@@ -1,0 +1,11 @@
+*.lo
+*.o
+*.la
+*.a
+*.lib
+*.so
+*.swp
+*~
+
+build/
+bin/
