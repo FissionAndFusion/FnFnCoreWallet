@@ -20,6 +20,7 @@ find_package(Boost 1.58.0 REQUIRED program_options filesystem system thread date
 
 find_package(MySQL 5.7.20 REQUIRED)
 find_package(sodium 1.0.8 REQUIRED)
+find_package(Readline 6.0 REQUIRED)
 
 add_subdirectory(src)
 add_subdirectory(walleve)
@@ -27,4 +28,3 @@ add_subdirectory(crypto)
 add_subdirectory(common)
 add_subdirectory(mpvss)
 add_subdirectory(storage)
-add_subdirectory(test)
