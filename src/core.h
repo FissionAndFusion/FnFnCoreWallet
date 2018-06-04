@@ -23,13 +23,20 @@ public:
     virtual MvErr VerifyBlock(CBlock& block,const CDestination& destIn,int64 nValueIn,
                               int64 nTxFee,CBlockIndex* pIndexPrev);
     virtual MvErr VerifyBlockTx(CBlockTx& tx,storage::CBlockView& view);
+    virtual bool GetProofOfWorkTarget(CBlockIndex* pIndexPrev,int nAlgo,int& nBits,int64& nReward);
+    virtual int GetProofOfWorkRunTimeBits(int nBits,int64 nTime,int64 nPrevTime);
     //virtual MvErr 
 protected:
     bool WalleveHandleInitialize();
     const MvErr Debug(const MvErr& err,const char* pszFunc,const char *pszFormat,...); 
     bool CheckBlockSignature(const CBlock& block);
+   int64 GetProofOfWorkReward(CBlockIndex* pIndexPrev);
 protected:
     uint256 hashGenesisBlock;
+    int nProofOfWorkLimit;
+    int nProofOfWorkInit;
+    int64 nProofOfWorkUpperTarget;
+    int64 nProofOfWorkLowerTarget;
 };
 
 class CMvTestNetCoreProtocol : public CMvCoreProtocol

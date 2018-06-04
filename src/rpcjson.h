@@ -77,6 +77,8 @@ inline json_spirit::Object JSONRPCError(int code, const std::string& message)
 int64 AmountFromValue(const json_spirit::Value& value);
 json_spirit::Value ValueFromAmount(int64 amount);
 
+json_spirit::Object BlockToJSON(const uint256& hashBlock,const CBlock& block,const uint256& hashFork,int nHeight);
+
 } // namespace multiverse
 
 #endif //MULTIVERSE_RPCJSON_H

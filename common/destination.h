@@ -38,6 +38,16 @@ public:
     {
         return (prefix == PREFIX_NULL);
     }
+    bool SetHex(const std::string& strHex)
+    {
+        if (strHex.size() != 66 || strHex[0] != '0' || strHex[1] < '0' || strHex[1] > '2')
+        {
+            return false;
+        }
+        prefix = strHex[1] - '0';
+        data.SetHex(strHex.c_str() + 2);
+        return true;
+    }
     void SetPubKey(const multiverse::crypto::CPubKey& pubkey)
     {
         prefix = PREFIX_PUBKEY;
@@ -77,6 +87,10 @@ public:
     friend bool operator<(const CDestination& a, const CDestination& b)
     {
         return (a.prefix < b.prefix || (a.prefix == b.prefix && a.data < b.data));
+    }
+    std::string ToString() const
+    {
+        return (std::string(1,'0' + prefix) + data.ToString());
     }
 protected:
     template <typename O>

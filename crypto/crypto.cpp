@@ -113,14 +113,14 @@ void CryptoSign(CCryptoKey& key,const void* md,std::size_t len,std::vector<uint8
     crypto_sign_ed25519_detached(&vchSig[0],NULL,(const uint8*)md,len,(uint8*)&key);
 }
 
-bool CryptoVerify(uint256& pubkey,const void* md,std::size_t len,const std::vector<uint8>& vchSig)
+bool CryptoVerify(const uint256& pubkey,const void* md,std::size_t len,const std::vector<uint8>& vchSig)
 {
     return (vchSig.size() == 64 
             && !crypto_sign_ed25519_verify_detached(&vchSig[0],(const uint8*)md,len,(uint8*)&pubkey));
 }
 
 // Encrypt
-void CryptoKeyFromPassphrase(int version,const CCryptoString& passhrase,const uint256& salt,CCryptoKeyData& key)
+void CryptoKeyFromPassphrase(int version,const CCryptoString& passphrase,const uint256& salt,CCryptoKeyData& key)
 {
     key.resize(32);
     if (version == 0)
@@ -129,7 +129,7 @@ void CryptoKeyFromPassphrase(int version,const CCryptoString& passhrase,const ui
     }
     else if (version == 1)
     {
-        if (crypto_pwhash_scryptsalsa208sha256(&key[0],32,passhrase.c_str(),passhrase.size(),(const uint8*)&salt,
+        if (crypto_pwhash_scryptsalsa208sha256(&key[0],32,passphrase.c_str(),passphrase.size(),(const uint8*)&salt,
                                                crypto_pwhash_scryptsalsa208sha256_OPSLIMIT_INTERACTIVE,
                                                crypto_pwhash_scryptsalsa208sha256_MEMLIMIT_INTERACTIVE) != 0)
         {
@@ -142,10 +142,10 @@ void CryptoKeyFromPassphrase(int version,const CCryptoString& passhrase,const ui
     }
 }
 
-bool CryptoEncryptSecret(int version,const CCryptoString& passhrase,const CCryptoKey& key,CCryptoCipher& cipher)
+bool CryptoEncryptSecret(int version,const CCryptoString& passphrase,const CCryptoKey& key,CCryptoCipher& cipher)
 {
     CCryptoKeyData ek;
-    CryptoKeyFromPassphrase(version,passhrase,key.pubkey,ek);
+    CryptoKeyFromPassphrase(version,passphrase,key.pubkey,ek);
     randombytes_buf(&cipher.nonce, sizeof(cipher.nonce));
     
     return (crypto_aead_chacha20poly1305_encrypt(cipher.encrypted,NULL,
@@ -155,10 +155,10 @@ bool CryptoEncryptSecret(int version,const CCryptoString& passhrase,const CCrypt
     
 }
 
-bool CryptoDecryptSecret(int version,const CCryptoString& passhrase,const CCryptoCipher& cipher,CCryptoKey& key)
+bool CryptoDecryptSecret(int version,const CCryptoString& passphrase,const CCryptoCipher& cipher,CCryptoKey& key)
 {
     CCryptoKeyData ek;
-    CryptoKeyFromPassphrase(version,passhrase,key.pubkey,ek);
+    CryptoKeyFromPassphrase(version,passphrase,key.pubkey,ek);
     return (crypto_aead_chacha20poly1305_decrypt((uint8*)&key.secret,NULL,NULL,
                                                  cipher.encrypted,48,
                                                  (const uint8*)&key.pubkey,32,

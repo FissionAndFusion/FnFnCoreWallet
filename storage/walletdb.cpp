@@ -17,6 +17,7 @@ CWalletDB::CWalletDB()
     
 CWalletDB::~CWalletDB()
 {   
+    Deinitialize();
 }
 
 bool CWalletDB::Initialize(const CMvDBConfig& config)
@@ -33,26 +34,40 @@ void CWalletDB::Deinitialize()
     dbConn.Disconnect();
 }
 
-bool CWalletDB::AddNewKey(const uint256& pubkey,const crypto::CCryptoCipher& cipher)
+bool CWalletDB::AddNewKey(const uint256& pubkey,int version,const crypto::CCryptoCipher& cipher)
 {
     ostringstream oss;
-    oss << "INSERT INTO key(pubkey,encrypted,nonce) "
+    oss << "INSERT INTO walletkey(pubkey,version,encrypted,nonce) "
               "VALUES("
         <<            "\'" << dbConn.ToEscString(pubkey) << "\',"
+        <<            version << ","
         <<            "\'" << dbConn.ToEscString(cipher.encrypted,48) << "\',"
         <<            cipher.nonce << ")";
     return dbConn.Query(oss.str());
 }
 
+bool CWalletDB::UpdateKey(const uint256& pubkey,int version,const crypto::CCryptoCipher& cipher)
+{
+    ostringstream oss;
+    oss << "UPDATE walletkey SET version = " << version << ","  
+                << "encrypted = \'" << dbConn.ToEscString(cipher.encrypted,48) << "\',"
+                << "nonce = " << cipher.nonce 
+                << " WHERE pubkey = " << "\'" << dbConn.ToEscString(pubkey) << "\'";
+
+    return dbConn.Query(oss.str());
+}
+
 bool CWalletDB::WalkThroughKey(CWalletDBKeyWalker& walker)
 {
-    CMvDBRes res(dbConn,"SELECT pubkey,encrypted,nonce FROM key",true);
+    CMvDBRes res(dbConn,"SELECT pubkey,version,encrypted,nonce FROM walletkey",true);
     while (res.GetRow())
     {
+        int version;
         uint256 pubkey;
         crypto::CCryptoCipher cipher;
-        if (!res.GetField(0,pubkey) || !res.GetBinary(1,cipher.encrypted,48) || !res.GetField(2,cipher.nonce) 
-            || !walker.Walk(pubkey,cipher))
+        if (!res.GetField(0,pubkey) || !res.GetField(1,version)
+            || !res.GetBinary(2,cipher.encrypted,48) || !res.GetField(3,cipher.nonce) 
+            || !walker.Walk(pubkey,version,cipher))
         {
             return false;
         }
@@ -62,9 +77,10 @@ bool CWalletDB::WalkThroughKey(CWalletDBKeyWalker& walker)
 
 bool CWalletDB::CreateTable()
 {
-    return dbConn.Query("CREATE TABLE IF NOT EXISTS key("
-                          "id INT NOT NULL AUTO_INCREMENT,"
+    return dbConn.Query("CREATE TABLE IF NOT EXISTS walletkey("
+                          "id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,"
                           "pubkey BINARY(32) NOT NULL UNIQUE KEY,"
+                          "version INT NOT NULL,"
                           "encrypted BINARY(48) NOT NULL,"
                           "nonce BIGINT UNSIGNED NOT NULL)"
                        );

@@ -3,7 +3,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "key.h"
-
+#include "walleve/stream/datastream.h"
 using namespace multiverse::crypto;
 
 //////////////////////////////
@@ -81,12 +81,50 @@ bool CKey::Renew()
     return (CryptoMakeNewKey(*pCryptoKey) != 0 && UpdateCipher());
 }
 
-bool CKey::Load(int nVersionIn,const CCryptoCipher& cipherIn,const CPubKey& pubkeyIn)
+void CKey::Load(const CPubKey& pubkeyIn,int nVersionIn,const CCryptoCipher& cipherIn)
 {
+    pCryptoKey->pubkey = pubkeyIn;
+    pCryptoKey->secret = 0;
     nVersion = nVersionIn;
     cipher = cipherIn;
-    pCryptoKey->secret = 0;
-    pCryptoKey->pubkey = pubkeyIn;
+}
+
+bool CKey::Load(const std::vector<unsigned char>& vchKey)
+{
+    if (vchKey.size() != 96)
+    {   
+        return false;
+    }
+
+    CPubKey pubkey;
+    int version;
+    CCryptoCipher cip;
+    uint32 check;
+    walleve::CWalleveIDataStream is(vchKey);
+    is >> pubkey >> version >> cip >> check;
+    if (CryptoHash(&vchKey[0],vchKey.size() - 4).Get32() != check)
+    {
+        return false;
+    }
+    Load(pubkey,version,cip);
+    return true;
+}
+
+void CKey::Save(CPubKey& pubkeyRet,int& nVersionRet,CCryptoCipher& cipherRet) const
+{
+    pubkeyRet = pCryptoKey->pubkey;
+    nVersionRet = nVersion;
+    cipherRet = cipher;
+}
+
+void CKey::Save(std::vector<unsigned char>& vchKey) const
+{
+    vchKey.clear();
+    vchKey.reserve(96);
+    walleve::CWalleveODataStream os(vchKey);
+    os << GetPubKey() << GetVersion() << GetCipher();
+    uint256 hash = CryptoHash(&vchKey[0],vchKey.size());
+    os << hash.Get32();
 }
 
 bool CKey::SetSecret(const CCryptoKeyData& vchSecret)
@@ -109,9 +147,14 @@ bool CKey::GetSecret(CCryptoKeyData& vchSecret) const
     return false;
 }
 
-CPubKey CKey::GetPubKey() const
+const CPubKey CKey::GetPubKey() const
 {
     return CPubKey(pCryptoKey->pubkey);
+}
+
+const CCryptoCipher& CKey::GetCipher() const
+{
+    return cipher;
 }
 
 bool CKey::Sign(const uint256& hash,std::vector<uint8>& vchSig) const
@@ -122,11 +165,6 @@ bool CKey::Sign(const uint256& hash,std::vector<uint8>& vchSig) const
         return true;
     }
     return false;
-}
-
-const CCryptoCipher& CKey::GetCipher() const
-{
-    return cipher;
 }
 
 bool CKey::Encrypt(const CCryptoString& strPassphrase,

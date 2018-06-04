@@ -78,7 +78,88 @@ void CWorldLine::WalleveHandleHalt()
     cntrBlock.Deinitialize();
 }
 
-MvErr CWorldLine::AddNewBlock(CBlock& block,vector<CTransaction>& vtx)
+void CWorldLine::GetForkStatus(map<uint256,CForkStatus>& mapForkStatus)
+{
+    mapForkStatus.clear();
+
+    multimap<int,CBlockIndex*> mapForkIndex;
+    cntrBlock.ListForkIndex(mapForkIndex);
+    for (multimap<int,CBlockIndex*>::iterator it = mapForkIndex.begin();it != mapForkIndex.end();++it)
+    {
+        CBlockIndex* pIndex = (*it).second;
+        int nForkHeight = (*it).first;
+        uint256 hashFork = pIndex->GetOriginHash();
+        uint256 hashParent = pIndex->GetParentHash();
+
+        map<uint256,CForkStatus>::iterator mi = mapForkStatus.insert(make_pair(hashFork,CForkStatus(hashFork,hashParent,nForkHeight))).first;
+        if (hashParent != 0)
+        {
+            mapForkStatus[hashParent].mapSubline.insert(make_pair(nForkHeight,hashFork));
+        }     
+        CForkStatus& status = (*mi).second;
+        status.hashLastBlock = pIndex->GetBlockHash();
+        status.nLastBlockTime = pIndex->GetBlockTime();
+        status.nLastBlockHeight = pIndex->GetBlockHeight();
+        status.nMoneySupply = pIndex->GetMoneySupply();
+    }
+}
+
+bool CWorldLine::GetBlockLocation(const uint256& hashBlock,uint256& hashFork,int& nHeight)
+{
+    CBlockIndex* pIndex = NULL;
+    if (!cntrBlock.RetrieveIndex(hashBlock,&pIndex))
+    {
+        return false;
+    }
+    hashFork = pIndex->GetOriginHash();
+    nHeight = pIndex->GetBlockHeight();
+    return true;
+}
+
+bool CWorldLine::GetBlockHash(const uint256& hashFork,int nHeight,uint256& hashBlock)
+{
+    CBlockIndex* pIndex = NULL;
+    if (!cntrBlock.RetrieveFork(hashFork,&pIndex) || pIndex->GetBlockHeight() < nHeight)
+    {
+        return false;
+    }
+    while (pIndex != NULL && pIndex->GetBlockHeight() > nHeight)
+    {
+        pIndex = pIndex->pPrev;
+    }
+    hashBlock = !pIndex ? 0 : pIndex->GetBlockHash();
+    return (pIndex != NULL);
+}
+
+bool CWorldLine::GetLastBlock(const uint256& hashFork,uint256& hashBlock,int& nHeight,int64& nTime)
+{
+    CBlockIndex* pIndex = NULL;
+    if (!cntrBlock.RetrieveFork(hashFork,&pIndex))
+    {
+        return false;
+    }
+    hashBlock = pIndex->GetBlockHash();
+    nHeight = pIndex->GetBlockHeight();
+    nTime = pIndex->GetBlockTime();
+    return true;
+}
+
+bool CWorldLine::GetBlock(const uint256& hashBlock,CBlock& block)
+{
+    return cntrBlock.Retrieve(hashBlock,block);
+}
+
+bool CWorldLine::Exists(const uint256& hashBlock)
+{
+    return cntrBlock.Exists(hashBlock);
+}
+
+bool CWorldLine::GetTransaction(const uint256& txid,CTransaction& tx)
+{
+    return cntrBlock.RetrieveTx(txid,tx);
+}
+
+MvErr CWorldLine::AddNewBlock(CBlock& block,vector<CTransaction>& vtx,CWorldLineUpdate& update)
 {
     uint256 hash = block.GetHash();
     MvErr err = MV_OK;
@@ -179,8 +260,32 @@ MvErr CWorldLine::AddNewBlock(CBlock& block,vector<CTransaction>& vtx)
         WalleveLog("AddNewBlock Storage Commit BlockView Error : %s \n",hash.ToString().c_str());
         return MV_ERR_SYS_STORAGE_ERROR;
     }
-    
+   
+    update = CWorldLineUpdate(pIndexNew);
+    view.GetTxChanges(update.vTxAddNew,update.vTxRemove,update.setTxUpdate);
+ 
     return MV_OK;
+}
+
+bool CWorldLine::GetProofOfWorkTarget(const uint256& hashPrev,int nAlgo,int& nBits,int64& nReward)
+{
+    CBlockIndex* pIndexPrev;
+    if (!cntrBlock.RetrieveIndex(hashPrev,&pIndexPrev))
+    {
+        WalleveLog("GetProofOfWorkTarget : Retrieve Prev Index Error: %s \n",hashPrev.ToString().c_str());
+        return false;
+    }
+    if (!pIndexPrev->IsPrimary())
+    {
+        WalleveLog("GetProofOfWorkTarget : Previous is not primary: %s \n",hashPrev.ToString().c_str());
+        return false;
+    }
+    if (!pCoreProtocol->GetProofOfWorkTarget(pIndexPrev,nAlgo,nBits,nReward))
+    {
+        WalleveLog("GetProofOfWorkTarget : Unknown proof-of-work algo: %s \n",hashPrev.ToString().c_str());
+        return false;
+    }
+    return true;
 }
 
 bool CWorldLine::CheckContainer()

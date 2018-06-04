@@ -19,7 +19,10 @@ class CKeyStore
 public:
     CKeyStore();
     virtual ~CKeyStore();
+    void Clear();
+    bool IsEmpty() const { return mapKey.empty(); }
     bool AddKey(const CKey& key);
+    void RemoveKey(const CPubKey& pubkey);
     bool HaveKey(const CPubKey& pubkey) const;
     bool GetSecret(const CPubKey& pubkey,CCryptoKeyData& vchSecret) const;
     void GetKeys(std::set<CPubKey>& setPubKey) const;

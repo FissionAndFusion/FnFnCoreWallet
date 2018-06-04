@@ -250,6 +250,48 @@ string CMvRPCConfig::ListConfig()
     return "";
 }
 
+//////////////////////////////
+// CMvMintConfig
+
+CMvMintConfig::CMvMintConfig()
+{
+    po::options_description desc("LoMoMint");
+
+    desc.add_options()
+
+    OPTSTR("mpvssdest",strDestMPVss,"")
+    OPTSTR("mpvsskey",strKeyMPVss,"")
+    OPTSTR("blake512dest",strDestBlake512,"")
+    OPTSTR("blake512key",strKeyBlake512,"");
+
+    AddOptions(desc);
+}
+
+CMvMintConfig::~CMvMintConfig()
+{
+}
+
+bool CMvMintConfig::PostLoad()
+{
+    CDestination dest;
+    if (dest.SetHex(strDestMPVss) && strKeyMPVss.size() == 64)
+    {
+        destMPVss = dest;
+        keyMPVss.SetHex(strKeyMPVss);
+    }
+
+    if (dest.SetHex(strDestBlake512) && strKeyBlake512.size() == 64)
+    {
+        destBlake512 = dest;
+        keyBlake512.SetHex(strKeyBlake512);
+    }
+    return true;
+}
+
+string CMvMintConfig::ListConfig()
+{
+    return "";
+}
 
 //////////////////////////////
 // CMvConfig
@@ -265,8 +307,10 @@ CMvConfig::~CMvConfig()
 bool CMvConfig::PostLoad()
 {
     return (CWalleveConfig::PostLoad()
+            && CMvBasicConfig::PostLoad()
             && CMvNetworkConfig::PostLoad()
-            && CMvRPCConfig::PostLoad());
+            && CMvRPCConfig::PostLoad()
+            && CMvMintConfig::PostLoad());
 }
 
 string CMvConfig::ListConfig()
@@ -274,5 +318,6 @@ string CMvConfig::ListConfig()
     return (CWalleveConfig::ListConfig()
             + CMvBasicConfig::ListConfig()
             + CMvNetworkConfig::ListConfig()
-            + CMvRPCConfig::ListConfig());
+            + CMvRPCConfig::ListConfig()
+            + CMvMintConfig::ListConfig());
 }

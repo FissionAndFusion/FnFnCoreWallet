@@ -91,6 +91,37 @@ inline std::string ToHexString(const unsigned char *p,std::size_t size)
     return strHex;    
 }
 
+inline std::string ToHexString(const std::vector<unsigned char>& vch)
+{
+    return ToHexString(&vch[0],vch.size());
+}
+
+inline int CharToHex(char c)
+{
+    if (c >= '0' && c <= '9') return (c - '0');
+    if (c >= 'a' && c <= 'f') return (c - 'a' + 10);
+    if (c >= 'A' && c <= 'F') return (c - 'A' + 10);
+    return -1;
+}
+
+inline std::vector<unsigned char> ParseHexString(const char* psz)
+{
+    std::vector<unsigned char> vch;
+    vch.reserve(128);
+    while (*psz)
+    {
+        int h = CharToHex(*psz++);
+        int l = CharToHex(*psz++);
+        if (h < 0 || l < 0) break;
+        vch.push_back((unsigned char)((h << 4) | l));
+    }
+    return vch; 
+}
+inline std::vector<unsigned char> ParseHexString(const std::string& str)
+{
+    return ParseHexString(str.c_str());
+}
+
 } // namespace walleve
 
 #endif //WALLEVE_UTIL_H

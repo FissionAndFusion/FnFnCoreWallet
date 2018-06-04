@@ -13,6 +13,8 @@ set(sources
 	config.cpp config.h
 	entry.cpp entry.h        
 	mvbase.h
+	mvtype.h
+	event.h
 	core.cpp core.h
 	worldline.cpp worldline.h
 	txpool.cpp txpool.h
@@ -21,6 +23,7 @@ set(sources
 	service.cpp service.h
 	rpcjson.cpp rpcjson.h
 	rpcmod.cpp rpcmod.h
+	blockmaker.cpp blockmaker.h
 	rpcclient.cpp rpcclient.h
 )
 

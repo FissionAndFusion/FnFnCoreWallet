@@ -100,7 +100,16 @@ public:
             try
             {
                 std::stringstream ss(std::string(rowData[idx],pLength[idx]));
-                ss >> t;
+                if (sizeof(T) == 1)
+                {
+                   int i;
+                   ss >> i;
+                   t = (T)i;
+                }
+                else
+                {
+                    ss >> t;
+                }
                 return true;
             }
             catch (...) {}

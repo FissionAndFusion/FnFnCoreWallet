@@ -35,6 +35,10 @@ public:
     
     bool SetLogFilePath(const std::string& strPathLog)
     {
+        if (pFile != NULL)
+        {
+            fclose(pFile);
+        }
         pFile = fopen(strPathLog.c_str(), "a");
         fNewLine = true;
         return (pFile != NULL);

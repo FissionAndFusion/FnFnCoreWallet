@@ -12,11 +12,21 @@ using namespace multiverse;
 
 static const size_t MIN_TOKEN_TX_SIZE = 192;
 static const int64  MAX_CLOCK_DRIFT   = 10 * 60;
+
+static const int  PROOF_OF_WORK_BITS_LIMIT   = 16;
+static const int  PROOF_OF_WORK_BITS_INIT    = 20;
+static const int  PROOF_OF_WORK_ADJUST_COUNT = 16; 
+static const int  PROOF_OF_WORK_ADJUST_DEBOUNCE = 10; 
+static const int  PROOF_OF_WORK_TARGET_SPACING = BLOCK_TARGET_SPACING + BLOCK_TARGET_SPACING / 2; 
 ///////////////////////////////
 // CMvCoreProtocol
 
 CMvCoreProtocol::CMvCoreProtocol()
 {
+    nProofOfWorkLimit = PROOF_OF_WORK_BITS_LIMIT;
+    nProofOfWorkInit = PROOF_OF_WORK_BITS_INIT;
+    nProofOfWorkUpperTarget = PROOF_OF_WORK_TARGET_SPACING + PROOF_OF_WORK_ADJUST_DEBOUNCE;
+    nProofOfWorkLowerTarget = PROOF_OF_WORK_TARGET_SPACING - PROOF_OF_WORK_ADJUST_DEBOUNCE;
 }
 
 CMvCoreProtocol::~CMvCoreProtocol()
@@ -226,10 +236,82 @@ MvErr CMvCoreProtocol::VerifyBlockTx(CBlockTx& tx,storage::CBlockView& view)
     return MV_OK;
 }
 
+bool CMvCoreProtocol::GetProofOfWorkTarget(CBlockIndex* pIndexPrev,int nAlgo,int& nBits,int64& nReward)
+{
+    if (nAlgo <= 0 || nAlgo >= POWA_MAX || !pIndexPrev->IsPrimary())
+    {
+        return false;
+    }
+    nReward = GetProofOfWorkReward(pIndexPrev);
+
+    CBlockIndex* pIndex = pIndexPrev;
+    while ((!pIndex->IsProofOfWork() || pIndex->nProofAlgo != nAlgo) && pIndex->pPrev != NULL)
+    {
+        pIndex = pIndex->pPrev;
+    }
+    
+    // first 
+    if (!pIndex->IsProofOfWork())
+    {
+        nBits = nProofOfWorkInit;
+        return true; 
+    }
+
+    nBits = pIndex->nProofBits;
+    int64 nSpacing = 0;
+    int64 nWeight = 0;
+    int nWIndex = PROOF_OF_WORK_ADJUST_COUNT - 1; 
+    while (pIndex->IsProofOfWork())
+    {
+        nSpacing += (pIndex->GetBlockTime() - pIndex->pPrev->GetBlockTime()) << nWIndex;
+        nWeight += (1ULL) << nWIndex; 
+        if (!nWIndex--)
+        {
+            break;
+        }
+        pIndex = pIndex->pPrev;
+        while ((!pIndex->IsProofOfWork() || pIndex->nProofAlgo != nAlgo) && pIndex->pPrev != NULL)
+        {
+            pIndex = pIndex->pPrev;
+        }
+    }
+    nSpacing /= nWeight;
+    if (nSpacing > nProofOfWorkUpperTarget && nBits > nProofOfWorkLimit)
+    {
+        nBits--;
+    }
+    else if (nSpacing < nProofOfWorkLowerTarget)
+    {
+        nBits++;
+    }
+    return true;    
+}
+
+int CMvCoreProtocol::GetProofOfWorkRunTimeBits(int nBits,int64 nTime,int64 nPrevTime)
+{
+    if (nTime - nPrevTime < BLOCK_TARGET_SPACING)
+    {
+        return (nBits + 1);
+    }
+    
+    nBits -= (nTime - nPrevTime - BLOCK_TARGET_SPACING) / PROOF_OF_WORK_DECAY_STEP;
+    if (nBits < nProofOfWorkLimit)
+    {
+        nBits = nProofOfWorkLimit;
+    }
+    return nBits;
+}
+
+int64 CMvCoreProtocol::GetProofOfWorkReward(CBlockIndex* pIndexPrev)
+{
+    return (15 * COIN);    
+}
+
 bool CMvCoreProtocol::CheckBlockSignature(const CBlock& block)
 {
     return true;
 }
+
 ///////////////////////////////
 // CMvTestNetCoreProtocol
 

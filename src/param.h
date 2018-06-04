@@ -16,4 +16,22 @@ inline bool MoneyRange(int64 nValue) { return (nValue >= 0 && nValue <= MAX_MONE
 static const unsigned int MAX_BLOCK_SIZE = 2000000;
 static const unsigned int MAX_TX_SIZE = (MAX_BLOCK_SIZE/20);
 
+static const unsigned int BLOCK_TARGET_SPACING = 60;    // 1-minute block spacing
+static const unsigned int PROOF_OF_WORK_DECAY_STEP = BLOCK_TARGET_SPACING; 
+
+static const unsigned int MINT_MATURITY        = 120;   // 120 blocks about 2 hours
+
+enum ProofOfWorkAlgorithm
+{
+    POWA_BLAKE512 = 1,
+    POWA_MAX,
+};
+
+enum ConsensusMethod
+{
+    CM_MPVSS = 0,
+    CM_BLAKE512 = POWA_BLAKE512,
+    CM_MAX,
+};
+
 #endif //MULTIVERSE_PARAM_H

@@ -1,0 +1,77 @@
+// Copyright (c) 2017-2018 The Multiverse developers
+// Distributed under the MIT/X11 software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
+#ifndef  MULTIVERSE_BLOCKMAKER_H
+#define  MULTIVERSE_BLOCKMAKER_H
+
+#include "mvbase.h"
+#include "event.h"
+#include "key.h"
+namespace multiverse
+{
+
+class CBlockMakerHashAlgo
+{
+public: 
+    CBlockMakerHashAlgo(const std::string& strAlgoIn,int64 nHashRateIn) : strAlgo(strAlgoIn),nHashRate(nHashRateIn) {}
+    const std::string strAlgo;
+    int64 nHashRate;
+public:
+    virtual uint256 Hash(const std::vector<unsigned char>& vchData) = 0;
+};
+
+class CBlockMakerProfile
+{
+public:
+    CBlockMakerProfile() {}
+    CBlockMakerProfile(int nAlgoIn,const CDestination& dest,const uint256& nPrivKey) 
+    : nAlgo(nAlgoIn),destMint(dest) 
+    {
+        keyMint.SetSecret(crypto::CCryptoKeyData(nPrivKey.begin(),nPrivKey.end()));
+    }
+public:
+    int nAlgo;
+    CDestination destMint;
+    crypto::CKey keyMint;
+};
+
+class CBlockMaker : public IBlockMaker, virtual public CMvBlockMakerEventListener
+{
+public:
+    CBlockMaker();
+    ~CBlockMaker();
+    bool HandleEvent(CMvEventBlockMakerUpdate& eventUpdate);
+protected:
+    bool WalleveHandleInitialize();
+    void WalleveHandleDeinitialize();
+    bool WalleveHandleInvoke();
+    void WalleveHandleHalt();
+    bool Interrupted() { return (nMakerStatus != MAKER_RUN); }
+    bool Wait(long nSeconds);
+    bool CreateNewBlock(CBlock& block,const uint256& hashPrev,int64 nPrevTime);
+    bool DispatchNewBlock(CBlock& block);
+    bool CreateProofOfWork(CBlock& block,int nAlgo,CDestination& dest);
+private:
+    enum {MAKER_RUN=0,MAKER_RESET=1,MAKER_EXIT=2,MAKER_HOLD=3};
+    void BlockMakerThreadFunc();
+protected:
+    mutable boost::shared_mutex rwAccess;
+    walleve::CWalleveThread thrMaker;
+    boost::mutex mutex;
+    boost::condition_variable cond;
+    int nMakerStatus;
+    uint256 hashLastBlock;
+    int64 nLastBlockTime;
+    std::map<int,CBlockMakerHashAlgo*> mapHashAlgo;
+    std::map<int,CBlockMakerProfile> mapProfile;
+    ICoreProtocol* pCoreProtocol;
+    IWorldLine* pWorldLine;
+    IDispatcher* pDispatcher;
+    IWallet* pWallet;
+};
+
+} // namespace multiverse
+
+#endif //MULTIVERSE_BLOCKMAKER_H
+

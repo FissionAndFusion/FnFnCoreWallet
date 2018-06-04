@@ -6,7 +6,7 @@
 #define  MULTIVERSE_BLOCK_H
 
 #include "uint256.h"
-#include "bignum.h"
+#include "proof.h"
 #include "transaction.h"
 #include <vector>
 #include <walleve/stream/stream.h>
@@ -26,11 +26,11 @@ public:
     std::vector<uint8> vchSig;
     enum
     {
-        BLOCK_GENESIS   = 0xffff,
-        BLOCK_ORIGIN    = 0xff00,
-        BLOCK_COINSTAKE = 0x0001,
-        BLOCK_DELEGATED = 0x0002,
-        BLOCK_EXTENDED  = 0x0003,
+        BLOCK_GENESIS    = 0xffff,
+        BLOCK_ORIGIN     = 0xff00,
+        BLOCK_PRIMARY    = 0x0001,
+        BLOCK_SUBSIDIARY = 0x0002,
+        BLOCK_EXTENDED   = 0x0004,
     };
 public:
     CBlock()
@@ -56,11 +56,35 @@ public:
     {
         return (nType >> 15);
     }
+    bool IsPrimary() const
+    {
+        return (nType & 1);
+    }
+    bool IsProofOfWork() const
+    {
+        return (txMint.nType == CTransaction::TX_WORK);
+    }
     uint256 GetHash() const
     {
         walleve::CWalleveBufStream ss;
         ss << (*this);
         return multiverse::crypto::CryptoHash(ss.GetData(),ss.GetSize());
+    }
+    uint256 GetSignatureHash() const
+    {
+        walleve::CWalleveBufStream ss;
+        ss << nVersion << nType << nTimeStamp << hashPrev << txMint << vchProof << vTxHash;
+        return multiverse::crypto::CryptoHash(ss.GetData(),ss.GetSize());
+    }
+    void GetSerializedProofOfWorkData(std::vector<unsigned char>& vchProofOfWork) const
+    {
+        walleve::CWalleveBufStream ss;
+        ss << nVersion << nType << nTimeStamp << hashPrev << vchProof;
+        vchProofOfWork.assign(ss.GetData(),ss.GetData() + ss.GetSize());
+    }
+    int64 GetBlockTime() const
+    {
+        return (int64)nTimeStamp;
     }
     uint64 GetBlockBeacon(int idx = 0) const
     {
@@ -69,6 +93,22 @@ public:
             return hashPrev.Get64(idx & 3);
         }
         return 0;
+    }
+    uint64 GetBlockTrust() const
+    {
+        if (vchProof.empty())
+        {
+            return 1;
+        }
+        else if (IsProofOfWork())
+        {
+            return 1; 
+        }
+        return 0;
+    }
+    int64 GetBlockMint(int64 nValueIn) const
+    {
+        return (txMint.nAmount - nValueIn); 
     }
     void GetTxHash(std::vector<uint256>& vTxHashRet) const
     {
@@ -97,7 +137,8 @@ public:
     const uint256* phashBlock;
     CBlockIndex* pOrigin;
     CBlockIndex* pPrev;
-    uint256 txidStake;
+    uint256 txidMint;
+    uint16  nMintType;
     uint16  nVersion;
     uint16  nType;
     uint32  nTimeStamp;
@@ -105,6 +146,8 @@ public:
     uint64  nRandBeacon;
     uint64  nChainTrust;
     int64   nMoneySupply;
+    uint8   nProofAlgo;
+    uint8   nProofBits;
     uint32  nFile;
     uint32  nOffset;
 public:
@@ -113,14 +156,17 @@ public:
         phashBlock = NULL;
         pOrigin = this;
         pPrev = NULL;
-        txidStake = 0;
+        txidMint = 0;
+        nMintType = 0;
         nVersion = 0;
         nType = 0;
         nTimeStamp = 0;
         nHeight = 0;
         nChainTrust = 0;
-        nMoneySupply = 0;
         nRandBeacon = 0;
+        nMoneySupply = 0;
+        nProofAlgo = 0;
+        nProofBits = 0;
         nFile = 0;
         nOffset = 0;
     }
@@ -129,7 +175,8 @@ public:
         phashBlock = NULL;
         pOrigin = this;
         pPrev = NULL;
-        txidStake = block.txMint.GetHash();
+        txidMint = block.txMint.GetHash();
+        nMintType = block.txMint.nType;
         nVersion = block.nVersion;
         nType = block.nType;
         nTimeStamp = block.nTimeStamp;
@@ -137,6 +184,18 @@ public:
         nChainTrust = 0;
         nMoneySupply = 0;
         nRandBeacon = 0;
+        if (IsProofOfWork() && block.vchProof.size() >= CProofOfHashWorkCompact::PROOFHASHWORK_SIZE)
+        {
+            CProofOfHashWorkCompact proof;
+            proof.Load(block.vchProof);
+            nProofAlgo = proof.nAlgo;
+            nProofBits = proof.nBits;
+        }
+        else
+        {
+            nProofAlgo = 0;
+            nProofBits = 0;
+        }
         nFile = nFileIn;
         nOffset = nOffsetIn;
     }
@@ -144,22 +203,57 @@ public:
     {
         return *phashBlock;
     }
+    int GetBlockHeight() const
+    {
+        return nHeight;
+    }
+    int64 GetBlockTime() const
+    {
+        return (int64)nTimeStamp;
+    }
     uint256 GetOriginHash() const
     {
         return pOrigin->GetBlockHash();
+    }
+    uint256 GetParentHash() const
+    {
+        return (!pOrigin->pPrev ? 0 : pOrigin->pPrev->GetOriginHash());
+    }
+    int64 GetMoneySupply() const
+    {
+        return nMoneySupply;
     }
     bool IsOrigin() const
     {
         return (nType >> 15);
     }
+    bool IsPrimary() const
+    {
+        return (nType & 1);
+    }
+    bool IsProofOfWork() const
+    {
+        return (nMintType == CTransaction::TX_WORK);
+    }
+    const std::string GetBlockType() const
+    {
+        if (nType == CBlock::BLOCK_GENESIS) return std::string("genesis");
+        if (nType == CBlock::BLOCK_ORIGIN) return std::string("origin");
+        if (nType == CBlock::BLOCK_EXTENDED) return std::string("extended");
+        std::string str("undefined-");
+        if (nType == CBlock::BLOCK_PRIMARY) str = "primary-";
+        if (nType == CBlock::BLOCK_SUBSIDIARY) str = "subsidiary-";
+        if (nMintType == CTransaction::TX_WORK) return (str + "pow"); 
+        if (nMintType == CTransaction::TX_STAKE) return (str + "dpos"); 
+        return str;
+    }
     std::string ToString() const
     {
-        const char* sType[5] = {"genesis","undefined","coinstake","delegated","extended"};
         std::ostringstream oss;
         oss << "CBlockIndex : hash=" << GetBlockHash().ToString() 
-                         << " prev=" << (pPrev ? pPrev ->GetBlockHash().ToString() : "Genesis")
-                         << " nHeight=" << nHeight << " nFile=" << nFile << " nOffset=" << nOffset 
-                         << " nType=" << sType[nType + 1];
+                         << " prev=" << (pPrev ? pPrev->GetBlockHash().ToString() : "NULL")
+                         << " height=" << nHeight
+                         << " type=" << GetBlockType();
         return oss.str();
     }
 };
@@ -189,75 +283,14 @@ public:
     }
     std::string ToString() const
     {
-        const char* sType[5] = {"genesis","undefined","coinstake","delegated","extended"};
         std::ostringstream oss;
-        oss << "CBlockIndex : hash=" << GetBlockHash().ToString() 
-                         << " prev=" << hashPrev.ToString()
-                         << " nHeight=" << nHeight << " nFile=" << nFile << " nOffset=" << nOffset 
-                         << " nType=" << sType[nType + 1];
+        oss << "CDiskBlockIndex : hash=" << GetBlockHash().ToString() 
+                             << " prev=" << hashPrev.ToString()
+                             << " height=" << nHeight << " file=" << nFile << " offset=" << nOffset 
+                             << " type=" << GetBlockType();
         return oss.str();
     }
 };
-
-/*
-class CBlock : public CTransaction
-{
-public:
-    uint32  nTime;
-    uint32  nBits;
-    uint256 hashPrev;
-    uint256 hashTxStake;
-    std::vector<uint256> vCandidate;
-    std::vector<uint256> vTxHash;
-
-    CBlock()
-    {
-    }
-    CBlock(const CTransaction& txMint)
-    : CTransaction(txMint)
-    {
-        if (txMint.nType == TYPE_TOKEN)
-        {
-            SetNull();
-        }
-        else
-        {
-            DecodeData();
-        }
-    }
-    void EncodeData()
-    {
-        vchData.clear();
-        vchData.reserve(80 + 32 * (vTxHash.size() + vCandidate.size()));
-        walleve::CWalleveODataStream(vchData) << nTime << nBits << hashPrev << hashTxStake 
-                                              << vCandidate << vTxHash;
-    }
-protected:
-    void DecodeData()
-    {
-        walleve::CWalleveIDataStream(vchData) >> nTime >> nBits >> hashPrev >> hashTxStake 
-                                              >> vCandidate >> vTxHash;
-    }
-};
-
-
-class CBlockIndex
-{
-public:
-    const uint256* phashBlock;
-    CBlockIndex* pPrev;
-    CBlockIndex* pCoRef;
-    std::vector<CBlockIndex*> vNext;
-    uint256 hashMerkleRoot;
-    uint256 txidStake;
-    CBigNum bnChainTrust;
-    uint256 hashProofOfStake;
-    uint32  nHeight;
-    uint32  nVersion;
-    uint32  nTime;
-    uint32  nBits;
-};
-*/
 
 #endif //MULTIVERSE_BLOCK_H
 

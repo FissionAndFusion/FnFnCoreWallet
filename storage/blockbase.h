@@ -33,6 +33,7 @@ public:
     void ReadUnlock() { spAccess->ReadUnlock(); }
     void WriteUnlock() { spAccess->WriteUnlock(); }
     CBlockIndex* GetLast() const { return pIndexLast; }
+    CBlockIndex* GetOrigin() const { return pIndexLast->pOrigin; }
     void UpdateLast(CBlockIndex* pIndexLastIn) { pIndexLast = pIndexLastIn; }
     void InsertAncestry(CBlockIndex* pAncestry) 
     {
@@ -111,6 +112,7 @@ public:
     void AddTx(const uint256& txid,const CBlockTx& tx) { AddTx(txid,tx,tx.destIn,tx.nValueIn); }
     void RemoveTx(const uint256& txid,std::vector<CTxUnspent>& vPrevout);
     void GetUnspentChanges(std::vector<CTxUnspent>& vAddNew,std::vector<CTxOutPoint>& vRemove);
+    void GetTxChanges(std::vector<uint256>& vAddNew,std::vector<uint256>& vRemove,std::set<uint256>& setUpdate);
 protected:
     CBlockBase* pBlockBase;
     CBlockFork* pBlockFork;
@@ -118,6 +120,8 @@ protected:
     bool fCommittable;
     std::map<uint256,CTransaction> mapTx;
     std::map<CTxOutPoint,CUnspent> mapUnspent;
+    std::vector<uint256> vTxRemove;
+    std::vector<uint256> vTxAddNew;
 };
 
 class CBlockBase
@@ -137,6 +141,7 @@ public:
     bool RetrieveIndex(const uint256& hash,CBlockIndex** ppIndex);
     bool RetrieveFork(const uint256& hash,CBlockIndex** ppIndex);
     bool RetrieveTx(const uint256& txid,CTransaction& tx);
+    void ListForkIndex(std::multimap<int,CBlockIndex*>& mapForkIndex);
     bool GetBlockView(CBlockView& view);
     bool GetBlockView(const uint256& hash,CBlockView& view,bool fCommitable=false);
     bool CommitBlockView(CBlockView& view,CBlockIndex* pIndexNew);

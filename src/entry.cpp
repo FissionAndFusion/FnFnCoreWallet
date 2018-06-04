@@ -10,6 +10,7 @@
 #include "dispatcher.h"
 #include "rpcmod.h"
 #include "service.h"
+#include "blockmaker.h"
 #include "rpcclient.h"
 
 #include <map>
@@ -166,6 +167,12 @@ bool CMvEntry::InitializeService()
         return false;
     }
 
+    CBlockMaker *pBlockMaker = new CBlockMaker();
+    if (!pBlockMaker || !walleveDocker.Attach(pBlockMaker))
+    {
+        delete pBlockMaker;
+        return false;
+    }
 /*
     CTxPool *pTxPool = new CTxPool();
     if (!pTxPool || !walleveDocker.Attach(pTxPool))

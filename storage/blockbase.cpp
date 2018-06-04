@@ -58,6 +58,8 @@ void CBlockView::Initialize(CBlockBase* pBlockBaseIn,CBlockFork* pBlockForkIn,
             pBlockFork->ReadLock();
         }
     }
+    vTxRemove.clear();
+    vTxAddNew.clear();
 }
 
 void CBlockView::Deinitialize()
@@ -123,6 +125,8 @@ bool CBlockView::RetrieveUnspent(const CTxOutPoint& out,CTxOutput& unspent)
 void CBlockView::AddTx(const uint256& txid,const CTransaction& tx,const CDestination& destIn,int64 nValueIn)
 {
     mapTx[txid] = tx;
+    vTxAddNew.push_back(txid);
+
     for (int i = 0;i < tx.vInput.size();i++)
     {
         mapUnspent[tx.vInput[i].prevout].Disable();
@@ -142,6 +146,8 @@ void CBlockView::AddTx(const uint256& txid,const CTransaction& tx,const CDestina
 void CBlockView::RemoveTx(const uint256& txid,vector<CTxUnspent>& vPrevout)
 {
     mapTx[txid].SetNull();
+    vTxRemove.push_back(txid);
+
     for (int i = 0;i < vPrevout.size();i++)
     {   
         mapUnspent[vPrevout[i]].Enable(vPrevout[i].output);
@@ -169,6 +175,33 @@ void CBlockView::GetUnspentChanges(vector<CTxUnspent>& vAddNew,vector<CTxOutPoin
             {
                 vRemove.push_back(out);
             }
+        }
+    }
+}
+
+void CBlockView::GetTxChanges(vector<uint256>& vAddNew,vector<uint256>& vRemove,set<uint256>& setUpdate)
+{
+    vRemove.reserve(vTxRemove.size());
+    vAddNew.reserve(vTxAddNew.size());
+
+    for (int i = 0;i < vTxRemove.size();i++)
+    {
+        const uint256& txid = vTxRemove[i];
+        if (mapTx[txid].IsNull())
+        {
+            vRemove.push_back(txid);
+        }
+        else
+        {
+            setUpdate.insert(txid);
+        }
+    }
+    for (int i = 0;i < vTxAddNew.size();i++)
+    {
+        const uint256& txid = vTxAddNew[i];
+        if (!setUpdate.count(txid))
+        {
+            vAddNew.push_back(txid);
         }
     }
 }
@@ -367,6 +400,17 @@ bool CBlockBase::RetrieveTx(const uint256& txid,CTransaction& tx)
     return true;
 }
 
+void CBlockBase::ListForkIndex(multimap<int,CBlockIndex*>& mapForkIndex)
+{
+    CWalleveReadLock rlock(rwAccess);
+    mapForkIndex.clear();
+    for (map<uint256,CBlockFork>::iterator it = mapFork.begin();it != mapFork.end();++it)
+    {
+        CBlockIndex* pIndex = (*it).second.GetLast();
+        mapForkIndex.insert(make_pair(pIndex->pOrigin->GetBlockHeight() - 1,pIndex));     
+    }
+}
+
 bool CBlockBase::GetBlockView(CBlockView& view)
 {
     view.Initialize(this,NULL,0,false);
@@ -510,7 +554,6 @@ bool CBlockBase::LoadIndex(CDiskBlockIndex& diskIndex)
             pIndexNew->pOrigin = pIndexNew->pPrev->pOrigin;
         }
     }
-
     return true;
 }
 

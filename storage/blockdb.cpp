@@ -286,7 +286,7 @@ bool CBlockDB::AddNewBlock(const CDiskBlockIndex& diskIndex,
         CMvDBTxn txn(*db);
         {
             ostringstream oss;
-            oss << "INSERT INTO block(hash,prev,txid,minttype,version,type,time,height,trust,supply,beacon,file,offset,txs) "
+            oss << "INSERT INTO block(hash,prev,txid,minttype,version,type,time,height,trust,supply,beacon,algo,bits,file,offset,txs) "
                       "VALUES("
                 <<            "\'" << strEscHash << "\',"
                 <<            "\'" << db->ToEscString(diskIndex.hashPrev) << "\',"
@@ -299,6 +299,8 @@ bool CBlockDB::AddNewBlock(const CDiskBlockIndex& diskIndex,
                 <<            diskIndex.nChainTrust << ","
                 <<            diskIndex.nMoneySupply << ","
                 <<            diskIndex.nRandBeacon << ","
+                <<            (int)diskIndex.nProofAlgo << ","
+                <<            (int)diskIndex.nProofBits << ","
                 <<            diskIndex.nFile << ","
                 <<            diskIndex.nOffset << ","
                 <<            diskIndex.nTxs << ")";
@@ -379,7 +381,7 @@ bool CBlockDB::WalkThroughBlock(CBlockDBWalker& walker)
         return false;
     }
     {
-        CMvDBRes res(*db,"SELECT hash,prev,txid,minttype,version,type,time,height,trust,supply,beacon,file,offset,txs FROM block ORDER BY id",true);
+        CMvDBRes res(*db,"SELECT hash,prev,txid,minttype,version,type,time,height,trust,supply,beacon,algo,bits,file,offset,txs FROM block ORDER BY id",true);
         while (res.GetRow())
         {
             CDiskBlockIndex diskIndex;
@@ -388,8 +390,9 @@ bool CBlockDB::WalkThroughBlock(CBlockDBWalker& walker)
                 || !res.GetField(4,diskIndex.nVersion)     || !res.GetField(5,diskIndex.nType)
                 || !res.GetField(6,diskIndex.nTimeStamp)   || !res.GetField(7,diskIndex.nHeight)      
                 || !res.GetField(8,diskIndex.nChainTrust)  || !res.GetField(9,diskIndex.nMoneySupply) 
-                || !res.GetField(10,diskIndex.nRandBeacon) || !res.GetField(11,diskIndex.nFile)       
-                || !res.GetField(12,diskIndex.nOffset)     || !res.GetField(13,diskIndex.nTxs)
+                || !res.GetField(10,diskIndex.nRandBeacon) || !res.GetField(11,diskIndex.nProofAlgo)
+                || !res.GetField(12,diskIndex.nProofBits)  || !res.GetField(13,diskIndex.nFile)       
+                || !res.GetField(14,diskIndex.nOffset)     || !res.GetField(15,diskIndex.nTxs)
                 || !walker.Walk(diskIndex))
             {
                 return false;
@@ -541,6 +544,8 @@ bool CBlockDB::CreateTable()
                     "trust BIGINT UNSIGNED NOT NULL,"
                     "supply BIGINT NOT NULL,"
                     "beacon BIGINT UNSIGNED NOT NULL,"
+                    "algo TINYINT UNSIGNED NOT NULL,"
+                    "bits TINYINT UNSIGNED NOT NULL,"
                     "file INT UNSIGNED NOT NULL,"
                     "offset INT UNSIGNED NOT NULL,"
                     "txs INT UNSIGNED NOT NULL,"

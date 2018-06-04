@@ -21,12 +21,31 @@ CRPCMod::CRPCMod()
     mapRPCFunc = boost::assign::map_list_of
                  ("help",                  &CRPCMod::RPCHelp)
                  ("stop",                  &CRPCMod::RPCStop)
+                 ("getpeercount",          &CRPCMod::RPCGetPeerCount)
+                 ("listpeerinfo",          &CRPCMod::RPCListPeer)
+                 ("addnode",               &CRPCMod::RPCAddNode)
+                 ("getforkcount",          &CRPCMod::RPCGetForkCount)
+                 ("getgenealogy",          &CRPCMod::RPCGetForkGenealogy)
+                 ("getlocation",           &CRPCMod::RPCGetBlockLocation)
+                 ("getblockcount",         &CRPCMod::RPCGetBlockCount)
+                 ("getblockhash",          &CRPCMod::RPCGetBlockHash)
+                 ("getblock",              &CRPCMod::RPCGetBlock)
+                 ("gettxpool",             &CRPCMod::RPCGetTxPool)
+                 ("gettransaction",        &CRPCMod::RPCGetTransaction)
+                 ("listkey",               &CRPCMod::RPCListKey)
+                 ("getnewkey",             &CRPCMod::RPCGetNewKey)
+                 ("encryptkey",            &CRPCMod::RPCEncryptKey)
+                 ("lockkey",               &CRPCMod::RPCLockKey)
+                 ("unlockkey",             &CRPCMod::RPCUnlockKey)
+                 ("importprivkey",         &CRPCMod::RPCImportPrivKey)
+                 ("importkey",             &CRPCMod::RPCImportKey)
+                 ("exportkey",             &CRPCMod::RPCExportKey)
+                 ("signmessage",           &CRPCMod::RPCSignMessage)
+                 ("verifymessage",         &CRPCMod::RPCVerifyMessage)
+                 ("makekeypair",           &CRPCMod::RPCMakeKeyPair)
 #if 0
                  ("notify",                &CRPCMod::RPCNotify)
                  ("makekeypair",           &CRPCMod::RPCMakeKeyPair)
-                 ("getconnectioncount",    &CRPCMod::RPCGetConnectionCount)
-                 ("getpeerinfo",           &CRPCMod::RPCGetPeerInfo)
-                 ("addnode",               &CRPCMod::RPCAddNode)
                  ("getblockcount",         &CRPCMod::RPCGetBlockCount)
                  ("getblockhash",          &CRPCMod::RPCGetBlockHash)
                  ("getblock",              &CRPCMod::RPCGetBlock)
@@ -318,12 +337,514 @@ Value CRPCMod::RPCStop(const Array& params,bool fHelp)
     {
         throw runtime_error(
             "stop\n"
-            "Stop lomocoin server.");
+            "Stop multiverse server.");
     }
     pService->Shutdown();
-    return "lomocoin server stopping";
+    return "multiverse server stopping";
 }
 
+Value CRPCMod::RPCGetPeerCount(const Array& params,bool fHelp)
+{
+    if (fHelp || params.size() != 0)
+    {
+        throw runtime_error(
+            "getpeercount\n"
+            "Returns the number of connections to other nodes.");
+    }
+    return pService->GetPeerCount();
+}
+
+Value CRPCMod::RPCListPeer(const Array& params,bool fHelp)
+{
+    if (fHelp || params.size() != 0)
+    {
+        throw runtime_error(
+            "listpeer\n"
+            "Returns data about each connected network node.");
+    }
+    return Value::null;
+}
+
+Value CRPCMod::RPCAddNode(const Array& params,bool fHelp)
+{
+    if (fHelp || params.size() != 1)
+    {
+        throw runtime_error(
+            "addnode \"node\"\n"
+            "Attempts add a node into the addnode list.\n");
+    }
+    string strNode = params[0].get_str();
+/*
+    if (!pService->AddNode(CNetHost(strNode,WalleveConfig()->nPort)))
+    {
+        throw JSONRPCError(RPC_CLIENT_INVALID_IP_OR_SUBNET,"Failed to add node.");
+    }
+*/
+    return Value::null;
+}
+
+Value CRPCMod::RPCGetForkCount(const Array& params,bool fHelp)
+{
+    if (fHelp || params.size() != 0)
+    {
+        throw runtime_error(
+            "getforkcount\n"
+            "Returns the number of forks.");
+    }
+    return pService->GetForkCount();
+}
+
+Value CRPCMod::RPCGetForkGenealogy(const Array& params,bool fHelp)
+{
+    if (fHelp || params.size() > 1)
+    {
+        throw runtime_error(
+            "getgenealogy [fork=0]\n"
+            "Returns the list of ancestry and subline.");
+    }
+    uint256 fork = GetForkHash(params,0);
+    vector<pair<uint256,int> > vAncestry;
+    vector<pair<int,uint256> > vSubline;
+    if (!pService->GetForkGenealogy(fork,vAncestry,vSubline))
+    {
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Unknown fork");
+    }
+    Object ancestry;
+    for (int i = vAncestry.size();i > 0;i--)
+    {
+        ancestry.push_back(Pair(vAncestry[i - 1].first.GetHex(),vAncestry[i - 1].second));
+    }
+    Object subline;
+    for (int i = 0;i > vSubline.size();i++)
+    {
+        subline.push_back(Pair(vSubline[i].second.GetHex(),vSubline[i].first));
+    }
+    Object ret;
+    ret.push_back(Pair("ancestry",ancestry));
+    ret.push_back(Pair("subline",subline));
+    return ret;
+}
+
+Value CRPCMod::RPCGetBlockLocation(const Array& params,bool fHelp)
+{
+    if (fHelp || params.size() != 1)
+    {
+        throw runtime_error(
+            "getlocation <blockhash>\n"
+            "Returns the location with given block.");
+    }
+    uint256 hash(params[0].get_str());
+    uint256 fork;
+    int height;
+    if (!pService->GetBlockLocation(hash,fork,height))
+    {
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Unknown block");
+    }
+    Object ret;
+    ret.push_back(Pair(fork.GetHex(),height));
+    return ret;
+}
+
+Value CRPCMod::RPCGetBlockCount(const Array& params,bool fHelp)
+{
+    if (fHelp || params.size() > 1)
+    {
+        throw runtime_error(
+            "getblockcount [fork=0]\n"
+            "Returns the number of blocks in the given fork.");
+    }
+    uint256 fork = GetForkHash(params,0);
+    return pService->GetBlockCount(fork);
+}
+
+Value CRPCMod::RPCGetBlockHash(const Array& params,bool fHelp)
+{
+    if (fHelp || params.size() < 1 || params.size() > 2)
+    {
+        throw runtime_error(
+            "getblockhash <index> [fork=0]\n"
+            "Returns hash of block in fork at <index>.");
+    }
+    int nHeight = params[0].get_int();
+    uint256 fork = GetForkHash(params,1);
+    uint256 hash = 0;
+    if (!pService->GetBlockHash(fork,nHeight,hash))
+    {
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Block number out of range.");
+    }
+    return (hash.GetHex());
+}
+
+Value CRPCMod::RPCGetBlock(const Array& params,bool fHelp)
+{
+    if (fHelp || params.size() != 1)
+    {
+        throw runtime_error(
+            "getblock <hash>\n"
+            "Returns details of a block with given block-hash.");
+    }
+
+    uint256 hash(params[0].get_str());
+    CBlock block;
+    uint256 fork;
+    int height;
+    if (!pService->GetBlock(hash,block,fork,height))
+    {
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Unknown block");
+    }
+
+    return BlockToJSON(hash,block,fork,height);
+}
+
+Value CRPCMod::RPCGetTxPool(const Array& params,bool fHelp)
+{
+    if (fHelp || params.size() > 1)
+    {
+        throw runtime_error(
+            "gettxpool [fork=0]\n"
+            "Returns all transaction ids in memory pool for given fork.");
+    }
+    uint256 fork = GetForkHash(params,0);
+    vector<uint256> vTxPool;
+    pService->GetTxPool(fork,vTxPool);
+    Array arrayTx;
+    BOOST_FOREACH(const uint256& txid, vTxPool)
+    {   
+        arrayTx.push_back(txid.ToString());
+    }
+    return arrayTx;
+}
+
+Value CRPCMod::RPCGetTransaction(const Array& params,bool fHelp)
+{
+    if (fHelp || params.size() != 1)
+    {
+        throw runtime_error(
+            "gettransaction <hash>\n"
+            "Returns details of a transaction with given txid.");
+    }
+
+    return Value::null;
+}
+
+Value CRPCMod::RPCListKey(const Array& params,bool fHelp)
+{
+    if (fHelp || params.size() != 0)
+    {
+        throw runtime_error(
+            "listkey\n"
+            "Returns Object that has pubkey as keys, associated status as values.\n");
+    }
+    set<crypto::CPubKey> setPubKey;
+    pService->GetPubKeys(setPubKey);
+
+    Object ret;
+    BOOST_FOREACH(const crypto::CPubKey& pubkey,setPubKey)
+    {
+        int nVersion;
+        bool fLocked;
+        int64 nAutoLockTime;
+        if (pService->GetKeyStatus(pubkey,nVersion,fLocked,nAutoLockTime))
+        {
+            ostringstream oss;
+            oss << "ver=" << nVersion;
+            if (fLocked)
+            {
+                oss << ";locked";
+            }
+            else
+            {
+                oss << ";unlocked";
+                if (nAutoLockTime > 0)
+                {
+                    oss <<";timeout=" << (nAutoLockTime - GetTime());
+                }
+            }
+            ret.push_back(Pair(pubkey.GetHex(),oss.str()));
+        }
+    } 
+    return ret;
+}
+
+Value CRPCMod::RPCGetNewKey(const Array& params,bool fHelp)
+{
+    if (fHelp || params.size() > 1)
+    {
+        throw runtime_error(
+            "getnewkey [passphrase]\n"
+            "Returns a new pubkey for receiving payments.  "
+            "If [passphrase] is specified (recommended), the key will be encrypted with [passphrase]. \n");
+    }
+    
+    crypto::CCryptoString strPassphrase;
+    if (params.size() != 0)
+    {
+        strPassphrase = params[0].get_str().c_str();
+    }
+    crypto::CPubKey pubkey;
+
+    if (!pService->MakeNewKey(strPassphrase,pubkey))
+    {
+        throw JSONRPCError(RPC_WALLET_ERROR,"Failed add new key.");
+    }
+
+    return (pubkey.ToString());
+}
+Value CRPCMod::RPCEncryptKey(const Array& params,bool fHelp)
+{
+    if (fHelp || params.size() < 2 || params.size()  > 3)
+    {
+        throw runtime_error(
+            "encryptkey <pubkey> <passphrase> [oldpassphrase]\n"
+            "Encrypts the key assoiciated with <passphrase>.  "
+            "For encrypted key, changes the passphrase for [oldpassphrase] to <passphrase> \n");
+    }
+
+    crypto::CPubKey pubkey;
+    pubkey.SetHex(params[0].get_str());
+    crypto::CCryptoString strPassphrase,strOldPassphrase;
+    strPassphrase = params[1].get_str().c_str();
+    if (params.size() > 2)
+    {
+        strOldPassphrase = params[2].get_str().c_str();
+    }
+    if (!pService->HaveKey(pubkey))
+    {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY,"Unknown key");
+    }
+    if (!pService->EncryptKey(pubkey,strPassphrase,strOldPassphrase))
+    {
+        throw JSONRPCError(RPC_WALLET_PASSPHRASE_INCORRECT,"The passphrase entered was incorrect.");
+    }
+    return Value::null;
+}
+
+Value CRPCMod::RPCLockKey(const Array& params,bool fHelp)
+{
+    if (fHelp || params.size() != 1)
+    {
+        throw runtime_error(
+            "lockkey <pubkey>\n"
+            "Removes the encryption key from memory, locking the key.\n"
+            "After calling this method, you will need to call unlockkey again."
+            "before being able to call any methods which require the key to be unlocked.");
+    }
+
+    crypto::CPubKey pubkey;
+    pubkey.SetHex(params[0].get_str());
+   
+    int nVersion;
+    bool fLocked;
+    int64 nAutoLockTime; 
+    if (!pService->GetKeyStatus(pubkey,nVersion,fLocked,nAutoLockTime))
+    {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY,"Unknown key");
+    }
+    if (!fLocked && !pService->Lock(pubkey))
+    {
+        throw JSONRPCError(RPC_WALLET_ERROR,"Failed to lock key");
+    }
+    return Value::null;
+}
+
+Value CRPCMod::RPCUnlockKey(const Array& params,bool fHelp)
+{
+    if (fHelp || params.size() < 2 || params.size() > 3)
+    {
+        throw runtime_error(
+            "unlockkey <pubkey> <passphrase> [timeout=0]\n"
+            "If [timeout] > 0,stores the wallet decryption key in memory for [timeout] seconds."
+            "before being able to call any methods which require the key to be locked.");
+    }
+
+    crypto::CPubKey pubkey;
+    pubkey.SetHex(params[0].get_str());
+    crypto::CCryptoString strPassphrase;
+    strPassphrase = params[1].get_str().c_str();
+    int64 nTimeout = 0;
+    if (params.size() > 2)
+    {
+         nTimeout = params[2].get_int64();
+    }
+
+    int nVersion;
+    bool fLocked;
+    int64 nAutoLockTime; 
+    if (!pService->GetKeyStatus(pubkey,nVersion,fLocked,nAutoLockTime))
+    {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY,"Unknown key");
+    }
+    if (!fLocked)
+    {
+        throw JSONRPCError(RPC_WALLET_ALREADY_UNLOCKED,"Key is already unlocked");
+    }
+    if (!pService->Unlock(pubkey,strPassphrase,nTimeout))
+    {
+        throw JSONRPCError(RPC_WALLET_PASSPHRASE_INCORRECT,"The passphrase entered was incorrect.");
+    }
+    return Value::null;
+}
+
+Value CRPCMod::RPCImportPrivKey(const Array& params,bool fHelp)
+{
+    if (fHelp || params.size() < 1 || params.size() > 2)
+    {
+        throw runtime_error(
+            "importprivkey <privkey> [passphrase]\n"
+            "Adds a private key (as returned by dumpprivkey) to your wallet."
+            "If [passphrase] is specified (recommended), the key will be encrypted with [passphrase]. \n");
+    }
+    uint256 nPriv(params[0].get_str());
+    crypto::CCryptoString strPassphrase;
+    if (params.size() == 2)
+    {
+        strPassphrase = params[1].get_str().c_str();
+    }
+
+    crypto::CKey key;
+    if (!key.SetSecret(crypto::CCryptoKeyData(nPriv.begin(),nPriv.end())))
+    {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY,"Invalid private key");
+    }
+    if (pService->HaveKey(key.GetPubKey()))
+    {
+        throw JSONRPCError(RPC_WALLET_ERROR,"Already have key");
+    }
+    if (!strPassphrase.empty())
+    {
+        key.Encrypt(strPassphrase);
+    }
+    if (!pService->AddKey(key))
+    {
+        throw JSONRPCError(RPC_WALLET_ERROR,"Failed to add key");
+    }
+    return key.GetPubKey().GetHex();
+}
+
+Value CRPCMod::RPCImportKey(const Array& params,bool fHelp)
+{
+    if (fHelp || params.size() != 1)
+    {
+        throw runtime_error(
+            "importkey <serialized key>\n"
+            "Adds a key (as returned by importkey) to your wallet.");
+    }
+    vector<unsigned char> vchKey = ParseHexString(params[0].get_str());
+    crypto::CKey key;
+    if (!key.Load(vchKey))
+    {
+        throw JSONRPCError(RPC_INVALID_PARAMS,"Failed to verify serialized key");
+    }
+    if (pService->HaveKey(key.GetPubKey()))
+    {
+        throw JSONRPCError(RPC_WALLET_ERROR,"Already have key");
+    }
+    
+    if (!pService->AddKey(key))
+    {
+        throw JSONRPCError(RPC_WALLET_ERROR,"Failed to add key");
+    }
+    return key.GetPubKey().GetHex();
+}
+
+Value CRPCMod::RPCExportKey(const Array& params,bool fHelp)
+{
+    if (fHelp || params.size() != 1)
+    {
+        throw runtime_error(
+            "exportkey <pubkey>\n"
+            "Reveals the serialized key corresponding to <pubkey>.");
+    }
+    crypto::CPubKey pubkey;
+    pubkey.SetHex(params[0].get_str());
+    if (!pService->HaveKey(pubkey))
+    {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY,"Unknown key");
+    }
+    vector<unsigned char> vchKey;
+    if (!pService->ExportKey(pubkey,vchKey))
+    {
+        throw JSONRPCError(RPC_WALLET_ERROR,"Failed to export key");
+    }
+    return ToHexString(vchKey);
+}
+
+Value CRPCMod::RPCSignMessage(const Array& params,bool fHelp)
+{
+    if (fHelp || params.size() != 2)
+    {
+        throw runtime_error(
+            "signmessage <pubkey> <message>\n"
+            "Sign a message with the private key of an pubkey");
+    }
+
+    crypto::CPubKey pubkey;
+    pubkey.SetHex(params[0].get_str());
+    string strMessage = params[1].get_str();
+
+    int nVersion;
+    bool fLocked;
+    int64 nAutoLockTime; 
+    if (!pService->GetKeyStatus(pubkey,nVersion,fLocked,nAutoLockTime))
+    {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY,"Unknown key");
+    }
+    if (fLocked)
+    {
+        throw JSONRPCError(RPC_WALLET_UNLOCK_NEEDED,"Key is locked");
+    }
+    
+    const string strMessageMagic = "Multiverse Signed Message:\n";
+    CWalleveBufStream ss;
+    ss << strMessageMagic;
+    ss << strMessage;
+    vector<unsigned char> vchSig;
+    if (!pService->SignSignature(pubkey,crypto::CryptoHash(ss.GetData(),ss.GetSize()),vchSig))
+    {
+        throw JSONRPCError(RPC_WALLET_ERROR,"Failed to sign message");
+    }
+
+    return ToHexString(vchSig);
+}
+
+Value CRPCMod::RPCVerifyMessage(const Array& params,bool fHelp)
+{
+    if (fHelp || params.size() != 3)
+    {
+        throw runtime_error(
+            "verifymessage <pubkey> <message> <signature>\n"
+            "Verify a signed message");
+    }
+
+    crypto::CPubKey pubkey;
+    pubkey.SetHex(params[0].get_str());
+    string strMessage = params[1].get_str();
+    vector<unsigned char> vchSig = ParseHexString(params[2].get_str());
+    const string strMessageMagic = "Multiverse Signed Message:\n";
+    CWalleveBufStream ss;
+    ss << strMessageMagic;
+    ss << strMessage;
+    
+    return pubkey.Verify(crypto::CryptoHash(ss.GetData(),ss.GetSize()),vchSig);
+}
+
+Value CRPCMod::RPCMakeKeyPair(const Array& params,bool fHelp)
+{
+    if (fHelp || params.size() != 0)
+    {
+        throw runtime_error(
+            "makekeypair\n"
+            "Make a public/private key pair.\n");
+    }
+
+    crypto::CCryptoKey key;
+    crypto::CryptoMakeNewKey(key);
+    
+    Object result;
+    result.push_back(Pair("privkey", key.secret.GetHex()));
+    result.push_back(Pair("pubkey", key.pubkey.GetHex()));
+    return result;
+}
 #if 0
 Value CRPCMod::RPCNotify(const Array& params,bool fHelp)
 {
@@ -358,69 +879,6 @@ Value CRPCMod::RPCMakeKeyPair(const Array& params,bool fHelp)
     result.push_back(Pair("pubkey", HexStr(key.GetPubKey().Raw())));
     result.push_back(Pair("address", CLoMoAddress(key.GetPubKey().GetID()).ToString()));
     return result;
-}
-
-Value CRPCMod::RPCGetConnectionCount(const Array& params,bool fHelp)
-{
-    if (fHelp || params.size() != 0)
-    {
-        throw runtime_error(
-            "getconnectioncount\n"
-            "Returns the number of connections to other nodes.");
-    }
-    return pService->GetPeerCount();
-}
-
-Value CRPCMod::RPCGetPeerInfo(const Array& params,bool fHelp)
-{
-    if (fHelp || params.size() != 0)
-    {
-        throw runtime_error(
-            "getpeerinfo\n"
-            "Returns data about each connected network node.");
-    }
-
-    vector<CLoMoPeerInfo> vPeerInfo;
-    pService->GetPeerInfo(vPeerInfo);
-
-    Array ret;
-    BOOST_FOREACH(const CLoMoPeerInfo& info,vPeerInfo)
-    {
-        Object obj;
-
-        obj.push_back(Pair("addr", info.strAddress));
-        obj.push_back(Pair("services", strprintf("%08"PRI64x, info.nService)));
-        obj.push_back(Pair("lastsend", (boost::int64_t)info.nLastSend));
-        obj.push_back(Pair("lastrecv", (boost::int64_t)info.nLastRecv));
-        obj.push_back(Pair("conntime", (boost::int64_t)info.nActive));
-        obj.push_back(Pair("version", info.nVersion));
-        obj.push_back(Pair("subver", info.strSubVer));
-        obj.push_back(Pair("inbound", info.fInBound));
-        obj.push_back(Pair("releasetime", (boost::int64_t)0));
-        obj.push_back(Pair("height", info.nStartingHeight));
-        obj.push_back(Pair("banscore", info.nScore));
-
-        ret.push_back(obj);
-    }
-
-    return ret;
-}
-
-Value CRPCMod::RPCAddNode(const Array& params,bool fHelp)
-{
-    if (fHelp || params.size() != 1)
-    {
-        throw runtime_error(
-            "addnode \"node\"\n"
-            "Attempts add a node into the addnode list.\n");
-    }
-    string strNode = params[0].get_str();
-
-    if (!pService->AddNode(CNetHost(strNode,WalleveConfig()->nPort)))
-    {
-        throw JSONRPCError(RPC_CLIENT_INVALID_IP_OR_SUBNET,"Failed to add node.");
-    }
-    return Value::null;
 }
 
 Value CRPCMod::RPCGetBlockCount(const Array& params,bool fHelp)

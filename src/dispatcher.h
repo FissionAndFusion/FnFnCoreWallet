@@ -15,17 +15,22 @@ class CDispatcher : public IDispatcher
 public:
     CDispatcher();
     ~CDispatcher();
-    MvErr AddNewBlock(const CBlock& block);
-    MvErr AddNewTx(const CTransaction& tx);
+    MvErr AddNewBlock(CBlock& block);
+    MvErr AddNewTx(CTransaction& tx);
 protected:
     bool WalleveHandleInitialize();
     void WalleveHandleDeinitialize();
     bool WalleveHandleInvoke();
     void WalleveHandleHalt();
+//    MvErr PushTxPool(const uint256& txid,CTransaction& tx);
 protected:
     boost::shared_mutex rwAccess;
     ICoreProtocol* pCoreProtocol;
     IWorldLine* pWorldLine;
+    ITxPool* pTxPool;
+    IWallet* pWallet;
+    IService* pService;
+    IBlockMaker* pBlockMaker;
 };
 
 } // namespace multiverse

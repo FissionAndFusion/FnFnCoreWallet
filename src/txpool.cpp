@@ -51,20 +51,41 @@ bool CTxPool::WalleveHandleInvoke()
 
 void CTxPool::WalleveHandleHalt()
 {
+    Clear();
 }
 
 bool CTxPool::Exists(const uint256& txid)
-{
-    return false;
+{    
+    boost::shared_lock<boost::shared_mutex> rlock(rwAccess);
+    return (!!mapTx.count(txid));
 }
 
 void CTxPool::Clear()
 {
+    boost::unique_lock<boost::shared_mutex> wlock(rwAccess);
+    mapTxCache.clear();
+    mapTx.clear();
 }
 
 size_t CTxPool::Count(const uint256& fork) const
 {
+    boost::shared_lock<boost::shared_mutex> rlock(rwAccess);
+    map<uint256,CTxCache>::const_iterator it = mapTxCache.find(fork);
+    if (it != mapTxCache.end())
+    {
+        return ((*it).second.Size());
+    }
     return 0;
+}
+
+bool CTxPool::Push(const uint256& hashFork,const uint256& txid,CTransaction& tx)
+{
+    return false;
+}
+
+bool CTxPool::Pop(const uint256& hashFork,const uint256& txid)
+{
+    return false;
 }
 
 MvErr CTxPool::AddNew(const CTransaction& tx)

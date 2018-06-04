@@ -81,7 +81,7 @@ struct CCryptoKey
 uint256 CryptoMakeNewKey(CCryptoKey& key);
 uint256 CryptoImportKey(CCryptoKey& key,const uint256& secret);
 void CryptoSign(CCryptoKey& key,const void* md,std::size_t len,std::vector<uint8>& vchSig);
-bool CryptoVerify(uint256& pubkey,const void* md,std::size_t len,const std::vector<uint8>& vchSig);
+bool CryptoVerify(const uint256& pubkey,const void* md,std::size_t len,const std::vector<uint8>& vchSig);
 
 // Encrypt
 struct CCryptoCipher
@@ -90,9 +90,9 @@ struct CCryptoCipher
     uint64 nonce;
 };
 
-void CryptoKeyFromPassphrase(int version,const CCryptoString& passhrase,const uint256& salt,CCryptoKeyData& key);
-bool CryptoEncryptSecret(int version,const CCryptoString& passhrase,const CCryptoKey& key,CCryptoCipher& cipher);
-bool CryptoDecryptSecret(int version,const CCryptoString& passhrase,const CCryptoCipher& cipher,CCryptoKey& key);
+void CryptoKeyFromPassphrase(int version,const CCryptoString& passphrase,const uint256& salt,CCryptoKeyData& key);
+bool CryptoEncryptSecret(int version,const CCryptoString& passphrase,const CCryptoKey& key,CCryptoCipher& cipher);
+bool CryptoDecryptSecret(int version,const CCryptoString& passphrase,const CCryptoCipher& cipher,CCryptoKey& key);
 
 } // namespace crypto
 } // namespace multiverse

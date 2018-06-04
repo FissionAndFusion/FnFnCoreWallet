@@ -18,6 +18,12 @@ CKeyStore::~CKeyStore()
 {
 }
 
+void CKeyStore::Clear()
+{
+    boost::unique_lock<boost::shared_mutex> wlock(rwAccess);
+    mapKey.clear();
+}
+
 bool CKeyStore::AddKey(const CKey& key)
 {
     boost::unique_lock<boost::shared_mutex> wlock(rwAccess);
@@ -32,6 +38,12 @@ bool CKeyStore::AddKey(const CKey& key)
         }
     }
     return false;
+}
+
+void CKeyStore::RemoveKey(const CPubKey& pubkey)
+{
+    boost::unique_lock<boost::shared_mutex> wlock(rwAccess);
+    mapKey.erase(pubkey);
 }
 
 bool CKeyStore::HaveKey(const CPubKey& pubkey) const

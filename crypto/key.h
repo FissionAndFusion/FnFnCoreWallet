@@ -31,10 +31,13 @@ public:
     bool IsNull() const;
     bool IsLocked() const;
     bool Renew();
-    bool Load(int nVersionIn,const CCryptoCipher& cipherIn,const CPubKey& pubkeyIn);
+    void Load(const CPubKey& pubkeyIn,int nVersionIn,const CCryptoCipher& cipherIn);
+    bool Load(const std::vector<unsigned char>& vchKey);
+    void Save(CPubKey& pubkeyRet,int& nVersionRet,CCryptoCipher& cipherRet) const;
+    void Save(std::vector<unsigned char>& vchKey) const;
     bool SetSecret(const CCryptoKeyData& vchSecret);
     bool GetSecret(CCryptoKeyData& vchSecret) const;
-    CPubKey GetPubKey() const;
+    const CPubKey GetPubKey() const;
     const CCryptoCipher& GetCipher() const;
     bool Sign(const uint256& hash,std::vector<uint8>& vchSig) const;
     bool Encrypt(const CCryptoString& strPassphrase,

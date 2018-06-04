@@ -4,7 +4,8 @@
 
 #ifndef  MULTIVERSE_CONFIG_H
 #define  MULTIVERSE_CONFIG_H
-
+#include "uint256.h"
+#include "destination.h"
 #include <walleve/walleve.h>
 
 namespace multiverse
@@ -88,9 +89,29 @@ protected:
     int nRPCPortInt;
 };
 
+class CMvMintConfig : virtual public CMvBasicConfig
+{
+public:
+    CMvMintConfig();
+    virtual ~CMvMintConfig();
+    virtual bool PostLoad();
+    virtual std::string ListConfig();
+public:
+    CDestination destMPVss;
+    uint256 keyMPVss;
+    CDestination destBlake512;
+    uint256 keyBlake512;
+protected:
+    std::string strDestMPVss;
+    std::string strKeyMPVss;
+    std::string strDestBlake512;
+    std::string strKeyBlake512;
+};
+
 class CMvConfig : virtual public CMvStorageConfig,
                   virtual public CMvNetworkConfig,
-                  virtual public CMvRPCConfig
+                  virtual public CMvRPCConfig,
+                  virtual public CMvMintConfig
 {
 public:
     CMvConfig();

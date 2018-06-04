@@ -9,6 +9,7 @@
 set(sources
 	destination.h 
 	transaction.h 
+	proof.h
 	block.h
 )
 

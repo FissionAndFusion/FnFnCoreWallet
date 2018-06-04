@@ -18,7 +18,7 @@ class CWalleveODataStream
 public:
     CWalleveODataStream(std::vector<unsigned char>& vchIn) : vch(vchIn) {}
     template <typename T>
-    CWalleveODataStream& operator<< (T& data)
+    CWalleveODataStream& operator<< (const T& data)
     {
         vch.insert(vch.end(),BEGIN(data),END(data));
         return (*this);
@@ -34,12 +34,6 @@ public:
         }
         return (*this);
     }
-    template <typename T>
-    CWalleveODataStream& operator>> (T& data)
-    {
-        vch.insert(vch.end(),BEGIN(data),END(data));
-        return (*this);
-    }
 protected:
     std::vector<unsigned char>& vch;
     std::size_t nPosition;
@@ -48,7 +42,7 @@ protected:
 class CWalleveIDataStream
 {
 public:
-    CWalleveIDataStream(std::vector<unsigned char>& vchIn) : vch(vchIn),nPosition(0) {}
+    CWalleveIDataStream(const std::vector<unsigned char>& vchIn) : vch(vchIn),nPosition(0) {}
     std::size_t GetSize()
     {
         return (vch.size() - nPosition);
@@ -81,7 +75,7 @@ public:
         return (*this);
     }
 protected:
-    std::vector<unsigned char>& vch;
+    const std::vector<unsigned char>& vch;
     std::size_t nPosition;
 };
 
