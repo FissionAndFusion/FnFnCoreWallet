@@ -130,6 +130,8 @@ MvErr CDispatcher::AddNewBlock(CBlock& block)
         pWorldLine->GetTransaction(txid,tx);
     } 
 */
+    pService->NotifyWorldLineUpdate(updateWorldLine);
+
     if (block.IsPrimary())
     {
         CMvEventBlockMakerUpdate *pBlockMakerUpdate = new CMvEventBlockMakerUpdate(0);

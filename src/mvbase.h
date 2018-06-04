@@ -125,6 +125,8 @@ class IService : public walleve::IWalleveBase
 {
 public:
     IService() : IWalleveBase("service") {}
+    /* Notify */
+    virtual void NotifyWorldLineUpdate(const CWorldLineUpdate& update) = 0;
     /* System */
     virtual void Shutdown() = 0;
     /* Network */ 
