@@ -12,7 +12,8 @@ make
 
 Dependencies
 ------------
-
+build-essential
+pkg-config
 gcc/g++           5.4.0
 cmake             3.5.1
 libboost          1.58.0
