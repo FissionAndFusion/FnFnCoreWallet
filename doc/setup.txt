@@ -1,0 +1,7 @@
+
+mysql setup
+========
+login mysql as root,run sql command: 
+
+grant all privileges on multiverse.* to multiverse@localhost identified by 'multiverse';
+
