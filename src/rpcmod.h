@@ -44,6 +44,9 @@ protected:
         return fork;
     }
     bool CheckWalletError(MvErr err);
+    multiverse::crypto::CPubKey GetPubKey(const json_spirit::Value& value);
+    CTemplatePtr MakeTemplate(const std::string& strType,const json_spirit::Object& obj);
+    void ListDestination(std::vector<CDestination>& vDestination);
 private:
     /* System */
     json_spirit::Value RPCHelp(const json_spirit::Array& params,bool fHelp);
@@ -61,6 +64,7 @@ private:
     json_spirit::Value RPCGetBlock(const json_spirit::Array& params,bool fHelp);
     json_spirit::Value RPCGetTxPool(const json_spirit::Array& params,bool fHelp);
     json_spirit::Value RPCGetTransaction(const json_spirit::Array& params,bool fHelp);
+    json_spirit::Value RPCSendTransaction(const json_spirit::Array& params,bool fHelp);
     /* Wallet */
     json_spirit::Value RPCListKey(const json_spirit::Array& params,bool fHelp);
     json_spirit::Value RPCGetNewKey(const json_spirit::Array& params,bool fHelp);
@@ -70,57 +74,23 @@ private:
     json_spirit::Value RPCImportPrivKey(const json_spirit::Array& params,bool fHelp);
     json_spirit::Value RPCImportKey(const json_spirit::Array& params,bool fHelp);
     json_spirit::Value RPCExportKey(const json_spirit::Array& params,bool fHelp);
+    json_spirit::Value RPCAddNewTemplate(const json_spirit::Array& params,bool fHelp);
+    json_spirit::Value RPCImportTemplate(const json_spirit::Array& params,bool fHelp);
+    json_spirit::Value RPCExportTemplate(const json_spirit::Array& params,bool fHelp);
+    json_spirit::Value RPCValidateAddress(const json_spirit::Array& params,bool fHelp);
+    json_spirit::Value RPCGetBalance(const json_spirit::Array& params,bool fHelp);
+    json_spirit::Value RPCListTransaction(const json_spirit::Array& params,bool fHelp);
+    json_spirit::Value RPCSendFrom(const json_spirit::Array& params,bool fHelp);
+    json_spirit::Value RPCCreateTransaction(const json_spirit::Array& params,bool fHelp);
+    json_spirit::Value RPCSignTransaction(const json_spirit::Array& params,bool fHelp);
     json_spirit::Value RPCSignMessage(const json_spirit::Array& params,bool fHelp);
     /* Util */
     json_spirit::Value RPCVerifyMessage(const json_spirit::Array& params,bool fHelp);
     json_spirit::Value RPCMakeKeyPair(const json_spirit::Array& params,bool fHelp);
-#if 0
-    /* Wallet */
-    json_spirit::Value RPCAddMultiSigAddress(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCAddColdMintingAddress(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCSetTxFee(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCEncryptWallet(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCWalletLock(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCWalletPassphrase(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCWalletPassphraseChange(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCWalletExport(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCWalletImport(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCGetInfo(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCGetAddressInfo(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCSetAddressBook(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCGetAddressBook(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCDelAddressBook(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCListAddressBook(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCListAccounts(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCGetNewAddress(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCGetAccountAddress(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCSetAccount(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCGetAccount(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCGetAddressesByAccount(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCValidateAddress(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCGetBalance(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCGetTransaction(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCListTransactions(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCListUnspent(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCListSinceBlock(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCListReceivedByAddress(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCListReceivedByAccount(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCGetReceivedByAddress(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCGetReceivedByAccount(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCSendToAddress(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCSendFrom(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCSendMany(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCCreateSendFromAddress(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCImportPrivKey(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCDumpPrivKey(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCSignMessage(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCVerifyMessage(const json_spirit::Array& params,bool fHelp);
-    /* RawTransaction */
-    json_spirit::Value RPCCreateRawTransaction(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCDecodeRawTransaction(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCSignRawTransaction(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCSendRawTransaction(const json_spirit::Array& params,bool fHelp);
-#endif
+    json_spirit::Value RPCGetPubKeyAddress(const json_spirit::Array& params,bool fHelp);
+    json_spirit::Value RPCGetTemplateAddress(const json_spirit::Array& params,bool fHelp);
+    json_spirit::Value RPCMakeTemplate(const json_spirit::Array& params,bool fHelp);
+    json_spirit::Value RPCDecodeTransaction(const json_spirit::Array& params,bool fHelp);
 protected:
     walleve::IIOProc *pHttpServer;
     ICoreProtocol *pCoreProtocol;

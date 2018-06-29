@@ -37,6 +37,18 @@ bool CService::WalleveHandleInitialize()
         return false;
     }
 
+    if (!WalleveGetObject("txpool",pTxPool))
+    {
+        WalleveLog("Failed to request txpool\n");
+        return false;
+    }
+
+    if (!WalleveGetObject("dispatcher",pDispatcher))
+    {
+        WalleveLog("Failed to request dispatcher\n");
+        return false;
+    }
+
     if (!WalleveGetObject("wallet",pWallet))
     {
         WalleveLog("Failed to request wallet\n");
@@ -167,9 +179,23 @@ void CService::GetTxPool(const uint256& hashFork,vector<uint256>& vTxPool)
 {
 }
 
-bool CService::GetTransaction(const uint256& txid,CTransaction& tx,vector<uint256>& vInBlock)
+bool CService::GetTransaction(const uint256& txid,CTransaction& tx,uint256& hashFork,int& nHeight)
 {
-    return false;
+    if (pTxPool->Get(txid,tx))
+    {
+        int nAnchorHeight;
+        if (!pWorldLine->GetBlockLocation(tx.hashAnchor,hashFork,nAnchorHeight))
+        {
+            return false;
+        }
+        nHeight = -1;
+        return true; 
+    }
+    if (!pWorldLine->GetTransaction(txid,tx))
+    {
+        return false;
+    }
+    return pWorldLine->GetTxLocation(txid,hashFork,nHeight);
 }
 
 MvErr CService::SendTransaction(CTransaction& tx)
@@ -247,3 +273,87 @@ bool CService::SignSignature(const crypto::CPubKey& pubkey,const uint256& hash,v
     return pWallet->Sign(pubkey,hash,vchSig);
 }
 
+bool CService::SignTransaction(CTransaction& tx,bool& fCompleted)
+{
+    uint256 hashFork;
+    int nHeight;
+    if (!pWorldLine->GetBlockLocation(tx.hashAnchor,hashFork,nHeight))
+    {
+        return false;
+    }
+    vector<CTxOutput> vUnspent;
+    if (!pTxPool->FetchInputs(hashFork,tx,vUnspent) || vUnspent.empty())
+    {
+        return false;
+    }
+
+    CDestination destIn = vUnspent[0].destTo;
+    if (!pWallet->SignTransaction(destIn,tx,fCompleted))
+    {
+        return false;
+    }
+    return (!fCompleted 
+            || (pCoreProtocol->ValidateTransaction(tx) == MV_OK 
+                && pCoreProtocol->VerifyTransaction(tx,vUnspent,nHeight) == MV_OK));
+}
+
+bool CService::HaveTemplate(const CTemplateId& tid)
+{
+    return pWallet->Have(tid);
+}
+
+void CService::GetTemplateIds(set<CTemplateId>& setTid)
+{
+    pWallet->GetTemplateIds(setTid);
+}
+
+bool CService::AddTemplate(CTemplatePtr& ptr)
+{
+    return pWallet->AddTemplate(ptr);
+}
+
+bool CService::GetTemplate(const CTemplateId& tid,CTemplatePtr& ptr)
+{
+    return pWallet->GetTemplate(tid,ptr);
+}
+
+bool CService::GetBalance(const CDestination& dest,const uint256& hashFork,CWalletBalance& balance)
+{
+    int nBlockCount = GetBlockCount(hashFork);
+    if (nBlockCount <= 0)
+    {
+        return false;
+    }
+    return pWallet->GetBalance(dest,hashFork,nBlockCount - 1,balance);
+}
+
+bool CService::ListWalletTx(const uint256& txidPrev,int nCount,vector<CWalletTx>& vWalletTx)
+{
+    return pWallet->ListWalletTx(txidPrev,nCount,vWalletTx);
+}
+
+bool CService::CreateTransaction(const uint256& hashFork,const CDestination& destFrom,
+                                 const CDestination& destSendTo,int64 nAmount,int64 nTxFee,
+                                 const vector<unsigned char>& vchData,CTransaction& txNew)
+{
+    int nForkHeight = 0;
+    txNew.SetNull();
+    {
+        boost::shared_lock<boost::shared_mutex> rlock(rwForkStatus);
+        map<uint256,CForkStatus>::iterator it = mapForkStatus.find(hashFork);
+        if (it == mapForkStatus.end())
+        {
+            return false;
+        }
+        nForkHeight = (*it).second.nLastBlockHeight;
+        txNew.hashAnchor = (*it).second.hashLastBlock;
+    }
+    txNew.nType = CTransaction::TX_TOKEN;
+    txNew.nLockUntil = 0;
+    txNew.sendTo = destSendTo;
+    txNew.nAmount = nAmount;
+    txNew.nTxFee = nTxFee;
+    txNew.vchData = vchData;
+
+    return pWallet->ArrangeInputs(destFrom,hashFork,nForkHeight,txNew);
+}

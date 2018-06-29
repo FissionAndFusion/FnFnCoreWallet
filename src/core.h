@@ -19,10 +19,9 @@ public:
     virtual void GetGenesisBlock(CBlock& block); 
     virtual MvErr ValidateTransaction(const CTransaction& tx);
     virtual MvErr ValidateBlock(CBlock& block);
-    virtual MvErr ValidateBlock(CBlock& block,std::vector<CTransaction>& vtx);
-    virtual MvErr VerifyBlock(CBlock& block,const CDestination& destIn,int64 nValueIn,
-                              int64 nTxFee,CBlockIndex* pIndexPrev);
-    virtual MvErr VerifyBlockTx(CBlockTx& tx,storage::CBlockView& view);
+    virtual MvErr VerifyBlock(CBlock& block,CBlockIndex* pIndexPrev);
+    virtual MvErr VerifyBlockTx(CTransaction& tx,CTxContxt& txContxt,CBlockIndex* pIndexPrev);
+    virtual MvErr VerifyTransaction(CTransaction& tx,const std::vector<CTxOutput>& vPrevOutput,int nForkHeight);
     virtual bool GetProofOfWorkTarget(CBlockIndex* pIndexPrev,int nAlgo,int& nBits,int64& nReward);
     virtual int GetProofOfWorkRunTimeBits(int nBits,int64 nTime,int64 nPrevTime);
     //virtual MvErr 

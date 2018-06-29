@@ -9,9 +9,48 @@
 #include "proof.h"
 #include "transaction.h"
 #include <vector>
+#include <boost/foreach.hpp>
 #include <walleve/stream/stream.h>
 #include <walleve/stream/datastream.h>
-
+/*
+class CBlockHeader
+{
+    friend class walleve::CWalleveStream;
+public:
+    uint16  nVersion;
+    uint16  nType;
+    uint32  nTimeStamp;
+    uint256 hashPrev;
+    uint256 hashMerkle;
+    std::vector<uint8> vchProof;
+public:
+    CBlockHeader()
+    {
+        nVersion   = 1;
+        nType      = 0;
+        nTimeStamp = 0;
+        hashPrev   = 0;
+        hashMerkle = 0;
+        vchProof.clear();
+    }
+    CBlockHeader(const CBlock& block)
+    : nVersion(block.nVersion),nType(block.nType),nTimeStamp(block.nTimeStamp),
+      hashPrev(block.hashPrev),hashMerkle(block.hashMerkle),vchProof(block.vchProof)
+    {
+    }
+protected:
+    template <typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s,O& opt)
+    {
+        s.Serialize(nVersion,opt);
+        s.Serialize(nType,opt);
+        s.Serialize(nTimeStamp,opt);
+        s.Serialize(hashPrev,opt);
+        s.Serialize(hashMerkle,opt);
+        s.Serialize(vchProof,opt);
+    }
+};
+*/
 class CBlock
 {
     friend class walleve::CWalleveStream;
@@ -20,9 +59,10 @@ public:
     uint16  nType;
     uint32  nTimeStamp;
     uint256 hashPrev;
-    CTransaction txMint;
+    uint256 hashMerkle;
     std::vector<uint8> vchProof;
-    std::vector<uint256> vTxHash;
+    CTransaction txMint;
+    std::vector<CTransaction> vtx;
     std::vector<uint8> vchSig;
     enum
     {
@@ -43,9 +83,10 @@ public:
         nType      = 0;
         nTimeStamp = 0;
         hashPrev   = 0;
-        txMint.SetNull();
+        hashMerkle = 0;
         vchProof.clear();
-        vTxHash.clear();
+        txMint.SetNull();
+        vtx.clear();
         vchSig.clear();
     }
     bool IsNull() const
@@ -67,14 +108,13 @@ public:
     uint256 GetHash() const
     {
         walleve::CWalleveBufStream ss;
-        ss << (*this);
+        ss << nVersion << nType << nTimeStamp << hashPrev << hashMerkle << vchProof << txMint;
         return multiverse::crypto::CryptoHash(ss.GetData(),ss.GetSize());
     }
-    uint256 GetSignatureHash() const
+    std::size_t GetTxSerializedOffset() const
     {
-        walleve::CWalleveBufStream ss;
-        ss << nVersion << nType << nTimeStamp << hashPrev << txMint << vchProof << vTxHash;
-        return multiverse::crypto::CryptoHash(ss.GetData(),ss.GetSize());
+        return (sizeof(nVersion) + sizeof(nType) + sizeof(nTimeStamp) + sizeof(hashPrev) + 
+                sizeof(hashMerkle) + walleve::GetSerializeSize(vchProof));
     }
     void GetSerializedProofOfWorkData(std::vector<unsigned char>& vchProofOfWork) const
     {
@@ -110,11 +150,27 @@ public:
     {
         return (txMint.nAmount - nValueIn); 
     }
-    void GetTxHash(std::vector<uint256>& vTxHashRet) const
+    uint256 BuildMerkleTree(std::vector<uint256>& vMerkleTree) const
     {
-        vTxHashRet.clear();
-        vTxHashRet.push_back(txMint.GetHash());
-        vTxHashRet.insert(vTxHashRet.end(),vTxHash.begin(),vTxHash.end());
+        vMerkleTree.clear();
+        BOOST_FOREACH(const CTransaction& tx, vtx)
+            vMerkleTree.push_back(tx.GetHash());
+        int j = 0;
+        for (int nSize = vtx.size(); nSize > 1; nSize = (nSize + 1) / 2)
+        {
+            for (int i = 0; i < nSize; i += 2)
+            {
+                int i2 = std::min(i+1, nSize-1);
+                vMerkleTree.push_back(multiverse::crypto::CryptoHash(vMerkleTree[j+i],vMerkleTree[j+i2]));
+            } 
+            j += nSize;
+        }
+        return (vMerkleTree.empty() ? 0 : vMerkleTree.back());
+    }
+    uint256 CalcMerkleTreeRoot() const
+    {
+        std::vector<uint256> vMerkleTree;
+        return BuildMerkleTree(vMerkleTree);
     }
 protected:
     template <typename O>
@@ -124,11 +180,32 @@ protected:
         s.Serialize(nType,opt);
         s.Serialize(nTimeStamp,opt);
         s.Serialize(hashPrev,opt);
-        s.Serialize(txMint,opt);
+        s.Serialize(hashMerkle,opt);
         s.Serialize(vchProof,opt);
-        s.Serialize(vTxHash,opt);
+        s.Serialize(txMint,opt);
+        s.Serialize(vtx,opt);
         s.Serialize(vchSig,opt);
     }    
+};
+
+class CBlockEx : public CBlock
+{
+    friend class walleve::CWalleveStream;
+public:
+    std::vector<CTxContxt> vTxContxt;
+public:
+    CBlockEx() {}
+    CBlockEx(const CBlock& block,const std::vector<CTxContxt>& vTxContxtIn = std::vector<CTxContxt>())
+    : CBlock(block),vTxContxt(vTxContxtIn)
+    {
+    }
+protected:
+    template <typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s,O& opt)
+    {
+        CBlock::WalleveSerialize(s,opt);
+        s.Serialize(vTxContxt,opt);
+    }
 };
 
 class CBlockIndex
@@ -137,6 +214,7 @@ public:
     const uint256* phashBlock;
     CBlockIndex* pOrigin;
     CBlockIndex* pPrev;
+    CBlockIndex* pNext;
     uint256 txidMint;
     uint16  nMintType;
     uint16  nVersion;
@@ -156,6 +234,7 @@ public:
         phashBlock = NULL;
         pOrigin = this;
         pPrev = NULL;
+        pNext = NULL;
         txidMint = 0;
         nMintType = 0;
         nVersion = 0;
@@ -175,6 +254,7 @@ public:
         phashBlock = NULL;
         pOrigin = this;
         pPrev = NULL;
+        pNext = NULL;
         txidMint = block.txMint.GetHash();
         nMintType = block.txMint.nType;
         nVersion = block.nVersion;
@@ -258,24 +338,21 @@ public:
     }
 };
 
-class CDiskBlockIndex : public CBlockIndex
+class CBlockOutline : public CBlockIndex
 {
 public:
     uint256 hashBlock;
     uint256 hashPrev;
-    uint32 nTxs;
 public:
-    CDiskBlockIndex()
+    CBlockOutline()
     {
         hashBlock = 0;
         hashPrev = 0;
-        nTxs = 0;
     }
-    CDiskBlockIndex(const CBlockIndex* pIndex,const CBlock& block) : CBlockIndex(*pIndex)
+    CBlockOutline(const CBlockIndex* pIndex) : CBlockIndex(*pIndex)
     {
         hashBlock = pIndex->GetBlockHash();
-        hashPrev = block.hashPrev;
-        nTxs = block.vTxHash.size(); 
+        hashPrev = (pPrev ? pPrev->GetBlockHash() : 0);
     }
     uint256 GetBlockHash() const
     {
@@ -284,7 +361,7 @@ public:
     std::string ToString() const
     {
         std::ostringstream oss;
-        oss << "CDiskBlockIndex : hash=" << GetBlockHash().ToString() 
+        oss << "CBlockOutline : hash=" << GetBlockHash().ToString() 
                              << " prev=" << hashPrev.ToString()
                              << " height=" << nHeight << " file=" << nFile << " offset=" << nOffset 
                              << " type=" << GetBlockType();

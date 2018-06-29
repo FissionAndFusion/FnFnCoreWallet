@@ -57,7 +57,6 @@ bool CBlockDB::RemoveAll()
         txn.Query("TRUNCATE TABLE fork");
         txn.Query("TRUNCATE TABLE block");
         txn.Query("TRUNCATE TABLE transaction");
-        txn.Query("TRUNCATE TABLE txloc");
         if (!txn.Commit())
         {
             return false;
@@ -190,8 +189,9 @@ bool CBlockDB::RetrieveFork(vector<uint256>& vFork)
     return true;
 }
 
-bool CBlockDB::UpdateFork(const uint256& hash,const uint256& ref,const uint256& anchor,
-                              const vector<CTxUnspent>& vAddNew,const vector<CTxOutPoint>& vRemove)
+bool CBlockDB::UpdateFork(const uint256& hash,const uint256& hashRefBlock,const uint256& hashForkBased,
+                          const vector<pair<uint256,CTxIndex> >& vTxNew,const vector<uint256>& vTxDel,
+                          const vector<CTxUnspent>& vAddNew,const vector<CTxOutPoint>& vRemove)
 {
     CMvDBInst db(&dbPool);
     if (!db.Available())
@@ -205,10 +205,10 @@ bool CBlockDB::UpdateFork(const uint256& hash,const uint256& ref,const uint256& 
     {
         return false;
     }
-    int nIndexAnchor = -1;
-    if (anchor != hash && anchor != 0)
+    int nIndexBased = -1;
+    if (hashForkBased != hash && hashForkBased != 0)
     {
-        if ((nIndexAnchor = GetForkIndex(anchor)) < 0);
+        if ((nIndexBased = GetForkIndex(hashForkBased)) < 0);
         {
             return false;
         }
@@ -225,16 +225,43 @@ bool CBlockDB::UpdateFork(const uint256& hash,const uint256& ref,const uint256& 
     }
     {
         CMvDBTxn txn(*db);
+        for (int i = 0;i < vTxDel.size();i++)
+        {
+            ostringstream oss;
+            oss << "DELETE FROM tansaction WHERE txid = " 
+                <<            "\'" << db->ToEscString(vTxDel[i]) << "\'";
+            txn.Query(oss.str());
+        }
+        for (int i = 0;i < vTxNew.size();i++)
+        {
+            const CTxIndex& txIndex = vTxNew[i].second;
+            string strEscTxid = db->ToEscString(vTxNew[i].first);
+            ostringstream oss;
+            oss << "INSERT INTO transaction(txid,version,type,lockuntil,anchor,destin,valuein,height,file,offset) "
+                      "VALUES("
+                <<            "\'" << strEscTxid << "\',"
+                <<            txIndex.nVersion << ","
+                <<            txIndex.nType << ","
+                <<            txIndex.nLockUntil << ","
+                <<            "\'" << db->ToEscString(txIndex.hashAnchor) << "\',"
+                <<            "\'" << db->ToEscString(txIndex.destIn) << "\',"
+                <<            txIndex.nValueIn << ","
+                <<            txIndex.nBlockHeight << ","
+                <<            txIndex.nFile << ","
+                <<            txIndex.nOffset << ")"
+                << " ON DUPLICATE KEY UPDATE height = VALUES(height),file = VALUES(file),offset = VALUES(offset)";
+            txn.Query(oss.str());
+        }
         if (fTrunc)
         {
             ostringstream oss;
             oss << "TRUNCATE TABLE unspent" << nIndex;
             txn.Query(oss.str());
         }
-        if (nIndexAnchor > 0)
+        if (nIndexBased > 0)
         {
             ostringstream oss;
-            oss << "INSERT unspent" << nIndex << " SELECT * FROM unspent" << nIndexAnchor; 
+            oss << "INSERT unspent" << nIndex << " SELECT * FROM unspent" << nIndexBased; 
             txn.Query(oss.str());
         }
         for (int i = 0;i < vAddNew.size();i++)
@@ -261,7 +288,7 @@ bool CBlockDB::UpdateFork(const uint256& hash,const uint256& ref,const uint256& 
         }
         {
             ostringstream oss;
-            oss << "UPDATE fork SET refblock = \'" << db->ToEscString(ref) << "\' "
+            oss << "UPDATE fork SET refblock = \'" << db->ToEscString(hashRefBlock) << "\' "
                                 "WHERE hash = \'" << db->ToEscString(hash) << "\'"; 
             txn.Query(oss.str());
         }
@@ -273,104 +300,33 @@ bool CBlockDB::UpdateFork(const uint256& hash,const uint256& ref,const uint256& 
     return true;
 }
 
-bool CBlockDB::AddNewBlock(const CDiskBlockIndex& diskIndex,
-                               const vector<pair<uint256,CTxIndex> >& vTxIndex)
+bool CBlockDB::AddNewBlock(const CBlockOutline& outline)
 {
     CMvDBInst db(&dbPool);
     if (!db.Available())
     {
         return false;
     }
-    string strEscHash = db->ToEscString(diskIndex.hashBlock);
-    {
-        CMvDBTxn txn(*db);
-        {
-            ostringstream oss;
-            oss << "INSERT INTO block(hash,prev,txid,minttype,version,type,time,height,trust,supply,beacon,algo,bits,file,offset,txs) "
-                      "VALUES("
-                <<            "\'" << strEscHash << "\',"
-                <<            "\'" << db->ToEscString(diskIndex.hashPrev) << "\',"
-                <<            "\'" << db->ToEscString(diskIndex.txidMint) << "\',"
-                <<            diskIndex.nMintType << ","
-                <<            diskIndex.nVersion << ","
-                <<            diskIndex.nType << ","
-                <<            diskIndex.nTimeStamp << ","
-                <<            diskIndex.nHeight << ","
-                <<            diskIndex.nChainTrust << ","
-                <<            diskIndex.nMoneySupply << ","
-                <<            diskIndex.nRandBeacon << ","
-                <<            (int)diskIndex.nProofAlgo << ","
-                <<            (int)diskIndex.nProofBits << ","
-                <<            diskIndex.nFile << ","
-                <<            diskIndex.nOffset << ","
-                <<            diskIndex.nTxs << ")";
-            txn.Query(oss.str());
-        }
-        {
-            for (size_t i = 0;i < vTxIndex.size();i++)
-            {
-                const CTxIndex& txIndex = vTxIndex[i].second;
-                vector<uint8> vchInput;
-                walleve::CWalleveODataStream ss(vchInput);
-                ss << txIndex.vTxInput;
-                
-                string strEscTxid = db->ToEscString(vTxIndex[i].first);
-                if (!txIndex.IsNull())
-                {
-                    ostringstream oss;
-                    oss << "INSERT INTO transaction(txid,version,type,lockuntil,anchor,destin,valuein,file,offset,vin) "
-                              "VALUES("
-                        <<            "\'" << strEscTxid << "\',"
-                        <<            txIndex.nVersion << ","
-                        <<            txIndex.nType << ","
-                        <<            txIndex.nLockUntil << ","
-                        <<            "\'" << db->ToEscString(txIndex.hashAnchor) << "\',"
-                        <<            "\'" << db->ToEscString(txIndex.destIn) << "\',"
-                        <<            txIndex.nValueIn << ","
-                        <<            txIndex.nFile << ","
-                        <<            txIndex.nOffset << ","
-                        <<            "\'" << db->ToEscString(vchInput) << "\')"
-                        <<    " ON DUPLICATE KEY UPDATE id = id";
-                    txn.Query(oss.str());
-                }
-                {
-                    ostringstream oss;
-                    oss << "INSERT INTO txloc(txid,block) "
-                              "VALUES("
-                        <<            "\'" << strEscTxid << "\',"
-                        <<            "\'" << strEscHash << "\')";
-                    txn.Query(oss.str());
-                }
-            }
-        }
-        return txn.Commit();
-    }    
-}
-
-bool CBlockDB::RemoveBlock(const uint256& hash)
-{
-    CMvDBInst db(&dbPool);
-    if (!db.Available())
-    {
-        return false;
-    }
-    {
-        CMvDBTxn txn(*db);
-        string strEscHash = db->ToEscString(hash);
-        {
-            ostringstream oss;
-            oss << "DELETE FROM block WHERE hash = " 
-                <<            "\'" << strEscHash << "\'";
-            txn.Query(oss.str());
-        }
-        {
-            ostringstream oss;
-            oss << "DELETE FROM txloc WHERE block = " 
-                <<            "\'" << strEscHash << "\'";
-            txn.Query(oss.str());
-        }
-        return txn.Commit();
-    }
+    
+    ostringstream oss;
+    oss << "INSERT INTO block(hash,prev,txid,minttype,version,type,time,height,beacon,trust,supply,algo,bits,file,offset) "
+              "VALUES("
+        <<            "\'" << db->ToEscString(outline.hashBlock) << "\',"
+        <<            "\'" << db->ToEscString(outline.hashPrev) << "\',"
+        <<            "\'" << db->ToEscString(outline.txidMint) << "\',"
+        <<            outline.nMintType << ","
+        <<            outline.nVersion << ","
+        <<            outline.nType << ","
+        <<            outline.nTimeStamp << ","
+        <<            outline.nHeight << ","
+        <<            outline.nRandBeacon << ","
+        <<            outline.nChainTrust << ","
+        <<            outline.nMoneySupply << ","
+        <<            (int)outline.nProofAlgo << ","
+        <<            (int)outline.nProofBits << ","
+        <<            outline.nFile << ","
+        <<            outline.nOffset << ")";
+    return db->Query(oss.str());
 }
 
 bool CBlockDB::WalkThroughBlock(CBlockDBWalker& walker)
@@ -381,19 +337,18 @@ bool CBlockDB::WalkThroughBlock(CBlockDBWalker& walker)
         return false;
     }
     {
-        CMvDBRes res(*db,"SELECT hash,prev,txid,minttype,version,type,time,height,trust,supply,beacon,algo,bits,file,offset,txs FROM block ORDER BY id",true);
+        CMvDBRes res(*db,"SELECT hash,prev,txid,minttype,version,type,time,height,beacon,trust,supply,algo,bits,file,offset FROM block ORDER BY id",true);
         while (res.GetRow())
         {
-            CDiskBlockIndex diskIndex;
-            if (   !res.GetField(0,diskIndex.hashBlock)    || !res.GetField(1,diskIndex.hashPrev)
-                || !res.GetField(2,diskIndex.txidMint)     || !res.GetField(3,diskIndex.nMintType)
-                || !res.GetField(4,diskIndex.nVersion)     || !res.GetField(5,diskIndex.nType)
-                || !res.GetField(6,diskIndex.nTimeStamp)   || !res.GetField(7,diskIndex.nHeight)      
-                || !res.GetField(8,diskIndex.nChainTrust)  || !res.GetField(9,diskIndex.nMoneySupply) 
-                || !res.GetField(10,diskIndex.nRandBeacon) || !res.GetField(11,diskIndex.nProofAlgo)
-                || !res.GetField(12,diskIndex.nProofBits)  || !res.GetField(13,diskIndex.nFile)       
-                || !res.GetField(14,diskIndex.nOffset)     || !res.GetField(15,diskIndex.nTxs)
-                || !walker.Walk(diskIndex))
+            CBlockOutline outline;
+            if (   !res.GetField(0,outline.hashBlock)     || !res.GetField(1,outline.hashPrev)
+                || !res.GetField(2,outline.txidMint)      || !res.GetField(3,outline.nMintType)
+                || !res.GetField(4,outline.nVersion)      || !res.GetField(5,outline.nType)
+                || !res.GetField(6,outline.nTimeStamp)    || !res.GetField(7,outline.nHeight)      
+                || !res.GetField(8,outline.nRandBeacon)   || !res.GetField(9,outline.nChainTrust)  
+                || !res.GetField(10,outline.nMoneySupply) || !res.GetField(11,outline.nProofAlgo)
+                || !res.GetField(12,outline.nProofBits)   || !res.GetField(13,outline.nFile)       
+                || !res.GetField(14,outline.nOffset)      || !walker.Walk(outline))
             {
                 return false;
             }
@@ -427,20 +382,17 @@ bool CBlockDB::RetrieveTxIndex(const uint256& txid,CTxIndex& txIndex)
     CMvDBInst db(&dbPool);
     if (db.Available())
     {
-        vector<uint8> vchInput;
         ostringstream oss;
-        oss << "SELECT version,type,lockuntil,anchor,destin,valuein,file,offset,vin FROM transaction WHERE txid = "
+        oss << "SELECT version,type,lockuntil,anchor,destin,valuein,height,file,offset FROM transaction WHERE txid = "
             <<            "\'" << db->ToEscString(txid) << "\'";
         CMvDBRes res(*db,oss.str());
         if (res.GetRow()
             && res.GetField(0,txIndex.nVersion) && res.GetField(1,txIndex.nType) 
             && res.GetField(2,txIndex.nLockUntil) && res.GetField(3,txIndex.hashAnchor) 
             && res.GetField(4,txIndex.destIn) && res.GetField(5,txIndex.nValueIn)
-            && res.GetField(6,txIndex.nFile) && res.GetField(7,txIndex.nOffset) 
-            && res.GetField(8,vchInput))
+            && res.GetField(6,txIndex.nBlockHeight)
+            && res.GetField(7,txIndex.nFile) && res.GetField(8,txIndex.nOffset))
         {
-            walleve::CWalleveIDataStream ss(vchInput);
-            ss >> txIndex.vTxInput;
             return true;
         }
     }
@@ -463,31 +415,20 @@ bool CBlockDB::RetrieveTxPos(const uint256& txid,uint32& nFile,uint32& nOffset)
     }
 }
 
-bool CBlockDB::RetrieveTxLocation(const uint256& txid,vector<uint256>& vBlockHash)
+bool CBlockDB::RetrieveTxLocation(const uint256& txid,uint256& hashAnchor,int& nBlockHeight)
 {
-    vBlockHash.clear();
-
     CMvDBInst db(&dbPool);
     if (!db.Available())
     {
         return false;
     }
-
     {
         ostringstream oss;
-        oss << "SELECT block FROM txloc WHERE txid = \'" << db->ToEscString(txid) << "\'";
-        CMvDBRes res(*db,oss.str(),true);
-        while (res.GetRow())
-        {
-            uint256 hash;
-            if (!res.GetField(0,hash))
-            {
-                return false;
-            }
-            vBlockHash.push_back(hash);
-        }
+        oss << "SELECT anchor,height FROM transaction WHERE txid = "
+            <<            "\'" << db->ToEscString(txid) << "\'";
+        CMvDBRes res(*db,oss.str());
+        return (res.GetRow() && res.GetField(0,hashAnchor) && res.GetField(1,nBlockHeight));
     }
-    return true;
 }
 
 bool CBlockDB::RetrieveTxUnspent(const uint256& fork,const CTxOutPoint& out,CTxOutput& unspent)
@@ -541,14 +482,13 @@ bool CBlockDB::CreateTable()
                     "type SMALLINT UNSIGNED NOT NULL,"
                     "time INT UNSIGNED NOT NULL,"
                     "height INT UNSIGNED NOT NULL,"
+                    "beacon BIGINT UNSIGNED NOT NULL,"
                     "trust BIGINT UNSIGNED NOT NULL,"
                     "supply BIGINT NOT NULL,"
-                    "beacon BIGINT UNSIGNED NOT NULL,"
                     "algo TINYINT UNSIGNED NOT NULL,"
                     "bits TINYINT UNSIGNED NOT NULL,"
                     "file INT UNSIGNED NOT NULL,"
                     "offset INT UNSIGNED NOT NULL,"
-                    "txs INT UNSIGNED NOT NULL,"
                     "INDEX(id))"
                     "PARTITION BY KEY(hash) PARTITIONS 16")
            &&
@@ -561,18 +501,10 @@ bool CBlockDB::CreateTable()
                     "anchor BINARY(32) NOT NULL,"
                     "destin BINARY(33) NOT NULL,"
                     "valuein BIGINT UNSIGNED NOT NULL,"
+                    "height INT NOT NULL,"
                     "file INT UNSIGNED NOT NULL,"
                     "offset INT UNSIGNED NOT NULL,"
-                    "vin BLOB NOT NULL,"
                     "INDEX(id))"
-                    "PARTITION BY KEY(txid) PARTITIONS 256")
-           &&
-        db->Query("CREATE TABLE IF NOT EXISTS txloc("
-                    "id INT NOT NULL AUTO_INCREMENT,"
-                    "txid BINARY(32) NOT NULL,"
-                    "block BINARY(32) NOT NULL,"
-                    "INDEX(id),"
-                    "INDEX(txid))"
                     "PARTITION BY KEY(txid) PARTITIONS 256")
             );
 }

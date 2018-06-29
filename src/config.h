@@ -96,15 +96,18 @@ public:
     virtual ~CMvMintConfig();
     virtual bool PostLoad();
     virtual std::string ListConfig();
+protected:
+    void ExtractMintParamPair(const std::string& strAddress,const std::string& strKey,
+                              CDestination& dest,uint256& privkey);
 public:
     CDestination destMPVss;
     uint256 keyMPVss;
     CDestination destBlake512;
     uint256 keyBlake512;
 protected:
-    std::string strDestMPVss;
+    std::string strAddressMPVss;
     std::string strKeyMPVss;
-    std::string strDestBlake512;
+    std::string strAddressBlake512;
     std::string strKeyBlake512;
 };
 

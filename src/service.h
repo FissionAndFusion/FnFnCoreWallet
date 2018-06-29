@@ -32,7 +32,7 @@ public:
     bool GetBlockHash(const uint256& hashFork,int nHeight,uint256& hashBlock);
     bool GetBlock(const uint256& hashBlock,CBlock& block,uint256& hashFork,int& nHeight);
     void GetTxPool(const uint256& hashFork,std::vector<uint256>& vTxPool);
-    bool GetTransaction(const uint256& txid,CTransaction& tx,std::vector<uint256>& vInBlock);
+    bool GetTransaction(const uint256& txid,CTransaction& tx,uint256& hashFork,int& nHeight);
     MvErr SendTransaction(CTransaction& tx);
     /* Wallet */
     bool HaveKey(const crypto::CPubKey& pubkey);
@@ -47,16 +47,28 @@ public:
     bool Lock(const crypto::CPubKey& pubkey);
     bool Unlock(const crypto::CPubKey& pubkey,const crypto::CCryptoString& strPassphrase,int64 nTimeout);
     bool SignSignature(const crypto::CPubKey& pubkey,const uint256& hash,std::vector<unsigned char>& vchSig);
+    bool SignTransaction(CTransaction& tx,bool& fCompleted);
+    bool HaveTemplate(const CTemplateId& tid);
+    void GetTemplateIds(std::set<CTemplateId>& setTid);
+    bool AddTemplate(CTemplatePtr& ptr);
+    bool GetTemplate(const CTemplateId& tid,CTemplatePtr& ptr);
+    bool GetBalance(const CDestination& dest,const uint256& hashFork,CWalletBalance& balance);
+    bool ListWalletTx(const uint256& txidPrev,int nCount,std::vector<CWalletTx>& vWalletTx); 
+    bool CreateTransaction(const uint256& hashFork,const CDestination& destFrom,
+                           const CDestination& destSendTo,int64 nAmount,int64 nTxFee,
+                           const std::vector<unsigned char>& vchData,CTransaction& txNew);
+
     /* Util */
 protected:
     bool WalleveHandleInitialize();
     void WalleveHandleDeinitialize();
     bool WalleveHandleInvoke();
-    void WalleveHandleHalt();
-    
+    void WalleveHandleHalt();    
 protected:
     ICoreProtocol* pCoreProtocol;
     IWorldLine* pWorldLine;
+    ITxPool* pTxPool;
+    IDispatcher* pDispatcher;
     IWallet* pWallet;
     mutable boost::shared_mutex rwForkStatus;
     std::map<uint256,CForkStatus> mapForkStatus;

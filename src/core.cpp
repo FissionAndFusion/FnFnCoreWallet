@@ -149,7 +149,7 @@ MvErr CMvCoreProtocol::ValidateBlock(CBlock& block)
     }
 
     // Extended block should be not empty
-    if (block.nType == CBlock::BLOCK_EXTENDED && block.vTxHash.empty())
+    if (block.nType == CBlock::BLOCK_EXTENDED && block.vtx.empty())
     {
         return DEBUG(MV_ERR_BLOCK_TRANSACTIONS_INVALID,"empty extended block\n");
     }
@@ -160,10 +160,31 @@ MvErr CMvCoreProtocol::ValidateBlock(CBlock& block)
         return DEBUG(MV_ERR_BLOCK_TRANSACTIONS_INVALID,"invalid mint tx\n");
     }
 
-    size_t nMinSize = GetSerializeSize(block) + block.vTxHash.size() * MIN_TOKEN_TX_SIZE;
-    if (nMinSize > MAX_BLOCK_SIZE)
+    size_t nBlockSize = GetSerializeSize(block);
+    if (nBlockSize > MAX_BLOCK_SIZE)
     {
-        return DEBUG(MV_ERR_BLOCK_OVERSIZE,"size overflow minsize=%u vtx=%u\n",nMinSize,block.vTxHash.size());
+        return DEBUG(MV_ERR_BLOCK_OVERSIZE,"size overflow size=%u vtx=%u\n",nBlockSize,block.vtx.size());
+    }
+
+    vector<uint256> vMerkleTree;
+    if (block.hashMerkle != block.BuildMerkleTree(vMerkleTree))
+    {
+        return DEBUG(MV_ERR_BLOCK_TXHASH_MISMATCH,"tx merkeroot mismatched\n");
+    }
+
+    set<uint256> setTx;
+    setTx.insert(vMerkleTree.begin(),vMerkleTree.begin() + block.vtx.size());
+    if (setTx.size() != block.vtx.size())
+    {
+        return DEBUG(MV_ERR_BLOCK_DUPLICATED_TRANSACTION,"duplicate tx\n");
+    }
+
+    BOOST_FOREACH(CTransaction& tx,block.vtx)
+    {
+        if (tx.IsMintTx() || ValidateTransaction(tx) != MV_OK)
+        {
+            return DEBUG(MV_ERR_BLOCK_TRANSACTIONS_INVALID,"invalid tx %s\n",tx.GetHash().GetHex().c_str());
+        }
     }
 
     if (!CheckBlockSignature(block))
@@ -173,66 +194,44 @@ MvErr CMvCoreProtocol::ValidateBlock(CBlock& block)
     return MV_OK;
 }
 
-MvErr CMvCoreProtocol::ValidateBlock(CBlock& block,vector<CTransaction>& vtx)
-{
-    // These are checks that are independent of context
-    // Check timestamp
-    if (block.GetBlockTime() > WalleveGetNetTime() + MAX_CLOCK_DRIFT)
-    {
-        return DEBUG(MV_ERR_BLOCK_TIMESTAMP_OUT_OF_RANGE,"%ld\n",block.GetBlockTime());
-    }
-
-    // Extended block should be not empty
-    if (block.nType == CBlock::BLOCK_EXTENDED && vtx.empty())
-    {
-        return DEBUG(MV_ERR_BLOCK_TRANSACTIONS_INVALID,"empty extended block\n");
-    }
-    
-    // Validate mint tx
-    if (!block.txMint.IsMintTx() || ValidateTransaction(block.txMint) != MV_OK)
-    {
-        return DEBUG(MV_ERR_BLOCK_TRANSACTIONS_INVALID,"invalid mint tx\n");
-    }
-
-    // Check block size and transactions 
-    if (block.vTxHash.size() != vtx.size())
-    {
-        return DEBUG(MV_ERR_BLOCK_TXHASH_MISMATCH,"hash count mismatch\n");
-    }
-    size_t nSize = GetSerializeSize(block);
-    set<uint256> setTxHash;
-    for (size_t i = 0;i < vtx.size();i++)
-    {
-        const CTransaction& tx = vtx[i];
-        if (tx.IsMintTx())
-        {
-            return DEBUG(MV_ERR_BLOCK_TRANSACTIONS_INVALID,"invalid tx type\n");
-        }
-        if (block.vTxHash[i] != tx.GetHash())
-        {
-            return DEBUG(MV_ERR_BLOCK_TXHASH_MISMATCH,"tx hash mismatch\n");
-        }
-        nSize += GetSerializeSize(tx);
-        if (nSize > MAX_BLOCK_SIZE)
-        {
-            return DEBUG(MV_ERR_BLOCK_OVERSIZE,"size overflow %u tx(%u/%u)\n",nSize,i,vtx.size());
-        }
-        if (!setTxHash.insert(block.vTxHash[i]).second)
-        {
-            return DEBUG(MV_ERR_BLOCK_DUPLICATED_TRANSACTION,"duplicate tx\n");
-        }
-    }
-    return MV_OK;
-}
-
-MvErr CMvCoreProtocol::VerifyBlock(CBlock& block,const CDestination& destIn,int64 nValueIn,
-                                   int64 nTxFee,CBlockIndex* pIndexPrev)
+MvErr CMvCoreProtocol::VerifyBlock(CBlock& block,CBlockIndex* pIndexPrev)
 {
     return MV_OK;
 }
 
-MvErr CMvCoreProtocol::VerifyBlockTx(CBlockTx& tx,storage::CBlockView& view)
+MvErr CMvCoreProtocol::VerifyBlockTx(CTransaction& tx,CTxContxt& txContxt,CBlockIndex* pIndexPrev)
 {
+    return MV_OK;
+}
+
+MvErr CMvCoreProtocol::VerifyTransaction(CTransaction& tx,const vector<CTxOutput>& vPrevOutput,int nForkHeight)
+{
+    CDestination destIn = vPrevOutput[0].destTo;
+    int64 nValueIn = 0;
+    BOOST_FOREACH(const CTxOutput& output,vPrevOutput)
+    {
+        if (destIn != output.destTo)
+        {
+            return DEBUG(MV_ERR_TRANSACTION_INPUT_INVALID,"input destination mismatched\n");
+        }
+        if (output.nLockUntil != 0 && output.nLockUntil < nForkHeight)
+        {
+            return DEBUG(MV_ERR_TRANSACTION_INPUT_INVALID,"input is still locked\n");
+        }
+        nValueIn += output.nAmount;
+    }
+    if (!MoneyRange(nValueIn))
+    {
+        return DEBUG(MV_ERR_TRANSACTION_INPUT_INVALID,"valuein invalid %ld\n",nValueIn);
+    }
+    if (nValueIn < tx.nAmount + tx.nTxFee)
+    {
+        return DEBUG(MV_ERR_TRANSACTION_INPUT_INVALID,"valuein is not enough (%ld : %ld)\n",nValueIn,tx.nAmount + tx.nTxFee);
+    }
+    if (!destIn.VerifySignature(tx.GetSignatureHash(),tx.vchSig))
+    {
+        return DEBUG(MV_ERR_TRANSACTION_SIGNATURE_INVALID,"invalid signature\n");
+    }
     return MV_OK;
 }
 

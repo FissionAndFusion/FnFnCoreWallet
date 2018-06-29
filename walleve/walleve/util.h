@@ -117,9 +117,29 @@ inline std::vector<unsigned char> ParseHexString(const char* psz)
     }
     return vch; 
 }
+
+inline std::size_t ParseHexString(const char* psz,unsigned char* p,std::size_t n)
+{
+    std::size_t count = 0;
+    unsigned char* end = p + n;
+    while (*psz && p != end)
+    {
+        int h = CharToHex(*psz++);
+        int l = CharToHex(*psz++);
+        if (h < 0 || l < 0) break;
+        *p++ = (unsigned char)((h << 4) | l);
+    }
+    return (n - (end - p));
+}
+
 inline std::vector<unsigned char> ParseHexString(const std::string& str)
 {
     return ParseHexString(str.c_str());
+}
+
+inline std::size_t ParseHexString(const std::string& str,unsigned char* p,std::size_t n)
+{
+    return ParseHexString(str.c_str(),p,n);
 }
 
 } // namespace walleve

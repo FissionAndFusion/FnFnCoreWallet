@@ -35,6 +35,21 @@ public:
     std::multimap<int,uint256> mapSubline;
 };
 
+class CWalletBalance
+{
+public:
+    int64 nAvailable;
+    int64 nLocked;
+    int64 nUnconfirmed;
+public:
+    void SetNull()
+    {
+        nAvailable = 0;
+        nLocked = 0;
+        nUnconfirmed = 0;
+    }
+};
+
 // Notify
 class CWorldLineUpdate
 {
@@ -60,9 +75,19 @@ public:
     int64 nLastBlockTime;
     int nLastBlockHeight;
     int64 nMoneySupply;
-    std::vector<uint256> vTxAddNew;
-    std::vector<uint256> vTxRemove;
     std::set<uint256> setTxUpdate;
+    std::vector<CBlockEx> vBlockAddNew;
+    std::vector<CBlockEx> vBlockRemove;
+};
+
+class CTxPoolUpdate
+{
+public:
+    uint256 hashFork;
+    std::map<uint256,int> mapTxUpdate;
+    std::vector<CAssembledTx> vTxAddNew;
+    std::vector<std::pair<uint256,std::vector<CTxIn> > > vTxRemove;
+    //std::vector<CAssembledTx> vTxRemove;
 };
 
 /* Proof */

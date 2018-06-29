@@ -3,6 +3,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "config.h"
+#include "address.h"
 
 using namespace std;
 using namespace boost::filesystem;
@@ -259,9 +260,9 @@ CMvMintConfig::CMvMintConfig()
 
     desc.add_options()
 
-    OPTSTR("mpvssdest",strDestMPVss,"")
+    OPTSTR("mpvssaddress",strAddressMPVss,"")
     OPTSTR("mpvsskey",strKeyMPVss,"")
-    OPTSTR("blake512dest",strDestBlake512,"")
+    OPTSTR("blake512address",strAddressBlake512,"")
     OPTSTR("blake512key",strKeyBlake512,"");
 
     AddOptions(desc);
@@ -273,24 +274,25 @@ CMvMintConfig::~CMvMintConfig()
 
 bool CMvMintConfig::PostLoad()
 {
-    CDestination dest;
-    if (dest.SetHex(strDestMPVss) && strKeyMPVss.size() == 64)
-    {
-        destMPVss = dest;
-        keyMPVss.SetHex(strKeyMPVss);
-    }
-
-    if (dest.SetHex(strDestBlake512) && strKeyBlake512.size() == 64)
-    {
-        destBlake512 = dest;
-        keyBlake512.SetHex(strKeyBlake512);
-    }
+    ExtractMintParamPair(strAddressMPVss,strKeyMPVss,destMPVss,keyMPVss);
+    ExtractMintParamPair(strAddressBlake512,strKeyBlake512,destBlake512,keyBlake512);
     return true;
 }
 
 string CMvMintConfig::ListConfig()
 {
     return "";
+}
+
+void CMvMintConfig::ExtractMintParamPair(const std::string& strAddress,const std::string& strKey,
+                                         CDestination& dest,uint256& privkey)
+{
+    CMvAddress address;
+    if (address.ParseString(strAddress) && !address.IsNull() && strKey.size() == 64)
+    {
+        dest = address;
+        privkey.SetHex(strKey);
+    }
 }
 
 //////////////////////////////

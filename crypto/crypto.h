@@ -70,6 +70,7 @@ void CryptoGetRand256(uint256& u);
 
 // Hash
 uint256 CryptoHash(const void* msg,std::size_t len);
+uint256 CryptoHash(const uint256& h1,const uint256& h2);
 
 // Sign & verify
 struct CCryptoKey

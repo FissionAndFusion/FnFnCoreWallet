@@ -8,6 +8,18 @@
 #include "uint256.h"
 #include "key.h"
 #include <walleve/stream/stream.h>
+#include <walleve/util.h>
+
+class CTemplateId : public uint256
+{
+public:
+    CTemplateId() {}
+    CTemplateId(const uint256& data) : uint256(data) {}
+    CTemplateId(const uint16 type,const uint256& hash) : uint256((hash << 16) | (const uint64)(type)) {}
+   
+    uint16 GetType() const { return (Get32() & 0xFFFF); } 
+    CTemplateId& operator=(uint64 b) { *((uint256*)this)=b; return *this; }
+};
 
 class CDestination
 {
@@ -20,7 +32,9 @@ public:
         PREFIX_NULL     = 0x00,
         PREFIX_PUBKEY   = 0x01,
         PREFIX_TEMPLATE = 0x02,
+        PREFIX_MAX,
     };
+    enum {DESTINATION_SIZE = 33,};
     CDestination()
     {
         SetNull();
@@ -28,6 +42,10 @@ public:
     CDestination(const multiverse::crypto::CPubKey& pubkey)
     {
         SetPubKey(pubkey);
+    }
+    CDestination(const CTemplateId& tid)
+    {
+        SetTemplateId(tid);
     }
     void SetNull()
     {
@@ -40,12 +58,15 @@ public:
     }
     bool SetHex(const std::string& strHex)
     {
-        if (strHex.size() != 66 || strHex[0] != '0' || strHex[1] < '0' || strHex[1] > '2')
+        if (strHex.size() != DESTINATION_SIZE*2 || strHex[0] != '0' || strHex[1] < '0' || strHex[1] > '2')
         {
             return false;
         }
         prefix = strHex[1] - '0';
-        data.SetHex(strHex.c_str() + 2);
+        if (walleve::ParseHexString(strHex.c_str() + 2,data.begin(),sizeof(uint256)) != sizeof(uint256))
+        {
+            return false;
+        }
         return true;
     }
     void SetPubKey(const multiverse::crypto::CPubKey& pubkey)
@@ -66,16 +87,25 @@ public:
         }
         return false;
     }
-    void SetTemplateHash(const uint256& hash)
+    void SetTemplateId(const CTemplateId& tid)
     {
         prefix = PREFIX_TEMPLATE;
-        data = hash;
+        data = tid;
     }
     bool IsTemplate() const
     {
         return (prefix == PREFIX_TEMPLATE);
     }
-    
+    bool GetTemplateId(CTemplateId& tid) const
+    {
+        if (prefix == PREFIX_TEMPLATE)
+        {
+            tid = CTemplateId(data);
+            return true;
+        }
+        return false;
+    } 
+    bool VerifySignature(const uint256& hash,const std::vector<unsigned char>& vchSig) const;
     friend bool operator==(const CDestination& a, const CDestination& b)
     {
         return (a.prefix == b.prefix && a.data == b.data );
@@ -88,9 +118,9 @@ public:
     {
         return (a.prefix < b.prefix || (a.prefix == b.prefix && a.data < b.data));
     }
-    std::string ToString() const
+    std::string GetHex() const
     {
-        return (std::string(1,'0' + prefix) + data.ToString());
+        return (std::string(1,(char)(prefix + '0')) + walleve::ToHexString(data.begin(),sizeof(uint256)));
     }
 protected:
     template <typename O>

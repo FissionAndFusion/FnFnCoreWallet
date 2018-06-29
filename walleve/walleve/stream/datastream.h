@@ -7,6 +7,7 @@
 
 #include <exception>
 #include <vector>
+#include <boost/type_traits.hpp>
 
 namespace walleve
 {
@@ -17,10 +18,26 @@ class CWalleveODataStream
 #define END(a)              ((unsigned char*)&((&(a))[1]))
 public:
     CWalleveODataStream(std::vector<unsigned char>& vchIn) : vch(vchIn) {}
+    void Push(const void* p,std::size_t size)
+    {
+        vch.insert(vch.end(),(const unsigned char*)p,(const unsigned char*)p + size);
+    }
+     
+    template <typename T>
+    void Push(const T& data,const boost::true_type&)
+    {
+        vch.insert(vch.end(),BEGIN(data),END(data));
+    }
+    template <typename T>
+    void Push(const T& data,const boost::false_type&)
+    {
+        data.ToDataStream(*this);
+    }
+    
     template <typename T>
     CWalleveODataStream& operator<< (const T& data)
     {
-        vch.insert(vch.end(),BEGIN(data),END(data));
+        Push(data,boost::is_fundamental<T>());
         return (*this);
     }
     template<typename T, typename A>
@@ -30,7 +47,17 @@ public:
         vch.insert(vch.end(),BEGIN(size),END(size));
         if (size > 0)
         {
-            vch.insert(vch.end(),BEGIN(data[0]),END(data[size - 1]));
+            if (boost::is_fundamental<T>::value)
+            {
+                vch.insert(vch.end(),BEGIN(data[0]),END(data[size - 1]));
+            }
+            else
+            {
+                for (std::size_t i = 0;i < data.size();i++)
+                {
+                    (*this) << data[i];
+                }
+            }
         }
         return (*this);
     }
@@ -47,8 +74,17 @@ public:
     {
         return (vch.size() - nPosition);
     }
+    void Pop(void* p,std::size_t size)
+    {
+        if (nPosition + size > vch.size())
+        {
+            throw std::range_error("out of range");
+        }
+        std::memmove(p,&vch[nPosition],size);
+        nPosition += size;
+    }
     template <typename T>
-    CWalleveIDataStream& operator>> (T& data)
+    void Pop(T& data,const boost::true_type&)
     {
         if (nPosition + sizeof(T) > vch.size())
         {
@@ -56,6 +92,16 @@ public:
         }
         data = *((T*)&vch[nPosition]);
         nPosition += sizeof(T);
+    }
+    template <typename T>
+    void Pop(T& data,const boost::false_type&)
+    {
+        data.FromDataStream(*this);
+    }
+    template <typename T>
+    CWalleveIDataStream& operator>> (T& data)
+    {
+        Pop(data,boost::is_fundamental<T>());
         return (*this);
     }
     template<typename T, typename A>
@@ -67,10 +113,18 @@ public:
         {
             throw std::range_error("out of range");
         }
-        for (unsigned int i = 0;i < size;i++)
+        if (boost::is_fundamental<T>::value)
         {
-            data.push_back(*(T*)&vch[nPosition]);
-            nPosition += sizeof(T);
+            data.assign((T*)&vch[nPosition],(T*)&vch[nPosition] + size);
+            nPosition += size * sizeof(T); 
+        }
+        else
+        {
+            data.resize(size);
+            for (unsigned int i = 0;i < size;i++)
+            {
+                *this >> data[i];
+            }
         }
         return (*this);
     }

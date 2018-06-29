@@ -11,6 +11,9 @@
 #include "mvtype.h"
 #include "transaction.h"
 #include "block.h"
+#include "wallettx.h"
+#include "destination.h"
+#include "template.h"
 #include "crypto.h"
 #include "key.h"
 #include "config.h"
@@ -28,10 +31,11 @@ public:
     ICoreProtocol() : IWalleveBase("coreprotocol") {}
     virtual const uint256& GetGenesisBlockHash() = 0;
     virtual void GetGenesisBlock(CBlock& block) = 0;
-    virtual MvErr ValidateBlock(CBlock& block,std::vector<CTransaction>& vTx) = 0;
-    virtual MvErr VerifyBlock(CBlock& block,const CDestination& destIn,int64 nValueIn,
-                              int64 nTxFee,CBlockIndex* pIndexPrev) = 0;
-    virtual MvErr VerifyBlockTx(CBlockTx& tx,storage::CBlockView& view) = 0;
+    virtual MvErr ValidateTransaction(const CTransaction& tx) = 0;
+    virtual MvErr ValidateBlock(CBlock& block) = 0;
+    virtual MvErr VerifyBlock(CBlock& block,CBlockIndex* pIndexPrev) = 0;
+    virtual MvErr VerifyBlockTx(CTransaction& tx,CTxContxt& txContxt,CBlockIndex* pIndexPrev) = 0;
+    virtual MvErr VerifyTransaction(CTransaction& tx,const std::vector<CTxOutput>& vPrevOutput,int nForkHeight) = 0;
     virtual bool GetProofOfWorkTarget(CBlockIndex* pIndexPrev,int nAlgo,int& nBits,int64& nReward) = 0;
     virtual int GetProofOfWorkRunTimeBits(int nBits,int64 nTime,int64 nPrevTime) = 0;
 };
@@ -47,7 +51,10 @@ public:
     virtual bool GetBlock(const uint256& hashBlock,CBlock& block) = 0;
     virtual bool Exists(const uint256& hashBlock) = 0;
     virtual bool GetTransaction(const uint256& txid,CTransaction& tx) = 0;
-    virtual MvErr AddNewBlock(CBlock& block,std::vector<CTransaction>& vtx,CWorldLineUpdate& update) = 0;    
+    virtual bool GetTxLocation(const uint256& txid,uint256& hashFork,int& nHeight) = 0;
+    virtual bool GetTxUnspent(const uint256& hashFork,const std::vector<CTxIn>& vInput,
+                                                      std::vector<CTxOutput>& vOutput) = 0;
+    virtual MvErr AddNewBlock(CBlock& block,CWorldLineUpdate& update) = 0;    
     virtual bool GetProofOfWorkTarget(const uint256& hashPrev,int nAlgo,int& nBits,int64& nReward) = 0;
     const CMvBasicConfig * WalleveConfig()
     {
@@ -66,14 +73,14 @@ public:
     virtual bool Exists(const uint256& txid) = 0;
     virtual void Clear() = 0;
     virtual std::size_t Count(const uint256& fork) const = 0;
-    virtual MvErr AddNew(const CTransaction& tx) = 0;
-    virtual bool Push(const uint256& hashFork,const uint256& txid,CTransaction& tx) = 0;
-    virtual bool Pop(const uint256& hashFork,const uint256& txid) = 0;
-    virtual void Remove(const uint256& txid) = 0;
+    virtual MvErr Push(CTransaction& tx) = 0;
+    virtual void Pop(const uint256& txid) = 0;
     virtual bool Get(const uint256& txid,CTransaction& tx) const = 0;
     virtual bool Arrange(uint256& fork,std::vector<std::pair<uint256,CTransaction> >& vtx,std::size_t nMaxSize) = 0;
-    virtual bool FetchInputs(uint256& fork,const CTransaction& tx,std::vector<CTxOutput>& vUnspent) = 0;
-    virtual void ForkUpdate(uint256& fork,const std::vector<CBlockTx>& vAddNew,const std::vector<uint256>& vRemove) = 0;
+    virtual bool FetchInputs(const uint256& hashFork,const CTransaction& tx,std::vector<CTxOutput>& vUnspent) = 0;
+/*
+    virtual void ForkUpdate(uint256& fork,int nForkHeight,const std::vector<CBlockTx>& vAddNew,const std::vector<uint256>& vRemove,std::vector<uint256>& vInvalidTx) = 0;
+*/
 };
 
 class IBlockMaker : public walleve::CWalleveEventProc
@@ -90,6 +97,7 @@ class IWallet : public walleve::IWalleveBase
 {
 public:
     IWallet() : IWalleveBase("wallet") {}
+    /* Key store */
     virtual bool AddKey(const crypto::CKey& key) = 0;
     virtual void GetPubKeys(std::set<crypto::CPubKey>& setPubKey) const = 0;
     virtual bool Have(const crypto::CPubKey& pubkey) const = 0;
@@ -102,7 +110,16 @@ public:
     virtual bool Lock(const crypto::CPubKey& pubkey) = 0;
     virtual bool Unlock(const crypto::CPubKey& pubkey,const crypto::CCryptoString& strPassphrase,int64 nTimeout) = 0;
     virtual bool Sign(const crypto::CPubKey& pubkey,const uint256& hash,std::vector<uint8>& vchSig) const = 0;
-
+    /* Template */
+    virtual void GetTemplateIds(std::set<CTemplateId>& setTemplateId) const = 0;
+    virtual bool Have(const CTemplateId& tid) const = 0;
+    virtual bool AddTemplate(CTemplatePtr& ptr) = 0;
+    virtual bool GetTemplate(const CTemplateId& tid,CTemplatePtr& ptr) = 0;
+    /* Wallet Tx */
+    virtual bool ListWalletTx(const uint256& txidPrev,int nCount,std::vector<CWalletTx>& vWalletTx) = 0;
+    virtual bool GetBalance(const CDestination& dest,const uint256& hashFork,int nForkHeight,CWalletBalance& balance) = 0;
+    virtual bool SignTransaction(const CDestination& destIn,CTransaction& tx,bool& fCompleted) const = 0;
+    virtual bool ArrangeInputs(const CDestination& destIn,const uint256& hashFork,int nForkHeight,CTransaction& tx) = 0; 
     const CMvBasicConfig * WalleveConfig()
     {
         return dynamic_cast<const CMvBasicConfig *>(walleve::IWalleveBase::WalleveConfig());
@@ -142,7 +159,7 @@ public:
     virtual bool GetBlockHash(const uint256& hashFork,int nHeight,uint256& hashBlock) = 0;
     virtual bool GetBlock(const uint256& hashBlock,CBlock& block,uint256& hashFork,int& nHeight) = 0;
     virtual void GetTxPool(const uint256& hashFork,std::vector<uint256>& vTxPool) = 0;
-    virtual bool GetTransaction(const uint256& txid,CTransaction& tx,std::vector<uint256>& vInBlock) = 0;
+    virtual bool GetTransaction(const uint256& txid,CTransaction& tx,uint256& hashFork,int& nHeight) = 0;
     virtual MvErr SendTransaction(CTransaction& tx) = 0;
     /* Wallet */
     virtual bool HaveKey(const crypto::CPubKey& pubkey) = 0;
@@ -157,6 +174,16 @@ public:
     virtual bool Lock(const crypto::CPubKey& pubkey) = 0;
     virtual bool Unlock(const crypto::CPubKey& pubkey,const crypto::CCryptoString& strPassphrase,int64 nTimeout) = 0;
     virtual bool SignSignature(const crypto::CPubKey& pubkey,const uint256& hash,std::vector<unsigned char>& vchSig) = 0;
+    virtual bool SignTransaction(CTransaction& tx,bool& fCompleted) = 0; 
+    virtual bool HaveTemplate(const CTemplateId& tid) = 0;
+    virtual void GetTemplateIds(std::set<CTemplateId>& setTid) = 0;
+    virtual bool AddTemplate(CTemplatePtr& ptr) = 0;
+    virtual bool GetTemplate(const CTemplateId& tid,CTemplatePtr& ptr) = 0;
+    virtual bool GetBalance(const CDestination& dest,const uint256& hashFork,CWalletBalance& balance) = 0;
+    virtual bool ListWalletTx(const uint256& txidPrev,int nCount,std::vector<CWalletTx>& vWalletTx) = 0;
+    virtual bool CreateTransaction(const uint256& hashFork,const CDestination& destFrom,
+                                   const CDestination& destSendTo,int64 nAmount,int64 nTxFee,
+                                   const std::vector<unsigned char>& vchData,CTransaction& txNew) = 0;
 };
 
 } // namespace multiverse

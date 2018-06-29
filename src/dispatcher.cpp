@@ -93,18 +93,9 @@ MvErr CDispatcher::AddNewBlock(CBlock& block)
     {
         return MV_ERR_MISSING_PREV;
     }
-    vector<CTransaction> vtx;
-    vtx.resize(block.vTxHash.size());
-    for (int i = 0;i < block.vTxHash.size();i++)
-    {
-        if (!pTxPool->Get(block.vTxHash[i],vtx[i]))
-        {
-            return MV_ERR_BLOCK_TXHASH_MISMATCH;
-        }
-    }
 
     CWorldLineUpdate updateWorldLine;
-    err = pWorldLine->AddNewBlock(block,vtx,updateWorldLine);
+    err = pWorldLine->AddNewBlock(block,updateWorldLine);
     if (err != MV_OK || updateWorldLine.IsNull())
     {
         return err;

@@ -27,7 +27,7 @@ public:
 class CBlockDBWalker
 {
 public:
-    virtual bool Walk(CDiskBlockIndex& diskIndex) = 0;
+    virtual bool Walk(CBlockOutline& outline) = 0;
 };
 
 class CBlockDB
@@ -41,16 +41,15 @@ public:
     bool AddNewFork(const uint256& hash);
     bool RemoveFork(const uint256& hash);
     bool RetrieveFork(std::vector<uint256>& vFork);
-    bool UpdateFork(const uint256& hash,const uint256& ref,const uint256& anchor,
+    bool UpdateFork(const uint256& hash,const uint256& hashRefBlock,const uint256& hashForkBased,
+                    const std::vector<std::pair<uint256,CTxIndex> >& vTxNew,const std::vector<uint256>& vTxDel,
                     const std::vector<CTxUnspent>& vAddNew,const std::vector<CTxOutPoint>& vRemove);
-    bool AddNewBlock(const CDiskBlockIndex& diskIndex,
-                     const std::vector<std::pair<uint256,CTxIndex> >& vTxIndex);
-    bool RemoveBlock(const uint256& hash);
+    bool AddNewBlock(const CBlockOutline& outline);
     bool WalkThroughBlock(CBlockDBWalker& walker);
     bool ExistsTx(const uint256& txid);
     bool RetrieveTxIndex(const uint256& txid,CTxIndex& txIndex);
     bool RetrieveTxPos(const uint256& txid,uint32& nFile,uint32& nOffset);
-    bool RetrieveTxLocation(const uint256& txid,std::vector<uint256>& vBlockHash);
+    bool RetrieveTxLocation(const uint256& txid,uint256& hashAnchor,int& nBlockHeight);
     bool RetrieveTxUnspent(const uint256& fork,const CTxOutPoint& out,CTxOutput& unspent);
 protected:
     int GetForkIndex(const uint256& hash)

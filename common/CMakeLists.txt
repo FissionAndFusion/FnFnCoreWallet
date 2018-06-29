@@ -7,8 +7,10 @@
 #------------------------------------------------------------------------------
 
 set(sources
-	destination.h 
+	destination.h destination.cpp 
+	template.h template.cpp 
 	transaction.h 
+	wallettx.h 
 	proof.h
 	block.h
 )

@@ -159,7 +159,28 @@ bool CWorldLine::GetTransaction(const uint256& txid,CTransaction& tx)
     return cntrBlock.RetrieveTx(txid,tx);
 }
 
-MvErr CWorldLine::AddNewBlock(CBlock& block,vector<CTransaction>& vtx,CWorldLineUpdate& update)
+bool CWorldLine::GetTxLocation(const uint256& txid,uint256& hashFork,int& nHeight)
+{
+    return cntrBlock.RetrieveTxLocation(txid,hashFork,nHeight);
+}
+
+bool CWorldLine::GetTxUnspent(const uint256& hashFork,const vector<CTxIn>& vInput,vector<CTxOutput>& vOutput)
+{
+    vOutput.resize(vInput.size());
+    storage::CBlockView view;
+    if (!cntrBlock.GetForkBlockView(hashFork,view))
+    {
+        return false;
+    }
+    
+    for (int i = 0;i < vInput.size();i++)
+    {
+        view.RetrieveUnspent(vInput[i].prevout,vOutput[i]);
+    }
+    return true;
+}
+
+MvErr CWorldLine::AddNewBlock(CBlock& block,CWorldLineUpdate& update)
 {
     uint256 hash = block.GetHash();
     MvErr err = MV_OK;
@@ -170,7 +191,7 @@ MvErr CWorldLine::AddNewBlock(CBlock& block,vector<CTransaction>& vtx,CWorldLine
         return MV_ERR_ALREADY_HAVE;
     }
     
-    err = pCoreProtocol->ValidateBlock(block,vtx);
+    err = pCoreProtocol->ValidateBlock(block);
     if (err != MV_OK)
     {
         WalleveLog("AddNewBlock Validate Block Error(%s) : %s \n",MvErrString(err),hash.ToString().c_str());
@@ -191,55 +212,42 @@ MvErr CWorldLine::AddNewBlock(CBlock& block,vector<CTransaction>& vtx,CWorldLine
         return MV_ERR_SYS_STORAGE_ERROR;
     }
     
-    CBlockTx txMint(block.txMint);
-    err = GetBlockTx(txMint,view);
-    if (err != MV_OK)
-    {
-        WalleveLog("AddNewBlock Get BlockTx Error(%s) : %s \n",MvErrString(err),block.txMint.GetHash().ToString().c_str());
-        return err;
-    } 
-    
-    int64 nTxFee = txMint.nTxFee;
-    BOOST_FOREACH(const CTransaction& tx,vtx)
-    {
-        nTxFee += tx.nTxFee;
-    }
-    
-    err = pCoreProtocol->VerifyBlock(block,txMint.destIn,txMint.nValueIn,nTxFee,pIndexPrev);
+    err = pCoreProtocol->VerifyBlock(block,pIndexPrev);
     if (err != MV_OK)
     {
         WalleveLog("AddNewBlock Verify Block Error(%s) : %s \n",MvErrString(err),hash.ToString().c_str());
         return err;
     } 
     
-    vector<CBlockTx> vBlockTx;
-    vBlockTx.reserve(vtx.size() + 1);
-    vBlockTx.push_back(txMint);
-    view.AddTx(block.txMint.GetHash(),txMint);
+    view.AddTx(block.txMint.GetHash(),block.txMint);
 
-    int n = 0;
-    BOOST_FOREACH(const CTransaction& tx,vtx)
+    CBlockEx blockex(block);
+    vector<CTxContxt>& vTxContxt = blockex.vTxContxt;
+
+    vTxContxt.reserve(block.vtx.size());
+
+    BOOST_FOREACH(CTransaction& tx,block.vtx)
     {
-        const uint256& txid = block.vTxHash[n++];
-        CBlockTx txBlock(tx);
-        err = GetBlockTx(txBlock,view);
+        uint256 txid = tx.GetHash();
+        CTxContxt txContxt;
+        err = GetTxContxt(view,tx,txContxt);
         if (err != MV_OK)
         {
-            WalleveLog("AddNewBlock Get BlockTx Error(%s) : %s \n",MvErrString(err),txid.ToString().c_str());
+            WalleveLog("AddNewBlock Get txContxt Error(%s) : %s \n",MvErrString(err),txid.ToString().c_str());
             return err;
         }
-        err = pCoreProtocol->VerifyBlockTx(txBlock,view);
+        err = pCoreProtocol->VerifyBlockTx(tx,txContxt,pIndexPrev);
         if (err != MV_OK)
         {
             WalleveLog("AddNewBlock Verify BlockTx Error(%s) : %s \n",MvErrString(err),txid.ToString().c_str());
             return err;
         }
-        vBlockTx.push_back(txBlock);
-        view.AddTx(txid,txBlock); 
+        vTxContxt.push_back(txContxt);
+        view.AddTx(txid,tx,txContxt.destIn,txContxt.GetValueIn());
     }
 
     CBlockIndex* pIndexNew;
-    if (!cntrBlock.AddNew(hash,block,vBlockTx,&pIndexNew))
+    if (!cntrBlock.AddNew(hash,blockex,&pIndexNew))
     {
         WalleveLog("AddNewBlock Storage AddNew Error : %s \n",hash.ToString().c_str());
         return MV_ERR_SYS_STORAGE_ERROR;
@@ -262,8 +270,12 @@ MvErr CWorldLine::AddNewBlock(CBlock& block,vector<CTransaction>& vtx,CWorldLine
     }
    
     update = CWorldLineUpdate(pIndexNew);
-    view.GetTxChanges(update.vTxAddNew,update.vTxRemove,update.setTxUpdate);
- 
+    view.GetTxUpdated(update.setTxUpdate);
+    if (!GetBlockChanges(pIndexNew,pIndexFork,update.vBlockAddNew,update.vBlockRemove))
+    {
+        WalleveLog("AddNewBlock Storage GetBlockChanges Error : %s \n",hash.ToString().c_str());
+        return MV_ERR_SYS_STORAGE_ERROR;
+    } 
     return MV_OK;
 }
 
@@ -308,21 +320,16 @@ bool CWorldLine::RebuildContainer()
 
 bool CWorldLine::InsertGenesisBlock(CBlock& block)
 {
-    uint256 hash = block.GetHash();
-    uint256 txidMint = block.txMint.GetHash();
-    CBlockTx txMint(block.txMint);
-    vector<CBlockTx> vtx;
-    vtx.push_back(txMint);
     CBlockIndex* pIndexNew = NULL;
-
-    if (!cntrBlock.AddNew(block.GetHash(),block,vtx,&pIndexNew))
+    CBlockEx blockex(block);
+    if (!cntrBlock.AddNew(block.GetHash(),blockex,&pIndexNew))
     {
         return false;
     }
     
     storage::CBlockView view;
     cntrBlock.GetBlockView(view);
-    view.AddTx(txidMint,txMint);
+    view.AddTx(block.txMint.GetHash(),block.txMint);
     if (!cntrBlock.CommitBlockView(view,pIndexNew))
     {
         return false;
@@ -330,8 +337,9 @@ bool CWorldLine::InsertGenesisBlock(CBlock& block)
     return true;
 }
 
-MvErr CWorldLine::GetBlockTx(CBlockTx& tx,storage::CBlockView& view)
+MvErr CWorldLine::GetTxContxt(storage::CBlockView& view,const CTransaction& tx,CTxContxt& txContxt)
 {
+    txContxt.SetNull();
     BOOST_FOREACH(const CTxIn& txin,tx.vInput)
     {
         CTxOutput output;
@@ -339,16 +347,46 @@ MvErr CWorldLine::GetBlockTx(CBlockTx& tx,storage::CBlockView& view)
         {
             return MV_ERR_MISSING_PREV;
         }
-        if (tx.destIn.IsNull())
+        if (txContxt.destIn.IsNull())
         {
-            tx.destIn = output.destTo;
+            txContxt.destIn = output.destTo;
         }
-        else if (tx.destIn != output.destTo)
+        else if (txContxt.destIn != output.destTo)
         {
             return MV_ERR_TRANSACTION_INVALID;
         }
-        tx.nValueIn += output.nAmount;
-        tx.vTxInput.push_back(CTxInput(txin.prevout,output.nAmount,output.nLockUntil));
+        txContxt.vInputValue.push_back(make_pair(output.nAmount,output.nLockUntil));
     }
-    return MV_OK;
+    return MV_OK; 
 }
+
+bool CWorldLine::GetBlockChanges(const CBlockIndex* pIndexNew,const CBlockIndex* pIndexFork,
+                                 vector<CBlockEx>& vBlockAddNew,vector<CBlockEx>& vBlockRemove)
+{
+    while (pIndexNew != pIndexFork)
+    {
+        int nForkHeight = pIndexFork ? pIndexFork->GetBlockHeight() : -1;
+        if (pIndexNew->GetBlockHeight() >= nForkHeight)
+        {
+            CBlockEx block;
+            if (!cntrBlock.Retrieve(pIndexNew,block))
+            {
+                return false;
+            }
+            vBlockAddNew.push_back(block);
+            pIndexNew = pIndexNew->pPrev;
+        }
+        else
+        {
+            CBlockEx block;
+            if (!cntrBlock.Retrieve(pIndexFork,block))
+            {
+                return false;
+            }
+            vBlockRemove.push_back(block);
+            pIndexFork = pIndexFork->pPrev;
+        }
+    }
+    return true;
+}
+

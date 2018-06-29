@@ -24,7 +24,10 @@ public:
     bool GetBlock(const uint256& hashBlock,CBlock& block);
     bool Exists(const uint256& hashBlock);
     bool GetTransaction(const uint256& txid,CTransaction& tx);
-    MvErr AddNewBlock(CBlock& block,std::vector<CTransaction>& vtx,CWorldLineUpdate& update);
+    bool GetTxLocation(const uint256& txid,uint256& hashFork,int& nHeight);
+    bool GetTxUnspent(const uint256& hashFork,const std::vector<CTxIn>& vInput,
+                                                    std::vector<CTxOutput>& vOutput);
+    MvErr AddNewBlock(CBlock& block,CWorldLineUpdate& update);
     bool GetProofOfWorkTarget(const uint256& hashPrev,int nAlgo,int& nBits,int64& nReward);
 protected:
     bool WalleveHandleInitialize();
@@ -34,7 +37,9 @@ protected:
     bool CheckContainer();
     bool RebuildContainer();
     bool InsertGenesisBlock(CBlock& block);
-    MvErr GetBlockTx(CBlockTx& tx,storage::CBlockView& view);
+    MvErr GetTxContxt(storage::CBlockView& view,const CTransaction& tx,CTxContxt& txContxt);
+    bool GetBlockChanges(const CBlockIndex* pIndexNew,const CBlockIndex* pIndexFork,
+                         std::vector<CBlockEx>& vBlockAddNew,std::vector<CBlockEx>& vBlockRemove);
 protected:
     boost::shared_mutex rwAccess;
     ICoreProtocol *pCoreProtocol;

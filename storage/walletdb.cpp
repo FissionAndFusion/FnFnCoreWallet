@@ -75,6 +75,58 @@ bool CWalletDB::WalkThroughKey(CWalletDBKeyWalker& walker)
     return true;
 }
 
+bool CWalletDB::AddNewTemplate(const uint256& tid,uint16 nType,const vector<unsigned char>& vchData)
+{
+    ostringstream oss;
+    oss << "INSERT INTO wallettemplate(tid,type,data) "
+              "VALUES("
+        <<            "\'" << dbConn.ToEscString(tid) << "\',"
+        <<            nType << ","
+        <<            "\'" << dbConn.ToEscString(vchData) << "\')";
+    return dbConn.Query(oss.str());
+}
+
+bool CWalletDB::WalkThroughTemplate(CWalletDBTemplateWalker& walker)
+{
+    CMvDBRes res(dbConn,"SELECT tid,type,data FROM wallettemplate",true);
+    while (res.GetRow())
+    {
+        uint256 tid;
+        uint16 type;
+        vector<unsigned char> vchData;
+        if (!res.GetField(0,tid) || !res.GetField(1,type) || !res.GetField(2,vchData) 
+            || !walker.Walk(tid,type,vchData))
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool CWalletDB::AddNewTx(const CWalletTx& wtx)
+{
+}
+
+bool CWalletDB::UpdateTxSpent(const uint256& txid,int n,const uint256& hashSpent)
+{
+}
+
+bool CWalletDB::RetrieveTx(const uint256& txid,CWalletTx& wtx)
+{
+}
+
+bool CWalletDB::ExistsTx(const uint256& txid)
+{
+}
+
+bool CWalletDB::WalkThroughUnspent(CWalletDBTxWalker& walker)
+{
+}
+
+bool CWalletDB::ListTx(const uint256& txidPrev,int nCount,std::vector<CWalletTx>& vWalletTx)
+{
+}
+
 bool CWalletDB::CreateTable()
 {
     return dbConn.Query("CREATE TABLE IF NOT EXISTS walletkey("
@@ -83,5 +135,12 @@ bool CWalletDB::CreateTable()
                           "version INT NOT NULL,"
                           "encrypted BINARY(48) NOT NULL,"
                           "nonce BIGINT UNSIGNED NOT NULL)"
+                       )
+             &&
+           dbConn.Query("CREATE TABLE IF NOT EXISTS wallettemplate("
+                          "id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,"
+                          "tid BINARY(32) NOT NULL UNIQUE KEY,"
+                          "type SMALLINT NOT NULL,"
+                          "data VARBINARY(640) NOT NULL)"
                        );
 }

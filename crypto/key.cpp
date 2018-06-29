@@ -98,15 +98,19 @@ bool CKey::Load(const std::vector<unsigned char>& vchKey)
 
     CPubKey pubkey;
     int version;
-    CCryptoCipher cip;
+    CCryptoCipher cipherNew;
     uint32 check;
+
     walleve::CWalleveIDataStream is(vchKey);
-    is >> pubkey >> version >> cip >> check;
+    is >> pubkey >> version;
+    is.Pop(cipherNew.encrypted,48);
+    is >> cipherNew.nonce >> check;
+
     if (CryptoHash(&vchKey[0],vchKey.size() - 4).Get32() != check)
     {
         return false;
     }
-    Load(pubkey,version,cip);
+    Load(pubkey,version,cipherNew);
     return true;
 }
 
@@ -121,8 +125,12 @@ void CKey::Save(std::vector<unsigned char>& vchKey) const
 {
     vchKey.clear();
     vchKey.reserve(96);
+    
     walleve::CWalleveODataStream os(vchKey);
-    os << GetPubKey() << GetVersion() << GetCipher();
+    os << GetPubKey() << GetVersion();
+    os.Push(GetCipher().encrypted,48);
+    os << GetCipher().nonce;
+    
     uint256 hash = CryptoHash(&vchKey[0],vchKey.size());
     os << hash.Get32();
 }

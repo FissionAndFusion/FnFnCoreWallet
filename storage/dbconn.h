@@ -50,7 +50,10 @@ public:
     }
     std::string ToEscString(const CDestination& dest)
     {
-        return ToEscString(&dest,33);
+        unsigned char d[33];
+        d[0] = dest.prefix;
+        *(uint256*)&d[1] = dest.data;
+        return ToEscString(&d,33);
     }
     std::string ToEscString(const std::vector<unsigned char>& vch)
     {

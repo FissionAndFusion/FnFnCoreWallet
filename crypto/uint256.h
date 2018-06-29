@@ -6,6 +6,7 @@
 #define BITCOIN_UINT256_H
 
 #include <walleve/stream/stream.h>
+#include <walleve/stream/datastream.h>
 
 #include <limits.h>
 #include <stdio.h>
@@ -364,7 +365,14 @@ public:
     {
         return pn[n];
     }
-
+    void ToDataStream(walleve::CWalleveODataStream& os) const
+    {
+        os.Push(pn,sizeof(pn));
+    }
+    void FromDataStream(walleve::CWalleveIDataStream& is)
+    {
+        is.Pop(pn,sizeof(pn));
+    }
 protected:
     void WalleveSerialize(walleve::CWalleveStream& s,walleve::SaveType&)
     {

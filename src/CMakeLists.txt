@@ -9,6 +9,7 @@
 set(sources
 	multiverse.cpp
 	usage.cpp
+	address.cpp address.h
 	error.cpp error.h
 	config.cpp config.h
 	entry.cpp entry.h        

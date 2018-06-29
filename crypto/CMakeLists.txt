@@ -8,7 +8,8 @@
 
 set(sources
 	uint256.h
-	bignum.h
+	crc24q.cpp crc24q.h
+	base32.cpp base32.h
 	hash.cpp hash.h
 	crypto.cpp crypto.h
 	key.cpp key.h

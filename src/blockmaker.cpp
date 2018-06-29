@@ -3,7 +3,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "blockmaker.h"
-
+#include "address.h"
 using namespace std;
 using namespace walleve;
 using namespace multiverse;
@@ -20,6 +20,30 @@ public:
         return crypto::CryptoHash(&vchData[0],vchData.size());
     } 
 };
+
+//////////////////////////////
+// CBlockMakerProfile 
+bool CBlockMakerProfile::BuildTemplate()
+{
+    crypto::CPubKey pubkey;
+    if (destMint.GetPubKey(pubkey) && pubkey == keyMint.GetPubKey())
+    {
+        return false;
+    }
+    if (nAlgo == CM_MPVSS)
+    {
+        templMint = CTemplatePtr(new CTemplateDelegate(keyMint.GetPubKey(),destMint));
+    }
+    else if (nAlgo < CM_MAX)
+    {
+        templMint = CTemplatePtr(new CTemplateMint(keyMint.GetPubKey(),destMint));
+    }
+    if (templMint != NULL && templMint->IsNull())
+    {
+        templMint.reset();
+    }
+    return (templMint != NULL);
+}
 
 //////////////////////////////
 // CBlockMaker 
@@ -73,13 +97,20 @@ bool CBlockMaker::WalleveHandleInitialize()
 
     if (!MintConfig()->destMPVss.IsNull() && MintConfig()->keyMPVss != 0)
     { 
-        mapProfile.insert(make_pair(CM_MPVSS,CBlockMakerProfile(0,MintConfig()->destMPVss,MintConfig()->keyMPVss)));
+        CBlockMakerProfile profile(0,MintConfig()->destMPVss,MintConfig()->keyMPVss);
+        if (profile.IsValid())
+        {
+            mapProfile.insert(make_pair(CM_MPVSS,profile));
+        }
     }
 
     if (!MintConfig()->destBlake512.IsNull() && MintConfig()->keyBlake512 != 0)
     { 
-        mapProfile.insert(make_pair(CM_BLAKE512,CBlockMakerProfile(POWA_BLAKE512,MintConfig()->destBlake512,
-                                                                                 MintConfig()->keyBlake512)));
+        CBlockMakerProfile profile(POWA_BLAKE512,MintConfig()->destBlake512, MintConfig()->keyBlake512);
+        if (profile.IsValid())
+        {
+            mapProfile.insert(make_pair(CM_BLAKE512,profile));
+        }
     }
 
     return true;
@@ -172,15 +203,35 @@ bool CBlockMaker::CreateNewBlock(CBlock& block,const uint256& hashPrev,int64 nPr
     {
         return false;
     } 
+
     CBlockMakerProfile& profile = (*it).second;
-    if (!CreateProofOfWork(block,profile.nAlgo,profile.destMint))
+    if (!CreateProofOfWork(block,profile.nAlgo,CDestination(profile.templMint->GetTemplateId())))
     {
         return false;
     }
+   
+    block.hashMerkle = block.CalcMerkleTreeRoot();
+ 
+    if (!SignBlock(block,profile))
+    {
+        return false;
+    }
+
     return true;
 }
 
-bool CBlockMaker::CreateProofOfWork(CBlock& block,int nAlgo,CDestination& dest)
+bool CBlockMaker::SignBlock(CBlock& block,CBlockMakerProfile& profile)
+{
+    uint256 hashSig = block.GetHash();
+    vector<unsigned char> vchMintSig;
+    if (!profile.keyMint.Sign(hashSig,vchMintSig))
+    {
+        return false;
+    }
+    return profile.templMint->BuildBlockSignature(hashSig,vchMintSig,block.vchSig);
+}
+
+bool CBlockMaker::CreateProofOfWork(CBlock& block,int nAlgo,const CDestination& dest)
 {
     int nBits;
     int64 nReward;
@@ -264,9 +315,9 @@ void CBlockMaker::BlockMakerThreadFunc()
     for (map<int,CBlockMakerProfile>::iterator it = mapProfile.begin();it != mapProfile.end();++it)
     {
         CBlockMakerProfile& profile = (*it).second;
-        WalleveLog("Profile [%s] : destination=%s,pubkey=%s\n",
+        WalleveLog("Profile [%s] : dest=%s,pubkey=%s\n",
                    ConsensusMethodName[(*it).first],
-                   profile.destMint.ToString().c_str(),
+                   CMvAddress(profile.destMint).ToString().c_str(),
                    profile.keyMint.GetPubKey().GetHex().c_str());
     }
     for (;;)

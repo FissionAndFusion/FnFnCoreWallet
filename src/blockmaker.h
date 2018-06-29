@@ -29,11 +29,16 @@ public:
     : nAlgo(nAlgoIn),destMint(dest) 
     {
         keyMint.SetSecret(crypto::CCryptoKeyData(nPrivKey.begin(),nPrivKey.end()));
+        BuildTemplate();
     }
+    
+    bool IsValid() const { return (templMint != NULL); }
+    bool BuildTemplate();
 public:
     int nAlgo;
     CDestination destMint;
     crypto::CKey keyMint;
+    CTemplatePtr templMint;
 };
 
 class CBlockMaker : public IBlockMaker, virtual public CMvBlockMakerEventListener
@@ -51,7 +56,8 @@ protected:
     bool Wait(long nSeconds);
     bool CreateNewBlock(CBlock& block,const uint256& hashPrev,int64 nPrevTime);
     bool DispatchNewBlock(CBlock& block);
-    bool CreateProofOfWork(CBlock& block,int nAlgo,CDestination& dest);
+    bool SignBlock(CBlock& block,CBlockMakerProfile& profile);
+    bool CreateProofOfWork(CBlock& block,int nAlgo,const CDestination& dest);
 private:
     enum {MAKER_RUN=0,MAKER_RESET=1,MAKER_EXIT=2,MAKER_HOLD=3};
     void BlockMakerThreadFunc();

@@ -90,6 +90,16 @@ uint256 CryptoHash(const void* msg,std::size_t len)
     return hash;
 }
 
+uint256 CryptoHash(const uint256& h1,const uint256& h2)
+{
+    uint256 hash;
+    crypto_generichash_blake2b_state state;
+    crypto_generichash_blake2b_init(&state,NULL,0,sizeof(hash));
+    crypto_generichash_blake2b_update(&state,h1.begin(),sizeof(h1));
+    crypto_generichash_blake2b_update(&state,h2.begin(),sizeof(h2));
+    crypto_generichash_blake2b_final(&state,hash.begin(),sizeof(hash));
+}
+
 //////////////////////////////
 // Sign & verify
 

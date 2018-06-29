@@ -8,6 +8,7 @@
 
 #include "block.h"
 #include "transaction.h"
+#include "wallettx.h"
 #include "json/json_spirit_reader_template.h"
 #include "json/json_spirit_writer_template.h"
 #include "json/json_spirit_utils.h"
@@ -78,6 +79,10 @@ int64 AmountFromValue(const json_spirit::Value& value);
 json_spirit::Value ValueFromAmount(int64 amount);
 
 json_spirit::Object BlockToJSON(const uint256& hashBlock,const CBlock& block,const uint256& hashFork,int nHeight);
+
+json_spirit::Object TxToJSON(const uint256& txid,const CTransaction& tx,const uint256& hashFork,int nDepth);
+
+json_spirit::Object WalletTxToJSON(const CWalletTx& wtx);
 
 } // namespace multiverse
 

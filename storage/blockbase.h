@@ -109,10 +109,11 @@ public:
     bool RetrieveTx(const uint256& txid,CTransaction& tx);
     bool RetrieveUnspent(const CTxOutPoint& out,CTxOutput& unspent);
     void AddTx(const uint256& txid,const CTransaction& tx,const CDestination& destIn=CDestination(),int64 nValueIn=0);
-    void AddTx(const uint256& txid,const CBlockTx& tx) { AddTx(txid,tx,tx.destIn,tx.nValueIn); }
-    void RemoveTx(const uint256& txid,std::vector<CTxUnspent>& vPrevout);
+    void AddTx(const uint256& txid,const CAssembledTx& tx) { AddTx(txid,tx,tx.destIn,tx.nValueIn); }
+    void RemoveTx(const uint256& txid,const CTransaction& tx,const CTxContxt& txContxt=CTxContxt());
     void GetUnspentChanges(std::vector<CTxUnspent>& vAddNew,std::vector<CTxOutPoint>& vRemove);
-    void GetTxChanges(std::vector<uint256>& vAddNew,std::vector<uint256>& vRemove,std::set<uint256>& setUpdate);
+    void GetTxUpdated(std::set<uint256>& setUpdate);
+    void GetTxRemoved(std::vector<uint256>& vRemove);
 protected:
     CBlockBase* pBlockBase;
     CBlockFork* pBlockFork;
@@ -136,25 +137,30 @@ public:
     void Clear();
     bool IsEmpty() const;
     bool Exists(const uint256& hash) const;
-    bool AddNew(const uint256& hash,CBlock& block,std::vector<CBlockTx>& vtx,CBlockIndex** ppIndexNew);
+    bool ExistsTx(const uint256& txid);
+    bool AddNew(const uint256& hash,CBlockEx& block,CBlockIndex** ppIndexNew);
     bool Retrieve(const uint256& hash,CBlock& block);
+    bool Retrieve(const CBlockIndex* pIndex,CBlock& block);
+    bool Retrieve(const uint256& hash,CBlockEx& block);
+    bool Retrieve(const CBlockIndex* pIndex,CBlockEx& block);
     bool RetrieveIndex(const uint256& hash,CBlockIndex** ppIndex);
     bool RetrieveFork(const uint256& hash,CBlockIndex** ppIndex);
     bool RetrieveTx(const uint256& txid,CTransaction& tx);
+    bool RetrieveTxLocation(const uint256& txid,uint256& hashFork,int& nHeight);
     void ListForkIndex(std::multimap<int,CBlockIndex*>& mapForkIndex);
     bool GetBlockView(CBlockView& view);
     bool GetBlockView(const uint256& hash,CBlockView& view,bool fCommitable=false);
+    bool GetForkBlockView(const uint256& hashFork,CBlockView& view);
     bool CommitBlockView(CBlockView& view,CBlockIndex* pIndexNew);
-    bool LoadIndex(CDiskBlockIndex& diskIndex);
+    bool LoadIndex(CBlockOutline& diskIndex);
 protected:
     CBlockIndex* GetIndex(const uint256& hash) const;
     CBlockFork* GetFork(const uint256& hash);
     CBlockIndex* GetBranch(CBlockIndex* pIndexRef,CBlockIndex* pIndex,std::vector<CBlockIndex*>& vPath);
-    CBlockIndex* AddNewIndex(const uint256& hash,CBlock& block,int64 nMint,uint32 nFile,uint32 nOffset);
+    CBlockIndex* AddNewIndex(const uint256& hash,CBlock& block,uint32 nFile,uint32 nOffset);
     CBlockFork* AddNewFork(CBlockIndex* pIndexLast);
-    CBlockIndex* GetTxLocation(CBlockFork* pFork,const uint256& txid);    
     bool GetTxUnspent(const uint256 fork,const CTxOutPoint& out,CTxOutput& unspent);
-    bool AddNewTx(const uint256& txid,const CBlockTx& tx,CTxIndex& txIndex);
+    bool GetTxNewIndex(CBlockView& view,CBlockIndex* pIndexNew,std::vector<std::pair<uint256,CTxIndex> >& vTxNew);
     void ClearCache();
     bool LoadDB();
     bool SetupLog(const boost::filesystem::path& pathDataLocation,bool fDebug);
@@ -188,7 +194,6 @@ protected:
     bool fDebugLog;
     CBlockDB dbBlock;
     CTimeSeries tsBlock;
-    CTimeSeries tsTx;
     std::map<uint256,CBlockIndex*> mapIndex;
     std::map<uint256,CBlockFork> mapFork;
 };

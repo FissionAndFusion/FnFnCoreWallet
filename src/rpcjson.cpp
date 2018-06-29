@@ -4,6 +4,7 @@
 
 #include "rpcjson.h"
 #include "param.h"
+#include "address.h"
 #include <boost/foreach.hpp>
 
 using namespace std;
@@ -63,13 +64,66 @@ Object BlockToJSON(const uint256& hashBlock,const CBlock& block,const uint256& h
     
     result.push_back(Pair("txmint",block.txMint.GetHash().GetHex()));
     Array txhash;
-    BOOST_FOREACH(const uint256& txid,block.vTxHash)
+    BOOST_FOREACH(const CTransaction& tx,block.vtx)
     {
-        txhash.push_back(txid.GetHex());
+        txhash.push_back(tx.GetHash().GetHex());
     }
     result.push_back(Pair("tx", txhash));
     return result;
 }
 
+Object TxToJSON(const uint256& txid,const CTransaction& tx,const uint256& hashFork,int nDepth)
+{
+    Object entry;
+    entry.push_back(Pair("txid", txid.GetHex()));
+    entry.push_back(Pair("version", (boost::int64_t)tx.nVersion));
+    entry.push_back(Pair("type", tx.GetTypeString()));
+    entry.push_back(Pair("lockuntil", (boost::int64_t)tx.nLockUntil));
+    entry.push_back(Pair("anchor", tx.hashAnchor.GetHex()));
+    Array vin;
+    BOOST_FOREACH(const CTxIn& txin, tx.vInput)
+    {
+        Object in;
+        in.push_back(Pair("txid", txin.prevout.hash.GetHex()));
+        in.push_back(Pair("vout", (boost::int64_t)txin.prevout.n));
+        vin.push_back(in);
+    }
+    entry.push_back(Pair("vin", vin));
+    entry.push_back(Pair("sendto",CMvAddress(tx.sendTo).ToString()));
+    entry.push_back(Pair("amount",ValueFromAmount(tx.nAmount)));
+    entry.push_back(Pair("txfee",ValueFromAmount(tx.nTxFee)));
+
+    entry.push_back(Pair("data",walleve::ToHexString(tx.vchData)));
+    entry.push_back(Pair("sig",walleve::ToHexString(tx.vchSig)));
+    entry.push_back(Pair("fork", hashFork.GetHex()));
+    if (nDepth >= 0)
+    {
+        entry.push_back(Pair("confirmations", (boost::int64_t)nDepth));
+    }
+
+    return entry;
+}
+
+Object WalletTxToJSON(const CWalletTx& wtx)
+{
+    Object entry;
+    entry.push_back(Pair("txid", wtx.txid.GetHex()));
+    entry.push_back(Pair("fork", wtx.hashFork.GetHex()));
+    if (wtx.nBlockHeight >= 0)
+    {
+        entry.push_back(Pair("blockheight", wtx.nBlockHeight));
+    }
+    entry.push_back(Pair("type", wtx.GetTypeString()));
+    entry.push_back(Pair("send", wtx.IsFromMe()));
+    if (!wtx.IsMintTx())
+    {
+        entry.push_back(Pair("from", CMvAddress(wtx.destIn).ToString()));
+    }
+    entry.push_back(Pair("to", CMvAddress(wtx.sendTo).ToString()));
+    entry.push_back(Pair("amount", ValueFromAmount(wtx.nAmount)));
+    entry.push_back(Pair("fee", ValueFromAmount(wtx.nTxFee)));
+    entry.push_back(Pair("lockuntil", (boost::int64_t)wtx.nLockUntil));
+    return entry;
+}
 
 } // namespace multiverse

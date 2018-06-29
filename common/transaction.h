@@ -10,6 +10,7 @@
 #include "crypto.h"
 
 #include <walleve/stream/stream.h>
+#include <walleve/stream/datastream.h>
 
 class CTxOutPoint
 {
@@ -50,6 +51,8 @@ class CTxIn
     friend class walleve::CWalleveStream;
 public:
     CTxOutPoint prevout;
+    CTxIn() {}
+    CTxIn(const CTxOutPoint& prevoutIn) : prevout(prevoutIn) {}
     friend bool operator==(const CTxIn& a, const CTxIn& b)
     {
         return (a.prevout == b.prevout);
@@ -109,12 +112,28 @@ public:
     {
         return (nType == TX_GENESIS || nType == TX_STAKE || nType == TX_WORK); 
     }
+    std::string GetTypeString() const
+    {
+        if (nType == TX_TOKEN) return std::string("token");
+        if (nType == TX_CERT) return std::string("certification");
+        if (nType == TX_GENESIS) return std::string("genesis");
+        if (nType == TX_STAKE) return std::string("stake");
+        if (nType == TX_WORK) return std::string("work");
+        return std::string("undefined");
+    }
     uint256 GetHash() const
     {
         walleve::CWalleveBufStream ss;
         ss << (*this);
         return multiverse::crypto::CryptoHash(ss.GetData(),ss.GetSize());
     }
+    uint256 GetSignatureHash() const
+    {
+        walleve::CWalleveBufStream ss;
+        ss << nVersion << nType << nLockUntil << hashAnchor << vInput << sendTo << nAmount << nTxFee << vchData;
+        return multiverse::crypto::CryptoHash(ss.GetData(),ss.GetSize());
+    }
+
     int64 GetChange(int64 nValueIn) const
     {
         return (nValueIn - nAmount - nTxFee);
@@ -161,7 +180,7 @@ public:
     uint32 nLockUntil;
 public:
     CTxOutput() { SetNull(); }
-    CTxOutput(const CDestination destToIn,int64 nAmountIn,int nLockUntilIn) 
+    CTxOutput(const CDestination destToIn,int64 nAmountIn,uint32 nLockUntilIn) 
     : destTo(destToIn),nAmount(nAmountIn),nLockUntil(nLockUntilIn) {}
     CTxOutput(const CTransaction& tx)
     {
@@ -182,7 +201,7 @@ public:
     std::string ToString() const 
     {
         std::ostringstream oss;
-        oss << "TxOutput : (" << destTo.ToString() << "," << nAmount << "," << nLockUntil << ")";
+        oss << "TxOutput : (" << destTo.GetHex() << "," << nAmount << "," << nLockUntil << ")";
         return oss.str(); 
     }
 };
@@ -202,48 +221,24 @@ public:
     bool IsNull() const { return (CTxOutPoint::IsNull() || output.IsNull()); }
 };
 
-class CTxInput
+class CAssembledTx : public CTransaction
 {
     friend class walleve::CWalleveStream;
 public:
-    CTxOutPoint prevout;
-    int64 nAmount;
-    uint32 nLockUntil;
-public:
-    CTxInput() { prevout.SetNull(); nAmount = 0;nLockUntil = 0; } 
-    CTxInput(const CTxOutPoint& prevoutIn,int64 nAmountIn,uint32 nLockUntilIn) 
-    : prevout(prevoutIn), nAmount(nAmountIn), nLockUntil(nLockUntilIn) {}
-protected:
-    template <typename O>
-    void WalleveSerialize(walleve::CWalleveStream& s,O& opt)
-    {
-        s.Serialize(prevout,opt);
-        s.Serialize(nAmount,opt);
-        s.Serialize(nLockUntil,opt);
-    }
-};
-
-class CBlockTx : public CTransaction
-{
-public:
     CDestination destIn;
     int64 nValueIn;
-    std::vector<CTxInput> vTxInput;
+    int nBlockHeight;
 public:
-    CBlockTx() { SetNull(); }
-    CBlockTx(const CTransaction& tx) : CTransaction(tx) 
+    CAssembledTx() { SetNull(); }
+    CAssembledTx(const CTransaction& tx,const CDestination destInIn=CDestination(),int64 nValueInIn=0) 
+    : CTransaction(tx),destIn(destInIn),nValueIn(nValueInIn) 
     { 
-        destIn.SetNull();
-        nValueIn = 0;
-        vTxInput.clear();
-        vTxInput.reserve(vInput.size());
     }
     void SetNull()
     {
         CTransaction::SetNull();
         destIn.SetNull();
         nValueIn = 0;
-        vTxInput.clear();
     }
     int64 GetChange() const
     {
@@ -261,6 +256,42 @@ public:
         }
         return CTxOutput();
     }
+protected:
+    template <typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s,O& opt)
+    {
+        CTransaction::WalleveSerialize(s,opt);
+        s.Serialize(destIn,opt);
+        s.Serialize(nValueIn,opt);
+    }
+};
+
+class CTxContxt
+{
+    friend class walleve::CWalleveStream;
+public:
+    CDestination destIn;
+    std::vector<std::pair<int64,uint32> > vInputValue;
+    int64 GetValueIn() const
+    {
+        int64 nValueIn = 0;
+        for (int i = 0;i < vInputValue.size();i++)
+        {
+            nValueIn += vInputValue[i].first;
+        }
+    }
+    void SetNull()
+    {
+        destIn.SetNull();
+        vInputValue.clear();
+    }
+protected:
+    template <typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s,O& opt)
+    {
+        s.Serialize(destIn,opt);
+        s.Serialize(vInputValue,opt);
+    }
 };
 
 class CTxIndex
@@ -272,7 +303,7 @@ public:
     uint256 hashAnchor;
     CDestination destIn;
     int64 nValueIn;
-    std::vector<CTxInput> vTxInput;
+    int nBlockHeight;
     uint32 nFile;
     uint32 nOffset;
 public:
@@ -280,15 +311,16 @@ public:
     {
         SetNull();
     }
-    CTxIndex(const CBlockTx& tx,uint32 nFileIn,uint32 nOffsetIn)
+    CTxIndex(const CTransaction& tx,const CDestination destInIn,int64 nValueInIn,
+             int nBlockHeightIn,uint32 nFileIn,uint32 nOffsetIn)
     {
         nVersion     = tx.nVersion;
         nType        = tx.nType;
         nLockUntil   = tx.nLockUntil;
         hashAnchor   = tx.hashAnchor;
-        destIn       = tx.destIn;
-        nValueIn     = tx.nValueIn;
-        vTxInput     = tx.vTxInput;
+        destIn       = destInIn;
+        nValueIn     = nValueInIn;
+        nBlockHeight = nBlockHeightIn;
         nFile        = nFileIn;
         nOffset      = nOffsetIn;
     }
@@ -299,23 +331,15 @@ public:
         nLockUntil   = 0;
         hashAnchor   = 0;
         nValueIn     = 0;
+        nBlockHeight = 0;
         nFile        = 0;
         nOffset      = 0;
         destIn.SetNull();
-        vTxInput.clear();
     }
     bool IsNull() const 
     { 
         return (nVersion == 0 || nFile == 0); 
     };
-    void GetPrevout(std::vector<CTxUnspent>& vPrevout) const
-    {
-        vPrevout.resize(vTxInput.size());
-        for (int i = 0;i < vTxInput.size();i++)
-        {
-            vPrevout[i] = CTxUnspent(vTxInput[i].prevout,CTxOutput(destIn,vTxInput[i].nAmount,vTxInput[i].nLockUntil));
-        }
-    }
 };
 
 #endif //MULTIVERSE_TRANSACTION_H
