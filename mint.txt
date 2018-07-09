@@ -1,0 +1,15 @@
+
+Proof of work minting
+========
+1) run core wallet
+./multiverse
+
+2) get wallet address
+./multiverse listkey
+./multiverse getpubkeyaddress
+
+3) create mintkey and get privkey
+./multiverse makekeypair
+
+4) start miner
+./multiverse miner <wallet address> <mintkey priv>
