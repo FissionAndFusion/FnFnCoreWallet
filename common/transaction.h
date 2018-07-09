@@ -230,8 +230,8 @@ public:
     int nBlockHeight;
 public:
     CAssembledTx() { SetNull(); }
-    CAssembledTx(const CTransaction& tx,const CDestination destInIn=CDestination(),int64 nValueInIn=0) 
-    : CTransaction(tx),destIn(destInIn),nValueIn(nValueInIn) 
+    CAssembledTx(const CTransaction& tx,int nBlockHeightIn,const CDestination& destInIn=CDestination(),int64 nValueInIn=0) 
+    : CTransaction(tx),destIn(destInIn),nValueIn(nValueInIn),nBlockHeight(nBlockHeightIn) 
     { 
     }
     void SetNull()
@@ -263,6 +263,7 @@ protected:
         CTransaction::WalleveSerialize(s,opt);
         s.Serialize(destIn,opt);
         s.Serialize(nValueIn,opt);
+        s.Serialize(nBlockHeight,opt);
     }
 };
 
@@ -301,6 +302,8 @@ public:
     uint16 nType;
     uint32 nLockUntil;
     uint256 hashAnchor;
+    CDestination sendTo;
+    int64 nAmount;
     CDestination destIn;
     int64 nValueIn;
     int nBlockHeight;
@@ -318,6 +321,8 @@ public:
         nType        = tx.nType;
         nLockUntil   = tx.nLockUntil;
         hashAnchor   = tx.hashAnchor;
+        sendTo       = tx.sendTo;
+        nAmount      = tx.nAmount;
         destIn       = destInIn;
         nValueIn     = nValueInIn;
         nBlockHeight = nBlockHeightIn;
@@ -330,10 +335,12 @@ public:
         nType        = 0;
         nLockUntil   = 0;
         hashAnchor   = 0;
+        nAmount      = 0;
         nValueIn     = 0;
         nBlockHeight = 0;
         nFile        = 0;
         nOffset      = 0;
+        sendTo.SetNull();
         destIn.SetNull();
     }
     bool IsNull() const 
@@ -342,5 +349,23 @@ public:
     };
 };
 
+/*
+    if destIn = null and sendTo = null, select all txs
+    if destIn = null and sendTo != null, select tx which tx.sendTo = sendTo
+    if sendTo = null and destIn != null, select tx which tx.destIn = destIn
+    if destIn != null and sendTo != null, select tx which tx.destIn = destIn or tx.sendTo = sendTo
+*/
+class CTxFilter
+{
+public:
+    CDestination destIn;
+    CDestination sendTo;
+public:
+    CTxFilter(const CDestination& destInIn,const CDestination& sendToIn)
+    : destIn(destInIn),sendTo(sendToIn) 
+    {
+    }
+    virtual bool FoundTx(const uint256& hashFork,const CAssembledTx& tx) = 0;
+};
 #endif //MULTIVERSE_TRANSACTION_H
 

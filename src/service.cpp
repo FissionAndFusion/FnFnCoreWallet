@@ -9,6 +9,24 @@ using namespace walleve;
 using namespace multiverse;
 
 extern void MvShutdown();
+
+//////////////////////////////
+// CServiceWalletTxFilter
+class CServiceWalletTxFilter : public CTxFilter
+{
+public:
+    CServiceWalletTxFilter(IWallet* pWalletIn,const CDestination& destNew)
+    : CTxFilter(destNew,destNew),pWallet(pWalletIn)
+    {
+    }
+    bool FoundTx(const uint256& hashFork,const CAssembledTx& tx)
+    {
+        return pWallet->UpdateTx(hashFork,tx);
+    }
+public:
+    IWallet* pWallet;
+};
+
 //////////////////////////////
 // CService 
 
@@ -88,10 +106,10 @@ void CService::NotifyWorldLineUpdate(const CWorldLineUpdate& update)
     map<uint256,CForkStatus>::iterator it = mapForkStatus.find(update.hashFork);
     if (it == mapForkStatus.end())
     {
-        it = mapForkStatus.insert(make_pair(update.hashFork,CForkStatus(update.hashFork,update.hashParent,update.nForkHeight))).first;
+        it = mapForkStatus.insert(make_pair(update.hashFork,CForkStatus(update.hashFork,update.hashParent,update.nOriginHeight))).first;
         if (update.hashParent != 0)
         {
-            mapForkStatus[update.hashParent].mapSubline.insert(make_pair(update.nForkHeight,update.hashFork));
+            mapForkStatus[update.hashParent].mapSubline.insert(make_pair(update.nOriginHeight,update.hashFork));
         }
     }
     
@@ -139,7 +157,7 @@ bool CService::GetForkGenealogy(const uint256& hashFork,vector<pair<uint256,int>
     CForkStatus* pAncestry = &(*it).second;
     while (pAncestry->hashParent != 0)
     {
-        vAncestry.push_back(make_pair(pAncestry->hashParent,pAncestry->nForkHeight));
+        vAncestry.push_back(make_pair(pAncestry->hashParent,pAncestry->nOriginHeight));
         pAncestry = &mapForkStatus[pAncestry->hashParent];
     }
 
@@ -166,6 +184,17 @@ int CService::GetBlockCount(const uint256& hashFork)
 
 bool CService::GetBlockHash(const uint256& hashFork,int nHeight,uint256& hashBlock)
 {
+    if (nHeight < 0)
+    {
+        boost::shared_lock<boost::shared_mutex> rlock(rwForkStatus);
+        map<uint256,CForkStatus>::iterator it = mapForkStatus.find(hashFork);
+        if (it == mapForkStatus.end())
+        {
+            return false;
+        }
+        hashBlock = (*it).second.hashLastBlock;
+        return true;
+    }
     return pWorldLine->GetBlockHash(hashFork,nHeight,hashBlock);
 }
 
@@ -175,8 +204,10 @@ bool CService::GetBlock(const uint256& hashBlock,CBlock& block,uint256& hashFork
            && pWorldLine->GetBlockLocation(hashBlock,hashFork,nHeight);
 }
 
-void CService::GetTxPool(const uint256& hashFork,vector<uint256>& vTxPool)
+void CService::GetTxPool(const uint256& hashFork,vector<pair<uint256,size_t> >& vTxPool)
 {
+    vTxPool.clear();
+    pTxPool->ListTx(hashFork,vTxPool);
 }
 
 bool CService::GetTransaction(const uint256& txid,CTransaction& tx,uint256& hashFork,int& nHeight)
@@ -200,7 +231,17 @@ bool CService::GetTransaction(const uint256& txid,CTransaction& tx,uint256& hash
 
 MvErr CService::SendTransaction(CTransaction& tx)
 {
-    return MV_OK;
+    return pDispatcher->AddNewTx(tx);
+}
+
+bool CService::RemovePendingTx(const uint256& txid)
+{
+    if (!pTxPool->Exists(txid))
+    {
+        return false;
+    }
+    pTxPool->Pop(txid);
+    return true;
 }
 
 bool CService::HaveKey(const crypto::CPubKey& pubkey)
@@ -327,9 +368,17 @@ bool CService::GetBalance(const CDestination& dest,const uint256& hashFork,CWall
     return pWallet->GetBalance(dest,hashFork,nBlockCount - 1,balance);
 }
 
-bool CService::ListWalletTx(const uint256& txidPrev,int nCount,vector<CWalletTx>& vWalletTx)
+bool CService::ListWalletTx(int nOffset,int nCount,vector<CWalletTx>& vWalletTx)
 {
-    return pWallet->ListWalletTx(txidPrev,nCount,vWalletTx);
+    if (nOffset < 0)
+    {
+        nOffset = pWallet->GetTxCount() - nCount;
+        if (nOffset < 0)
+        {
+            nOffset = 0;
+        }
+    }
+    return pWallet->ListTx(nOffset,nCount,vWalletTx);
 }
 
 bool CService::CreateTransaction(const uint256& hashFork,const CDestination& destFrom,
@@ -356,4 +405,134 @@ bool CService::CreateTransaction(const uint256& hashFork,const CDestination& des
     txNew.vchData = vchData;
 
     return pWallet->ArrangeInputs(destFrom,hashFork,nForkHeight,txNew);
+}
+
+bool CService::SynchronizeWalletTx(const CDestination& destNew)
+{
+    CServiceWalletTxFilter txFilter(pWallet,destNew);
+    return (pWorldLine->FilterTx(txFilter) && pTxPool->FilterTx(txFilter));
+}
+
+bool CService::ResynchronizeWalletTx()
+{
+    if (!pWallet->ClearTx())
+    {
+        return false;
+    }
+    
+    set<crypto::CPubKey> setPubKey;
+    pWallet->GetPubKeys(setPubKey);
+    BOOST_FOREACH(const crypto::CPubKey& pubkey,setPubKey)
+    {
+        if (!SynchronizeWalletTx(CDestination(pubkey)))
+        {
+            return false;
+        }
+    }
+    set<CTemplateId> setTemplateId;
+    pWallet->GetTemplateIds(setTemplateId);
+    BOOST_FOREACH(const CTemplateId& tid,setTemplateId)
+    {
+        if (!SynchronizeWalletTx(CDestination(tid)))
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool CService::GetWork(vector<unsigned char>& vchWorkData,uint256& hashPrev,uint32& nPrevTime,int& nAlgo,int& nBits)
+{
+    CBlock block;
+    block.nType = CBlock::BLOCK_PRIMARY;
+    
+    {
+        boost::shared_lock<boost::shared_mutex> rlock(rwForkStatus);
+        map<uint256,CForkStatus>::iterator it = mapForkStatus.find(pCoreProtocol->GetGenesisBlockHash());
+        if (it == mapForkStatus.end())
+        {
+            return false;
+        }
+        hashPrev = (*it).second.hashLastBlock;
+        nPrevTime = (*it).second.nLastBlockTime;
+        block.hashPrev = hashPrev;
+        block.nTimeStamp = nPrevTime + BLOCK_TARGET_SPACING - 10;
+    }
+ 
+    nAlgo = POWA_BLAKE512;
+    int64 nReward;
+    if (!pWorldLine->GetProofOfWorkTarget(block.hashPrev,nAlgo,nBits,nReward))
+    {
+        return false;
+    }
+
+    CProofOfHashWork proof;
+    proof.nWeight = 0;
+    proof.nAgreement = 0;
+    proof.nAlgo = nAlgo;
+    proof.nBits = nBits;
+    proof.nNonce = 0;
+    proof.Save(block.vchProof);
+    
+    block.GetSerializedProofOfWorkData(vchWorkData);
+    return true;
+}
+
+MvErr CService::SubmitWork(const vector<unsigned char>& vchWorkData,CTemplatePtr& templMint,crypto::CKey& keyMint,uint256& hashBlock)
+{
+    if (vchWorkData.empty())
+    {
+        return MV_FAILED;
+    }
+    CBlock block;
+    CProofOfHashWorkCompact proof;
+    CWalleveBufStream ss;
+    ss.Write((const char*)&vchWorkData[0],vchWorkData.size());
+    try
+    {
+        ss >> block.nVersion >> block.nType >> block.nTimeStamp >> block.hashPrev >> block.vchProof;
+        proof.Load(block.vchProof);
+        if (proof.nAlgo != POWA_BLAKE512)
+        {
+            return MV_ERR_BLOCK_PROOF_OF_WORK_INVALID;
+        }
+    }
+    catch (...)
+    {
+        return MV_FAILED;
+    }
+    int nBits;
+    int64 nReward;
+    if (!pWorldLine->GetProofOfWorkTarget(block.hashPrev,proof.nAlgo,nBits,nReward))
+    {
+        return MV_FAILED;
+    }
+
+    CTransaction& txMint = block.txMint;
+    txMint.nType = CTransaction::TX_WORK;
+    txMint.hashAnchor = block.hashPrev;
+    txMint.sendTo = CDestination(templMint->GetTemplateId());
+    txMint.nAmount = nReward;
+
+    size_t nSigSize = templMint->GetTemplateDataSize() + 64 + 2;
+    size_t nMaxTxSize = MAX_BLOCK_SIZE - GetSerializeSize(block) - nSigSize;
+    int64 nTotalTxFee = 0;
+    pTxPool->ArrangeBlockTx(pCoreProtocol->GetGenesisBlockHash(),nMaxTxSize,block.vtx,nTotalTxFee);
+    block.hashMerkle = block.CalcMerkleTreeRoot();
+    block.txMint.nAmount += nTotalTxFee;
+
+    hashBlock = block.GetHash();
+    vector<unsigned char> vchMintSig;
+    if (!keyMint.Sign(hashBlock,vchMintSig) 
+        || !templMint->BuildBlockSignature(hashBlock,vchMintSig,block.vchSig))
+    {
+        return MV_ERR_BLOCK_SIGNATURE_INVALID;
+    }
+
+    MvErr err = pCoreProtocol->ValidateBlock(block);
+    if (err != MV_OK)
+    {
+        return err;
+    } 
+    return pDispatcher->AddNewBlock(block);
 }

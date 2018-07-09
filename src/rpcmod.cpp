@@ -33,6 +33,7 @@ CRPCMod::CRPCMod()
                  ("getblockhash",          &CRPCMod::RPCGetBlockHash)
                  ("getblock",              &CRPCMod::RPCGetBlock)
                  ("gettxpool",             &CRPCMod::RPCGetTxPool)
+                 ("removependingtx",       &CRPCMod::RPCRemovePendingTx)
                  ("gettransaction",        &CRPCMod::RPCGetTransaction)
                  ("sendtransaction",       &CRPCMod::RPCSendTransaction)
                  ("listkey",               &CRPCMod::RPCListKey)
@@ -47,6 +48,7 @@ CRPCMod::CRPCMod()
                  ("importtemplate",        &CRPCMod::RPCImportTemplate)
                  ("exporttemplate",        &CRPCMod::RPCExportTemplate)
                  ("validateaddress",       &CRPCMod::RPCValidateAddress)
+                 ("resyncwallet",          &CRPCMod::RPCResyncWallet)
                  ("getbalance",            &CRPCMod::RPCGetBalance)
                  ("listtransaction",       &CRPCMod::RPCListTransaction)
                  ("sendfrom",              &CRPCMod::RPCSendFrom)
@@ -59,6 +61,8 @@ CRPCMod::CRPCMod()
                  ("gettemplateaddress",    &CRPCMod::RPCGetTemplateAddress)
                  ("maketemplate",          &CRPCMod::RPCMakeTemplate)
                  ("decodetransaction",     &CRPCMod::RPCDecodeTransaction)
+                 ("getwork",               &CRPCMod::RPCGetWork)
+                 ("submitwork",            &CRPCMod::RPCSubmitWork)
                  ;
 }
 
@@ -578,21 +582,56 @@ Value CRPCMod::RPCGetBlock(const Array& params,bool fHelp)
 
 Value CRPCMod::RPCGetTxPool(const Array& params,bool fHelp)
 {
-    if (fHelp || params.size() > 1)
+    if (fHelp || params.size() > 2)
     {
         throw runtime_error(
-            "gettxpool [fork=0]\n"
-            "Returns all transaction ids in memory pool for given fork.");
+            "gettxpool [fork=0] [detail=0]\n"
+            "If detail==0, returns the count and total size of txs for given fork.\n"
+            "Otherwise,returns all transaction ids and sizes in memory pool for given fork.");
     }
     uint256 fork = GetForkHash(params,0);
-    vector<uint256> vTxPool;
+    bool fDetail = (!!GetInt(params,1,0));
+    
+    vector<pair<uint256,size_t> > vTxPool;
     pService->GetTxPool(fork,vTxPool);
-    Array arrayTx;
-    BOOST_FOREACH(const uint256& txid, vTxPool)
-    {   
-        arrayTx.push_back(txid.ToString());
+
+    Object ret;
+    if (!fDetail)
+    {
+        size_t nTotalSize = 0;
+        for (int i = 0;i < vTxPool.size();i++)
+        {
+            nTotalSize += vTxPool[i].second;
+        }
+        ret.push_back(Pair("count",vTxPool.size()));
+        ret.push_back(Pair("size",nTotalSize));
     }
-    return arrayTx;
+    else
+    {
+        for (int i = 0;i < vTxPool.size();i++)
+        {
+            ret.push_back(Pair(vTxPool[i].first.GetHex(),vTxPool[i].second));
+        }
+    }
+    
+    return ret;
+}
+
+Value CRPCMod::RPCRemovePendingTx(const Array& params,bool fHelp)
+{
+    if (fHelp || params.size() != 1)
+    {
+        throw runtime_error(
+            "removependingtx <txid>\n"
+            "Removes tx whose id is <txid> from txpool.");
+    }
+    uint256 txid;
+    txid.SetHex(params[0].get_str());
+    if (!pService->RemovePendingTx(txid))
+    {
+        throw JSONRPCError(RPC_INVALID_REQUEST, "This transaction is not in tx pool");
+    }
+    return Value::null;
 }
 
 Value CRPCMod::RPCGetTransaction(const Array& params,bool fHelp)
@@ -624,11 +663,9 @@ Value CRPCMod::RPCGetTransaction(const Array& params,bool fHelp)
     }
     if (fSerialized)
     {
-        string strSerialized;
         CWalleveBufStream ss;
         ss << tx;
-        ss.HexToString(strSerialized);
-        return strSerialized;
+        return ToHexString((const unsigned char*)ss.GetData(),ss.GetSize());
     }
     int nDepth = nHeight < 0 ? 0 : pService->GetBlockCount(hashFork) - nHeight;
     return TxToJSON(txid,tx,hashFork,nDepth);
@@ -855,6 +892,10 @@ Value CRPCMod::RPCImportPrivKey(const Array& params,bool fHelp)
     {
         throw JSONRPCError(RPC_WALLET_ERROR,"Failed to add key");
     }
+    if (!pService->SynchronizeWalletTx(CDestination(key.GetPubKey())))
+    {
+        throw JSONRPCError(RPC_WALLET_ERROR,"Failed to sync wallet tx");
+    }
     return key.GetPubKey().GetHex();
 }
 
@@ -880,6 +921,10 @@ Value CRPCMod::RPCImportKey(const Array& params,bool fHelp)
     if (!pService->AddKey(key))
     {
         throw JSONRPCError(RPC_WALLET_ERROR,"Failed to add key");
+    }
+    if (!pService->SynchronizeWalletTx(CDestination(key.GetPubKey())))
+    {
+        throw JSONRPCError(RPC_WALLET_ERROR,"Failed to sync wallet tx");
     }
     return key.GetPubKey().GetHex();
 }
@@ -923,6 +968,10 @@ Value CRPCMod::RPCAddNewTemplate(const Array& params,bool fHelp)
     {
         throw JSONRPCError(RPC_WALLET_ERROR,"Failed to add template");
     }
+    if (!pService->SynchronizeWalletTx(CDestination(ptr->GetTemplateId())))
+    {
+        throw JSONRPCError(RPC_WALLET_ERROR,"Failed to sync wallet tx");
+    }
     return CMvAddress(ptr->GetTemplateId()).ToString();
 }
 
@@ -943,6 +992,10 @@ Value CRPCMod::RPCImportTemplate(const Array& params,bool fHelp)
     if (!pService->AddTemplate(ptr))
     {
         throw JSONRPCError(RPC_WALLET_ERROR,"Failed to add template");
+    }
+    if (!pService->SynchronizeWalletTx(CDestination(ptr->GetTemplateId())))
+    {
+        throw JSONRPCError(RPC_WALLET_ERROR,"Failed to sync wallet tx");
     }
     return CMvAddress(ptr->GetTemplateId()).ToString();
 }
@@ -1060,6 +1113,37 @@ Value CRPCMod::RPCValidateAddress(const Array& params,bool fHelp)
     return ret;
 }
 
+Value CRPCMod::RPCResyncWallet(const Array& params,bool fHelp)
+{
+    if (fHelp || params.size() > 1)
+    {
+        throw runtime_error(
+            "resyncwallet [address]\n"
+            "If [address] is not specified, resync wallet's tx for each address.\n"
+            "If [address] is specified, resync wallet's tx for the address.");
+    }
+    if (params.size() == 1)
+    {
+        CMvAddress address(params[0].get_str());
+        if (address.IsNull())
+        {
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid address");
+        }
+        if (!pService->SynchronizeWalletTx(static_cast<CDestination&>(address)))
+        {
+            throw JSONRPCError(RPC_WALLET_ERROR, "Failed to resync wallet tx");
+        }
+    }
+    else
+    {
+        if (!pService->ResynchronizeWalletTx())
+        {
+            throw JSONRPCError(RPC_WALLET_ERROR, "Failed to resync wallet tx");
+        }
+    }
+    return Value::null;
+}
+
 Value CRPCMod::RPCGetBalance(const Array& params,bool fHelp)
 {
     if (fHelp || params.size() > 2)
@@ -1078,6 +1162,7 @@ Value CRPCMod::RPCGetBalance(const Array& params,bool fHelp)
         {
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid address");
         }
+        vDest.push_back(static_cast<CDestination&>(address));
     }
     else 
     {
@@ -1105,24 +1190,21 @@ Value CRPCMod::RPCListTransaction(const Array& params,bool fHelp)
     if (fHelp || params.size() > 2)
     {
         throw runtime_error(
-            "listtransaction [count=10] [prev tx=0]\n"
-            "Returns up to [count] most recent transactions skipping transactions before [prev tx].");
+            "listtransaction [count=10] [from=0]\n"
+            "If [from] < 0,returns last [count] transactions,\n"
+            "If [from] >= 0,returns up to [count] most recent transactions skipping the first [from] transactions.");
     }
     int nCount = GetInt(params,0,10);
-    uint256 txidPrev;
-    if (params.size() == 2)
-    {
-        txidPrev.SetHex(params[1].get_str());
-    }
+    int nOffset = GetInt(params,1,0);
     if (nCount <= 0)
     {
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Negative or zero count");
     }
     
     vector<CWalletTx> vWalletTx;
-    if (!pService->ListWalletTx(txidPrev,nCount,vWalletTx))
+    if (!pService->ListWalletTx(nOffset,nCount,vWalletTx))
     {
-        throw JSONRPCError(RPC_WALLET_ERROR, "Invalid or non-wallet transaction id");
+        throw JSONRPCError(RPC_WALLET_ERROR, "Failed to list transactions");
     }
 
     Array ret;
@@ -1159,11 +1241,8 @@ Value CRPCMod::RPCSendFrom(const Array& params,bool fHelp)
             nTxFee = MIN_TX_FEE;
         }
     }
-    uint256 hashFork;
-    if (params.size() > 4)
-    {
-        hashFork.SetHex(params[4].get_str());
-    }
+    uint256 hashFork = GetForkHash(params,4);
+
     CTransaction txNew;
     if (!pService->CreateTransaction(hashFork,from,to,nAmount,nTxFee,vector<unsigned char>(),txNew))
     {
@@ -1214,11 +1293,7 @@ Value CRPCMod::RPCCreateTransaction(const Array& params,bool fHelp)
             nTxFee = MIN_TX_FEE;
         }
     }
-    uint256 hashFork;
-    if (params.size() > 4)
-    {
-        hashFork.SetHex(params[4].get_str());
-    }
+    uint256 hashFork = GetForkHash(params,4);
     vector<unsigned char> vchData;
     if (params.size() > 5)
     {
@@ -1232,9 +1307,7 @@ Value CRPCMod::RPCCreateTransaction(const Array& params,bool fHelp)
 
     CWalleveBufStream ss;
     ss << txNew;
-    string strSerialized;
-    ss.HexToString(strSerialized); 
-    return strSerialized;
+    return ToHexString((const unsigned char*)ss.GetData(),ss.GetSize()); 
 }
 
 Value CRPCMod::RPCSignTransaction(const Array& params,bool fHelp)
@@ -1269,11 +1342,9 @@ Value CRPCMod::RPCSignTransaction(const Array& params,bool fHelp)
 
     CWalleveBufStream ssNew;
     ssNew << rawTx;
-    string strSerialized;
-    ssNew.HexToString(strSerialized);
 
     Object ret;
-    ret.push_back(Pair("hex",strSerialized));
+    ret.push_back(Pair("hex",ToHexString((const unsigned char*)ssNew.GetData(),ssNew.GetSize())));
     ret.push_back(Pair("complate",fCompleted));
 
     return ret;
@@ -1438,3 +1509,80 @@ Value CRPCMod::RPCDecodeTransaction(const Array& params,bool fHelp)
     return TxToJSON(rawTx.GetHash(),rawTx,hashFork,-1);
 }
 
+Value CRPCMod::RPCGetWork(const Array& params,bool fHelp)
+{
+    if (fHelp || params.size() > 1)
+    {
+        throw runtime_error(
+            "getwork [prev hash]\n"
+            "If [prev hash] is matched with the current primary chain,returns true\n"
+            "If next block is not generated by proof-of-work,return false\n"
+            "Otherwise, returns formatted proof-of-work parameters to work on:\n"
+            "  \"prevblockhash\" : prevblock hash\n"
+            "  \"prevblocktime\" : prevblock timestamp\n"
+            "  \"algo\" : proof-of-work algorithm: blake2b=1,...\n"
+            "  \"bits\" : proof-of-work difficulty nbits\n"
+            "  \"data\" : work data");
+    }
+
+    uint256 hashPrev;
+    if (!pService->GetBlockHash(pCoreProtocol->GetGenesisBlockHash(),-1,hashPrev))
+    {
+        throw JSONRPCError(RPC_INTERNAL_ERROR, "The primary chain is invalid.");
+    }
+    if (params.size() == 1 && hashPrev == uint256(params[0].get_str()))
+    {
+        return true;
+    }
+    vector<unsigned char> vchWorkData;
+    uint32 nPrevTime;
+    int nAlgo,nBits;
+    if (!pService->GetWork(vchWorkData,hashPrev,nPrevTime,nAlgo,nBits))
+    {
+        return false;
+    }
+    Object ret;
+    ret.push_back(Pair("prevblockhash",hashPrev.GetHex()));
+    ret.push_back(Pair("prevblocktime",(boost::uint64_t)nPrevTime));
+    ret.push_back(Pair("algo",nAlgo));
+    ret.push_back(Pair("bits",nBits));
+    ret.push_back(Pair("data",ToHexString(vchWorkData)));
+    return ret;
+}
+
+Value CRPCMod::RPCSubmitWork(const Array& params,bool fHelp)
+{
+    if (fHelp || params.size() != 3)
+    {
+        throw runtime_error(
+            "submitwork <data> <spent address> <mintkey>\n"
+            "Attempts to construct and submit new block to network\n"
+            "Return hash of new block.");
+    }
+
+    vector<unsigned char> vchWorkData(ParseHexString(params[0].get_str()));
+    CMvAddress addrSpent(params[1].get_str());
+    uint256 nPriv(params[2].get_str());
+    if (addrSpent.IsNull())
+    {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY,"Invalid spent address");
+    }
+    crypto::CKey key;
+    if (!key.SetSecret(crypto::CCryptoKeyData(nPriv.begin(),nPriv.end())))
+    {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY,"Invalid private key");
+    }
+    
+    CTemplatePtr ptr = CTemplatePtr(new CTemplateMint(key.GetPubKey(),static_cast<CDestination&>(addrSpent)));
+    if (ptr == NULL)
+    {
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY,"Invalid mint template");
+    }
+    uint256 hashBlock;
+    MvErr err = pService->SubmitWork(vchWorkData,ptr,key,hashBlock);
+    if (err != MV_OK)
+    {
+        throw JSONRPCError(RPC_INVALID_PARAMETER,string("Block rejected : ") + MvErrString(err));
+    }
+    return hashBlock.GetHex();
+}

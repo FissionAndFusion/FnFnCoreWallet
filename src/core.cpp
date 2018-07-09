@@ -10,7 +10,6 @@ using namespace multiverse;
 
 #define DEBUG(err, ...)         Debug((err),__FUNCTION__,__VA_ARGS__)
 
-static const size_t MIN_TOKEN_TX_SIZE = 192;
 static const int64  MAX_CLOCK_DRIFT   = 10 * 60;
 
 static const int  PROOF_OF_WORK_BITS_LIMIT   = 16;

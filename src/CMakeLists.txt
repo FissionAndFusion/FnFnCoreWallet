@@ -26,6 +26,7 @@ set(sources
 	rpcmod.cpp rpcmod.h
 	blockmaker.cpp blockmaker.h
 	rpcclient.cpp rpcclient.h
+	miner.cpp miner.h
 )
 
 add_executable(multiverse ${sources})

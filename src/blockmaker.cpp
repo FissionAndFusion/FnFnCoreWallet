@@ -54,6 +54,7 @@ CBlockMaker::CBlockMaker()
 {
     pCoreProtocol = NULL;
     pWorldLine = NULL;
+    pTxPool = NULL;
     pDispatcher = NULL;
     pWallet = NULL;
     mapHashAlgo[POWA_BLAKE512] = new CHashAlgo_Blake512(INITIAL_HASH_RATE);    
@@ -80,6 +81,12 @@ bool CBlockMaker::WalleveHandleInitialize()
     if (!WalleveGetObject("worldline",pWorldLine))
     {
         WalleveLog("Failed to request worldline\n");
+        return false;
+    }
+
+    if (!WalleveGetObject("txpool",pTxPool))
+    {
+        WalleveLog("Failed to request txpool\n");
         return false;
     }
 
@@ -120,6 +127,7 @@ void CBlockMaker::WalleveHandleDeinitialize()
 {
     pCoreProtocol = NULL;
     pWorldLine = NULL;
+    pTxPool = NULL;
     pDispatcher = NULL;
     pWallet = NULL;
 
@@ -209,8 +217,12 @@ bool CBlockMaker::CreateNewBlock(CBlock& block,const uint256& hashPrev,int64 nPr
     {
         return false;
     }
-   
+    
+    size_t nMaxTxSize = MAX_BLOCK_SIZE - GetSerializeSize(block) - profile.GetSignatureSize();
+    int64 nTotalTxFee = 0;
+    pTxPool->ArrangeBlockTx(pCoreProtocol->GetGenesisBlockHash(),nMaxTxSize,block.vtx,nTotalTxFee); 
     block.hashMerkle = block.CalcMerkleTreeRoot();
+    block.txMint.nAmount += nTotalTxFee;
  
     if (!SignBlock(block,profile))
     {
@@ -260,7 +272,7 @@ bool CBlockMaker::CreateProofOfWork(CBlock& block,int nAlgo,const CDestination& 
     vector<unsigned char> vchProofOfWork;
     block.GetSerializedProofOfWorkData(vchProofOfWork);
     uint32& nTime = *((uint32*)&vchProofOfWork[4]);
-    uint256& nNonce = *((uint256*)&vchProofOfWork[vchProofOfWork.size() - 4]);
+    uint256& nNonce = *((uint256*)&vchProofOfWork[vchProofOfWork.size() - 32]);
     CBlockMakerHashAlgo* pHashAlgo = mapHashAlgo[nAlgo]; 
     int64& nHashRate = pHashAlgo->nHashRate;
     while (!Interrupted())

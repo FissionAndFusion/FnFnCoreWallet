@@ -34,6 +34,12 @@ public:
     
     bool IsValid() const { return (templMint != NULL); }
     bool BuildTemplate();
+    std::size_t GetSignatureSize()
+    {
+        std::size_t size = templMint->GetTemplateDataSize() + 64;
+        walleve::CVarInt var(size);
+        return (size + walleve::GetSerializeSize(var));
+    }
 public:
     int nAlgo;
     CDestination destMint;
@@ -73,6 +79,7 @@ protected:
     std::map<int,CBlockMakerProfile> mapProfile;
     ICoreProtocol* pCoreProtocol;
     IWorldLine* pWorldLine;
+    ITxPool* pTxPool;
     IDispatcher* pDispatcher;
     IWallet* pWallet;
 };

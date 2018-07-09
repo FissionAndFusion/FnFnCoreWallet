@@ -6,9 +6,35 @@
 #define  MULTIVERSE_TXPOOL_H
 
 #include "mvbase.h"
+#include "txpooldb.h"
 
 namespace multiverse
 {
+
+class CPooledTx : public CAssembledTx
+{
+public:
+    std::size_t nSequenceNumber;
+    std::size_t nSerializeSize;
+public:
+    CPooledTx() { SetNull(); }
+    CPooledTx(const CAssembledTx& tx,std::size_t nSequenceNumberIn)
+    : CAssembledTx(tx),nSequenceNumber(nSequenceNumberIn)
+    {
+        nSerializeSize = walleve::GetSerializeSize(static_cast<const CTransaction&>(tx));
+    }
+    CPooledTx(const CTransaction& tx,int nBlockHeightIn,std::size_t nSequenceNumberIn,const CDestination& destInIn=CDestination(),int64 nValueInIn=0)
+    : CAssembledTx(tx,nBlockHeightIn,destInIn,nValueInIn),nSequenceNumber(nSequenceNumberIn)
+    {
+        nSerializeSize = walleve::GetSerializeSize(tx);
+    }
+    void SetNull()
+    {
+        CAssembledTx::SetNull();
+        nSequenceNumber = 0;
+        nSerializeSize = 0;
+    }
+};
 
 class CTxPoolView
 {
@@ -31,9 +57,9 @@ public:
     {
         return (!!mapTx.count(txid));
     }
-    CAssembledTx* Get(uint256 txid) const
+    CPooledTx* Get(uint256 txid) const
     {
-        std::map<uint256,CAssembledTx*>::const_iterator mi = mapTx.find(txid);
+        std::map<uint256,CPooledTx*>::const_iterator mi = mapTx.find(txid);
         return (mi != mapTx.end() ? (*mi).second : NULL);
     }
     bool IsSpent(const CTxOutPoint& out) const
@@ -67,7 +93,7 @@ public:
     } 
     void SetUnspent(const CTxOutPoint& out)
     {
-        CAssembledTx* pTx = Get(out.hash);
+        CPooledTx* pTx = Get(out.hash);
         if (pTx != NULL)
         {
             mapSpent[out].SetUnspent(pTx->GetOutput(out.n));
@@ -81,7 +107,7 @@ public:
     {
         mapSpent[out].SetSpent(txidNextTxIn);
     }
-    void AddNew(const uint256& txid,CAssembledTx& tx)
+    void AddNew(const uint256& txid,CPooledTx& tx)
     {
         mapTx[txid] = &tx;
         for (int i = 0;i < tx.vInput.size();i++)
@@ -102,64 +128,27 @@ public:
     }
     void Remove(const uint256& txid)
     {
-        CAssembledTx *pTx = Get(txid);
+        CPooledTx *pTx = Get(txid);
         if (pTx != NULL)
         {
             for (int i = 0;i < pTx->vInput.size();i++)
             {
-                mapSpent.erase(pTx->vInput[i].prevout);
+                SetUnspent(pTx->vInput[i].prevout);
             }
             mapTx.erase(txid);
         } 
-    }
-    void InvalidateSpent(const CTxOutPoint& out,std::vector<uint256>& vInvolvedTx)
-    {
-        std::set<uint256> setInvolvedTx;
-        std::vector<CTxOutPoint> vOutPoint;
-        vOutPoint.push_back(out);
-        for (int i = 0;i < vOutPoint.size();i++)
-        {
-            uint256 txidNextTx;
-            if (GetSpent(vOutPoint[i],txidNextTx))
-            {
-                CAssembledTx* pNextTx = NULL;
-                if ((pNextTx = Get(txidNextTx)) != NULL)
-                {
-                    BOOST_FOREACH(const CTxIn& txin,pNextTx->vInput)
-                    {
-                        SetUnspent(txin.prevout);
-                    }
-                    CTxOutPoint out0(txidNextTx,0);
-                    if (IsSpent(out0))
-                    {
-                        vOutPoint.push_back(out0);
-                    }
-                    else
-                    {
-                        mapSpent.erase(out0);
-                    }
-                    CTxOutPoint out1(txidNextTx,1);
-                    if (IsSpent(out1))
-                    {
-                        vOutPoint.push_back(out1);
-                    }
-                    else
-                    {
-                        mapSpent.erase(out1);
-                    }
-                    mapTx.erase(txidNextTx);
-                    vInvolvedTx.push_back(txidNextTx);
-                }
-            }
-        }
     }
     void Clear() 
     {
         mapTx.clear();
         mapSpent.clear();
     }
+    void InvalidateSpent(const CTxOutPoint& out,std::vector<uint256>& vInvolvedTx);
+    void GetFilteredTx(std::map<std::size_t,std::pair<uint256,CPooledTx*> >& mapFilteredTx,
+                       const CDestination& sendTo=CDestination(),const CDestination& destIn=CDestination());
+    void ArrangeBlockTx(std::map<std::size_t,std::pair<uint256,CPooledTx*> >& mapArrangedTx,std::size_t nMaxSize);
 public:
-    std::map<uint256,CAssembledTx*> mapTx;
+    std::map<uint256,CPooledTx*> mapTx;
     std::map<CTxOutPoint,CSpent> mapSpent;
 };
 
@@ -171,29 +160,38 @@ public:
     bool Exists(const uint256& txid);
     void Clear();
     std::size_t Count(const uint256& fork) const;
-
-    MvErr Push(CTransaction& tx);
+    MvErr Push(CTransaction& tx,uint256& hashFork,CDestination& destIn,int64& nValueIn);
     void Pop(const uint256& txid);
     bool Get(const uint256& txid,CTransaction& tx) const;
-    bool Arrange(uint256& fork,std::vector<std::pair<uint256,CTransaction> >& vtx,std::size_t nMaxSize);
+    void ListTx(const uint256& hashFork,std::vector<std::pair<uint256,size_t> >& vTxPool);
+    bool FilterTx(CTxFilter& filter);
+    void ArrangeBlockTx(const uint256& hashFork,std::size_t nMaxSize,std::vector<CTransaction>& vtx,int64& nTotalTxFee);
     bool FetchInputs(const uint256& hashFork,const CTransaction& tx,std::vector<CTxOutput>& vUnspent);
-    void SynchronizeWorldLine(CWorldLineUpdate& update,CTxPoolUpdate& change);
-/*
-    void ForkUpdate(uint256& fork,int nForkHeight,const std::vector<CBlockTx>& vAddNew,const std::vector<uint256>& vRemove,
-                    std::vector<uint256>& vInvalidTx);
-*/
+    bool SynchronizeWorldLine(CWorldLineUpdate& update,CTxSetChange& change);
+    bool LoadTx(const uint256& txid,const uint256& hashFork,const CAssembledTx& tx);
 protected:
     bool WalleveHandleInitialize();
     void WalleveHandleDeinitialize();
     bool WalleveHandleInvoke();
     void WalleveHandleHalt();
+    bool LoadDB();
     MvErr AddNew(CTxPoolView& txView,const uint256& txid,CTransaction& tx,const uint256& hashFork,int nForkHeight);
+    std::size_t GetSequenceNumber()
+    {
+        if (mapTx.empty())
+        {
+            nLastSequenceNumber = 0;
+        }
+        return ++nLastSequenceNumber;
+    }
 protected:
+    storage::CTxPoolDB dbTxPool;
     mutable boost::shared_mutex rwAccess;
     ICoreProtocol* pCoreProtocol;
     IWorldLine* pWorldLine;
     std::map<uint256,CTxPoolView> mapPoolView;
-    std::map<uint256,CAssembledTx> mapTx;
+    std::map<uint256,CPooledTx> mapTx;
+    std::size_t nLastSequenceNumber;
 };
 
 } // namespace multiverse

@@ -22,7 +22,7 @@ bool CDestination::VerifySignature(const uint256& hash,const vector<unsigned cha
     else if (IsTemplate())
     {
         CTemplatePtr ptr = CTemplateGeneric::GetTemplatePtr(data,vchSig);
-        if (ptr != NULL && ptr->IsTxSpendable())
+        if (ptr != NULL)
         {
             return ptr->VerifyTxSignature(hash,vchSig);
         }

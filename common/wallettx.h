@@ -121,7 +121,7 @@ class CWalletTxOut
 public:
     CWalletTxOut(CWalletTx* pWalletTxIn=NULL,int nIn=-1) : pWalletTx(pWalletTxIn),n(nIn) {}
     bool IsNull() const { return (pWalletTx == NULL || pWalletTx->GetOutput(n).IsNull()); }
-    bool IsLocked(int nHeight) const { return (n == 0 && pWalletTx->nLockUntil < nHeight); }
+    bool IsLocked(int nHeight) const { return (n == 0 && pWalletTx->nLockUntil > 0 && pWalletTx->nLockUntil < nHeight); }
     int GetDepth(int nHeight) const { return (pWalletTx->nBlockHeight >= 0 ? nHeight - pWalletTx->nBlockHeight + 1 : 0); }
     int64 GetAmount() const { return (n == 0 ? pWalletTx->nAmount : pWalletTx->GetChange()); }
     CTxOutPoint GetTxOutPoint() const { return CTxOutPoint(pWalletTx->txid,n); }

@@ -39,6 +39,7 @@ public:
     uint16 GetTemplateType() const { return nTemplateType; }
     CTemplateId GetTemplateId() const { return nTemplateId; }
     void GetTemplateData(std::vector<unsigned char>& vchDataRet) const { vchDataRet = vchData; }
+    std::size_t GetTemplateDataSize() const { return vchData.size(); }
     void Export(std::vector<unsigned char>& vchTemplateRet) const
     {
         vchTemplateRet.clear();

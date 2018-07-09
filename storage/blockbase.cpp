@@ -25,6 +25,30 @@ public:
 };
 
 //////////////////////////////
+// CBlockTxFilter
+
+class CBlockTxFilter : public CBlockDBTxFilter
+{
+public:
+    CBlockTxFilter(CBlockBase* pBlockBaseIn,CTxFilter& filterIn) 
+    : CBlockDBTxFilter(filterIn),pBlockBase(pBlockBaseIn) 
+    {
+    }
+    bool FoundTxIndex(const CDestination& destTxIn,int64 nValueTxIn,int nBlockHeight,uint32 nFile,uint32 nOffset)
+    {
+        uint256 hashFork;
+        CTransaction tx;
+        if (!pBlockBase->LoadTx(tx,nFile,nOffset,hashFork))
+        {
+            return false;
+        }
+        return filter.FoundTx(hashFork,CAssembledTx(tx,nBlockHeight,destTxIn,nValueTxIn));
+    }
+public:
+    CBlockBase* pBlockBase;
+};
+
+//////////////////////////////
 // CBlockView
  
 CBlockView::CBlockView()
@@ -595,6 +619,30 @@ bool CBlockBase::LoadIndex(CBlockOutline& outline)
         }
     }
     return true;
+}
+
+bool CBlockBase::LoadTx(CTransaction& tx,uint32 nTxFile,uint32 nTxOffset,uint256& hashFork)
+{
+    tx.SetNull();
+    if (!tsBlock.Read(tx,nTxFile,nTxOffset))
+    {
+        return false;
+    }
+    CBlockIndex* pIndex = GetIndex(tx.hashAnchor);
+    if (pIndex == NULL)
+    {
+        return false;
+    }
+    hashFork = pIndex->GetOriginHash();
+    return true;
+}
+
+bool CBlockBase::FilterTx(CTxFilter& filter)
+{
+    CWalleveReadLock rlock(rwAccess);
+
+    CBlockTxFilter txFilter(this,filter); 
+    return dbBlock.FilterTx(txFilter);
 }
 
 CBlockIndex* CBlockBase::GetIndex(const uint256& hash) const

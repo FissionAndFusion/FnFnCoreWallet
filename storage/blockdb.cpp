@@ -237,13 +237,15 @@ bool CBlockDB::UpdateFork(const uint256& hash,const uint256& hashRefBlock,const 
             const CTxIndex& txIndex = vTxNew[i].second;
             string strEscTxid = db->ToEscString(vTxNew[i].first);
             ostringstream oss;
-            oss << "INSERT INTO transaction(txid,version,type,lockuntil,anchor,destin,valuein,height,file,offset) "
+            oss << "INSERT INTO transaction(txid,version,type,lockuntil,anchor,sendto,amount,destin,valuein,height,file,offset) "
                       "VALUES("
                 <<            "\'" << strEscTxid << "\',"
                 <<            txIndex.nVersion << ","
                 <<            txIndex.nType << ","
                 <<            txIndex.nLockUntil << ","
                 <<            "\'" << db->ToEscString(txIndex.hashAnchor) << "\',"
+                <<            "\'" << db->ToEscString(txIndex.sendTo) << "\',"
+                <<            txIndex.nAmount << ","
                 <<            "\'" << db->ToEscString(txIndex.destIn) << "\',"
                 <<            txIndex.nValueIn << ","
                 <<            txIndex.nBlockHeight << ","
@@ -383,15 +385,16 @@ bool CBlockDB::RetrieveTxIndex(const uint256& txid,CTxIndex& txIndex)
     if (db.Available())
     {
         ostringstream oss;
-        oss << "SELECT version,type,lockuntil,anchor,destin,valuein,height,file,offset FROM transaction WHERE txid = "
+        oss << "SELECT version,type,lockuntil,anchor,sendto,amount,destin,valuein,height,file,offset FROM transaction WHERE txid = "
             <<            "\'" << db->ToEscString(txid) << "\'";
         CMvDBRes res(*db,oss.str());
         if (res.GetRow()
             && res.GetField(0,txIndex.nVersion) && res.GetField(1,txIndex.nType) 
             && res.GetField(2,txIndex.nLockUntil) && res.GetField(3,txIndex.hashAnchor) 
-            && res.GetField(4,txIndex.destIn) && res.GetField(5,txIndex.nValueIn)
-            && res.GetField(6,txIndex.nBlockHeight)
-            && res.GetField(7,txIndex.nFile) && res.GetField(8,txIndex.nOffset))
+            && res.GetField(4,txIndex.sendTo) && res.GetField(5,txIndex.nAmount)
+            && res.GetField(6,txIndex.destIn) && res.GetField(7,txIndex.nValueIn)
+            && res.GetField(8,txIndex.nBlockHeight)
+            && res.GetField(9,txIndex.nFile) && res.GetField(10,txIndex.nOffset))
         {
             return true;
         }
@@ -458,6 +461,49 @@ bool CBlockDB::RetrieveTxUnspent(const uint256& fork,const CTxOutPoint& out,CTxO
     } 
 }
 
+bool CBlockDB::FilterTx(CBlockDBTxFilter& filter)
+{
+    CMvDBInst db(&dbPool);
+    if (!db.Available())
+    {
+        return false;
+    }
+    ostringstream oss;
+    oss << "SELECT destin,valuein,height,file,offset FROM transaction";
+    if (filter.destIn.IsNull())
+    {
+        if (!filter.sendTo.IsNull())
+        {
+            oss << " WHERE sendto = \'" << db->ToEscString(filter.sendTo) << "\'";
+        }
+    }
+    else
+    {
+        oss << " WHERE destin = \'" << db->ToEscString(filter.destIn) << "\'";
+        if (!filter.sendTo.IsNull())
+        {
+            oss << " OR sendto = \'" << db->ToEscString(filter.sendTo) << "\'";
+        }
+    }
+    oss << " ORDER BY id";
+
+    CMvDBRes res(*db,oss.str(),true);
+    while (res.GetRow())
+    {
+        CDestination destIn;
+        int64 nValueIn;
+        int nHeight;
+        uint32 nFile,nOffset;
+        if (   !res.GetField(0,destIn) || !res.GetField(1,nValueIn) || !res.GetField(2,nHeight) 
+            || !res.GetField(3,nFile)  || !res.GetField(4,nOffset)
+            || !filter.FoundTxIndex(destIn,nValueIn,nHeight,nFile,nOffset))
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
 bool CBlockDB::CreateTable()
 {
     CMvDBInst db(&dbPool);
@@ -499,6 +545,8 @@ bool CBlockDB::CreateTable()
                     "type SMALLINT UNSIGNED NOT NULL,"
                     "lockuntil INT UNSIGNED NOT NULL,"
                     "anchor BINARY(32) NOT NULL,"
+                    "sendto BINARY(33) NOT NULL,"
+                    "amount BIGINT UNSIGNED NOT NULL,"
                     "destin BINARY(33) NOT NULL,"
                     "valuein BIGINT UNSIGNED NOT NULL,"
                     "height INT NOT NULL,"

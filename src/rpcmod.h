@@ -63,6 +63,7 @@ private:
     json_spirit::Value RPCGetBlockHash(const json_spirit::Array& params,bool fHelp);
     json_spirit::Value RPCGetBlock(const json_spirit::Array& params,bool fHelp);
     json_spirit::Value RPCGetTxPool(const json_spirit::Array& params,bool fHelp);
+    json_spirit::Value RPCRemovePendingTx(const json_spirit::Array& params,bool fHelp);
     json_spirit::Value RPCGetTransaction(const json_spirit::Array& params,bool fHelp);
     json_spirit::Value RPCSendTransaction(const json_spirit::Array& params,bool fHelp);
     /* Wallet */
@@ -78,6 +79,7 @@ private:
     json_spirit::Value RPCImportTemplate(const json_spirit::Array& params,bool fHelp);
     json_spirit::Value RPCExportTemplate(const json_spirit::Array& params,bool fHelp);
     json_spirit::Value RPCValidateAddress(const json_spirit::Array& params,bool fHelp);
+    json_spirit::Value RPCResyncWallet(const json_spirit::Array& params,bool fHelp);
     json_spirit::Value RPCGetBalance(const json_spirit::Array& params,bool fHelp);
     json_spirit::Value RPCListTransaction(const json_spirit::Array& params,bool fHelp);
     json_spirit::Value RPCSendFrom(const json_spirit::Array& params,bool fHelp);
@@ -91,6 +93,9 @@ private:
     json_spirit::Value RPCGetTemplateAddress(const json_spirit::Array& params,bool fHelp);
     json_spirit::Value RPCMakeTemplate(const json_spirit::Array& params,bool fHelp);
     json_spirit::Value RPCDecodeTransaction(const json_spirit::Array& params,bool fHelp);
+    /* Mint */
+    json_spirit::Value RPCGetWork(const json_spirit::Array& params,bool fHelp);
+    json_spirit::Value RPCSubmitWork(const json_spirit::Array& params,bool fHelp);
 protected:
     walleve::IIOProc *pHttpServer;
     ICoreProtocol *pCoreProtocol;

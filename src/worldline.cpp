@@ -159,6 +159,11 @@ bool CWorldLine::GetTransaction(const uint256& txid,CTransaction& tx)
     return cntrBlock.RetrieveTx(txid,tx);
 }
 
+bool CWorldLine::ExistsTx(const uint256& txid)
+{
+    return cntrBlock.ExistsTx(txid);
+}
+
 bool CWorldLine::GetTxLocation(const uint256& txid,uint256& hashFork,int& nHeight)
 {
     return cntrBlock.RetrieveTxLocation(txid,hashFork,nHeight);
@@ -178,6 +183,11 @@ bool CWorldLine::GetTxUnspent(const uint256& hashFork,const vector<CTxIn>& vInpu
         view.RetrieveUnspent(vInput[i].prevout,vOutput[i]);
     }
     return true;
+}
+
+bool CWorldLine::FilterTx(CTxFilter& filter)
+{
+    return cntrBlock.FilterTx(filter);
 }
 
 MvErr CWorldLine::AddNewBlock(CBlock& block,CWorldLineUpdate& update)

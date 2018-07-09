@@ -153,6 +153,8 @@ public:
     bool GetForkBlockView(const uint256& hashFork,CBlockView& view);
     bool CommitBlockView(CBlockView& view,CBlockIndex* pIndexNew);
     bool LoadIndex(CBlockOutline& diskIndex);
+    bool LoadTx(CTransaction& tx,uint32 nTxFile,uint32 nTxOffset,uint256& hashFork);
+    bool FilterTx(CTxFilter& filter);
 protected:
     CBlockIndex* GetIndex(const uint256& hash) const;
     CBlockFork* GetFork(const uint256& hash);

@@ -54,6 +54,8 @@ public:
     virtual bool GetTxLocation(const uint256& txid,uint256& hashFork,int& nHeight) = 0;
     virtual bool GetTxUnspent(const uint256& hashFork,const std::vector<CTxIn>& vInput,
                                                       std::vector<CTxOutput>& vOutput) = 0;
+    virtual bool ExistsTx(const uint256& txid) = 0;
+    virtual bool FilterTx(CTxFilter& filter) = 0;
     virtual MvErr AddNewBlock(CBlock& block,CWorldLineUpdate& update) = 0;    
     virtual bool GetProofOfWorkTarget(const uint256& hashPrev,int nAlgo,int& nBits,int64& nReward) = 0;
     const CMvBasicConfig * WalleveConfig()
@@ -73,14 +75,18 @@ public:
     virtual bool Exists(const uint256& txid) = 0;
     virtual void Clear() = 0;
     virtual std::size_t Count(const uint256& fork) const = 0;
-    virtual MvErr Push(CTransaction& tx) = 0;
+    virtual MvErr Push(CTransaction& tx,uint256& hashFork,CDestination& destIn,int64& nValueIn) = 0;
     virtual void Pop(const uint256& txid) = 0;
     virtual bool Get(const uint256& txid,CTransaction& tx) const = 0;
-    virtual bool Arrange(uint256& fork,std::vector<std::pair<uint256,CTransaction> >& vtx,std::size_t nMaxSize) = 0;
+    virtual void ListTx(const uint256& hashFork,std::vector<std::pair<uint256,size_t> >& vTxPool) = 0;
+    virtual bool FilterTx(CTxFilter& filter) = 0;
+    virtual void ArrangeBlockTx(const uint256& hashFork,std::size_t nMaxSize,std::vector<CTransaction>& vtx,int64& nTotalTxFee) = 0;
     virtual bool FetchInputs(const uint256& hashFork,const CTransaction& tx,std::vector<CTxOutput>& vUnspent) = 0;
-/*
-    virtual void ForkUpdate(uint256& fork,int nForkHeight,const std::vector<CBlockTx>& vAddNew,const std::vector<uint256>& vRemove,std::vector<uint256>& vInvalidTx) = 0;
-*/
+    virtual bool SynchronizeWorldLine(CWorldLineUpdate& update,CTxSetChange& change) = 0;
+    const CMvStorageConfig * StorageConfig()
+    {
+        return dynamic_cast<const CMvStorageConfig *>(walleve::IWalleveBase::WalleveConfig());
+    }
 };
 
 class IBlockMaker : public walleve::CWalleveEventProc
@@ -116,10 +122,15 @@ public:
     virtual bool AddTemplate(CTemplatePtr& ptr) = 0;
     virtual bool GetTemplate(const CTemplateId& tid,CTemplatePtr& ptr) = 0;
     /* Wallet Tx */
-    virtual bool ListWalletTx(const uint256& txidPrev,int nCount,std::vector<CWalletTx>& vWalletTx) = 0;
+    virtual std::size_t GetTxCount() = 0;
+    virtual bool ListTx(int nOffset,int nCount,std::vector<CWalletTx>& vWalletTx) = 0;
     virtual bool GetBalance(const CDestination& dest,const uint256& hashFork,int nForkHeight,CWalletBalance& balance) = 0;
     virtual bool SignTransaction(const CDestination& destIn,CTransaction& tx,bool& fCompleted) const = 0;
     virtual bool ArrangeInputs(const CDestination& destIn,const uint256& hashFork,int nForkHeight,CTransaction& tx) = 0; 
+    /* Update */
+    virtual bool SynchronizeTxSet(CTxSetChange& change) = 0;
+    virtual bool UpdateTx(const uint256& hashFork,const CAssembledTx& tx) = 0;
+    virtual bool ClearTx() = 0;
     const CMvBasicConfig * WalleveConfig()
     {
         return dynamic_cast<const CMvBasicConfig *>(walleve::IWalleveBase::WalleveConfig());
@@ -158,9 +169,10 @@ public:
     virtual int  GetBlockCount(const uint256& hashFork) = 0;
     virtual bool GetBlockHash(const uint256& hashFork,int nHeight,uint256& hashBlock) = 0;
     virtual bool GetBlock(const uint256& hashBlock,CBlock& block,uint256& hashFork,int& nHeight) = 0;
-    virtual void GetTxPool(const uint256& hashFork,std::vector<uint256>& vTxPool) = 0;
+    virtual void GetTxPool(const uint256& hashFork,std::vector<std::pair<uint256,std::size_t> >& vTxPool) = 0;
     virtual bool GetTransaction(const uint256& txid,CTransaction& tx,uint256& hashFork,int& nHeight) = 0;
     virtual MvErr SendTransaction(CTransaction& tx) = 0;
+    virtual bool RemovePendingTx(const uint256& txid) = 0;
     /* Wallet */
     virtual bool HaveKey(const crypto::CPubKey& pubkey) = 0;
     virtual void GetPubKeys(std::set<crypto::CPubKey>& setPubKey) = 0;
@@ -180,10 +192,15 @@ public:
     virtual bool AddTemplate(CTemplatePtr& ptr) = 0;
     virtual bool GetTemplate(const CTemplateId& tid,CTemplatePtr& ptr) = 0;
     virtual bool GetBalance(const CDestination& dest,const uint256& hashFork,CWalletBalance& balance) = 0;
-    virtual bool ListWalletTx(const uint256& txidPrev,int nCount,std::vector<CWalletTx>& vWalletTx) = 0;
+    virtual bool ListWalletTx(int nOffset,int nCount,std::vector<CWalletTx>& vWalletTx) = 0;
     virtual bool CreateTransaction(const uint256& hashFork,const CDestination& destFrom,
                                    const CDestination& destSendTo,int64 nAmount,int64 nTxFee,
                                    const std::vector<unsigned char>& vchData,CTransaction& txNew) = 0;
+    virtual bool SynchronizeWalletTx(const CDestination& destNew) = 0;
+    virtual bool ResynchronizeWalletTx() = 0;
+    /* Mint */
+    virtual bool GetWork(std::vector<unsigned char>& vchWorkData,uint256& hashPrev,uint32& nPrevTime,int& nAlgo,int& nBits) = 0;
+    virtual MvErr SubmitWork(const std::vector<unsigned char>& vchWorkData,CTemplatePtr& templMint,crypto::CKey& keyMint,uint256& hashBlock) = 0;
 };
 
 } // namespace multiverse

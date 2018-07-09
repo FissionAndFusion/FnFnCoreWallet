@@ -30,6 +30,20 @@ public:
     virtual bool Walk(CBlockOutline& outline) = 0;
 };
 
+class CBlockDBTxFilter
+{
+public:
+    CBlockDBTxFilter(CTxFilter& filterIn) 
+    : filter(filterIn),destIn(filterIn.destIn),sendTo(filterIn.sendTo)
+    {
+    }
+    virtual bool FoundTxIndex(const CDestination& destTxIn,int64 nValueTxIn,int nBlockHeight,uint32 nFile,uint32 nOffset) = 0;
+public:
+    CTxFilter& filter;
+    CDestination& destIn;
+    CDestination& sendTo;
+};
+
 class CBlockDB
 {
 public:
@@ -51,6 +65,7 @@ public:
     bool RetrieveTxPos(const uint256& txid,uint32& nFile,uint32& nOffset);
     bool RetrieveTxLocation(const uint256& txid,uint256& hashAnchor,int& nBlockHeight);
     bool RetrieveTxUnspent(const uint256& fork,const CTxOutPoint& out,CTxOutput& unspent);
+    bool FilterTx(CBlockDBTxFilter& filter);
 protected:
     int GetForkIndex(const uint256& hash)
     {

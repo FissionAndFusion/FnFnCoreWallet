@@ -100,27 +100,17 @@ MvErr CDispatcher::AddNewBlock(CBlock& block)
     {
         return err;
     }
-/*
-    vector<uint256> vTxAddNew;
-    set<uint256> setTxUpdate(updateWorldLine.setTxUpdate);
-    BOOST_FOREACH(const uint256& txid,updateWorldLine.vTxAddNew)
+
+    CTxSetChange changeTxSet;
+    if (!pTxPool->SynchronizeWorldLine(updateWorldLine,changeTxSet))
     {
-        if (pTxPool->Pop(updateWorldLine.hashFork,txid))
-        {
-            setTxUpdate.insert(txid);
-        }
-        else
-        {
-            vTxAddNew.push_back(txid);
-        }
+        return MV_ERR_SYS_DATABASE_ERROR;
+    }
+    if (!pWallet->SynchronizeTxSet(changeTxSet))
+    {
+        return MV_ERR_SYS_DATABASE_ERROR;
     }
 
-    BOOST_REVERSE_FOREACH(const uint256& txid,updateWorldLine.vTxRemove)
-    {
-        CTransaction tx;
-        pWorldLine->GetTransaction(txid,tx);
-    } 
-*/
     pService->NotifyWorldLineUpdate(updateWorldLine);
 
     if (block.IsPrimary())
@@ -138,5 +128,36 @@ MvErr CDispatcher::AddNewBlock(CBlock& block)
 
 MvErr CDispatcher::AddNewTx(CTransaction& tx)
 {
+    MvErr err = MV_OK;
+    err = pCoreProtocol->ValidateTransaction(tx);
+    if (err != MV_OK)
+    {
+        return err;
+    }
+    set<uint256> setMissingPrevTx;
+    BOOST_FOREACH(const CTxIn& txin,tx.vInput)
+    {
+        if (!pTxPool->Exists(txin.prevout.hash) && !pWorldLine->ExistsTx(txin.prevout.hash))
+        {
+            setMissingPrevTx.insert(txin.prevout.hash);
+        }
+    }
+    if (!setMissingPrevTx.empty())
+    {
+        return MV_ERR_MISSING_PREV;
+    }
+    uint256 hashFork;
+    CDestination destIn;
+    int64 nValueIn;
+    err = pTxPool->Push(tx,hashFork,destIn,nValueIn);
+    if (err != MV_OK)
+    {
+        return err;
+    }
+    if (!pWallet->UpdateTx(hashFork,CAssembledTx(tx,-1,destIn,nValueIn)))
+    {
+        return MV_ERR_SYS_DATABASE_ERROR;
+    }
+    
     return MV_OK;
 }

@@ -21,12 +21,12 @@ class CForkStatus
 {
 public:
     CForkStatus() {}
-    CForkStatus(const uint256& hashOriginIn,const uint256& hashParentIn,int nForkHeightIn) 
-    : hashOrigin(hashOrigin),hashParent(hashParentIn),nForkHeight(nForkHeightIn) {}
+    CForkStatus(const uint256& hashOriginIn,const uint256& hashParentIn,int nOriginHeightIn) 
+    : hashOrigin(hashOrigin),hashParent(hashParentIn),nOriginHeight(nOriginHeightIn) {}
 public:
     uint256 hashOrigin;
     uint256 hashParent;
-    int nForkHeight;
+    int nOriginHeight;
     
     uint256 hashLastBlock;
     int64 nLastBlockTime;
@@ -59,7 +59,7 @@ public:
     {
         hashFork = pIndex->GetOriginHash();
         hashParent = pIndex->GetParentHash();
-        nForkHeight = pIndex->pOrigin->GetBlockHeight() - 1;
+        nOriginHeight = pIndex->pOrigin->GetBlockHeight() - 1;
         hashLastBlock = pIndex->GetBlockHash();
         nLastBlockTime = pIndex->GetBlockTime();
         nLastBlockHeight = pIndex->GetBlockHeight();
@@ -70,7 +70,7 @@ public:
 public:
     uint256 hashFork;
     uint256 hashParent;
-    int nForkHeight;
+    int nOriginHeight;
     uint256 hashLastBlock;
     int64 nLastBlockTime;
     int nLastBlockHeight;
@@ -80,14 +80,13 @@ public:
     std::vector<CBlockEx> vBlockRemove;
 };
 
-class CTxPoolUpdate
+class CTxSetChange
 {
 public:
     uint256 hashFork;
     std::map<uint256,int> mapTxUpdate;
     std::vector<CAssembledTx> vTxAddNew;
     std::vector<std::pair<uint256,std::vector<CTxIn> > > vTxRemove;
-    //std::vector<CAssembledTx> vTxRemove;
 };
 
 /* Proof */

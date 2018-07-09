@@ -31,9 +31,10 @@ public:
     int  GetBlockCount(const uint256& hashFork);
     bool GetBlockHash(const uint256& hashFork,int nHeight,uint256& hashBlock);
     bool GetBlock(const uint256& hashBlock,CBlock& block,uint256& hashFork,int& nHeight);
-    void GetTxPool(const uint256& hashFork,std::vector<uint256>& vTxPool);
+    void GetTxPool(const uint256& hashFork,std::vector<std::pair<uint256,std::size_t> >& vTxPool);
     bool GetTransaction(const uint256& txid,CTransaction& tx,uint256& hashFork,int& nHeight);
     MvErr SendTransaction(CTransaction& tx);
+    bool RemovePendingTx(const uint256& txid);
     /* Wallet */
     bool HaveKey(const crypto::CPubKey& pubkey);
     void GetPubKeys(std::set<crypto::CPubKey>& setPubKey);
@@ -53,17 +54,21 @@ public:
     bool AddTemplate(CTemplatePtr& ptr);
     bool GetTemplate(const CTemplateId& tid,CTemplatePtr& ptr);
     bool GetBalance(const CDestination& dest,const uint256& hashFork,CWalletBalance& balance);
-    bool ListWalletTx(const uint256& txidPrev,int nCount,std::vector<CWalletTx>& vWalletTx); 
+    bool ListWalletTx(int nOffset,int nCount,std::vector<CWalletTx>& vWalletTx); 
     bool CreateTransaction(const uint256& hashFork,const CDestination& destFrom,
                            const CDestination& destSendTo,int64 nAmount,int64 nTxFee,
                            const std::vector<unsigned char>& vchData,CTransaction& txNew);
-
+    bool SynchronizeWalletTx(const CDestination& destNew);
+    bool ResynchronizeWalletTx();
+    /* Mint */
+    bool GetWork(std::vector<unsigned char>& vchWorkData,uint256& hashPrev,uint32& nPrevTime,int& nAlgo,int& nBits);
+    MvErr SubmitWork(const std::vector<unsigned char>& vchWorkData,CTemplatePtr& templMint,crypto::CKey& keyMint,uint256& hashBlock);
     /* Util */
 protected:
     bool WalleveHandleInitialize();
     void WalleveHandleDeinitialize();
     bool WalleveHandleInvoke();
-    void WalleveHandleHalt();    
+    void WalleveHandleHalt();
 protected:
     ICoreProtocol* pCoreProtocol;
     IWorldLine* pWorldLine;

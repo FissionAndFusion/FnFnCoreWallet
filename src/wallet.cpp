@@ -384,14 +384,16 @@ bool CWallet::GetTemplate(const CTemplateId& tid,CTemplatePtr& ptr)
     return false;
 }
 
-bool CWallet::ListWalletTx(const uint256& txidPrev,int nCount,vector<CWalletTx>& vWalletTx)
+size_t CWallet::GetTxCount()
 {
     boost::shared_lock<boost::shared_mutex> rlock(rwWalletTx);
-    if (txidPrev != 0 && !dbWallet.ExistsTx(txidPrev))
-    {
-        return false;
-    }
-    return dbWallet.ListTx(txidPrev,nCount,vWalletTx);
+    return dbWallet.GetTxCount();
+}
+
+bool CWallet::ListTx(int nOffset,int nCount,vector<CWalletTx>& vWalletTx)
+{
+    boost::shared_lock<boost::shared_mutex> rlock(rwWalletTx);
+    return dbWallet.ListTx(nOffset,nCount,vWalletTx);
 }
 
 bool CWallet::GetBalance(const CDestination& dest,const uint256& hashFork,int nForkHeight,CWalletBalance& balance)
@@ -488,13 +490,29 @@ bool CWallet::LoadDB()
             }
         }
     }
+    {
+        boost::unique_lock<boost::shared_mutex> wlock(rwWalletTx);
+        CDBTxWalker walker(this);
+        if (!dbWallet.WalkThroughUnspent(walker))
+        {
+            return false;
+        } 
+    }
     return true;
 }
 
 void CWallet::Clear()
 {
-    boost::unique_lock<boost::shared_mutex> wlock(rwKeyStore);
-    mapKeyStore.clear();
+    {
+        boost::unique_lock<boost::shared_mutex> wlock(rwKeyStore);
+        mapKeyStore.clear();
+        mapTemplatePtr.clear();
+    }
+    {
+        boost::unique_lock<boost::shared_mutex> wlock(rwWalletTx);
+        mapWalletUnspent.clear();
+        mapWalletTx.clear();
+    }
 }
 
 bool CWallet::InsertKey(const crypto::CKey& key)
@@ -512,51 +530,18 @@ bool CWallet::InsertKey(const crypto::CKey& key)
     return false;
 }
 
-void CWallet::TxPoolUpdate(CTxPoolUpdate& update)
+bool CWallet::SynchronizeTxSet(CTxSetChange& change)
 {
+    boost::unique_lock<boost::shared_mutex> wlock(rwWalletTx);
+
     set<uint256> setTxUpdate;
-/* 
-    BOOST_FOREACH(CAssembledTx& tx,update.vTxRemove)
+    for (int i = 0;i < change.vTxRemove.size();i++)
     {
-        uint256 txid = tx.GetHash();
+        uint256& txid = change.vTxRemove[i].first;
         CWalletTx* pWalletTx = LoadWalletTx(txid);
         if (pWalletTx != NULL)
         {
-            BOOST_FOREACH(const CTxIn& txin,tx.vInput)
-            {
-                CWalletTx* pWalletPrevTx = LoadWalletTx(txin.prevout.hash);
-                if (pWalletPrevTx != NULL)
-                {
-                    // Restore prevout unspent
-                    pWalletPrevTx->SetUnspent(txin.prevout.n);
-                    setTxUpdate.insert(txin.prevout.hash);
-                    if (pWalletTx->IsFromMe())
-                    {
-                        mapWalletUnspent[tx.destIn].Push(pWalletPrevTx,txin.prevout.n);
-                    }   
-                }
-            }
-            if (pWalletTx->IsMine())
-            {
-                 mapWalletUnspent[tx.sendTo].Pop(pWalletTx,0);
-            }
-            if (pWalletTx->IsFromMe())
-            {
-                 mapWalletUnspent[tx.destIn].Pop(pWalletTx,1);
-            }
-            
-            pWalletTx->SetNull();
-            setTxUpdate.insert(txid);
-        }
-    }
-*/    
-    for (int i = 0;i < update.vTxRemove.size();i++)
-    {
-        uint256& txid = update.vTxRemove[i].first;
-        CWalletTx* pWalletTx = LoadWalletTx(txid);
-        if (pWalletTx != NULL)
-        {
-            BOOST_FOREACH(const CTxIn& txin,update.vTxRemove[i].second)
+            BOOST_FOREACH(const CTxIn& txin,change.vTxRemove[i].second)
             {
                 CWalletTx* pWalletPrevTx = LoadWalletTx(txin.prevout.hash);
                 if (pWalletPrevTx != NULL)
@@ -583,7 +568,7 @@ void CWallet::TxPoolUpdate(CTxPoolUpdate& update)
             setTxUpdate.insert(txid);
         }
     }
-    for (map<uint256,int>::iterator it = update.mapTxUpdate.begin();it != update.mapTxUpdate.end();++it)
+    for (map<uint256,int>::iterator it = change.mapTxUpdate.begin();it != change.mapTxUpdate.end();++it)
     {
         const uint256& txid = (*it).first;
         CWalletTx* pWalletTx = LoadWalletTx(txid);
@@ -594,14 +579,14 @@ void CWallet::TxPoolUpdate(CTxPoolUpdate& update)
         }
     }
 
-    BOOST_FOREACH(CAssembledTx& tx,update.vTxAddNew)
+    BOOST_FOREACH(CAssembledTx& tx,change.vTxAddNew)
     {
         bool fIsMine = IsMine(tx.sendTo); 
         bool fFromMe = IsMine(tx.destIn);
         if (fFromMe || fIsMine)
         {
             uint256 txid = tx.GetHash();
-            CWalletTx* pWalletTx = InsertWalletTx(txid,tx,update.hashFork,fIsMine,fFromMe);
+            CWalletTx* pWalletTx = InsertWalletTx(txid,tx,change.hashFork,fIsMine,fFromMe);
             if (pWalletTx != NULL)
             {
                 BOOST_FOREACH(const CTxIn& txin,tx.vInput)
@@ -654,6 +639,27 @@ void CWallet::TxPoolUpdate(CTxPoolUpdate& update)
             }
         }
     }
+    if (!vWalletTx.empty() || !vRemove.empty())
+    {
+        return dbWallet.UpdateTx(vWalletTx,vRemove);
+    }
+    return true;
+}
+
+bool CWallet::UpdateTx(const uint256& hashFork,const CAssembledTx& tx)
+{
+    CTxSetChange change;
+    change.hashFork = hashFork; 
+    change.vTxAddNew.push_back(tx);
+    return SynchronizeTxSet(change);
+}
+
+bool CWallet::ClearTx()
+{
+    boost::unique_lock<boost::shared_mutex> wlock(rwWalletTx);
+    mapWalletUnspent.clear();
+    mapWalletTx.clear();
+    return dbWallet.ClearTx();
 }
 
 CWalletTx* CWallet::LoadWalletTx(const uint256& txid)
@@ -674,9 +680,9 @@ CWalletTx* CWallet::LoadWalletTx(const uint256& txid)
 
 CWalletTx* CWallet::InsertWalletTx(const uint256& txid,const CAssembledTx &tx,const uint256& hashFork,bool fIsMine,bool fFromMe)
 {
-     map<uint256,CWalletTx>::iterator it;
-     it = mapWalletTx.insert(make_pair(txid,CWalletTx(txid,tx,hashFork,fIsMine,fFromMe))).first;
-     return (&(*it).second);
+    CWalletTx& wtx = mapWalletTx[txid];
+    wtx = CWalletTx(txid,tx,hashFork,fIsMine,fFromMe);
+    return &wtx;
 }
 
 int64 CWallet::SelectCoins(const CDestination& dest,const uint256& hashFork,int nForkHeight,

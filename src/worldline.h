@@ -24,9 +24,11 @@ public:
     bool GetBlock(const uint256& hashBlock,CBlock& block);
     bool Exists(const uint256& hashBlock);
     bool GetTransaction(const uint256& txid,CTransaction& tx);
+    bool ExistsTx(const uint256& txid);
     bool GetTxLocation(const uint256& txid,uint256& hashFork,int& nHeight);
     bool GetTxUnspent(const uint256& hashFork,const std::vector<CTxIn>& vInput,
                                                     std::vector<CTxOutput>& vOutput);
+    bool FilterTx(CTxFilter& filter);
     MvErr AddNewBlock(CBlock& block,CWorldLineUpdate& update);
     bool GetProofOfWorkTarget(const uint256& hashPrev,int nAlgo,int& nBits,int64& nReward);
 protected:

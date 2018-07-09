@@ -12,6 +12,7 @@
 #include "service.h"
 #include "blockmaker.h"
 #include "rpcclient.h"
+#include "miner.h"
 
 #include <map>
 #include <string>
@@ -104,10 +105,7 @@ bool CMvEntry::InitializeService()
              << "Multiverse is probably already running.\n";
         return false;
     }
-/*    
-    CLoMoBase58::Initialize(mvConfig.fTestNet);
 
-*/    
     ICoreProtocol *pCoreProtocol = mvConfig.fTestNet ?
                                    new CMvTestNetCoreProtocol : new CMvCoreProtocol();
     if (!pCoreProtocol || !walleveDocker.Attach(pCoreProtocol))
@@ -173,96 +171,7 @@ bool CMvEntry::InitializeService()
         delete pBlockMaker;
         return false;
     }
-/*
-    CTxPool *pTxPool = new CTxPool();
-    if (!pTxPool || !walleveDocker.Attach(pTxPool))
-    {
-        delete pTxPool;
-        return false;
-    }
 
-    CTxDispatch *pTxDispatch = new CTxDispatch();
-    if (!pTxDispatch || !walleveDocker.Attach(pTxDispatch))
-    {
-        delete pTxDispatch;
-        return false;
-    }
-
-    CWalletManager *pWalletMngr = new CWalletManager();
-    if (!pWalletMngr || !walleveDocker.Attach(pWalletMngr))
-    {
-        delete pWalletMngr;
-        return false;
-    }
-
-    CLoMoNet *pLoMoNet = new CLoMoNet();
-    if (!pLoMoNet || !walleveDocker.Attach(pLoMoNet))
-    {
-        delete pLoMoNet;
-        return false;
-    }
-
-    CFactory *pFactory = new CFactory();
-    if (!pFactory || !walleveDocker.Attach(pFactory))
-    {
-        delete pFactory;
-        return false;
-    }
-
-    CLoMoService *pService = new CLoMoService();
-    if (!pService || !walleveDocker.Attach(pService))
-    {
-        delete pService;
-        return false;
-    }
-
-    CHttpServer *pServer = new CHttpServer();
-    if (!pServer || !walleveDocker.Attach(pServer))
-    {
-        delete pServer;
-        return false;
-    }
-   
-    pServer->AddNewHost(GetRPCHostConfig());
-    if (mvConfig.fWebUIEnable)
-    {
-        pServer->AddNewHost(GetWebUIHostConfig());
-    }
-
-    CHttpGet *pHttpGet = new CHttpGet();
-    if (!pHttpGet || !walleveDocker.Attach(pHttpGet))
-    {
-        delete pHttpGet;
-        return false;
-    }
-
-    CRPCMod *pRPCMod = new CRPCMod();
-    if (!pRPCMod || !walleveDocker.Attach(pRPCMod))
-    {
-        delete pRPCMod;
-        return false;
-    }
-
-    if (mvConfig.fWebUIEnable)
-    {
-        CWebUIMod *pWebUIMod = new CWebUIMod();
-        if (!pWebUIMod || !walleveDocker.Attach(pWebUIMod))
-        {
-            delete pWebUIMod;
-            return false;
-        }
-    }
-
-    if (!mvConfig.fDaemon && mvConfig.fInteractive)
-    {
-        CInteractive *pInteractive = new CInteractive();
-        if (!pInteractive || !walleveDocker.Attach(pInteractive))
-        {
-            delete pInteractive;
-            return false;
-        }
-    }
-*/
     return true;
 }
 
@@ -275,12 +184,23 @@ bool CMvEntry::InitializeClient()
         return false;
     }
 
-    CRPCDispatch *pRPCDispatch = mvConfig.vecCommand[0] == "console" ?
-                                 new CRPCDispatch() : new CRPCDispatch(mvConfig.vecCommand);
-    if (!pRPCDispatch || !walleveDocker.Attach(pRPCDispatch))
+    if (mvConfig.vecCommand[0] != "miner")
     {
-        delete pRPCDispatch;
-        return false;
+        CRPCDispatch *pRPCDispatch = mvConfig.vecCommand[0] == "console" ?
+                                     new CRPCDispatch() : new CRPCDispatch(mvConfig.vecCommand);
+        if (!pRPCDispatch || !walleveDocker.Attach(pRPCDispatch))
+        {
+            delete pRPCDispatch;
+            return false;
+        }
+    }
+    else
+    {
+        CMiner *pMiner = new CMiner(mvConfig.vecCommand);
+        if (!pMiner || !walleveDocker.Attach(pMiner))
+        {
+            return false;
+        }
     }
     return true;
 }

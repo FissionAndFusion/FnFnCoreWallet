@@ -103,12 +103,15 @@ public:
     bool AddTemplate(CTemplatePtr& ptr);
     bool GetTemplate(const CTemplateId& tid,CTemplatePtr& ptr);
     /* Wallet Tx */
-    bool ListWalletTx(const uint256& txidPrev,int nCount,std::vector<CWalletTx>& vWalletTx);
+    std::size_t GetTxCount();
+    bool ListTx(int nOffset,int nCount,std::vector<CWalletTx>& vWalletTx);
     bool GetBalance(const CDestination& dest,const uint256& hashFork,int nForkHeight,CWalletBalance& balance);
     bool SignTransaction(const CDestination& destIn,CTransaction& tx,bool& fCompleted) const;
     bool ArrangeInputs(const CDestination& destIn,const uint256& hashFork,int nForkHeight,CTransaction& tx);
-    /* TxPool update*/
-    void TxPoolUpdate(CTxPoolUpdate& update);
+    /* Update */
+    bool SynchronizeTxSet(CTxSetChange& change);
+    bool UpdateTx(const uint256& hashFork,const CAssembledTx& tx);
+    bool ClearTx();
     bool LoadTx(const CWalletTx& wtx);
 protected:
     bool WalleveHandleInitialize();
