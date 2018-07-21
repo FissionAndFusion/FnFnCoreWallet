@@ -12,6 +12,10 @@ zguide: http://zguide.zeromq.org/page:all
 
 ## 架构
 
+单一的Core Wallet节点可以通过Socket组件与大于1个Light wallet service实例保持长连接，Core Wallet节点可将自身产生或者接收到的广播数据主动推送至Light wallet service。
+
+以上情况决定了Core Wallet节点需要一定的并发能力，但由于长连接建立，应用之间无需频繁打开关闭连接，因此并发能力相对来说并不十分重要，更重要的是对数据的快速处理能力。数据处理瓶颈可能来源于网络IO层面以及业务本身的处理难度，这就要求Socket组件能够使用非同步的方式处理网络IO并能够对数据进行列队缓存（消息队列）。
+
 ![](socket_img/corewallet.jpg)
 
 ## Socket通信
@@ -64,8 +68,6 @@ Push/Pull 模式的另外一个应用场景是 fair queue — Push clients 轮�
 
 Router/Dealer 模式是典型的 broker 模式。在多对多的网络中， 掮客起到在网络的两端双方互不认识的情况下，促成双方的交易。超市就是一个典型的掮客。顾客不必和所有的供应商一一打交道，每个供应商也不需要认识所有的顾客来促成交易 —— 整个交易在超市的促成下完成，双方几乎都不知道对方的存在。多对多的网络中，Router/Dealer 模式很有用。假设我们有 N 个 Reply server，M 个 Request client，若要保证高可用性，正常而言，双方需要一个 M x N 的 full mesh 的网络才能保证任何一个 client 能够和任何一个 server 建立连接。通过在中间加一层 Router/Dealer，M x N 的连接被简化成 M + N。网络的复杂度大大降低。
 
-
-
 ### Nanomsg
 
 Nanomsg是zeromq的其中一个作者重新开发的下一代类zeromq系统，其中对zeromq实现的一些问题进行了反思，并体现在nanomsg设计中。nanomsg与zeromq不同的地方有：
@@ -106,8 +108,6 @@ Nanomsg是zeromq的其中一个作者重新开发的下一代类zeromq系统，�
 
 允许一次查询多个应用程序的状态。
 
-
-
 ### Libevent&Libev&Boost::asio
 
 Libevent库提供了以下功能：当一个文件描述符的特定事件 （如可读，可写或出错）发生了，或一个定时事件发生了， libevent就会自动执行用户指定的回调函数，来处理事件。libevent已支持了/dev/poll、kqueue(2)、 event ports、select(2)、poll(2) 、epoll(4)等接口，并将io、signal、dns、timer、idle都抽象成为了事件。
@@ -129,21 +129,70 @@ Boost::asio是一个跨平台的网络及底层IO的C++编程库，它使用现�
 
 ## 消息协议
 
-二进制的消息协议相较于基于文本的协议（xml、json）有以下优点：传输效率更高、处理性能更好，对于高并发、大数据量的环境更有优势。
+二进制的消息协议相较于基于文本的协议（xml、json）有以下优点：传输效率更高、处理性能更好，对于高并发、大数据量的环境更有优势，缺点是——相对于xml缺乏自描述信息。
 
 ### Protobuf
 
 Protocol Buffers 是一种轻便高效的结构化数据存储格式，可以用于结构化数据串行化，或者说序列化。它很适合做数据存储或 RPC 数据交换格式。可用于通讯协议、数据存储等领域的语言无关、平台无关、可扩展的序列化结构数据格式。
 
+使用方法：
+
+- 定义用于消息文件.proto;
+- 使用protobuf的编译器编译消息文件;
+- 使用编译好对应语言的类文件进行消息的序列化与反序列化;
+
+```protobuf
+message Person {
+  required string name = 1;
+  required int32 id = 2;
+  optional string email = 3;
+}
+```
+
+```java
+Person john = Person.newBuilder()
+    .setId(1234)
+    .setName("John Doe")
+    .setEmail("jdoe@example.com")
+    .build();
+output = new FileOutputStream(args[0]);
+john.writeTo(output);
+```
+
+```swift
+Person john;
+fstream input(argv[1],
+    ios::in | ios::binary);
+john.ParseFromIstream(&input);
+id = john.id();
+name = john.name();
+email = john.email();
+```
+
+团队必须共同维护.proto文件，业务发生变化需要更新对应的.proto文件，并且重新生成个项目下对应的源代码文件，这既是优势也是其缺点——牺牲了灵活性但提高了对个项目开发者的约束。
+
 ### Msgpack
+
+MessagePack是一个基于二进制高效的对象序列化类库，可用于跨语言通信。它可以像JSON那样，在许多种语言之间交换结构对象；但是它比JSON更快速也更轻巧。
+
+相较于protobuf其使用更灵活，可以像处理json一样进行序列化与反序列化，可以看作是json的二进制版本。
 
 ### Thrift
 
-
+Thrift比起前二者跟像是通过定义.thrift文件而创建整套RPC服务，二进制消息协议只是其中的一部分，所以将不做分析与说明。
 
 ## 总结
 
-ZeroMQ改变TCP基于字节流收发数据的方式，处理了粘包、半包等问题，以msg为单位收发数据，结合Protocol Buffers，可以对应用层彻底屏蔽网络通信层。
+Libevent、libev、boost::aiso 这三者的服务端实现较为容易，但是在客户端实现过程中需要处理太多细节问题，如：断线重连、实现高效且稳定的消息推送等。并且服务端需要自行设计消息缓存机制（队列），以防止处理密集数据时有可能产生的各种问题。
 
-Libevent&libev&boost::aiso客户端编写有难度。
+ZeroMQ改变TCP基于字节流收发数据的方式，处理了粘包、半包等问题，以msg为单位收发数据，结合ProtoBuf，可以对应用层彻底屏蔽网络通信层。
+
+本文的选型标准之一是尽量简化构架，所以ZeroMQ这种无第三方Broker的弱消息队列方案比较符合这一预期，二进制消息协议倾向于ProtoBuf，但MsgPack也有足够的吸引力，可以尝试搭配使用。
+
+| 项目     | 选择结果 |
+| -------- | -------- |
+| ZeroMQ   | 优先选择 |
+| Nanomsg  | 备选     |
+| ProtoBuf | 优先选择 |
+| MsgPack  | 备选     |
 
