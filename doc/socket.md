@@ -12,7 +12,7 @@ zguide: http://zguide.zeromq.org/page:all
 
 ## 架构
 
-![](socket_img/core wallet.jpg)
+![](socket_img/corewallet.jpg)
 
 ## Socket通信
 
