@@ -32,7 +32,7 @@ zguide: http://zguide.zeromq.org/page:all
 
 REQ/REP 是最基本的模式。客户端发送数据请求服务器的响应。
 
-![](/home/gaoc/workbench/FnFnMvWallet-Pre/doc/fig2.png)
+![](socket_img/fig2.png)
 
 #### Publish-Subscribe
 
@@ -48,7 +48,7 @@ REQ/REP 是最基本的模式。客户端发送数据请求服务器的响应。
 
 Pub/Sub 自身组合使用可以解决很多实际问题。比如你有很多数据要发布给内部应用和外部应用使用，而外部应用可以访问的数据是内部应用的一个子集。通过组合 Pub/Sub，让其中一个（或者多个）订阅者在收到数据后，过滤出想要对外发布的 topic（或者 channel），然后再重新发布出去，供外网的应用订阅。
 
-![](/home/gaoc/workbench/FnFnMvWallet-Pre/doc/fig4.png)
+![](socket_img/fig4.png)
 
 #### Push-Pull
 
@@ -58,7 +58,7 @@ Push/Pull 的特点是无论是 Push 端还是 Pull 端都可以做 server，bin
 
 Push/Pull 模式的另外一个应用场景是 fair queue — Push clients 轮番往 Pull server 写入数据。
 
-![](/home/gaoc/workbench/FnFnMvWallet-Pre/doc/fig5.png)
+![](socket_img/fig5.png)
 
 #### Router-Dealer
 
