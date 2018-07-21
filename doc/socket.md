@@ -4,7 +4,7 @@
 
 ## 概述与定义
 
-作为FnFn Core Wallet的一个通讯组件，**Socket组件**主要是为Core Wallet的外部应用提供一种除REQ-REP（RPC）模式以外的、拥有主动推送能力的通讯功能。消息传输协议将采用二进制形式以提高系统的传输能力和处理能力。本文涉及的技术项目名称如下： [zeromq](http://zeromq.org/intro:read-the-manual)、 [nanomsg](https://nanomsg.org/)、 [libevent](http://libevent.org/)、 [libev](https://github.com/enki/libev)、 [protobuf](https://developers.google.com/protocol-buffers/)、 [thrift](http://thrift.apache.org/)。
+作为FnFn Core Wallet的一个通讯组件，**Socket组件**主要是为Core Wallet的外部应用提供一种除REQ-REP（RPC）模式以外的、拥有主动推送能力的通讯功能。消息传输协议将采用二进制形式以提高系统的传输能力和处理能力。本文涉及的技术项目名称如下： [zeromq](http://zeromq.org/intro:read-the-manual)、 [nanomsg](https://nanomsg.org/)、 [libevent](http://libevent.org/)、 [libev](https://github.com/enki/libev)、[boost::aiso](https://www.boost.org/doc/libs/1_67_0/doc/html/boost_asio.html)、 [protobuf](https://developers.google.com/protocol-buffers/)、[msgpack](https://msgpack.org/)、 [thrift](http://thrift.apache.org/)。
 
 zguide: http://zguide.zeromq.org/page:all
 
@@ -12,7 +12,7 @@ zguide: http://zguide.zeromq.org/page:all
 
 ## 架构
 
-
+![](socket_img/core wallet.jpg)
 
 ## Socket通信
 
@@ -68,7 +68,15 @@ Router/Dealer 模式是典型的 broker 模式。在多对多的网络中， 掮
 
 ### Nanomsg
 
-nanomsg是zeromq的其中一个作者重新开发的下一代类zeromq系统，其中对zeromq实现的一些问题进行了反思，并体现在nanomsg设计中。
+Nanomsg是zeromq的其中一个作者重新开发的下一代类zeromq系统，其中对zeromq实现的一些问题进行了反思，并体现在nanomsg设计中。nanomsg与zeromq不同的地方有：
+
+- POSIX 兼容性的实现 （与zmq不同，nanomsg 目标是保持完全的 POSIX 兼容性）;
+- 与使用C++的zmq不同的是，nanomsg使用C实现;
+- 更方便扩展的传输协议;
+- 线程模型改进;
+- IOCP 的支持;
+- Routing 优先级的支持;
+- 其他改进;
 
 #### 通讯协议
 
@@ -100,9 +108,22 @@ nanomsg是zeromq的其中一个作者重新开发的下一代类zeromq系统，�
 
 
 
+### Libevent&Libev&Boost::asio
+
+Libevent库提供了以下功能：当一个文件描述符的特定事件 （如可读，可写或出错）发生了，或一个定时事件发生了， libevent就会自动执行用户指定的回调函数，来处理事件。libevent已支持了/dev/poll、kqueue(2)、 event ports、select(2)、poll(2) 、epoll(4)等接口，并将io、signal、dns、timer、idle都抽象成为了事件。
+
+Libev与libevent的功能相似，同样也对io等操作进行了事件抽象，提供了非阻塞的io操作能力，nodejs的作者就是在libev的基础上封装了libuv，后者成为了nodejs的事件驱动编程的基础。
+
+Boost::asio是一个跨平台的网络及底层IO的C++编程库，它使用现代C++手法实现了统一的异步调用模型。asio库能够使用TCP、UDP、ICMP、串口来发送/接收数据。
+
+以上三个库，设计目的都在于——针对计算机底层的各种io的进行事件抽象。通过其提供的事件驱动开发能力，可以实现出各种并发（连接）能力不错的平台、客户端与服务器（nodejs、chrome、webserver），但是三个库均没有做更进一步的抽象，这是由其设计目的所决定，并且需要开发者来根据需要自行设计并实现的。
+
+
+
 ## 消息队列
 
-传统的消息队列中有一个“中央集权式”的messaging broker，该messaging broker通常会负责消息在各个节点之间的传输。而zeromq呢，用zguide中的话讲，就是：decentralized。zeromq并不要求你的messaging topology中央必须是一个message broker（这个message broker可能作为消息的存储、转发中心）。在一些简单的通信模型中，省去message broker确实为我们省去了很多工作。而且我们也无需为message broker专门搭建一个服务器。
+传统的消息队列中有一个“中央集权式”的messaging broker，该messaging broker通常会负责消息在各个节点之间的传输。而对于zeromq用zguide（**概述与定义**有链接）中的话讲就是：decentralized。zeromq并不要求你的messaging topology中央必须是一个message broker（这个message broker可能作为消息的存储、转发中心）。在一些简单的通信模型中，省去message broker确实为我们省去了很多工作。而且我们也无需为message broker专门搭建一个服务器。
+
 如果缺少了message broker，那么未及发送/接受的消息会不会丢失？通常情况下，zeromq中一些套接字本身自带一个buffer，会把这些消息先存下来。但是zeromq的去中心化不代表完完全全的去中心化。zeromq把建立message broker的自由交给了我们。这样，我们可以在有需要的时候建立一个proxy，来简化网络的复杂性和维护城北。zguide中讲到的The Dynamic Discovery Problem、Shared Queue其实都是在教我们在不同场景下应该怎样建立一个broker来降低网络的复杂性而提升其灵活性。
 而且，对于一个复杂的消息拓扑，“各自为政”会可能需要在加入新的节点时重新配置消息拓扑（这会在什么情况下发生，具体可以参考zguide中在介绍The Dynamic Discovery Problem、Shared Queue时引入的例子）。zguide中描述The Dynamic Discovery Problem这个问题时，拿PUB-SUB模式来举例，说明了使用中间件可以降低两两互联网络的维护成本。中间件的引入使网络更加灵活，因而增加新的节点更加简单。如果不采用中间件，则每次增加新的节点时（比如增加一个新的PUB节点），要重新配置该新节点和现有其他节点之间的关系（比如，把刚才新增的PUB节点和所有现有的SUB节点相连）。
 
@@ -114,9 +135,15 @@ nanomsg是zeromq的其中一个作者重新开发的下一代类zeromq系统，�
 
 Protocol Buffers 是一种轻便高效的结构化数据存储格式，可以用于结构化数据串行化，或者说序列化。它很适合做数据存储或 RPC 数据交换格式。可用于通讯协议、数据存储等领域的语言无关、平台无关、可扩展的序列化结构数据格式。
 
+### Msgpack
+
+### Thrift
+
 
 
 ## 总结
 
 ZeroMQ改变TCP基于字节流收发数据的方式，处理了粘包、半包等问题，以msg为单位收发数据，结合Protocol Buffers，可以对应用层彻底屏蔽网络通信层。
+
+Libevent&libev&boost::aiso客户端编写有难度。
 
