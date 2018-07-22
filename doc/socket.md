@@ -50,7 +50,7 @@ REQ/REP 是最基本的模式。客户端发送数据请求服务器的响应。
 
 - 从ZeroMQ 3.x 开始，当使用连接协议时（tcp 或 ipc）过滤操作将在发布者一端执行。在ZeroMQ 2.x 所有的过滤操作都在订阅者一端执行。
 
-Pub/Sub 自身组合使用可以解决很多实际问题。比如你有很多数据要发布给内部应用和外部应用使用，而外部应用可以访问的数据是内部应用的一个子集。通过组合 Pub/Sub，让其中一个（或者多个）订阅者在收到数据后，过滤出想要对外发布的 topic（或者 channel），然后再重新发布出去，供外网的应用订阅。
+Pub/Sub 自身组合使用可以解决很多实际问题。比如有很多数据要发布给内部应用和外部应用使用，而外部应用可以访问的数据是内部应用的一个子集。通过组合 Pub/Sub，让其中一个（或者多个）订阅者在收到数据后，过滤出想要对外发布的 topic（或者 channel），然后再重新发布出去，供外网的应用订阅。
 
 ![](socket_img/fig4.png)
 
@@ -124,8 +124,8 @@ Boost::asio是一个跨平台的网络及底层IO的C++编程库，它使用现�
 
 传统的消息队列中有一个“中央集权式”的messaging broker，该messaging broker通常会负责消息在各个节点之间的传输。而对于zeromq用zguide（**概述与定义**有链接）中的话讲就是：decentralized。zeromq并不要求你的messaging topology中央必须是一个message broker（这个message broker可能作为消息的存储、转发中心）。在一些简单的通信模型中，省去message broker确实为我们省去了很多工作。而且我们也无需为message broker专门搭建一个服务器。
 
-如果缺少了message broker，那么未及发送/接受的消息会不会丢失？通常情况下，zeromq中一些套接字本身自带一个buffer，会把这些消息先存下来。但是zeromq的去中心化不代表完完全全的去中心化。zeromq把建立message broker的自由交给了我们。这样，我们可以在有需要的时候建立一个proxy，来简化网络的复杂性和维护城北。zguide中讲到的The Dynamic Discovery Problem、Shared Queue其实都是在教我们在不同场景下应该怎样建立一个broker来降低网络的复杂性而提升其灵活性。
-而且，对于一个复杂的消息拓扑，“各自为政”会可能需要在加入新的节点时重新配置消息拓扑（这会在什么情况下发生，具体可以参考zguide中在介绍The Dynamic Discovery Problem、Shared Queue时引入的例子）。zguide中描述The Dynamic Discovery Problem这个问题时，拿PUB-SUB模式来举例，说明了使用中间件可以降低两两互联网络的维护成本。中间件的引入使网络更加灵活，因而增加新的节点更加简单。如果不采用中间件，则每次增加新的节点时（比如增加一个新的PUB节点），要重新配置该新节点和现有其他节点之间的关系（比如，把刚才新增的PUB节点和所有现有的SUB节点相连）。
+如果缺少了message broker，那么未及发送/接受的消息会不会丢失？通常情况下，zeromq中一些套接字本身自带一个buffer，会把这些消息先存下来。但是zeromq的去中心化不代表完全的去中心化。zeromq把建立message broker的自由交给了我们。这样，我们可以在需要的时候建立一个proxy，来简化网络的复杂性和维护成本。zguide中讲到的The Dynamic Discovery Problem、Shared Queue其实都是在教我们在不同场景下应该怎样建立一个broker来降低网络的复杂性而提升其灵活性。
+而且，对于一个复杂的消息拓扑，“各自为政”可能会需要在加入新的节点时重新配置消息拓扑（这会在什么情况下发生，具体可以参考zguide中在介绍The Dynamic Discovery Problem、Shared Queue时引入的例子）。zguide中描述The Dynamic Discovery Problem这个问题时，拿PUB-SUB模式来举例，说明了使用中间件可以降低两两互联网络的维护成本。中间件的引入使网络更加灵活，因而增加新的节点更加简单。如果不采用中间件，则每次增加新的节点时（比如增加一个新的PUB节点），要重新配置该新节点和现有其他节点之间的关系（比如，把刚才新增的PUB节点和所有现有的SUB节点相连）。
 
 ## 消息协议
 
@@ -169,7 +169,7 @@ name = john.name();
 email = john.email();
 ```
 
-团队必须共同维护.proto文件，业务发生变化需要更新对应的.proto文件，并且重新生成个项目下对应的源代码文件，这既是优势也是其缺点——牺牲了灵活性但提高了对个项目开发者的约束。
+团队必须共同维护.proto文件，业务发生变化需要更新对应的.proto文件，并且重新生成各个项目下对应的源代码文件，这既是优势也是其缺点——牺牲了灵活性但提高了对个项目开发者的约束。
 
 ### Msgpack
 
@@ -187,7 +187,9 @@ Libevent、libev、boost::aiso 这三者的服务端实现较为容易，但是�
 
 ZeroMQ改变TCP基于字节流收发数据的方式，处理了粘包、半包等问题，以msg为单位收发数据，结合ProtoBuf，可以对应用层彻底屏蔽网络通信层。其采用了非阻塞的异步网络IO处理，可以应对大量并发请求，并且通过组合其REQ-REP模式、PUB-SUB模式、PUSH-PULL模式可以满足目前的需求以及以后有可能的需求变更。
 
-本文的选型标准之一是尽量简化构架，所以ZeroMQ这种无第三方Broker的弱消息队列方案比较符合这一预期，二进制消息协议倾向于ProtoBuf，但MsgPack也有足够的吸引力，可以尝试搭配使用。
+本文的选型标准之一是尽量简化构架，所以ZeroMQ这种无第三方Broker的弱消息队列方案比较符合这一预期，二进制消息协议倾向于ProtoBuf，但MsgPack的简单性也有足够的吸引力，可以尝试搭配使用。
+
+Nanomsg脱胎于ZeroMQ，理论上应该比ZeroMQ更优秀，但是目前业界应用比较少，文档稍微欠缺，所以不是一个最优的选择。
 
 | 项目     | 选择结果 |
 | -------- | -------- |
