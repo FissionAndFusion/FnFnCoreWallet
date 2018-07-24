@@ -5,6 +5,7 @@
 #include "rpcmod.h"
 #include "address.h"
 #include "template.h"
+#include "version.h"
 #include <boost/assign/list_of.hpp>
 using namespace std;
 using namespace multiverse;
@@ -24,8 +25,9 @@ CRPCMod::CRPCMod()
                  ("help",                  &CRPCMod::RPCHelp)
                  ("stop",                  &CRPCMod::RPCStop)
                  ("getpeercount",          &CRPCMod::RPCGetPeerCount)
-                 ("listpeerinfo",          &CRPCMod::RPCListPeer)
+                 ("listpeer",              &CRPCMod::RPCListPeer)
                  ("addnode",               &CRPCMod::RPCAddNode)
+                 ("remvenode",             &CRPCMod::RPCRemoveNode)
                  ("getforkcount",          &CRPCMod::RPCGetForkCount)
                  ("getgenealogy",          &CRPCMod::RPCGetForkGenealogy)
                  ("getlocation",           &CRPCMod::RPCGetBlockLocation)
@@ -446,7 +448,28 @@ Value CRPCMod::RPCListPeer(const Array& params,bool fHelp)
             "listpeer\n"
             "Returns data about each connected network node.");
     }
-    return Value::null;
+    vector<network::CMvPeerInfo> vPeerInfo;
+    pService->GetPeers(vPeerInfo);
+
+    Array ret;
+    BOOST_FOREACH(const network::CMvPeerInfo& info,vPeerInfo)
+    {
+        Object obj;
+        obj.push_back(Pair("address", info.strAddress));
+        obj.push_back(Pair("services", UIntToHexString(info.nService)));
+        obj.push_back(Pair("lastsend", (boost::int64_t)info.nLastSend));
+        obj.push_back(Pair("lastrecv", (boost::int64_t)info.nLastRecv));
+        obj.push_back(Pair("conntime", (boost::int64_t)info.nActive));
+        obj.push_back(Pair("version", FormatVersion(info.nVersion)));
+        obj.push_back(Pair("subver", info.strSubVer));
+        obj.push_back(Pair("inbound", info.fInBound));
+        obj.push_back(Pair("height", info.nStartingHeight));
+        obj.push_back(Pair("banscore", info.nScore));
+        
+        ret.push_back(obj);
+    }
+
+    return ret;
 }
 
 Value CRPCMod::RPCAddNode(const Array& params,bool fHelp)
@@ -454,16 +477,34 @@ Value CRPCMod::RPCAddNode(const Array& params,bool fHelp)
     if (fHelp || params.size() != 1)
     {
         throw runtime_error(
-            "addnode \"node\"\n"
+            "addnode <node>\n"
             "Attempts add a node into the addnode list.\n");
     }
     string strNode = params[0].get_str();
-/*
+
     if (!pService->AddNode(CNetHost(strNode,WalleveConfig()->nPort)))
     {
         throw JSONRPCError(RPC_CLIENT_INVALID_IP_OR_SUBNET,"Failed to add node.");
     }
-*/
+
+    return Value::null;
+}
+
+Value CRPCMod::RPCRemoveNode(const Array& params,bool fHelp)
+{
+    if (fHelp || params.size() != 1)
+    {
+        throw runtime_error(
+            "removenode <node>\n"
+            "Attempts remove a node from the addnode list.\n");
+    }
+    string strNode = params[0].get_str();
+
+    if (!pService->RemoveNode(CNetHost(strNode,WalleveConfig()->nPort)))
+    {
+        throw JSONRPCError(RPC_CLIENT_INVALID_IP_OR_SUBNET,"Failed to remove node.");
+    }
+
     return Value::null;
 }
 

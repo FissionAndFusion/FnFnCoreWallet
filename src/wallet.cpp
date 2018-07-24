@@ -821,6 +821,7 @@ bool CWallet::SignDestination(const CDestination& destIn,const uint256& hash,vec
                 break;
             }
         }
+
         return fSigned;
     }
 

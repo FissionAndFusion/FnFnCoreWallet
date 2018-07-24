@@ -9,6 +9,7 @@
 set(sources
 	multiverse.cpp
 	usage.cpp
+	version.h
 	address.cpp address.h
 	error.cpp error.h
 	config.cpp config.h
@@ -20,6 +21,9 @@ set(sources
 	worldline.cpp worldline.h
 	txpool.cpp txpool.h
 	dispatcher.cpp dispatcher.h
+	network.cpp network.h
+	netchn.cpp netchn.h
+	schedule.cpp schedule.h
 	wallet.cpp wallet.h
 	service.cpp service.h
 	rpcjson.cpp rpcjson.h
@@ -31,7 +35,7 @@ set(sources
 
 add_executable(multiverse ${sources})
 
-include_directories(../walleve ../crypto ../common ../storage)
+include_directories(../walleve ../crypto ../common ../storage ../network)
 target_link_libraries(multiverse
 	Boost::system
 	Boost::filesystem
@@ -45,4 +49,5 @@ target_link_libraries(multiverse
 	walleve
 	crypto	
 	storage	
+	network	
 )

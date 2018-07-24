@@ -8,6 +8,8 @@
 #include "txpool.h"
 #include "wallet.h"
 #include "dispatcher.h"
+#include "network.h"
+#include "netchn.h"
 #include "rpcmod.h"
 #include "service.h"
 #include "blockmaker.h"
@@ -139,6 +141,20 @@ bool CMvEntry::InitializeService()
     if (!pDispatcher || !walleveDocker.Attach(pDispatcher))
     {
         delete pDispatcher;
+        return false;
+    }
+
+    CNetwork *pNetwork = new CNetwork();
+    if (!pNetwork || !walleveDocker.Attach(pNetwork))
+    {
+        delete pNetwork;
+        return false;
+    }
+
+    CNetChannel *pNetChannel = new CNetChannel();
+    if (!pNetChannel || !walleveDocker.Attach(pNetChannel))
+    {
+        delete pNetChannel;
         return false;
     }
 

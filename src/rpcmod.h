@@ -55,6 +55,7 @@ private:
     json_spirit::Value RPCGetPeerCount(const json_spirit::Array& params,bool fHelp);
     json_spirit::Value RPCListPeer(const json_spirit::Array& params,bool fHelp);
     json_spirit::Value RPCAddNode(const json_spirit::Array& params,bool fHelp);
+    json_spirit::Value RPCRemoveNode(const json_spirit::Array& params,bool fHelp);
     /* Worldline & TxPool */
     json_spirit::Value RPCGetForkCount(const json_spirit::Array& params,bool fHelp);
     json_spirit::Value RPCGetForkGenealogy(const json_spirit::Array& params,bool fHelp);

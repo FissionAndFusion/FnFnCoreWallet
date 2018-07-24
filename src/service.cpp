@@ -35,6 +35,7 @@ CService::CService()
     pCoreProtocol = NULL;
     pWorldLine = NULL;
     pWallet = NULL;
+    pNetwork = NULL;
 }
 
 CService::~CService()
@@ -73,6 +74,12 @@ bool CService::WalleveHandleInitialize()
         return false;
     }
 
+    if (!WalleveGetObject("peernet",pNetwork))
+    {
+        WalleveLog("Failed to request network\n");
+        return false;
+    }
+
     return true;
 }
 
@@ -81,6 +88,7 @@ void CService::WalleveHandleDeinitialize()
     pCoreProtocol = NULL;
     pWorldLine = NULL;
     pWallet = NULL;
+    pNetwork = NULL;
 }
 
 bool CService::WalleveHandleInvoke()
@@ -120,6 +128,10 @@ void CService::NotifyWorldLineUpdate(const CWorldLineUpdate& update)
     status.nMoneySupply = update.nMoneySupply;
 }
 
+void CService::NotifyNetworkPeerUpdate(const CNetworkPeerUpdate& update)
+{
+}
+
 void CService::Shutdown()
 {
     MvShutdown();
@@ -127,16 +139,40 @@ void CService::Shutdown()
 
 int CService::GetPeerCount()
 {
+    CWalleveEventPeerNetGetCount eventGetPeerCount(0);
+    if (pNetwork->DispatchEvent(&eventGetPeerCount))
+    {
+        return eventGetPeerCount.result;
+    }
     return 0;
 }
 
-bool CService::AddNode(const walleve::CNetHost& node)
+void CService::GetPeers(vector<network::CMvPeerInfo>& vPeerInfo)
 {
-    return false;
+    vPeerInfo.clear();
+    CWalleveEventPeerNetGetPeers eventGetPeers(0);
+    if (pNetwork->DispatchEvent(&eventGetPeers))
+    {
+        vPeerInfo.reserve(eventGetPeers.result.size());
+        for (unsigned int i = 0;i < eventGetPeers.result.size();i++)
+        {
+            vPeerInfo.push_back(static_cast<network::CMvPeerInfo&>(eventGetPeers.result[i]));
+        }
+    }
 }
 
-void CService::RemoveNode(const walleve::CNetHost& node)
+bool CService::AddNode(const CNetHost& node)
 {
+    CWalleveEventPeerNetAddNode eventAddNode(0);
+    eventAddNode.data = node;
+    return pNetwork->DispatchEvent(&eventAddNode);
+}
+
+bool CService::RemoveNode(const CNetHost& node)
+{
+    CWalleveEventPeerNetRemoveNode eventRemoveNode(0);
+    eventRemoveNode.data = node;
+    return pNetwork->DispatchEvent(&eventRemoveNode);
 }
 
 int  CService::GetForkCount()

@@ -12,45 +12,7 @@
 #include <boost/foreach.hpp>
 #include <walleve/stream/stream.h>
 #include <walleve/stream/datastream.h>
-/*
-class CBlockHeader
-{
-    friend class walleve::CWalleveStream;
-public:
-    uint16  nVersion;
-    uint16  nType;
-    uint32  nTimeStamp;
-    uint256 hashPrev;
-    uint256 hashMerkle;
-    std::vector<uint8> vchProof;
-public:
-    CBlockHeader()
-    {
-        nVersion   = 1;
-        nType      = 0;
-        nTimeStamp = 0;
-        hashPrev   = 0;
-        hashMerkle = 0;
-        vchProof.clear();
-    }
-    CBlockHeader(const CBlock& block)
-    : nVersion(block.nVersion),nType(block.nType),nTimeStamp(block.nTimeStamp),
-      hashPrev(block.hashPrev),hashMerkle(block.hashMerkle),vchProof(block.vchProof)
-    {
-    }
-protected:
-    template <typename O>
-    void WalleveSerialize(walleve::CWalleveStream& s,O& opt)
-    {
-        s.Serialize(nVersion,opt);
-        s.Serialize(nType,opt);
-        s.Serialize(nTimeStamp,opt);
-        s.Serialize(hashPrev,opt);
-        s.Serialize(hashMerkle,opt);
-        s.Serialize(vchProof,opt);
-    }
-};
-*/
+
 class CBlock
 {
     friend class walleve::CWalleveStream;
@@ -367,6 +329,22 @@ public:
                              << " type=" << GetBlockType();
         return oss.str();
     }
+};
+
+class CBlockLocator
+{
+    friend class walleve::CWalleveStream;
+public:
+    CBlockLocator() {}
+    virtual ~CBlockLocator() {}
+protected:
+    template <typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s,O& opt)
+    {
+        s.Serialize(vBlockHash,opt);
+    }
+public:
+    std::vector<uint256> vBlockHash;
 };
 
 #endif //MULTIVERSE_BLOCK_H

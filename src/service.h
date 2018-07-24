@@ -6,6 +6,7 @@
 #define  MULTIVERSE_SERVICE_H
 
 #include "mvbase.h"
+#include "network.h"
 
 namespace multiverse
 {
@@ -17,12 +18,14 @@ public:
     ~CService();
     /* Notify */
     void NotifyWorldLineUpdate(const CWorldLineUpdate& update);
+    void NotifyNetworkPeerUpdate(const CNetworkPeerUpdate& update);
     /* System */
     void Shutdown();
     /* Network */
     int GetPeerCount();
+    void GetPeers(std::vector<network::CMvPeerInfo>& vPeerInfo);
     bool AddNode(const walleve::CNetHost& node);
-    void RemoveNode(const walleve::CNetHost& node);
+    bool RemoveNode(const walleve::CNetHost& node);
     /* Worldline & Tx Pool*/
     int  GetForkCount();
     bool GetForkGenealogy(const uint256& hashFork,std::vector<std::pair<uint256,int> >& vAncestry,
@@ -75,6 +78,7 @@ protected:
     ITxPool* pTxPool;
     IDispatcher* pDispatcher;
     IWallet* pWallet;
+    CNetwork* pNetwork;
     mutable boost::shared_mutex rwForkStatus;
     std::map<uint256,CForkStatus> mapForkStatus;
 };

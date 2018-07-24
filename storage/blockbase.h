@@ -34,7 +34,30 @@ public:
     void WriteUnlock() { spAccess->WriteUnlock(); }
     CBlockIndex* GetLast() const { return pIndexLast; }
     CBlockIndex* GetOrigin() const { return pIndexLast->pOrigin; }
-    void UpdateLast(CBlockIndex* pIndexLastIn) { pIndexLast = pIndexLastIn; }
+    void UpdateLast(CBlockIndex* pIndexLastIn) { pIndexLast = pIndexLastIn; UpdateNext(); }
+    void UpdateNext()
+    {
+        if (pIndexLast != NULL)
+        {
+            CBlockIndex *pIndexNext = pIndexLast;
+            pIndexLast->pNext = NULL;
+            while (!pIndexNext->IsOrigin() && pIndexNext->pPrev->pNext != pIndexNext)
+            {
+                CBlockIndex *pIndex = pIndexNext->pPrev;
+                if (pIndex->pNext != NULL)
+                {
+                    CBlockIndex* p = pIndex->pNext;
+                    while (p != NULL)
+                    {
+                        p = p->pNext;
+                        p->pPrev->pNext = NULL;
+                    }
+                }
+                pIndex->pNext = pIndexNext;
+                pIndexNext = pIndex;
+            }
+        }
+    }
     void InsertAncestry(CBlockIndex* pAncestry) 
     {
         mapAncestry.insert(std::make_pair(pAncestry->GetOriginHash(),pAncestry)); 
@@ -70,11 +93,7 @@ public:
                 p = (*it).second;
             }
         }
-        while (p != pIndex && p != NULL && !p->IsOrigin())
-        {
-            p = p->pPrev;
-        }
-        return (p == pIndex);
+        return (pIndex->pNext != NULL || p == pIndex);
     }
 protected:
     CBlockIndex* pIndexLast;
@@ -155,6 +174,8 @@ public:
     bool LoadIndex(CBlockOutline& diskIndex);
     bool LoadTx(CTransaction& tx,uint32 nTxFile,uint32 nTxOffset,uint256& hashFork);
     bool FilterTx(CTxFilter& filter);
+    bool GetForkBlockLocator(const uint256& hashFork,CBlockLocator& locator);
+    bool GetForkBlockInv(const uint256& hashFork,const CBlockLocator& locator,std::vector<uint256>& vBlockHash,size_t nMaxCount);
 protected:
     CBlockIndex* GetIndex(const uint256& hash) const;
     CBlockFork* GetFork(const uint256& hash);

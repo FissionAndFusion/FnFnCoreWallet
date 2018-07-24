@@ -8,10 +8,15 @@
 #include "uint256.h"
 #include "block.h"
 #include "transaction.h"
+#include "mvproto.h"
 
 #include <vector>
 #include <map>
 #include <set>
+
+#include <boost/multi_index_container.hpp>
+#include <boost/multi_index/member.hpp>
+#include <boost/multi_index/ordered_index.hpp>
 
 namespace multiverse
 {
@@ -89,6 +94,14 @@ public:
     std::vector<std::pair<uint256,std::vector<CTxIn> > > vTxRemove;
 };
 
+class CNetworkPeerUpdate
+{
+public:
+    bool fActive;
+    uint64 nPeerNonce;
+    network::CAddress addrPeer;
+};
+
 /* Proof */
 /*
 class CMPSSProof
@@ -106,6 +119,28 @@ protected:
     template <typename O>
     void WalleveSerialize(walleve::CWalleveStream& s,O& opt) {}
 };
+
+/* Net Channel */
+class CPeerKnownTx
+{
+public:
+    CPeerKnownTx() {}
+    CPeerKnownTx(const uint256& txidIn) : txid(txidIn),nTime(walleve::GetTime()) {}
+public:
+    uint256 txid;
+    int64 nTime;
+};
+
+typedef boost::multi_index_container<
+  CPeerKnownTx,
+  boost::multi_index::indexed_by<
+    boost::multi_index::ordered_unique<boost::multi_index::member<CPeerKnownTx,uint256,&CPeerKnownTx::txid> >,
+    boost::multi_index::ordered_non_unique<boost::multi_index::member<CPeerKnownTx,int64,&CPeerKnownTx::nTime> >
+  >
+> CPeerKnownTxSet;
+
+typedef CPeerKnownTxSet::nth_index<0>::type CPeerKnownTxSetById;
+typedef CPeerKnownTxSet::nth_index<1>::type CPeerKnownTxSetByTime;
 
 } // namespace multiverse
 

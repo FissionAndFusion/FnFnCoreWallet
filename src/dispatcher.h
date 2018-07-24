@@ -6,6 +6,7 @@
 #define  MULTIVERSE_DISPATCHER_H
 
 #include "mvbase.h"
+#include "mvpeernet.h"
 
 namespace multiverse
 {
@@ -15,8 +16,8 @@ class CDispatcher : public IDispatcher
 public:
     CDispatcher();
     ~CDispatcher();
-    MvErr AddNewBlock(CBlock& block);
-    MvErr AddNewTx(CTransaction& tx);
+    MvErr AddNewBlock(CBlock& block,uint64 nNonce=0);
+    MvErr AddNewTx(CTransaction& tx,uint64 nNonce=0);
 protected:
     bool WalleveHandleInitialize();
     void WalleveHandleDeinitialize();
@@ -31,6 +32,7 @@ protected:
     IWallet* pWallet;
     IService* pService;
     IBlockMaker* pBlockMaker;
+    network::IMvNetChannel* pNetChannel;
 };
 
 } // namespace multiverse

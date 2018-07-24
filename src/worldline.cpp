@@ -310,6 +310,16 @@ bool CWorldLine::GetProofOfWorkTarget(const uint256& hashPrev,int nAlgo,int& nBi
     return true;
 }
 
+bool CWorldLine::GetBlockLocator(const uint256& hashFork,CBlockLocator& locator)
+{
+    return cntrBlock.GetForkBlockLocator(hashFork,locator);
+}
+
+bool CWorldLine::GetBlockInv(const uint256& hashFork,const CBlockLocator& locator,vector<uint256>& vBlockHash,size_t nMaxCount)
+{
+    return cntrBlock.GetForkBlockInv(hashFork,locator,vBlockHash,nMaxCount);
+}
+
 bool CWorldLine::CheckContainer()
 {
     if (cntrBlock.IsEmpty())

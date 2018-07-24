@@ -31,6 +31,8 @@ public:
     bool FilterTx(CTxFilter& filter);
     MvErr AddNewBlock(CBlock& block,CWorldLineUpdate& update);
     bool GetProofOfWorkTarget(const uint256& hashPrev,int nAlgo,int& nBits,int64& nReward);
+    bool GetBlockLocator(const uint256& hashFork,CBlockLocator& locator);
+    bool GetBlockInv(const uint256& hashFork,const CBlockLocator& locator,std::vector<uint256>& vBlockHash,std::size_t nMaxCount);
 protected:
     bool WalleveHandleInitialize();
     void WalleveHandleDeinitialize();

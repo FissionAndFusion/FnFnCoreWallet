@@ -96,6 +96,21 @@ inline std::string ToHexString(const std::vector<unsigned char>& vch)
     return ToHexString(&vch[0],vch.size());
 }
 
+template<typename T>
+inline std::string UIntToHexString(const T& t)
+{
+    const char hexc[17] = "0123456789abcdef";
+    char hex[sizeof(T) * 2 + 1];
+    for (int i = 0;i < sizeof(T);i++)
+    {
+        int byte = (t >> (sizeof(T) - i - 1)) & 0xFF;
+        hex[i * 2]     = hexc[byte >> 4];
+        hex[i * 2 + 1] = hexc[byte & 15];
+    }
+    hex[sizeof(T) * 2] = 0;
+    return std::string(hex);
+}
+
 inline int CharToHex(char c)
 {
     if (c >= '0' && c <= '9') return (c - '0');

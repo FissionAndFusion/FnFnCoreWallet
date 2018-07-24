@@ -18,6 +18,7 @@
 #include "key.h"
 #include "config.h"
 #include "blockbase.h"
+#include "mvpeer.h"
 
 #include <walleve/walleve.h>
 #include <boost/foreach.hpp>
@@ -58,6 +59,9 @@ public:
     virtual bool FilterTx(CTxFilter& filter) = 0;
     virtual MvErr AddNewBlock(CBlock& block,CWorldLineUpdate& update) = 0;    
     virtual bool GetProofOfWorkTarget(const uint256& hashPrev,int nAlgo,int& nBits,int64& nReward) = 0;
+    virtual bool GetBlockLocator(const uint256& hashFork,CBlockLocator& locator) = 0;
+    virtual bool GetBlockInv(const uint256& hashFork,const CBlockLocator& locator,std::vector<uint256>& vBlockHash,std::size_t nMaxCount) = 0;
+
     const CMvBasicConfig * WalleveConfig()
     {
         return dynamic_cast<const CMvBasicConfig *>(walleve::IWalleveBase::WalleveConfig());
@@ -78,7 +82,8 @@ public:
     virtual MvErr Push(CTransaction& tx,uint256& hashFork,CDestination& destIn,int64& nValueIn) = 0;
     virtual void Pop(const uint256& txid) = 0;
     virtual bool Get(const uint256& txid,CTransaction& tx) const = 0;
-    virtual void ListTx(const uint256& hashFork,std::vector<std::pair<uint256,size_t> >& vTxPool) = 0;
+    virtual void ListTx(const uint256& hashFork,std::vector<std::pair<uint256,std::size_t> >& vTxPool) = 0;
+    virtual void ListTx(const uint256& hashFork,std::vector<uint256>& vTxPool) = 0;
     virtual bool FilterTx(CTxFilter& filter) = 0;
     virtual void ArrangeBlockTx(const uint256& hashFork,std::size_t nMaxSize,std::vector<CTransaction>& vtx,int64& nTotalTxFee) = 0;
     virtual bool FetchInputs(const uint256& hashFork,const CTransaction& tx,std::vector<CTxOutput>& vUnspent) = 0;
@@ -145,8 +150,8 @@ class IDispatcher : public walleve::IWalleveBase
 {
 public:
     IDispatcher() : IWalleveBase("dispatcher") {}
-    virtual MvErr AddNewBlock(CBlock& block) = 0;
-    virtual MvErr AddNewTx(CTransaction& tx) = 0;
+    virtual MvErr AddNewBlock(CBlock& block,uint64 nNonce=0) = 0;
+    virtual MvErr AddNewTx(CTransaction& tx,uint64 nNonce=0) = 0;
 };
 
 class IService : public walleve::IWalleveBase
@@ -155,12 +160,14 @@ public:
     IService() : IWalleveBase("service") {}
     /* Notify */
     virtual void NotifyWorldLineUpdate(const CWorldLineUpdate& update) = 0;
+    virtual void NotifyNetworkPeerUpdate(const CNetworkPeerUpdate& update) = 0;
     /* System */
     virtual void Shutdown() = 0;
     /* Network */ 
     virtual int GetPeerCount() = 0;
+    virtual void GetPeers(std::vector<network::CMvPeerInfo>& vPeerInfo) = 0;
     virtual bool AddNode(const walleve::CNetHost& node) = 0;
-    virtual void RemoveNode(const walleve::CNetHost& node) = 0;
+    virtual bool RemoveNode(const walleve::CNetHost& node) = 0;
     /* Worldline & Tx Pool*/
     virtual int  GetForkCount() = 0;
     virtual bool GetForkGenealogy(const uint256& hashFork,std::vector<std::pair<uint256,int> >& vAncestry,

@@ -343,7 +343,7 @@ void CMiner::LaunchFetcher()
             boost::unique_lock<boost::mutex> lock(mutex);
             while(nMinerStatus != MINER_EXIT)
             {
-                if (!condFetcher.timed_wait(lock,timeout))
+                if (!condFetcher.timed_wait(lock,timeout) || nMinerStatus == MINER_HOLD)
                 {
                     break;
                 }

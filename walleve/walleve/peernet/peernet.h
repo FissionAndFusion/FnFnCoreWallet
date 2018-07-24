@@ -66,6 +66,7 @@ protected:
     void AddNewNode(const CNetHost& host);
     void AddNewNode(const boost::asio::ip::tcp::endpoint& epNode,
                     const std::string& strName = "",const boost::any& data = boost::any());
+    void RemoveNode(const CNetHost& host);
     void RemoveNode(const boost::asio::ip::tcp::endpoint& epNode);
     std::string GetNodeName(const boost::asio::ip::tcp::endpoint& epNode);
     bool GetNodeData(const boost::asio::ip::tcp::endpoint& epNode,boost::any& data); 
@@ -79,6 +80,7 @@ protected:
     bool HandleEvent(CWalleveEventPeerNetGetCount& eventGetCount); 
     bool HandleEvent(CWalleveEventPeerNetGetPeers& eventGetPeers); 
     bool HandleEvent(CWalleveEventPeerNetAddNode& eventAddNode); 
+    bool HandleEvent(CWalleveEventPeerNetRemoveNode& eventRemoveNode); 
     bool HandleEvent(CWalleveEventPeerNetGetBanned& eventGetBanned); 
     bool HandleEvent(CWalleveEventPeerNetSetBan& eventSetBan); 
     bool HandleEvent(CWalleveEventPeerNetClrBanned& eventClrBanned);

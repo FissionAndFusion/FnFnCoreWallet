@@ -645,6 +645,76 @@ bool CBlockBase::FilterTx(CTxFilter& filter)
     return dbBlock.FilterTx(txFilter);
 }
 
+bool CBlockBase::GetForkBlockLocator(const uint256& hashFork,CBlockLocator& locator)
+{
+    CWalleveReadLock rlock(rwAccess);
+    
+    CBlockFork* pFork = GetFork(hashFork);
+    if (pFork == NULL)
+    {
+        return false;
+    }
+    
+    CBlockIndex* pIndex = pFork->GetLast();
+
+    locator.vBlockHash.clear();
+    int nStep = 1;
+    while(pIndex && pIndex->GetOriginHash() == hashFork && !pIndex->IsOrigin())
+    {
+        locator.vBlockHash.push_back(pIndex->GetBlockHash());
+        for (int i = 0; pIndex && i < nStep; i++)
+        {
+            pIndex = pIndex->pPrev;
+        }
+        if (locator.vBlockHash.size() > 10)
+        {
+            nStep *= 2;
+        }
+    }
+    return true;
+}
+
+bool CBlockBase::GetForkBlockInv(const uint256& hashFork,const CBlockLocator& locator,vector<uint256>& vBlockHash,size_t nMaxCount)
+{
+    CWalleveReadLock rlock(rwAccess);
+
+    CBlockFork* pFork = GetFork(hashFork);
+    if (pFork == NULL)
+    {
+        return false;
+    }
+    
+    CBlockIndex* pIndex = NULL;
+    BOOST_FOREACH(const uint256& hash,locator.vBlockHash)
+    {
+        pIndex = GetIndex(hash);
+        if (pIndex != NULL)
+        {
+            if (pIndex->GetOriginHash() != hashFork)
+            {
+                return false;
+            }
+            else if (pFork->Have(pIndex))
+            {        
+                break;
+            }
+            pIndex = NULL;
+        }
+    }
+    pIndex = (pIndex != NULL ? pIndex->pNext : pFork->GetOrigin()->pNext);
+    while(pIndex != NULL && vBlockHash.size() < nMaxCount - 1)
+    {
+        vBlockHash.push_back(pIndex->GetBlockHash());
+        pIndex = pIndex->pNext;
+    }
+    CBlockIndex* pIndexLast = pFork->GetLast();
+    if (pIndex != NULL && pIndex != pIndexLast)
+    {
+        vBlockHash.push_back(pIndexLast->GetBlockHash());
+    }
+    return true;
+}
+
 CBlockIndex* CBlockBase::GetIndex(const uint256& hash) const
 {
     map<uint256,CBlockIndex*>::const_iterator mi = mapIndex.find(hash);
@@ -814,7 +884,8 @@ bool CBlockBase::LoadDB()
             ClearCache();
             return false;
         }
-        AddNewFork(pIndex);
+        CBlockFork* pFork = AddNewFork(pIndex);
+        pFork->UpdateNext();
     }
 
     return true;

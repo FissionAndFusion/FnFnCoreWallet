@@ -163,7 +163,8 @@ public:
     MvErr Push(CTransaction& tx,uint256& hashFork,CDestination& destIn,int64& nValueIn);
     void Pop(const uint256& txid);
     bool Get(const uint256& txid,CTransaction& tx) const;
-    void ListTx(const uint256& hashFork,std::vector<std::pair<uint256,size_t> >& vTxPool);
+    void ListTx(const uint256& hashFork,std::vector<std::pair<uint256,std::size_t> >& vTxPool);
+    void ListTx(const uint256& hashFork,std::vector<uint256>& vTxPool);
     bool FilterTx(CTxFilter& filter);
     void ArrangeBlockTx(const uint256& hashFork,std::size_t nMaxSize,std::vector<CTransaction>& vtx,int64& nTotalTxFee);
     bool FetchInputs(const uint256& hashFork,const CTransaction& tx,std::vector<CTxOutput>& vUnspent);

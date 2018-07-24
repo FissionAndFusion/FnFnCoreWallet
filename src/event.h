@@ -8,6 +8,7 @@
 #include "mvtype.h"
 #include "block.h"
 #include "transaction.h"
+#include "mvpeerevent.h"
 #include "walleve/walleve.h"
 #include <vector>
 #include <map>
@@ -18,7 +19,7 @@ namespace multiverse
 
 enum
 {
-    MV_EVENT_BASE = walleve::WALLEVE_EVENT_USER_BASE,
+    MV_EVENT_BASE = network::MV_EVENT_PEER_MAX,
     MV_EVENT_BLOCKMAKER_UPDATE,
     MV_EVENT_BLOCKMAKER_ENROLL,
     MV_EVENT_BLOCKMAKER_DISTRIBUTE,

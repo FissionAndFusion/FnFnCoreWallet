@@ -20,6 +20,7 @@ CDispatcher::CDispatcher()
     pWallet = NULL;
     pService = NULL;
     pBlockMaker = NULL;
+    pNetChannel = NULL;
 }
 
 CDispatcher::~CDispatcher()
@@ -64,6 +65,12 @@ bool CDispatcher::WalleveHandleInitialize()
         return false;
     }
 
+    if (!WalleveGetObject("netchannel",pNetChannel))
+    {
+        WalleveLog("Failed to request netchannel\n");
+        return false;
+    }
+
     return true;
 }
 
@@ -75,6 +82,7 @@ void CDispatcher::WalleveHandleDeinitialize()
     pWallet = NULL;
     pService = NULL;
     pBlockMaker = NULL;
+    pNetChannel = NULL;
 }
 
 bool CDispatcher::WalleveHandleInvoke()
@@ -86,7 +94,7 @@ void CDispatcher::WalleveHandleHalt()
 {
 }
 
-MvErr CDispatcher::AddNewBlock(CBlock& block)
+MvErr CDispatcher::AddNewBlock(CBlock& block,uint64 nNonce)
 {
     MvErr err = MV_OK;
     if (!pWorldLine->Exists(block.hashPrev))
@@ -123,10 +131,16 @@ MvErr CDispatcher::AddNewBlock(CBlock& block)
             pBlockMaker->PostEvent(pBlockMakerUpdate);
         }
     }
+
+    if (!nNonce)
+    {
+        pNetChannel->BroadcastBlockInv(updateWorldLine.hashFork,block.GetHash());
+    }
+
     return MV_OK;
 }
 
-MvErr CDispatcher::AddNewTx(CTransaction& tx)
+MvErr CDispatcher::AddNewTx(CTransaction& tx,uint64 nNonce)
 {
     MvErr err = MV_OK;
     err = pCoreProtocol->ValidateTransaction(tx);
@@ -159,5 +173,9 @@ MvErr CDispatcher::AddNewTx(CTransaction& tx)
         return MV_ERR_SYS_DATABASE_ERROR;
     }
     
+    if (!nNonce)
+    {
+        pNetChannel->BroadcastTxInv(hashFork);
+    }
     return MV_OK;
 }

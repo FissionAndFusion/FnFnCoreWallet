@@ -153,7 +153,14 @@ void CPeerNet::ClientFailToConnect(const tcp::endpoint& epRemote)
 
 void CPeerNet::HostResolved(const CNetHost& host,const tcp::endpoint& ep)
 {
-    epMngr.AddNewOutBound(ep,host.strName,host.data);
+    if (host.strName == "toremove")
+    {
+        epMngr.RemoveOutBound(ep);
+    }
+    else
+    {
+        epMngr.AddNewOutBound(ep,host.strName,host.data);
+    }
 }
 
 CPeer* CPeerNet::AddNewPeer(CIOClient *pClient,bool fInBound)
@@ -222,6 +229,19 @@ void CPeerNet::AddNewNode(const CNetHost& host)
 void CPeerNet::AddNewNode(const tcp::endpoint& epNode,const string& strName,const boost::any& data)
 {
     epMngr.AddNewOutBound(epNode,strName,data);
+}
+
+void CPeerNet::RemoveNode(const CNetHost& host)
+{
+    const tcp::endpoint ep = host.ToEndPoint();
+    if (ep != tcp::endpoint())
+    {
+        epMngr.RemoveOutBound(ep);
+    }
+    else 
+    {
+        ResolveHost(CNetHost(host.strHost,host.nPort,"toremove"));
+    }
 }
 
 void CPeerNet::RemoveNode(const tcp::endpoint& epNode)
@@ -324,7 +344,14 @@ bool CPeerNet::HandleEvent(CWalleveEventPeerNetAddNode& eventAddNode)
     eventAddNode.result = true;
     return true;
 }
- 
+
+bool CPeerNet::HandleEvent(CWalleveEventPeerNetRemoveNode& eventRemoveNode)
+{
+    RemoveNode(eventRemoveNode.data);
+    eventRemoveNode.result = true;
+    return true;
+}
+
 bool CPeerNet::HandleEvent(CWalleveEventPeerNetGetBanned& eventGetBanned)
 {
     epMngr.GetBanned(eventGetBanned.result);
