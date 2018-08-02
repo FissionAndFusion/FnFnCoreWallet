@@ -9,3 +9,6 @@
 
 build/
 bin/
+.idea
+.vscode
+cmake-build-debug/
