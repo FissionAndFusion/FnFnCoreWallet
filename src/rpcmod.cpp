@@ -728,7 +728,7 @@ Value CRPCMod::RPCSendTransaction(const Array& params,bool fHelp)
     {
         ss >> rawTx;
     }
-    catch (std::exception &e)
+    catch (const std::exception &e)
     {
         throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "TX decode failed");
     }
@@ -1370,7 +1370,7 @@ Value CRPCMod::RPCSignTransaction(const Array& params,bool fHelp)
     {
         ss >> rawTx;
     }
-    catch (std::exception &e)
+    catch (const std::exception &e)
     {
         throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "TX decode failed");
     }
@@ -1536,7 +1536,7 @@ Value CRPCMod::RPCDecodeTransaction(const Array& params,bool fHelp)
     {
         ss >> rawTx;
     }
-    catch (std::exception &e)
+    catch (const std::exception &e)
     {
         throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "TX decode failed");
     }

@@ -150,7 +150,7 @@ bool CRPCDispatch::HandleEvent(CWalleveEventHttpGetRsp& event)
             cerr << "error: " << write_string(error, false) << "\n";
         }
     }
-    catch (std::exception& e)
+    catch (const std::exception& e)
     {
         cerr << "error: " << e.what() << "\n";
     }
@@ -227,7 +227,7 @@ bool CRPCDispatch::CallRPC(const vector<string>& vCommand,const string& strWalle
         request.push_back(Pair("id", nReqId));
         return GetResponse(1,strWallet,request);
     }
-    catch (std::exception& e)
+    catch (const std::exception& e)
     {
         cerr << "error: " << e.what() << "\n";
     }
