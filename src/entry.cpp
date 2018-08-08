@@ -101,6 +101,7 @@ bool CMvEntry::Initialize(int argc,char *argv[])
 
 bool CMvEntry::InitializeService()
 {
+    // single instance
     if (!TryLockFile((mvConfig.pathData / ".lock").string()))
     {
         cerr << "Cannot obtain a lock on data directory " << mvConfig.pathData << "\n"

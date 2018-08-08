@@ -25,7 +25,7 @@ int main(int argc,char **argv)
             mvEntry.Run();
         }
     }
-    catch (std::exception& e)
+    catch (const std::exception& e)
     {
         std::cerr << "Multiverse exception caught : " << e.what() << "\n";
     }

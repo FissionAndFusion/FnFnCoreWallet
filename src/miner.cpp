@@ -206,7 +206,7 @@ bool CMiner::HandleEvent(CWalleveEventHttpGetRsp& event)
             cerr << "error: " << write_string(error, false) << "\n";
         }
     }
-    catch (std::exception& e)
+    catch (const std::exception& e)
     {
         cerr << "error: " << e.what() << "\n";
     }

@@ -280,6 +280,7 @@ public:
         {
             nValueIn += vInputValue[i].first;
         }
+        return nValueIn;
     }
     void SetNull()
     {

@@ -79,7 +79,7 @@ void CMvCoreProtocol::GetGenesisBlock(CBlock& block)
     CTransaction& tx = block.txMint;
     tx.nType   = CTransaction::TX_GENESIS;
     tx.sendTo  = CDestination(multiverse::crypto::CPubKey(uint256("575f2041770496489120bb102d9dd55f5e75b0c4aa528d5762b92b59acd6d939")));
-    tx.nAmount = 745000000 * COIN;
+    tx.nAmount = 745000000 * COIN; // 745000000 is initial number of token
 
     const char* pszGenesis = "The third machine age : Revolution";
     block.vchProof = vector<uint8>((const uint8*)pszGenesis, (const uint8*)pszGenesis + strlen(pszGenesis));
