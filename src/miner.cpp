@@ -183,7 +183,7 @@ bool CMiner::HandleEvent(CWalleveEventHttpGetRsp& event)
                         workCurrent.hashPrev.SetHex(prevhash.get_str());
                         workCurrent.nPrevTime = prevtime.get_int64();
                         workCurrent.nAlgo = algo.get_int();
-                        workCurrent.nBits = algo.get_int();
+                        workCurrent.nBits = bits.get_int();
                         workCurrent.vchWorkData = ParseHexString(data.get_str());
 
                         nMinerStatus = MINER_RESET;
