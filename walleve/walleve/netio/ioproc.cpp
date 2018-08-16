@@ -85,7 +85,7 @@ boost::asio::io_service& CIOProc::GetIoService()
     return ioService;
 }
 
-boost::asio::strand& CIOProc::GetIoStrand()
+boost::asio::io_service::strand& CIOProc::GetIoStrand()
 {
     return ioStrand;
 }

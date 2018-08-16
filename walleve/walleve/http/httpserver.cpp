@@ -185,7 +185,7 @@ bool CHttpServer::CreateProfile(const CHttpHostConfig& confHost)
 
     if (confHost.optSSL.fEnable)
     {
-        profile.pSSLContext = new boost::asio::ssl::context(GetIoService(),boost::asio::ssl::context::sslv23);
+        profile.pSSLContext = new boost::asio::ssl::context(boost::asio::ssl::context::sslv23);
         if (profile.pSSLContext == NULL)
         {
             WalleveLog("Failed to alloc ssl context for %s:%u\n",confHost.epHost.address().to_string().c_str(),

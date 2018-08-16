@@ -339,7 +339,7 @@ bool CIOSSLOption::SetupSSLContext(boost::asio::ssl::context& ctx) const
         }
         if (!strCiphers.empty())
         {
-            SSL_CTX_set_cipher_list(ctx.impl(),strCiphers.c_str());
+            SSL_CTX_set_cipher_list(ctx.native_handle(),strCiphers.c_str());
         }
     }
     catch (...)
@@ -375,7 +375,7 @@ CIOClient* CIOSSLOutBound::ClientAlloc(const CIOSSLOption& optSSL)
     {
         try 
         {
-            boost::asio::ssl::context ctx(ioService,boost::asio::ssl::context::sslv23);
+            boost::asio::ssl::context ctx(boost::asio::ssl::context::sslv23);
             ctx.set_options(boost::asio::ssl::context::no_sslv2);
             if (optSSL.fVerifyPeer)
             {
