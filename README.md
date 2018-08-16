@@ -6,6 +6,7 @@ Fission And Fusion Network Official Development Repo
 
 ### FnFn Resources
 ================================
+
 * Source:
 [Source Code](https://github.com/FissionAndFusion/FnFnCoreWallet)
 * Documentation: 
@@ -14,6 +15,7 @@ Fission And Fusion Network Official Development Repo
 
 ### License
 ================================
+
 FnFnCoreWallet is released under the terms of the MIT license. See COPYING for more information or see https://opensource.org/licenses/MIT.
 
 ### Repo Guidelines
