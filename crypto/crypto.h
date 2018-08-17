@@ -48,10 +48,12 @@ public:
 
     T* allocate(std::size_t n, const void *hint = 0)
     {
+        (void)hint;
         return static_cast<T*>(CryptoAlloc(sizeof(T) * n));
     }
     void deallocate(T* p, std::size_t n)
     {
+        (void)n;
         CryptoFree(p);
     }
 };

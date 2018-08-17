@@ -15,6 +15,7 @@ class CBlockMakerHashAlgo
 {
 public: 
     CBlockMakerHashAlgo(const std::string& strAlgoIn,int64 nHashRateIn) : strAlgo(strAlgoIn),nHashRate(nHashRateIn) {}
+    virtual ~CBlockMakerHashAlgo(){}
     const std::string strAlgo;
     int64 nHashRate;
 public:

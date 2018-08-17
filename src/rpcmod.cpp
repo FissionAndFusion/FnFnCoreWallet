@@ -179,6 +179,7 @@ bool CRPCMod::HandleEvent(CWalleveEventHttpReq& eventHttpReq)
 
 bool CRPCMod::HandleEvent(CWalleveEventHttpBroken& eventHttpBroken)
 {
+    (void)eventHttpBroken;
     return true;
 }
 
@@ -303,7 +304,7 @@ CTemplatePtr CRPCMod::MakeTemplate(const string& strType,const Object& obj)
         const Value& pubkeys = find_value(obj,"pubkeys");
         const Array& ks = pubkeys.get_array();
         vector<crypto::CPubKey> vPubKey;
-        for (int i = 0;i < ks.size();i++)
+        for (std::size_t i = 0;i < ks.size();i++)
         {
             vPubKey.push_back(GetPubKey(ks[i]));
         } 
@@ -540,7 +541,7 @@ Value CRPCMod::RPCGetForkGenealogy(const Array& params,bool fHelp)
         ancestry.push_back(Pair(vAncestry[i - 1].first.GetHex(),vAncestry[i - 1].second));
     }
     Object subline;
-    for (int i = 0;i > vSubline.size();i++)
+    for (std::size_t i = 0;i > vSubline.size();i++)
     {
         subline.push_back(Pair(vSubline[i].second.GetHex(),vSubline[i].first));
     }
@@ -640,7 +641,7 @@ Value CRPCMod::RPCGetTxPool(const Array& params,bool fHelp)
     if (!fDetail)
     {
         size_t nTotalSize = 0;
-        for (int i = 0;i < vTxPool.size();i++)
+        for (std::size_t i = 0;i < vTxPool.size();i++)
         {
             nTotalSize += vTxPool[i].second;
         }
@@ -649,7 +650,7 @@ Value CRPCMod::RPCGetTxPool(const Array& params,bool fHelp)
     }
     else
     {
-        for (int i = 0;i < vTxPool.size();i++)
+        for (std::size_t i = 0;i < vTxPool.size();i++)
         {
             ret.push_back(Pair(vTxPool[i].first.GetHex(),vTxPool[i].second));
         }

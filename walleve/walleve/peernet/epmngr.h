@@ -87,7 +87,7 @@ public:
         RESPONSE_FAILURE,
         PROTOCOL_INVALID,
         DDOS_ATTACK,
-        NUM_CLOSEREASONS,
+        NUM_CLOSEREASONS
     }CloseReason;
     typedef enum
     {
@@ -95,7 +95,7 @@ public:
         MINOR_DATA,
         MAJOR_DATA,
         VITAL_DATA,
-        NUM_BONUS,
+        NUM_BONUS
     }Bonus;
 public:
     void Clear();

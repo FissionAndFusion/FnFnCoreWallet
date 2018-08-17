@@ -15,7 +15,7 @@ enum
 {
     WALLEVE_EVENT_PEER_BASE = (1 << 8),
     WALLEVE_EVENT_HTTP_BASE = (2 << 8),
-    WALLEVE_EVENT_USER_BASE = (128 << 8),
+    WALLEVE_EVENT_USER_BASE = (128 << 8)
 };
 
 class CWalleveEvent;
@@ -38,9 +38,9 @@ public:
     virtual bool Handle(CWalleveEventListener& listener) {return listener.HandleEvent(*this);}
     virtual void Free() {delete this;}
 protected:
-    virtual void WalleveSerialize(CWalleveStream& s,SaveType&) {}
-    virtual void WalleveSerialize(CWalleveStream& s,LoadType&) {}
-    virtual void WalleveSerialize(CWalleveStream& s,std::size_t& serSize) {}
+    virtual void WalleveSerialize(CWalleveStream& s,SaveType&) { (void)s; }
+    virtual void WalleveSerialize(CWalleveStream& s,LoadType&) { (void)s; }
+    virtual void WalleveSerialize(CWalleveStream& s,std::size_t& serSize) { (void)s; (void)serSize;}
 public:
     uint64 nNonce;
     int nType;

@@ -63,7 +63,7 @@ public:
     uint256 nNonce;
     
 public:
-    enum { PROOFHASHWORK_SIZE = 34, };
+    enum { PROOFHASHWORK_SIZE = 34 };
     void Save(std::vector<unsigned char>& vchProof)
     {
         unsigned char *p = &vchProof[vchProof.size() - PROOFHASHWORK_SIZE];

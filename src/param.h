@@ -25,14 +25,14 @@ static const unsigned int MIN_TOKEN_TX_SIZE    = 192;
 enum ProofOfWorkAlgorithm
 {
     POWA_BLAKE512 = 1,
-    POWA_MAX,
+    POWA_MAX
 };
 
 enum ConsensusMethod
 {
     CM_MPVSS = 0,
     CM_BLAKE512 = POWA_BLAKE512,
-    CM_MAX,
+    CM_MAX
 };
 
 #endif //MULTIVERSE_PARAM_H

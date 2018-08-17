@@ -17,7 +17,7 @@ namespace network
 
 enum
 {
-    NODE_NETWORK           = (1 << 0),
+    NODE_NETWORK           = (1 << 0)
 };
 
 enum
@@ -25,7 +25,7 @@ enum
     MVPROTO_CHN_NETWORK     = 0,
     MVPROTO_CHN_DELEGATE    = 1,
     MVPROTO_CHN_DATA        = 2,
-    MVPROTO_CHN_USER        = 3,
+    MVPROTO_CHN_USER        = 3
 };
 
 enum
@@ -35,7 +35,7 @@ enum
     MVPROTO_CMD_GETADDRESS  = 3,
     MVPROTO_CMD_ADDRESS     = 4,
     MVPROTO_CMD_PING        = 5,
-    MVPROTO_CMD_PONG        = 6,
+    MVPROTO_CMD_PONG        = 6
 };
 
 enum
@@ -46,13 +46,13 @@ enum
     MVPROTO_CMD_GETDATA     = 4,
     MVPROTO_CMD_INV         = 5,
     MVPROTO_CMD_TX          = 6,
-    MVPROTO_CMD_BLOCK       = 7,
+    MVPROTO_CMD_BLOCK       = 7
 };
 
 enum
 {
     MVPROTO_CMD_DISTRIBUTE  = 1,
-    MVPROTO_CMD_PUBLISH     = 2,
+    MVPROTO_CMD_PUBLISH     = 2
 };
 
 #define MESSAGE_HEADER_SIZE		16
@@ -110,6 +110,7 @@ protected:
     }
     void WalleveSerialize(walleve::CWalleveStream& s,std::size_t& serSize)
     {
+        (void)s;
         serSize += MESSAGE_HEADER_SIZE;
     }
 };
@@ -119,7 +120,7 @@ class CInv
     friend class walleve::CWalleveStream;
 public:
     enum {ERROR=0,MSG_TX,MSG_BLOCK,MSG_FILTERED_BLOCK,MSG_CMPCT_BLOCK};
-    enum {MAX_INV_COUNT = 1024 * 8,};
+    enum {MAX_INV_COUNT = 1024 * 8};
     CInv() {}
     CInv(uint32 nTypeIn,const uint256& nHashIn)
         : nType(nTypeIn),nHash(nHashIn) {}
@@ -146,7 +147,7 @@ public:
 class CEndpoint : public walleve::CBinary
 {
 public:
-    enum {BINSIZE=18,};
+    enum {BINSIZE=18};
     CEndpoint();
     CEndpoint(const boost::asio::ip::tcp::endpoint& ep);
     CEndpoint(const CEndpoint& other);

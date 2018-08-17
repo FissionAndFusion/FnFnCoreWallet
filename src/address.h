@@ -13,7 +13,7 @@ namespace multiverse
 class CMvAddress : public CDestination
 {
 public:
-    enum { ADDRESS_LEN=57, };
+    enum { ADDRESS_LEN=57 };
     CMvAddress(const CDestination& destIn = CDestination()) : CDestination(destIn) {}
     CMvAddress(const std::string& strAddress) { ParseString(strAddress); }
     bool ParseString(const std::string& strAddress);

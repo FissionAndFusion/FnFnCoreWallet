@@ -25,7 +25,7 @@ public:
     uint256 txidSpent;
     uint256 txidChange;
 public:
-    enum { WTX_ISMINE  = (1 << 0), WTX_FROMME = (1 << 1), };
+    enum { WTX_ISMINE  = (1 << 0), WTX_FROMME = (1 << 1)};
     CWalletTx() { SetNull(); }
     CWalletTx(const uint256& txidIn,const CAssembledTx &tx,const uint256& hashForkIn,bool fIsMine,bool fFromMe)
     {

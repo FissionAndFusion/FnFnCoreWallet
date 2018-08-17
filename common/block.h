@@ -32,7 +32,7 @@ public:
         BLOCK_ORIGIN     = 0xff00,
         BLOCK_PRIMARY    = 0x0001,
         BLOCK_SUBSIDIARY = 0x0002,
-        BLOCK_EXTENDED   = 0x0004,
+        BLOCK_EXTENDED   = 0x0004
     };
 public:
     CBlock()

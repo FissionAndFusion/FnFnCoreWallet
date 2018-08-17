@@ -66,6 +66,7 @@ void CNetwork::WalleveHandleDeinitialize()
 
 bool CNetwork::CheckPeerVersion(uint32 nVersionIn,uint64 nServiceIn,const string& subVersionIn)
 {
+    (void)subVersionIn;
     if (nVersionIn < MIN_PROTO_VERSION || (nServiceIn & network::NODE_NETWORK) == 0)
     {
         return false;

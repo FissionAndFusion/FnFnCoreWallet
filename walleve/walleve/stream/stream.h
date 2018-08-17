@@ -20,7 +20,7 @@ namespace walleve
 enum
 {
     WALLEVE_STREAM_SAVE,
-    WALLEVE_STREAM_LOAD,
+    WALLEVE_STREAM_LOAD
 };
 
 typedef const boost::true_type  BasicType;

@@ -110,7 +110,7 @@ public:
     void AddNew(const uint256& txid,CPooledTx& tx)
     {
         mapTx[txid] = &tx;
-        for (int i = 0;i < tx.vInput.size();i++)
+        for (std::size_t i = 0;i < tx.vInput.size();i++)
         {
             mapSpent[tx.vInput[i].prevout].SetSpent(txid);
         }
@@ -131,7 +131,7 @@ public:
         CPooledTx *pTx = Get(txid);
         if (pTx != NULL)
         {
-            for (int i = 0;i < pTx->vInput.size();i++)
+            for (std::size_t i = 0;i < pTx->vInput.size();i++)
             {
                 SetUnspent(pTx->vInput[i].prevout);
             }
