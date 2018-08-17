@@ -44,6 +44,7 @@ protected:
     }
     void WalleveSerialize(CWalleveStream& s,std::size_t& serSize)
     {
+        (void)s;
         serSize += strContent.size();
     }
 public:

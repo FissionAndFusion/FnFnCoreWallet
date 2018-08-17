@@ -63,7 +63,7 @@ void CTxPoolView::InvalidateSpent(const CTxOutPoint& out,vector<uint256>& vInvol
     set<uint256> setInvolvedTx;
     vector<CTxOutPoint> vOutPoint;
     vOutPoint.push_back(out);
-    for (int i = 0;i < vOutPoint.size();i++)
+    for (std::size_t i = 0;i < vOutPoint.size();i++)
     {
         uint256 txidNextTx;
         if (GetSpent(vOutPoint[i],txidNextTx))
@@ -122,7 +122,6 @@ void CTxPoolView::ArrangeBlockTx(map<size_t,pair<uint256,CPooledTx*> >& mapArran
     multimap<int64,CTxPoolCandidate> mapCandidate;
     for (map<uint256,CPooledTx*>::iterator it = mapTx.begin();it != mapTx.end();++it)
     {
-        CPooledTx* pPooledTx = (*it).second;
         nTotalSize += (*it).second->nSerializeSize;
 
         CTxPoolCandidate candidateTx(*it);
@@ -147,7 +146,7 @@ void CTxPoolView::ArrangeBlockTx(map<size_t,pair<uint256,CPooledTx*> >& mapArran
             {
                 vector<pair<uint256,CPooledTx*> > vTxTree;
                 vTxTree.push_back(*candidate.mapPoolTx.begin());
-                for (int i = 0;i < vTxTree.size();i++)
+                for (std::size_t i = 0;i < vTxTree.size();i++)
                 {
                     CPooledTx* pPooledTx = vTxTree[i].second;
                     BOOST_FOREACH(const CTxIn& txin,pPooledTx->vInput)
@@ -446,7 +445,7 @@ bool CTxPool::FetchInputs(const uint256& hashFork,const CTransaction& tx,vector<
         boost::shared_lock<boost::shared_mutex> rlock(rwAccess);
         CTxPoolView& txView = mapPoolView[hashFork];
         CDestination destIn;
-        for (int i = 0;i < tx.vInput.size();i++)
+        for (std::size_t i = 0;i < tx.vInput.size();i++)
         {
             if (txView.IsSpent(tx.vInput[i].prevout))
             {
@@ -485,7 +484,7 @@ bool CTxPool::SynchronizeWorldLine(CWorldLineUpdate& update,CTxSetChange& change
     BOOST_REVERSE_FOREACH(CBlockEx& block,update.vBlockAddNew)
     {
         change.vTxAddNew.push_back(CAssembledTx(block.txMint,nHeight)); 
-        for (int i = 0;i < block.vtx.size();i++)
+        for (std::size_t i = 0;i < block.vtx.size();i++)
         {
             CTransaction& tx = block.vtx[i];
             CTxContxt& txContxt = block.vTxContxt[i];

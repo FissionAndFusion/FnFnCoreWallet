@@ -101,7 +101,7 @@ inline std::string UIntToHexString(const T& t)
 {
     const char hexc[17] = "0123456789abcdef";
     char hex[sizeof(T) * 2 + 1];
-    for (int i = 0;i < sizeof(T);i++)
+    for (std::size_t i = 0;i < sizeof(T);i++)
     {
         int byte = (t >> (sizeof(T) - i - 1)) & 0xFF;
         hex[i * 2]     = hexc[byte >> 4];
@@ -135,7 +135,6 @@ inline std::vector<unsigned char> ParseHexString(const char* psz)
 
 inline std::size_t ParseHexString(const char* psz,unsigned char* p,std::size_t n)
 {
-    std::size_t count = 0;
     unsigned char* end = p + n;
     while (*psz && p != end)
     {

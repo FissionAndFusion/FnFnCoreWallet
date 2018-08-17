@@ -130,6 +130,7 @@ void CService::NotifyWorldLineUpdate(const CWorldLineUpdate& update)
 
 void CService::NotifyNetworkPeerUpdate(const CNetworkPeerUpdate& update)
 {
+    (void)update;
 }
 
 void CService::Shutdown()

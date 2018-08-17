@@ -22,7 +22,7 @@ public:
     pos_type putpos() const;
     void consume(std::size_t n);
 protected:
-    enum {MIN_SIZE=8,};
+    enum {MIN_SIZE=8};
     int_type underflow();
     int_type overflow(int_type c);
     pos_type seekoff(off_type, std::ios_base::seekdir,

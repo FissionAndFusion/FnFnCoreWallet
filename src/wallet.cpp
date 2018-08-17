@@ -535,7 +535,7 @@ bool CWallet::SynchronizeTxSet(CTxSetChange& change)
     boost::unique_lock<boost::shared_mutex> wlock(rwWalletTx);
 
     set<uint256> setTxUpdate;
-    for (int i = 0;i < change.vTxRemove.size();i++)
+    for (std::size_t i = 0;i < change.vTxRemove.size();i++)
     {
         uint256& txid = change.vTxRemove[i].first;
         CWalletTx* pWalletTx = LoadWalletTx(txid);
@@ -668,7 +668,7 @@ CWalletTx* CWallet::LoadWalletTx(const uint256& txid)
     if (it == mapWalletTx.end())
     {
         CWalletTx wtx;
-        if (!dbWallet.RetrieveTx(txid,wtx));
+        if (!dbWallet.RetrieveTx(txid,wtx))
         {
             return NULL;
         }

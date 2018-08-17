@@ -195,11 +195,16 @@ MvErr CMvCoreProtocol::ValidateBlock(CBlock& block)
 
 MvErr CMvCoreProtocol::VerifyBlock(CBlock& block,CBlockIndex* pIndexPrev)
 {
+    (void)block;
+    (void)pIndexPrev;
     return MV_OK;
 }
 
 MvErr CMvCoreProtocol::VerifyBlockTx(CTransaction& tx,CTxContxt& txContxt,CBlockIndex* pIndexPrev)
 {
+    (void)tx;
+    (void)txContxt;
+    (void)pIndexPrev;
     return MV_OK;
 }
 
@@ -302,11 +307,13 @@ int CMvCoreProtocol::GetProofOfWorkRunTimeBits(int nBits,int64 nTime,int64 nPrev
 
 int64 CMvCoreProtocol::GetProofOfWorkReward(CBlockIndex* pIndexPrev)
 {
+    (void)pIndexPrev;
     return (15 * COIN);    
 }
 
 bool CMvCoreProtocol::CheckBlockSignature(const CBlock& block)
 {
+    (void)block;
     return true;
 }
 
@@ -319,5 +326,6 @@ CMvTestNetCoreProtocol::CMvTestNetCoreProtocol()
 
 void CMvTestNetCoreProtocol::GetGenesisBlock(CBlock& block)
 {
+    (void)block;
 }
 

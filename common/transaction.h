@@ -85,7 +85,7 @@ public:
         TX_CERT     = 0xff00,
         TX_GENESIS  = 0x0100,
         TX_STAKE    = 0x0200,
-        TX_WORK     = 0x0300,
+        TX_WORK     = 0x0300
     };
     CTransaction()
     {
@@ -276,7 +276,7 @@ public:
     int64 GetValueIn() const
     {
         int64 nValueIn = 0;
-        for (int i = 0;i < vInputValue.size();i++)
+        for (std::size_t i = 0;i < vInputValue.size();i++)
         {
             nValueIn += vInputValue[i].first;
         }

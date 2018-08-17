@@ -178,7 +178,7 @@ bool CWorldLine::GetTxUnspent(const uint256& hashFork,const vector<CTxIn>& vInpu
         return false;
     }
     
-    for (int i = 0;i < vInput.size();i++)
+    for (std::size_t i = 0;i < vInput.size();i++)
     {
         view.RetrieveUnspent(vInput[i].prevout,vOutput[i]);
     }

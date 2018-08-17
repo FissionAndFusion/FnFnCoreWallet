@@ -484,6 +484,7 @@ static char * RPCCommand_Generator(const char *text,int state)
 
 static char ** RPCCommand_Completion(const char *text,int start,int end)
 {
+    (void)end;
     char **matches = NULL;
     if (start == 0)
     {

@@ -32,9 +32,9 @@ public:
         PREFIX_NULL     = 0x00,
         PREFIX_PUBKEY   = 0x01,
         PREFIX_TEMPLATE = 0x02,
-        PREFIX_MAX,
+        PREFIX_MAX
     };
-    enum {DESTINATION_SIZE = 33,};
+    enum {DESTINATION_SIZE = 33};
     CDestination()
     {
         SetNull();

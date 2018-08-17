@@ -58,7 +58,7 @@ typedef enum
     MV_ERR_WALLET_IS_UNENCRYPTED,			// 38
     MV_ERR_WALLET_FAILED,				// 39
     /* count */
-    MV_ERR_MAX_COUNT,
+    MV_ERR_MAX_COUNT
 }MvErr;
 
 extern const char* MvErrString(const MvErr& err);

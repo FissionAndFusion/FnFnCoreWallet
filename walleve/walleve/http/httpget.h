@@ -21,7 +21,7 @@ enum
     HTTPGET_RESP_TIMEOUT      = -5,
     HTTPGET_RESOLVE_FAILED    = -6,
     HTTPGET_INTERNAL_FAILURE  = -7,
-    HTTPGET_ABORTED           = -8,
+    HTTPGET_ABORTED           = -8
 };
 
 class CHttpGet;

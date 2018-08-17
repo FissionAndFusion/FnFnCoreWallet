@@ -64,7 +64,7 @@ enum RPCErrorCode
     RPC_WALLET_ENCRYPTION_FAILED    = -16, //!< Failed to encrypt the wallet
     RPC_WALLET_ALREADY_UNLOCKED     = -17, //!< Wallet is already unlocked
     RPC_WALLET_INVALID_LABEL_NAME   = -18, //!< Invalid label name
-    RPC_WALLET_INVALID_PASSPHRASE   = -19, //!< Invalid passphrase
+    RPC_WALLET_INVALID_PASSPHRASE   = -19 //!< Invalid passphrase
 };
 
 inline json_spirit::Object JSONRPCError(int code, const std::string& message)

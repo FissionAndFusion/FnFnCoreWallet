@@ -21,7 +21,7 @@ enum TemplateType
     TEMPLATE_FORK      = 3,
     TEMPLATE_MINT      = 4, 
     TEMPLATE_DELEGATE  = 5, 
-    TEMPLATE_MAX, 
+    TEMPLATE_MAX 
 };
 
 class CTemplateGeneric;
@@ -34,6 +34,7 @@ public:
     CTemplateGeneric(uint16 nTemplateTypeIn,const std::vector<unsigned char>& vchDataIn)
     : nTemplateType(nTemplateTypeIn)
     {
+        (void)vchDataIn;
     }
     bool IsTxSpendable() const { return (nTemplateType == TEMPLATE_WEIGHTED || nTemplateType == TEMPLATE_MULTISIG); }
     uint16 GetTemplateType() const { return nTemplateType; }
@@ -68,7 +69,13 @@ public:
         std::vector<unsigned char> vchRemain(vchSig.begin() + vchData.size(),vchSig.end());
         return VerifySignature(hash,vchRemain,false);
     }
-    virtual bool BuildBlockSignature(const uint256& hash,const std::vector<unsigned char>& vchMintSig,std::vector<unsigned char>& vchSig) { return false; }
+    virtual bool BuildBlockSignature(const uint256& hash,const std::vector<unsigned char>& vchMintSig,std::vector<unsigned char>& vchSig) 
+    { 
+        (void)hash;
+        (void)vchMintSig;
+        (void)vchSig;
+        return false; 
+    }
 
     static CTemplatePtr CreateTemplatePtr(uint16 nTemplateTypeIn,const std::vector<unsigned char>& vchDataIn);
     static CTemplatePtr CreateTemplatePtr(const std::vector<unsigned char>& vchTemplateIn);
@@ -76,7 +83,11 @@ public:
     static bool IsTxSpendableType(const CDestination& dest);
     static const std::string GetTypeName(uint16 nTemplateTypeIn);
 protected:
-    virtual bool SetTemplateData(const std::vector<unsigned char>& vchDataIn) { return false; }
+    virtual bool SetTemplateData(const std::vector<unsigned char>& vchDataIn) 
+    { 
+        (void)vchDataIn;
+        return false; 
+    }
     virtual void BuildTemplateData() {};
     void BuildTemplate()
     {
@@ -87,7 +98,13 @@ protected:
     {
         return (vchSig.size() > vchData.size() && std::memcmp(&vchData[0],&vchSig[0],vchData.size()) == 0); 
     }
-    virtual bool VerifySignature(const uint256& hash,const std::vector<unsigned char>& vchSig,bool fBlock) { return false; }
+    virtual bool VerifySignature(const uint256& hash,const std::vector<unsigned char>& vchSig,bool fBlock) 
+    { 
+        (void)hash;
+        (void)vchSig;
+        (void)fBlock;
+        return false; 
+    }
 public:
     uint16  nTemplateType;
     CTemplateId nTemplateId;

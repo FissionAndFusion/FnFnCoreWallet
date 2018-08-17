@@ -384,6 +384,7 @@ protected:
     }
     void WalleveSerialize(walleve::CWalleveStream& s,std::size_t& serSize)
     {
+        (void)s;
         serSize += sizeof(pn);
     }
     
