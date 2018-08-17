@@ -5,6 +5,8 @@
 #ifndef  WALLEVE_TYPE_H
 #define  WALLEVE_TYPE_H
 
+// TODO: cross platform support.
+
 typedef char int8;
 typedef unsigned char uint8;
 typedef short int16;

@@ -41,7 +41,7 @@ bool CMvDBConn::Connect(const CMvDBConfig& config)
 {
     boost::unique_lock<boost::mutex> lock(mtxConn);
 
-    my_bool reconnect = 0;
+    bool reconnect = 0;
     mysql_options(&dbConn, MYSQL_OPT_RECONNECT, &reconnect);
     return (mysql_real_connect(&dbConn,config.strHost.c_str(),config.strUser.c_str(),config.strPass.c_str(),
                                        config.strDBName.c_str(),config.nPort,NULL,0) != NULL);
@@ -77,13 +77,13 @@ string CMvDBConn::ToEscString(const void* pBinary,size_t nBytes)
 CMvDBTxn::CMvDBTxn(CMvDBConn* pDBConn)
 : CMvDBExclusive(pDBConn), fCompleted(false)
 {
-    mysql_autocommit(&dbConn, (my_bool)0);
+    mysql_autocommit(&dbConn, (bool)0);
 }
 
 CMvDBTxn::CMvDBTxn(CMvDBConn& dbConnIn)
 : CMvDBExclusive(dbConnIn), fCompleted(false)
 {
-    mysql_autocommit(&dbConn, (my_bool)0);
+    mysql_autocommit(&dbConn, (bool)0);
 }
 
 CMvDBTxn::~CMvDBTxn()
@@ -92,7 +92,7 @@ CMvDBTxn::~CMvDBTxn()
     {
         Abort();
     }
-    mysql_autocommit(&dbConn, (my_bool)1);
+    mysql_autocommit(&dbConn, (bool)1);
 }
 
 bool CMvDBTxn::Query(const string& strQuery)

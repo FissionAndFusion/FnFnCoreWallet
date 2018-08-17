@@ -11,10 +11,10 @@
 #include <boost/program_options/variables_map.hpp>
 
 using namespace std;
-using namespace boost::filesystem;
 using namespace walleve;
 
 namespace po = boost::program_options;
+namespace fs = boost::filesystem;
 
 //////////////////////////////
 // CWalleveConfig
@@ -28,12 +28,12 @@ CWalleveConfig::~CWalleveConfig()
 {
 }
 
-bool CWalleveConfig::Load(int argc,char *argv[],const path& pathDefault,const string& strConfile)
+bool CWalleveConfig::Load(int argc,char *argv[],const fs::path& pathDefault,const string& strConfile)
 {
     const int cmdStyle = po::command_line_style::allow_long 
                          | po::command_line_style::long_allow_adjacent
                          | po::command_line_style::allow_long_disguise;
-    path pathConfile;
+    fs::path pathConfile;
     try
     { 
         optDesc.add_options()
@@ -41,8 +41,8 @@ bool CWalleveConfig::Load(int argc,char *argv[],const path& pathDefault,const st
         ("debug", po::value<bool>(&fDebug)->default_value(false))
         ("daemon", po::value<bool>(&fDaemon)->default_value(false))
         ("help", po::value<bool>(&fHelp)->default_value(false))
-        ("datadir", po::value<path>(&pathRoot)->default_value(pathDefault))
-        ("conf", po::value<path>(&pathConfile)->default_value(path(strConfile)));
+        ("datadir", po::value<fs::path>(&pathRoot)->default_value(pathDefault))
+        ("conf", po::value<fs::path>(&pathConfile)->default_value(fs::path(strConfile)));
 
         po::positional_options_description posDesc;
         posDesc.add("cmd",-1);

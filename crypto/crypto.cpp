@@ -98,6 +98,7 @@ uint256 CryptoHash(const uint256& h1,const uint256& h2)
     crypto_generichash_blake2b_update(&state,h1.begin(),sizeof(h1));
     crypto_generichash_blake2b_update(&state,h2.begin(),sizeof(h2));
     crypto_generichash_blake2b_final(&state,hash.begin(),sizeof(hash));
+    return hash;
 }
 
 //////////////////////////////

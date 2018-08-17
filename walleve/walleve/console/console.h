@@ -46,7 +46,7 @@ private:
     std::string strPrompt;
     std::string strLastHistory;
     boost::asio::io_service ioService;
-    boost::asio::strand ioStrand;
+    boost::asio::io_service::strand ioStrand;
     boost::asio::posix::stream_descriptor inStream;
     boost::asio::null_buffers bufReadNull;
 };

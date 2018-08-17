@@ -208,7 +208,7 @@ bool CBlockDB::UpdateFork(const uint256& hash,const uint256& hashRefBlock,const 
     int nIndexBased = -1;
     if (hashForkBased != hash && hashForkBased != 0)
     {
-        if ((nIndexBased = GetForkIndex(hashForkBased)) < 0);
+        if ((nIndexBased = GetForkIndex(hashForkBased)) < 0)
         {
             return false;
         }

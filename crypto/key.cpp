@@ -54,6 +54,7 @@ CKey& CKey::operator=(const CKey& key)
     nVersion = key.nVersion;
     *pCryptoKey = *key.pCryptoKey;
     cipher = key.cipher;
+    return *this;
 }
 
 CKey::~CKey()

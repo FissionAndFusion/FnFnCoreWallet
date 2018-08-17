@@ -20,6 +20,7 @@ public:
     int64 nHashRate;
 public:
     virtual uint256 Hash(const std::vector<unsigned char>& vchData) = 0;
+    virtual ~CBlockMakerHashAlgo() {};
 };
 
 class CBlockMakerProfile

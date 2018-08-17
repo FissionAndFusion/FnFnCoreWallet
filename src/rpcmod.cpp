@@ -645,14 +645,14 @@ Value CRPCMod::RPCGetTxPool(const Array& params,bool fHelp)
         {
             nTotalSize += vTxPool[i].second;
         }
-        ret.push_back(Pair("count",vTxPool.size()));
-        ret.push_back(Pair("size",nTotalSize));
+        ret.push_back(Pair("count",(boost::uint64_t)vTxPool.size()));
+        ret.push_back(Pair("size",(boost::uint64_t)nTotalSize));
     }
     else
     {
         for (std::size_t i = 0;i < vTxPool.size();i++)
         {
-            ret.push_back(Pair(vTxPool[i].first.GetHex(),vTxPool[i].second));
+            ret.push_back(Pair(vTxPool[i].first.GetHex(),(boost::uint64_t)vTxPool[i].second));
         }
     }
     

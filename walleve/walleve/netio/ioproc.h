@@ -15,6 +15,7 @@
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp> 
 
+
 namespace walleve
 {
 
@@ -53,7 +54,7 @@ public:
     CIOProc(const std::string& walleveOwnKeyIn);
     virtual ~CIOProc();
     boost::asio::io_service& GetIoService();
-    boost::asio::strand& GetIoStrand();
+    boost::asio::io_service::strand& GetIoStrand();
     bool DispatchEvent(CWalleveEvent* pEvent);
     virtual CIOClient* CreateIOClient(CIOContainer *pContainer);
 protected:
@@ -92,7 +93,7 @@ private:
 private:
     CWalleveThread thrIOProc;
     boost::asio::io_service ioService;
-    boost::asio::strand ioStrand;
+    boost::asio::io_service::strand ioStrand;
     boost::asio::ip::tcp::resolver resolverHost;
     std::map<boost::asio::ip::tcp::endpoint,CIOInBound*> mapService;
     CIOOutBound ioOutBound;
