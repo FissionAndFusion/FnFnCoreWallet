@@ -16,10 +16,10 @@ static inline void Base32Encode5Bytes(const unsigned char* md5,std::string& strB
     strBase32.push_back(alphabet[(md5[0] >> 3) & 0x1F]);
     strBase32.push_back(alphabet[((md5[0] << 2) & 0x1C) | ((md5[1] >> 6) & 0x03)]);
     strBase32.push_back(alphabet[(md5[1] >> 1) & 0x1F]);
-    strBase32.push_back(alphabet[(md5[1] << 4) & 0x10 | ((md5[2] >> 4) & 0x0F)]);
-    strBase32.push_back(alphabet[(md5[2] << 1) & 0x1E | ((md5[3] >> 7) & 0x01)]);
+    strBase32.push_back(alphabet[((md5[1] << 4) & 0x10) | ((md5[2] >> 4) & 0x0F)]);
+    strBase32.push_back(alphabet[((md5[2] << 1) & 0x1E) | ((md5[3] >> 7) & 0x01)]);
     strBase32.push_back(alphabet[(md5[3] >> 2) & 0x1F]);
-    strBase32.push_back(alphabet[(md5[3] << 3) & 0x18 | ((md5[4] >> 5) & 0x07)]);
+    strBase32.push_back(alphabet[((md5[3] << 3) & 0x18) | ((md5[4] >> 5) & 0x07)]);
     strBase32.push_back(alphabet[(md5[4] & 0x1F)]);
 }
 

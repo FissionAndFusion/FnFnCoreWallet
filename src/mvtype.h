@@ -27,7 +27,7 @@ class CForkStatus
 public:
     CForkStatus() {}
     CForkStatus(const uint256& hashOriginIn,const uint256& hashParentIn,int nOriginHeightIn) 
-    : hashOrigin(hashOrigin),hashParent(hashParentIn),nOriginHeight(nOriginHeightIn) {}
+    : hashOrigin(hashOriginIn),hashParent(hashParentIn),nOriginHeight(nOriginHeightIn) {}
 public:
     uint256 hashOrigin;
     uint256 hashParent;

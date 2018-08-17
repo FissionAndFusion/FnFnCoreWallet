@@ -668,7 +668,7 @@ CWalletTx* CWallet::LoadWalletTx(const uint256& txid)
     if (it == mapWalletTx.end())
     {
         CWalletTx wtx;
-        if (!dbWallet.RetrieveTx(txid,wtx));
+        if (!dbWallet.RetrieveTx(txid,wtx))
         {
             return NULL;
         }
