@@ -29,11 +29,13 @@ CEndpoint::CEndpoint(const tcp::endpoint& ep)
     memmove(ss,epipv4,BINSIZE);
     if (ep.address().is_v4())
     {
-        memmove(&ss[12],ep.address().to_v4().to_bytes().elems,4);
+        //TODO
+        memmove(&ss[12],ep.address().to_v4().to_bytes().data(),4);
     }
     else
     {
-        memmove(&ss[0],ep.address().to_v6().to_bytes().elems,16);
+        //TODO
+        memmove(&ss[0],ep.address().to_v6().to_bytes().data(),16);
     }
     ss[16] = ep.port() >> 8;
     ss[17] = ep.port() & 0xFF;
@@ -52,13 +54,15 @@ void CEndpoint::GetEndpoint(tcp::endpoint& ep)
     if (memcmp(ss,epipv4,12) == 0)
     {
         ip::address_v4::bytes_type bytes;
-        memmove(bytes.elems,&ss[12],4);
+        //TODO
+        memmove(bytes.data(),&ss[12],4);
         ep.address(ip::address(ip::address_v4(bytes)));
     }
     else
     {
         ip::address_v6::bytes_type bytes;
-        memmove(bytes.elems,&ss[0],16);
+        //TODO
+        memmove(bytes.data(),&ss[0],16);
         ep.address(ip::address(ip::address_v6(bytes)));
     }
     ep.port((((unsigned short)ss[16]) << 8) + ss[17]);

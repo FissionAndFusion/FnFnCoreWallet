@@ -22,6 +22,10 @@ find_package(MySQL 5.7.20 REQUIRED)
 find_package(sodium 1.0.8 REQUIRED)
 find_package(Readline 6.0 REQUIRED)
 
+if(${USE_SSL_110} MATCHES "TRUE")
+    add_definitions(-DUSE_SSL_110)
+endif(${USE_SSL_110} MATCHES "TRUE")
+
 add_subdirectory(src)
 add_subdirectory(walleve)
 add_subdirectory(crypto)

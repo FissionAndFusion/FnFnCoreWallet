@@ -308,14 +308,24 @@ bool CSSLClient::VerifyCertificate(const string& strVerifyHost,bool fPreverified
     std::cout << "Verifying " << fPreverified << " " << subject_name << "\n";
 
     X509_STORE_CTX *cts = ctx.native_handle();
+    
+    
     //int32_t length = 0;
     //X509* cert = X509_STORE_CTX_get_current_cert(ctx.native_handle());
-    std::cout << "CTX ERROR : " << cts->error << std::endl;
+    int cts_error;
+
+#ifdef USE_SSL_110
+    cts_error = X509_STORE_CTX_get_error(cts);
+#else
+    cts_error = cts->error;
+#endif
+    std::cout << "CTX ERROR : " << cts_error << std::endl;
+
 
     int32_t depth = X509_STORE_CTX_get_error_depth(cts);
     std::cout << "CTX DEPTH : " << depth << std::endl;
 
-    switch (cts->error)
+    switch (cts_error)
     {
     case X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT:
         cout << "X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT\n";
