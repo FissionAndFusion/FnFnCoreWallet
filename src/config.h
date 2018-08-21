@@ -89,6 +89,34 @@ protected:
     int nRPCPortInt;
 };
 
+class CMvDbpConfig : virtual public CMvBasicConfig
+{
+public:
+    CMvDbpConfig();
+    virtual ~CMvDbpConfig();
+    virtual bool PostLoad();
+    virtual std::string ListConfig();
+public:
+    boost::asio::ip::tcp::endpoint epDbp;
+    std::string strDbpConnect;
+    unsigned int nDbpPort;
+    unsigned int nDbpConnectTimeout;
+    unsigned int nDbpMaxConnections;
+    std::vector<std::string> vDbpAllowIP;
+    std::string strDbpWallet;
+    std::string strDbpUser;
+    std::string strDbpPass;
+    bool fDbpSSLEnable;
+    bool fDbpSSLVerify;
+    std::string strDbpCAFile;
+    std::string strDbpCertFile;
+    std::string strDbpPKFile;
+    std::string strDbpCiphers;
+protected:
+    int nDbpPortInt;
+};
+
+
 class CMvMintConfig : virtual public CMvBasicConfig
 {
 public:
@@ -114,6 +142,7 @@ protected:
 class CMvConfig : virtual public CMvStorageConfig,
                   virtual public CMvNetworkConfig,
                   virtual public CMvRPCConfig,
+                  virtual public CMvDbpConfig,
                   virtual public CMvMintConfig
 {
 public:

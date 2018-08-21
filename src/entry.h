@@ -24,6 +24,7 @@ protected:
     bool InitializeService();
     bool InitializeClient();
     walleve::CHttpHostConfig GetRPCHostConfig();
+    walleve::CDbpHostConfig GetDbpHostConfig();
 
     boost::filesystem::path GetDefaultDataDir();
 

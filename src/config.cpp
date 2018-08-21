@@ -19,6 +19,8 @@ using namespace multiverse;
 #define DEFAULT_TESTNET_P2PPORT         6813
 #define DEFAULT_RPCPORT                 6812
 #define DEFAULT_TESTNET_RPCPORT         6814
+#define DEFAULT_DBPPORT                 6815
+#define DEFAULT_TESTNET_DBPPORT         6817
 
 #define DEFAULT_MAX_INBOUNDS            125
 #define DEFAULT_MAX_OUTBOUNDS           10
@@ -26,6 +28,9 @@ using namespace multiverse;
 
 #define DEFAULT_RPC_MAX_CONNECTIONS     5
 #define DEFAULT_RPC_CONNECT_TIMEOUT     120
+
+#define DEFAULT_DBP_MAX_CONNECTIONS     10
+#define DEFAULT_DBP_CONNECT_TIMEOUT     150
 
 namespace po = boost::program_options;
 
@@ -249,6 +254,83 @@ bool CMvRPCConfig::PostLoad()
 string CMvRPCConfig::ListConfig()
 {
     return "";
+}
+
+
+//////////////////////////////
+// CMvDbpConfig
+
+CMvDbpConfig::CMvDbpConfig()
+{
+    po::options_description desc("dbp");
+    desc.add_options()
+
+    OPTSTR("dbpconnect",strDbpConnect,"127.0.0.1")
+    OPTINT("dbpport",nDbpPortInt,0)
+    OPTUINT("dbptimeout",nDbpConnectTimeout,DEFAULT_DBP_CONNECT_TIMEOUT)
+    OPTUINT("dbpmaxconnections",nDbpMaxConnections,DEFAULT_DBP_MAX_CONNECTIONS)
+    OPTVEC("dbpallowip",vDbpAllowIP)
+
+    OPTSTR("dbpwallet",strDbpWallet,"")
+    OPTSTR("dbpuser",strDbpUser,"")
+    OPTSTR("dbppassword",strDbpPass,"")
+
+    OPTBOOL("dbpssl",fDbpSSLEnable,false)
+    OPTBOOL("dbpsslverify",fDbpSSLVerify,true)
+    OPTSTR("dbpsslcafile",strDbpCAFile,"ca.crt")
+    OPTSTR("dbpsslcertificatechainfile",strDbpCertFile,"server.crt")
+    OPTSTR("dbpsslprivatekeyfile",strDbpPKFile,"server.key")
+    OPTSTR("dbpsslciphers",strDbpCiphers,"TLSv1+HIGH:!SSLv2:!aNULL:!eNULL:!AH:!3DES:@STRENGTH");
+
+    AddOptions(desc);
+}
+
+CMvDbpConfig::~CMvDbpConfig()
+{
+}
+
+bool CMvDbpConfig::PostLoad()
+{
+    if (nDbpPortInt <= 0 || nDbpPortInt > 0xFFFF)
+    {
+        nDbpPort = (fTestNet ? DEFAULT_TESTNET_DBPPORT : DEFAULT_DBPPORT);
+    }
+    else
+    {
+        nDbpPort = (unsigned short)nDbpPortInt;
+    }
+
+    if (nDbpConnectTimeout == 0)
+    {
+        nDbpConnectTimeout = 10;
+    }
+
+    epDbp = tcp::endpoint(!vDbpAllowIP.empty()
+                              ? boost::asio::ip::address_v4::any()
+                                : boost::asio::ip::address_v4::loopback(),
+                          nDbpPort);
+
+    if (!path(strDbpCAFile).is_complete())
+    {
+        strDbpCAFile = (pathRoot / strDbpCAFile).string();
+    }
+
+    if (!path(strDbpCertFile).is_complete())
+    {
+        strDbpCertFile = (pathRoot / strDbpCertFile).string();
+    }
+
+    if (!path(strDbpPKFile).is_complete())
+    {
+        strDbpPKFile = (pathRoot / strDbpPKFile).string();
+    }
+
+    return true;
+}
+
+std::string CMvDbpConfig::ListConfig()
+{
+    return std::string();
 }
 
 //////////////////////////////

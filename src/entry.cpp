@@ -196,6 +196,7 @@ bool CMvEntry::InitializeService()
         delete pDbpServer;
         return false;
     }
+    pDbpServer->AddNewHost(GetDbpHostConfig());
 
     return true;
 }
@@ -245,6 +246,22 @@ CHttpHostConfig CMvEntry::GetRPCHostConfig()
 
     return CHttpHostConfig(mvConfig.epRPC,mvConfig.nRPCMaxConnections,sslRPC,mapUsrRPC,
                            mvConfig.vRPCAllowIP,"rpcmod");
+}
+
+CDbpHostConfig CMvEntry::GetDbpHostConfig()
+{
+    CIOSSLOption sslDbp(mvConfig.fDbpSSLEnable,mvConfig.fDbpSSLVerify,
+                        mvConfig.strDbpCAFile,mvConfig.strDbpCertFile,
+                        mvConfig.strDbpPKFile,mvConfig.strDbpCiphers);
+
+    map<string,string> mapUsrDbp;
+    if (!mvConfig.strDbpUser.empty())
+    {
+        mapUsrDbp[mvConfig.strDbpUser] = mvConfig.strDbpPass;
+    }
+
+    return CDbpHostConfig(mvConfig.epDbp,mvConfig.nDbpMaxConnections,sslDbp,mapUsrDbp,
+                           mvConfig.vDbpAllowIP,"dbpserver");
 }
 
 bool CMvEntry::Run()
