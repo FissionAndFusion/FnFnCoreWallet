@@ -21,7 +21,8 @@ CRPCMod::CRPCMod()
     pHttpServer = NULL;
     pCoreProtocol = NULL;
     pService = NULL;
-    mapRPCFunc = boost::assign::map_list_of
+    
+    std::map<std::string,RPCFunc>  temp_map = boost::assign::map_list_of
                  ("help",                  &CRPCMod::RPCHelp)
                  ("stop",                  &CRPCMod::RPCStop)
                  ("getpeercount",          &CRPCMod::RPCGetPeerCount)
@@ -66,6 +67,7 @@ CRPCMod::CRPCMod()
                  ("getwork",               &CRPCMod::RPCGetWork)
                  ("submitwork",            &CRPCMod::RPCSubmitWork)
                  ;
+    mapRPCFunc = temp_map; 
 }
 
 CRPCMod::~CRPCMod()

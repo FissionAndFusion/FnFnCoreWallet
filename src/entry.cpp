@@ -189,6 +189,9 @@ bool CMvEntry::InitializeService()
         return false;
     }
 
+    // TODO
+    
+
     return true;
 }
 
