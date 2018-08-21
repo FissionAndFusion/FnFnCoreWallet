@@ -139,7 +139,7 @@ void CConsole::WaitForChars()
 
 void CConsole::HandleRead(boost::system::error_code const& err,size_t nTransferred)
 {
-    if (err == boost::system::errc::errc_t::success)
+    if (err == boost::system::errc::success)
     {
         rl_callback_read_char();
         WaitForChars();
