@@ -41,7 +41,7 @@ public:
     void WriteLock()
     {
         boost::unique_lock<boost::shared_mutex> lock(mutex);
-        if (nRead || nWrite.fetch_add(1))
+        if (nWrite.fetch_add(1) || nRead)
         {
             do { condWrite.wait(lock); } while (nRead || nWriting);
         }
