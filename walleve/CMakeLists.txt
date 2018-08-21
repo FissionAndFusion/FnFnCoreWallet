@@ -44,6 +44,12 @@ set(sources
 	walleve/http/httpevent.h
 	walleve/peernet/peerevent.h
 	walleve/peernet/peerinfo.h
+
+	# DBP server src
+	walleve/dbp/dbpevent.h
+	walleve/dbp/dbptype.h
+	walleve/dbp/dbpserver.h
+	walleve/dbp/dbpserver.cpp
 )
 
 add_library(walleve ${sources})

@@ -189,8 +189,13 @@ bool CMvEntry::InitializeService()
         return false;
     }
 
-    // TODO
-    
+    // DBP Server
+    CDbpServer *pDbpServer = new CDbpServer();
+    if (!pDbpServer || !walleveDocker.Attach(pDbpServer))
+    {
+        delete pDbpServer;
+        return false;
+    }
 
     return true;
 }
