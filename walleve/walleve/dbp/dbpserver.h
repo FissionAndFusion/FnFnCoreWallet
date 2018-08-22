@@ -45,9 +45,10 @@ class CDbpClient
 {
 public:
     CDbpClient(CDbpServer *pServerIn,CDbpProfile *pProfileIn,
-                CIOClient* pClientIn);
+                CIOClient* pClientIn,uint64 nonce);
     ~CDbpClient();
     CDbpProfile *GetProfile();
+    uint64 GetNonce();
     bool IsEventStream();
     void SetEventStream();
     void Activate();
@@ -64,6 +65,7 @@ protected:
     CDbpServer* pServer;
     CDbpProfile *pProfile;
     CIOClient* pClient;
+    uint64 nNonce;
     bool fEventStream;
     CWalleveBufStream ssRecv;
     CWalleveBufStream ssSend;

@@ -36,5 +36,11 @@ class CWalleveDbpMethod: public CWalleveDbpRequest
 public:
 
 };
+
+class CWalleveDbpBroken
+{
+public:
+    bool fEventStream;
+};
 } // namespace walleve
 #endif//WALLEVE_DBP_TYPE_H

@@ -7,8 +7,8 @@
 using namespace walleve;
 
  CDbpClient::CDbpClient(CDbpServer *pServerIn,CDbpProfile *pProfileIn,
-                CIOClient* pClientIn)
-: pServer(pServerIn), pProfile(pProfileIn), pClient(pClientIn)
+                CIOClient* pClientIn,uint64 nonce)
+: pServer(pServerIn), pProfile(pProfileIn), pClient(pClientIn),nNonce(nonce)
   
 {
 }
@@ -22,6 +22,11 @@ CDbpProfile *CDbpClient::GetProfile()
 {
     return pProfile;
 }
+
+ uint64 CDbpClient::GetNonce()
+ {
+     return nNonce;
+ }
 
 bool CDbpClient::IsEventStream()
 {
@@ -223,17 +228,39 @@ bool CDbpServer::CreateProfile(const CDbpHostConfig& confHost)
 
 CDbpClient* CDbpServer::AddNewClient(CIOClient *pClient,CDbpProfile *pDbpProfile)
 {
+    uint64 nNonce = 0;
+    RAND_bytes((unsigned char*)&nNonce, sizeof(nNonce));
+    while(mapClient.count(nNonce))
+    {
+        RAND_bytes((unsigned char*)&nNonce, sizeof(nNonce));
+    }
 
+    CDbpClient *pDbpClient = new CDbpClient(this,pDbpProfile,pClient,nNonce);
+    if(pDbpClient)
+    {
+        mapClient.insert(std::make_pair(nNonce,pDbpClient));
+        pDbpClient->Activate();
+    }
+
+    return pDbpClient;
 }
 
 void CDbpServer::RemoveClient(CDbpClient *pDbpClient)
 {
-
+    mapClient.erase(pDbpClient->GetNonce());
+    
+    CWalleveEventDbpBroken *pEventBroken = new CWalleveEventDbpBroken(pDbpClient->GetNonce());
+    if (pEventBroken != NULL)
+    {
+        pEventBroken->data.fEventStream = pDbpClient->IsEventStream();
+        pDbpClient->GetProfile()->pIOModule->PostEvent(pEventBroken);
+    }
+    delete pDbpClient;
 }
 
 void CDbpServer::RespondError(CDbpClient *pDbpClient,int nStatusCode,const std::string& strError)
 {
-
+    
 }
 
 bool CDbpServer::HandleEvent(CWalleveEventDbpRespond& eventRsp)

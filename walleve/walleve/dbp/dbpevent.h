@@ -11,7 +11,8 @@ enum {
     WALLEVE_EVENT_DBP_RSP,
     WALLEVE_EVENT_DBP_CONNECT,
     WALLEVE_EVENT_DBP_SUB,
-    WALLEVE_EVENT_DBP_METHOD
+    WALLEVE_EVENT_DBP_METHOD,
+    WALLEVE_EVENT_DBP_BROKEN
 };
 
 class CWalleveDBPEventListener;
@@ -25,6 +26,7 @@ typedef TYPE_DBPEVENT(WALLEVE_EVENT_DBP_RSP,CWalleveDbpRespond) CWalleveEventDbp
 typedef TYPE_DBPEVENT(WALLEVE_EVENT_DBP_CONNECT,CWalleveDbpConnect) CWalleveEventDbpConnect;
 typedef TYPE_DBPEVENT(WALLEVE_EVENT_DBP_SUB,CWalleveDbpSub) CWalleveEventDbpSub;
 typedef TYPE_DBPEVENT(WALLEVE_EVENT_DBP_METHOD,CWalleveDbpMethod) CWalleveEventDbpMethod;
+typedef TYPE_DBPEVENT(WALLEVE_EVENT_DBP_BROKEN,CWalleveDbpBroken) CWalleveEventDbpBroken;
 
 
 class CWalleveDBPEventListener : virtual public CWalleveEventListener
@@ -36,6 +38,7 @@ public:
     DECLARE_EVENTHANDLER(CWalleveEventDbpConnect);
     DECLARE_EVENTHANDLER(CWalleveEventDbpSub);
     DECLARE_EVENTHANDLER(CWalleveEventDbpMethod);
+    DECLARE_EVENTHANDLER(CWalleveEventDbpBroken);
 };
 
 }// namespace walleve
