@@ -15,6 +15,7 @@
 #include "blockmaker.h"
 #include "rpcclient.h"
 #include "miner.h"
+#include "dbpservice.h"
 
 #include <map>
 #include <string>
@@ -190,7 +191,7 @@ bool CMvEntry::InitializeService()
     }
 
     // DBP Server
-    CDbpServer *pDbpServer = new CDbpServer();
+    CDbpService *pDbpServer = new CDbpService();
     if (!pDbpServer || !walleveDocker.Attach(pDbpServer))
     {
         delete pDbpServer;

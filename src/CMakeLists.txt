@@ -31,6 +31,7 @@ set(sources
 	blockmaker.cpp blockmaker.h
 	rpcclient.cpp rpcclient.h
 	miner.cpp miner.h
+	dbpservice.cpp dbpservice.h
 )
 
 add_executable(multiverse ${sources})
