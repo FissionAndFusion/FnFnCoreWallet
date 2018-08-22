@@ -191,13 +191,21 @@ bool CMvEntry::InitializeService()
     }
 
     // DBP Server
-    CDbpService *pDbpServer = new CDbpService();
+    CDbpServer  *pDbpServer  = new CDbpServer();
     if (!pDbpServer || !walleveDocker.Attach(pDbpServer))
     {
         delete pDbpServer;
         return false;
     }
     pDbpServer->AddNewHost(GetDbpHostConfig());
+
+    // DBP Service
+    CDbpService *pDbpService = new CDbpService();
+    if (!pDbpService || !walleveDocker.Attach(pDbpService))
+    {
+        delete pDbpService;
+        return false;
+    }
 
     return true;
 }

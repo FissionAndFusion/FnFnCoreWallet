@@ -260,7 +260,7 @@ void CDbpServer::RemoveClient(CDbpClient *pDbpClient)
 
 void CDbpServer::RespondError(CDbpClient *pDbpClient,int nStatusCode,const std::string& strError)
 {
-    
+
 }
 
 bool CDbpServer::HandleEvent(CWalleveEventDbpRespond& eventRsp)

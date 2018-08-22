@@ -4,9 +4,10 @@ using namespace multiverse;
 
 
 CDbpService::CDbpService()
-:walleve::CDbpServer()
+:walleve::IIOModule("dbpservice")
 {
-
+    pService = NULL;
+    pDbpServer = NULL;
 }
 
 CDbpService::~CDbpService()
@@ -17,14 +18,15 @@ CDbpService::~CDbpService()
 
 bool CDbpService::WalleveHandleInitialize()
 {
-    if(!walleve::CDbpServer::WalleveHandleInitialize())
-    {
-        return false;
-    }
-
     if (!WalleveGetObject("service",pService))
     {
         WalleveLog("Failed to request service\n");
+        return false;
+    }
+
+    if (!WalleveGetObject("dbpserver",pDbpServer))
+    {
+        WalleveLog("Failed to request dbpserver\n");
         return false;
     }
 
@@ -33,5 +35,6 @@ bool CDbpService::WalleveHandleInitialize()
 
 void CDbpService::WalleveHandleDeinitialize()
 {
-    walleve::CDbpServer::WalleveHandleDeinitialize();
+    pDbpServer = NULL;
+    pService = NULL;
 }

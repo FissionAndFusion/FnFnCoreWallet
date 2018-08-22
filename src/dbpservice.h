@@ -6,7 +6,7 @@
 
 namespace multiverse{
 
-class CDbpService : public walleve::CDbpServer
+class CDbpService : public walleve::IIOModule, virtual public walleve::CWalleveDBPEventListener
 {
 public:
     CDbpService();
@@ -15,6 +15,7 @@ protected:
     bool WalleveHandleInitialize();
     void WalleveHandleDeinitialize();
 protected:
+    walleve::IIOProc *pDbpServer;
     IService *pService;
 };
 
