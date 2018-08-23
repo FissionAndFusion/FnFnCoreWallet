@@ -51,11 +51,11 @@ set(sources
 	walleve/dbp/dbpserver.h
 	walleve/dbp/dbpserver.cpp
 	walleve/dbp/dbputils.hpp
-	walleve/dbp/dbp-proto/dbp.pb.cc
-	walleve/dbp/dbp-proto/dbp.pb.h
 )
 
-protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS walleve/dbp/dbp.proto walleve/dbp/lws.proto)
+protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS 
+walleve/dbp/dbp-proto/dbp.proto 
+walleve/dbp/dbp-proto/lws.proto)
 
 add_library(walleve ${sources}  ${PROTO_SRCS} ${PROTO_HDRS})
 

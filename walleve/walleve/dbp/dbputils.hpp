@@ -2,7 +2,6 @@
 #define DBP_UTILS_HPP
 
 #include <arpa/inet.h>
-#include <cstdint>
 #include <cstring>
 
 class CDbpUtils

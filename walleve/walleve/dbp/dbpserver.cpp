@@ -3,8 +3,8 @@
 #include <openssl/rand.h>
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string/trim.hpp>
-#include "dbp.pb.h"
 
+#include "dbp.pb.h"
 #include "dbputils.hpp"
 
 using namespace walleve;
@@ -107,20 +107,20 @@ void CDbpClient::HandleReadCompleted()
     msgBase.ParseFromArray(ssRecv.GetData(),ssRecv.GetSize());
 
     dbp::Msg currentMsgType = msgBase.msg();
-
+    google::protobuf::Any anyObj = msgBase.object();
     switch(currentMsgType)
     {
     case dbp::CONNECT:
-        pServer->HandleClientRecv(this,msgBase.object());
+        pServer->HandleClientRecv(this,&anyObj);
         break;
     case dbp::SUB:
-        pServer->HandleClientRecv(this,msgBase.object());
+        pServer->HandleClientRecv(this,&anyObj);
         break;
     case dbp::UNSUB:
-        pServer->HandleClientRecv(this,msgBase.object());
+        pServer->HandleClientRecv(this,&anyObj);
         break;
     case dbp::METHOD:
-        pServer->HandleClientRecv(this,msgBase.object());
+        pServer->HandleClientRecv(this,&anyObj);
         break;
     default:
         pServer->HandleClientError(this);
@@ -155,7 +155,7 @@ CIOClient* CDbpServer::CreateIOClient(CIOContainer *pContainer)
     return CIOProc::CreateIOClient(pContainer);
 }
 
-void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,google::protobuf::Any anyObj)
+void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
 {
     CDbpProfile *pDbpProfile = pDbpClient->GetProfile();
     CWalleveEventDbpRequest *pEventDbpReq = new CWalleveEventDbpRequest(pDbpClient->GetNonce());
@@ -165,21 +165,21 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,google::protobuf::Any a
         return;
     }
 
+    google::protobuf::Any* any = static_cast<google::protobuf::Any*>(anyObj);
     
-    
-    if(anyObj.Is<dbp::Connect>())
+    if(any->Is<dbp::Connect>())
     {
 
     }
-    else if(anyObj.Is<dbp::Sub>())
+    else if(any->Is<dbp::Sub>())
     {
 
     }
-    else if(anyObj.Is<dbp::Unsub>())
+    else if(any->Is<dbp::Unsub>())
     {
 
     }
-    else if(anyObj.Is<dbp::Method>())
+    else if(any->Is<dbp::Method>())
     {
 
     }
