@@ -4,6 +4,8 @@
 #include "walleve/netio/ioproc.h"
 #include "walleve/dbp/dbpevent.h"
 
+#include "dbp-proto/dbp.pb.h"
+
 
 namespace walleve{
 
@@ -77,8 +79,7 @@ public:
     CDbpServer();
     virtual ~CDbpServer();
     CIOClient* CreateIOClient(CIOContainer *pContainer);
-    void HandleClientRecv(CDbpClient *pDbpClient,
-                          CWalleveBufStream& ssPayload);
+    void HandleClientRecv(CDbpClient *pDbpClient,google::protobuf::Any anyObj);
     void HandleClientSent(CDbpClient *pDbpClient);
     void HandleClientError(CDbpClient *pDbpClient);
     void AddNewHost(const CDbpHostConfig& confHost);

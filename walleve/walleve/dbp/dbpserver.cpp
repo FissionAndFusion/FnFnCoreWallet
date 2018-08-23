@@ -5,7 +5,6 @@
 #include <boost/algorithm/string/trim.hpp>
 
 #include "dbputils.hpp"
-#include "dbp-proto/dbp.pb.h"
 
 using namespace walleve;
 
@@ -90,12 +89,42 @@ void CDbpClient::HandleReadHeader(std::size_t nTransferred)
 
 void CDbpClient::HandleReadPayload(std::size_t nTransferred)
 {
-    
+    if(nTransferred != 0)
+    {
+        HandleReadCompleted();
+    }
+    else
+    {
+        pServer->HandleClientError(this);
+    }
 }
 
 void CDbpClient::HandleReadCompleted()
 {
+    // start parse msg body(payload) by protobuf
+    dbp::Base msgBase;
+    msgBase.ParseFromArray(ssRecv.GetData(),ssRecv.GetSize());
 
+    dbp::Msg currentMsgType = msgBase.msg();
+
+    switch(currentMsgType)
+    {
+    case dbp::CONNECT:
+        pServer->HandleClientRecv(this,msgBase.object());
+        break;
+    case dbp::SUB:
+        pServer->HandleClientRecv(this,msgBase.object());
+        break;
+    case dbp::UNSUB:
+        pServer->HandleClientRecv(this,msgBase.object());
+        break;
+    case dbp::METHOD:
+        pServer->HandleClientRecv(this,msgBase.object());
+        break;
+    default:
+        pServer->HandleClientError(this);
+        break;
+    }
 }
 
 void CDbpClient::HandleWritenResponse(std::size_t nTransferred)
@@ -125,10 +154,38 @@ CIOClient* CDbpServer::CreateIOClient(CIOContainer *pContainer)
     return CIOProc::CreateIOClient(pContainer);
 }
 
-void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,
-                          CWalleveBufStream& ssPayload)
+void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,google::protobuf::Any anyObj)
 {
+    CDbpProfile *pDbpProfile = pDbpClient->GetProfile();
+    CWalleveEventDbpRequest *pEventDbpReq = new CWalleveEventDbpRequest(pDbpClient->GetNonce());
+    if(!pEventDbpReq)
+    {
+        RespondError(pDbpClient,500);
+        return;
+    }
 
+    
+    
+    if(anyObj.Is<dbp::Connect>())
+    {
+
+    }
+    else if(anyObj.Is<dbp::Sub>())
+    {
+
+    }
+    else if(anyObj.Is<dbp::Unsub>())
+    {
+
+    }
+    else if(anyObj.Is<dbp::Method>())
+    {
+
+    }
+    else
+    {
+
+    }
 }
 
 void CDbpServer::HandleClientSent(CDbpClient *pDbpClient)
