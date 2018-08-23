@@ -4,6 +4,9 @@
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string/trim.hpp>
 
+#include "dbputils.hpp"
+#include "dbp-proto/dbp.pb.h"
+
 using namespace walleve;
 
  CDbpClient::CDbpClient(CDbpServer *pServerIn,CDbpProfile *pProfileIn,
@@ -49,27 +52,45 @@ void CDbpClient::Activate()
 
 void CDbpClient::SendResponse(std::string& strResponse)
 {
-
+    
 }
 
 void CDbpClient::StartReadHeader()
 {
-
+    pClient->Read(ssRecv,4,
+    boost::bind(&CDbpClient::HandleReadHeader,this,_1));
 }
 
 void CDbpClient::StartReadPayload(std::size_t nLength)
 {
-
+    pClient->Read(ssRecv,nLength,
+        boost::bind(&CDbpClient::HandleReadPayload,this,_1));
 }
+
 
 void CDbpClient::HandleReadHeader(std::size_t nTransferred)
 {
+    if(nTransferred != 0)
+    {
+        uint32_t len = CDbpUtils::parseLenFromMsgHeader(ssRecv.GetData(),4);
+        if(len == 0)
+        {
+            pServer->HandleClientError(this);
+            return;
+        }
 
+        ssRecv.Clear();
+        StartReadPayload(len);
+    }
+    else
+    {
+        pServer->HandleClientError(this);
+    }
 }
 
 void CDbpClient::HandleReadPayload(std::size_t nTransferred)
 {
-
+    
 }
 
 void CDbpClient::HandleReadCompleted()
@@ -187,7 +208,12 @@ void CDbpServer::LeaveLoop()
 
 bool CDbpServer::ClientAccepted(const boost::asio::ip::tcp::endpoint& epService,CIOClient *pClient)
 {
-
+    std::map<boost::asio::ip::tcp::endpoint,CDbpProfile>::iterator it = mapProfile.find(epService);
+    if (it == mapProfile.end())
+    {
+        return false;
+    }
+    return AddNewClient(pClient,&(*it).second) != NULL;
 }
 
 bool CDbpServer::CreateProfile(const CDbpHostConfig& confHost)

@@ -50,6 +50,9 @@ set(sources
 	walleve/dbp/dbptype.h
 	walleve/dbp/dbpserver.h
 	walleve/dbp/dbpserver.cpp
+	walleve/dbp/dbputils.hpp
+	walleve/dbp/dbp-proto/dbp.pb.cc
+	walleve/dbp/dbp-proto/dbp.pb.h
 )
 
 add_library(walleve ${sources})
