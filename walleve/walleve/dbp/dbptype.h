@@ -23,18 +23,29 @@ public:
 class CWalleveDbpConnect: public CWalleveDbpRequest
 {
 public:
+    std::string session;
+    int32 version;
+    std::string client;
 };
 
 class CWalleveDbpSub: public CWalleveDbpRequest
 {
 public:
+    std::string id;
+    std::string name;
+};
 
+class CWalleveDbpUnSub: public CWalleveDbpRequest
+{
+public:
+    std::string id;
 };
 
 class CWalleveDbpMethod: public CWalleveDbpRequest
 {
 public:
-
+    std::string method;
+    std::string id;
 };
 
 class CWalleveDbpBroken

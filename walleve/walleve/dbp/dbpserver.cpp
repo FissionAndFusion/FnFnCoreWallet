@@ -158,30 +158,86 @@ CIOClient* CDbpServer::CreateIOClient(CIOContainer *pContainer)
 void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
 {
     CDbpProfile *pDbpProfile = pDbpClient->GetProfile();
-    CWalleveEventDbpRequest *pEventDbpReq = new CWalleveEventDbpRequest(pDbpClient->GetNonce());
-    if(!pEventDbpReq)
+
+    google::protobuf::Any* any = static_cast<google::protobuf::Any*>(anyObj);
+    if(!any)
     {
         RespondError(pDbpClient,500);
         return;
     }
-
-    google::protobuf::Any* any = static_cast<google::protobuf::Any*>(anyObj);
     
     if(any->Is<dbp::Connect>())
     {
-
+        
+        CWalleveEventDbpConnect *pEventDbpConnect = new CWalleveEventDbpConnect(pDbpClient->GetNonce());
+        if(!pEventDbpConnect)
+        {
+            RespondError(pDbpClient,500);
+            return;
+        }
+        
+        dbp::Connect connectMsg;
+        any->UnpackTo(&connectMsg);
+        
+        CWalleveDbpConnect &connectBody = pEventDbpConnect->data;
+        connectBody.session = connectMsg.session();
+        connectBody.version = connectMsg.version();
+        connectBody.client  = connectMsg.client();
+        
+        pDbpProfile->pIOModule->PostEvent(pEventDbpConnect);
     }
     else if(any->Is<dbp::Sub>())
     {
+        CWalleveEventDbpSub *pEventDbpSub = new CWalleveEventDbpSub(pDbpClient->GetNonce());
+        if(!pEventDbpSub)
+        {
+            RespondError(pDbpClient,500);
+            return;
+        }
+        
+        dbp::Sub subMsg;
+        any->UnpackTo(&subMsg);
 
+        CWalleveDbpSub &subBody = pEventDbpSub->data;
+        subBody.id = subMsg.id();
+        subBody.name = subMsg.name();
+        
+        pDbpProfile->pIOModule->PostEvent(pEventDbpSub);
     }
     else if(any->Is<dbp::Unsub>())
     {
+        CWalleveEventDbpUnSub *pEventDbpUnSub = new CWalleveEventDbpUnSub(pDbpClient->GetNonce());
+        if(!pEventDbpUnSub)
+        {
+            RespondError(pDbpClient,500);
+            return;
+        }
 
+        dbp::Unsub unsubMsg;
+        any->UnpackTo(&unsubMsg);
+
+        CWalleveDbpUnSub &unsubBody = pEventDbpUnSub->data;
+        unsubBody.id = unsubMsg.id();
+        
+        pDbpProfile->pIOModule->PostEvent(pEventDbpUnSub);
     }
     else if(any->Is<dbp::Method>())
     {
+        CWalleveEventDbpMethod *pEventDbpMethod = new CWalleveEventDbpMethod(pDbpClient->GetNonce());
+        if(!pEventDbpMethod)
+        {
+            RespondError(pDbpClient,500);
+            return;
+        }
+        
+        dbp::Method methodMsg;
+        any->UnpackTo(&methodMsg);
 
+        CWalleveDbpMethod &methodBody = pEventDbpMethod->data;
+        methodBody.id = methodMsg.id();
+        methodBody.method = methodMsg.method();
+        
+        pDbpProfile->pIOModule->PostEvent(pEventDbpMethod);
     }
     else
     {
