@@ -3,6 +3,7 @@
 #include <openssl/rand.h>
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string/trim.hpp>
+#include "dbp.pb.h"
 
 #include "dbputils.hpp"
 
