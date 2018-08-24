@@ -331,6 +331,52 @@ bool CBlockDB::AddNewBlock(const CBlockOutline& outline)
     return db->Query(oss.str());
 }
 
+bool CBlockDB::RemoveBlock(const uint256& hash)
+{
+    CMvDBInst db(&dbPool);
+    if (!db.Available())
+    {
+        return false;
+    }
+
+    ostringstream oss;
+    oss << "DELETE FROM block" << " WHERE hash = \'" << db->ToEscString(hash) << "\'";
+    return db->Query(oss.str());
+}
+
+bool CBlockDB::UpdateDelegate(const uint256& hash,const map<CDestination,int64>& mapDelegate)
+{
+    CMvDBInst db(&dbPool);
+    if (!db.Available())
+    {
+        return false;
+    }
+
+    {
+        CMvDBTxn txn(*db);
+        
+        for (map<CDestination,int64>::const_iterator it = mapDelegate.begin();it != mapDelegate.end();++it)
+        {
+            if ((*it).second != 0)
+            {
+                ostringstream oss;
+                oss << "INSERT INTO delegate(block,dest,amount) " 
+                          "VALUES("
+                    <<            "\'" << db->ToEscString(hash) << "\',"
+                    <<            "\'" << db->ToEscString((*it).first) << "\',"
+                    <<            (*it).second << ")";
+                txn.Query(oss.str());
+            }
+        }
+
+        if (!txn.Commit()) 
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
 bool CBlockDB::WalkThroughBlock(CBlockDBWalker& walker)
 {
     CMvDBInst db(&dbPool);
@@ -504,6 +550,32 @@ bool CBlockDB::FilterTx(CBlockDBTxFilter& filter)
     return true;
 }
 
+bool CBlockDB::RetrieveDelegate(const uint256& hash,int64 nMinAmount,map<CDestination,int64>& mapDelegate)
+{
+    CMvDBInst db(&dbPool);
+    if (!db.Available())
+    {
+        return false;
+    }
+    ostringstream oss;
+    oss << "SELECT dest,amount FROM delegate" 
+           " WHERE block = \'" << db->ToEscString(hash) << "\'"
+           " AND amount >= " << nMinAmount; 
+    
+    CMvDBRes res(*db,oss.str(),true);
+    while (res.GetRow())
+    {
+        CDestination dest;
+        int64 amount;
+        if (!res.GetField(0,dest) || !res.GetField(1,amount))
+        {
+            return false;
+        }
+        mapDelegate.insert(make_pair(dest,amount));
+    }
+    return true;
+}
+
 bool CBlockDB::CreateTable()
 {
     CMvDBInst db(&dbPool);
@@ -552,8 +624,15 @@ bool CBlockDB::CreateTable()
                     "height INT NOT NULL,"
                     "file INT UNSIGNED NOT NULL,"
                     "offset INT UNSIGNED NOT NULL,"
-                    "INDEX(id))"
+                    "INDEX(txid),INDEX(id))"
                     "PARTITION BY KEY(txid) PARTITIONS 256")
+           &&
+        db->Query("CREATE TABLE IF NOT EXISTS delegate("
+                    "id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,"
+                    "block BINARY(32) NOT NULL,"
+                    "dest BINARY(33) NOT NULL,"
+                    "amount BIGINT UNSIGNED NOT NULL,"
+                    "INDEX(block,amount))")
             );
 }
 

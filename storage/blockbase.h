@@ -182,6 +182,7 @@ protected:
     CBlockIndex* GetBranch(CBlockIndex* pIndexRef,CBlockIndex* pIndex,std::vector<CBlockIndex*>& vPath);
     CBlockIndex* AddNewIndex(const uint256& hash,CBlock& block,uint32 nFile,uint32 nOffset);
     CBlockFork* AddNewFork(CBlockIndex* pIndexLast);
+    bool UpdateDelegate(const uint256& hash,CBlockEx& block);
     bool GetTxUnspent(const uint256 fork,const CTxOutPoint& out,CTxOutput& unspent);
     bool GetTxNewIndex(CBlockView& view,CBlockIndex* pIndexNew,std::vector<std::pair<uint256,CTxIndex> >& vTxNew);
     void ClearCache();

@@ -3,6 +3,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "blockbase.h"
+#include "template.h"
 
 using namespace std;
 using namespace boost::filesystem;
@@ -339,6 +340,18 @@ bool CBlockBase::AddNew(const uint256& hash,CBlockEx& block,CBlockIndex** ppInde
             delete pIndexNew;
             return false;
         }
+        
+        if (pIndexNew->IsPrimary())
+        {
+            if (!UpdateDelegate(hash,block))
+            {
+                dbBlock.RemoveBlock(hash);
+                mapIndex.erase(hash);
+                delete pIndexNew;
+                return false;
+            }
+        }
+
         *ppIndexNew = pIndexNew;
     }
     
@@ -797,6 +810,43 @@ CBlockFork* CBlockBase::AddNewFork(CBlockIndex* pIndexLast)
         } while(pIndexPrev);
     }
     return pFork;
+}
+
+bool CBlockBase::UpdateDelegate(const uint256& hash,CBlockEx& block)
+{
+    map<CDestination,int64> mapDelegate;
+    if (!dbBlock.RetrieveDelegate(block.hashPrev,0,mapDelegate))
+    {
+        return false;
+    }
+    
+    if (block.txMint.nType == CTransaction::TX_STAKE)
+    {
+        mapDelegate[block.txMint.sendTo] += block.txMint.nAmount;
+    }
+
+    for (int i = 0;i < block.vtx.size();i++)
+    {
+        CTransaction& tx = block.vtx[i];
+        {
+            CTemplateId tid;
+            if (tx.sendTo.GetTemplateId(tid) && tid.GetType() == TEMPLATE_DELEGATE)
+            {
+                mapDelegate[tx.sendTo] += tx.nAmount;
+            }
+        }
+
+        CTxContxt& txContxt = block.vTxContxt[i]; 
+        {
+            CTemplateId tid;
+            if (txContxt.destIn.GetTemplateId(tid) && tid.GetType() == TEMPLATE_DELEGATE)
+            {
+                mapDelegate[txContxt.destIn] -= tx.nAmount + tx.nTxFee;
+            }
+        }
+    }
+
+    return dbBlock.UpdateDelegate(hash,mapDelegate);
 }
 
 bool CBlockBase::GetTxUnspent(const uint256 fork,const CTxOutPoint& out,CTxOutput& unspent)
