@@ -60,7 +60,7 @@ walleve/dbp/dbp-proto/lws.proto)
 add_library(walleve ${sources}  ${PROTO_SRCS} ${PROTO_HDRS})
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
-include_directories(${PROTOBUF_INCLUDE_DIRS})
+include_directories(${Protobuf_INCLUDE_DIRS})
 include_directories(${PROJECT_SOURCE_DIR}/walleve)
 
 target_link_libraries(walleve
@@ -72,5 +72,5 @@ target_link_libraries(walleve
 	Boost::regex
         OpenSSL::SSL
         OpenSSL::Crypto
-	${PROTOBUF_LIBRARIES}
+	${Protobuf_LIBRARIES}
 )

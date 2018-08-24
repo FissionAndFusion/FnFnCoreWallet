@@ -51,5 +51,5 @@ target_link_libraries(multiverse
 	crypto	
 	storage	
 	network
-	${PROTOBUF_LIBRARIES}	
+	${Protobuf_LIBRARIES}	
 )
