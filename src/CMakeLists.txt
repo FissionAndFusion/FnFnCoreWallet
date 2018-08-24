@@ -50,5 +50,6 @@ target_link_libraries(multiverse
 	walleve
 	crypto	
 	storage	
-	network	
+	network
+	${PROTOBUF_LIBRARIES}	
 )

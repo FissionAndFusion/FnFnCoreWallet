@@ -72,5 +72,5 @@ target_link_libraries(walleve
 	Boost::regex
         OpenSSL::SSL
         OpenSSL::Crypto
-	${Protobuf_LIBRARIES}
+	${PROTOBUF_LIBRARIES}
 )
