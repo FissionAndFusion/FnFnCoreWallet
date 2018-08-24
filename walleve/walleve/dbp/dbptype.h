@@ -44,8 +44,12 @@ public:
 class CWalleveDbpMethod: public CWalleveDbpRequest
 {
 public:
+    // param name => param value
+    typedef std::map<std::string,std::string> ParamMap;
+public:
     std::string method;
     std::string id;
+    ParamMap params;
 };
 
 class CWalleveDbpBroken

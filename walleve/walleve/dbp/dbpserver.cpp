@@ -3,8 +3,10 @@
 #include <openssl/rand.h>
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string/trim.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include "dbp.pb.h"
+#include "lws.pb.h"
 #include "dbputils.hpp"
 
 using namespace walleve;
@@ -236,6 +238,27 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
         CWalleveDbpMethod &methodBody = pEventDbpMethod->data;
         methodBody.id = methodMsg.id();
         methodBody.method = methodMsg.method();
+
+        if(methodBody.method == "getblocks" && methodMsg.params().Is<lws::GetBlocksArg>())
+        {
+            lws::GetBlocksArg args;
+            methodMsg.params().UnpackTo(&args);
+            methodBody.params.insert(std::make_pair("hash",args.hash())); 
+            methodBody.params.insert(std::make_pair("number",boost::lexical_cast<std::string>(args.number())));
+        }
+        else if(methodBody.method == "gettransaction" && methodMsg.params().Is<lws::GetTxArg>())
+        {
+            lws::GetTxArg args;
+            methodMsg.params().UnpackTo(&args);
+            methodBody.params.insert(std::make_pair("hash",args.hash()));
+        }
+        else if(methodBody.method == "sendtransaction" && methodMsg.params().Is<lws::SendTxArg>())
+        {
+            lws::SendTxArg args;
+            methodMsg.params().UnpackTo(&args);
+            methodBody.params.insert(std::make_pair("hash",args.hash()));
+        }   
+        else{}
         
         pDbpProfile->pIOModule->PostEvent(pEventDbpMethod);
     }
