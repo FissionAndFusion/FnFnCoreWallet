@@ -11,11 +11,12 @@ set(sources
 	mvpeerevent.h
 	mvpeer.cpp mvpeer.h
 	mvpeernet.cpp mvpeernet.h
+	dnseedserver.cpp dnseedserver.h
 )
 
 add_library(network ${sources})
 
-include_directories(../common ../walleve ../crypto)
+include_directories(../common ../walleve ../crypto ../storage)
 
 target_link_libraries(network
 	Boost::system
@@ -29,4 +30,5 @@ target_link_libraries(network
 	${sodium_LIBRARY_RELEASE}
 	walleve
 	crypto
+	storage
 )

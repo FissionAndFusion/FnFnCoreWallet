@@ -7,9 +7,9 @@
 
 #include "mvproto.h"
 #include "mvpeerevent.h"
+#include "dnseedserver.h"
 
 #include "walleve/walleve.h"
-
 namespace multiverse 
 {
 namespace network 
@@ -63,6 +63,7 @@ protected:
     bool fEnclosed;
     std::string subVersion;    
     std::set<boost::asio::ip::tcp::endpoint> setDNSeed;
+    DNSeedServer _dnseed;
 };
 
 } // namespace network

@@ -7,6 +7,7 @@
 #include <boost/bind.hpp>
 #include <boost/any.hpp>
 
+
 #define HANDSHAKE_TIMEOUT               5
 #define RESPONSE_TX_TIMEOUT             15
 #define RESPONSE_BLOCK_TIMEOUT          120
@@ -205,6 +206,7 @@ void CMvPeerNet::HandlePeerWriten(CPeer *pPeer)
 
 bool CMvPeerNet::HandlePeerHandshaked(CPeer *pPeer,uint32 nTimerId)
 {
+    WalleveLog("xp HandlePeerHandshaked()\n");
     CMvPeer *pMvPeer = static_cast<CMvPeer *>(pPeer);
     CancelTimer(nTimerId);
     if (!CheckPeerVersion(pMvPeer->nVersion,pMvPeer->nService,pMvPeer->strSubVer))
@@ -243,6 +245,7 @@ bool CMvPeerNet::HandlePeerHandshaked(CPeer *pPeer,uint32 nTimerId)
     {
         pMvPeer->SendMessage(MVPROTO_CHN_NETWORK,MVPROTO_CMD_GETADDRESS);
     }
+    
     return true;
 }
 
@@ -294,6 +297,14 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                 {
                     RemoveNode(pMvPeer->GetRemote());
                 }
+                //add DNSeed xp 0825
+                tcp::endpoint ep = pMvPeer->GetRemote();
+                this->_dnseed.add2list(ep);
+                if(!fEnclosed)
+                {
+                    WalleveLog("xp [send] MVPROTO_CMD_GETDNSEED\n");
+                    pMvPeer->SendMessage(MVPROTO_CHN_NETWORK,MVPROTO_CMD_GETDNSEED);
+                }
                 return true;
             }
             break;
@@ -302,6 +313,27 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
             break;
         case MVPROTO_CMD_PONG:
             return true;
+            break;
+        case MVPROTO_CMD_GETDNSEED:
+            {
+                WalleveLog("xp [receive] MVPROTO_CMD_GETDNSEED\n");
+                std::vector<CAddress> vAddrs;
+                this->_dnseed.getAddressList(vAddrs);
+                CWalleveBufStream ss;
+                ss << vAddrs;
+                return pMvPeer->SendMessage(MVPROTO_CHN_NETWORK,MVPROTO_CMD_DNSEED,ss);
+            }
+            break;
+        case MVPROTO_CMD_DNSEED:
+            {
+                WalleveLog("xp [receive] MVPROTO_CMD_DNSEED\n");
+                std::vector<CAddress> vAddrs;
+                ssPayload >> vAddrs;
+                this->_dnseed.recvAddressList(vAddrs);
+                //todo 建立多个连接
+
+                return true;
+            }   
             break;
         default:
             break;
