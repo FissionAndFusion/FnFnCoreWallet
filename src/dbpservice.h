@@ -17,8 +17,8 @@ public:
     bool HandleEvent(walleve::CWalleveEventDbpUnSub& event);
     bool HandleEvent(walleve::CWalleveEventDbpMethod& event);
 protected:
-    bool WalleveHandleInitialize();
-    void WalleveHandleDeinitialize();
+    bool WalleveHandleInitialize() override;
+    void WalleveHandleDeinitialize() override;
 protected:
     walleve::IIOProc *pDbpServer;
     IService *pService;

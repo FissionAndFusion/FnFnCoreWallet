@@ -23,13 +23,13 @@ public:
 
     ~CRPCDispatch();
 protected:
-    bool WalleveHandleInitialize();
-    void WalleveHandleDeinitialize();
-    bool WalleveHandleInvoke();
-    void WalleveHandleHalt();
+    bool WalleveHandleInitialize() override;
+    void WalleveHandleDeinitialize() override;
+    bool WalleveHandleInvoke() override;
+    void WalleveHandleHalt() override;
     const CMvRPCConfig * WalleveConfig();
 
-    bool HandleEvent(walleve::CWalleveEventHttpGetRsp& event);
+    bool HandleEvent(walleve::CWalleveEventHttpGetRsp& event) override;
     bool GetResponse(uint64 nNonce,const std::string& strWallet,json_spirit::Object& jsonReq);
     bool CallRPC(const std::vector<std::string>& vCommand,
                  const std::string& strWallet = "", int nReqId = 1);

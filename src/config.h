@@ -29,8 +29,8 @@ class CMvStorageConfig : virtual public CMvBasicConfig
 public:
     CMvStorageConfig();
     virtual ~CMvStorageConfig();
-    virtual bool PostLoad();
-    virtual std::string ListConfig();
+    virtual bool PostLoad() override;
+    virtual std::string ListConfig() override;
 public:
     std::string strDBHost;
     std::string strDBName;
@@ -45,8 +45,8 @@ class CMvNetworkConfig : virtual public CMvBasicConfig
 public:
     CMvNetworkConfig();
     virtual ~CMvNetworkConfig();
-    virtual bool PostLoad();
-    virtual std::string ListConfig();
+    virtual bool PostLoad() override;
+    virtual std::string ListConfig() override;
 public:
     bool fListen;
     bool fBloom;    
@@ -67,8 +67,8 @@ class CMvRPCConfig : virtual public CMvBasicConfig
 public:
     CMvRPCConfig();
     virtual ~CMvRPCConfig();
-    virtual bool PostLoad();
-    virtual std::string ListConfig();
+    virtual bool PostLoad() override;
+    virtual std::string ListConfig() override;
 public:
     boost::asio::ip::tcp::endpoint epRPC;
     std::string strRPCConnect;
@@ -94,8 +94,8 @@ class CMvDbpConfig : virtual public CMvBasicConfig
 public:
     CMvDbpConfig();
     virtual ~CMvDbpConfig();
-    virtual bool PostLoad();
-    virtual std::string ListConfig();
+    virtual bool PostLoad() override;
+    virtual std::string ListConfig() override;
 public:
     boost::asio::ip::tcp::endpoint epDbp;
     std::string strDbpConnect;
@@ -122,8 +122,8 @@ class CMvMintConfig : virtual public CMvBasicConfig
 public:
     CMvMintConfig();
     virtual ~CMvMintConfig();
-    virtual bool PostLoad();
-    virtual std::string ListConfig();
+    virtual bool PostLoad() override;
+    virtual std::string ListConfig() override;
 protected:
     void ExtractMintParamPair(const std::string& strAddress,const std::string& strKey,
                               CDestination& dest,uint256& privkey);
@@ -148,8 +148,8 @@ class CMvConfig : virtual public CMvStorageConfig,
 public:
     CMvConfig();
     virtual ~CMvConfig();
-    virtual bool PostLoad();
-    virtual std::string ListConfig();
+    virtual bool PostLoad() override;
+    virtual std::string ListConfig() override;
 };
 
 } // namespace multiverse

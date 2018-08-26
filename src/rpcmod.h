@@ -18,11 +18,11 @@ public:
     typedef json_spirit::Value (CRPCMod::*RPCFunc)(const json_spirit::Array&,bool);
     CRPCMod();
     ~CRPCMod();
-    bool HandleEvent(walleve::CWalleveEventHttpReq& eventHttpReq);
-    bool HandleEvent(walleve::CWalleveEventHttpBroken& eventHttpBroken);
+    bool HandleEvent(walleve::CWalleveEventHttpReq& eventHttpReq) override;
+    bool HandleEvent(walleve::CWalleveEventHttpBroken& eventHttpBroken) override;
 protected:
-    bool WalleveHandleInitialize();
-    void WalleveHandleDeinitialize();
+    bool WalleveHandleInitialize() override;
+    void WalleveHandleDeinitialize() override;
     const CMvConfig* WalleveConfig()
     {
         return dynamic_cast<const CMvConfig *>(walleve::IWalleveBase::WalleveConfig());

@@ -77,24 +77,24 @@ class CDbpServer : public CIOProc, virtual public CWalleveDBPEventListener
 public:
     CDbpServer();
     virtual ~CDbpServer();
-    CIOClient* CreateIOClient(CIOContainer *pContainer);
+    virtual CIOClient* CreateIOClient(CIOContainer *pContainer) override;
     void HandleClientRecv(CDbpClient *pDbpClient,void* anyObj);
     void HandleClientSent(CDbpClient *pDbpClient);
     void HandleClientError(CDbpClient *pDbpClient);
     void AddNewHost(const CDbpHostConfig& confHost);
 protected:
-    bool WalleveHandleInitialize();
-    void WalleveHandleDeinitialize();
-    void EnterLoop();
-    void LeaveLoop();
+    bool WalleveHandleInitialize() override;
+    void WalleveHandleDeinitialize() override;
+    void EnterLoop() override;
+    void LeaveLoop() override;
 
-    bool ClientAccepted(const boost::asio::ip::tcp::endpoint& epService,CIOClient *pClient);
+    bool ClientAccepted(const boost::asio::ip::tcp::endpoint& epService,CIOClient *pClient) override;
 
     bool CreateProfile(const CDbpHostConfig& confHost);
     CDbpClient* AddNewClient(CIOClient *pClient,CDbpProfile *pDbpProfile);
     void RemoveClient(CDbpClient *pDbpClient);
     void RespondError(CDbpClient *pDbpClient,int nStatusCode,const std::string& strError = "");
-    bool HandleEvent(CWalleveEventDbpRespond& eventRsp);
+    bool HandleEvent(CWalleveEventDbpRespond& eventRsp) override;
 protected:
     std::vector<CDbpHostConfig> vecHostConfig;
     std::map<boost::asio::ip::tcp::endpoint,CDbpProfile> mapProfile;

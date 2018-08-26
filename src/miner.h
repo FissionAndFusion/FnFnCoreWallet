@@ -42,13 +42,13 @@ public:
     CMiner(const std::vector<std::string>& vArgsIn);
     ~CMiner();
 protected:
-    bool WalleveHandleInitialize();
-    void WalleveHandleDeinitialize();
-    bool WalleveHandleInvoke();
-    void WalleveHandleHalt();
+    bool WalleveHandleInitialize() override;
+    void WalleveHandleDeinitialize() override;
+    bool WalleveHandleInvoke() override;
+    void WalleveHandleHalt() override;
     const CMvRPCConfig * WalleveConfig();
     bool Interrupted() { return (nMinerStatus != MINER_RUN); }
-    bool HandleEvent(walleve::CWalleveEventHttpGetRsp& event);
+    bool HandleEvent(walleve::CWalleveEventHttpGetRsp& event) override;
     bool SendRequest(uint64 nNonce,json_spirit::Object& jsonReq);
     bool GetWork();
     bool SubmitWork(const std::vector<unsigned char>& vchWorkData);

@@ -13,6 +13,8 @@ cmake_minimum_required(VERSION 3.5.1)
 set(CMAKE_DIR "${CMAKE_CURRENT_LIST_DIR}/cmake" CACHE PATH "The path to the cmake directory")
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_DIR})
 
+set(CMAKE_CXX_STANDARD 11)
+
 set(Boost_USE_STATIC_LIBS ON)
 set(Boost_USE_MULTITHREADED ON)
 find_package(OpenSSL 1.0.0 REQUIRED) 

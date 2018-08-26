@@ -60,15 +60,15 @@ public:
     CSocketClient(CIOContainer *pContainerIn,boost::asio::io_service& ioservice);
     ~CSocketClient();
 protected:
-    void AsyncAccept(boost::asio::ip::tcp::acceptor& acceptor,CallBackConn fnAccepted);
-    void AsyncConnect(const boost::asio::ip::tcp::endpoint& epRemote,CallBackConn fnConnected);
-    void AsyncRead(CWalleveBufStream& ssRecv,std::size_t nLength,CallBackFunc fnCompleted);
-    void AsyncReadUntil(CWalleveBufStream& ssRecv,const std::string& delim,CallBackFunc fnCompleted);
-    void AsyncWrite(CWalleveBufStream& ssSend,CallBackFunc fnCompleted);
-    const boost::asio::ip::tcp::endpoint SocketGetRemote();
-    const boost::asio::ip::tcp::endpoint SocketGetLocal();
-    void CloseSocket();
-    bool IsSocketOpen();
+    void AsyncAccept(boost::asio::ip::tcp::acceptor& acceptor,CallBackConn fnAccepted) override;
+    void AsyncConnect(const boost::asio::ip::tcp::endpoint& epRemote,CallBackConn fnConnected) override;
+    void AsyncRead(CWalleveBufStream& ssRecv,std::size_t nLength,CallBackFunc fnCompleted) override;
+    void AsyncReadUntil(CWalleveBufStream& ssRecv,const std::string& delim,CallBackFunc fnCompleted) override;
+    void AsyncWrite(CWalleveBufStream& ssSend,CallBackFunc fnCompleted) override;
+    const boost::asio::ip::tcp::endpoint SocketGetRemote() override;
+    const boost::asio::ip::tcp::endpoint SocketGetLocal() override;
+    void CloseSocket() override;
+    bool IsSocketOpen() override;
 protected:
     boost::asio::ip::tcp::socket sockClient;
 };

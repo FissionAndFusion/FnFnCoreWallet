@@ -17,27 +17,27 @@ class CWorldLine : public IWorldLine
 public:
     CWorldLine();
     ~CWorldLine();
-    void GetForkStatus(std::map<uint256,CForkStatus>& mapForkStatus); 
-    bool GetBlockLocation(const uint256& hashBlock,uint256& hashFork,int& nHeight);
-    bool GetBlockHash(const uint256& hashFork,int nHeight,uint256& hashBlock);
-    bool GetLastBlock(const uint256& hashFork,uint256& hashBlock,int& nHeight,int64& nTime);
-    bool GetBlock(const uint256& hashBlock,CBlock& block);
-    bool Exists(const uint256& hashBlock);
-    bool GetTransaction(const uint256& txid,CTransaction& tx);
-    bool ExistsTx(const uint256& txid);
-    bool GetTxLocation(const uint256& txid,uint256& hashFork,int& nHeight);
+    void GetForkStatus(std::map<uint256,CForkStatus>& mapForkStatus) override; 
+    bool GetBlockLocation(const uint256& hashBlock,uint256& hashFork,int& nHeight) override;
+    bool GetBlockHash(const uint256& hashFork,int nHeight,uint256& hashBlock) override;
+    bool GetLastBlock(const uint256& hashFork,uint256& hashBlock,int& nHeight,int64& nTime) override;
+    bool GetBlock(const uint256& hashBlock,CBlock& block) override;
+    bool Exists(const uint256& hashBlock) override;
+    bool GetTransaction(const uint256& txid,CTransaction& tx) override;
+    bool ExistsTx(const uint256& txid) override;
+    bool GetTxLocation(const uint256& txid,uint256& hashFork,int& nHeight) override;
     bool GetTxUnspent(const uint256& hashFork,const std::vector<CTxIn>& vInput,
-                                                    std::vector<CTxOutput>& vOutput);
-    bool FilterTx(CTxFilter& filter);
-    MvErr AddNewBlock(CBlock& block,CWorldLineUpdate& update);
-    bool GetProofOfWorkTarget(const uint256& hashPrev,int nAlgo,int& nBits,int64& nReward);
-    bool GetBlockLocator(const uint256& hashFork,CBlockLocator& locator);
-    bool GetBlockInv(const uint256& hashFork,const CBlockLocator& locator,std::vector<uint256>& vBlockHash,std::size_t nMaxCount);
+                                                    std::vector<CTxOutput>& vOutput) override;
+    bool FilterTx(CTxFilter& filter) override;
+    MvErr AddNewBlock(CBlock& block,CWorldLineUpdate& update) override;
+    bool GetProofOfWorkTarget(const uint256& hashPrev,int nAlgo,int& nBits,int64& nReward) override;
+    bool GetBlockLocator(const uint256& hashFork,CBlockLocator& locator) override;
+    bool GetBlockInv(const uint256& hashFork,const CBlockLocator& locator,std::vector<uint256>& vBlockHash,std::size_t nMaxCount) override;
 protected:
-    bool WalleveHandleInitialize();
-    void WalleveHandleDeinitialize();
-    bool WalleveHandleInvoke();
-    void WalleveHandleHalt();
+    bool WalleveHandleInitialize() override;
+    void WalleveHandleDeinitialize() override;
+    bool WalleveHandleInvoke() override;
+    void WalleveHandleHalt() override;
     bool CheckContainer();
     bool RebuildContainer();
     bool InsertGenesisBlock(CBlock& block);

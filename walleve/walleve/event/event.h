@@ -54,7 +54,7 @@ public:
     CWalleveEventCategory(uint64 nNonceIn)
         : CWalleveEvent(nNonceIn,type) {}
     virtual ~CWalleveEventCategory() {}
-    virtual bool Handle(CWalleveEventListener& listener) 
+    virtual bool Handle(CWalleveEventListener& listener) override
     {
         try
         {

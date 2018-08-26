@@ -67,7 +67,7 @@ CRPCMod::CRPCMod()
                  ("getwork",               &CRPCMod::RPCGetWork)
                  ("submitwork",            &CRPCMod::RPCSubmitWork)
                  ;
-    mapRPCFunc = temp_map; 
+    mapRPCFunc = temp_map;
 }
 
 CRPCMod::~CRPCMod()
