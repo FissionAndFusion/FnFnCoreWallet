@@ -40,9 +40,24 @@ else(Readline_INCLUDE_DIR AND Readline_LIBRARY AND Ncurses_LIBRARY)
   MARK_AS_ADVANCED(Readline_INCLUDE_DIR Readline_LIBRARY)
 endif(Readline_INCLUDE_DIR AND Readline_LIBRARY AND Ncurses_LIBRARY)
 
+# communicate results
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(Readline
+    REQUIRED_VARS
+        Readline_ROOT_DIR
+        Readline_INCLUDE_DIR
+        Readline_LIBRARY
+)
+
+include_directories(${Readline_INCLUDE_DIR})
+
 mark_as_advanced(
     Readline_ROOT_DIR
     Readline_INCLUDE_DIR
     Readline_LIBRARY
 )
 
+message(STATUS "Readline info:")
+message(STATUS "  Readline_ROOT_DIR                  : ${Readline_ROOT_DIR}")
+message(STATUS "  Readline_INCLUDE_DIR               : ${Readline_INCLUDE_DIR}")
+message(STATUS "  Readline_LIBRARY                   : ${Readline_LIBRARY}")

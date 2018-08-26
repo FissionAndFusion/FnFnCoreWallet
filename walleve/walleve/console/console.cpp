@@ -9,6 +9,10 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 
+#ifdef WIN32
+#include <io.h>
+#endif
+
 using namespace std;
 using namespace walleve;
 
@@ -21,7 +25,12 @@ boost::mutex CConsole::mutexConsole;
 CConsole::CConsole(const string& walleveOwnKeyIn,const string& strPromptIn)
 : IWalleveBase(walleveOwnKeyIn),
   thrConsole(walleveOwnKeyIn,boost::bind(&CConsole::ConsoleThreadFunc,this)),strPrompt(strPromptIn),
-  ioStrand(ioService),inStream(ioService,::dup(STDIN_FILENO))
+  ioStrand(ioService),
+#ifdef WIN32
+  inStream(ioService, GetStdHandle(STD_INPUT_HANDLE))
+#else  
+  inStream(ioService,::dup(STDIN_FILENO))
+#endif
 {
 }
 
@@ -132,9 +141,16 @@ void CConsole::ReadlineCallback(char *line)
 
 void CConsole::WaitForChars()
 {
+#if WIN32
+    // TODO: Just to be compilable. It works incorrect.
+    inStream.async_read_some(boost::asio::mutable_buffer(),boost::bind(&CConsole::HandleRead,this,
+                                                     boost::asio::placeholders::error,
+                                                     boost::asio::placeholders::bytes_transferred));
+#else
     inStream.async_read_some(bufReadNull,boost::bind(&CConsole::HandleRead,this,
                                                      boost::asio::placeholders::error,
                                                      boost::asio::placeholders::bytes_transferred));
+#endif
 }
 
 void CConsole::HandleRead(boost::system::error_code const& err,size_t nTransferred)

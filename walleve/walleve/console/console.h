@@ -10,6 +10,12 @@
 #include <string>
 #include <boost/asio.hpp>
 
+#ifdef WIN32
+    typedef boost::asio::windows::stream_handle stream_desc;
+#else
+    typedef boost::asio::posix::stream_descriptor stream_desc;
+#endif
+
 namespace walleve
 {
 
@@ -21,6 +27,7 @@ public:
     bool DispatchEvent(CWalleveEvent* pEvent);
     void DispatchLine(const std::string& strLine); 
     void DispatchOutput(const std::string& strOutput); 
+    
 protected:
     bool WalleveHandleInvoke();
     void WalleveHandleHalt();
@@ -47,7 +54,7 @@ private:
     std::string strLastHistory;
     boost::asio::io_service ioService;
     boost::asio::io_service::strand ioStrand;
-    boost::asio::posix::stream_descriptor inStream;
+    stream_desc inStream;
     boost::asio::null_buffers bufReadNull;
 };
 

@@ -111,7 +111,7 @@ bool CTimeSeries::VacateCache(uint32 nNeeded)
 {
     const size_t nHdrSize = 12;
 
-    while(cacheStream.GetFreeSpace() < nNeeded + nHdrSize)
+    while(cacheStream.GetBufFreeSpace() < nNeeded + nHdrSize)
     {
         CDiskPos diskpos;
         uint32 nSize = 0;

@@ -220,7 +220,7 @@ public:
         return size();
     }
 
-    std::size_t GetFreeSpace() const
+    std::size_t GetBufFreeSpace() const
     {
         return freespace();
     }
