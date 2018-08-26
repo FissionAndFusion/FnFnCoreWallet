@@ -19,9 +19,18 @@ bool DNSeedServer::init()
         WalleveLog("Failed to initialize DNSeed database\n");
         return false;
     }
-    //load _a
+    if(_isDNSeedServerNode)
+    {
+        startDNSeedService();
+    }
     _db.selectAllNode(this->_nodeList);
+
     return true;
+}
+
+void DNSeedServer::startDNSeedService()
+{
+
 }
 
 bool DNSeedServer::add2list(boost::asio::ip::tcp::endpoint newep)

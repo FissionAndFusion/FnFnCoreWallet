@@ -19,7 +19,8 @@ class DNSeedServer:public walleve::IWalleveBase
 {
 public: 
     DNSeedServer(){
-        _isDNSeedServerNode=false;
+        _DNSeedServerAddress="kmd.psay.me";//todo
+        _isDNSeedServerNode=true;//todo config
         _initTime=walleve::GetTime();
         _runTime=0;
         init();
@@ -36,13 +37,17 @@ public:
     bool updateScore(storage::SeedNode node);
     static int test();
     storage::DNSeedDB * testGetDb(){return &_db;}
+    bool isDNseedServer(){return _isDNSeedServerNode;}
 private:
     bool init();
+    void startDNSeedService();
     void filterAddressList();
     bool hasAddress(boost::asio::ip::tcp::endpoint ep);   
     void getAddressList(std::vector<storage::SeedNode> & list,GetNodeWay gettype=GET_A_LOT);
     
 private:
+    CIOClient* pClient;
+    //todo add peernet
     std::vector<storage::SeedNode> _nodeList;
     bool _isDNSeedServerNode;
 
@@ -50,6 +55,7 @@ private:
     //timer
     int64 _initTime;
     int64 _runTime;
+    std::string _DNSeedServerAddress;
 //advanced
     //定时任务
 
