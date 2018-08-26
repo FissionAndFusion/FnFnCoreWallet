@@ -53,7 +53,8 @@ public:
     bool IsEventStream();
     void SetEventStream();
     void Activate();
-    void SendResponse(std::string& strResponse);
+    void SendResponse(CWalleveDbpConnected& body);
+    void SendResponse(CWalleveDbpFailed& body);
 protected:
     void StartReadHeader();
     void StartReadPayload(std::size_t nLength);
@@ -94,7 +95,8 @@ protected:
     CDbpClient* AddNewClient(CIOClient *pClient,CDbpProfile *pDbpProfile);
     void RemoveClient(CDbpClient *pDbpClient);
     void RespondError(CDbpClient *pDbpClient,int nStatusCode,const std::string& strError = "");
-    bool HandleEvent(CWalleveEventDbpRespond& eventRsp) override;
+    bool HandleEvent(CWalleveEventDbpConnected& event) override;
+    bool HandleEvent(CWalleveEventDbpFailed& event) override;
 protected:
     std::vector<CDbpHostConfig> vecHostConfig;
     std::map<boost::asio::ip::tcp::endpoint,CDbpProfile> mapProfile;

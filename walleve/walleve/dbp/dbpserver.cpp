@@ -52,9 +52,49 @@ void CDbpClient::Activate()
     StartReadHeader();
 }
 
-void CDbpClient::SendResponse(std::string& strResponse)
+void CDbpClient::SendResponse(CWalleveDbpConnected& body)
 {
+    ssSend.Clear();
+
+    dbp::Connected connectedMsg;
+    connectedMsg.set_session(body.session);
     
+    int byteSize = connectedMsg.ByteSize();
+    unsigned char byteBuf[byteSize];
+
+    connectedMsg.SerializeToArray(byteBuf,byteSize);
+
+    unsigned char msgLenBuf[4];
+    CDbpUtils::writeLenToMsgHeader(byteSize,(char*)msgLenBuf,4);
+    ssSend.Write((char*)msgLenBuf,4);
+    ssSend.Write((char*)byteBuf,byteSize);
+
+    pClient->Write(ssSend,boost::bind(&CDbpClient::HandleWritenResponse,this,_1));
+
+}
+
+void CDbpClient::SendResponse(CWalleveDbpFailed& body)
+{
+    ssSend.Clear();
+
+    dbp::Failed failedMsg;
+
+    for(const int32& version : body.versions)
+    {
+        failedMsg.add_version(version);
+    }
+ 
+    int byteSize = failedMsg.ByteSize();
+    unsigned char byteBuf[byteSize];
+
+    failedMsg.SerializeToArray(byteBuf,byteSize);
+
+    unsigned char msgLenBuf[4];
+    CDbpUtils::writeLenToMsgHeader(byteSize,(char*)msgLenBuf,4);
+    ssSend.Write((char*)msgLenBuf,4);
+    ssSend.Write((char*)byteBuf,byteSize);
+
+    pClient->Write(ssSend,boost::bind(&CDbpClient::HandleWritenResponse,this,_1));
 }
 
 void CDbpClient::StartReadHeader()
@@ -132,7 +172,14 @@ void CDbpClient::HandleReadCompleted()
 
 void CDbpClient::HandleWritenResponse(std::size_t nTransferred)
 {
-
+    if(nTransferred != 0)
+    {
+        pServer->HandleClientSent(this);
+    }
+    else
+    {
+        pServer->HandleClientError(this);
+    }
 }
 
 CDbpServer::CDbpServer()
@@ -273,12 +320,12 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
 
 void CDbpServer::HandleClientSent(CDbpClient *pDbpClient)
 {
-
+    RemoveClient(pDbpClient);
 }
 
 void CDbpServer::HandleClientError(CDbpClient *pDbpClient)
 {
-
+    RemoveClient(pDbpClient);
 }
 
 void CDbpServer::AddNewHost(const CDbpHostConfig& confHost)
@@ -429,7 +476,30 @@ void CDbpServer::RespondError(CDbpClient *pDbpClient,int nStatusCode,const std::
 
 }
 
-bool CDbpServer::HandleEvent(CWalleveEventDbpRespond& eventRsp)
+bool CDbpServer::HandleEvent(CWalleveEventDbpConnected& event)
 {
+    std::map<uint64,CDbpClient*>::iterator it = mapClient.find(event.nNonce);
+    if (it == mapClient.end())
+    {
+        return false;
+    }
 
+    CDbpClient *pDbpClient = (*it).second;
+    CWalleveDbpConnected &connectedBody = event.data;
+
+    pDbpClient->SendResponse(connectedBody);
+}
+    
+bool CDbpServer::HandleEvent(CWalleveEventDbpFailed& event)
+{
+    std::map<uint64,CDbpClient*>::iterator it = mapClient.find(event.nNonce);
+    if (it == mapClient.end())
+    {
+        return false;
+    }
+
+    CDbpClient *pDbpClient = (*it).second;
+    CWalleveDbpFailed &failedBody = event.data;
+
+    pDbpClient->SendResponse(failedBody);
 }

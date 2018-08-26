@@ -10,6 +10,8 @@ enum {
     WALLEVE_EVENT_DBP_REQ,
     WALLEVE_EVENT_DBP_RSP,
     WALLEVE_EVENT_DBP_CONNECT,
+    WALLEVE_EVENT_DBP_CONNECTED,
+    WALLEVE_EVENT_DBP_FAILED,
     WALLEVE_EVENT_DBP_SUB,
     WALLEVE_EVENT_DBP_UNSUB,
     WALLEVE_EVENT_DBP_METHOD,
@@ -25,6 +27,8 @@ class CWalleveDBPEventListener;
 typedef TYPE_DBPEVENT(WALLEVE_EVENT_DBP_REQ,CWalleveDbpRequest) CWalleveEventDbpRequest;
 typedef TYPE_DBPEVENT(WALLEVE_EVENT_DBP_RSP,CWalleveDbpRespond) CWalleveEventDbpRespond;
 typedef TYPE_DBPEVENT(WALLEVE_EVENT_DBP_CONNECT,CWalleveDbpConnect) CWalleveEventDbpConnect;
+typedef TYPE_DBPEVENT(WALLEVE_EVENT_DBP_CONNECTED,CWalleveDbpConnected) CWalleveEventDbpConnected;
+typedef TYPE_DBPEVENT(WALLEVE_EVENT_DBP_FAILED,CWalleveDbpFailed) CWalleveEventDbpFailed;
 typedef TYPE_DBPEVENT(WALLEVE_EVENT_DBP_SUB,CWalleveDbpSub) CWalleveEventDbpSub;
 typedef TYPE_DBPEVENT(WALLEVE_EVENT_DBP_UNSUB,CWalleveDbpUnSub) CWalleveEventDbpUnSub;
 typedef TYPE_DBPEVENT(WALLEVE_EVENT_DBP_METHOD,CWalleveDbpMethod) CWalleveEventDbpMethod;
@@ -38,6 +42,8 @@ public:
     DECLARE_EVENTHANDLER(CWalleveEventDbpRequest);
     DECLARE_EVENTHANDLER(CWalleveEventDbpRespond);
     DECLARE_EVENTHANDLER(CWalleveEventDbpConnect);
+    DECLARE_EVENTHANDLER(CWalleveEventDbpConnected);
+    DECLARE_EVENTHANDLER(CWalleveEventDbpFailed);
     DECLARE_EVENTHANDLER(CWalleveEventDbpSub);
     DECLARE_EVENTHANDLER(CWalleveEventDbpUnSub);
     DECLARE_EVENTHANDLER(CWalleveEventDbpMethod);

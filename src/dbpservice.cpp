@@ -1,7 +1,8 @@
 #include "dbpservice.h"
 
-using namespace multiverse;
+#include <boost/assign/list_of.hpp>
 
+using namespace multiverse;
 
 CDbpService::CDbpService()
 :walleve::IIOModule("dbpservice")
@@ -42,17 +43,23 @@ void CDbpService::WalleveHandleDeinitialize()
 bool CDbpService::HandleEvent(walleve::CWalleveEventDbpConnect& event)
 {
     (void)event.data.client;
-    event.data.session;
-    event.data.version;
 
-    if(event.data.version != 1)
+    if(event.data.version != 1 || event.data.session.empty())
     {
         // reply error
+        uint64 nonce = event.nNonce;
+        std::vector<int> versions{1};
+        walleve::CWalleveEventDbpFailed eventFailed(nonce);
+        eventFailed.data.versions = versions;
+        pDbpServer->DispatchEvent(&eventFailed);
     }
     else
     {
         // reply normal
-        
+        uint64 nonce = event.nNonce;
+        walleve::CWalleveEventDbpConnected eventConnected(nonce);
+        eventConnected.data.session = event.data.session;
+        pDbpServer->DispatchEvent(&eventConnected);
     }
 
     return true;

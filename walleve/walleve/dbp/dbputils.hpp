@@ -13,6 +13,12 @@ public:
         std::memcpy(&lenNetWorkOrder,header,4);
         return ntohl(lenNetWorkOrder);
     }
+
+    static void writeLenToMsgHeader(uint32_t len,char* header,int size)
+    {
+        uint32_t lenNetWorkOrder = htonl(len);
+        std::memcpy(header,&lenNetWorkOrder,4);
+    }
 };
 
 #endif
