@@ -12,10 +12,10 @@ public:
     CDbpService();
     virtual ~CDbpService();
 
-    bool HandleEvent(walleve::CWalleveEventDbpConnect& event);
-    bool HandleEvent(walleve::CWalleveEventDbpSub& event);
-    bool HandleEvent(walleve::CWalleveEventDbpUnSub& event);
-    bool HandleEvent(walleve::CWalleveEventDbpMethod& event);
+    bool HandleEvent(walleve::CWalleveEventDbpConnect& event) override;
+    bool HandleEvent(walleve::CWalleveEventDbpSub& event) override;
+    bool HandleEvent(walleve::CWalleveEventDbpUnSub& event) override;
+    bool HandleEvent(walleve::CWalleveEventDbpMethod& event) override;
 protected:
     bool WalleveHandleInitialize() override;
     void WalleveHandleDeinitialize() override;
