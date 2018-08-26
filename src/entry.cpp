@@ -190,7 +190,7 @@ bool CMvEntry::InitializeService()
         return false;
     }
 
-    // DBP Server
+    //DBP Server
     CDbpServer  *pDbpServer  = new CDbpServer();
     if (!pDbpServer || !walleveDocker.Attach(pDbpServer))
     {
@@ -270,7 +270,7 @@ CDbpHostConfig CMvEntry::GetDbpHostConfig()
     }
 
     return CDbpHostConfig(mvConfig.epDbp,mvConfig.nDbpMaxConnections,sslDbp,mapUsrDbp,
-                           mvConfig.vDbpAllowIP,"dbpserver");
+                           mvConfig.vDbpAllowIP,"dbpservice");
 }
 
 bool CMvEntry::Run()
