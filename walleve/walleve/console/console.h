@@ -18,12 +18,12 @@ class CConsole : public IWalleveBase
 public:
     CConsole(const std::string& walleveOwnKeyIn,const std::string& strPromptIn);
     virtual ~CConsole();
-    bool DispatchEvent(CWalleveEvent* pEvent);
+    bool DispatchEvent(CWalleveEvent* pEvent) override;
     void DispatchLine(const std::string& strLine); 
     void DispatchOutput(const std::string& strOutput); 
 protected:
-    bool WalleveHandleInvoke();
-    void WalleveHandleHalt();
+    bool WalleveHandleInvoke() override;
+    void WalleveHandleHalt() override;
     bool InstallReadline(const std::string& strPrompt);
     void UninstallReadline();
     static void ReadlineCallback(char *line); 

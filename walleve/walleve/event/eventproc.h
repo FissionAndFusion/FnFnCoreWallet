@@ -79,8 +79,8 @@ public:
     CWalleveEventProc(const std::string& walleveOwnKeyIn);
     void PostEvent(CWalleveEvent * pEvent);
 protected:
-    bool WalleveHandleInvoke();
-    void WalleveHandleHalt();
+    bool WalleveHandleInvoke() override;
+    void WalleveHandleHalt() override;
     void EventThreadFunc();
 protected:
     CWalleveThread thrEventQue;

@@ -12,8 +12,8 @@ public:
     CDbpService();
     virtual ~CDbpService();
 protected:
-    bool WalleveHandleInitialize();
-    void WalleveHandleDeinitialize();
+    bool WalleveHandleInitialize() override;
+    void WalleveHandleDeinitialize() override;
 protected:
     walleve::IIOProc *pDbpServer;
     IService *pService;

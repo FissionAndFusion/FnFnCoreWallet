@@ -57,18 +57,18 @@ protected:
     enum {MAX_GETBLOCKS_COUNT = 128};
     enum {MAX_PEER_SCHED_COUNT = 8};
 
-    bool WalleveHandleInitialize();
-    void WalleveHandleDeinitialize();
-    bool WalleveHandleInvoke();
-    void WalleveHandleHalt();
+    bool WalleveHandleInitialize() override;
+    void WalleveHandleDeinitialize() override;
+    bool WalleveHandleInvoke() override;
+    void WalleveHandleHalt() override;
 
-    bool HandleEvent(network::CMvEventPeerActive& eventActive);
-    bool HandleEvent(network::CMvEventPeerDeactive& eventDeactive);
-    bool HandleEvent(network::CMvEventPeerInv& eventInv);
-    bool HandleEvent(network::CMvEventPeerGetData& eventGetData);
-    bool HandleEvent(network::CMvEventPeerGetBlocks& eventGetBlocks);
-    bool HandleEvent(network::CMvEventPeerTx& eventTx);
-    bool HandleEvent(network::CMvEventPeerBlock& eventBlock);
+    bool HandleEvent(network::CMvEventPeerActive& eventActive) override;
+    bool HandleEvent(network::CMvEventPeerDeactive& eventDeactive) override;
+    bool HandleEvent(network::CMvEventPeerInv& eventInv) override;
+    bool HandleEvent(network::CMvEventPeerGetData& eventGetData) override;
+    bool HandleEvent(network::CMvEventPeerGetBlocks& eventGetBlocks) override;
+    bool HandleEvent(network::CMvEventPeerTx& eventTx) override;
+    bool HandleEvent(network::CMvEventPeerBlock& eventBlock) override;
 
     CSchedule& GetSchedule(const uint256& hashFork);
     void NotifyPeerUpdate(uint64 nNonce,bool fActive,const network::CAddress& addrPeer);

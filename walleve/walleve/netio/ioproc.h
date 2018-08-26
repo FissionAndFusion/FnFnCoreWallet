@@ -55,11 +55,11 @@ public:
     virtual ~CIOProc();
     boost::asio::io_service& GetIoService();
     boost::asio::io_service::strand& GetIoStrand();
-    bool DispatchEvent(CWalleveEvent* pEvent);
+    virtual bool DispatchEvent(CWalleveEvent* pEvent) override;
     virtual CIOClient* CreateIOClient(CIOContainer *pContainer);
 protected:
-    bool WalleveHandleInvoke();
-    void WalleveHandleHalt();
+    bool WalleveHandleInvoke() override;
+    void WalleveHandleHalt() override;
    
     uint32 SetTimer(uint64 nNonce,int64 nElapse);
     void CancelTimer(uint32 nTimerId);

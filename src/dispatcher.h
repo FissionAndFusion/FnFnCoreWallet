@@ -16,13 +16,13 @@ class CDispatcher : public IDispatcher
 public:
     CDispatcher();
     ~CDispatcher();
-    MvErr AddNewBlock(CBlock& block,uint64 nNonce=0);
-    MvErr AddNewTx(CTransaction& tx,uint64 nNonce=0);
+    MvErr AddNewBlock(CBlock& block,uint64 nNonce=0) override;
+    MvErr AddNewTx(CTransaction& tx,uint64 nNonce=0) override;
 protected:
-    bool WalleveHandleInitialize();
-    void WalleveHandleDeinitialize();
-    bool WalleveHandleInvoke();
-    void WalleveHandleHalt();
+    bool WalleveHandleInitialize() override;
+    void WalleveHandleDeinitialize() override;
+    bool WalleveHandleInvoke() override;
+    void WalleveHandleHalt() override;
 //    MvErr PushTxPool(const uint256& txid,CTransaction& tx);
 protected:
     boost::shared_mutex rwAccess;

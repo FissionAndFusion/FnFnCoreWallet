@@ -40,11 +40,11 @@ class CHttpSSEStatusGenerator : public CHttpSSEGenerator
 {
 public:
     CHttpSSEStatusGenerator() : nEventId(0) {}
-    virtual void ResetData()
+    virtual void ResetData() override
     {
         status = T();
     }
-    virtual bool UpdateData(CHttpSSEData& data,uint64 nEventNewId)
+    virtual bool UpdateData(CHttpSSEData& data,uint64 nEventNewId) override
     {
         try
         {
@@ -62,7 +62,7 @@ public:
         return false;
     }
     virtual void GenerateEventData(uint64 nEventLastId,uint64 nEventCurrentId,
-                                   std::vector<std::string>& vEventData)
+                                   std::vector<std::string>& vEventData) override
     {
         if (nEventLastId < nEventId && !(status == T()))
         {

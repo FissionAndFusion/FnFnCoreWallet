@@ -157,24 +157,24 @@ class CTxPool : public ITxPool
 public:
     CTxPool();
     ~CTxPool();
-    bool Exists(const uint256& txid);
-    void Clear();
-    std::size_t Count(const uint256& fork) const;
-    MvErr Push(CTransaction& tx,uint256& hashFork,CDestination& destIn,int64& nValueIn);
-    void Pop(const uint256& txid);
-    bool Get(const uint256& txid,CTransaction& tx) const;
-    void ListTx(const uint256& hashFork,std::vector<std::pair<uint256,std::size_t> >& vTxPool);
-    void ListTx(const uint256& hashFork,std::vector<uint256>& vTxPool);
-    bool FilterTx(CTxFilter& filter);
-    void ArrangeBlockTx(const uint256& hashFork,std::size_t nMaxSize,std::vector<CTransaction>& vtx,int64& nTotalTxFee);
-    bool FetchInputs(const uint256& hashFork,const CTransaction& tx,std::vector<CTxOutput>& vUnspent);
-    bool SynchronizeWorldLine(CWorldLineUpdate& update,CTxSetChange& change);
+    bool Exists(const uint256& txid) override;
+    void Clear() override;
+    std::size_t Count(const uint256& fork) const override;
+    MvErr Push(CTransaction& tx,uint256& hashFork,CDestination& destIn,int64& nValueIn) override;
+    void Pop(const uint256& txid) override;
+    bool Get(const uint256& txid,CTransaction& tx) const override;
+    void ListTx(const uint256& hashFork,std::vector<std::pair<uint256,std::size_t> >& vTxPool) override;
+    void ListTx(const uint256& hashFork,std::vector<uint256>& vTxPool) override;
+    bool FilterTx(CTxFilter& filter) override;
+    void ArrangeBlockTx(const uint256& hashFork,std::size_t nMaxSize,std::vector<CTransaction>& vtx,int64& nTotalTxFee) override;
+    bool FetchInputs(const uint256& hashFork,const CTransaction& tx,std::vector<CTxOutput>& vUnspent) override;
+    bool SynchronizeWorldLine(CWorldLineUpdate& update,CTxSetChange& change) override;
     bool LoadTx(const uint256& txid,const uint256& hashFork,const CAssembledTx& tx);
 protected:
-    bool WalleveHandleInitialize();
-    void WalleveHandleDeinitialize();
-    bool WalleveHandleInvoke();
-    void WalleveHandleHalt();
+    bool WalleveHandleInitialize() override;
+    void WalleveHandleDeinitialize() override;
+    bool WalleveHandleInvoke() override;
+    void WalleveHandleHalt() override;
     bool LoadDB();
     MvErr AddNew(CTxPoolView& txView,const uint256& txid,CTransaction& tx,const uint256& hashFork,int nForkHeight);
     std::size_t GetSequenceNumber()

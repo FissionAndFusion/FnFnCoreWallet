@@ -15,18 +15,18 @@ class CMvCoreProtocol : public ICoreProtocol
 public:
     CMvCoreProtocol();
     virtual ~CMvCoreProtocol();
-    virtual const uint256& GetGenesisBlockHash();
-    virtual void GetGenesisBlock(CBlock& block); 
-    virtual MvErr ValidateTransaction(const CTransaction& tx);
-    virtual MvErr ValidateBlock(CBlock& block);
-    virtual MvErr VerifyBlock(CBlock& block,CBlockIndex* pIndexPrev);
-    virtual MvErr VerifyBlockTx(CTransaction& tx,CTxContxt& txContxt,CBlockIndex* pIndexPrev);
-    virtual MvErr VerifyTransaction(CTransaction& tx,const std::vector<CTxOutput>& vPrevOutput,int nForkHeight);
-    virtual bool GetProofOfWorkTarget(CBlockIndex* pIndexPrev,int nAlgo,int& nBits,int64& nReward);
-    virtual int GetProofOfWorkRunTimeBits(int nBits,int64 nTime,int64 nPrevTime);
+    virtual const uint256& GetGenesisBlockHash() override;
+    virtual void GetGenesisBlock(CBlock& block) override; 
+    virtual MvErr ValidateTransaction(const CTransaction& tx) override;
+    virtual MvErr ValidateBlock(CBlock& block) override;
+    virtual MvErr VerifyBlock(CBlock& block,CBlockIndex* pIndexPrev) override;
+    virtual MvErr VerifyBlockTx(CTransaction& tx,CTxContxt& txContxt,CBlockIndex* pIndexPrev) override;
+    virtual MvErr VerifyTransaction(CTransaction& tx,const std::vector<CTxOutput>& vPrevOutput,int nForkHeight) override;
+    virtual bool GetProofOfWorkTarget(CBlockIndex* pIndexPrev,int nAlgo,int& nBits,int64& nReward) override;
+    virtual int GetProofOfWorkRunTimeBits(int nBits,int64 nTime,int64 nPrevTime) override;
     //virtual MvErr 
 protected:
-    bool WalleveHandleInitialize();
+    bool WalleveHandleInitialize() override;
     const MvErr Debug(const MvErr& err,const char* pszFunc,const char *pszFormat,...); 
     bool CheckBlockSignature(const CBlock& block);
    int64 GetProofOfWorkReward(CBlockIndex* pIndexPrev);
@@ -42,7 +42,7 @@ class CMvTestNetCoreProtocol : public CMvCoreProtocol
 {
 public:
     CMvTestNetCoreProtocol();
-    void GetGenesisBlock(CBlock& block);
+    void GetGenesisBlock(CBlock& block) override;
 };
 
 } // namespace multiverse

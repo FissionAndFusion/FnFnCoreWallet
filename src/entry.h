@@ -18,7 +18,7 @@ public:
     CMvEntry();
     ~CMvEntry();
     bool Initialize(int argc,char *argv[]);
-    bool Run();
+    bool Run() override;
     void Exit();
 protected:
     bool InitializeService();

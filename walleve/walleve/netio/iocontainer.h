@@ -38,8 +38,8 @@ class CIOCachedContainer : public CIOContainer
 public:
     CIOCachedContainer(CIOProc *pIOProcIn);
     virtual ~CIOCachedContainer();
-    void ClientClose(CIOClient* pClient);
-    std::size_t GetIdleCount();
+    void ClientClose(CIOClient* pClient) override;
+    std::size_t GetIdleCount() override;
 protected:
     CIOClient *ClientAlloc();
     void Deactivate();
@@ -58,7 +58,7 @@ public:
     bool Invoke(const boost::asio::ip::tcp::endpoint& epListen,std::size_t nMaxConnection,
                 const std::vector<std::string>& vAllowMask = std::vector<std::string>());
     void Halt();
-    const boost::asio::ip::tcp::endpoint GetServiceEndpoint();
+    const boost::asio::ip::tcp::endpoint GetServiceEndpoint() override;
 protected:
     bool BuildWhiteList(const std::vector<std::string>& vAllowMask);
     bool IsAllowedRemote(const boost::asio::ip::tcp::endpoint& ep);

@@ -18,8 +18,8 @@ public:
     ~CNetwork();
     bool CheckPeerVersion(uint32 nVersionIn,uint64 nServiceIn,const std::string& subVersionIn);
 protected:
-    bool WalleveHandleInitialize();
-    void WalleveHandleDeinitialize();
+    bool WalleveHandleInitialize() override;
+    void WalleveHandleDeinitialize() override;
     const CMvNetworkConfig * NetworkConfig()
     {
         return dynamic_cast<const CMvNetworkConfig *>(walleve::IWalleveBase::WalleveConfig());
