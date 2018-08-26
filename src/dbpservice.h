@@ -11,6 +11,11 @@ class CDbpService : public walleve::IIOModule, virtual public walleve::CWalleveD
 public:
     CDbpService();
     virtual ~CDbpService();
+
+    bool HandleEvent(walleve::CWalleveEventDbpConnect& event);
+    bool HandleEvent(walleve::CWalleveEventDbpSub& event);
+    bool HandleEvent(walleve::CWalleveEventDbpUnSub& event);
+    bool HandleEvent(walleve::CWalleveEventDbpMethod& event);
 protected:
     bool WalleveHandleInitialize();
     void WalleveHandleDeinitialize();

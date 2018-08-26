@@ -38,3 +38,37 @@ void CDbpService::WalleveHandleDeinitialize()
     pDbpServer = NULL;
     pService = NULL;
 }
+
+bool CDbpService::HandleEvent(walleve::CWalleveEventDbpConnect& event)
+{
+    (void)event.data.client;
+    event.data.session;
+    event.data.version;
+
+    if(event.data.version != 1)
+    {
+        // reply error
+    }
+    else
+    {
+        // reply normal
+        
+    }
+
+    return true;
+}
+
+bool CDbpService::HandleEvent(walleve::CWalleveEventDbpSub& event)
+{
+    return true;
+}
+
+bool CDbpService::HandleEvent(walleve::CWalleveEventDbpUnSub& event)
+{
+    return true;
+}
+
+bool CDbpService::HandleEvent(walleve::CWalleveEventDbpMethod& event)
+{
+    return true;
+}

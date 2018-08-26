@@ -258,7 +258,10 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
             methodMsg.params().UnpackTo(&args);
             methodBody.params.insert(std::make_pair("hash",args.hash()));
         }   
-        else{}
+        else
+        {
+            return;
+        }
         
         pDbpProfile->pIOModule->PostEvent(pEventDbpMethod);
     }

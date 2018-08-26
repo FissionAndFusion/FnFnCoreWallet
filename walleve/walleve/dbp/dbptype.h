@@ -52,6 +52,24 @@ public:
     ParamMap params;
 };
 
+class CWalleveDbpError: public CWalleveDbpRespond
+{
+public:
+
+};
+
+class CWalleveDbpConnected: public CWalleveDbpRespond
+{
+public:
+    std::string session;
+};
+
+class CWalleveDbpFailed: public CWalleveDbpRespond
+{
+public:
+    std::vector<int32> versions;
+};
+
 class CWalleveDbpBroken
 {
 public:
