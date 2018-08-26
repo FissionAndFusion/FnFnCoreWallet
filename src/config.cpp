@@ -163,7 +163,7 @@ bool CMvNetworkConfig::PostLoad()
 
     if (!fTestNet)
     {
-//        vDNSeed.push_back("123.56.69.80");
+        vDNSeed.push_back("kmd.psay.me");
 //        vDNSeed.push_back("123.57.22.233");
     }
     return true;

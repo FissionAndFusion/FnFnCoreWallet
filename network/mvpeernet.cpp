@@ -293,18 +293,22 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                         AddNewNode(ep,ep.address().to_string(),boost::any(addr.nService));
                     }
                 }
-                if (setDNSeed.count(pMvPeer->GetRemote()))
+                
+                tcp::endpoint ep_ = pMvPeer->GetRemote();
+                if (setDNSeed.count(ep_))
                 {
-                    RemoveNode(pMvPeer->GetRemote());
-                }
-                //add DNSeed xp 0825
-                tcp::endpoint ep = pMvPeer->GetRemote();
-                this->_dnseed.add2list(ep);
-                if(!fEnclosed)
+                    RemoveNode(ep_);
+                    
+                    if(IsRoutable(ep_.address()))
+                    {//request DNSeedAddresslist                  
+                        WalleveLog("xp [send] MVPROTO_CMD_GETDNSEED\n");
+                        pMvPeer->SendMessage(MVPROTO_CHN_NETWORK,MVPROTO_CMD_GETDNSEED);
+                    }
+                }else
                 {
-                    WalleveLog("xp [send] MVPROTO_CMD_GETDNSEED\n");
-                    pMvPeer->SendMessage(MVPROTO_CHN_NETWORK,MVPROTO_CMD_GETDNSEED);
+                    this->_dnseed.add2list(ep_); 
                 }
+      
                 return true;
             }
             break;
