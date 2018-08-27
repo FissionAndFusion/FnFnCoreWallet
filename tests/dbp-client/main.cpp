@@ -7,7 +7,11 @@
 #include "dbp.pb.h"
 #include "lws.pb.h"
 
-void sendConnect() 
+void sendConnect(
+ const std::string& session,
+ const std::string& client,
+ int version
+) 
 {
     boost::asio::io_service service;
     boost::asio::ip::tcp::socket socket(service);
@@ -23,9 +27,9 @@ void sendConnect()
     connectMsgBase.set_msg(dbp::Msg::CONNECT);
 
     dbp::Connect connectMsg;
-    connectMsg.set_session("123test");
-    connectMsg.set_client("client1");
-    connectMsg.set_version(1);
+    connectMsg.set_session(session);
+    connectMsg.set_client(client);
+    connectMsg.set_version(version);
 
     google::protobuf::Any any;
     any.PackFrom(connectMsg);
@@ -113,27 +117,41 @@ void sendConnect()
         std::cerr << "unknown msg type" << std::endl;
     }
 
+    socket.close();
+
+}
+
+void help()
+{
+    std::cerr << "usage: dbpclient [msgtype]"
+        << std::endl
+        << "msgtype:" << std::endl
+        << "connect [session] [client] [version]"
+        << std::endl;
 }
 
 int main(int argc, char* argv[])
 {
-    
-    if(argc != 2)
-    {
-        std::cerr << "usage: dbpclient [msgtype]"
-        << std::endl;
-        return -1;
-    }
 
     std::string msgType(argv[1]);
+    
+    if(msgType == "help")
+    {
+        help();
+    }
     if(msgType == "connect")
     {
-        sendConnect();
+        std::string session(argv[2]);
+        std::string client(argv[3]);
+        std::string version(argv[4]);
+        sendConnect(session,client,
+        std::atoi(version.c_str()));
     }
     else
     {
         std::cerr << "error: msg type invalid"
         << std::endl;
+        help();
     }
     
     return 0;
