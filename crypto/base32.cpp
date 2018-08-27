@@ -32,7 +32,7 @@ void Base32Encode(const unsigned char* md32,std::string& strBase32)
     {
         Base32Encode5Bytes(md32 + i,strBase32);
     }
-    unsigned char tail[5] = { md32[30],md32[31],crc >> 16,crc >> 8,crc };
+    unsigned char tail[5] = { md32[30],md32[31],(unsigned char)(crc >> 16),(unsigned char)(crc >> 8),(unsigned char)crc };
     Base32Encode5Bytes(tail,strBase32);
 }
 

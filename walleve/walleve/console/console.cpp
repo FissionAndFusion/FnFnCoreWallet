@@ -141,7 +141,7 @@ void CConsole::ReadlineCallback(char *line)
 
 void CConsole::WaitForChars()
 {
-#if WIN32
+#ifdef WIN32
     // TODO: Just to be compilable. It works incorrect.
     inStream.async_read_some(boost::asio::mutable_buffer(),boost::bind(&CConsole::HandleRead,this,
                                                      boost::asio::placeholders::error,
