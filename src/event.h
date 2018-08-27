@@ -40,6 +40,28 @@ public:
     DECLARE_EVENTHANDLER(CMvEventBlockMakerUpdate);
 };
 
+enum
+{
+    MV_EVENT_DBP_SOCKET_STUB = MV_EVENT_BLOCKMAKER_PUBLISH,
+	MV_EVENT_DBP_SOCKET_ADD_NEW_BLOCK,
+	MV_EVENT_DBP_SOCKET_ADD_NEW_TX
+};
+
+class CMvDBPEventListener;
+#define TYPE_DBPEVENT(type,body)       \
+		walleve::CWalleveEventCategory<type,CMvDBPEventListener,body,CNil>
+
+typedef TYPE_DBPEVENT(MV_EVENT_DBP_SOCKET_ADD_NEW_BLOCK,uint256) CMvEventDbpUpdateNewBlock;
+typedef TYPE_DBPEVENT(MV_EVENT_DBP_SOCKET_ADD_NEW_TX,uint256) CMvEventDbpUpdateNewTx;
+
+class CMvDBPEventListener : virtual public walleve::CWalleveEventListener
+{
+public:
+	virtual ~CMvDBPEventListener() {}
+	DECLARE_EVENTHANDLER(CMvEventDbpUpdateNewBlock);
+	DECLARE_EVENTHANDLER(CMvEventDbpUpdateNewTx);
+};
+
 } // namespace multiverse
 
 #endif //MULTIVERSE_EVENT_H

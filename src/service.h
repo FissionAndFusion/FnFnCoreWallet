@@ -11,6 +11,7 @@
 namespace multiverse
 {
 
+class CDbpService;
 class CService : public IService
 {
 public:
@@ -79,6 +80,7 @@ protected:
     IDispatcher* pDispatcher;
     IWallet* pWallet;
     CNetwork* pNetwork;
+    CDbpService* pDbpSocket;
     mutable boost::shared_mutex rwForkStatus;
     std::map<uint256,CForkStatus> mapForkStatus;
 };
