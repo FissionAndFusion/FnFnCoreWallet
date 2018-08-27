@@ -394,6 +394,7 @@ bool CMvConfig::PostLoad()
             && CMvBasicConfig::PostLoad()
             && CMvNetworkConfig::PostLoad()
             && CMvRPCConfig::PostLoad()
+            && CMvDbpConfig::PostLoad()
             && CMvMintConfig::PostLoad());
 }
 
@@ -403,5 +404,6 @@ string CMvConfig::ListConfig()
             + CMvBasicConfig::ListConfig()
             + CMvNetworkConfig::ListConfig()
             + CMvRPCConfig::ListConfig()
+            + CMvDbpConfig::ListConfig()
             + CMvMintConfig::ListConfig());
 }
