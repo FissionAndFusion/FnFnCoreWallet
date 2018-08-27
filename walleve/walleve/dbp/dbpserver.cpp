@@ -62,10 +62,10 @@ void CDbpClient::SendResponse(CWalleveDbpConnected& body)
     dbp::Connected connectedMsg;
     connectedMsg.set_session(body.session);
 
-    google::protobuf::Any any;
-    any.PackFrom(connectedMsg);
+    google::protobuf::Any *any = new google::protobuf::Any();
+    any->PackFrom(connectedMsg);
 
-    connectedMsgBase.set_allocated_object(&any);
+    connectedMsgBase.set_allocated_object(any);
     
     int byteSize = connectedMsgBase.ByteSize();
     unsigned char byteBuf[byteSize];
@@ -96,10 +96,10 @@ void CDbpClient::SendResponse(CWalleveDbpFailed& body)
         failedMsg.add_version(version);
     }
 
-    google::protobuf::Any any;
-    any.PackFrom(failedMsg);
+    google::protobuf::Any *any = new google::protobuf::Any();
+    any->PackFrom(failedMsg);
 
-    failedMsgBase.set_allocated_object(&any);
+    failedMsgBase.set_allocated_object(any);
  
     int byteSize = failedMsgBase.ByteSize();
     unsigned char byteBuf[byteSize];
@@ -505,6 +505,7 @@ bool CDbpServer::HandleEvent(CWalleveEventDbpConnected& event)
     CWalleveDbpConnected &connectedBody = event.data;
 
     pDbpClient->SendResponse(connectedBody);
+    return true;
 }
     
 bool CDbpServer::HandleEvent(CWalleveEventDbpFailed& event)
@@ -519,4 +520,5 @@ bool CDbpServer::HandleEvent(CWalleveEventDbpFailed& event)
     CWalleveDbpFailed &failedBody = event.data;
 
     pDbpClient->SendResponse(failedBody);
+    return true;
 }
