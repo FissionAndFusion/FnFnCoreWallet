@@ -15,11 +15,11 @@ namespace network
 {
 
 
-class DNSeedServer:public walleve::IWalleveBase 
+class DNSeedServer  
 {
 public: 
     DNSeedServer(){
-        _isDNSeedServerNode=true;//todo config
+        _isDNSeedServerNode=false;//todo config
         _initTime=walleve::GetTime();
         _runTime=0;
         init();
@@ -30,13 +30,14 @@ public:
         GET_ALL,
         GET_A_LOT
     };
+    bool isDNseedServer(){return _isDNSeedServerNode;}
+
     void getAddressList(std::vector<CAddress> & list,GetNodeWay gettype=GET_A_LOT);
+    void getConnectAddressList(std::vector<boost::asio::ip::tcp::endpoint> &epList ,int limitCount=10);
     bool add2list(boost::asio::ip::tcp::endpoint newep);
     void recvAddressList(std::vector<CAddress> epList);
-    bool updateScore(storage::SeedNode node);
-    static int test();
-    storage::DNSeedDB * testGetDb(){return &_db;}
-    bool isDNseedServer(){return _isDNSeedServerNode;}
+    bool updateNode(storage::SeedNode node);
+    void removeNode(boost::asio::ip::tcp::endpoint ep);
 private:
     bool init();
     void startDNSeedService();

@@ -67,15 +67,13 @@ bool DNSeedDB::deleteNode(SeedNode &node)
     return dbConn.Query(oss.str());
 }
 
-bool DNSeedDB::updateNodeScore(SeedNode &node)
+bool DNSeedDB::updateNode(SeedNode &node)
 {
     std::ostringstream oss;
     std::vector<unsigned char> bt;
      this->getBinaryCharV4V6(bt,node._ep.address());
-    oss << "UPDATE dnseednode SET score = "<< node._score   
-                << " WHERE address = " << "\'" << dbConn.ToEscString(bt) << "\'"
-                << "or id="<<18;
-    std::string str=oss.str();
+    oss << "UPDATE dnseednode SET score = "<< node._score<< ",port = "<<node._ep.port() 
+                << " WHERE address = " << "\'" << dbConn.ToEscString(bt) << "\'";
     return dbConn.Query(oss.str());
 }
 

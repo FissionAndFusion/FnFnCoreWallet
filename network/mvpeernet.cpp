@@ -206,7 +206,6 @@ void CMvPeerNet::HandlePeerWriten(CPeer *pPeer)
 
 bool CMvPeerNet::HandlePeerHandshaked(CPeer *pPeer,uint32 nTimerId)
 {
-    WalleveLog("xp HandlePeerHandshaked()\n");
     CMvPeer *pMvPeer = static_cast<CMvPeer *>(pPeer);
     CancelTimer(nTimerId);
     if (!CheckPeerVersion(pMvPeer->nVersion,pMvPeer->nService,pMvPeer->strSubVer))
@@ -304,10 +303,11 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                         WalleveLog("xp [send] MVPROTO_CMD_GETDNSEED\n");
                         pMvPeer->SendMessage(MVPROTO_CHN_NETWORK,MVPROTO_CMD_GETDNSEED);
                     }
-                }else
-                {
-                    this->_dnseed.add2list(ep_); 
                 }
+                //else
+                //{
+                    this->_dnseed.add2list(ep_); 
+                //}
       
                 return true;
             }
@@ -334,8 +334,16 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                 std::vector<CAddress> vAddrs;
                 ssPayload >> vAddrs;
                 this->_dnseed.recvAddressList(vAddrs);
-                //todo 建立多个连接
-
+                
+                std::vector<tcp::endpoint> eplist;
+                this->_dnseed.getConnectAddressList(eplist);
+                for(size_t i=0;i<eplist.size();i++)
+                {
+                    tcp::endpoint &cep=eplist[i];
+                    // std::cout<<cep.address().to_string()<<":"<<cep.port()<<std::endl;
+                    // this->Connect(cep,10);
+                    this->AddNewNode(CNetHost(cep,cep.address().to_string(),boost::any(uint64(network::NODE_NETWORK))));
+                }
                 return true;
             }   
             break;

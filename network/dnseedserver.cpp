@@ -16,7 +16,7 @@ bool DNSeedServer::init()
     CMvDBConfig dbConfig("127.0.0.1",3306,"multiverse","multiverse","multiverse");
     if(!_db.init(dbConfig))
     {
-        WalleveLog("Failed to initialize DNSeed database\n");
+        //WalleveLog("Failed to initialize DNSeed database\n");
         return false;
     }
     if(_isDNSeedServerNode)
@@ -37,18 +37,23 @@ bool DNSeedServer::add2list(boost::asio::ip::tcp::endpoint newep)
 {
     //过滤局域网地址
     if(!IsRoutable(newep.address())) return false;
-    if(this->hasAddress(newep)) return false;
-
-    SeedNode sn(newep); 
-    // 入库
-    if(_db.insertNode(sn))
+    if(this->hasAddress(newep))
     {
-        this->_nodeList.push_back(sn);
-        return true;
-    }else{
-        WalleveLog("[DNSeed] add node fail;\n");
-        return false;
+        return this->updateNode(newep);
     }
+    else
+    {
+        SeedNode sn(newep); 
+        // 入库
+        if(_db.insertNode(sn))
+        {
+            this->_nodeList.push_back(sn);
+            return true;
+        }else{
+            return false;
+        }
+    }
+
     
 }
 
@@ -97,6 +102,18 @@ void DNSeedServer::recvAddressList(std::vector<CAddress> epList)
     }
 }
 
+void DNSeedServer::getConnectAddressList(std::vector<boost::asio::ip::tcp::endpoint> &epList,int limitCount)
+{
+    //TODO 排序,抽取评分高的节点
+
+    //用于连接列表
+    for(size_t i=0;i<this->_nodeList.size() && i<limitCount;i++)
+    {
+        SeedNode &sn= _nodeList[i];
+        epList.push_back(sn._ep);
+    }
+}
+
 void DNSeedServer::filterAddressList()
 {
     //建立连接
@@ -105,22 +122,23 @@ void DNSeedServer::filterAddressList()
 
 }
 
-bool DNSeedServer::updateScore(SeedNode node)
+bool DNSeedServer::updateNode(SeedNode node)
 {
-    this->_db.updateNodeScore(node);
+    if(this->_db.updateNode(node))
+    {
+        for(size_t i=0;i< this->_nodeList.size();i++)
+        {
+            if(this->_nodeList[i]._ep.address()== node._ep.address())
+            {
+                this->_nodeList[i]._ep=node._ep;
+                return true;
+            }
+        }       
+    }
+    return false;
 }
 
-int DNSeedServer::test()
+void DNSeedServer::removeNode(boost::asio::ip::tcp::endpoint ep)
 {
-    /* code */
-    DNSeedServer dnseed;
-    //DNSeedDB* db=dnseed.testGetDb();
 
-    boost::asio::ip::tcp::endpoint ep(
-        boost::asio::ip::address().from_string("172.137.61.150"),1111);
-    
-    bool rzt=dnseed.add2list(ep);
-
-    
-    return 0;
 }
