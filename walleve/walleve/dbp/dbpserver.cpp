@@ -56,13 +56,21 @@ void CDbpClient::SendResponse(CWalleveDbpConnected& body)
 {
     ssSend.Clear();
 
+    dbp::Base connectedMsgBase;
+    connectedMsgBase.set_msg(dbp::Msg::CONNECTED);
+    
     dbp::Connected connectedMsg;
     connectedMsg.set_session(body.session);
+
+    google::protobuf::Any any;
+    any.PackFrom(connectedMsg);
+
+    connectedMsgBase.set_allocated_object(&any);
     
-    int byteSize = connectedMsg.ByteSize();
+    int byteSize = connectedMsgBase.ByteSize();
     unsigned char byteBuf[byteSize];
 
-    connectedMsg.SerializeToArray(byteBuf,byteSize);
+    connectedMsgBase.SerializeToArray(byteBuf,byteSize);
 
     unsigned char msgLenBuf[4];
     CDbpUtils::writeLenToMsgHeader(byteSize,(char*)msgLenBuf,4);
@@ -77,17 +85,26 @@ void CDbpClient::SendResponse(CWalleveDbpFailed& body)
 {
     ssSend.Clear();
 
+    
+    dbp::Base failedMsgBase;
+    failedMsgBase.set_msg(dbp::Msg::FAILED);
+    
     dbp::Failed failedMsg;
 
     for(const int32& version : body.versions)
     {
         failedMsg.add_version(version);
     }
+
+    google::protobuf::Any any;
+    any.PackFrom(failedMsg);
+
+    failedMsgBase.set_allocated_object(&any);
  
-    int byteSize = failedMsg.ByteSize();
+    int byteSize = failedMsgBase.ByteSize();
     unsigned char byteBuf[byteSize];
 
-    failedMsg.SerializeToArray(byteBuf,byteSize);
+    failedMsgBase.SerializeToArray(byteBuf,byteSize);
 
     unsigned char msgLenBuf[4];
     CDbpUtils::writeLenToMsgHeader(byteSize,(char*)msgLenBuf,4);
