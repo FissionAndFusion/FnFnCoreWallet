@@ -13,7 +13,7 @@ void sendConnect()
     boost::asio::ip::tcp::socket socket(service);
 
     boost::asio::ip::tcp::endpoint ep(boost::asio::ip::address_v4::from_string("127.0.0.1"), 
-    1100);
+    6815);
 
     socket.connect(ep);
 
