@@ -32,13 +32,13 @@ public:
 // CService 
 
 CService::CService()
-: pCoreProtocol(nullptr)
-, pWorldLine(nullptr)
-, pTxPool(nullptr)
-, pDispatcher(nullptr)
-, pWallet(nullptr)
-, pNetwork(nullptr)
-, pDbpSocket(nullptr)
+: pCoreProtocol(NULL)
+, pWorldLine(NULL)
+, pTxPool(NULL)
+, pDispatcher(NULL)
+, pWallet(NULL)
+, pNetwork(NULL)
+, pDbpSocket(NULL)
 {
 }
 
@@ -95,13 +95,13 @@ bool CService::WalleveHandleInitialize()
 
 void CService::WalleveHandleDeinitialize()
 {
-    pCoreProtocol   = nullptr;
-    pWorldLine      = nullptr;
-    pTxPool         = nullptr;
-    pDispatcher     = nullptr;
-    pWallet         = nullptr;
-    pNetwork        = nullptr;
-    pDbpSocket      = nullptr;
+    pCoreProtocol   = NULL;
+    pWorldLine      = NULL;
+    pTxPool         = NULL;
+    pDispatcher     = NULL;
+    pWallet         = NULL;
+    pNetwork        = NULL;
+    pDbpSocket      = NULL;
 }
 
 bool CService::WalleveHandleInvoke()
@@ -123,30 +123,29 @@ void CService::WalleveHandleHalt()
 
 void CService::NotifyWorldLineUpdate(const CWorldLineUpdate& update)
 {
-	CForkStatus status;
-	{
-		boost::unique_lock<boost::shared_mutex> wlock(rwForkStatus);
-		map<uint256,CForkStatus>::iterator it = mapForkStatus.find(update.hashFork);
-		if (it == mapForkStatus.end())
-		{
-			it = mapForkStatus.insert(make_pair(update.hashFork,CForkStatus(update.hashFork,update.hashParent,update.nOriginHeight))).first;
-			if (update.hashParent != 0)
-			{
-				mapForkStatus[update.hashParent].mapSubline.insert(make_pair(update.nOriginHeight,update.hashFork));
-			}
-		}
+    {
+        boost::unique_lock<boost::shared_mutex> wlock(rwForkStatus);
+        map<uint256,CForkStatus>::iterator it = mapForkStatus.find(update.hashFork);
+        if (it == mapForkStatus.end())
+        {
+            it = mapForkStatus.insert(make_pair(update.hashFork,CForkStatus(update.hashFork,update.hashParent,update.nOriginHeight))).first;
+            if (update.hashParent != 0)
+            {
+                mapForkStatus[update.hashParent].mapSubline.insert(make_pair(update.nOriginHeight,update.hashFork));
+            }
+        }
 
-		status = (*it).second;
-	}
-    status.hashLastBlock = update.hashLastBlock;
-    status.nLastBlockTime = update.nLastBlockTime;
-    status.nLastBlockHeight = update.nLastBlockHeight;
-    status.nMoneySupply = update.nMoneySupply;
+        CForkStatus &status = (*it).second;
+        status.hashLastBlock = update.hashLastBlock;
+        status.nLastBlockTime = update.nLastBlockTime;
+        status.nLastBlockHeight = update.nLastBlockHeight;
+        status.nMoneySupply = update.nMoneySupply;
+    }
 
-	uint64 nNonce;
-	CMvEventDbpUpdateNewBlock evtDbp(nNonce);
-	evtDbp.data = update.hashLastBlock;
-	pDbpSocket->PostEvent(evtDbp);
+    uint64 nNonce;
+    CMvEventDbpUpdateNewBlock *pUpdateNewBlockEvent = new CMvEventDbpUpdateNewBlock(nNonce, update.hashFork);
+    pUpdateNewBlockEvent->data = update.hashLastBlock;
+    pDbpSocket->PostEvent(pUpdateNewBlockEvent);
 }
 
 void CService::NotifyNetworkPeerUpdate(const CNetworkPeerUpdate& update)
