@@ -139,7 +139,7 @@ int main(int argc, char* argv[])
     {
         help();
     }
-    if(msgType == "connect")
+    else if(msgType == "connect")
     {
         std::string session(argv[2]);
         std::string client(argv[3]);
