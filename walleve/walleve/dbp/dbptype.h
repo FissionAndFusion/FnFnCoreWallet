@@ -41,6 +41,18 @@ public:
     std::string id;
 };
 
+class CWalleveDbpNoSub: public CWalleveDbpRespond
+{
+public:
+    std::string id;
+    std::string error;
+};
+
+class CWalleveDbpReady: public CWalleveDbpRespond
+{
+public:
+    std::string id;    
+};
 class CWalleveDbpMethod: public CWalleveDbpRequest
 {
 public:
@@ -67,6 +79,7 @@ public:
 class CWalleveDbpFailed: public CWalleveDbpRespond
 {
 public:
+    std::string session; // for delete session map
     std::vector<int32> versions;
 };
 

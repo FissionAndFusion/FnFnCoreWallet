@@ -37,6 +37,7 @@ message Connect
     string session = 1;
     int32 version = 2;
     string client = 3;
+    map<string, google.protobuf.Any> udata = 4;
 }
 
 message Connected
@@ -46,7 +47,9 @@ message Connected
 
 message Failed
 {
-    repeated int32 version = 1;
+    string reason = 1;
+    string session = 2;
+    repeated int32 version = 3;
 }
 
 message Ping

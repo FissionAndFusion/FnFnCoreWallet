@@ -9,6 +9,13 @@ CDbpService::CDbpService()
 {
     pService = NULL;
     pDbpServer = NULL;
+
+    std::map<std::string,bool> temp_map = boost::assign::map_list_of
+                    ("added",true)
+                    ("changed",true)
+                    ("removed",true);
+    
+    currentTopicExistMap = temp_map;
 }
 
 CDbpService::~CDbpService()
@@ -44,13 +51,14 @@ bool CDbpService::HandleEvent(walleve::CWalleveEventDbpConnect& event)
 {
     (void)event.data.client;
 
-    if(event.data.version != 1 || event.data.session.empty())
+    if(event.data.version != 1)
     {
-        // reply error
+        // reply failed
         uint64 nonce = event.nNonce;
         std::vector<int> versions{1};
         walleve::CWalleveEventDbpFailed eventFailed(nonce);
         eventFailed.data.versions = versions;
+        eventFailed.data.session  = event.data.session;
         pDbpServer->DispatchEvent(&eventFailed);
     }
     else
@@ -67,6 +75,33 @@ bool CDbpService::HandleEvent(walleve::CWalleveEventDbpConnect& event)
 
 bool CDbpService::HandleEvent(walleve::CWalleveEventDbpSub& event)
 {
+    std::string id = event.data.id;
+    std::string topicName = event.data.name;
+
+    // if topic not exists
+    if(currentTopicExistMap.count(topicName) == 0 )
+    {
+         // reply nosub
+        uint64 nonce = event.nNonce;
+        walleve::CWalleveEventDbpNoSub eventNoSub(nonce);
+        eventNoSub.data.id = event.data.id;
+        pDbpServer->DispatchEvent(&eventNoSub);
+    }
+    else
+    {
+        IdTopicKeyPair pair = std::make_pair(id,topicName);
+        if(idTopicMap.count(pair) == 0)
+        {
+            idTopicMap.insert(std::make_pair(pair,event.nNonce));
+        }
+
+        //reply ready
+        uint64 nonce = event.nNonce;
+        walleve::CWalleveEventDbpReady eventReady(nonce);
+        eventReady.data.id = event.data.id;
+        pDbpServer->DispatchEvent(&eventReady);
+    }
+    
     return true;
 }
 

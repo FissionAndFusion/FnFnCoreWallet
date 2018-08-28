@@ -4,6 +4,9 @@
 #include "mvbase.h"
 #include "walleve/walleve.h"
 
+#include <map>
+#include <utility>
+
 namespace multiverse{
 
 class CDbpService : public walleve::IIOModule, virtual public walleve::CWalleveDBPEventListener
@@ -22,6 +25,10 @@ protected:
 protected:
     walleve::IIOProc *pDbpServer;
     IService *pService;
+private:
+    typedef std::pair<std::string, std::string> IdTopicKeyPair;
+    std::map<IdTopicKeyPair,int> idTopicMap;
+    std::map<std::string,bool> currentTopicExistMap;
 };
 
 

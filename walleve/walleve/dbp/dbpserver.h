@@ -55,6 +55,8 @@ public:
     void Activate();
     void SendResponse(CWalleveDbpConnected& body);
     void SendResponse(CWalleveDbpFailed& body);
+    void SendResponse(CWalleveDbpNoSub& body);
+    void SendResponse(CWalleveDbpReady& body);
 protected:
     void StartReadHeader();
     void StartReadPayload(std::size_t nLength);
@@ -97,6 +99,9 @@ protected:
     void RespondError(CDbpClient *pDbpClient,int nStatusCode,const std::string& strError = "");
     bool HandleEvent(CWalleveEventDbpConnected& event) override;
     bool HandleEvent(CWalleveEventDbpFailed& event) override;
+    bool HandleEvent(CWalleveEventDbpNoSub& event) override;
+    bool HandleEvent(CWalleveEventDbpReady& event) override;
+
 protected:
     std::vector<CDbpHostConfig> vecHostConfig;
     std::map<boost::asio::ip::tcp::endpoint,CDbpProfile> mapProfile;

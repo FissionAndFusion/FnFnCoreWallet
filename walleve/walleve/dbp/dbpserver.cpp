@@ -85,7 +85,6 @@ void CDbpClient::SendResponse(CWalleveDbpFailed& body)
 {
     ssSend.Clear();
 
-    
     dbp::Base failedMsgBase;
     failedMsgBase.set_msg(dbp::Msg::FAILED);
     
@@ -105,6 +104,63 @@ void CDbpClient::SendResponse(CWalleveDbpFailed& body)
     unsigned char byteBuf[byteSize];
 
     failedMsgBase.SerializeToArray(byteBuf,byteSize);
+
+    unsigned char msgLenBuf[4];
+    CDbpUtils::writeLenToMsgHeader(byteSize,(char*)msgLenBuf,4);
+    ssSend.Write((char*)msgLenBuf,4);
+    ssSend.Write((char*)byteBuf,byteSize);
+
+    pClient->Write(ssSend,boost::bind(&CDbpClient::HandleWritenResponse,this,_1));
+}
+
+void CDbpClient::SendResponse(CWalleveDbpNoSub& body)
+{
+    ssSend.Clear();
+
+    dbp::Base noSubMsgBase;
+    noSubMsgBase.set_msg(dbp::Msg::NOSUB);
+    
+    dbp::Nosub noSubMsg;
+    noSubMsg.set_id(body.id);
+    noSubMsg.set_error(body.error);
+
+    google::protobuf::Any *any = new google::protobuf::Any();
+    any->PackFrom(noSubMsg);
+
+    noSubMsgBase.set_allocated_object(any);
+ 
+    int byteSize = noSubMsgBase.ByteSize();
+    unsigned char byteBuf[byteSize];
+
+    noSubMsgBase.SerializeToArray(byteBuf,byteSize);
+
+    unsigned char msgLenBuf[4];
+    CDbpUtils::writeLenToMsgHeader(byteSize,(char*)msgLenBuf,4);
+    ssSend.Write((char*)msgLenBuf,4);
+    ssSend.Write((char*)byteBuf,byteSize);
+
+    pClient->Write(ssSend,boost::bind(&CDbpClient::HandleWritenResponse,this,_1));
+}
+
+void CDbpClient::SendResponse(CWalleveDbpReady& body)
+{
+    ssSend.Clear();
+
+    dbp::Base readyMsgBase;
+    readyMsgBase.set_msg(dbp::Msg::READY);
+    
+    dbp::Ready readyMsg;
+    readyMsg.set_id(body.id);
+
+    google::protobuf::Any *any = new google::protobuf::Any();
+    any->PackFrom(readyMsg);
+
+    readyMsgBase.set_allocated_object(any);
+ 
+    int byteSize = readyMsgBase.ByteSize();
+    unsigned char byteBuf[byteSize];
+
+    readyMsgBase.SerializeToArray(byteBuf,byteSize);
 
     unsigned char msgLenBuf[4];
     CDbpUtils::writeLenToMsgHeader(byteSize,(char*)msgLenBuf,4);
@@ -181,6 +237,9 @@ void CDbpClient::HandleReadCompleted()
     case dbp::METHOD:
         pServer->HandleClientRecv(this,&anyObj);
         break;
+    case dbp::PONG:
+        break;
+        pServer->HandleClientRecv(this,&anyObj);
     default:
         pServer->HandleClientError(this);
         break;
@@ -256,14 +315,31 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
                 session = CDbpUtils::RandomString();
             }
             sessionClientMap.insert(std::make_pair(session,pDbpClient));
+
+            CWalleveDbpConnect &connectBody = pEventDbpConnect->data;
+            connectBody.session = session;
+            connectBody.version = connectMsg.version();
+            connectBody.client  = connectMsg.client();
+            
+            pDbpProfile->pIOModule->PostEvent(pEventDbpConnect);
         }
-        
-        CWalleveDbpConnect &connectBody = pEventDbpConnect->data;
-        connectBody.session = session;
-        connectBody.version = connectMsg.version();
-        connectBody.client  = connectMsg.client();
-        
-        pDbpProfile->pIOModule->PostEvent(pEventDbpConnect);
+        else
+        {
+            if(sessionClientMap.count(session))
+            {
+                CWalleveDbpConnect &connectBody = pEventDbpConnect->data;
+                connectBody.session = session;
+                connectBody.version = connectMsg.version();
+                connectBody.client  = connectMsg.client();
+            
+                pDbpProfile->pIOModule->PostEvent(pEventDbpConnect);
+            }
+            else
+            {
+               
+            }
+            
+        }     
     }
     else if(any->Is<dbp::Sub>())
     {
@@ -351,7 +427,8 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
 
 void CDbpServer::HandleClientSent(CDbpClient *pDbpClient)
 {
-    RemoveClient(pDbpClient);
+    // keep-alive connection,do not remove
+    pDbpClient->Activate();
 }
 
 void CDbpServer::HandleClientError(CDbpClient *pDbpClient)
@@ -531,9 +608,52 @@ bool CDbpServer::HandleEvent(CWalleveEventDbpFailed& event)
         return false;
     }
 
-    CDbpClient *pDbpClient = (*it).second;
+    auto itSession = sessionClientMap.find(event.data.session);
+    if(itSession == sessionClientMap.end())
+    {
+        return false;
+    }
+
+
+    CDbpClient *pDbpClient = (*itSession).second;
     CWalleveDbpFailed &failedBody = event.data;
 
     pDbpClient->SendResponse(failedBody);
+    
+    // if connect failed, delete invalid session
+    sessionClientMap.erase(itSession);
+    
+    return true;
+}
+
+bool CDbpServer::HandleEvent(CWalleveEventDbpNoSub& event)
+{
+    std::map<uint64,CDbpClient*>::iterator it = mapClient.find(event.nNonce);
+    if (it == mapClient.end())
+    {
+        return false;
+    }
+
+    CDbpClient *pDbpClient = (*it).second;
+    CWalleveDbpNoSub &noSubBody = event.data;
+
+    pDbpClient->SendResponse(noSubBody);
+    
+    return true;
+}
+
+bool CDbpServer::HandleEvent(CWalleveEventDbpReady& event)
+{
+    std::map<uint64,CDbpClient*>::iterator it = mapClient.find(event.nNonce);
+    if (it == mapClient.end())
+    {
+        return false;
+    }
+
+    CDbpClient *pDbpClient = (*it).second;
+    CWalleveDbpReady &readyBody = event.data;
+
+    pDbpClient->SendResponse(readyBody);
+    
     return true;
 }
