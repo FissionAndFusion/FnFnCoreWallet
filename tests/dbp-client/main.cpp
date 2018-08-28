@@ -31,9 +31,9 @@ void sendConnect(
     connectMsg.set_client(client);
     connectMsg.set_version(version);
 
-    google::protobuf::Any any;
-    any.PackFrom(connectMsg);
-    connectMsgBase.set_allocated_object(&any);
+    google::protobuf::Any *any = new google::protobuf::Any();
+    any->PackFrom(connectMsg);
+    connectMsgBase.set_allocated_object(any);
 
     int sizeByte = connectMsgBase.ByteSize();
     char serilizedBuf[sizeByte];
