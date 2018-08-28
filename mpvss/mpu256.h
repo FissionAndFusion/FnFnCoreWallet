@@ -2,6 +2,8 @@
 #define  MPU256_H
 
 #include "curve25519.h"
+#include <walleve/stream/datastream.h>
+
 #include <stdint.h>
 #include <string>
 
@@ -63,6 +65,14 @@ public:
             s.push_back(chex[(*p--) & 15]);
         }
         return s;
+    }
+    void ToDataStream(walleve::CWalleveODataStream& os) const
+    {
+        os.Push(Data(),sizeof(u64));
+    }
+    void FromDataStream(walleve::CWalleveIDataStream& is)
+    {
+        is.Pop(Data(),sizeof(u64));
     }
 public:
     uint64_t u64[4];

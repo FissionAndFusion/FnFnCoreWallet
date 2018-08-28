@@ -36,6 +36,7 @@ set(sources
 add_executable(multiverse ${sources})
 
 include_directories(../walleve ../crypto ../common ../storage ../network)
+
 target_link_libraries(multiverse
 	Boost::system
 	Boost::filesystem
@@ -43,11 +44,13 @@ target_link_libraries(multiverse
 	Boost::thread
 	Boost::date_time
 	Boost::regex
-        OpenSSL::SSL
-        OpenSSL::Crypto
-        ${Readline_LIBRARY}
+	OpenSSL::SSL
+	OpenSSL::Crypto
 	walleve
 	crypto	
 	storage	
 	network	
+	${WS2_32_LIB}
+	${WSSOCK32_LIB}
+	${Readline_LIBRARY}
 )

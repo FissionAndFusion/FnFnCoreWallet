@@ -5,16 +5,16 @@
 #ifndef  WALLEVE_TYPE_H
 #define  WALLEVE_TYPE_H
 
-// TODO: cross platform support.
+#include <boost/cstdint.hpp>
 
-typedef char int8;
-typedef unsigned char uint8;
-typedef short int16;
-typedef unsigned short uint16;
-typedef int int32;
-typedef unsigned int uint32;
-typedef long long  int64;
-typedef unsigned long long  uint64;
+typedef boost::int8_t int8;
+typedef boost::uint8_t uint8;
+typedef boost::int16_t int16;
+typedef boost::uint16_t uint16;
+typedef boost::int32_t int32;
+typedef boost::uint32_t uint32;
+typedef boost::int64_t int64;
+typedef boost::uint64_t uint64;
 
 #endif //WALLEVE_TYPE_H
 

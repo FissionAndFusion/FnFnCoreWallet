@@ -13,18 +13,32 @@ cmake_minimum_required(VERSION 3.5.1)
 set(CMAKE_DIR "${CMAKE_CURRENT_LIST_DIR}/cmake" CACHE PATH "The path to the cmake directory")
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_DIR})
 
+add_compile_options("-std=c++11")
+
 set(Boost_USE_STATIC_LIBS ON)
 set(Boost_USE_MULTITHREADED ON)
+find_package(Boost 1.58.0 REQUIRED COMPONENTS
+    program_options
+    filesystem
+    system
+    thread
+    date_time
+    regex
+)
 find_package(OpenSSL 1.0.0 REQUIRED) 
-find_package(Boost 1.58.0 REQUIRED program_options filesystem system thread date_time regex)
-
 find_package(MySQL 5.7.20 REQUIRED)
 find_package(sodium 1.0.8 REQUIRED)
-find_package(Readline 6.0 REQUIRED)
+find_package(Readline 5.0 REQUIRED)
 
 if(${USE_SSL_110} MATCHES "TRUE")
     add_definitions(-DUSE_SSL_110)
 endif(${USE_SSL_110} MATCHES "TRUE")
+
+if(WIN32)
+    add_definitions(-DWIN32_LEAN_AND_MEAN)
+    find_library(WS2_32_LIB NAMES ws2_32)
+    find_library(WSSOCK32_LIB NAMES wsock32)
+endif()
 
 add_subdirectory(src)
 add_subdirectory(walleve)
