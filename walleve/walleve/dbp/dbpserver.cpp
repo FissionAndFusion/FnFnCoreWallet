@@ -244,9 +244,22 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
         
         dbp::Connect connectMsg;
         any->UnpackTo(&connectMsg);
+
+        //check session if exists
+        std::string session = connectMsg.session();
+        if(session.empty())
+        {
+            // generate random session string
+            session = CDbpUtils::RandomString();    
+            while(sessionClientMap.count(session))
+            {
+                session = CDbpUtils::RandomString();
+            }
+            sessionClientMap.insert(std::make_pair(session,pDbpClient));
+        }
         
         CWalleveDbpConnect &connectBody = pEventDbpConnect->data;
-        connectBody.session = connectMsg.session();
+        connectBody.session = session;
         connectBody.version = connectMsg.version();
         connectBody.client  = connectMsg.client();
         
@@ -331,7 +344,8 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
     }
     else
     {
-
+        RespondError(pDbpClient,500);
+        return;
     }
 }
 
@@ -471,6 +485,7 @@ CDbpClient* CDbpServer::AddNewClient(CIOClient *pClient,CDbpProfile *pDbpProfile
         mapClient.insert(std::make_pair(nNonce,pDbpClient));
         pDbpClient->Activate();
     }
+
 
     return pDbpClient;
 }

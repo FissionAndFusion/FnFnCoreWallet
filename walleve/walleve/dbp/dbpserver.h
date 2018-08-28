@@ -100,7 +100,8 @@ protected:
 protected:
     std::vector<CDbpHostConfig> vecHostConfig;
     std::map<boost::asio::ip::tcp::endpoint,CDbpProfile> mapProfile;
-    std::map<uint64,CDbpClient*> mapClient;  
+    std::map<uint64,CDbpClient*> mapClient; // nonce => CDbpClient
+    std::map<std::string,CDbpClient*> sessionClientMap; // session => CDbpClient 
 };
 } //namespace walleve
 #endif //WALLEVE_DBP_SERVER_H
