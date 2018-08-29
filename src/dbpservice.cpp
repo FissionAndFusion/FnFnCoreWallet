@@ -51,25 +51,39 @@ bool CDbpService::HandleEvent(walleve::CWalleveEventDbpConnect& event)
 {
     (void)event.data.client;
 
-    if(event.data.version != 1)
+    bool isReconnect = event.data.isReconnect;
+
+    if(isReconnect)
     {
-        // reply failed
-        uint64 nonce = event.nNonce;
-        std::vector<int> versions{1};
-        walleve::CWalleveEventDbpFailed eventFailed(nonce);
-        eventFailed.data.versions = versions;
-        eventFailed.data.session  = event.data.session;
-        pDbpServer->DispatchEvent(&eventFailed);
-    }
-    else
-    {
-        // reply normal
+         // reply normal
         uint64 nonce = event.nNonce;
         walleve::CWalleveEventDbpConnected eventConnected(nonce);
         eventConnected.data.session = event.data.session;
         pDbpServer->DispatchEvent(&eventConnected);
     }
-
+    else
+    {
+         if(event.data.version != 1)
+        {
+            // reply failed
+            uint64 nonce = event.nNonce;
+            std::vector<int> versions{1};
+            walleve::CWalleveEventDbpFailed eventFailed(nonce);
+            eventFailed.data.reason = "001";
+            eventFailed.data.versions = versions;
+            eventFailed.data.session  = event.data.session;
+            pDbpServer->DispatchEvent(&eventFailed);
+        }
+        else
+        {
+            // reply normal
+            uint64 nonce = event.nNonce;
+            walleve::CWalleveEventDbpConnected eventConnected(nonce);
+            eventConnected.data.session = event.data.session;
+            pDbpServer->DispatchEvent(&eventConnected);
+        }
+    }
+    
     return true;
 }
 

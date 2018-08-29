@@ -23,6 +23,7 @@ public:
 class CWalleveDbpConnect: public CWalleveDbpRequest
 {
 public:
+    bool isReconnect;
     std::string session;
     int32 version;
     std::string client;
@@ -79,6 +80,7 @@ public:
 class CWalleveDbpFailed: public CWalleveDbpRespond
 {
 public:
+    std::string reason; // failed reason
     std::string session; // for delete session map
     std::vector<int32> versions;
 };

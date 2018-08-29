@@ -95,6 +95,9 @@ void CDbpClient::SendResponse(CWalleveDbpFailed& body)
         failedMsg.add_version(version);
     }
 
+    failedMsg.set_reason(body.reason);
+    failedMsg.set_session(body.session);
+
     google::protobuf::Any *any = new google::protobuf::Any();
     any->PackFrom(failedMsg);
 
@@ -317,6 +320,7 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
             sessionClientMap.insert(std::make_pair(session,pDbpClient));
 
             CWalleveDbpConnect &connectBody = pEventDbpConnect->data;
+            connectBody.isReconnect = false;
             connectBody.session = session;
             connectBody.version = connectMsg.version();
             connectBody.client  = connectMsg.client();
@@ -328,6 +332,7 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
             if(sessionClientMap.count(session))
             {
                 CWalleveDbpConnect &connectBody = pEventDbpConnect->data;
+                connectBody.isReconnect = true;
                 connectBody.session = session;
                 connectBody.version = connectMsg.version();
                 connectBody.client  = connectMsg.client();
@@ -336,7 +341,13 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
             }
             else
             {
-               
+               // if reconnect cannot find session,send failed msg
+               CWalleveEventDbpFailed failedEvent(pDbpClient->GetNonce());
+               failedEvent.data.session = session;
+               failedEvent.data.reason =  "002";
+
+               this->HandleEvent(failedEvent);
+
             }
             
         }     
