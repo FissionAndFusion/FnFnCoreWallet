@@ -4,6 +4,7 @@
 
 #include <arpa/inet.h>
 
+#include "client.h"
 #include "dbp.pb.h"
 #include "lws.pb.h"
 
@@ -130,8 +131,22 @@ void help()
         << std::endl;
 }
 
+void run()
+{
+    try
+    {
+        client cl;
+        cl.run();
+    }
+    catch (std::exception& e)
+    {
+        std::cout << e.what() << std::endl;
+    }
+}
+
 int main(int argc, char* argv[])
 {
+    run();
 
     std::string msgType(argv[1]);
     
