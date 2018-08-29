@@ -5,6 +5,7 @@
 #include "walleve/walleve.h"
 
 #include <map>
+#include <set>
 #include <utility>
 
 namespace multiverse{
@@ -26,8 +27,9 @@ protected:
     walleve::IIOProc *pDbpServer;
     IService *pService;
 private:
-    typedef std::pair<std::string, std::string> IdTopicKeyPair;
-    std::map<IdTopicKeyPair,int> idTopicMap;
+    typedef std::set<std::string> TopicSet;
+    std::map<std::string,TopicSet> idSubedTopicsMap; // id => subed topics
+    std::map<std::string,int> idSubedNonceMap; // id => nonce
     std::map<std::string,bool> currentTopicExistMap;
 };
 

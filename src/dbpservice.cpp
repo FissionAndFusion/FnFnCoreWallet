@@ -89,11 +89,18 @@ bool CDbpService::HandleEvent(walleve::CWalleveEventDbpSub& event)
     }
     else
     {
-        IdTopicKeyPair pair = std::make_pair(id,topicName);
-        if(idTopicMap.count(pair) == 0)
+        if(idSubedTopicsMap.count(id) == 0)
         {
-            idTopicMap.insert(std::make_pair(pair,event.nNonce));
+            TopicSet topics{topicName};
+            idSubedTopicsMap.insert(std::make_pair(id,topics));
         }
+        else
+        {
+            auto & topics = idSubedTopicsMap[id];
+            topics.insert(topicName);
+        }
+
+        idSubedNonceMap.insert(std::make_pair(id,event.nNonce));
 
         //reply ready
         uint64 nonce = event.nNonce;
@@ -107,6 +114,18 @@ bool CDbpService::HandleEvent(walleve::CWalleveEventDbpSub& event)
 
 bool CDbpService::HandleEvent(walleve::CWalleveEventDbpUnSub& event)
 {
+    std::string id = event.data.id;    
+    if(idSubedTopicsMap.count(id) != 0)
+    {
+        // unsub is actual delete subed topic
+        idSubedTopicsMap.erase(id);
+    }
+
+    if(idSubedNonceMap.count(id) != 0)
+    {
+        idSubedNonceMap.erase(id);
+    }
+    
     return true;
 }
 
