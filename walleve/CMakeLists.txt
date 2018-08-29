@@ -73,4 +73,5 @@ target_link_libraries(walleve
         OpenSSL::SSL
         OpenSSL::Crypto
 	${Protobuf_LIBRARIES}
+	${Readline_LIBRARY}
 )

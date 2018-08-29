@@ -78,7 +78,7 @@ void CMPSecretShare::RandGeneretor(MPUInt256& r)
     uint8_t *p = r.Data();
     for (int i = 0;i < 32;i++)
     {
-        *p++ = random();
+        *p++ = rand();
     }
 }
 

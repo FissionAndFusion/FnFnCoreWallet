@@ -29,6 +29,7 @@
 #endif
 #include "shlobj.h"
 #include "shlwapi.h"
+#include "windows.h"
 #endif
 
 using namespace std;
@@ -372,6 +373,12 @@ bool CMvEntry::RunInBackground(const path& pathData)
     pid_t sid = setsid();
     if (sid < 0)
         cerr << "Error: setsid) returned " << sid << " errno " << errno << "\n";
+    return true;
+#else
+    HWND hwnd = GetForegroundWindow();
+    cout << "daemon running, window will run in background" << endl;
+    system("pause");
+    ShowWindow(hwnd, SW_HIDE);
     return true;
 #endif
     return false;

@@ -16,3 +16,9 @@ set(sources
 
 add_library(mpvss ${sources})
 
+include_directories(../walleve)
+
+target_link_libraries(mpvss
+	walleve
+)
+

@@ -119,7 +119,7 @@ class CInv
 {
     friend class walleve::CWalleveStream;
 public:
-    enum {ERROR=0,MSG_TX,MSG_BLOCK,MSG_FILTERED_BLOCK,MSG_CMPCT_BLOCK};
+    enum {MSG_ERROR=0,MSG_TX,MSG_BLOCK,MSG_FILTERED_BLOCK,MSG_CMPCT_BLOCK};
     enum {MAX_INV_COUNT = 1024 * 8};
     CInv() {}
     CInv(uint32 nTypeIn,const uint256& nHashIn)

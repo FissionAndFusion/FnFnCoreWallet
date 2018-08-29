@@ -59,6 +59,9 @@ public:
                     const std::vector<std::pair<uint256,CTxIndex> >& vTxNew,const std::vector<uint256>& vTxDel,
                     const std::vector<CTxUnspent>& vAddNew,const std::vector<CTxOutPoint>& vRemove);
     bool AddNewBlock(const CBlockOutline& outline);
+    bool RemoveBlock(const uint256& hash);
+    bool UpdateDelegate(const uint256& hash,const std::map<CDestination,int64>& mapDelegate);
+    bool UpdateEnroll(std::vector<std::pair<CTxIndex,uint256> >& vEnroll);
     bool WalkThroughBlock(CBlockDBWalker& walker);
     bool ExistsTx(const uint256& txid);
     bool RetrieveTxIndex(const uint256& txid,CTxIndex& txIndex);
@@ -66,6 +69,9 @@ public:
     bool RetrieveTxLocation(const uint256& txid,uint256& hashAnchor,int& nBlockHeight);
     bool RetrieveTxUnspent(const uint256& fork,const CTxOutPoint& out,CTxOutput& unspent);
     bool FilterTx(CBlockDBTxFilter& filter);
+    bool RetrieveDelegate(const uint256& hash,int64 nMinAmount,std::map<CDestination,int64>& mapDelegate);
+    bool RetrieveEnroll(const uint256& hashAnchor,const std::set<uint256>& setBlockRange, 
+                        std::map<CDestination,std::pair<uint32,uint32> >& mapEnrollTxPos);
 protected:
     int GetForkIndex(const uint256& hash)
     {

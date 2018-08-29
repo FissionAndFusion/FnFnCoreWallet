@@ -13,3 +13,7 @@ bin/
 .vscode
 cmake-build-debug/
 cmake-build-release/
+
+multiverse
+multiverse.exe
+CMakeSettings.json

@@ -3,6 +3,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "blockbase.h"
+#include "template.h"
 
 using namespace std;
 using namespace boost::filesystem;
@@ -339,6 +340,18 @@ bool CBlockBase::AddNew(const uint256& hash,CBlockEx& block,CBlockIndex** ppInde
             delete pIndexNew;
             return false;
         }
+        
+        if (pIndexNew->IsPrimary())
+        {
+            if (!UpdateDelegate(hash,block))
+            {
+                dbBlock.RemoveBlock(hash);
+                mapIndex.erase(hash);
+                delete pIndexNew;
+                return false;
+            }
+        }
+
         *ppIndexNew = pIndexNew;
     }
     
@@ -462,6 +475,48 @@ bool CBlockBase::RetrieveTxLocation(const uint256& txid,uint256& hashFork,int& n
     return true;
 }
 
+bool CBlockBase::RetrieveDelegate(const uint256& hash,int64 nMinAmount,map<CDestination,int64>& mapDelegate)
+{
+    CWalleveReadLock rlock(rwAccess);
+    return dbBlock.RetrieveDelegate(hash,nMinAmount,mapDelegate);
+}
+
+bool CBlockBase::RetrieveEnroll(const uint256& hashAnchor,const uint256& hashEnrollEnd,
+                                map<CDestination,vector<unsigned char> >& mapEnrollData)
+{
+    CWalleveReadLock rlock(rwAccess);
+    CBlockIndex* pIndex = GetIndex(hashEnrollEnd);
+    set<uint256> setBlockRange;
+    while (pIndex != NULL && pIndex->GetBlockHash() != hashAnchor)
+    {
+        setBlockRange.insert(pIndex->GetBlockHash());
+        pIndex = pIndex->pPrev;
+    }
+    
+    if (pIndex == NULL)
+    {
+        return false;
+    }
+
+    map<CDestination,pair<uint32,uint32> > mapEnrollTxPos;
+    if (!dbBlock.RetrieveEnroll(hashAnchor,setBlockRange,mapEnrollTxPos))
+    {
+        return false;
+    }
+    
+    for (map<CDestination,pair<uint32,uint32> >::iterator it = mapEnrollTxPos.begin();
+         it != mapEnrollTxPos.end();++it)
+    {
+        CTransaction tx;
+        if (!tsBlock.Read(tx,(*it).second.first,(*it).second.second))
+        {
+            return false;
+        }
+        mapEnrollData.insert(make_pair((*it).first,tx.vchData)); 
+    }
+    return true;
+}
+
 void CBlockBase::ListForkIndex(multimap<int,CBlockIndex*>& mapForkIndex)
 {
     CWalleveReadLock rlock(rwAccess);
@@ -580,6 +635,14 @@ bool CBlockBase::CommitBlockView(CBlockView& view,CBlockIndex* pIndexNew)
     vector<CTxUnspent> vAddNew;
     vector<CTxOutPoint> vRemove;
     view.GetUnspentChanges(vAddNew,vRemove);
+
+    if (pIndexNew->IsPrimary())
+    {
+        if (!UpdateEnroll(pIndexNew,vTxNew))
+        {
+            return false;
+        }
+    }
 
     if (!dbBlock.UpdateFork(hashFork,pIndexNew->GetBlockHash(),view.GetForkHash(),vTxNew,vTxDel,vAddNew,vRemove))
     {
@@ -797,6 +860,62 @@ CBlockFork* CBlockBase::AddNewFork(CBlockIndex* pIndexLast)
         } while(pIndexPrev);
     }
     return pFork;
+}
+
+bool CBlockBase::UpdateDelegate(const uint256& hash,CBlockEx& block)
+{
+    map<CDestination,int64> mapDelegate;
+    if (!dbBlock.RetrieveDelegate(block.hashPrev,0,mapDelegate))
+    {
+        return false;
+    }
+    
+    if (block.txMint.nType == CTransaction::TX_STAKE)
+    {
+        mapDelegate[block.txMint.sendTo] += block.txMint.nAmount;
+    }
+
+    for (int i = 0;i < block.vtx.size();i++)
+    {
+        CTransaction& tx = block.vtx[i];
+        {
+            CTemplateId tid;
+            if (tx.sendTo.GetTemplateId(tid) && tid.GetType() == TEMPLATE_DELEGATE)
+            {
+                mapDelegate[tx.sendTo] += tx.nAmount;
+            }
+        }
+
+        CTxContxt& txContxt = block.vTxContxt[i]; 
+        {
+            CTemplateId tid;
+            if (txContxt.destIn.GetTemplateId(tid) && tid.GetType() == TEMPLATE_DELEGATE)
+            {
+                mapDelegate[txContxt.destIn] -= tx.nAmount + tx.nTxFee;
+            }
+        }
+    }
+
+    return dbBlock.UpdateDelegate(hash,mapDelegate);
+}
+
+bool CBlockBase::UpdateEnroll(CBlockIndex* pIndexNew,vector<pair<uint256,CTxIndex> >& vTxNew)
+{
+    vector<pair<CTxIndex,uint256> > vEnroll;
+    for (int i = 0;i < vTxNew.size();i++)
+    {
+        const CTxIndex& txIndex = vTxNew[i].second;
+        if (txIndex.nType == CTransaction::TX_CERT)
+        {
+            CBlockIndex* pIndex = pIndexNew;
+            while (pIndex->GetBlockHeight() > txIndex.nBlockHeight)
+            {
+                pIndex = pIndex->pPrev;
+            }
+            vEnroll.push_back(make_pair(txIndex,pIndex->GetBlockHash()));
+        }
+    }
+    return (vEnroll.empty() || dbBlock.UpdateEnroll(vEnroll));
 }
 
 bool CBlockBase::GetTxUnspent(const uint256 fork,const CTxOutPoint& out,CTxOutput& unspent)

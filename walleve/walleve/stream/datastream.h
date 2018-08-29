@@ -6,7 +6,9 @@
 #define  WALLEVE_DATASTREAM_H
 
 #include <exception>
+#include <cstring>
 #include <vector>
+#include <map>
 #include <boost/type_traits.hpp>
 
 namespace walleve
@@ -61,6 +63,17 @@ public:
         }
         return (*this);
     }
+    template<typename K, typename V, typename C, typename A>
+    CWalleveODataStream& operator<< (const std::map<K, V, C, A>& data)
+    {
+        unsigned int size = data.size();
+        vch.insert(vch.end(),BEGIN(size),END(size));
+        for (typename std::map<K, V, C, A>::const_iterator it = data.begin();it != data.end();++it)
+        {
+            (*this) << (*it).first << (*it).second;
+        }
+        return (*this);
+    }
 protected:
     std::vector<unsigned char>& vch;
     std::size_t nPosition;
@@ -109,10 +122,6 @@ public:
     {
         unsigned int size;
         *this >> size;
-        if (nPosition + size * sizeof(T) > vch.size())
-        {
-            throw std::range_error("out of range");
-        }
         if (boost::is_fundamental<T>::value)
         {
             data.assign((T*)&vch[nPosition],(T*)&vch[nPosition] + size);
@@ -128,12 +137,29 @@ public:
         }
         return (*this);
     }
+    template<typename K, typename V, typename C, typename A>
+    CWalleveIDataStream& operator>> (std::map<K, V, C, A>& data)
+    {
+        unsigned int size;
+        *this >> size;
+        for (std::size_t i = 0;i < size;i++)
+        {
+            K k;
+            V v;
+            *this >> k >> v;
+            if (!data.insert(std::make_pair(k,v)).second)
+            {
+                throw std::runtime_error("data conflict");
+            }
+        }
+        return (*this);
+    }
 protected:
     const std::vector<unsigned char>& vch;
     std::size_t nPosition;
 };
 
-}
+} // namespace walleve
 
 #endif //WALLEVE_DATASTREAM_H
 
