@@ -23,20 +23,20 @@ enum {
 class CWalleveDBPEventListener;
 
 
-#define TYPE_DBPEVENT(type,body) 	\
+#define TYPE_WALLEVE_DBP_EVENT(type,body) 	\
 	CWalleveEventCategory<type,CWalleveDBPEventListener,body,bool>
 
-typedef TYPE_DBPEVENT(WALLEVE_EVENT_DBP_REQ,CWalleveDbpRequest) CWalleveEventDbpRequest;
-typedef TYPE_DBPEVENT(WALLEVE_EVENT_DBP_RSP,CWalleveDbpRespond) CWalleveEventDbpRespond;
-typedef TYPE_DBPEVENT(WALLEVE_EVENT_DBP_CONNECT,CWalleveDbpConnect) CWalleveEventDbpConnect;
-typedef TYPE_DBPEVENT(WALLEVE_EVENT_DBP_CONNECTED,CWalleveDbpConnected) CWalleveEventDbpConnected;
-typedef TYPE_DBPEVENT(WALLEVE_EVENT_DBP_FAILED,CWalleveDbpFailed) CWalleveEventDbpFailed;
-typedef TYPE_DBPEVENT(WALLEVE_EVENT_DBP_SUB,CWalleveDbpSub) CWalleveEventDbpSub;
-typedef TYPE_DBPEVENT(WALLEVE_EVENT_DBP_UNSUB,CWalleveDbpUnSub) CWalleveEventDbpUnSub;
-typedef TYPE_DBPEVENT(WALLEVE_EVENT_DBP_NOSUB,CWalleveDbpNoSub) CWalleveEventDbpNoSub;
-typedef TYPE_DBPEVENT(WALLEVE_EVENT_DBP_READY,CWalleveDbpReady) CWalleveEventDbpReady;
-typedef TYPE_DBPEVENT(WALLEVE_EVENT_DBP_METHOD,CWalleveDbpMethod) CWalleveEventDbpMethod;
-typedef TYPE_DBPEVENT(WALLEVE_EVENT_DBP_BROKEN,CWalleveDbpBroken) CWalleveEventDbpBroken;
+typedef TYPE_WALLEVE_DBP_EVENT(WALLEVE_EVENT_DBP_REQ,CWalleveDbpRequest) CWalleveEventDbpRequest;
+typedef TYPE_WALLEVE_DBP_EVENT(WALLEVE_EVENT_DBP_RSP,CWalleveDbpRespond) CWalleveEventDbpRespond;
+typedef TYPE_WALLEVE_DBP_EVENT(WALLEVE_EVENT_DBP_CONNECT,CWalleveDbpConnect) CWalleveEventDbpConnect;
+typedef TYPE_WALLEVE_DBP_EVENT(WALLEVE_EVENT_DBP_CONNECTED,CWalleveDbpConnected) CWalleveEventDbpConnected;
+typedef TYPE_WALLEVE_DBP_EVENT(WALLEVE_EVENT_DBP_FAILED,CWalleveDbpFailed) CWalleveEventDbpFailed;
+typedef TYPE_WALLEVE_DBP_EVENT(WALLEVE_EVENT_DBP_SUB,CWalleveDbpSub) CWalleveEventDbpSub;
+typedef TYPE_WALLEVE_DBP_EVENT(WALLEVE_EVENT_DBP_UNSUB,CWalleveDbpUnSub) CWalleveEventDbpUnSub;
+typedef TYPE_WALLEVE_DBP_EVENT(WALLEVE_EVENT_DBP_NOSUB,CWalleveDbpNoSub) CWalleveEventDbpNoSub;
+typedef TYPE_WALLEVE_DBP_EVENT(WALLEVE_EVENT_DBP_READY,CWalleveDbpReady) CWalleveEventDbpReady;
+typedef TYPE_WALLEVE_DBP_EVENT(WALLEVE_EVENT_DBP_METHOD,CWalleveDbpMethod) CWalleveEventDbpMethod;
+typedef TYPE_WALLEVE_DBP_EVENT(WALLEVE_EVENT_DBP_BROKEN,CWalleveDbpBroken) CWalleveEventDbpBroken;
 
 
 class CWalleveDBPEventListener : virtual public CWalleveEventListener

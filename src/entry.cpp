@@ -161,6 +161,23 @@ bool CMvEntry::InitializeService()
         return false;
     }
 
+    //DBP Server
+    CDbpServer  *pDbpServer  = new CDbpServer();
+    if (!pDbpServer || !walleveDocker.Attach(pDbpServer))
+    {
+        delete pDbpServer;
+        return false;
+    }
+    pDbpServer->AddNewHost(GetDbpHostConfig());
+
+    // DBP Service
+    CDbpService *pDbpService = new CDbpService();
+    if (!pDbpService || !walleveDocker.Attach(pDbpService))
+    {
+        delete pDbpService;
+        return false;
+    }
+
     CService *pService = new CService();
     if (!pService || !walleveDocker.Attach(pService))
     {
@@ -188,23 +205,6 @@ bool CMvEntry::InitializeService()
     if (!pBlockMaker || !walleveDocker.Attach(pBlockMaker))
     {
         delete pBlockMaker;
-        return false;
-    }
-
-    //DBP Server
-    CDbpServer  *pDbpServer  = new CDbpServer();
-    if (!pDbpServer || !walleveDocker.Attach(pDbpServer))
-    {
-        delete pDbpServer;
-        return false;
-    }
-    pDbpServer->AddNewHost(GetDbpHostConfig());
-
-    // DBP Service
-    CDbpService *pDbpService = new CDbpService();
-    if (!pDbpService || !walleveDocker.Attach(pDbpService))
-    {
-        delete pDbpService;
         return false;
     }
 

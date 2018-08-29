@@ -23,7 +23,9 @@ enum
     MV_EVENT_BLOCKMAKER_UPDATE,
     MV_EVENT_BLOCKMAKER_ENROLL,
     MV_EVENT_BLOCKMAKER_DISTRIBUTE,
-    MV_EVENT_BLOCKMAKER_PUBLISH
+    MV_EVENT_BLOCKMAKER_PUBLISH,
+    MV_EVENT_DBP_SOCKET_ADD_NEW_BLOCK,
+    MV_EVENT_DBP_SOCKET_ADD_NEW_TX
 };
 
 class CMvBlockMakerEventListener;
@@ -38,6 +40,54 @@ class CMvBlockMakerEventListener : virtual public walleve::CWalleveEventListener
 public:
     virtual ~CMvBlockMakerEventListener() {}
     DECLARE_EVENTHANDLER(CMvEventBlockMakerUpdate);
+};
+
+template <int type,typename L,typename D>
+class CMvEventDbpSocketData : public walleve::CWalleveEvent
+{
+    friend class walleve::CWalleveStream;
+public:
+    CMvEventDbpSocketData(uint64 nNonceIn,const uint256& hashForkIn)
+            : CWalleveEvent(nNonceIn,type), hashFork(hashForkIn) {}
+    virtual ~CMvEventDbpSocketData() {}
+    virtual bool Handle(walleve::CWalleveEventListener& listener)
+    {
+        try
+        {
+            return (dynamic_cast<L&>(listener)).HandleEvent(*this);
+        }
+        catch (std::bad_cast&)
+        {
+            return listener.HandleEvent(*this);
+        }
+        catch (...) {}
+        return false;
+    }
+protected:
+    template <typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s,O& opt)
+    {
+        s.Serialize(hashFork,opt);
+        s.Serialize(data,opt);
+    }
+public:
+    uint256 hashFork;
+    D data;
+};
+
+class CMvDBPEventListener;
+#define TYPE_DBPEVENT(type,body)       \
+        CMvEventDbpSocketData<type,CMvDBPEventListener,body>
+
+typedef TYPE_DBPEVENT(MV_EVENT_DBP_SOCKET_ADD_NEW_BLOCK,uint256) CMvEventDbpUpdateNewBlock;
+typedef TYPE_DBPEVENT(MV_EVENT_DBP_SOCKET_ADD_NEW_TX,uint256) CMvEventDbpUpdateNewTx;
+
+class CMvDBPEventListener : virtual public walleve::CWalleveEventListener
+{
+public:
+    virtual ~CMvDBPEventListener() {}
+    DECLARE_EVENTHANDLER(CMvEventDbpUpdateNewBlock);
+    DECLARE_EVENTHANDLER(CMvEventDbpUpdateNewTx);
 };
 
 } // namespace multiverse

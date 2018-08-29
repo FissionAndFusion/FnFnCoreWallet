@@ -49,8 +49,6 @@ void CDbpService::WalleveHandleDeinitialize()
 
 bool CDbpService::HandleEvent(walleve::CWalleveEventDbpConnect& event)
 {
-    (void)event.data.client;
-
     bool isReconnect = event.data.isReconnect;
 
     if(isReconnect)
@@ -63,7 +61,7 @@ bool CDbpService::HandleEvent(walleve::CWalleveEventDbpConnect& event)
     }
     else
     {
-         if(event.data.version != 1)
+        if(event.data.version != 1)
         {
             // reply failed
             uint64 nonce = event.nNonce;
