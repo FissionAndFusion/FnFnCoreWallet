@@ -57,6 +57,8 @@ public:
     void SendResponse(CWalleveDbpFailed& body);
     void SendResponse(CWalleveDbpNoSub& body);
     void SendResponse(CWalleveDbpReady& body);
+    void SendResponse(CWalleveDbpAdded& body);
+
 protected:
     void StartReadHeader();
     void StartReadPayload(std::size_t nLength);
@@ -101,6 +103,7 @@ protected:
     bool HandleEvent(CWalleveEventDbpFailed& event) override;
     bool HandleEvent(CWalleveEventDbpNoSub& event) override;
     bool HandleEvent(CWalleveEventDbpReady& event) override;
+    bool HandleEvent(CWalleveEventDbpAdded& event) override;
 
 protected:
     std::vector<CDbpHostConfig> vecHostConfig;

@@ -8,6 +8,7 @@ CDbpService::CDbpService()
 :walleve::IIOModule("dbpservice")
 {
     pService = NULL;
+    pWallet = NULL;
     pDbpServer = NULL;
 
     std::map<std::string,bool> temp_map = boost::assign::map_list_of
@@ -32,6 +33,12 @@ bool CDbpService::WalleveHandleInitialize()
         return false;
     }
 
+    if (!WalleveGetObject("wallet",pWallet))
+    {
+        WalleveLog("Failed to request wallet\n");
+        return false;
+    }
+
     if (!WalleveGetObject("dbpserver",pDbpServer))
     {
         WalleveLog("Failed to request dbpserver\n");
@@ -45,6 +52,7 @@ void CDbpService::WalleveHandleDeinitialize()
 {
     pDbpServer = NULL;
     pService = NULL;
+    pWallet = NULL;
 }
 
 bool CDbpService::HandleEvent(walleve::CWalleveEventDbpConnect& event)
@@ -146,12 +154,127 @@ bool CDbpService::HandleEvent(walleve::CWalleveEventDbpMethod& event)
     return true;
 }
 
+void CDbpService::CreateDbpBlock(const CBlock& blockDetail,const uint256& forkHash, 
+int blockHeight, walleve::CWalleveDbpBlock& block)
+{
+    block.nVersion = blockDetail.nVersion;
+    block.nType = blockDetail.nType;
+    block.nTimeStamp = blockDetail.nTimeStamp;
+    
+    walleve::CWalleveODataStream hashPrevStream(block.hashPrev);
+    blockDetail.hashPrev.ToDataStream(hashPrevStream);
+
+    walleve::CWalleveODataStream hashMerkleStream(block.hashMerkle);
+    blockDetail.hashMerkle.ToDataStream(hashMerkleStream);
+
+    block.vchProof = blockDetail.vchProof;
+    block.vchSig = blockDetail.vchSig;
+
+    // txMint
+    CreateDbpTransaction(blockDetail.txMint,block.txMint);
+   
+    // vtx
+    for(const auto& tx : blockDetail.vtx)
+    {
+        walleve::CWalleveDbpTransaction dbpTx;
+        CreateDbpTransaction(tx,dbpTx);
+        block.vtx.push_back(dbpTx);
+    }
+}
+
+void CDbpService::CreateDbpTransaction(const CTransaction& tx,walleve::CWalleveDbpTransaction& dbptx)
+{
+    dbptx.nVersion = tx.nVersion;
+    dbptx.nType = tx.nType;
+    dbptx.nLockUntil = tx.nLockUntil;
+
+    walleve::CWalleveODataStream hashAnchorStream(dbptx.hashAnchor);
+    tx.hashAnchor.ToDataStream(hashAnchorStream);
+
+    for(const auto& input : tx.vInput)
+    {
+        walleve::CWalleveDbpTxIn txin;
+        txin.n = input.prevout.n;
+        
+        walleve::CWalleveODataStream txInHashStream(txin.hash);
+        input.prevout.hash.ToDataStream(txInHashStream);
+       
+        dbptx.vInput.push_back(txin);
+    }
+
+    dbptx.cDestination.prefix = tx.sendTo.prefix;
+    dbptx.cDestination.size = tx.sendTo.DESTINATION_SIZE;
+
+    walleve::CWalleveODataStream sendtoStream(dbptx.cDestination.data);
+    tx.sendTo.data.ToDataStream(sendtoStream);
+
+    dbptx.nAmount = tx.nAmount;
+    dbptx.nTxFee = tx.nTxFee;
+
+    dbptx.vchData = tx.vchData;
+    dbptx.vchSig = tx.vchSig;
+}
+
 bool CDbpService::HandleEvent(CMvEventDbpUpdateNewBlock& event)
 {
+    // get details about new block
+    uint256 blockHash = event.data;
+    CBlock newBlock;
+    uint256 forkHash;
+    int blockHeight;
+    
+    if(pService->GetBlock(blockHash,newBlock,forkHash,blockHeight))
+    {
+        walleve::CWalleveDbpBlock block;
+        CreateDbpBlock(newBlock,forkHash,blockHeight,block);
+        
+        // push new block to dbpclient when new-block-event comes 
+        for(const auto& kv : idSubedNonceMap)
+        {
+            std::string id = kv.first;
+            int nonce = kv.second;
+            
+            walleve::CWalleveEventDbpAdded eventAdded(nonce);
+            eventAdded.data.id = id;
+            eventAdded.data.name = "added";
+            eventAdded.data.type = walleve::CWalleveDbpAdded::BLOCK;
+            eventAdded.data.anyObject = &block;
+
+            pDbpServer->DispatchEvent(&eventAdded);
+
+        }
+    } 
     return true;
 }
 
 bool CDbpService::HandleEvent(CMvEventDbpUpdateNewTx& event)
 {
+    // get details about new tx
+    uint256 txHash = event.data;
+    CTransaction tx;
+    uint256 forkHash;
+    int blockHeight;
+    
+    if(pService->GetTransaction(txHash,tx,forkHash,blockHeight))
+    {
+        walleve::CWalleveDbpTransaction dbpTx;
+        CreateDbpTransaction(tx,dbpTx);
+
+        // push new tx to dbpclient when new-tx-event comes
+        for(const auto& kv : idSubedNonceMap)
+        {
+            std::string id = kv.first;
+            int nonce = kv.second;
+            
+            walleve::CWalleveEventDbpAdded eventAdded(nonce);
+            eventAdded.data.id = id;
+            eventAdded.data.name = "added";
+            eventAdded.data.type = walleve::CWalleveDbpAdded::TX;
+            eventAdded.data.anyObject = &dbpTx;
+
+            pDbpServer->DispatchEvent(&eventAdded);
+        }
+    }
+  
     return true;
 }

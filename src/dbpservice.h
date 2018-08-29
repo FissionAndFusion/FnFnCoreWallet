@@ -29,9 +29,14 @@ public:
 protected:
     bool WalleveHandleInitialize() override;
     void WalleveHandleDeinitialize() override;
+private:
+    void CreateDbpBlock(const CBlock& blockDetail,const uint256& forkHash, 
+    int blockHeight,walleve::CWalleveDbpBlock& block);
+    void CreateDbpTransaction(const CTransaction& tx,walleve::CWalleveDbpTransaction& dbptx);
 protected:
     walleve::IIOProc *pDbpServer;
     IService *pService;
+    IWallet *pWallet;
 private:
     typedef std::set<std::string> TopicSet;
     std::map<std::string,TopicSet> idSubedTopicsMap; // id => subed topics

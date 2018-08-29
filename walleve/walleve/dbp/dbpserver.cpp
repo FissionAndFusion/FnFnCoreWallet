@@ -173,6 +173,66 @@ void CDbpClient::SendResponse(CWalleveDbpReady& body)
     pClient->Write(ssSend,boost::bind(&CDbpClient::HandleWritenResponse,this,_1));
 }
 
+static void CreateLwsBlock(CWalleveDbpBlock* pBlock,lws::Block& block)
+{
+    
+}
+
+static void CreateLwsTransaction(CWalleveDbpTransaction* pTx,lws::Transaction& tx)
+{
+
+}
+
+void CDbpClient::SendResponse(CWalleveDbpAdded& body)
+{
+    ssSend.Clear();
+
+    dbp::Base addedMsgBase;
+    addedMsgBase.set_msg(dbp::Msg::ADDED);
+    
+    dbp::Added addedMsg;
+    addedMsg.set_id(body.id);
+    addedMsg.set_name(body.name);
+
+    if(body.type == CWalleveDbpAdded::AddedType::BLOCK)
+    {
+        lws::Block block;
+        CreateLwsBlock(static_cast<CWalleveDbpBlock*>(body.anyObject),block);
+        
+        google::protobuf::Any *anyBlock = new google::protobuf::Any();
+        anyBlock->PackFrom(block);
+        addedMsg.set_allocated_object(anyBlock);
+    }
+    else if(body.type == CWalleveDbpAdded::AddedType::TX)
+    {
+        lws::Transaction tx;
+        CreateLwsTransaction(static_cast<CWalleveDbpTransaction*>(body.anyObject),tx);
+
+        google::protobuf::Any *anyTx = new google::protobuf::Any();
+        anyTx->PackFrom(tx);
+        addedMsg.set_allocated_object(anyTx);
+    }
+    else
+    {}
+    
+    google::protobuf::Any *anyAdded = new google::protobuf::Any();
+    anyAdded->PackFrom(addedMsg);
+
+    addedMsgBase.set_allocated_object(anyAdded);
+ 
+    int byteSize = addedMsgBase.ByteSize();
+    unsigned char byteBuf[byteSize];
+
+    addedMsgBase.SerializeToArray(byteBuf,byteSize);
+
+    unsigned char msgLenBuf[4];
+    CDbpUtils::writeLenToMsgHeader(byteSize,(char*)msgLenBuf,4);
+    ssSend.Write((char*)msgLenBuf,4);
+    ssSend.Write((char*)byteBuf,byteSize);
+
+    pClient->Write(ssSend,boost::bind(&CDbpClient::HandleWritenResponse,this,_1)); 
+}
+
 void CDbpClient::StartReadHeader()
 {
     pClient->Read(ssRecv,4,
@@ -665,6 +725,22 @@ bool CDbpServer::HandleEvent(CWalleveEventDbpReady& event)
     CWalleveDbpReady &readyBody = event.data;
 
     pDbpClient->SendResponse(readyBody);
+    
+    return true;
+}
+
+bool CDbpServer::HandleEvent(CWalleveEventDbpAdded& event)
+{
+    std::map<uint64,CDbpClient*>::iterator it = mapClient.find(event.nNonce);
+    if (it == mapClient.end())
+    {
+        return false;
+    }
+
+    CDbpClient *pDbpClient = (*it).second;
+    CWalleveDbpAdded &addedBody = event.data;
+
+    pDbpClient->SendResponse(addedBody);
     
     return true;
 }
