@@ -3,6 +3,7 @@
 
 #include "mvbase.h"
 #include "walleve/walleve.h"
+#include "event.h"
 
 #include <map>
 #include <set>
@@ -10,7 +11,8 @@
 
 namespace multiverse{
 
-class CDbpService : public walleve::IIOModule, virtual public walleve::CWalleveDBPEventListener
+class CDbpService : public walleve::IIOModule, virtual public walleve::CWalleveDBPEventListener,
+virtual public CMvDBPEventListener
 {
 public:
     CDbpService();
@@ -20,6 +22,10 @@ public:
     bool HandleEvent(walleve::CWalleveEventDbpSub& event) override;
     bool HandleEvent(walleve::CWalleveEventDbpUnSub& event) override;
     bool HandleEvent(walleve::CWalleveEventDbpMethod& event) override;
+
+    // notify add msg(block tx ...) to event handler
+    bool HandleEvent(CMvEventDbpUpdateNewBlock& event) override;
+    bool HandleEvent(CMvEventDbpUpdateNewTx& event) override;
 protected:
     bool WalleveHandleInitialize() override;
     void WalleveHandleDeinitialize() override;

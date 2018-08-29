@@ -145,3 +145,13 @@ bool CDbpService::HandleEvent(walleve::CWalleveEventDbpMethod& event)
 {
     return true;
 }
+
+bool CDbpService::HandleEvent(CMvEventDbpUpdateNewBlock& event)
+{
+    return true;
+}
+
+bool CDbpService::HandleEvent(CMvEventDbpUpdateNewTx& event)
+{
+    return true;
+}
