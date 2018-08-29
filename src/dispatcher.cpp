@@ -174,7 +174,7 @@ MvErr CDispatcher::AddNewTx(CTransaction& tx,uint64 nNonce)
     }
 
     CTransactionUpdate updateTransaction;
-    updateTransaction.hashFork = tx.GetHash();
+    updateTransaction.hashFork = hashFork; 
     updateTransaction.txUpdate = tx;
     pService->NotifyTransactionUpdate(updateTransaction);
 
