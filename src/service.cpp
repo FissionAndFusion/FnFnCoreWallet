@@ -153,6 +153,14 @@ void CService::NotifyNetworkPeerUpdate(const CNetworkPeerUpdate& update)
     (void)update;
 }
 
+void CService::NotifyTransactionUpdate(const CTransactionUpdate& update)
+{
+    uint64 nNonce;
+    CMvEventDbpUpdateNewTx *pUpdateNewTxEvent = new CMvEventDbpUpdateNewTx(nNonce, update.hashFork);
+    pUpdateNewTxEvent->data = update.txUpdate;
+    pDbpSocket->PostEvent(pUpdateNewTxEvent);
+}
+
 void CService::Shutdown()
 {
     MvShutdown();

@@ -102,6 +102,17 @@ public:
     network::CAddress addrPeer;
 };
 
+class CTransactionUpdate
+{
+public:
+    CTransactionUpdate() { SetNull(); }
+    void SetNull() { hashFork = 0; }
+    bool IsNull() const { return (hashFork == 0); }
+public:
+    uint256 hashFork;
+    CTransaction txUpdate;
+};
+
 /* Proof */
 /*
 class CMPSSProof

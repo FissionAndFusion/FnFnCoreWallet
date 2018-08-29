@@ -7,11 +7,11 @@
 
 #include "mvbase.h"
 #include "network.h"
+#include "walleve/netio/netio.h"
 
 namespace multiverse
 {
 
-class IIOModule;
 class CService : public IService
 {
 public:
@@ -20,6 +20,7 @@ public:
     /* Notify */
     void NotifyWorldLineUpdate(const CWorldLineUpdate& update);
     void NotifyNetworkPeerUpdate(const CNetworkPeerUpdate& update);
+    void NotifyTransactionUpdate(const CTransactionUpdate& update);
     /* System */
     void Shutdown();
     /* Network */
@@ -80,7 +81,7 @@ protected:
     IDispatcher* pDispatcher;
     IWallet* pWallet;
     CNetwork* pNetwork;
-    IIOModule* pDbpSocket;
+    walleve::IIOModule* pDbpSocket;
     mutable boost::shared_mutex rwForkStatus;
     std::map<uint256,CForkStatus> mapForkStatus;
 };
