@@ -52,10 +52,26 @@ void CDbpClient::Activate()
     StartReadHeader();
 }
 
-void CDbpClient::SendResponse(CWalleveDbpConnected& body)
+void CDbpClient::SendMessage(dbp::Base* pBaseMsg)
 {
     ssSend.Clear();
+    
+    int byteSize = pBaseMsg->ByteSize();
+    unsigned char byteBuf[byteSize];
 
+    pBaseMsg->SerializeToArray(byteBuf,byteSize);
+
+    unsigned char msgLenBuf[4];
+    CDbpUtils::writeLenToMsgHeader(byteSize,(char*)msgLenBuf,4);
+    ssSend.Write((char*)msgLenBuf,4);
+    ssSend.Write((char*)byteBuf,byteSize);
+
+    pClient->Write(ssSend,boost::bind(&CDbpClient::HandleWritenResponse,this,_1));
+}
+
+void CDbpClient::SendResponse(CWalleveDbpConnected& body)
+{
+  
     dbp::Base connectedMsgBase;
     connectedMsgBase.set_msg(dbp::Msg::CONNECTED);
     
@@ -66,25 +82,12 @@ void CDbpClient::SendResponse(CWalleveDbpConnected& body)
     any->PackFrom(connectedMsg);
 
     connectedMsgBase.set_allocated_object(any);
-    
-    int byteSize = connectedMsgBase.ByteSize();
-    unsigned char byteBuf[byteSize];
 
-    connectedMsgBase.SerializeToArray(byteBuf,byteSize);
-
-    unsigned char msgLenBuf[4];
-    CDbpUtils::writeLenToMsgHeader(byteSize,(char*)msgLenBuf,4);
-    ssSend.Write((char*)msgLenBuf,4);
-    ssSend.Write((char*)byteBuf,byteSize);
-
-    pClient->Write(ssSend,boost::bind(&CDbpClient::HandleWritenResponse,this,_1));
-
+    SendMessage(&connectedMsgBase);
 }
 
 void CDbpClient::SendResponse(CWalleveDbpFailed& body)
 {
-    ssSend.Clear();
-
     dbp::Base failedMsgBase;
     failedMsgBase.set_msg(dbp::Msg::FAILED);
     
@@ -103,23 +106,11 @@ void CDbpClient::SendResponse(CWalleveDbpFailed& body)
 
     failedMsgBase.set_allocated_object(any);
  
-    int byteSize = failedMsgBase.ByteSize();
-    unsigned char byteBuf[byteSize];
-
-    failedMsgBase.SerializeToArray(byteBuf,byteSize);
-
-    unsigned char msgLenBuf[4];
-    CDbpUtils::writeLenToMsgHeader(byteSize,(char*)msgLenBuf,4);
-    ssSend.Write((char*)msgLenBuf,4);
-    ssSend.Write((char*)byteBuf,byteSize);
-
-    pClient->Write(ssSend,boost::bind(&CDbpClient::HandleWritenResponse,this,_1));
+    SendMessage(&failedMsgBase);
 }
 
 void CDbpClient::SendResponse(CWalleveDbpNoSub& body)
 {
-    ssSend.Clear();
-
     dbp::Base noSubMsgBase;
     noSubMsgBase.set_msg(dbp::Msg::NOSUB);
     
@@ -132,23 +123,11 @@ void CDbpClient::SendResponse(CWalleveDbpNoSub& body)
 
     noSubMsgBase.set_allocated_object(any);
  
-    int byteSize = noSubMsgBase.ByteSize();
-    unsigned char byteBuf[byteSize];
-
-    noSubMsgBase.SerializeToArray(byteBuf,byteSize);
-
-    unsigned char msgLenBuf[4];
-    CDbpUtils::writeLenToMsgHeader(byteSize,(char*)msgLenBuf,4);
-    ssSend.Write((char*)msgLenBuf,4);
-    ssSend.Write((char*)byteBuf,byteSize);
-
-    pClient->Write(ssSend,boost::bind(&CDbpClient::HandleWritenResponse,this,_1));
+    SendMessage(&noSubMsgBase);
 }
 
 void CDbpClient::SendResponse(CWalleveDbpReady& body)
 {
-    ssSend.Clear();
-
     dbp::Base readyMsgBase;
     readyMsgBase.set_msg(dbp::Msg::READY);
     
@@ -160,17 +139,7 @@ void CDbpClient::SendResponse(CWalleveDbpReady& body)
 
     readyMsgBase.set_allocated_object(any);
  
-    int byteSize = readyMsgBase.ByteSize();
-    unsigned char byteBuf[byteSize];
-
-    readyMsgBase.SerializeToArray(byteBuf,byteSize);
-
-    unsigned char msgLenBuf[4];
-    CDbpUtils::writeLenToMsgHeader(byteSize,(char*)msgLenBuf,4);
-    ssSend.Write((char*)msgLenBuf,4);
-    ssSend.Write((char*)byteBuf,byteSize);
-
-    pClient->Write(ssSend,boost::bind(&CDbpClient::HandleWritenResponse,this,_1));
+    SendMessage(&readyMsgBase);
 }
 
 static void CreateLwsTransaction(const CWalleveDbpTransaction* dbptx,lws::Transaction* tx)
@@ -240,9 +209,7 @@ static void CreateLwsBlock(CWalleveDbpBlock* pBlock,lws::Block& block)
 
 
 void CDbpClient::SendResponse(CWalleveDbpAdded& body)
-{
-    ssSend.Clear();
-
+{ 
     dbp::Base addedMsgBase;
     addedMsgBase.set_msg(dbp::Msg::ADDED);
     
@@ -277,23 +244,11 @@ void CDbpClient::SendResponse(CWalleveDbpAdded& body)
 
     addedMsgBase.set_allocated_object(anyAdded);
  
-    int byteSize = addedMsgBase.ByteSize();
-    unsigned char byteBuf[byteSize];
-
-    addedMsgBase.SerializeToArray(byteBuf,byteSize);
-
-    unsigned char msgLenBuf[4];
-    CDbpUtils::writeLenToMsgHeader(byteSize,(char*)msgLenBuf,4);
-    ssSend.Write((char*)msgLenBuf,4);
-    ssSend.Write((char*)byteBuf,byteSize);
-
-    pClient->Write(ssSend,boost::bind(&CDbpClient::HandleWritenResponse,this,_1)); 
+    SendMessage(&addedMsgBase);
 }
 
 void CDbpClient::SendResponse(CWalleveDbpMethodResult& body)
-{
-    ssSend.Clear();
-
+{  
     dbp::Base resultMsgBase;
     resultMsgBase.set_msg(dbp::Msg::RESULT);
     
@@ -340,17 +295,7 @@ void CDbpClient::SendResponse(CWalleveDbpMethodResult& body)
 
     resultMsgBase.set_allocated_object(anyResult);
  
-    int byteSize = resultMsgBase.ByteSize();
-    unsigned char byteBuf[byteSize];
-
-    resultMsgBase.SerializeToArray(byteBuf,byteSize);
-
-    unsigned char msgLenBuf[4];
-    CDbpUtils::writeLenToMsgHeader(byteSize,(char*)msgLenBuf,4);
-    ssSend.Write((char*)msgLenBuf,4);
-    ssSend.Write((char*)byteBuf,byteSize);
-
-    pClient->Write(ssSend,boost::bind(&CDbpClient::HandleWritenResponse,this,_1)); 
+    SendMessage(&resultMsgBase);
 }
 
 void CDbpClient::StartReadHeader()

@@ -5,6 +5,10 @@
 #include "walleve/dbp/dbpevent.h"
 
 
+namespace dbp{
+    class Base;
+}
+
 namespace walleve{
 
 class CDbpServer;
@@ -68,6 +72,8 @@ protected:
     void HandleReadPayload(std::size_t nTransferred);
     void HandleReadCompleted();
     void HandleWritenResponse(std::size_t nTransferred);
+private:
+    void SendMessage(dbp::Base* pBaseMsg);
 protected:
     CDbpServer* pServer;
     CDbpProfile *pProfile;
