@@ -124,12 +124,40 @@ public:
 class CWalleveDbpMethod: public CWalleveDbpRequest
 {
 public:
+    enum Method{
+        GET_BLOCKS,
+        GET_TX,
+        SEND_TX
+    };
+    
     // param name => param value
     typedef std::map<std::string,std::string> ParamMap;
 public:
-    std::string method;
+    Method method;
     std::string id;
     ParamMap params;
+};
+
+class CWalleveDbpSendTxRet
+{
+public:
+    std::string hash;
+};
+
+class CWalleveDbpMethodResult : public CWalleveDbpRespond
+{
+public:
+    enum ResultType{
+        BLOCKS,
+        TX,
+        SEND_TX,
+        ERROR
+    };
+public:
+    ResultType resultType;
+    std::string id;
+    std::string error;
+    std::vector<void*> anyObjects; // blocks,tx,send_tx_ret
 };
 
 class CWalleveDbpError: public CWalleveDbpRespond

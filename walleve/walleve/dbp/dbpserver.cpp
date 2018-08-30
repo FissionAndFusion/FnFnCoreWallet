@@ -266,6 +266,7 @@ void CDbpClient::SendResponse(CWalleveDbpAdded& body)
 
         google::protobuf::Any *anyTx = new google::protobuf::Any();
         anyTx->PackFrom(*tx);
+        delete tx;
         addedMsg.set_allocated_object(anyTx);
     }
     else
@@ -280,6 +281,69 @@ void CDbpClient::SendResponse(CWalleveDbpAdded& body)
     unsigned char byteBuf[byteSize];
 
     addedMsgBase.SerializeToArray(byteBuf,byteSize);
+
+    unsigned char msgLenBuf[4];
+    CDbpUtils::writeLenToMsgHeader(byteSize,(char*)msgLenBuf,4);
+    ssSend.Write((char*)msgLenBuf,4);
+    ssSend.Write((char*)byteBuf,byteSize);
+
+    pClient->Write(ssSend,boost::bind(&CDbpClient::HandleWritenResponse,this,_1)); 
+}
+
+void CDbpClient::SendResponse(CWalleveDbpMethodResult& body)
+{
+    ssSend.Clear();
+
+    dbp::Base resultMsgBase;
+    resultMsgBase.set_msg(dbp::Msg::RESULT);
+    
+    dbp::Result resultMsg;
+    resultMsg.set_id(body.id);
+    resultMsg.set_error(body.error);
+
+    if(body.resultType == CWalleveDbpMethodResult::ResultType::BLOCKS)
+    {
+        for(auto& obj : body.anyObjects)
+        {
+            lws::Block block;
+            CreateLwsBlock(static_cast<CWalleveDbpBlock*>(obj),block);
+            resultMsg.add_result()->PackFrom(block);
+        }
+    }
+    else if(body.resultType == CWalleveDbpMethodResult::ResultType::TX)
+    {
+        for(auto& obj : body.anyObjects)
+        {
+            lws::Transaction *tx = new lws::Transaction();
+            CreateLwsTransaction(static_cast<CWalleveDbpTransaction*>(obj),tx);
+            resultMsg.add_result()->PackFrom(*tx);
+            delete tx;
+        }
+    }
+    else if(body.resultType == CWalleveDbpMethodResult::ResultType::SEND_TX)
+    {
+        for(auto& obj : body.anyObjects)
+        {
+            lws::SendTxRet sendTxRet;
+            CWalleveDbpSendTxRet *txret = static_cast<CWalleveDbpSendTxRet*>(obj); 
+            sendTxRet.set_hash(txret->hash);
+            resultMsg.add_result()->PackFrom(sendTxRet);
+        }
+    }
+    else if(body.resultType == CWalleveDbpMethodResult::ResultType::ERROR)
+    {}
+    else
+    {}
+    
+    google::protobuf::Any *anyResult = new google::protobuf::Any();
+    anyResult->PackFrom(resultMsg);
+
+    resultMsgBase.set_allocated_object(anyResult);
+ 
+    int byteSize = resultMsgBase.ByteSize();
+    unsigned char byteBuf[byteSize];
+
+    resultMsgBase.SerializeToArray(byteBuf,byteSize);
 
     unsigned char msgLenBuf[4];
     CDbpUtils::writeLenToMsgHeader(byteSize,(char*)msgLenBuf,4);
@@ -517,22 +581,28 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
 
         CWalleveDbpMethod &methodBody = pEventDbpMethod->data;
         methodBody.id = methodMsg.id();
-        methodBody.method = methodMsg.method();
+        
+        if(methodMsg.method() == "getblocks") methodBody.method = CWalleveDbpMethod::Method::GET_BLOCKS;
+        if(methodMsg.method() == "gettransaction") methodBody.method = CWalleveDbpMethod::Method::GET_TX;
+        if(methodMsg.method() == "sendtransaction") methodBody.method = CWalleveDbpMethod::Method::SEND_TX;
 
-        if(methodBody.method == "getblocks" && methodMsg.params().Is<lws::GetBlocksArg>())
+        if(methodBody.method == CWalleveDbpMethod::Method::GET_BLOCKS
+            && methodMsg.params().Is<lws::GetBlocksArg>())
         {
             lws::GetBlocksArg args;
             methodMsg.params().UnpackTo(&args);
             methodBody.params.insert(std::make_pair("hash",args.hash())); 
             methodBody.params.insert(std::make_pair("number",boost::lexical_cast<std::string>(args.number())));
         }
-        else if(methodBody.method == "gettransaction" && methodMsg.params().Is<lws::GetTxArg>())
+        else if(methodBody.method == CWalleveDbpMethod::Method::GET_TX 
+            && methodMsg.params().Is<lws::GetTxArg>())
         {
             lws::GetTxArg args;
             methodMsg.params().UnpackTo(&args);
             methodBody.params.insert(std::make_pair("hash",args.hash()));
         }
-        else if(methodBody.method == "sendtransaction" && methodMsg.params().Is<lws::SendTxArg>())
+        else if(methodBody.method == CWalleveDbpMethod::Method::SEND_TX 
+            && methodMsg.params().Is<lws::SendTxArg>())
         {
             lws::SendTxArg args;
             methodMsg.params().UnpackTo(&args);
@@ -797,6 +867,22 @@ bool CDbpServer::HandleEvent(CWalleveEventDbpAdded& event)
     CWalleveDbpAdded &addedBody = event.data;
 
     pDbpClient->SendResponse(addedBody);
+    
+    return true;
+}
+
+bool CDbpServer::HandleEvent(CWalleveEventDbpMethodResult& event)
+{
+    std::map<uint64,CDbpClient*>::iterator it = mapClient.find(event.nNonce);
+    if (it == mapClient.end())
+    {
+        return false;
+    }
+
+    CDbpClient *pDbpClient = (*it).second;
+    CWalleveDbpMethodResult &resultBody = event.data;
+
+    pDbpClient->SendResponse(resultBody);
     
     return true;
 }
