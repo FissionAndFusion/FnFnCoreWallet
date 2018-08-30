@@ -32,14 +32,14 @@ public:
 // CService 
 
 CService::CService()
-: pCoreProtocol(NULL)
-, pWorldLine(NULL)
-, pTxPool(NULL)
-, pDispatcher(NULL)
-, pWallet(NULL)
-, pNetwork(NULL)
-, pDbpSocket(NULL)
 {
+    pCoreProtocol = NULL;
+    pWorldLine = NULL;
+    pTxPool = NULL;
+    pDispatcher = NULL;
+    pWallet = NULL;
+    pNetwork = NULL;
+    pDbpSocket = NULL;
 }
 
 CService::~CService()
@@ -95,13 +95,13 @@ bool CService::WalleveHandleInitialize()
 
 void CService::WalleveHandleDeinitialize()
 {
-    pCoreProtocol   = NULL;
-    pWorldLine      = NULL;
-    pTxPool         = NULL;
-    pDispatcher     = NULL;
-    pWallet         = NULL;
-    pNetwork        = NULL;
-    pDbpSocket      = NULL;
+    pCoreProtocol = NULL;
+    pWorldLine = NULL;
+    pTxPool = NULL;
+    pDispatcher = NULL;
+    pWallet = NULL;
+    pNetwork = NULL;
+    pDbpSocket = NULL;
 }
 
 bool CService::WalleveHandleInvoke()
