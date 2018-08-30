@@ -52,10 +52,26 @@ void CDbpClient::Activate()
     StartReadHeader();
 }
 
-void CDbpClient::SendResponse(CWalleveDbpConnected& body)
+void CDbpClient::SendMessage(dbp::Base* pBaseMsg)
 {
     ssSend.Clear();
+    
+    int byteSize = pBaseMsg->ByteSize();
+    unsigned char byteBuf[byteSize];
 
+    pBaseMsg->SerializeToArray(byteBuf,byteSize);
+
+    unsigned char msgLenBuf[4];
+    CDbpUtils::writeLenToMsgHeader(byteSize,(char*)msgLenBuf,4);
+    ssSend.Write((char*)msgLenBuf,4);
+    ssSend.Write((char*)byteBuf,byteSize);
+
+    pClient->Write(ssSend,boost::bind(&CDbpClient::HandleWritenResponse,this,_1));
+}
+
+void CDbpClient::SendResponse(CWalleveDbpConnected& body)
+{
+  
     dbp::Base connectedMsgBase;
     connectedMsgBase.set_msg(dbp::Msg::CONNECTED);
     
@@ -66,25 +82,12 @@ void CDbpClient::SendResponse(CWalleveDbpConnected& body)
     any->PackFrom(connectedMsg);
 
     connectedMsgBase.set_allocated_object(any);
-    
-    int byteSize = connectedMsgBase.ByteSize();
-    unsigned char byteBuf[byteSize];
 
-    connectedMsgBase.SerializeToArray(byteBuf,byteSize);
-
-    unsigned char msgLenBuf[4];
-    CDbpUtils::writeLenToMsgHeader(byteSize,(char*)msgLenBuf,4);
-    ssSend.Write((char*)msgLenBuf,4);
-    ssSend.Write((char*)byteBuf,byteSize);
-
-    pClient->Write(ssSend,boost::bind(&CDbpClient::HandleWritenResponse,this,_1));
-
+    SendMessage(&connectedMsgBase);
 }
 
 void CDbpClient::SendResponse(CWalleveDbpFailed& body)
 {
-    ssSend.Clear();
-
     dbp::Base failedMsgBase;
     failedMsgBase.set_msg(dbp::Msg::FAILED);
     
@@ -103,23 +106,11 @@ void CDbpClient::SendResponse(CWalleveDbpFailed& body)
 
     failedMsgBase.set_allocated_object(any);
  
-    int byteSize = failedMsgBase.ByteSize();
-    unsigned char byteBuf[byteSize];
-
-    failedMsgBase.SerializeToArray(byteBuf,byteSize);
-
-    unsigned char msgLenBuf[4];
-    CDbpUtils::writeLenToMsgHeader(byteSize,(char*)msgLenBuf,4);
-    ssSend.Write((char*)msgLenBuf,4);
-    ssSend.Write((char*)byteBuf,byteSize);
-
-    pClient->Write(ssSend,boost::bind(&CDbpClient::HandleWritenResponse,this,_1));
+    SendMessage(&failedMsgBase);
 }
 
 void CDbpClient::SendResponse(CWalleveDbpNoSub& body)
 {
-    ssSend.Clear();
-
     dbp::Base noSubMsgBase;
     noSubMsgBase.set_msg(dbp::Msg::NOSUB);
     
@@ -132,23 +123,11 @@ void CDbpClient::SendResponse(CWalleveDbpNoSub& body)
 
     noSubMsgBase.set_allocated_object(any);
  
-    int byteSize = noSubMsgBase.ByteSize();
-    unsigned char byteBuf[byteSize];
-
-    noSubMsgBase.SerializeToArray(byteBuf,byteSize);
-
-    unsigned char msgLenBuf[4];
-    CDbpUtils::writeLenToMsgHeader(byteSize,(char*)msgLenBuf,4);
-    ssSend.Write((char*)msgLenBuf,4);
-    ssSend.Write((char*)byteBuf,byteSize);
-
-    pClient->Write(ssSend,boost::bind(&CDbpClient::HandleWritenResponse,this,_1));
+    SendMessage(&noSubMsgBase);
 }
 
 void CDbpClient::SendResponse(CWalleveDbpReady& body)
 {
-    ssSend.Clear();
-
     dbp::Base readyMsgBase;
     readyMsgBase.set_msg(dbp::Msg::READY);
     
@@ -160,33 +139,77 @@ void CDbpClient::SendResponse(CWalleveDbpReady& body)
 
     readyMsgBase.set_allocated_object(any);
  
-    int byteSize = readyMsgBase.ByteSize();
-    unsigned char byteBuf[byteSize];
+    SendMessage(&readyMsgBase);
+}
 
-    readyMsgBase.SerializeToArray(byteBuf,byteSize);
+static void CreateLwsTransaction(const CWalleveDbpTransaction* dbptx,lws::Transaction* tx)
+{
+    tx->set_nversion(dbptx->nVersion);
+    tx->set_ntype(dbptx->nType);
+    tx->set_nlockuntil(dbptx->nLockUntil);
+    
+    std::string hashAnchor(dbptx->hashAnchor.begin(),dbptx->hashAnchor.end());
+    tx->set_hashanchor(hashAnchor);
 
-    unsigned char msgLenBuf[4];
-    CDbpUtils::writeLenToMsgHeader(byteSize,(char*)msgLenBuf,4);
-    ssSend.Write((char*)msgLenBuf,4);
-    ssSend.Write((char*)byteBuf,byteSize);
+    for(const auto& input : dbptx->vInput)
+    {
+        std::string inputHash(input.hash.begin(),input.hash.end());
+        tx->add_vinput()->set_hash(inputHash);
+        tx->add_vinput()->set_n(input.n);
+    }
 
-    pClient->Write(ssSend,boost::bind(&CDbpClient::HandleWritenResponse,this,_1));
+    lws::Transaction::CDestination *dest = new lws::Transaction::CDestination();
+    dest->set_prefix(dbptx->cDestination.prefix);
+    dest->set_size(dbptx->cDestination.size);
+
+    std::string destData(dbptx->cDestination.data.begin(),dbptx->cDestination.data.end());
+    dest->set_data(destData);
+    tx->set_allocated_cdestination(dest);
+
+    tx->set_namount(dbptx->nAmount);
+    tx->set_ntxfee(dbptx->nTxFee);
+    
+    std::string mintVchData(dbptx->vchData.begin(),dbptx->vchData.end());
+    tx->set_vchdata(mintVchData);
+
+    std::string mintVchSig(dbptx->vchData.begin(),dbptx->vchData.end());
+    tx->set_vchsig(mintVchSig);
 }
 
 static void CreateLwsBlock(CWalleveDbpBlock* pBlock,lws::Block& block)
 {
+    block.set_nversion(pBlock->nVersion);
+    block.set_ntype(pBlock->nType);
+    block.set_ntimestamp(pBlock->nTimeStamp);
     
+    std::string hashPrev(pBlock->hashPrev.begin(),pBlock->hashPrev.end());
+    block.set_hashprev(hashPrev);
+
+    std::string hashMerkle(pBlock->hashMerkle.begin(),pBlock->hashMerkle.end());
+    block.set_hashmerkle(hashMerkle);
+
+    std::string vchproof(pBlock->vchProof.begin(),pBlock->vchProof.end());
+    block.set_vchproof(vchproof);
+
+    std::string vchSig(pBlock->vchSig.begin(),pBlock->vchSig.end());
+    block.set_vchsig(vchSig);
+
+    //txMint
+    lws::Transaction *txMint = new lws::Transaction();
+    CreateLwsTransaction(&(pBlock->txMint),txMint);
+    block.set_allocated_txmint(txMint);
+    
+    //repeated vtx
+    for(const auto& tx : pBlock->vtx)
+    {
+        CreateLwsTransaction(&tx,block.add_vtx());
+    }
+
 }
 
-static void CreateLwsTransaction(CWalleveDbpTransaction* pTx,lws::Transaction& tx)
-{
-
-}
 
 void CDbpClient::SendResponse(CWalleveDbpAdded& body)
-{
-    ssSend.Clear();
-
+{ 
     dbp::Base addedMsgBase;
     addedMsgBase.set_msg(dbp::Msg::ADDED);
     
@@ -205,11 +228,12 @@ void CDbpClient::SendResponse(CWalleveDbpAdded& body)
     }
     else if(body.type == CWalleveDbpAdded::AddedType::TX)
     {
-        lws::Transaction tx;
+        lws::Transaction *tx = new lws::Transaction();
         CreateLwsTransaction(static_cast<CWalleveDbpTransaction*>(body.anyObject),tx);
 
         google::protobuf::Any *anyTx = new google::protobuf::Any();
-        anyTx->PackFrom(tx);
+        anyTx->PackFrom(*tx);
+        delete tx;
         addedMsg.set_allocated_object(anyTx);
     }
     else
@@ -220,17 +244,58 @@ void CDbpClient::SendResponse(CWalleveDbpAdded& body)
 
     addedMsgBase.set_allocated_object(anyAdded);
  
-    int byteSize = addedMsgBase.ByteSize();
-    unsigned char byteBuf[byteSize];
+    SendMessage(&addedMsgBase);
+}
 
-    addedMsgBase.SerializeToArray(byteBuf,byteSize);
+void CDbpClient::SendResponse(CWalleveDbpMethodResult& body)
+{  
+    dbp::Base resultMsgBase;
+    resultMsgBase.set_msg(dbp::Msg::RESULT);
+    
+    dbp::Result resultMsg;
+    resultMsg.set_id(body.id);
+    resultMsg.set_error(body.error);
 
-    unsigned char msgLenBuf[4];
-    CDbpUtils::writeLenToMsgHeader(byteSize,(char*)msgLenBuf,4);
-    ssSend.Write((char*)msgLenBuf,4);
-    ssSend.Write((char*)byteBuf,byteSize);
+    if(body.resultType == CWalleveDbpMethodResult::ResultType::BLOCKS)
+    {
+        for(auto& obj : body.anyObjects)
+        {
+            lws::Block block;
+            CreateLwsBlock(static_cast<CWalleveDbpBlock*>(obj),block);
+            resultMsg.add_result()->PackFrom(block);
+        }
+    }
+    else if(body.resultType == CWalleveDbpMethodResult::ResultType::TX)
+    {
+        for(auto& obj : body.anyObjects)
+        {
+            lws::Transaction *tx = new lws::Transaction();
+            CreateLwsTransaction(static_cast<CWalleveDbpTransaction*>(obj),tx);
+            resultMsg.add_result()->PackFrom(*tx);
+            delete tx;
+        }
+    }
+    else if(body.resultType == CWalleveDbpMethodResult::ResultType::SEND_TX)
+    {
+        for(auto& obj : body.anyObjects)
+        {
+            lws::SendTxRet sendTxRet;
+            CWalleveDbpSendTxRet *txret = static_cast<CWalleveDbpSendTxRet*>(obj); 
+            sendTxRet.set_hash(txret->hash);
+            resultMsg.add_result()->PackFrom(sendTxRet);
+        }
+    }
+    else if(body.resultType == CWalleveDbpMethodResult::ResultType::ERROR)
+    {}
+    else
+    {}
+    
+    google::protobuf::Any *anyResult = new google::protobuf::Any();
+    anyResult->PackFrom(resultMsg);
 
-    pClient->Write(ssSend,boost::bind(&CDbpClient::HandleWritenResponse,this,_1)); 
+    resultMsgBase.set_allocated_object(anyResult);
+ 
+    SendMessage(&resultMsgBase);
 }
 
 void CDbpClient::StartReadHeader()
@@ -461,22 +526,28 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
 
         CWalleveDbpMethod &methodBody = pEventDbpMethod->data;
         methodBody.id = methodMsg.id();
-        methodBody.method = methodMsg.method();
+        
+        if(methodMsg.method() == "getblocks") methodBody.method = CWalleveDbpMethod::Method::GET_BLOCKS;
+        if(methodMsg.method() == "gettransaction") methodBody.method = CWalleveDbpMethod::Method::GET_TX;
+        if(methodMsg.method() == "sendtransaction") methodBody.method = CWalleveDbpMethod::Method::SEND_TX;
 
-        if(methodBody.method == "getblocks" && methodMsg.params().Is<lws::GetBlocksArg>())
+        if(methodBody.method == CWalleveDbpMethod::Method::GET_BLOCKS
+            && methodMsg.params().Is<lws::GetBlocksArg>())
         {
             lws::GetBlocksArg args;
             methodMsg.params().UnpackTo(&args);
             methodBody.params.insert(std::make_pair("hash",args.hash())); 
             methodBody.params.insert(std::make_pair("number",boost::lexical_cast<std::string>(args.number())));
         }
-        else if(methodBody.method == "gettransaction" && methodMsg.params().Is<lws::GetTxArg>())
+        else if(methodBody.method == CWalleveDbpMethod::Method::GET_TX 
+            && methodMsg.params().Is<lws::GetTxArg>())
         {
             lws::GetTxArg args;
             methodMsg.params().UnpackTo(&args);
             methodBody.params.insert(std::make_pair("hash",args.hash()));
         }
-        else if(methodBody.method == "sendtransaction" && methodMsg.params().Is<lws::SendTxArg>())
+        else if(methodBody.method == CWalleveDbpMethod::Method::SEND_TX 
+            && methodMsg.params().Is<lws::SendTxArg>())
         {
             lws::SendTxArg args;
             methodMsg.params().UnpackTo(&args);
@@ -741,6 +812,22 @@ bool CDbpServer::HandleEvent(CWalleveEventDbpAdded& event)
     CWalleveDbpAdded &addedBody = event.data;
 
     pDbpClient->SendResponse(addedBody);
+    
+    return true;
+}
+
+bool CDbpServer::HandleEvent(CWalleveEventDbpMethodResult& event)
+{
+    std::map<uint64,CDbpClient*>::iterator it = mapClient.find(event.nNonce);
+    if (it == mapClient.end())
+    {
+        return false;
+    }
+
+    CDbpClient *pDbpClient = (*it).second;
+    CWalleveDbpMethodResult &resultBody = event.data;
+
+    pDbpClient->SendResponse(resultBody);
     
     return true;
 }

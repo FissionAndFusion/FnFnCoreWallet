@@ -7,6 +7,7 @@
 
 #include <map>
 #include <set>
+#include <vector>
 #include <utility>
 
 namespace multiverse{
@@ -33,6 +34,10 @@ private:
     void CreateDbpBlock(const CBlock& blockDetail,const uint256& forkHash, 
     int blockHeight,walleve::CWalleveDbpBlock& block);
     void CreateDbpTransaction(const CTransaction& tx,walleve::CWalleveDbpTransaction& dbptx);
+    bool GetBlocks(const uint256& startHash, int32 n, std::vector<walleve::CWalleveDbpBlock>& blocks);
+    void HandleGetBlocks(walleve::CWalleveEventDbpMethod& event);
+    void HandleGetTransaction(walleve::CWalleveEventDbpMethod& event);
+    void HandleSendTransaction(walleve::CWalleveEventDbpMethod& event);
 protected:
     walleve::IIOProc *pDbpServer;
     IService *pService;

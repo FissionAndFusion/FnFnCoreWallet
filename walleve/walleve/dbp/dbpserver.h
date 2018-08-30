@@ -5,6 +5,10 @@
 #include "walleve/dbp/dbpevent.h"
 
 
+namespace dbp{
+    class Base;
+}
+
 namespace walleve{
 
 class CDbpServer;
@@ -58,6 +62,7 @@ public:
     void SendResponse(CWalleveDbpNoSub& body);
     void SendResponse(CWalleveDbpReady& body);
     void SendResponse(CWalleveDbpAdded& body);
+    void SendResponse(CWalleveDbpMethodResult& body);
 
 protected:
     void StartReadHeader();
@@ -67,6 +72,8 @@ protected:
     void HandleReadPayload(std::size_t nTransferred);
     void HandleReadCompleted();
     void HandleWritenResponse(std::size_t nTransferred);
+private:
+    void SendMessage(dbp::Base* pBaseMsg);
 protected:
     CDbpServer* pServer;
     CDbpProfile *pProfile;
@@ -104,6 +111,7 @@ protected:
     bool HandleEvent(CWalleveEventDbpNoSub& event) override;
     bool HandleEvent(CWalleveEventDbpReady& event) override;
     bool HandleEvent(CWalleveEventDbpAdded& event) override;
+    bool HandleEvent(CWalleveEventDbpMethodResult& event) override;
 
 protected:
     std::vector<CDbpHostConfig> vecHostConfig;
