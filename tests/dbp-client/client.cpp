@@ -1,9 +1,9 @@
-#include <boost/bind.hpp>
 #include "dbp.pb.h"
 #include "client.h"
 
 client::client() : m_buf(100, 0),
-                   m_ep(boost::asio::ip::address_v4::from_string("127.0.0.1"), 6815)
+                   m_ep(boost::asio::ip::address_v4::from_string("127.0.0.1"), 6815),
+                   m_timer(m_io, std::chrono::seconds{30})
 {
     start();
 }
@@ -92,10 +92,20 @@ void client::read_handler(const boost::system::error_code &ec, std::shared_ptr<b
             msgBase.object().UnpackTo(&connectedMsg);
 
             std::cout << "connected session is:" << connectedMsg.session() << std::endl; 
+
+            // m_timer.async_wait([](const boost::system::error_code &ec) { std::cout << "3 sec\n"; });
+            m_timer.async_wait(boost::bind(&client::timer_handler, this, boost::asio::placeholders::error));
         }
     }
 
     sock->async_read_some(boost::asio::buffer(m_buf), boost::bind(&client::read_handler, this, boost::asio::placeholders::error, sock));
+}
+
+void client::timer_handler(const boost::system::error_code &ec)
+{
+    std::cout << "30 sec send ping msg" << std::endl;
+    m_timer.expires_from_now(std::chrono::seconds{30});
+    m_timer.async_wait(boost::bind(&client::timer_handler, this, boost::asio::placeholders::error));
 }
 
 void client::run()
