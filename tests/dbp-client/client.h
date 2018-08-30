@@ -7,8 +7,10 @@ class client
   public:
     client();
     ~client();
-    void start();
     void run();
+
+  private:
+    void start();
     void conn_handler(const boost::system::error_code& ec, std::shared_ptr<boost::asio::ip::tcp::socket> sock);
     void read_handler(const boost::system::error_code &ec, std::shared_ptr<boost::asio::ip::tcp::socket> sock);
 
