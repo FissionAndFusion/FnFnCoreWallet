@@ -7,6 +7,7 @@
 
 #include "mvbase.h"
 #include "network.h"
+#include "walleve/netio/netio.h"
 
 namespace multiverse
 {
@@ -19,6 +20,7 @@ public:
     /* Notify */
     void NotifyWorldLineUpdate(const CWorldLineUpdate& update);
     void NotifyNetworkPeerUpdate(const CNetworkPeerUpdate& update);
+    void NotifyTransactionUpdate(const CTransactionUpdate& update);
     /* System */
     void Shutdown();
     /* Network */
@@ -79,6 +81,7 @@ protected:
     IDispatcher* pDispatcher;
     IWallet* pWallet;
     CNetwork* pNetwork;
+    walleve::IIOModule* pDbpSocket;
     mutable boost::shared_mutex rwForkStatus;
     std::map<uint256,CForkStatus> mapForkStatus;
 };
