@@ -173,15 +173,71 @@ void CDbpClient::SendResponse(CWalleveDbpReady& body)
     pClient->Write(ssSend,boost::bind(&CDbpClient::HandleWritenResponse,this,_1));
 }
 
+static void CreateLwsTransaction(const CWalleveDbpTransaction* dbptx,lws::Transaction* tx)
+{
+    tx->set_nversion(dbptx->nVersion);
+    tx->set_ntype(dbptx->nType);
+    tx->set_nlockuntil(dbptx->nLockUntil);
+    
+    std::string hashAnchor(dbptx->hashAnchor.begin(),dbptx->hashAnchor.end());
+    tx->set_hashanchor(hashAnchor);
+
+    for(const auto& input : dbptx->vInput)
+    {
+        std::string inputHash(input.hash.begin(),input.hash.end());
+        tx->add_vinput()->set_hash(inputHash);
+        tx->add_vinput()->set_n(input.n);
+    }
+
+    lws::Transaction::CDestination *dest = new lws::Transaction::CDestination();
+    dest->set_prefix(dbptx->cDestination.prefix);
+    dest->set_size(dbptx->cDestination.size);
+
+    std::string destData(dbptx->cDestination.data.begin(),dbptx->cDestination.data.end());
+    dest->set_data(destData);
+    tx->set_allocated_cdestination(dest);
+
+    tx->set_namount(dbptx->nAmount);
+    tx->set_ntxfee(dbptx->nTxFee);
+    
+    std::string mintVchData(dbptx->vchData.begin(),dbptx->vchData.end());
+    tx->set_vchdata(mintVchData);
+
+    std::string mintVchSig(dbptx->vchData.begin(),dbptx->vchData.end());
+    tx->set_vchsig(mintVchSig);
+}
+
 static void CreateLwsBlock(CWalleveDbpBlock* pBlock,lws::Block& block)
 {
+    block.set_nversion(pBlock->nVersion);
+    block.set_ntype(pBlock->nType);
+    block.set_ntimestamp(pBlock->nTimeStamp);
     
+    std::string hashPrev(pBlock->hashPrev.begin(),pBlock->hashPrev.end());
+    block.set_hashprev(hashPrev);
+
+    std::string hashMerkle(pBlock->hashMerkle.begin(),pBlock->hashMerkle.end());
+    block.set_hashmerkle(hashMerkle);
+
+    std::string vchproof(pBlock->vchProof.begin(),pBlock->vchProof.end());
+    block.set_vchproof(vchproof);
+
+    std::string vchSig(pBlock->vchSig.begin(),pBlock->vchSig.end());
+    block.set_vchsig(vchSig);
+
+    //txMint
+    lws::Transaction *txMint = new lws::Transaction();
+    CreateLwsTransaction(&(pBlock->txMint),txMint);
+    block.set_allocated_txmint(txMint);
+    
+    //repeated vtx
+    for(const auto& tx : pBlock->vtx)
+    {
+        CreateLwsTransaction(&tx,block.add_vtx());
+    }
+
 }
 
-static void CreateLwsTransaction(CWalleveDbpTransaction* pTx,lws::Transaction& tx)
-{
-
-}
 
 void CDbpClient::SendResponse(CWalleveDbpAdded& body)
 {
@@ -205,11 +261,11 @@ void CDbpClient::SendResponse(CWalleveDbpAdded& body)
     }
     else if(body.type == CWalleveDbpAdded::AddedType::TX)
     {
-        lws::Transaction tx;
+        lws::Transaction *tx = new lws::Transaction();
         CreateLwsTransaction(static_cast<CWalleveDbpTransaction*>(body.anyObject),tx);
 
         google::protobuf::Any *anyTx = new google::protobuf::Any();
-        anyTx->PackFrom(tx);
+        anyTx->PackFrom(*tx);
         addedMsg.set_allocated_object(anyTx);
     }
     else
