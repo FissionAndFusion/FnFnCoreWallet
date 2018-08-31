@@ -297,18 +297,8 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                 if (setDNSeed.count(ep_))
                 {
                     RemoveNode(ep_);
-                    
-                    if(IsRoutable(ep_.address()))
-                    {//request DNSeedAddresslist                  
-                        WalleveLog("xp [send] MVPROTO_CMD_GETDNSEED\n");
-                        pMvPeer->SendMessage(MVPROTO_CHN_NETWORK,MVPROTO_CMD_GETDNSEED);
-                    }
-                }
-                //else
-                //{
+                }else 
                     this->_dnseed.add2list(ep_); 
-                //}
-      
                 return true;
             }
             break;
@@ -340,9 +330,8 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                 for(size_t i=0;i<eplist.size();i++)
                 {
                     tcp::endpoint &cep=eplist[i];
-                    // std::cout<<cep.address().to_string()<<":"<<cep.port()<<std::endl;
-                    // this->Connect(cep,10);
-                    this->AddNewNode(CNetHost(cep,cep.address().to_string(),boost::any(uint64(network::NODE_NETWORK))));
+                     std::cout<<cep.address().to_string()<<":"<<cep.port()<<std::endl;
+                    //this->AddNewNode(CNetHost(cep,cep.address().to_string(),boost::any(uint64(network::NODE_NETWORK))));
                 }
                 return true;
             }   

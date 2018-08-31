@@ -15,6 +15,7 @@
 #include "blockmaker.h"
 #include "rpcclient.h"
 #include "miner.h"
+#include "dnseed.h"
 
 #include <map>
 #include <string>
@@ -198,6 +199,11 @@ bool CMvEntry::InitializeService()
 
 bool CMvEntry::InitializeClient()
 {
+    if(mvConfig.vecCommand[0] == "dnseed")
+    {
+       return InitializeDNSeedService();
+    }
+
     CHttpGet *pHttpGet = new CHttpGet();
     if (!pHttpGet || !walleveDocker.Attach(pHttpGet))
     {
@@ -205,7 +211,15 @@ bool CMvEntry::InitializeClient()
         return false;
     }
 
-    if (mvConfig.vecCommand[0] != "miner")
+    if (mvConfig.vecCommand[0] == "miner")
+    {
+        CMiner *pMiner = new CMiner(mvConfig.vecCommand);
+        if (!pMiner || !walleveDocker.Attach(pMiner))
+        {
+            return false;
+        } 
+    }
+    else
     {
         CRPCDispatch *pRPCDispatch = mvConfig.vecCommand[0] == "console" ?
                                      new CRPCDispatch() : new CRPCDispatch(mvConfig.vecCommand);
@@ -215,17 +229,31 @@ bool CMvEntry::InitializeClient()
             return false;
         }
     }
-    else
-    {
-        CMiner *pMiner = new CMiner(mvConfig.vecCommand);
-        if (!pMiner || !walleveDocker.Attach(pMiner))
-        {
-            return false;
-        }
-    }
     return true;
 }
 
+bool CMvEntry::InitializeDNSeedService()
+{
+    if (!TryLockFile((mvConfig.pathData / ".lock").string()))
+    {
+        cerr << "Cannot obtain a lock on data directory " << mvConfig.pathData << "\n"
+             << "Multiverse is probably already running.\n";
+        return false;
+    }
+    if(!walleveLog.SetLogFilePath((mvConfig.pathData / "multiverse.log").string()))
+    {
+        cerr << "Failed to open log file : " << (mvConfig.pathData / "multiverse.log") << "\n";
+        return false; 
+    }
+
+    CDNSeed * pDnseed = new CDNSeed();
+    if (!pDnseed || !walleveDocker.Attach(pDnseed))
+    {
+        delete pDnseed;
+        return false;
+    }
+    return true;
+}
 
 CHttpHostConfig CMvEntry::GetRPCHostConfig()
 {

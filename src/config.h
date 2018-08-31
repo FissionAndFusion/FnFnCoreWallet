@@ -51,6 +51,7 @@ public:
     bool fListen;
     bool fBloom;    
     unsigned short nPort;
+    unsigned short nDNSeedPort;
     unsigned int nMaxInBounds;
     unsigned int nMaxOutBounds;
     unsigned int nConnectTimeout;

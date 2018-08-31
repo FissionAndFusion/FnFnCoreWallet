@@ -23,6 +23,7 @@ public:
 protected:
     bool InitializeService();
     bool InitializeClient();
+    bool InitializeDNSeedService();
     walleve::CHttpHostConfig GetRPCHostConfig();
 
     boost::filesystem::path GetDefaultDataDir();

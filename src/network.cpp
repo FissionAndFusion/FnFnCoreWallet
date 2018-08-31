@@ -6,6 +6,7 @@
 #include "version.h"
 #include <boost/bind.hpp>
 #include <boost/any.hpp>
+#include "mvdnseedpeer.h"
 
 using namespace std;
 using namespace walleve;
@@ -43,14 +44,26 @@ bool CNetwork::WalleveHandleInitialize()
     }
     if (config.vecNode.empty())
     {
-        BOOST_FOREACH(const string& seed,NetworkConfig()->vDNSeed)
-        {
-            config.vecNode.push_back(CNetHost(seed,config.nPortDefault,"dnseed",
-                                              boost::any(uint64(network::NODE_NETWORK))));
-        }
+        // BOOST_FOREACH(const string& seed,NetworkConfig()->vDNSeed)
+        // {
+        //     config.vecNode.push_back(CNetHost(seed,config.nPortDefault,"dnseed",
+        //                                       boost::any(uint64(network::NODE_NETWORK))));
+        // }
         BOOST_FOREACH(const string& node,NetworkConfig()->vNode)
         {
             config.vecNode.push_back(CNetHost(node,config.nPortDefault,node,
+                                              boost::any(uint64(network::NODE_NETWORK))));
+        }
+    }
+    if(config.vecNode.empty())
+    {
+        //TODO 加载数据库中的节点列表
+    }
+    if(config.vecNode.empty())
+    {
+        BOOST_FOREACH(const string& seed,NetworkConfig()->vDNSeed)
+        {
+            config.vecNode.push_back(CNetHost(seed,NetworkConfig()->nDNSeedPort,"dnseed",
                                               boost::any(uint64(network::NODE_NETWORK))));
         }
     }
