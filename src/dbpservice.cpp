@@ -425,32 +425,25 @@ bool CDbpService::HandleEvent(CMvEventDbpUpdateNewBlock& event)
 
 bool CDbpService::HandleEvent(CMvEventDbpUpdateNewTx& event)
 {
-    // get details about new tx
-    uint256 txHash = event.data;
-    CTransaction tx;
-    uint256 forkHash;
-    int blockHeight;
-    
-    if(pService->GetTransaction(txHash,tx,forkHash,blockHeight))
+    decltype(event.data) & newtx = event.data;
+
+    walleve::CWalleveDbpTransaction dbpTx;
+    CreateDbpTransaction(newtx,dbpTx);
+
+    // push new tx to dbpclient when new-tx-event comes
+    for(const auto& kv : idSubedNonceMap)
     {
-        walleve::CWalleveDbpTransaction dbpTx;
-        CreateDbpTransaction(tx,dbpTx);
+        std::string id = kv.first;
+        int nonce = kv.second;
+        
+        walleve::CWalleveEventDbpAdded eventAdded(nonce);
+        eventAdded.data.id = id;
+        eventAdded.data.name = "added";
+        eventAdded.data.type = walleve::CWalleveDbpAdded::TX;
+        eventAdded.data.anyObject = &dbpTx;
 
-        // push new tx to dbpclient when new-tx-event comes
-        for(const auto& kv : idSubedNonceMap)
-        {
-            std::string id = kv.first;
-            int nonce = kv.second;
-            
-            walleve::CWalleveEventDbpAdded eventAdded(nonce);
-            eventAdded.data.id = id;
-            eventAdded.data.name = "added";
-            eventAdded.data.type = walleve::CWalleveDbpAdded::TX;
-            eventAdded.data.anyObject = &dbpTx;
-
-            pDbpServer->DispatchEvent(&eventAdded);
-        }
+        pDbpServer->DispatchEvent(&eventAdded);
     }
-  
+
     return true;
 }

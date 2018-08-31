@@ -80,7 +80,7 @@ class CMvDBPEventListener;
         CMvEventDbpSocketData<type,CMvDBPEventListener,body>
 
 typedef TYPE_DBPEVENT(MV_EVENT_DBP_SOCKET_ADD_NEW_BLOCK,uint256) CMvEventDbpUpdateNewBlock;
-typedef TYPE_DBPEVENT(MV_EVENT_DBP_SOCKET_ADD_NEW_TX,uint256) CMvEventDbpUpdateNewTx;
+typedef TYPE_DBPEVENT(MV_EVENT_DBP_SOCKET_ADD_NEW_TX,CTransaction) CMvEventDbpUpdateNewTx;
 
 class CMvDBPEventListener : virtual public walleve::CWalleveEventListener
 {

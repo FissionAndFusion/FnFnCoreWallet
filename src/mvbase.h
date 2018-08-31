@@ -161,6 +161,7 @@ public:
     /* Notify */
     virtual void NotifyWorldLineUpdate(const CWorldLineUpdate& update) = 0;
     virtual void NotifyNetworkPeerUpdate(const CNetworkPeerUpdate& update) = 0;
+    virtual void NotifyTransactionUpdate(const CTransactionUpdate& update) = 0;
     /* System */
     virtual void Shutdown() = 0;
     /* Network */ 
