@@ -2,7 +2,10 @@
 
 client::client() : m_buf(100, 0),
                    m_ep(boost::asio::ip::address_v4::from_string("127.0.0.1"), 6815),
-                   m_timer(m_io, std::chrono::seconds{30})
+                   m_timer(m_io, std::chrono::seconds{30}),
+                   sock(new boost::asio::ip::tcp::socket(m_io)),
+                   is_connected(false),
+                   session("")
 {
     start();
 }
@@ -13,7 +16,7 @@ client::~client()
 
 void client::start()
 {
-    std::shared_ptr<boost::asio::ip::tcp::socket> sock(new boost::asio::ip::tcp::socket(m_io));
+    // std::shared_ptr<boost::asio::ip::tcp::socket> sock(new boost::asio::ip::tcp::socket(m_io));
     sock->async_connect(m_ep, boost::bind(&client::conn_handler, this, boost::asio::placeholders::error, sock));
 }
 
@@ -34,93 +37,201 @@ std::vector<char> client::serialize(dbp::Base base)
     char array[1024 * 10] = {'\0'};
     std::memcpy(array, &nl, 4);
     base.SerializeToArray(array + 4, len);
-    // std::vector<char> ret(array, array + sizeof(array)/sizeof(array[0]));
     std::vector<char> ret(array, array + (len + 4));
     return ret;
 }
 
-void client::conn_handler(const boost::system::error_code &ec, std::shared_ptr<boost::asio::ip::tcp::socket> sock)
+void client::send(std::vector<char> buf, std::string explain)
 {
-    if(ec)
-    {
-        return;
-    }
+    boost::shared_ptr<std::string> pstr(new std::string(explain));
+    sock->async_write_some(boost::asio::buffer(buf), boost::bind(&client::write_handler, this, pstr, _1, _2));
+}
 
+void client::send_connect(std::string session)
+{
     dbp::Connect connect;
-    connect.set_session("");
+    connect.set_session(session);
     connect.set_client("lws-test");
     connect.set_version(1);
 
     dbp::Base connect_msg = create_msg(dbp::Msg::CONNECT, connect);
     std::vector<char> ret = serialize(connect_msg);
+    send(ret, "connect");
+}
 
-    boost::system::error_code ec1;
-    sock->write_some(boost::asio::buffer(ret),ec1);
+std::string client::send_ping()
+{
+    srand(time(NULL));
+    int secret = rand();
+    char s[20] = {'\0'};
+    sprintf(s, "%d", secret);
+    std::string id(s);
 
-    if(ec1 != boost::system::errc::success)
+    dbp::Ping ping;
+    ping.set_id(id);
+    dbp::Base ping_msg = create_msg(dbp::Msg::PING, ping);
+    std::vector<char> ret = serialize(ping_msg);
+
+    char explain[30] = {'\0'};
+    sprintf(explain, "ping%d", secret);
+    send(ret, explain);
+    return id;
+}
+
+void client::send_pong(std::string id)
+{
+    dbp::Pong pong;
+    pong.set_id(id);
+    dbp::Base pong_msg = create_msg(dbp::Msg::PONG, pong);
+    std::vector<char> ret = serialize(pong_msg);
+    send(ret, "pong");
+}
+
+std::string client::send_sub(std::string name)
+{
+    srand (time(NULL));
+    int secret = rand();
+    char s[20] = {'\0'};
+    sprintf(s, "%d", secret);
+    std::string id(s);
+
+    dbp::Sub sub;
+    sub.set_name(name);
+    sub.set_id(id);
+    dbp::Base sub_msg = create_msg(dbp::Msg::SUB, sub);
+    std::vector<char> ret = serialize(sub_msg);
+
+    char explain[30] = {'\0'};
+    sprintf(explain, "sub%d", secret);
+    send(ret, explain);
+    return id;
+}
+
+void client::send_unsub(std::string id)
+{
+    dbp::Unsub unsub;
+    unsub.set_id(id);
+    dbp::Base unsubn_msg = create_msg(dbp::Msg::UNSUB, unsub);
+    std::vector<char> ret = serialize(unsubn_msg);
+    send(ret, "unsub");
+}
+
+std::string client::send_method(std::string method)
+{
+    srand(time(NULL));
+    int secret = rand();
+    char s[20] = {'\0'};
+    sprintf(s, "%d", secret);
+    std::string id(s);
+
+    dbp::Method obj;
+    obj.set_method(method);
+    obj.set_id(id);
+    dbp::Base obj_msg = create_msg(dbp::Msg::METHOD, obj);
+    std::vector<char> ret = serialize(obj_msg);
+
+    char explain[30] = {'\0'};
+    sprintf(explain, "method%d", secret);
+    send(ret, explain);
+    
+    return id;
+}
+
+void client::conn_handler(const boost::system::error_code &ec, std::shared_ptr<boost::asio::ip::tcp::socket> sock)
+{
+    if (ec)
     {
-        std::cerr << "[conn_handler]write_some failed" << std::endl;
         return;
     }
 
+    send_connect("");
     std::cout << "[conn_handler]recive from " << sock->remote_endpoint().address() << std::endl;
     sock->async_read_some(boost::asio::buffer(m_buf), boost::bind(&client::read_handler, this, boost::asio::placeholders::error, sock));
 }
 
+void client::test()
+{
+    std::string id = send_sub("all-block");
+    send_unsub(id);
+
+    std::string mehtod_id = send_method("getblocks");
+}
+
 void client::read_handler(const boost::system::error_code &ec, std::shared_ptr<boost::asio::ip::tcp::socket> sock)
 {
-    if(ec)
+    if (ec)
     {
         return;
     }
 
-    // std::cerr << "[read_handler]msg recved" << std::endl;
     uint32_t b;
     std::memcpy(&b, &m_buf[0], 4);
     uint32_t len = ntohl(b);
 
-    dbp::Base msgBase;
-    if(!msgBase.ParseFromArray(&m_buf[4], len))
+    dbp::Base base;
+    if(!base.ParseFromArray(&m_buf[4], len))
     {
         std::cerr << "[read_handler]parse base msg false" << std::endl;
         return;
     }
 
-    if(msgBase.msg() == dbp::Msg::CONNECTED)
+    if(base.msg() == dbp::Msg::CONNECTED)
     {
-        if(msgBase.object().Is<dbp::Connected>())
+        if(base.object().Is<dbp::Connected>())
         {
-            dbp::Connected connectedMsg;
-            msgBase.object().UnpackTo(&connectedMsg);
-
-            std::cout << "[read_handler]connected session is:" << connectedMsg.session() << std::endl; 
+            dbp::Connected connected;
+            base.object().UnpackTo(&connected);
+            std::cout << "[read_handler]connected session is:" << connected.session() << std::endl; 
+            is_connected = true;
+            session = connected.session();
 
             m_timer.async_wait(boost::bind(&client::timer_handler, this, boost::asio::placeholders::error, sock));
         }
 
-        dbp::Sub sub;
-        sub.set_name("all-block");
-        sub.set_id("123456");
-
-        dbp::Base sub_msg = create_msg(dbp::Msg::SUB, sub);
-        std::vector<char> ret = serialize(sub_msg);
-        boost::shared_ptr<std::string> pstr(new std::string("sub"));
-        sock->async_write_some(boost::asio::buffer(ret), boost::bind(&client::write_handler, this, pstr, _1, _2));
+        test();
     }
 
-    if(msgBase.msg() == dbp::Msg::PONG)
+    if(base.msg() == dbp::Msg::FAILED)
     {
-        std::cout << "[read_handler]pong recv" << std::endl;
     }
 
-    if(msgBase.msg() == dbp::Msg::NOSUB)
+    if(base.msg() == dbp::Msg::PING)
+    {
+        dbp::Ping ping;
+        base.object().UnpackTo(&ping);
+        send_pong(ping.id());
+    }
+
+    if(base.msg() == dbp::Msg::PONG)
+    {
+        dbp::Pong pong;
+        base.object().UnpackTo(&pong);
+    }
+
+    if(base.msg() == dbp::Msg::NOSUB)
     {
         std::cout << "[read_handler]nosub recv" << std::endl;
     }
      
-    if(msgBase.msg() == dbp::Msg::READY)
+    if(base.msg() == dbp::Msg::READY)
     {
         std::cout << "[read_handler]ready recv" << std::endl;
+    }
+
+    if(base.msg() == dbp::Msg::ADDED)
+    {
+    }
+
+    if(base.msg() == dbp::Msg::CHANGED)
+    {
+    }
+
+    if(base.msg() == dbp::Msg::REMOVED)
+    {
+    }
+
+    if(base.msg() == dbp::Msg::RESULT)
+    {
     }
 
     sock->async_read_some(boost::asio::buffer(m_buf), boost::bind(&client::read_handler, this, boost::asio::placeholders::error, sock));
@@ -138,12 +249,7 @@ void client::write_handler(boost::shared_ptr<std::string> pstr, const boost::sys
 
 void client::timer_handler(const boost::system::error_code &ec, std::shared_ptr<boost::asio::ip::tcp::socket> sock)
 {
-    dbp::Ping ping;
-    ping.set_id("");
-    dbp::Base ping_msg = create_msg(dbp::Msg::PING, ping);
-    std::vector<char> ret = serialize(ping_msg);
-    boost::shared_ptr<std::string> pstr(new std::string("ping"));
-    sock->async_write_some(boost::asio::buffer(ret), boost::bind(&client::write_handler, this, pstr, _1, _2));
+    std::string id = send_ping();
 
     m_timer.expires_from_now(std::chrono::seconds{30});
     m_timer.async_wait(boost::bind(&client::timer_handler, this, boost::asio::placeholders::error, sock));
