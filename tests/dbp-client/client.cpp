@@ -79,21 +79,21 @@ void client::read_handler(const boost::system::error_code &ec, std::shared_ptr<b
     std::memcpy(&b, &m_buf[0], 4);
     uint32_t len = ntohl(b);
 
-    dbp::Base msgBase;
-    if(!msgBase.ParseFromArray(&m_buf[4], len))
+    dbp::Base base;
+    if(!base.ParseFromArray(&m_buf[4], len))
     {
         std::cerr << "[read_handler]parse base msg false" << std::endl;
         return;
     }
 
-    if(msgBase.msg() == dbp::Msg::CONNECTED)
+    if(base.msg() == dbp::Msg::CONNECTED)
     {
-        if(msgBase.object().Is<dbp::Connected>())
+        if(base.object().Is<dbp::Connected>())
         {
-            dbp::Connected connectedMsg;
-            msgBase.object().UnpackTo(&connectedMsg);
+            dbp::Connected connected;
+            base.object().UnpackTo(&connected);
 
-            std::cout << "[read_handler]connected session is:" << connectedMsg.session() << std::endl; 
+            std::cout << "[read_handler]connected session is:" << connected.session() << std::endl; 
 
             m_timer.async_wait(boost::bind(&client::timer_handler, this, boost::asio::placeholders::error, sock));
         }
@@ -108,17 +108,17 @@ void client::read_handler(const boost::system::error_code &ec, std::shared_ptr<b
         sock->async_write_some(boost::asio::buffer(ret), boost::bind(&client::write_handler, this, pstr, _1, _2));
     }
 
-    if(msgBase.msg() == dbp::Msg::PONG)
+    if(base.msg() == dbp::Msg::PONG)
     {
         std::cout << "[read_handler]pong recv" << std::endl;
     }
 
-    if(msgBase.msg() == dbp::Msg::NOSUB)
+    if(base.msg() == dbp::Msg::NOSUB)
     {
         std::cout << "[read_handler]nosub recv" << std::endl;
     }
      
-    if(msgBase.msg() == dbp::Msg::READY)
+    if(base.msg() == dbp::Msg::READY)
     {
         std::cout << "[read_handler]ready recv" << std::endl;
     }
