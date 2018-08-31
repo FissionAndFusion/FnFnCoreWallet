@@ -34,7 +34,8 @@ std::vector<char> client::serialize(dbp::Base base)
 {
     uint32_t len = base.ByteSize();
     int nl = htonl(len);
-    char array[1024 * 10] = {'\0'};
+    // char array[1024 * 10] = {'\0'};
+    char *array = new char[len + 4];
     std::memcpy(array, &nl, 4);
     base.SerializeToArray(array + 4, len);
     std::vector<char> ret(array, array + (len + 4));
@@ -44,7 +45,7 @@ std::vector<char> client::serialize(dbp::Base base)
 void client::send(std::vector<char> buf, std::string explain)
 {
     boost::shared_ptr<std::string> pstr(new std::string(explain));
-    sock->async_write_some(boost::asio::buffer(buf), boost::bind(&client::write_handler, this, pstr, _1, _2));
+    sock->async_write_some(boost::asio::buffer(buf, buf.size()), boost::bind(&client::write_handler, this, pstr, _1, _2));
 }
 
 void client::send_connect(std::string session)
