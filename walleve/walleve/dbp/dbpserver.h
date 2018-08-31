@@ -63,6 +63,7 @@ public:
     void SendResponse(CWalleveDbpReady& body);
     void SendResponse(CWalleveDbpAdded& body);
     void SendResponse(CWalleveDbpMethodResult& body);
+    void SendResponse(int statusCode,const std::string& description);
 
 protected:
     void StartReadHeader();
@@ -93,6 +94,7 @@ public:
     void HandleClientRecv(CDbpClient *pDbpClient,void* anyObj);
     void HandleClientSent(CDbpClient *pDbpClient);
     void HandleClientError(CDbpClient *pDbpClient);
+    void RespondError(CDbpClient *pDbpClient,int nStatusCode,const std::string& strError = "");
     void AddNewHost(const CDbpHostConfig& confHost);
 protected:
     bool WalleveHandleInitialize() override;
@@ -105,7 +107,6 @@ protected:
     bool CreateProfile(const CDbpHostConfig& confHost);
     CDbpClient* AddNewClient(CIOClient *pClient,CDbpProfile *pDbpProfile);
     void RemoveClient(CDbpClient *pDbpClient);
-    void RespondError(CDbpClient *pDbpClient,int nStatusCode,const std::string& strError = "");
     bool HandleEvent(CWalleveEventDbpConnected& event) override;
     bool HandleEvent(CWalleveEventDbpFailed& event) override;
     bool HandleEvent(CWalleveEventDbpNoSub& event) override;
@@ -117,7 +118,8 @@ protected:
     std::vector<CDbpHostConfig> vecHostConfig;
     std::map<boost::asio::ip::tcp::endpoint,CDbpProfile> mapProfile;
     std::map<uint64,CDbpClient*> mapClient; // nonce => CDbpClient
-    std::map<std::string,CDbpClient*> sessionClientMap; // session => CDbpClient 
+    std::map<std::string,CDbpClient*> sessionClientMap; // session => CDbpClient
+    std::map<CDbpClient*,std::string> clientSessionMap; // CDbpClient => session
 };
 } //namespace walleve
 #endif //WALLEVE_DBP_SERVER_H

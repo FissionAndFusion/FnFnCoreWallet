@@ -298,6 +298,23 @@ void CDbpClient::SendResponse(CWalleveDbpMethodResult& body)
     SendMessage(&resultMsgBase);
 }
 
+void CDbpClient::SendResponse(int statusCode,const std::string& description)
+{
+    dbp::Base errorMsgBase;
+    errorMsgBase.set_msg(dbp::Msg::ERROR);
+    
+    dbp::Error errorMsg;
+    errorMsg.set_reason(std::to_string(statusCode));
+    errorMsg.set_explain(description);
+
+    google::protobuf::Any *any = new google::protobuf::Any();
+    any->PackFrom(errorMsg);
+
+    errorMsgBase.set_allocated_object(any);
+ 
+    SendMessage(&errorMsgBase);
+}
+
 void CDbpClient::StartReadHeader()
 {
     pClient->Read(ssRecv,4,
@@ -369,6 +386,7 @@ void CDbpClient::HandleReadCompleted()
         break;
         pServer->HandleClientRecv(this,&anyObj);
     default:
+        pServer->RespondError(this,400,"is not Message Base Type is unkown.");
         pServer->HandleClientError(this);
         break;
     }
@@ -415,7 +433,7 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
     google::protobuf::Any* any = static_cast<google::protobuf::Any*>(anyObj);
     if(!any)
     {
-        RespondError(pDbpClient,500);
+        RespondError(pDbpClient,500,"protobuf msg base any object pointer is null.");
         return;
     }
     
@@ -425,7 +443,7 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
         CWalleveEventDbpConnect *pEventDbpConnect = new CWalleveEventDbpConnect(pDbpClient->GetNonce());
         if(!pEventDbpConnect)
         {
-            RespondError(pDbpClient,500);
+            RespondError(pDbpClient,500,"dbp connect event create failed.");
             return;
         }
         
@@ -443,6 +461,7 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
                 session = CDbpUtils::RandomString();
             }
             sessionClientMap.insert(std::make_pair(session,pDbpClient));
+            clientSessionMap.insert(std::make_pair(pDbpClient,session));
 
             CWalleveDbpConnect &connectBody = pEventDbpConnect->data;
             connectBody.isReconnect = false;
@@ -479,10 +498,16 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
     }
     else if(any->Is<dbp::Sub>())
     {
+        if(clientSessionMap.count(pDbpClient) == 0)
+        {
+            RespondError(pDbpClient,400,"dbp sub message not had assiociated session,please connect first");
+            return;
+        }
+        
         CWalleveEventDbpSub *pEventDbpSub = new CWalleveEventDbpSub(pDbpClient->GetNonce());
         if(!pEventDbpSub)
         {
-            RespondError(pDbpClient,500);
+            RespondError(pDbpClient,500,"dbp sub event create failed");
             return;
         }
         
@@ -497,10 +522,16 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
     }
     else if(any->Is<dbp::Unsub>())
     {
+        if(clientSessionMap.count(pDbpClient) == 0)
+        {
+            RespondError(pDbpClient,400,"dbp unsub message not had assiociated session,please connect first");
+            return;
+        }
+        
         CWalleveEventDbpUnSub *pEventDbpUnSub = new CWalleveEventDbpUnSub(pDbpClient->GetNonce());
         if(!pEventDbpUnSub)
         {
-            RespondError(pDbpClient,500);
+            RespondError(pDbpClient,500,"dbp unsub event create failed.");
             return;
         }
 
@@ -514,10 +545,16 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
     }
     else if(any->Is<dbp::Method>())
     {
+        if(clientSessionMap.count(pDbpClient) == 0)
+        {
+            RespondError(pDbpClient,400,"dbp method message not had assiociated session,please connect first");
+            return;
+        }
+              
         CWalleveEventDbpMethod *pEventDbpMethod = new CWalleveEventDbpMethod(pDbpClient->GetNonce());
         if(!pEventDbpMethod)
         {
-            RespondError(pDbpClient,500);
+            RespondError(pDbpClient,500,"dbp event method create failed.");
             return;
         }
         
@@ -555,6 +592,7 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
         }   
         else
         {
+            RespondError(pDbpClient,400,"dbp method name is empty,please specify a method name.");
             return;
         }
         
@@ -562,7 +600,7 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
     }
     else
     {
-        RespondError(pDbpClient,500);
+        RespondError(pDbpClient,500,"unknown dbp message");
         return;
     }
 }
@@ -724,7 +762,7 @@ void CDbpServer::RemoveClient(CDbpClient *pDbpClient)
 
 void CDbpServer::RespondError(CDbpClient *pDbpClient,int nStatusCode,const std::string& strError)
 {
-
+    pDbpClient->SendResponse(nStatusCode,strError);
 }
 
 bool CDbpServer::HandleEvent(CWalleveEventDbpConnected& event)
