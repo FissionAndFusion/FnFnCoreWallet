@@ -6,7 +6,7 @@
 #include "mvpeer.h"
 #include <boost/bind.hpp>
 #include <boost/any.hpp>
-
+#include "dnseedservice.h"
 
 #define HANDSHAKE_TIMEOUT               5
 #define RESPONSE_TX_TIMEOUT             15
@@ -298,7 +298,7 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                 {
                     RemoveNode(ep_);
                 }else 
-                    this->_dnseed.add2list(ep_); 
+                    DNSeedService::getInstance()->add2list(ep_); 
                 return true;
             }
             break;
@@ -312,7 +312,7 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
             {
                 WalleveLog("xp [receive] MVPROTO_CMD_GETDNSEED\n");
                 std::vector<CAddress> vAddrs;
-                this->_dnseed.getAddressList(vAddrs);
+                DNSeedService::getInstance()->getAddressList(vAddrs);
                 CWalleveBufStream ss;
                 ss << vAddrs;
                 return pMvPeer->SendMessage(MVPROTO_CHN_NETWORK,MVPROTO_CMD_DNSEED,ss);
@@ -323,10 +323,10 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                 WalleveLog("xp [receive] MVPROTO_CMD_DNSEED\n");
                 std::vector<CAddress> vAddrs;
                 ssPayload >> vAddrs;
-                this->_dnseed.recvAddressList(vAddrs);
+                DNSeedService::getInstance()->recvAddressList(vAddrs);
                 
                 std::vector<tcp::endpoint> eplist;
-                this->_dnseed.getConnectAddressList(eplist);
+                DNSeedService::getInstance()->getConnectAddressList(eplist);
                 for(size_t i=0;i<eplist.size();i++)
                 {
                     tcp::endpoint &cep=eplist[i];
