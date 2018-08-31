@@ -383,10 +383,13 @@ void CDbpClient::HandleReadCompleted()
         pServer->HandleClientRecv(this,&anyObj);
         break;
     case dbp::PONG:
-        break;
         pServer->HandleClientRecv(this,&anyObj);
+        break;
+    case dbp::PING:
+        pServer->HandleClientRecv(this,&anyObj);
+        break;
     default:
-        pServer->RespondError(this,400,"is not Message Base Type is unkown.");
+        pServer->RespondError(this,400,"is not Message Base Type is unknown.");
         pServer->HandleClientError(this);
         break;
     }
@@ -598,6 +601,30 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
         
         pDbpProfile->pIOModule->PostEvent(pEventDbpMethod);
     }
+    else if(any->Is<dbp::Ping>())
+    {
+        if(clientSessionMap.count(pDbpClient) == 0)
+        {
+            RespondError(pDbpClient,400,"dbp ping message not had assiociated session,please connect first");
+            return;
+        }
+
+        dbp::Ping pingMsg;
+        any->UnpackTo(&pingMsg);
+    }
+    else if(any->Is<dbp::Pong>())
+    {
+        if(clientSessionMap.count(pDbpClient) == 0)
+        {
+            RespondError(pDbpClient,400,"dbp pong message not had assiociated session,please connect first");
+            return;
+        }
+
+        dbp::Pong pongMsg;
+        any->UnpackTo(&pongMsg);
+
+      
+    } 
     else
     {
         RespondError(pDbpClient,500,"unknown dbp message");
@@ -721,6 +748,7 @@ bool CDbpServer::CreateProfile(const CDbpHostConfig& confHost)
     }
 
     profile.nMaxConnections = confHost.nMaxConnections;
+    profile.nSessionTimeout = confHost.nSessionTimeout;
     profile.vAllowMask = confHost.vAllowMask;
     mapProfile[confHost.epHost] = profile;
 
@@ -750,6 +778,14 @@ CDbpClient* CDbpServer::AddNewClient(CIOClient *pClient,CDbpProfile *pDbpProfile
 void CDbpServer::RemoveClient(CDbpClient *pDbpClient)
 {
     mapClient.erase(pDbpClient->GetNonce());
+
+    auto iter = clientSessionMap.find(pDbpClient);
+    if(iter != clientSessionMap.end())
+    {
+       std::string assciatedSession = clientSessionMap[pDbpClient];
+       sessionClientMap.erase(assciatedSession);
+       clientSessionMap.erase(iter);
+    }
     
     CWalleveEventDbpBroken *pEventBroken = new CWalleveEventDbpBroken(pDbpClient->GetNonce());
     if (pEventBroken != NULL)
@@ -788,20 +824,12 @@ bool CDbpServer::HandleEvent(CWalleveEventDbpFailed& event)
         return false;
     }
 
-    auto itSession = sessionClientMap.find(event.data.session);
-    if(itSession == sessionClientMap.end())
-    {
-        return false;
-    }
-
-
-    CDbpClient *pDbpClient = (*itSession).second;
+    CDbpClient *pDbpClient = (*it).second;
     CWalleveDbpFailed &failedBody = event.data;
 
     pDbpClient->SendResponse(failedBody);
     
-    // if connect failed, delete invalid session
-    sessionClientMap.erase(itSession);
+    RemoveClient(pDbpClient);
     
     return true;
 }

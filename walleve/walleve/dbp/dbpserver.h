@@ -18,16 +18,22 @@ class CDbpHostConfig
 {
 public:
     CDbpHostConfig() {}
-    CDbpHostConfig(const boost::asio::ip::tcp::endpoint& epHostIn,unsigned int nMaxConnectionsIn,
+    CDbpHostConfig(const boost::asio::ip::tcp::endpoint& epHostIn,unsigned int nMaxConnectionsIn,unsigned int nSessionTimeoutIn, 
                     const CIOSSLOption& optSSLIn,const std::map<std::string,std::string>& mapUserPassIn,
                     const std::vector<std::string> vAllowMaskIn,const std::string& strIOModuleIn)
-    : epHost(epHostIn),nMaxConnections(nMaxConnectionsIn),optSSL(optSSLIn),
-      mapUserPass(mapUserPassIn),vAllowMask(vAllowMaskIn),strIOModule(strIOModuleIn)
+    : epHost(epHostIn),
+      nMaxConnections(nMaxConnectionsIn),
+      nSessionTimeout(nSessionTimeoutIn),
+      optSSL(optSSLIn),
+      mapUserPass(mapUserPassIn),
+      vAllowMask(vAllowMaskIn),
+      strIOModule(strIOModuleIn)
     {
     }
 public:
     boost::asio::ip::tcp::endpoint epHost;
     unsigned int nMaxConnections;
+    unsigned int nSessionTimeout;
     CIOSSLOption optSSL;
     std::map<std::string,std::string> mapUserPass;
     std::vector<std::string> vAllowMask;
@@ -44,6 +50,7 @@ public:
     std::map<std::string,std::string> mapAuthrizeUser;
     std::vector<std::string> vAllowMask;
     unsigned int nMaxConnections;
+    unsigned int nSessionTimeout;
 };
 
 class CDbpClient
@@ -85,6 +92,13 @@ protected:
     CWalleveBufStream ssSend;
 };
 
+class CSessionProfile
+{
+public:
+    CDbpClient* pDbpClient;
+    std::string sessionId;
+};
+
 class CDbpServer : public CIOProc, virtual public CWalleveDBPEventListener
 {
 public:
@@ -118,8 +132,9 @@ protected:
     std::vector<CDbpHostConfig> vecHostConfig;
     std::map<boost::asio::ip::tcp::endpoint,CDbpProfile> mapProfile;
     std::map<uint64,CDbpClient*> mapClient; // nonce => CDbpClient
-    std::map<std::string,CDbpClient*> sessionClientMap; // session => CDbpClient
-    std::map<CDbpClient*,std::string> clientSessionMap; // CDbpClient => session
+   // std::map<std::string,CDbpClient*> sessionClientMap; // session => CDbpClient
+   // std::map<CDbpClient*,std::string> clientSessionMap; // CDbpClient => session
+    std::map<std::string,CSessionProfile> sessionProfileMap; // session id => session profile
 };
 } //namespace walleve
 #endif //WALLEVE_DBP_SERVER_H

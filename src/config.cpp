@@ -31,6 +31,7 @@ using namespace multiverse;
 
 #define DEFAULT_DBP_MAX_CONNECTIONS     10
 #define DEFAULT_DBP_CONNECT_TIMEOUT     150
+#define DEFAULT_DBP_SESSION_TIMEOUT     60*5
 
 namespace po = boost::program_options;
 
@@ -268,6 +269,7 @@ CMvDbpConfig::CMvDbpConfig()
     OPTSTR("dbpconnect",strDbpConnect,"127.0.0.1")
     OPTINT("dbpport",nDbpPortInt,0)
     OPTUINT("dbptimeout",nDbpConnectTimeout,DEFAULT_DBP_CONNECT_TIMEOUT)
+    OPTUINT("dbpsessiontimeout",nDbpSessionTimeout,DEFAULT_DBP_SESSION_TIMEOUT)
     OPTUINT("dbpmaxconnections",nDbpMaxConnections,DEFAULT_DBP_MAX_CONNECTIONS)
     OPTVEC("dbpallowip",vDbpAllowIP)
 
