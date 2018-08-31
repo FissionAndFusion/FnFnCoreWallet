@@ -21,6 +21,7 @@ public:
     /* Notify */
     void NotifyWorldLineUpdate(const CWorldLineUpdate& update) override;
     void NotifyNetworkPeerUpdate(const CNetworkPeerUpdate& update) override;
+    void NotifyTransactionUpdate(const CTransactionUpdate& update) override;
     /* System */
     void Shutdown() override;
     /* Network */
