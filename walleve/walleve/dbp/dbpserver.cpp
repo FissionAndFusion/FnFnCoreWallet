@@ -459,12 +459,17 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
         {
             // generate random session string
             session = CDbpUtils::RandomString();    
-            while(sessionClientMap.count(session))
+            while(sessionProfileMap.count(session))
             {
                 session = CDbpUtils::RandomString();
             }
-            sessionClientMap.insert(std::make_pair(session,pDbpClient));
-            clientSessionMap.insert(std::make_pair(pDbpClient,session));
+            
+            CSessionProfile profile;
+            profile.sessionId = session;
+            profile.pDbpClient = pDbpClient;
+          
+            sessionProfileMap.insert(std::make_pair(session,profile));
+            sessionClientBimap.insert(position_pair(session,pDbpClient));
 
             CWalleveDbpConnect &connectBody = pEventDbpConnect->data;
             connectBody.isReconnect = false;
@@ -476,7 +481,7 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
         }
         else
         {
-            if(sessionClientMap.count(session))
+            if(sessionProfileMap.count(session))
             {
                 CWalleveDbpConnect &connectBody = pEventDbpConnect->data;
                 connectBody.isReconnect = true;
@@ -501,7 +506,7 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
     }
     else if(any->Is<dbp::Sub>())
     {
-        if(clientSessionMap.count(pDbpClient) == 0)
+        if(sessionClientBimap.right.find(pDbpClient) == sessionClientBimap.right.end())
         {
             RespondError(pDbpClient,400,"dbp sub message not had assiociated session,please connect first");
             return;
@@ -525,7 +530,7 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
     }
     else if(any->Is<dbp::Unsub>())
     {
-        if(clientSessionMap.count(pDbpClient) == 0)
+        if(sessionClientBimap.right.find(pDbpClient) == sessionClientBimap.right.end())
         {
             RespondError(pDbpClient,400,"dbp unsub message not had assiociated session,please connect first");
             return;
@@ -548,7 +553,7 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
     }
     else if(any->Is<dbp::Method>())
     {
-        if(clientSessionMap.count(pDbpClient) == 0)
+        if(sessionClientBimap.right.find(pDbpClient) == sessionClientBimap.right.end())
         {
             RespondError(pDbpClient,400,"dbp method message not had assiociated session,please connect first");
             return;
@@ -603,7 +608,7 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
     }
     else if(any->Is<dbp::Ping>())
     {
-        if(clientSessionMap.count(pDbpClient) == 0)
+        if(sessionClientBimap.right.find(pDbpClient) == sessionClientBimap.right.end())
         {
             RespondError(pDbpClient,400,"dbp ping message not had assiociated session,please connect first");
             return;
@@ -614,7 +619,7 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
     }
     else if(any->Is<dbp::Pong>())
     {
-        if(clientSessionMap.count(pDbpClient) == 0)
+        if(sessionClientBimap.right.find(pDbpClient) == sessionClientBimap.right.end())
         {
             RespondError(pDbpClient,400,"dbp pong message not had assiociated session,please connect first");
             return;
@@ -779,12 +784,12 @@ void CDbpServer::RemoveClient(CDbpClient *pDbpClient)
 {
     mapClient.erase(pDbpClient->GetNonce());
 
-    auto iter = clientSessionMap.find(pDbpClient);
-    if(iter != clientSessionMap.end())
+    auto iter = sessionClientBimap.right.find(pDbpClient);
+    if(iter != sessionClientBimap.right.end())
     {
-       std::string assciatedSession = clientSessionMap[pDbpClient];
-       sessionClientMap.erase(assciatedSession);
-       clientSessionMap.erase(iter);
+        std::string assciatedSession = iter->second;
+        sessionClientBimap.left.erase(assciatedSession);
+        sessionClientBimap.right.erase(pDbpClient);
     }
     
     CWalleveEventDbpBroken *pEventBroken = new CWalleveEventDbpBroken(pDbpClient->GetNonce());

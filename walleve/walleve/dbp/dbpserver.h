@@ -4,6 +4,7 @@
 #include "walleve/netio/ioproc.h"
 #include "walleve/dbp/dbpevent.h"
 
+#include <boost/bimap.hpp>
 
 namespace dbp{
     class Base;
@@ -132,8 +133,10 @@ protected:
     std::vector<CDbpHostConfig> vecHostConfig;
     std::map<boost::asio::ip::tcp::endpoint,CDbpProfile> mapProfile;
     std::map<uint64,CDbpClient*> mapClient; // nonce => CDbpClient
-   // std::map<std::string,CDbpClient*> sessionClientMap; // session => CDbpClient
-   // std::map<CDbpClient*,std::string> clientSessionMap; // CDbpClient => session
+   
+    typedef boost::bimap<std::string,CDbpClient*> SessionClientBimapType; 
+    typedef SessionClientBimapType::value_type  position_pair;
+    SessionClientBimapType sessionClientBimap; //session id <=> CDbpClient
     std::map<std::string,CSessionProfile> sessionProfileMap; // session id => session profile
 };
 } //namespace walleve
