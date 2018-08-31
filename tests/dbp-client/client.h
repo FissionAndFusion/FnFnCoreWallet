@@ -28,6 +28,7 @@ class client
     std::vector<char> m_buf;
     boost::asio::ip::tcp::endpoint m_ep;
     boost::asio::steady_timer m_timer;
+    std::shared_ptr<boost::asio::ip::tcp::socket> sock;
 
   protected:
 };

@@ -2,7 +2,8 @@
 
 client::client() : m_buf(100, 0),
                    m_ep(boost::asio::ip::address_v4::from_string("127.0.0.1"), 6815),
-                   m_timer(m_io, std::chrono::seconds{30})
+                   m_timer(m_io, std::chrono::seconds{30}),
+                   sock(new boost::asio::ip::tcp::socket(m_io))
 {
     start();
 }
@@ -13,7 +14,7 @@ client::~client()
 
 void client::start()
 {
-    std::shared_ptr<boost::asio::ip::tcp::socket> sock(new boost::asio::ip::tcp::socket(m_io));
+    // std::shared_ptr<boost::asio::ip::tcp::socket> sock(new boost::asio::ip::tcp::socket(m_io));
     sock->async_connect(m_ep, boost::bind(&client::conn_handler, this, boost::asio::placeholders::error, sock));
 }
 
