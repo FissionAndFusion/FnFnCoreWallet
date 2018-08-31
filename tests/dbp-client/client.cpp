@@ -39,6 +39,7 @@ std::vector<char> client::serialize(dbp::Base base)
     std::memcpy(array, &nl, 4);
     base.SerializeToArray(array + 4, len);
     std::vector<char> ret(array, array + (len + 4));
+    delete [] array;
     return ret;
 }
 
