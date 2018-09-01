@@ -24,10 +24,12 @@ class Client
 
   private:
     void Start();
+    void SockConnect();
     void ConnHandler(const boost::system::error_code& ec, std::shared_ptr<boost::asio::ip::tcp::socket> sock);
     void ReadHandler(const boost::system::error_code &ec, std::shared_ptr<boost::asio::ip::tcp::socket> sock);
     void TimerHandler(const boost::system::error_code &ec, std::shared_ptr<boost::asio::ip::tcp::socket> sock);
     void WriteHandler(boost::shared_ptr<std::string> pstr, const boost::system::error_code &ec, size_t bytes_transferred);
+    void ErrorHandler();
     dbp::Base CreateMsg(dbp::Msg msg, google::protobuf::Message &obj);
     std::vector<char> Serialize(dbp::Base base);
     void Send(std::vector<char> buf, std::string explain);
@@ -37,7 +39,7 @@ class Client
     boost::asio::io_service m_io_;
     std::vector<char> m_buf_;
     boost::asio::ip::tcp::endpoint m_ep_;
-    boost::asio::steady_timer m_timer_;
+    std::shared_ptr<boost::asio::steady_timer> m_timer_;
     std::shared_ptr<boost::asio::ip::tcp::socket> sock_;
     bool is_connected_;
     std::string session_;

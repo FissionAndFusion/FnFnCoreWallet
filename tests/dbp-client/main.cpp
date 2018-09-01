@@ -147,6 +147,7 @@ void run()
 int main(int argc, char* argv[])
 {
     run();
+    return 0;
 
     std::string msgType(argv[1]);
     

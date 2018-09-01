@@ -2,8 +2,8 @@
 
 Client::Client() : m_buf_(4096, 0),
                    m_ep_(boost::asio::ip::address_v4::from_string("127.0.0.1"), 6815),
-                   m_timer_(m_io_, std::chrono::seconds{30}),
-                   sock_(new boost::asio::ip::tcp::socket(m_io_)),
+                //    m_timer_(m_io_, std::chrono::seconds{3}),
+                //    sock_(new boost::asio::ip::tcp::socket(m_io_)),
                    is_connected_(false),
                    session_("")
 {
@@ -14,10 +14,27 @@ Client::~Client()
 {
 }
 
+void Client::SockConnect()
+{
+    boost::system::error_code ec;
+    do
+    {
+        sock_.reset(new boost::asio::ip::tcp::socket(m_io_));
+        sock_->connect(m_ep_, ec);
+        std::cerr << "socket connection: " << ec.message() << ec << std::endl;
+        sleep(1);
+    } while (ec != 0);
+
+    is_connected_ = true;
+    SendConnect("");
+    sock_->async_read_some(boost::asio::buffer(m_buf_), boost::bind(&Client::ReadHandler, this, boost::asio::placeholders::error, sock_));
+}
+
 void Client::Start()
 {
-    // std::shared_ptr<boost::asio::ip::tcp::socket> sock(new boost::asio::ip::tcp::socket(m_io));
-    sock_->async_connect(m_ep_, boost::bind(&Client::ConnHandler, this, boost::asio::placeholders::error, sock_));
+    // sock_.reset(new boost::asio::ip::tcp::socket(m_io_));
+    // sock_->async_connect(m_ep_, boost::bind(&Client::ConnHandler, this, boost::asio::placeholders::error, sock_));
+    SockConnect();
 }
 
 dbp::Base Client::CreateMsg(dbp::Msg msg, google::protobuf::Message &obj)
@@ -143,6 +160,7 @@ void Client::ConnHandler(const boost::system::error_code &ec, std::shared_ptr<bo
 {
     if (ec)
     {
+        std::cerr << "connection failed: " << ec.message() << std::endl;
         return;
     }
 
@@ -159,10 +177,19 @@ void Client::Test()
     std::string mehtod_id = SendMethod("getblocks");
 }
 
+void Client::ErrorHandler()
+{
+    SockConnect();
+}
+
 void Client::ReadHandler(const boost::system::error_code &ec, std::shared_ptr<boost::asio::ip::tcp::socket> sock)
 {
     if (ec)
     {
+
+        std::cerr << "read connection: " << ec.message() << ec << std::endl;
+        is_connected_ = false;
+        m_io_.post(boost::bind(&Client::ErrorHandler, this));
         return;
     }
 
@@ -187,7 +214,8 @@ void Client::ReadHandler(const boost::system::error_code &ec, std::shared_ptr<bo
             is_connected_ = true;
             session_ = connected.session();
 
-            m_timer_.async_wait(boost::bind(&Client::TimerHandler, this, boost::asio::placeholders::error, sock));
+            // m_timer_.reset(new boost::asio::steady_timer(m_io_, std::chrono::seconds{3}));
+            // m_timer_->async_wait(boost::bind(&Client::TimerHandler, this, boost::asio::placeholders::error, sock));
         }
 
         Test();
@@ -251,15 +279,14 @@ void Client::WriteHandler(boost::shared_ptr<std::string> pstr, const boost::syst
 
 void Client::TimerHandler(const boost::system::error_code &ec, std::shared_ptr<boost::asio::ip::tcp::socket> sock)
 {
-    std::string id = SendPing();
-
     if(is_connected_)
     {
+        std::string id = SendPing();
         std::cout << "connected" << std::endl;
     }
 
-    m_timer_.expires_from_now(std::chrono::seconds{30});
-    m_timer_.async_wait(boost::bind(&Client::TimerHandler, this, boost::asio::placeholders::error, sock));
+    m_timer_->expires_from_now(std::chrono::seconds{3});
+    m_timer_->async_wait(boost::bind(&Client::TimerHandler, this, boost::asio::placeholders::error, sock));
 }
 
 void Client::Run()
@@ -269,5 +296,7 @@ void Client::Run()
 
 void Client::Close()
 {
-    sock_.reset();
+    boost::system::error_code ec;
+    sock_->shutdown(boost::asio::ip::tcp::socket::shutdown_send, ec);
+    sock_->close(ec);
 }
