@@ -71,6 +71,8 @@ public:
     void SendResponse(CWalleveDbpReady& body);
     void SendResponse(CWalleveDbpAdded& body);
     void SendResponse(CWalleveDbpMethodResult& body);
+    void SendPing(const std::string& id);
+    void SendPong(const std::string& id);
     void SendResponse(int statusCode,const std::string& description);
 
 protected:
@@ -98,6 +100,7 @@ class CSessionProfile
 public:
     CDbpClient* pDbpClient;
     std::string sessionId;
+    uint64 timestamp;
 };
 
 class CDbpServer : public CIOProc, virtual public CWalleveDBPEventListener
@@ -128,6 +131,8 @@ protected:
     bool HandleEvent(CWalleveEventDbpReady& event) override;
     bool HandleEvent(CWalleveEventDbpAdded& event) override;
     bool HandleEvent(CWalleveEventDbpMethodResult& event) override;
+
+    bool IsSessionTimeOut(CDbpClient* pDbpClient);
 
 protected:
     std::vector<CDbpHostConfig> vecHostConfig;

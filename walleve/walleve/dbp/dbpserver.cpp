@@ -298,6 +298,38 @@ void CDbpClient::SendResponse(CWalleveDbpMethodResult& body)
     SendMessage(&resultMsgBase);
 }
 
+void CDbpClient::SendPing(const std::string& id)
+{
+    dbp::Base pingMsgBase;
+    pingMsgBase.set_msg(dbp::Msg::PING);
+    
+    dbp::Ping msg;
+    msg.set_id(id);
+
+    google::protobuf::Any *any = new google::protobuf::Any();
+    any->PackFrom(msg);
+
+    pingMsgBase.set_allocated_object(any);
+ 
+    SendMessage(&pingMsgBase);
+}
+
+void CDbpClient::SendPong(const std::string& id)
+{
+    dbp::Base pongMsgBase;
+    pongMsgBase.set_msg(dbp::Msg::PONG);
+    
+    dbp::Pong msg;
+    msg.set_id(id);
+
+    google::protobuf::Any *any = new google::protobuf::Any();
+    any->PackFrom(msg);
+
+    pongMsgBase.set_allocated_object(any);
+ 
+    SendMessage(&pongMsgBase);
+}
+
 void CDbpClient::SendResponse(int statusCode,const std::string& description)
 {
     dbp::Base errorMsgBase;
@@ -467,6 +499,7 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
             CSessionProfile profile;
             profile.sessionId = session;
             profile.pDbpClient = pDbpClient;
+            profile.timestamp = CDbpUtils::currentUTC();
           
             sessionProfileMap.insert(std::make_pair(session,profile));
             sessionClientBimap.insert(position_pair(session,pDbpClient));
@@ -511,6 +544,8 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
             RespondError(pDbpClient,400,"dbp sub message not had assiociated session,please connect first");
             return;
         }
+
+        if(IsSessionTimeOut(pDbpClient)) RemoveClient(pDbpClient);
         
         CWalleveEventDbpSub *pEventDbpSub = new CWalleveEventDbpSub(pDbpClient->GetNonce());
         if(!pEventDbpSub)
@@ -535,6 +570,8 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
             RespondError(pDbpClient,400,"dbp unsub message not had assiociated session,please connect first");
             return;
         }
+
+        if(IsSessionTimeOut(pDbpClient)) RemoveClient(pDbpClient);
         
         CWalleveEventDbpUnSub *pEventDbpUnSub = new CWalleveEventDbpUnSub(pDbpClient->GetNonce());
         if(!pEventDbpUnSub)
@@ -558,6 +595,8 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
             RespondError(pDbpClient,400,"dbp method message not had assiociated session,please connect first");
             return;
         }
+
+        if(IsSessionTimeOut(pDbpClient)) RemoveClient(pDbpClient);
               
         CWalleveEventDbpMethod *pEventDbpMethod = new CWalleveEventDbpMethod(pDbpClient->GetNonce());
         if(!pEventDbpMethod)
@@ -616,6 +655,9 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
 
         dbp::Ping pingMsg;
         any->UnpackTo(&pingMsg);
+
+        pDbpClient->SendPong(pingMsg.id());
+
     }
     else if(any->Is<dbp::Pong>())
     {
@@ -628,7 +670,16 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
         dbp::Pong pongMsg;
         any->UnpackTo(&pongMsg);
 
-      
+        std::string session = sessionClientBimap.right.at(pDbpClient);
+        sessionProfileMap[session].timestamp = CDbpUtils::currentUTC();
+
+        boost::asio::deadline_timer pingTimer(this->GetIoService(),boost::posix_time::seconds(10));
+
+        auto pingCallback = [pDbpClient] (const boost::system::error_code& err) -> void {
+            pDbpClient->SendPing(std::to_string(CDbpUtils::currentUTC()));
+        };
+
+        pingTimer.async_wait(pingCallback);
     } 
     else
     {
@@ -790,6 +841,7 @@ void CDbpServer::RemoveClient(CDbpClient *pDbpClient)
         std::string assciatedSession = iter->second;
         sessionClientBimap.left.erase(assciatedSession);
         sessionClientBimap.right.erase(pDbpClient);
+        sessionProfileMap.erase(assciatedSession);
     }
     
     CWalleveEventDbpBroken *pEventBroken = new CWalleveEventDbpBroken(pDbpClient->GetNonce());
@@ -818,6 +870,8 @@ bool CDbpServer::HandleEvent(CWalleveEventDbpConnected& event)
     CWalleveDbpConnected &connectedBody = event.data;
 
     pDbpClient->SendResponse(connectedBody);
+    pDbpClient->SendPing(std::to_string(pDbpClient->GetNonce()));
+    
     return true;
 }
     
@@ -902,3 +956,19 @@ bool CDbpServer::HandleEvent(CWalleveEventDbpMethodResult& event)
     
     return true;
 }
+
+ bool CDbpServer::IsSessionTimeOut(CDbpClient* pDbpClient)
+ {
+    auto timeout = pDbpClient->GetProfile()->nSessionTimeout;
+    auto iter = sessionClientBimap.right.find(pDbpClient);
+    if(iter != sessionClientBimap.right.end())
+    {
+        std::string assciatedSession = iter->second;
+        uint64 lastTimeStamp = sessionProfileMap[assciatedSession].timestamp;
+        return (CDbpUtils::currentUTC() - lastTimeStamp > timeout) ? true : false;
+    }
+    else
+    {
+        return true;
+    }
+ }
