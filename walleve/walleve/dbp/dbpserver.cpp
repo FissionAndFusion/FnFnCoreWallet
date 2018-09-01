@@ -870,7 +870,7 @@ bool CDbpServer::HandleEvent(CWalleveEventDbpConnected& event)
     CWalleveDbpConnected &connectedBody = event.data;
 
     pDbpClient->SendResponse(connectedBody);
-    pDbpClient->SendPing(std::to_string(pDbpClient->GetNonce()));
+    pDbpClient->SendPing(std::to_string(CDbpUtils::currentUTC()));
     
     return true;
 }
