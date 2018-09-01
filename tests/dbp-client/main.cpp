@@ -135,8 +135,8 @@ void run()
 {
     try
     {
-        client cl;
-        cl.run();
+        Client cl;
+        cl.Run();
     }
     catch (std::exception& e)
     {

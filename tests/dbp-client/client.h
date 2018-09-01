@@ -7,39 +7,40 @@
 #include <boost/asio/high_resolution_timer.hpp>
 #include "dbp.pb.h"
 
-class client
+class Client
 {
   public:
-    client();
-    ~client();
-    void run();
+    Client();
+    ~Client();
+    void Run();
 
-    void send_connect(std::string session);
-    std::string send_ping();
-    void send_pong(std::string id);
-    std::string send_sub(std::string name);
-    void send_unsub(std::string id);
-    std::string send_method(std::string method);
-
-  private:
-    void start();
-    void conn_handler(const boost::system::error_code& ec, std::shared_ptr<boost::asio::ip::tcp::socket> sock);
-    void read_handler(const boost::system::error_code &ec, std::shared_ptr<boost::asio::ip::tcp::socket> sock);
-    void timer_handler(const boost::system::error_code &ec, std::shared_ptr<boost::asio::ip::tcp::socket> sock);
-    void write_handler(boost::shared_ptr<std::string> pstr, const boost::system::error_code &ec, size_t bytes_transferred);
-    dbp::Base create_msg(dbp::Msg msg, google::protobuf::Message &obj);
-    std::vector<char> serialize(dbp::Base base);
-    void send(std::vector<char> buf, std::string explain);
-    void test();
+    void SendConnect(std::string session);
+    std::string SendPing();
+    void SendPong(std::string id);
+    std::string SendSub(std::string name);
+    void SendUnsub(std::string id);
+    std::string SendMethod(std::string method);
+    void Close();
 
   private:
-    boost::asio::io_service m_io;
-    std::vector<char> m_buf;
-    boost::asio::ip::tcp::endpoint m_ep;
-    boost::asio::steady_timer m_timer;
-    std::shared_ptr<boost::asio::ip::tcp::socket> sock;
-    bool is_connected;
-    std::string session;
+    void Start();
+    void ConnHandler(const boost::system::error_code& ec, std::shared_ptr<boost::asio::ip::tcp::socket> sock);
+    void ReadHandler(const boost::system::error_code &ec, std::shared_ptr<boost::asio::ip::tcp::socket> sock);
+    void TimerHandler(const boost::system::error_code &ec, std::shared_ptr<boost::asio::ip::tcp::socket> sock);
+    void WriteHandler(boost::shared_ptr<std::string> pstr, const boost::system::error_code &ec, size_t bytes_transferred);
+    dbp::Base CreateMsg(dbp::Msg msg, google::protobuf::Message &obj);
+    std::vector<char> Serialize(dbp::Base base);
+    void Send(std::vector<char> buf, std::string explain);
+    void Test();
+
+  private:
+    boost::asio::io_service m_io_;
+    std::vector<char> m_buf_;
+    boost::asio::ip::tcp::endpoint m_ep_;
+    boost::asio::steady_timer m_timer_;
+    std::shared_ptr<boost::asio::ip::tcp::socket> sock_;
+    bool is_connected_;
+    std::string session_;
 
   protected:
 };
