@@ -21,7 +21,7 @@ void Client::SockConnect()
     {
         sock_.reset(new boost::asio::ip::tcp::socket(m_io_));
         sock_->connect(m_ep_, ec);
-        std::cerr << "socket connection: " << ec.message() << ec << std::endl;
+        std::cerr << "socket connection: " << ec.message() << std::endl;
         sleep(1);
     } while (ec != 0);
 
@@ -179,6 +179,7 @@ void Client::Test()
 
 void Client::ErrorHandler()
 {
+    m_timer_->cancel();
     SockConnect();
 }
 
@@ -214,8 +215,8 @@ void Client::ReadHandler(const boost::system::error_code &ec, std::shared_ptr<bo
             is_connected_ = true;
             session_ = connected.session();
 
-            // m_timer_.reset(new boost::asio::steady_timer(m_io_, std::chrono::seconds{3}));
-            // m_timer_->async_wait(boost::bind(&Client::TimerHandler, this, boost::asio::placeholders::error, sock));
+            m_timer_.reset(new boost::asio::steady_timer(m_io_, std::chrono::seconds{3}));
+            m_timer_->async_wait(boost::bind(&Client::TimerHandler, this, boost::asio::placeholders::error, sock));
         }
 
         Test();
@@ -279,10 +280,15 @@ void Client::WriteHandler(boost::shared_ptr<std::string> pstr, const boost::syst
 
 void Client::TimerHandler(const boost::system::error_code &ec, std::shared_ptr<boost::asio::ip::tcp::socket> sock)
 {
+    if(ec)
+    {
+        std::cerr << "cancel timer" << std::endl;
+        return;
+    }
+
     if(is_connected_)
     {
         std::string id = SendPing();
-        std::cout << "connected" << std::endl;
     }
 
     m_timer_->expires_from_now(std::chrono::seconds{3});
