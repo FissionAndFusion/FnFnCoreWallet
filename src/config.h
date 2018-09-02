@@ -101,6 +101,7 @@ public:
     std::string strDbpConnect;
     unsigned int nDbpPort;
     unsigned int nDbpConnectTimeout;
+    unsigned int nDbpSessionTimeout;
     unsigned int nDbpMaxConnections;
     std::vector<std::string> vDbpAllowIP;
     std::string strDbpWallet;

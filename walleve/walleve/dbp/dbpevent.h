@@ -19,6 +19,10 @@ enum {
     WALLEVE_EVENT_DBP_ADDED,
     WALLEVE_EVENT_DBP_METHOD,
     WALLEVE_EVENT_DBP_RESULT,
+
+    WALLEVE_EVENT_DBP_PING,
+    WALLEVE_EVENT_DBP_PONG,
+
     WALLEVE_EVENT_DBP_BROKEN
 };
 
@@ -42,6 +46,10 @@ typedef TYPE_WALLEVE_DBP_EVENT(WALLEVE_EVENT_DBP_METHOD,CWalleveDbpMethod) CWall
 typedef TYPE_WALLEVE_DBP_EVENT(WALLEVE_EVENT_DBP_RESULT,CWalleveDbpMethodResult) CWalleveEventDbpMethodResult;
 typedef TYPE_WALLEVE_DBP_EVENT(WALLEVE_EVENT_DBP_BROKEN,CWalleveDbpBroken) CWalleveEventDbpBroken;
 
+// HeartBeats
+typedef TYPE_WALLEVE_DBP_EVENT(WALLEVE_EVENT_DBP_PING,CWalleveDbpPing) CWalleveEventDbpPing;
+typedef TYPE_WALLEVE_DBP_EVENT(WALLEVE_EVENT_DBP_PONG,CWalleveDbpPong) CWalleveEventDbpPong;
+
 
 class CWalleveDBPEventListener : virtual public CWalleveEventListener
 {
@@ -60,6 +68,9 @@ public:
     DECLARE_EVENTHANDLER(CWalleveEventDbpMethod);
     DECLARE_EVENTHANDLER(CWalleveEventDbpMethodResult);
     DECLARE_EVENTHANDLER(CWalleveEventDbpBroken);
+
+    DECLARE_EVENTHANDLER(CWalleveEventDbpPing);
+    DECLARE_EVENTHANDLER(CWalleveEventDbpPong);
 };
 
 }// namespace walleve

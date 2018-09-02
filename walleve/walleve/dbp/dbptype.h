@@ -172,6 +172,18 @@ public:
     std::string session;
 };
 
+class CWalleveDbpPing : public CWalleveDbpRequest, public CWalleveDbpRespond
+{
+public:
+    std::string id;
+};
+
+class CWalleveDbpPong : public CWalleveDbpRequest, public CWalleveDbpRespond
+{
+public:
+    std::string id;
+};
+
 class CWalleveDbpFailed: public CWalleveDbpRespond
 {
 public:

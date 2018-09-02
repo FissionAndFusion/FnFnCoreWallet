@@ -21,6 +21,14 @@ public:
         std::memcpy(header,&lenNetWorkOrder,4);
     }
 
+    static uint64 currentUTC()
+    {
+        boost::posix_time::ptime epoch(boost::gregorian::date(1970, boost::gregorian::Jan, 1));
+        boost::posix_time::time_duration time_from_epoch =
+        boost::posix_time::second_clock::universal_time() - epoch;
+        return time_from_epoch.total_seconds();
+    }
+
     static std::string RandomString()
     {
         static auto& chrs = "0123456789"

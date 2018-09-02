@@ -270,8 +270,8 @@ CDbpHostConfig CMvEntry::GetDbpHostConfig()
         mapUsrDbp[mvConfig.strDbpUser] = mvConfig.strDbpPass;
     }
 
-    return CDbpHostConfig(mvConfig.epDbp,mvConfig.nDbpMaxConnections,sslDbp,mapUsrDbp,
-                           mvConfig.vDbpAllowIP,"dbpservice");
+    return CDbpHostConfig(mvConfig.epDbp,mvConfig.nDbpMaxConnections,mvConfig.nDbpSessionTimeout,
+                           sslDbp,mapUsrDbp,mvConfig.vDbpAllowIP,"dbpservice");
 }
 
 bool CMvEntry::Run()

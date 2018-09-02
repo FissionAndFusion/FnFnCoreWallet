@@ -4,6 +4,7 @@
 #include "walleve/netio/ioproc.h"
 #include "walleve/dbp/dbpevent.h"
 
+#include <boost/bimap.hpp>
 
 namespace dbp{
     class Base;
@@ -18,16 +19,22 @@ class CDbpHostConfig
 {
 public:
     CDbpHostConfig() {}
-    CDbpHostConfig(const boost::asio::ip::tcp::endpoint& epHostIn,unsigned int nMaxConnectionsIn,
+    CDbpHostConfig(const boost::asio::ip::tcp::endpoint& epHostIn,unsigned int nMaxConnectionsIn,unsigned int nSessionTimeoutIn, 
                     const CIOSSLOption& optSSLIn,const std::map<std::string,std::string>& mapUserPassIn,
                     const std::vector<std::string> vAllowMaskIn,const std::string& strIOModuleIn)
-    : epHost(epHostIn),nMaxConnections(nMaxConnectionsIn),optSSL(optSSLIn),
-      mapUserPass(mapUserPassIn),vAllowMask(vAllowMaskIn),strIOModule(strIOModuleIn)
+    : epHost(epHostIn),
+      nMaxConnections(nMaxConnectionsIn),
+      nSessionTimeout(nSessionTimeoutIn),
+      optSSL(optSSLIn),
+      mapUserPass(mapUserPassIn),
+      vAllowMask(vAllowMaskIn),
+      strIOModule(strIOModuleIn)
     {
     }
 public:
     boost::asio::ip::tcp::endpoint epHost;
     unsigned int nMaxConnections;
+    unsigned int nSessionTimeout;
     CIOSSLOption optSSL;
     std::map<std::string,std::string> mapUserPass;
     std::vector<std::string> vAllowMask;
@@ -44,6 +51,7 @@ public:
     std::map<std::string,std::string> mapAuthrizeUser;
     std::vector<std::string> vAllowMask;
     unsigned int nMaxConnections;
+    unsigned int nSessionTimeout;
 };
 
 class CDbpClient
@@ -63,6 +71,9 @@ public:
     void SendResponse(CWalleveDbpReady& body);
     void SendResponse(CWalleveDbpAdded& body);
     void SendResponse(CWalleveDbpMethodResult& body);
+    void SendPing(const std::string& id);
+    void SendPong(const std::string& id);
+    void SendResponse(int statusCode,const std::string& description);
 
 protected:
     void StartReadHeader();
@@ -84,6 +95,14 @@ protected:
     CWalleveBufStream ssSend;
 };
 
+class CSessionProfile
+{
+public:
+    CDbpClient* pDbpClient;
+    std::string sessionId;
+    uint64 timestamp;
+};
+
 class CDbpServer : public CIOProc, virtual public CWalleveDBPEventListener
 {
 public:
@@ -93,6 +112,7 @@ public:
     void HandleClientRecv(CDbpClient *pDbpClient,void* anyObj);
     void HandleClientSent(CDbpClient *pDbpClient);
     void HandleClientError(CDbpClient *pDbpClient);
+    void RespondError(CDbpClient *pDbpClient,int nStatusCode,const std::string& strError = "");
     void AddNewHost(const CDbpHostConfig& confHost);
 protected:
     bool WalleveHandleInitialize() override;
@@ -105,7 +125,6 @@ protected:
     bool CreateProfile(const CDbpHostConfig& confHost);
     CDbpClient* AddNewClient(CIOClient *pClient,CDbpProfile *pDbpProfile);
     void RemoveClient(CDbpClient *pDbpClient);
-    void RespondError(CDbpClient *pDbpClient,int nStatusCode,const std::string& strError = "");
     bool HandleEvent(CWalleveEventDbpConnected& event) override;
     bool HandleEvent(CWalleveEventDbpFailed& event) override;
     bool HandleEvent(CWalleveEventDbpNoSub& event) override;
@@ -113,11 +132,17 @@ protected:
     bool HandleEvent(CWalleveEventDbpAdded& event) override;
     bool HandleEvent(CWalleveEventDbpMethodResult& event) override;
 
+    bool IsSessionTimeOut(CDbpClient* pDbpClient);
+
 protected:
     std::vector<CDbpHostConfig> vecHostConfig;
     std::map<boost::asio::ip::tcp::endpoint,CDbpProfile> mapProfile;
     std::map<uint64,CDbpClient*> mapClient; // nonce => CDbpClient
-    std::map<std::string,CDbpClient*> sessionClientMap; // session => CDbpClient 
+   
+    typedef boost::bimap<std::string,CDbpClient*> SessionClientBimapType; 
+    typedef SessionClientBimapType::value_type  position_pair;
+    SessionClientBimapType sessionClientBimap; //session id <=> CDbpClient
+    std::map<std::string,CSessionProfile> sessionProfileMap; // session id => session profile
 };
 } //namespace walleve
 #endif //WALLEVE_DBP_SERVER_H
