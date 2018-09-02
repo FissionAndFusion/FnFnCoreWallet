@@ -135,8 +135,8 @@ void run()
 {
     try
     {
-        client cl;
-        cl.run();
+        Client cl;
+        cl.Run();
     }
     catch (std::exception& e)
     {
@@ -147,6 +147,7 @@ void run()
 int main(int argc, char* argv[])
 {
     run();
+    return 0;
 
     std::string msgType(argv[1]);
     

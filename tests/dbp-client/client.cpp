@@ -1,26 +1,43 @@
 #include "client.h"
 
-client::client() : m_buf(100, 0),
-                   m_ep(boost::asio::ip::address_v4::from_string("127.0.0.1"), 6815),
-                   m_timer(m_io, std::chrono::seconds{30}),
-                   sock(new boost::asio::ip::tcp::socket(m_io)),
-                   is_connected(false),
-                   session("")
+Client::Client() : m_buf_(4096, 0),
+                   m_ep_(boost::asio::ip::address_v4::from_string("127.0.0.1"), 6815),
+                //    m_timer_(m_io_, std::chrono::seconds{3}),
+                //    sock_(new boost::asio::ip::tcp::socket(m_io_)),
+                   is_connected_(false),
+                   session_("")
 {
-    start();
+    Start();
 }
 
-client::~client()
+Client::~Client()
 {
 }
 
-void client::start()
+void Client::SockConnect()
 {
-    // std::shared_ptr<boost::asio::ip::tcp::socket> sock(new boost::asio::ip::tcp::socket(m_io));
-    sock->async_connect(m_ep, boost::bind(&client::conn_handler, this, boost::asio::placeholders::error, sock));
+    boost::system::error_code ec;
+    do
+    {
+        sock_.reset(new boost::asio::ip::tcp::socket(m_io_));
+        sock_->connect(m_ep_, ec);
+        std::cerr << "socket connection: " << ec.message() << std::endl;
+        sleep(1);
+    } while (ec != 0);
+
+    is_connected_ = true;
+    SendConnect("");
+    sock_->async_read_some(boost::asio::buffer(m_buf_), boost::bind(&Client::ReadHandler, this, boost::asio::placeholders::error, sock_));
 }
 
-dbp::Base client::create_msg(dbp::Msg msg, google::protobuf::Message &obj)
+void Client::Start()
+{
+    // sock_.reset(new boost::asio::ip::tcp::socket(m_io_));
+    // sock_->async_connect(m_ep_, boost::bind(&Client::ConnHandler, this, boost::asio::placeholders::error, sock_));
+    SockConnect();
+}
+
+dbp::Base Client::CreateMsg(dbp::Msg msg, google::protobuf::Message &obj)
 {
     dbp::Base base;
     base.set_msg(msg);
@@ -30,36 +47,38 @@ dbp::Base client::create_msg(dbp::Msg msg, google::protobuf::Message &obj)
     return base;
 }
 
-std::vector<char> client::serialize(dbp::Base base)
+std::vector<char> Client::Serialize(dbp::Base base)
 {
     uint32_t len = base.ByteSize();
     int nl = htonl(len);
-    char array[1024 * 10] = {'\0'};
+    // char array[1024 * 10] = {'\0'};
+    char *array = new char[len + 4];
     std::memcpy(array, &nl, 4);
     base.SerializeToArray(array + 4, len);
     std::vector<char> ret(array, array + (len + 4));
+    delete [] array;
     return ret;
 }
 
-void client::send(std::vector<char> buf, std::string explain)
+void Client::Send(std::vector<char> buf, std::string explain)
 {
     boost::shared_ptr<std::string> pstr(new std::string(explain));
-    sock->async_write_some(boost::asio::buffer(buf), boost::bind(&client::write_handler, this, pstr, _1, _2));
+    sock_->async_write_some(boost::asio::buffer(buf, buf.size()), boost::bind(&Client::WriteHandler, this, pstr, _1, _2));
 }
 
-void client::send_connect(std::string session)
+void Client::SendConnect(std::string session)
 {
     dbp::Connect connect;
     connect.set_session(session);
     connect.set_client("lws-test");
     connect.set_version(1);
 
-    dbp::Base connect_msg = create_msg(dbp::Msg::CONNECT, connect);
-    std::vector<char> ret = serialize(connect_msg);
-    send(ret, "connect");
+    dbp::Base connect_msg = CreateMsg(dbp::Msg::CONNECT, connect);
+    std::vector<char> ret = Serialize(connect_msg);
+    Send(ret, "connect");
 }
 
-std::string client::send_ping()
+std::string Client::SendPing()
 {
     srand(time(NULL));
     int secret = rand();
@@ -69,25 +88,25 @@ std::string client::send_ping()
 
     dbp::Ping ping;
     ping.set_id(id);
-    dbp::Base ping_msg = create_msg(dbp::Msg::PING, ping);
-    std::vector<char> ret = serialize(ping_msg);
+    dbp::Base ping_msg = CreateMsg(dbp::Msg::PING, ping);
+    std::vector<char> ret = Serialize(ping_msg);
 
     char explain[30] = {'\0'};
     sprintf(explain, "ping%d", secret);
-    send(ret, explain);
+    Send(ret, explain);
     return id;
 }
 
-void client::send_pong(std::string id)
+void Client::SendPong(std::string id)
 {
     dbp::Pong pong;
     pong.set_id(id);
-    dbp::Base pong_msg = create_msg(dbp::Msg::PONG, pong);
-    std::vector<char> ret = serialize(pong_msg);
-    send(ret, "pong");
+    dbp::Base pong_msg = CreateMsg(dbp::Msg::PONG, pong);
+    std::vector<char> ret = Serialize(pong_msg);
+    Send(ret, "pong");
 }
 
-std::string client::send_sub(std::string name)
+std::string Client::SendSub(std::string name)
 {
     srand (time(NULL));
     int secret = rand();
@@ -98,25 +117,25 @@ std::string client::send_sub(std::string name)
     dbp::Sub sub;
     sub.set_name(name);
     sub.set_id(id);
-    dbp::Base sub_msg = create_msg(dbp::Msg::SUB, sub);
-    std::vector<char> ret = serialize(sub_msg);
+    dbp::Base sub_msg = CreateMsg(dbp::Msg::SUB, sub);
+    std::vector<char> ret = Serialize(sub_msg);
 
     char explain[30] = {'\0'};
     sprintf(explain, "sub%d", secret);
-    send(ret, explain);
+    Send(ret, explain);
     return id;
 }
 
-void client::send_unsub(std::string id)
+void Client::SendUnsub(std::string id)
 {
     dbp::Unsub unsub;
     unsub.set_id(id);
-    dbp::Base unsubn_msg = create_msg(dbp::Msg::UNSUB, unsub);
-    std::vector<char> ret = serialize(unsubn_msg);
-    send(ret, "unsub");
+    dbp::Base unsubn_msg = CreateMsg(dbp::Msg::UNSUB, unsub);
+    std::vector<char> ret = Serialize(unsubn_msg);
+    Send(ret, "unsub");
 }
 
-std::string client::send_method(std::string method)
+std::string Client::SendMethod(std::string method)
 {
     srand(time(NULL));
     int secret = rand();
@@ -127,49 +146,60 @@ std::string client::send_method(std::string method)
     dbp::Method obj;
     obj.set_method(method);
     obj.set_id(id);
-    dbp::Base obj_msg = create_msg(dbp::Msg::METHOD, obj);
-    std::vector<char> ret = serialize(obj_msg);
+    dbp::Base obj_msg = CreateMsg(dbp::Msg::METHOD, obj);
+    std::vector<char> ret = Serialize(obj_msg);
 
     char explain[30] = {'\0'};
     sprintf(explain, "method%d", secret);
-    send(ret, explain);
+    Send(ret, explain);
     
     return id;
 }
 
-void client::conn_handler(const boost::system::error_code &ec, std::shared_ptr<boost::asio::ip::tcp::socket> sock)
+void Client::ConnHandler(const boost::system::error_code &ec, std::shared_ptr<boost::asio::ip::tcp::socket> sock)
 {
     if (ec)
     {
+        std::cerr << "connection failed: " << ec.message() << std::endl;
         return;
     }
 
-    send_connect("");
+    SendConnect("");
     std::cout << "[conn_handler]recive from " << sock->remote_endpoint().address() << std::endl;
-    sock->async_read_some(boost::asio::buffer(m_buf), boost::bind(&client::read_handler, this, boost::asio::placeholders::error, sock));
+    sock_->async_read_some(boost::asio::buffer(m_buf_), boost::bind(&Client::ReadHandler, this, boost::asio::placeholders::error, sock));
 }
 
-void client::test()
+void Client::Test()
 {
-    std::string id = send_sub("all-block");
-    send_unsub(id);
+    std::string id = SendSub("all-block");
+    SendUnsub(id);
 
-    std::string mehtod_id = send_method("getblocks");
+    std::string mehtod_id = SendMethod("getblocks");
 }
 
-void client::read_handler(const boost::system::error_code &ec, std::shared_ptr<boost::asio::ip::tcp::socket> sock)
+void Client::ErrorHandler()
+{
+    m_timer_->cancel();
+    SockConnect();
+}
+
+void Client::ReadHandler(const boost::system::error_code &ec, std::shared_ptr<boost::asio::ip::tcp::socket> sock)
 {
     if (ec)
     {
+
+        std::cerr << "read connection: " << ec.message() << ec << std::endl;
+        is_connected_ = false;
+        m_io_.post(boost::bind(&Client::ErrorHandler, this));
         return;
     }
 
     uint32_t b;
-    std::memcpy(&b, &m_buf[0], 4);
+    std::memcpy(&b, &m_buf_[0], 4);
     uint32_t len = ntohl(b);
 
     dbp::Base base;
-    if(!base.ParseFromArray(&m_buf[4], len))
+    if(!base.ParseFromArray(&m_buf_[4], len))
     {
         std::cerr << "[read_handler]parse base msg false" << std::endl;
         return;
@@ -182,13 +212,14 @@ void client::read_handler(const boost::system::error_code &ec, std::shared_ptr<b
             dbp::Connected connected;
             base.object().UnpackTo(&connected);
             std::cout << "[read_handler]connected session is:" << connected.session() << std::endl; 
-            is_connected = true;
-            session = connected.session();
+            is_connected_ = true;
+            session_ = connected.session();
 
-            m_timer.async_wait(boost::bind(&client::timer_handler, this, boost::asio::placeholders::error, sock));
+            m_timer_.reset(new boost::asio::steady_timer(m_io_, std::chrono::seconds{3}));
+            m_timer_->async_wait(boost::bind(&Client::TimerHandler, this, boost::asio::placeholders::error, sock));
         }
 
-        test();
+        Test();
     }
 
     if(base.msg() == dbp::Msg::FAILED)
@@ -199,7 +230,7 @@ void client::read_handler(const boost::system::error_code &ec, std::shared_ptr<b
     {
         dbp::Ping ping;
         base.object().UnpackTo(&ping);
-        send_pong(ping.id());
+        SendPong(ping.id());
     }
 
     if(base.msg() == dbp::Msg::PONG)
@@ -234,28 +265,44 @@ void client::read_handler(const boost::system::error_code &ec, std::shared_ptr<b
     {
     }
 
-    sock->async_read_some(boost::asio::buffer(m_buf), boost::bind(&client::read_handler, this, boost::asio::placeholders::error, sock));
+    sock->async_read_some(boost::asio::buffer(m_buf_), boost::bind(&Client::ReadHandler, this, boost::asio::placeholders::error, sock));
 }
 
-void client::write_handler(boost::shared_ptr<std::string> pstr, const boost::system::error_code &ec, size_t bytes_transferred)
+void Client::WriteHandler(boost::shared_ptr<std::string> pstr, const boost::system::error_code &ec, size_t bytes_transferred)
 {
   if (ec)
   {
-      std::cerr << "[write_handler]" << *pstr << " msg write error:" << ec << ". len:" << bytes_transferred << std::endl;
+      std::cerr << "[write_handler]" << *pstr << " msg write error:" << ec.message() << ". len:" << bytes_transferred << std::endl;
       return;
   }
   std::cout << "[write_handler]" << *pstr << " msg write succeed. len:" << bytes_transferred << std::endl;
 }
 
-void client::timer_handler(const boost::system::error_code &ec, std::shared_ptr<boost::asio::ip::tcp::socket> sock)
+void Client::TimerHandler(const boost::system::error_code &ec, std::shared_ptr<boost::asio::ip::tcp::socket> sock)
 {
-    std::string id = send_ping();
+    if(ec)
+    {
+        std::cerr << "cancel timer" << std::endl;
+        return;
+    }
 
-    m_timer.expires_from_now(std::chrono::seconds{30});
-    m_timer.async_wait(boost::bind(&client::timer_handler, this, boost::asio::placeholders::error, sock));
+    if(is_connected_)
+    {
+        std::string id = SendPing();
+    }
+
+    m_timer_->expires_from_now(std::chrono::seconds{3});
+    m_timer_->async_wait(boost::bind(&Client::TimerHandler, this, boost::asio::placeholders::error, sock));
 }
 
-void client::run()
+void Client::Run()
 {
-    m_io.run();
+    m_io_.run();
+}
+
+void Client::Close()
+{
+    boost::system::error_code ec;
+    sock_->shutdown(boost::asio::ip::tcp::socket::shutdown_send, ec);
+    sock_->close(ec);
 }
