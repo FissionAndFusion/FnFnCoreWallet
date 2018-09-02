@@ -1,11 +1,16 @@
 #include "client.h"
 
-Client::Client() : m_buf_(4096, 0),
-                   m_ep_(boost::asio::ip::address_v4::from_string("127.0.0.1"), 6815),
-                //    m_timer_(m_io_, std::chrono::seconds{3}),
-                //    sock_(new boost::asio::ip::tcp::socket(m_io_)),
-                   is_connected_(false),
-                   session_("")
+Client::Client()
+{
+}
+
+Client::Client(std::string ip, int port, int version, std::string client)
+    : client_(client),
+      version_(version),
+      m_ep_(boost::asio::ip::address_v4::from_string(ip), port),
+      m_buf_(4096, 0),
+      is_connected_(false),
+      session_("")
 {
     Start();
 }
@@ -26,7 +31,7 @@ void Client::SockConnect()
     } while (ec != 0);
 
     is_connected_ = true;
-    SendConnect("");
+    SendConnect(session_);
     sock_->async_read_some(boost::asio::buffer(m_buf_), boost::bind(&Client::ReadHandler, this, boost::asio::placeholders::error, sock_));
 }
 
@@ -70,12 +75,15 @@ void Client::SendConnect(std::string session)
 {
     dbp::Connect connect;
     connect.set_session(session);
-    connect.set_client("lws-test");
-    connect.set_version(1);
+    if("" == session)
+    {
+        connect.set_client(client_);
+        connect.set_version(version_);
+    }
 
     dbp::Base connect_msg = CreateMsg(dbp::Msg::CONNECT, connect);
     std::vector<char> ret = Serialize(connect_msg);
-    Send(ret, "connect");
+    Send(ret, "connect" + session);
 }
 
 std::string Client::SendPing()
@@ -90,10 +98,7 @@ std::string Client::SendPing()
     ping.set_id(id);
     dbp::Base ping_msg = CreateMsg(dbp::Msg::PING, ping);
     std::vector<char> ret = Serialize(ping_msg);
-
-    char explain[30] = {'\0'};
-    sprintf(explain, "ping%d", secret);
-    Send(ret, explain);
+    Send(ret, "ping" + id);
     return id;
 }
 
@@ -119,10 +124,7 @@ std::string Client::SendSub(std::string name)
     sub.set_id(id);
     dbp::Base sub_msg = CreateMsg(dbp::Msg::SUB, sub);
     std::vector<char> ret = Serialize(sub_msg);
-
-    char explain[30] = {'\0'};
-    sprintf(explain, "sub%d", secret);
-    Send(ret, explain);
+    Send(ret, "sub" + id);
     return id;
 }
 
@@ -224,6 +226,26 @@ void Client::ReadHandler(const boost::system::error_code &ec, std::shared_ptr<bo
 
     if(base.msg() == dbp::Msg::FAILED)
     {
+        dbp::Failed failed;
+        base.object().UnpackTo(&failed);
+        if("002" == failed.reason())
+        {
+            session_ = "";
+            SendConnect(session_);
+        }
+
+        if("001" == failed.reason())
+        {
+            session_ = "";
+            version_ = failed.version()[0];
+            SendConnect(session_);
+        }
+
+        if("003" == failed.reason())
+        {
+            session_ = "";
+            SendConnect(session_);
+        }
     }
 
     if(base.msg() == dbp::Msg::PING)

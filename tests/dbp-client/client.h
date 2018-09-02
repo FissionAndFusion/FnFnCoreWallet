@@ -11,6 +11,7 @@ class Client
 {
   public:
     Client();
+    Client(std::string ip, int port, int version, std::string client);
     ~Client();
     void Run();
 
@@ -43,6 +44,8 @@ class Client
     std::shared_ptr<boost::asio::ip::tcp::socket> sock_;
     bool is_connected_;
     std::string session_;
+    std::string client_;
+    int version_;
 
   protected:
 };

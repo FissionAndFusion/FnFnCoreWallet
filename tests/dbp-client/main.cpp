@@ -135,7 +135,7 @@ void run()
 {
     try
     {
-        Client cl;
+        Client cl("127.0.0.1", 6815, 1, "lws-test");
         cl.Run();
     }
     catch (std::exception& e)
