@@ -15,6 +15,8 @@ class Client
     ~Client();
     void Run();
 
+    typedef void (*CallBackFn)(Client *cl);
+    void SetCallBackFn(CallBackFn cb);
     void SendConnect(std::string session);
     std::string SendPing();
     void SendPong(std::string id);
@@ -31,6 +33,7 @@ class Client
     void TimerHandler(const boost::system::error_code &ec, std::shared_ptr<boost::asio::ip::tcp::socket> sock);
     void WriteHandler(boost::shared_ptr<std::string> pstr, const boost::system::error_code &ec, size_t bytes_transferred);
     void ErrorHandler();
+    void TestHandle(Client *cl);
     dbp::Base CreateMsg(dbp::Msg msg, google::protobuf::Message &obj);
     std::vector<char> Serialize(dbp::Base base);
     void Send(std::vector<char> buf, std::string explain);
@@ -46,6 +49,7 @@ class Client
     std::string session_;
     std::string client_;
     int version_;
+    CallBackFn cb_;
 
   protected:
 };

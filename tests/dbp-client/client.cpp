@@ -27,7 +27,11 @@ void Client::SockConnect()
         sock_.reset(new boost::asio::ip::tcp::socket(m_io_));
         sock_->connect(m_ep_, ec);
         std::cerr << "socket connection: " << ec.message() << std::endl;
-        sleep(1);
+
+        if (0 != ec)
+        {
+            sleep(1);
+        }
     } while (ec != 0);
 
     is_connected_ = true;
@@ -185,6 +189,16 @@ void Client::ErrorHandler()
     SockConnect();
 }
 
+void Client::SetCallBackFn(CallBackFn cb)
+{
+    cb_ = cb;
+}
+
+void Client::TestHandle(Client *cl)
+{
+    cb_(cl);
+}
+
 void Client::ReadHandler(const boost::system::error_code &ec, std::shared_ptr<boost::asio::ip::tcp::socket> sock)
 {
     if (ec)
@@ -221,7 +235,8 @@ void Client::ReadHandler(const boost::system::error_code &ec, std::shared_ptr<bo
             m_timer_->async_wait(boost::bind(&Client::TimerHandler, this, boost::asio::placeholders::error, sock));
         }
 
-        Test();
+        m_io_.post(boost::bind(&Client::TestHandle, this, this));
+        // Test();
     }
 
     if(base.msg() == dbp::Msg::FAILED)

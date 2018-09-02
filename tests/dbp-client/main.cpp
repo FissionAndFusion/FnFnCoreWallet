@@ -131,11 +131,20 @@ void help()
         << std::endl;
 }
 
+void callback(Client *cl)
+{
+    std::string id = cl->SendSub("all-block");
+    cl->SendUnsub(id);
+
+    std::string mehtod_id = cl->SendMethod("getblocks");
+}
+
 void run()
 {
     try
     {
         Client cl("127.0.0.1", 6815, 1, "lws-test");
+        cl.SetCallBackFn(callback);
         cl.Run();
     }
     catch (std::exception& e)
@@ -149,26 +158,26 @@ int main(int argc, char* argv[])
     run();
     return 0;
 
-    std::string msgType(argv[1]);
+    // std::string msgType(argv[1]);
     
-    if(msgType == "help")
-    {
-        help();
-    }
-    else if(msgType == "connect")
-    {
-        std::string session(argv[2]);
-        std::string client(argv[3]);
-        std::string version(argv[4]);
-        sendConnect(session,client,
-        std::atoi(version.c_str()));
-    }
-    else
-    {
-        std::cerr << "error: msg type invalid"
-        << std::endl;
-        help();
-    }
+    // if(msgType == "help")
+    // {
+    //     help();
+    // }
+    // else if(msgType == "connect")
+    // {
+    //     std::string session(argv[2]);
+    //     std::string client(argv[3]);
+    //     std::string version(argv[4]);
+    //     sendConnect(session,client,
+    //     std::atoi(version.c_str()));
+    // }
+    // else
+    // {
+    //     std::cerr << "error: msg type invalid"
+    //     << std::endl;
+    //     help();
+    // }
     
-    return 0;
+    // return 0;
 }
