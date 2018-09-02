@@ -137,6 +137,8 @@ void callback(Client *cl)
     cl->SendUnsub(id);
 
     std::string mehtod_id = cl->SendMethod("getblocks");
+    usleep(100 * 100);
+    std::string mehtod_id1 = cl->SendMethod("gettransaction");
 }
 
 void run()

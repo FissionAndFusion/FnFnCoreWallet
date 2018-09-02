@@ -5,6 +5,8 @@
 #include <boost/asio/steady_timer.hpp>
 #include <boost/asio/system_timer.hpp>
 #include <boost/asio/high_resolution_timer.hpp>
+#include <boost/random.hpp>
+#include <boost/random/uniform_int.hpp>
 #include "dbp.pb.h"
 
 class Client
@@ -38,6 +40,7 @@ class Client
     std::vector<char> Serialize(dbp::Base base);
     void Send(std::vector<char> buf, std::string explain);
     void Test();
+    uint Random();
 
   private:
     boost::asio::io_service m_io_;

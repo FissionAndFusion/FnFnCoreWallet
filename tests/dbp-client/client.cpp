@@ -90,13 +90,28 @@ void Client::SendConnect(std::string session)
     Send(ret, "connect" + session);
 }
 
+uint Client::Random()
+{
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    long seed = tv.tv_sec * 1000 + tv.tv_usec / 1000;
+    // boost::random::mt19937 gen;
+    // boost::uniform_int<>distribut(1, 10000000);
+    // boost::random::variate_generator <boost::random::mt19937 &, boost::uniform_int<>> die(gen, distribut);
+    // int ret = die();
+    // boost::random::mt19937 rng(time(0));
+    boost::random::mt19937 rng(seed);
+    int ret = rng();
+    return ret;
+}
+
 std::string Client::SendPing()
 {
-    srand(time(NULL));
-    int secret = rand();
-    char s[20] = {'\0'};
-    sprintf(s, "%d", secret);
-    std::string id(s);
+    // srand(time(NULL));
+    // int secret = rand();
+    // char s[20] = {'\0'};
+    // sprintf(s, "%d", secret);
+    std::string id(std::to_string(Random()));
 
     dbp::Ping ping;
     ping.set_id(id);
@@ -117,11 +132,11 @@ void Client::SendPong(std::string id)
 
 std::string Client::SendSub(std::string name)
 {
-    srand (time(NULL));
-    int secret = rand();
-    char s[20] = {'\0'};
-    sprintf(s, "%d", secret);
-    std::string id(s);
+    // srand (time(NULL));
+    // int secret = rand();
+    // char s[20] = {'\0'};
+    // sprintf(s, "%d", secret);
+    std::string id(std::to_string(Random()));
 
     dbp::Sub sub;
     sub.set_name(name);
@@ -143,11 +158,11 @@ void Client::SendUnsub(std::string id)
 
 std::string Client::SendMethod(std::string method)
 {
-    srand(time(NULL));
-    int secret = rand();
-    char s[20] = {'\0'};
-    sprintf(s, "%d", secret);
-    std::string id(s);
+    // srand(time(NULL));
+    // int secret = rand();
+    // char s[20] = {'\0'};
+    // sprintf(s, "%d", secret);
+    std::string id(std::to_string(Random()));
 
     dbp::Method obj;
     obj.set_method(method);
@@ -155,10 +170,8 @@ std::string Client::SendMethod(std::string method)
     dbp::Base obj_msg = CreateMsg(dbp::Msg::METHOD, obj);
     std::vector<char> ret = Serialize(obj_msg);
 
-    char explain[30] = {'\0'};
-    sprintf(explain, "method%d", secret);
-    Send(ret, explain);
-    
+    Send(ret, "method" + id);
+
     return id;
 }
 
