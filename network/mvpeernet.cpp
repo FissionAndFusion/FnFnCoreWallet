@@ -7,6 +7,7 @@
 #include <boost/bind.hpp>
 #include <boost/any.hpp>
 #include "dnseedservice.h"
+#include "mvdnseedpeer.h"
 
 #define HANDSHAKE_TIMEOUT               5
 #define RESPONSE_TX_TIMEOUT             15
@@ -95,7 +96,14 @@ bool CMvPeerNet::HandleEvent(CMvEventPeerBlock& eventBlock)
 CPeer* CMvPeerNet::CreatePeer(CIOClient *pClient,uint64 nNonce,bool fInBound)
 {
     uint32_t nTimerId = SetTimer(nNonce,HANDSHAKE_TIMEOUT);
-    CMvPeer *pPeer = new CMvPeer(this,pClient,nNonce,fInBound,nMagicNum,nTimerId);
+    //todo 
+    CMvPeer *pPeer = NULL;
+    if(pClient->GetRemote().port()==6816)
+    {
+        pPeer = new CMvDNSeedPeer(this,pClient,nNonce,fInBound,nMagicNum,nTimerId);
+    }
+    else 
+        pPeer = new CMvPeer(this,pClient,nNonce,fInBound,nMagicNum,nTimerId);
     if (pPeer == NULL)
     {   
         CancelTimer(nTimerId);

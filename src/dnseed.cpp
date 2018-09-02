@@ -4,13 +4,21 @@
 #include <boost/any.hpp>
 #include "dnseedservice.h"
 #include "mvdnseedpeer.h"
+#include "mvproto.h"
+#include "config.h"
 
 using namespace walleve;
 using namespace multiverse;
 using boost::asio::ip::tcp;
+using namespace multiverse::storage;
+using namespace multiverse::network;
+using namespace std;
+
+#define HANDSHAKE_TIMEOUT               5
+#define NODE_ACTIVE_TIME                (3 * 60 * 60)
 
 CDNSeed::CDNSeed()
-//: CPeerNet("peernet")
+//: CPeerNet("dnseed")
 {
 }
 
@@ -55,13 +63,23 @@ bool CDNSeed::CheckPeerVersion(uint32 nVersionIn,uint64 nServiceIn,const std::st
     return true;
 }
 
+void CDNSeed::BuildHello(CPeer *pPeer,CWalleveBufStream& ssPayload)
+{
+    uint64 nNonce = pPeer->GetNonce();
+    int64 nTime = WalleveGetNetTime();
+    int nHeight = this->GetPrimaryChainHeight();
+    ssPayload << nVersion << nService << nTime << nNonce << subVersion << nHeight; 
+}
+
 int CDNSeed::GetPrimaryChainHeight()
 {
+    //todo 缓存的高度
     return 0;
 }
 
 CPeer* CDNSeed::CreatePeer(CIOClient *pClient,uint64 nNonce,bool fInBound)
 {
+    WalleveLog("xp CreatePeer()>>%d",(int)fInBound);
     uint32_t nTimerId = SetTimer(nNonce,HANDSHAKE_TIMEOUT);
     CMvDNSeedPeer *pPeer = new CMvDNSeedPeer(this,pClient,nNonce,fInBound,nMagicNum,nTimerId);
     if (pPeer == NULL)
@@ -73,6 +91,7 @@ CPeer* CDNSeed::CreatePeer(CIOClient *pClient,uint64 nNonce,bool fInBound)
 
 bool CDNSeed::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CWalleveBufStream& ssPayload)
 {
+    WalleveLog("xp HandlePeerRecvMessage()");
     CMvPeer *pMvPeer = static_cast<CMvPeer *>(pPeer);
     if (nChannel == MVPROTO_CHN_NETWORK)
     {
@@ -121,7 +140,7 @@ bool CDNSeed::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CWall
                 {
                     RemoveNode(ep_);
                 }
-                this->_dnseed.add2list(ep_); 
+                DNSeedService::getInstance()->add2list(ep_); 
                 return true;
             }
             break;
@@ -135,7 +154,7 @@ bool CDNSeed::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CWall
             {
                 WalleveLog("xp [receive] MVPROTO_CMD_GETDNSEED\n");
                 std::vector<CAddress> vAddrs;
-                this->_dnseed.getAddressList(vAddrs);
+                DNSeedService::getInstance()->getAddressList(vAddrs);
                 CWalleveBufStream ss;
                 ss << vAddrs;
                 return pMvPeer->SendMessage(MVPROTO_CHN_NETWORK,MVPROTO_CMD_DNSEED,ss);
@@ -146,10 +165,10 @@ bool CDNSeed::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CWall
                 WalleveLog("xp [receive] MVPROTO_CMD_DNSEED\n");
                 std::vector<CAddress> vAddrs;
                 ssPayload >> vAddrs;
-                this->_dnseed.recvAddressList(vAddrs);
+                DNSeedService::getInstance()->recvAddressList(vAddrs);
                 
                 std::vector<tcp::endpoint> eplist;
-                this->_dnseed.getConnectAddressList(eplist);
+                DNSeedService::getInstance()->getConnectAddressList(eplist);
                 for(size_t i=0;i<eplist.size();i++)
                 {
                     tcp::endpoint &cep=eplist[i];

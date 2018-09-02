@@ -29,10 +29,10 @@ class CMvPeerNet : public walleve::CPeerNet, virtual public CMvPeerEventListener
 public:
     CMvPeerNet();
     ~CMvPeerNet();
-    void BuildHello(walleve::CPeer *pPeer,walleve::CWalleveBufStream& ssPayload);
+    virtual void BuildHello(walleve::CPeer *pPeer,walleve::CWalleveBufStream& ssPayload);
     void HandlePeerWriten(walleve::CPeer *pPeer);
     bool HandlePeerHandshaked(walleve::CPeer *pPeer,uint32 nTimerId);
-    bool HandlePeerRecvMessage(walleve::CPeer *pPeer,int nChannel,int nCommand,
+    virtual bool HandlePeerRecvMessage(walleve::CPeer *pPeer,int nChannel,int nCommand,
                                walleve::CWalleveBufStream& ssPayload); 
 protected:
     bool WalleveHandleInitialize();
@@ -42,7 +42,7 @@ protected:
     bool HandleEvent(CMvEventPeerGetBlocks& eventGetBlocks);
     bool HandleEvent(CMvEventPeerTx& eventTx);
     bool HandleEvent(CMvEventPeerBlock& eventBlock);
-    walleve::CPeer* CreatePeer(walleve::CIOClient *pClient,uint64 nNonce,bool fInBound);
+    virtual walleve::CPeer* CreatePeer(walleve::CIOClient *pClient,uint64 nNonce,bool fInBound);
     void DestroyPeer(walleve::CPeer* pPeer);
     walleve::CPeerInfo* GetPeerInfo(walleve::CPeer* pPeer,walleve::CPeerInfo* pInfo);
     bool SendDataMessage(uint64 nNonce,int nCommand,walleve::CWalleveBufStream& ssPayload);

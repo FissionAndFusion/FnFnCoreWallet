@@ -19,13 +19,14 @@ public:
             bool fInBoundIn,uint32 nMsgMagicIn,uint32 nHsTimerIdIn);
     ~CMvDNSeedPeer();
     
-    void Activate()override;
+    virtual void Activate()override;
 protected:
-    // void SendHello();
-    // void SendHelloAck();
-    // bool HandshakeCompletd();
+    virtual void SendHello()override;
+    virtual void SendHelloAck()override;
+    virtual bool HandshakeCompletd()override;
 
-    // bool HandleReadCompleted();
+    virtual bool HandleReadCompleted()override;
+    virtual bool HandshakeReadCompletd()override;
 
 };
 

@@ -25,6 +25,7 @@ public:
         GET_ALL,
         GET_A_LOT
     };
+    bool init(storage::CMvDBConfig & config);
     bool isDNSeedService(){return _isDNSeedServiceNode;}
     void enableDNSeedServer(){_isDNSeedServiceNode=true;}
 
@@ -40,7 +41,7 @@ protected:
         _initTime=walleve::GetTime();
         _runTime=0;
     } 
-    bool init(storage::CMvDBConfig & config);
+    
     void startDNSeedService();
     void filterAddressList();
     bool hasAddress(boost::asio::ip::tcp::endpoint ep);   
