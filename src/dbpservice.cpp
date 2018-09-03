@@ -13,7 +13,7 @@ CDbpService::CDbpService()
     pDbpServer = NULL;
 
     std::map<std::string,bool> temp_map = boost::assign::map_list_of
-                    ("added",true)
+                    ("all-block",true)
                     ("changed",true)
                     ("removed",true);
     
@@ -101,6 +101,7 @@ bool CDbpService::HandleEvent(walleve::CWalleveEventDbpSub& event)
 
     WalleveLog("Sub topic is:\n");
     WalleveLog(topicName.c_str());
+    WalleveLog("\n");
 
     // if topic not exists
     if(currentTopicExistMap.count(topicName) == 0 )
@@ -408,6 +409,7 @@ bool CDbpService::HandleEvent(CMvEventDbpUpdateNewBlock& event)
 
     WalleveLog("new block event added,block hash is:\n");
     WalleveLog(blockHash.ToString().c_str());
+    WalleveLog("\n");
     
     if(pService->GetBlock(blockHash,newBlock,forkHash,blockHeight))
     {
@@ -442,6 +444,7 @@ bool CDbpService::HandleEvent(CMvEventDbpUpdateNewTx& event)
 
     WalleveLog("new tx event added,tx hash is:\n");
     WalleveLog(newtx.GetHash().ToString().c_str());
+    WalleveLog("\n");
 
     // push new tx to dbpclient when new-tx-event comes
     for(const auto& kv : idSubedNonceMap)
