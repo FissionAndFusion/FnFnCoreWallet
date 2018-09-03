@@ -90,13 +90,19 @@ void Client::SendConnect(std::string session)
     Send(ret, "connect" + session);
 }
 
+uint Client::Random()
+{
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    long seed = tv.tv_sec * 1000 + tv.tv_usec / 1000;
+    boost::random::mt19937 rng(seed);
+    int ret = rng();
+    return ret;
+}
+
 std::string Client::SendPing()
 {
-    srand(time(NULL));
-    int secret = rand();
-    char s[20] = {'\0'};
-    sprintf(s, "%d", secret);
-    std::string id(s);
+    std::string id(std::to_string(Random()));
 
     dbp::Ping ping;
     ping.set_id(id);
@@ -115,13 +121,9 @@ void Client::SendPong(std::string id)
     Send(ret, "pong");
 }
 
-std::string Client::SendSub(std::string name)
+std::string Client::SendSub(std::string name, HandlePair hp)
 {
-    srand (time(NULL));
-    int secret = rand();
-    char s[20] = {'\0'};
-    sprintf(s, "%d", secret);
-    std::string id(s);
+    std::string id(std::to_string(Random()));
 
     dbp::Sub sub;
     sub.set_name(name);
@@ -129,6 +131,12 @@ std::string Client::SendSub(std::string name)
     dbp::Base sub_msg = CreateMsg(dbp::Msg::SUB, sub);
     std::vector<char> ret = Serialize(sub_msg);
     Send(ret, "sub" + id);
+
+    hp.name = name;
+    hp.id = id;
+    hp.type = "sub";
+    sub_map_.insert({id, hp});
+
     return id;
 }
 
@@ -139,26 +147,25 @@ void Client::SendUnsub(std::string id)
     dbp::Base unsubn_msg = CreateMsg(dbp::Msg::UNSUB, unsub);
     std::vector<char> ret = Serialize(unsubn_msg);
     Send(ret, "unsub");
+    sub_map_.erase(id);
 }
 
-std::string Client::SendMethod(std::string method)
+std::string Client::SendMethod(std::string method, HandlePair hp)
 {
-    srand(time(NULL));
-    int secret = rand();
-    char s[20] = {'\0'};
-    sprintf(s, "%d", secret);
-    std::string id(s);
+    std::string id(std::to_string(Random()));
 
     dbp::Method obj;
     obj.set_method(method);
     obj.set_id(id);
     dbp::Base obj_msg = CreateMsg(dbp::Msg::METHOD, obj);
     std::vector<char> ret = Serialize(obj_msg);
+    Send(ret, "method" + id);
 
-    char explain[30] = {'\0'};
-    sprintf(explain, "method%d", secret);
-    Send(ret, explain);
-    
+    hp.name = method;
+    hp.id = id;
+    hp.type = "method";
+    method_map_.insert({id, hp});
+
     return id;
 }
 
@@ -173,14 +180,6 @@ void Client::ConnHandler(const boost::system::error_code &ec, std::shared_ptr<bo
     SendConnect("");
     std::cout << "[conn_handler]recive from " << sock->remote_endpoint().address() << std::endl;
     sock_->async_read_some(boost::asio::buffer(m_buf_), boost::bind(&Client::ReadHandler, this, boost::asio::placeholders::error, sock));
-}
-
-void Client::Test()
-{
-    std::string id = SendSub("all-block");
-    SendUnsub(id);
-
-    std::string mehtod_id = SendMethod("getblocks");
 }
 
 void Client::ErrorHandler()
@@ -236,7 +235,6 @@ void Client::ReadHandler(const boost::system::error_code &ec, std::shared_ptr<bo
         }
 
         m_io_.post(boost::bind(&Client::TestHandle, this, this));
-        // Test();
     }
 
     if(base.msg() == dbp::Msg::FAILED)
@@ -279,15 +277,24 @@ void Client::ReadHandler(const boost::system::error_code &ec, std::shared_ptr<bo
     if(base.msg() == dbp::Msg::NOSUB)
     {
         std::cout << "[read_handler]nosub recv" << std::endl;
+        dbp::Nosub nosub;
+        base.object().UnpackTo(&nosub);
+        sub_map_.erase(nosub.id());
     }
      
     if(base.msg() == dbp::Msg::READY)
     {
         std::cout << "[read_handler]ready recv" << std::endl;
+        dbp::Ready ready;
+        base.object().UnpackTo(&ready);
+        sub_map_[ready.id()].enable = true;
     }
 
     if(base.msg() == dbp::Msg::ADDED)
     {
+        dbp::Added added;
+        base.object().UnpackTo(&added);
+        sub_map_[added.id()].SubHandler("added", added.name(), added.object());
     }
 
     if(base.msg() == dbp::Msg::CHANGED)
@@ -300,6 +307,17 @@ void Client::ReadHandler(const boost::system::error_code &ec, std::shared_ptr<bo
 
     if(base.msg() == dbp::Msg::RESULT)
     {
+        dbp::Result result;
+        base.object().UnpackTo(&result);
+        method_map_[result.id()].MethodHandler();
+        method_map_.erase(result.id());
+    }
+
+    if(base.msg() == dbp::Msg::ERROR)
+    {
+        dbp::Error error;
+        base.object().UnpackTo(&error);
+        std::cout << "reason:" << error.reason() << ", explain:" << error.explain() << std::endl;
     }
 
     sock->async_read_some(boost::asio::buffer(m_buf_), boost::bind(&Client::ReadHandler, this, boost::asio::placeholders::error, sock));

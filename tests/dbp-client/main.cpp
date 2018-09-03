@@ -5,6 +5,7 @@
 #include <arpa/inet.h>
 
 #include "client.h"
+#include "handlepair.h"
 #include "dbp.pb.h"
 #include "lws.pb.h"
 
@@ -133,10 +134,14 @@ void help()
 
 void callback(Client *cl)
 {
-    std::string id = cl->SendSub("all-block");
+    HandlePair sub_hp;
+    std::string id = cl->SendSub("all-block", sub_hp);
     cl->SendUnsub(id);
 
-    std::string mehtod_id = cl->SendMethod("getblocks");
+    HandlePair method_hp;
+    std::string mehtod_id = cl->SendMethod("getblocks", method_hp);
+    usleep(100 * 100);
+    std::string mehtod_id1 = cl->SendMethod("gettransaction", method_hp);
 }
 
 void run()
