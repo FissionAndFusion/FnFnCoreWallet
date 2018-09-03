@@ -525,6 +525,8 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
                     sessionClientBimap.right.erase(pDbpClient);
                 }
                 
+                sessionProfileMap[session].pDbpClient = pDbpClient;
+                sessionProfileMap[session].timestamp = CDbpUtils::currentUTC();                
                 sessionClientBimap.insert(position_pair(session,pDbpClient));
    
                 CWalleveDbpConnect &connectBody = pEventDbpConnect->data;
