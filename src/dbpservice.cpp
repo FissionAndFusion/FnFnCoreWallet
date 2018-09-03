@@ -99,10 +99,14 @@ bool CDbpService::HandleEvent(walleve::CWalleveEventDbpSub& event)
     std::string id = event.data.id;
     std::string topicName = event.data.name;
 
+    WalleveLog("Sub topic is:\n");
+    WalleveLog(topicName.c_str());
+
     // if topic not exists
     if(currentTopicExistMap.count(topicName) == 0 )
     {
          // reply nosub
+        WalleveLog("Sub topic not exists\n");
         uint64 nonce = event.nNonce;
         walleve::CWalleveEventDbpNoSub eventNoSub(nonce);
         eventNoSub.data.id = event.data.id;
@@ -110,6 +114,7 @@ bool CDbpService::HandleEvent(walleve::CWalleveEventDbpSub& event)
     }
     else
     {
+        WalleveLog("Sub topic  exists\n");
         if(idSubedTopicsMap.count(id) == 0)
         {
             TopicSet topics{topicName};
@@ -139,11 +144,13 @@ bool CDbpService::HandleEvent(walleve::CWalleveEventDbpUnSub& event)
     if(idSubedTopicsMap.count(id) != 0)
     {
         // unsub is actual delete subed topic
+        WalleveLog("[SubedTopicsMap] UnSub topic  success\n");
         idSubedTopicsMap.erase(id);
     }
 
     if(idSubedNonceMap.count(id) != 0)
     {
+        WalleveLog("[SubedNonceMap] UnSub topic  success\n");
         idSubedNonceMap.erase(id);
     }
     
@@ -398,6 +405,9 @@ bool CDbpService::HandleEvent(CMvEventDbpUpdateNewBlock& event)
     CBlock newBlock;
     uint256 forkHash;
     int blockHeight;
+
+    WalleveLog("new block event added,block hash is:\n");
+    WalleveLog(blockHash.ToString().c_str());
     
     if(pService->GetBlock(blockHash,newBlock,forkHash,blockHeight))
     {
@@ -429,6 +439,9 @@ bool CDbpService::HandleEvent(CMvEventDbpUpdateNewTx& event)
 
     walleve::CWalleveDbpTransaction dbpTx;
     CreateDbpTransaction(newtx,dbpTx);
+
+    WalleveLog("new tx event added,tx hash is:\n");
+    WalleveLog(newtx.GetHash().ToString().c_str());
 
     // push new tx to dbpclient when new-tx-event comes
     for(const auto& kv : idSubedNonceMap)
