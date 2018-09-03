@@ -118,7 +118,7 @@ void Client::SendPong(std::string id)
     pong.set_id(id);
     dbp::Base pong_msg = CreateMsg(dbp::Msg::PONG, pong);
     std::vector<char> ret = Serialize(pong_msg);
-    Send(ret, "pong");
+    Send(ret, "pong" + id);
 }
 
 std::string Client::SendSub(std::string name, HandlePair hp)
