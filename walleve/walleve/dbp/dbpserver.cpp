@@ -440,7 +440,8 @@ void CDbpClient::HandleWritenResponse(std::size_t nTransferred)
 }
 
 CDbpServer::CDbpServer()
-: CIOProc("dbpserver")
+: CIOProc("dbpserver"),
+pingTimer_(this->GetIoService(),boost::posix_time::seconds(5))
 {
 
 }
@@ -868,8 +869,6 @@ bool CDbpServer::HandleEvent(CWalleveEventDbpConnected& event)
     CWalleveDbpConnected &connectedBody = event.data;
 
     pDbpClient->SendResponse(connectedBody);
-      
-    boost::asio::deadline_timer pingTimer(this->GetIoService(),boost::posix_time::seconds(10));
 
     std::function<void (const boost::system::error_code&)> 
     pingCallback = [&] (const boost::system::error_code& err) -> void {
@@ -878,12 +877,12 @@ bool CDbpServer::HandleEvent(CWalleveEventDbpConnected& event)
         
         pDbpClient->SendPing(std::to_string(CDbpUtils::currentUTC()));
         
-        pingTimer.expires_at(pingTimer.expires_at() + boost::posix_time::seconds(5));
-        pingTimer.async_wait(pingCallback);
+        pingTimer_.expires_at(pingTimer_.expires_at() + boost::posix_time::seconds(5));
+        pingTimer_.async_wait(pingCallback);
 
     };
 
-    pingTimer.async_wait(pingCallback);
+    pingTimer_.async_wait(pingCallback);
     
     return true;
 }

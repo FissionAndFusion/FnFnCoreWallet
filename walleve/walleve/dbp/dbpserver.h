@@ -143,6 +143,8 @@ protected:
     typedef SessionClientBimapType::value_type  position_pair;
     SessionClientBimapType sessionClientBimap; //session id <=> CDbpClient
     std::map<std::string,CSessionProfile> sessionProfileMap; // session id => session profile
+
+    boost::asio::deadline_timer pingTimer_;
 };
 } //namespace walleve
 #endif //WALLEVE_DBP_SERVER_H
