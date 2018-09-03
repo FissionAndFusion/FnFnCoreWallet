@@ -146,7 +146,7 @@ protected:
     SessionClientBimapType sessionClientBimap; //session id <=> CDbpClient
     std::map<std::string,CSessionProfile> sessionProfileMap; // session id => session profile
 
-    boost::asio::deadline_timer pingTimer_;
+    std::shared_ptr<boost::asio::deadline_timer> pingTimerPtr_;
 };
 } //namespace walleve
 #endif //WALLEVE_DBP_SERVER_H
