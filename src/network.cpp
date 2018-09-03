@@ -6,7 +6,7 @@
 #include "version.h"
 #include <boost/bind.hpp>
 #include <boost/any.hpp>
-#include "mvdnseedpeer.h"
+#include "dnseedservice.h"
 
 using namespace std;
 using namespace walleve;
@@ -37,6 +37,11 @@ bool CNetwork::WalleveHandleInitialize()
     }
     config.nMaxOutBounds = NetworkConfig()->nMaxOutBounds;
     config.nPortDefault = NetworkConfig()->nPort;
+
+    storage::CMvDBConfig dbConfig(StorageConfig()->strDBHost,StorageConfig()->nDBPort
+                        ,StorageConfig()->strDBName,StorageConfig()->strDBUser,StorageConfig()->strDBPass);
+    network::DNSeedService::getInstance()->init(dbConfig);
+
     BOOST_FOREACH(const string& conn,NetworkConfig()->vConnectTo)
     {
         config.vecNode.push_back(CNetHost(conn,config.nPortDefault,conn,

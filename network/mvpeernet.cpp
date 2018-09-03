@@ -328,7 +328,7 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
             break;
         case MVPROTO_CMD_DNSEED:
             {
-                WalleveLog("xp [receive] MVPROTO_CMD_DNSEED\n");
+                WalleveLog("[receive] MVPROTO_CMD_DNSEED\n");
                 std::vector<CAddress> vAddrs;
                 ssPayload >> vAddrs;
                 DNSeedService::getInstance()->recvAddressList(vAddrs);
@@ -338,9 +338,11 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                 for(size_t i=0;i<eplist.size();i++)
                 {
                     tcp::endpoint &cep=eplist[i];
-                     std::cout<<cep.address().to_string()<<":"<<cep.port()<<std::endl;
-                    //this->AddNewNode(CNetHost(cep,cep.address().to_string(),boost::any(uint64(network::NODE_NETWORK))));
+                    WalleveLog("%s:%d\n",cep.address().to_string().c_str(),cep.port());
+                    AddNewNode(CNetHost(cep,cep.address().to_string(),boost::any(uint64(network::NODE_NETWORK))));
                 }
+                //断开当前节点并移除
+                if(eplist.size()>0) RemoveNode( pMvPeer->GetRemote());
                 return true;
             }   
             break;

@@ -79,7 +79,6 @@ int CDNSeed::GetPrimaryChainHeight()
 
 CPeer* CDNSeed::CreatePeer(CIOClient *pClient,uint64 nNonce,bool fInBound)
 {
-    WalleveLog("xp CreatePeer()>>%d",(int)fInBound);
     uint32_t nTimerId = SetTimer(nNonce,HANDSHAKE_TIMEOUT);
     CMvDNSeedPeer *pPeer = new CMvDNSeedPeer(this,pClient,nNonce,fInBound,nMagicNum,nTimerId);
     if (pPeer == NULL)
@@ -89,69 +88,48 @@ CPeer* CDNSeed::CreatePeer(CIOClient *pClient,uint64 nNonce,bool fInBound)
     return pPeer;
 }
 
+void CDNSeed::DestroyPeer(CPeer* pPeer)
+{
+    CMvPeer *pMvPeer = static_cast<CMvPeer *>(pPeer);
+    if (pMvPeer->IsHandshaked())
+    {
+        // CMvEventPeerDeactive *pEventDeactive = new CMvEventPeerDeactive(pMvPeer->GetNonce());
+        // if (pEventDeactive != NULL)
+        // {
+        //     pEventDeactive->data = CAddress(pMvPeer->nService,pMvPeer->GetRemote());
+        //     pNetChannel->PostEvent(pEventDeactive);
+        // }
+    }
+    CPeerNet::DestroyPeer(pPeer);
+}
+
+void CDNSeed::ProcessAskFor(CPeer* pPeer)
+{
+    uint256 hashFork;
+    CInv inv;
+    CMvPeer *pMvPeer = static_cast<CMvPeer *>(pPeer);
+    if (pMvPeer->FetchAskFor(hashFork,inv))
+    {
+        // CMvEventPeerGetData* pEventGetData = new CMvEventPeerGetData(pMvPeer->GetNonce(),hashFork);
+        // if (pEventGetData != NULL)
+        // {
+        //     pEventGetData->data.push_back(inv);
+        //     pNetChannel->PostEvent(pEventGetData);
+        // }
+    }
+}
+
 bool CDNSeed::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CWalleveBufStream& ssPayload)
 {
-    WalleveLog("xp HandlePeerRecvMessage()");
     CMvPeer *pMvPeer = static_cast<CMvPeer *>(pPeer);
     if (nChannel == MVPROTO_CHN_NETWORK)
     {
         switch (nCommand)
         {
-        case MVPROTO_CMD_GETADDRESS:
-            {
-                vector<CNodeAvail> vNode;
-                RetrieveGoodNode(vNode,NODE_ACTIVE_TIME,500);
-                vector<CAddress> vAddr;
-                BOOST_FOREACH(const CNodeAvail& node,vNode)
-                {
-                    if (node.data.type() == typeid(uint64) && IsRoutable(node.ep.address()))
-                    {
-                        uint64 nService = boost::any_cast<uint64>(node.data);
-                        vAddr.push_back(CAddress(nService,node.ep));
-                    }
-                }
-                CWalleveBufStream ss;
-                ss << vAddr;
-                return pMvPeer->SendMessage(MVPROTO_CHN_NETWORK,MVPROTO_CMD_ADDRESS,ss);
-            }
-            break;
-        case MVPROTO_CMD_ADDRESS:
-            if (!fEnclosed)
-            {
-                vector<CAddress> vAddr;
-                ssPayload >> vAddr;
-                if (vAddr.size() > 500)
-                {
-                    return false;
-                }
-                BOOST_FOREACH(CAddress& addr,vAddr)
-                {
-                    tcp::endpoint ep;
-                    addr.ssEndpoint.GetEndpoint(ep);          
-                    if ((addr.nService & NODE_NETWORK) == NODE_NETWORK 
-                         && IsRoutable(ep.address()) && !setDNSeed.count(ep))
-                    {   
-                        AddNewNode(ep,ep.address().to_string(),boost::any(addr.nService));
-                    }
-                }
-                
-                tcp::endpoint ep_ = pMvPeer->GetRemote();
-                if (setDNSeed.count(ep_))
-                {
-                    RemoveNode(ep_);
-                }
-                DNSeedService::getInstance()->add2list(ep_); 
-                return true;
-            }
-            break;
-        case MVPROTO_CMD_PING:
-            return pMvPeer->SendMessage(MVPROTO_CHN_NETWORK,MVPROTO_CMD_PONG,ssPayload);
-            break;
-        case MVPROTO_CMD_PONG:
-            return true;
-            break;
         case MVPROTO_CMD_GETDNSEED:
             {
+                tcp::endpoint ep(pMvPeer->GetRemote().address(),NetworkConfig()->nPort);
+                DNSeedService::getInstance()->add2list(ep);
                 WalleveLog("xp [receive] MVPROTO_CMD_GETDNSEED\n");
                 std::vector<CAddress> vAddrs;
                 DNSeedService::getInstance()->getAddressList(vAddrs);
@@ -161,21 +139,21 @@ bool CDNSeed::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CWall
             }
             break;
         case MVPROTO_CMD_DNSEED:
-            {
-                WalleveLog("xp [receive] MVPROTO_CMD_DNSEED\n");
-                std::vector<CAddress> vAddrs;
-                ssPayload >> vAddrs;
-                DNSeedService::getInstance()->recvAddressList(vAddrs);
+            {   //TODO betwen DNSeed servers change
+                // std::cout<<"xp [receive] MVPROTO_CMD_DNSEED"<<std::endl;
+                // std::vector<CAddress> vAddrs;
+                // ssPayload >> vAddrs;
+                // DNSeedService::getInstance()->recvAddressList(vAddrs);
                 
-                std::vector<tcp::endpoint> eplist;
-                DNSeedService::getInstance()->getConnectAddressList(eplist);
-                for(size_t i=0;i<eplist.size();i++)
-                {
-                    tcp::endpoint &cep=eplist[i];
-                     std::cout<<cep.address().to_string()<<":"<<cep.port()<<std::endl;
-                    // this->Connect(cep,10);
-                    //this->AddNewNode(CNetHost(cep,cep.address().to_string(),boost::any(uint64(network::NODE_NETWORK))));
-                }
+                // std::vector<tcp::endpoint> eplist;
+                // DNSeedService::getInstance()->getConnectAddressList(eplist);
+                // for(size_t i=0;i<eplist.size();i++)
+                // {
+                //     tcp::endpoint &cep=eplist[i];
+                //      std::cout<<cep.address().to_string()<<":"<<cep.port()<<std::endl;
+                //     // this->Connect(cep,10);
+                //     this->AddNewNode(CNetHost(cep,cep.address().to_string(),boost::any(uint64(network::NODE_NETWORK))));
+                // }
                 return true;
             }   
             break;
@@ -184,4 +162,48 @@ bool CDNSeed::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CWall
         }
     }
     return false;
+}
+
+//
+bool CDNSeed::HandlePeerHandshaked(CPeer *pPeer,uint32 nTimerId)
+{
+    cout<<"HandlePeerHandshaked()"<<endl;
+    CMvPeer *pMvPeer = static_cast<CMvPeer *>(pPeer);
+    CancelTimer(nTimerId);
+    if (!CheckPeerVersion(pMvPeer->nVersion,pMvPeer->nService,pMvPeer->strSubVer))
+    {
+        return false;
+    }
+    if (!pMvPeer->IsInBound())
+    {
+        tcp::endpoint ep = pMvPeer->GetRemote();
+        if (GetPeer(pMvPeer->nNonceFrom) != NULL)
+        {
+            RemoveNode(ep);
+            return false;
+        }
+
+        string strName = GetNodeName(ep);
+        if (strName == "dnseed")
+        {
+            setDNSeed.insert(ep);
+        }
+
+        SetNodeData(ep,boost::any(pMvPeer->nService));
+    }
+    WalleveUpdateNetTime(pMvPeer->GetRemote().address(),pMvPeer->nTimeDelta);
+    // CMvEventPeerActive* pEventActive = new CMvEventPeerActive(pMvPeer->GetNonce());
+    // if (pEventActive == NULL)
+    // {
+    //     return false;
+    // }   
+    // pEventActive->data = CAddress(pMvPeer->nService,pMvPeer->GetRemote());
+    // pNetChannel->PostEvent(pEventActive);
+    // //
+    // cout<<"HandlePeerHandshaked()4"<<endl;
+    // if (!fEnclosed)
+    // {
+    //     pMvPeer->SendMessage(MVPROTO_CHN_NETWORK,MVPROTO_CMD_GETADDRESS);
+    // }
+    return true;
 }

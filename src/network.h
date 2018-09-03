@@ -7,6 +7,7 @@
 
 #include "mvpeernet.h"
 #include "config.h"
+#include "mvbase.h"
 
 namespace multiverse
 {
@@ -23,6 +24,10 @@ protected:
     const CMvNetworkConfig * NetworkConfig()
     {
         return dynamic_cast<const CMvNetworkConfig *>(walleve::IWalleveBase::WalleveConfig());
+    }
+    const CMvStorageConfig * StorageConfig()
+    {
+        return dynamic_cast<const CMvStorageConfig *>(walleve::IWalleveBase::WalleveConfig());
     }
 };
 

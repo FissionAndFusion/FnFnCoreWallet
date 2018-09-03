@@ -17,10 +17,13 @@ public:
     virtual int GetPrimaryChainHeight();
     virtual bool HandlePeerRecvMessage(walleve::CPeer *pPeer,int nChannel,int nCommand,
                                walleve::CWalleveBufStream& ssPayload)override;
+    virtual bool HandlePeerHandshaked(walleve::CPeer *pPeer,uint32 nTimerId)override;
     virtual void BuildHello(walleve::CPeer *pPeer,walleve::CWalleveBufStream& ssPayload)override;
 protected:
     bool WalleveHandleInitialize();
     void WalleveHandleDeinitialize();
+    virtual void DestroyPeer(walleve::CPeer* pPeer) override;
+    virtual void ProcessAskFor(walleve::CPeer* pPeer) override;
     virtual walleve::CPeer* CreatePeer(walleve::CIOClient *pClient,uint64 nNonce,bool fInBound)override;
 
     const CMvNetworkConfig * NetworkConfig()

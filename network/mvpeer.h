@@ -23,7 +23,7 @@ public:
     ~CMvPeer();
     virtual void Activate();
     virtual bool IsHandshaked();
-    bool SendMessage(int nChannel,int nCommand,walleve::CWalleveBufStream& ssPayload);
+    virtual bool SendMessage(int nChannel,int nCommand,walleve::CWalleveBufStream& ssPayload);
     bool SendMessage(int nChannel,int nCommand)
     {
         walleve::CWalleveBufStream ssPayload;
