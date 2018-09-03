@@ -136,7 +136,7 @@ void callback(Client *cl)
 {
     HandlePair sub_hp;
     std::string id = cl->SendSub("all-block", sub_hp);
-    cl->SendUnsub(id);
+    // cl->SendUnsub(id);
 
     HandlePair method_hp;
     std::string mehtod_id = cl->SendMethod("getblocks", method_hp);

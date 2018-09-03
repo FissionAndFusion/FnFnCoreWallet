@@ -9,8 +9,9 @@ HandlePair::~HandlePair()
 {
 }
 
-void HandlePair::AddBlock()
+void HandlePair::AddBlock(lws::Block &block)
 {
+    std::cout << "recived block, nVersion:" << block.nversion() << "nType:" << block.ntype() << std::endl;
 }
 
 void HandlePair::AddTx()
@@ -21,7 +22,9 @@ void HandlePair::SubHandler(std::string type, std::string name, google::protobuf
 {
     if("all-block" == name)
     {
-        AddBlock();
+        lws::Block block;
+        object.UnpackTo(&block);
+        AddBlock(block);
     }
 
     if("all-tx" == name)
