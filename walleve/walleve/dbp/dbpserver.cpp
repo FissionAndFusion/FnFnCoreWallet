@@ -396,7 +396,12 @@ void CDbpClient::HandleReadCompleted()
 {
     // start parse msg body(payload) by protobuf
     dbp::Base msgBase;
-    msgBase.ParseFromArray(ssRecv.GetData() + 4,ssRecv.GetSize());
+    if(!msgBase.ParseFromArray(ssRecv.GetData() + 4,ssRecv.GetSize() - 4))
+    {        
+        pServer->RespondError(this,400,"Parse Msg Base failed");
+        pServer->HandleClientError(this);
+        return;
+    }
 
     dbp::Msg currentMsgType = msgBase.msg();
     google::protobuf::Any anyObj = msgBase.object();
@@ -727,7 +732,9 @@ void CDbpServer::HandleClientError(CDbpClient *pDbpClient)
 {
     WalleveLog("Client error\n");
     pingTimerPtr_->cancel();
+    WalleveLog("Timer canceled\n");
     RemoveClient(pDbpClient);
+    WalleveLog("Removed client\n");
 }
 
 void CDbpServer::AddNewHost(const CDbpHostConfig& confHost)
@@ -898,8 +905,10 @@ void CDbpServer::SendPingHandler(const boost::system::error_code& err,CDbpClient
     }
     
     WalleveLog("send ping:\n");
-    
-    pDbpClient->SendPing(std::to_string(CDbpUtils::currentUTC()));
+    std::string utc = std::to_string(CDbpUtils::currentUTC());
+    WalleveLog(utc.c_str());
+    WalleveLog("\n");
+    pDbpClient->SendPing(utc);
     
     pingTimerPtr_.reset(new boost::asio::deadline_timer(this->GetIoService(),boost::posix_time::seconds(5)));
     pingTimerPtr_->expires_at(pingTimerPtr_->expires_at() + boost::posix_time::seconds(5));
