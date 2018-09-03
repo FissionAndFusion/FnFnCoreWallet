@@ -6,7 +6,7 @@
 #include <boost/asio/system_timer.hpp>
 #include <boost/asio/high_resolution_timer.hpp>
 #include <boost/random.hpp>
-#include <boost/random/uniform_int.hpp>
+#include "handlepair.h"
 #include "dbp.pb.h"
 
 class Client
@@ -22,9 +22,9 @@ class Client
     void SendConnect(std::string session);
     std::string SendPing();
     void SendPong(std::string id);
-    std::string SendSub(std::string name);
+    std::string SendSub(std::string name, HandlePair hp);
     void SendUnsub(std::string id);
-    std::string SendMethod(std::string method);
+    std::string SendMethod(std::string method, HandlePair hp);
     void Close();
 
   private:
@@ -52,6 +52,8 @@ class Client
     std::string client_;
     int version_;
     CallBackFn cb_;
+    std::map<std::string, HandlePair> sub_map_;
+    std::map<std::string, HandlePair> method_map_;
 
   protected:
 };
