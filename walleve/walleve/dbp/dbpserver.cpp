@@ -677,8 +677,15 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
         WalleveLog("recv pong:\n");
         WalleveLog(pongMsg.id().c_str());
 
-        std::string session = sessionClientBimap.right.at(pDbpClient);
-        sessionProfileMap[session].timestamp = CDbpUtils::currentUTC();
+        if(sessionClientBimap.right.find(pDbpClient) != sessionClientBimap.right.end())
+        {
+            std::string session = sessionClientBimap.right.at(pDbpClient);
+            
+            if(sessionProfileMap.count(session) != 0)
+            {
+                sessionProfileMap[session].timestamp = CDbpUtils::currentUTC();
+            }
+        }
     } 
     else
     {
