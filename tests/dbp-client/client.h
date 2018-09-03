@@ -39,7 +39,6 @@ class Client
     dbp::Base CreateMsg(dbp::Msg msg, google::protobuf::Message &obj);
     std::vector<char> Serialize(dbp::Base base);
     void Send(std::vector<char> buf, std::string explain);
-    void Test();
     uint Random();
 
   private:

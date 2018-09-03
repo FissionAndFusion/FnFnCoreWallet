@@ -95,11 +95,6 @@ uint Client::Random()
     struct timeval tv;
     gettimeofday(&tv, NULL);
     long seed = tv.tv_sec * 1000 + tv.tv_usec / 1000;
-    // boost::random::mt19937 gen;
-    // boost::uniform_int<>distribut(1, 10000000);
-    // boost::random::variate_generator <boost::random::mt19937 &, boost::uniform_int<>> die(gen, distribut);
-    // int ret = die();
-    // boost::random::mt19937 rng(time(0));
     boost::random::mt19937 rng(seed);
     int ret = rng();
     return ret;
@@ -107,10 +102,6 @@ uint Client::Random()
 
 std::string Client::SendPing()
 {
-    // srand(time(NULL));
-    // int secret = rand();
-    // char s[20] = {'\0'};
-    // sprintf(s, "%d", secret);
     std::string id(std::to_string(Random()));
 
     dbp::Ping ping;
@@ -132,10 +123,6 @@ void Client::SendPong(std::string id)
 
 std::string Client::SendSub(std::string name)
 {
-    // srand (time(NULL));
-    // int secret = rand();
-    // char s[20] = {'\0'};
-    // sprintf(s, "%d", secret);
     std::string id(std::to_string(Random()));
 
     dbp::Sub sub;
@@ -158,10 +145,6 @@ void Client::SendUnsub(std::string id)
 
 std::string Client::SendMethod(std::string method)
 {
-    // srand(time(NULL));
-    // int secret = rand();
-    // char s[20] = {'\0'};
-    // sprintf(s, "%d", secret);
     std::string id(std::to_string(Random()));
 
     dbp::Method obj;
@@ -186,14 +169,6 @@ void Client::ConnHandler(const boost::system::error_code &ec, std::shared_ptr<bo
     SendConnect("");
     std::cout << "[conn_handler]recive from " << sock->remote_endpoint().address() << std::endl;
     sock_->async_read_some(boost::asio::buffer(m_buf_), boost::bind(&Client::ReadHandler, this, boost::asio::placeholders::error, sock));
-}
-
-void Client::Test()
-{
-    std::string id = SendSub("all-block");
-    SendUnsub(id);
-
-    std::string mehtod_id = SendMethod("getblocks");
 }
 
 void Client::ErrorHandler()
@@ -249,7 +224,6 @@ void Client::ReadHandler(const boost::system::error_code &ec, std::shared_ptr<bo
         }
 
         m_io_.post(boost::bind(&Client::TestHandle, this, this));
-        // Test();
     }
 
     if(base.msg() == dbp::Msg::FAILED)
