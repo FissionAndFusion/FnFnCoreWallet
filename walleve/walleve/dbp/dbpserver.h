@@ -134,6 +134,8 @@ protected:
 
     bool IsSessionTimeOut(CDbpClient* pDbpClient);
 
+    void SendPingHandler(const boost::system::error_code& err,CDbpClient *pDbpClient); 
+
 protected:
     std::vector<CDbpHostConfig> vecHostConfig;
     std::map<boost::asio::ip::tcp::endpoint,CDbpProfile> mapProfile;

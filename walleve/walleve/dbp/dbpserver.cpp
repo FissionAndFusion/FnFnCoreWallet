@@ -857,6 +857,17 @@ void CDbpServer::RespondError(CDbpClient *pDbpClient,int nStatusCode,const std::
     pDbpClient->SendResponse(nStatusCode,strError);
 }
 
+void CDbpServer::SendPingHandler(const boost::system::error_code& err,CDbpClient *pDbpClient)
+{
+    WalleveLog("send ping:\n");
+    
+    pDbpClient->SendPing(std::to_string(CDbpUtils::currentUTC()));
+    
+    pingTimer_.expires_at(pingTimer_.expires_at() + boost::posix_time::seconds(5));
+    pingTimer_.async_wait(boost::bind(&CDbpServer::SendPingHandler, 
+        this, boost::asio::placeholders::error, pDbpClient));
+} 
+
 bool CDbpServer::HandleEvent(CWalleveEventDbpConnected& event)
 {
     std::map<uint64,CDbpClient*>::iterator it = mapClient.find(event.nNonce);
@@ -870,19 +881,8 @@ bool CDbpServer::HandleEvent(CWalleveEventDbpConnected& event)
 
     pDbpClient->SendResponse(connectedBody);
 
-    std::function<void (const boost::system::error_code&)> 
-    pingCallback = [&] (const boost::system::error_code& err) -> void {
-        
-        WalleveLog("send ping:\n");
-        
-        pDbpClient->SendPing(std::to_string(CDbpUtils::currentUTC()));
-        
-        pingTimer_.expires_at(pingTimer_.expires_at() + boost::posix_time::seconds(5));
-        pingTimer_.async_wait(pingCallback);
-
-    };
-
-    pingTimer_.async_wait(pingCallback);
+    pingTimer_.async_wait(boost::bind(&CDbpServer::SendPingHandler, 
+        this, boost::asio::placeholders::error, pDbpClient));
     
     return true;
 }
