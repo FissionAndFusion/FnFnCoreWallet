@@ -656,7 +656,10 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
         dbp::Ping pingMsg;
         any->UnpackTo(&pingMsg);
 
+        WalleveLog("recv ping:\n");
+        WalleveLog(pingMsg.id().c_str());
         pDbpClient->SendPong(pingMsg.id());
+        WalleveLog("sended pong");
 
     }
     else if(any->Is<dbp::Pong>())
@@ -670,16 +673,11 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
         dbp::Pong pongMsg;
         any->UnpackTo(&pongMsg);
 
+        WalleveLog("recv pong:\n");
+        WalleveLog(pongMsg.id().c_str());
+
         std::string session = sessionClientBimap.right.at(pDbpClient);
         sessionProfileMap[session].timestamp = CDbpUtils::currentUTC();
-
-        boost::asio::deadline_timer pingTimer(this->GetIoService(),boost::posix_time::seconds(10));
-
-        auto pingCallback = [pDbpClient] (const boost::system::error_code& err) -> void {
-            pDbpClient->SendPing(std::to_string(CDbpUtils::currentUTC()));
-        };
-
-        pingTimer.async_wait(pingCallback);
     } 
     else
     {
@@ -870,7 +868,22 @@ bool CDbpServer::HandleEvent(CWalleveEventDbpConnected& event)
     CWalleveDbpConnected &connectedBody = event.data;
 
     pDbpClient->SendResponse(connectedBody);
-    pDbpClient->SendPing(std::to_string(CDbpUtils::currentUTC()));
+      
+    boost::asio::deadline_timer pingTimer(this->GetIoService(),boost::posix_time::seconds(10));
+
+    std::function<void (const boost::system::error_code&)> 
+    pingCallback = [&] (const boost::system::error_code& err) -> void {
+        
+        WalleveLog("send ping:\n");
+        
+        pDbpClient->SendPing(std::to_string(CDbpUtils::currentUTC()));
+        
+        pingTimer.expires_at(pingTimer.expires_at() + boost::posix_time::seconds(5));
+        pingTimer.async_wait(pingCallback);
+
+    };
+
+    pingTimer.async_wait(pingCallback);
     
     return true;
 }
