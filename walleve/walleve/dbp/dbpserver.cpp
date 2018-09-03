@@ -517,6 +517,16 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
         {
             if(sessionProfileMap.count(session))
             {
+                
+                if(sessionClientBimap.left.find(session) != sessionClientBimap.left.end())
+                {
+                    auto pDbplient = sessionClientBimap.left.at(session);
+                    sessionClientBimap.left.erase(session);
+                    sessionClientBimap.right.erase(pDbpClient);
+                }
+                
+                sessionClientBimap.insert(position_pair(session,pDbpClient));
+   
                 CWalleveDbpConnect &connectBody = pEventDbpConnect->data;
                 connectBody.isReconnect = true;
                 connectBody.session = session;
