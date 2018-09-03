@@ -371,7 +371,7 @@ void CDbpClient::HandleReadHeader(std::size_t nTransferred)
             return;
         }
 
-        ssRecv.Clear();
+        //ssRecv.Clear();
         StartReadPayload(len);
     }
     else
@@ -396,7 +396,7 @@ void CDbpClient::HandleReadCompleted()
 {
     // start parse msg body(payload) by protobuf
     dbp::Base msgBase;
-    msgBase.ParseFromArray(ssRecv.GetData(),ssRecv.GetSize());
+    msgBase.ParseFromArray(ssRecv.GetData() + 4,ssRecv.GetSize());
 
     dbp::Msg currentMsgType = msgBase.msg();
     google::protobuf::Any anyObj = msgBase.object();
@@ -718,7 +718,10 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
 void CDbpServer::HandleClientSent(CDbpClient *pDbpClient)
 {
     // keep-alive connection,do not remove
+    WalleveLog("continue active");
     pDbpClient->Activate();
+    //RemoveClient(pDbpClient);
+    WalleveLog("continue actived");
 }
 
 void CDbpServer::HandleClientError(CDbpClient *pDbpClient)
