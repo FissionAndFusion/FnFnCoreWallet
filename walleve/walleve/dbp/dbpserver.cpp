@@ -490,6 +490,9 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
         std::string session = connectMsg.session();
         if(session.empty())
         {
+            
+            WalleveLog("new connect:\n");
+            
             // generate random session string
             session = CDbpUtils::RandomString();    
             while(sessionProfileMap.count(session))
@@ -515,14 +518,19 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
         }
         else
         {
+            
+            WalleveLog("reconnect:\n");
+            
             if(sessionProfileMap.count(session))
             {
                 
+                WalleveLog("reconnect session exists \n");
                 if(sessionClientBimap.left.find(session) != sessionClientBimap.left.end())
                 {
+                    WalleveLog("reconnect session exists and reconstruct sessionClientBimap\n");
                     auto pDbplient = sessionClientBimap.left.at(session);
                     sessionClientBimap.left.erase(session);
-                    sessionClientBimap.right.erase(pDbpClient);
+                    //sessionClientBimap.right.erase(pDbpClient);
                 }
                 
                 sessionProfileMap[session].pDbpClient = pDbpClient;
@@ -671,6 +679,7 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
 
         WalleveLog("recv ping:\n");
         WalleveLog(pingMsg.id().c_str());
+        WalleveLog("\n");
         pDbpClient->SendPong(pingMsg.id());
         WalleveLog("sended pong");
 
@@ -858,7 +867,7 @@ void CDbpServer::RemoveClient(CDbpClient *pDbpClient)
     {
         std::string assciatedSession = iter->second;
         sessionClientBimap.left.erase(assciatedSession);
-        sessionClientBimap.right.erase(pDbpClient);
+        //sessionClientBimap.right.erase(pDbpClient);
         sessionProfileMap.erase(assciatedSession);
     }
     
