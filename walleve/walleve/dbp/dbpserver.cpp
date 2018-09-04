@@ -373,8 +373,7 @@ void CDbpClient::HandleReadHeader(std::size_t nTransferred)
     {
         
         std::string lenBuffer(4,0);
-        CBinary lenBinary(&lenBuffer[0],lenBuffer.size());
-        ssRecv >> lenBinary;
+        ssRecv.Read(&lenBuffer[0],4);
         
         uint32_t nMsgHeaderLen = CDbpUtils::parseLenFromMsgHeader(&lenBuffer[0],4);
         if(nMsgHeaderLen == 0)
@@ -417,8 +416,7 @@ void CDbpClient::HandleReadCompleted(uint32_t len)
 
     
     std::string payloadBuffer(len,0);
-    CBinary payloadBinary(&payloadBuffer[0],payloadBuffer.size());
-    ssRecv >> payloadBinary;
+    ssRecv.Read(&payloadBuffer[0],len);
     
     if(!msgBase.ParseFromArray(&payloadBuffer[0],len))
     {        
