@@ -49,7 +49,7 @@ void CDbpClient::SetEventStream()
 void CDbpClient::Activate()
 {
     fEventStream = false;
-   // ssRecv.Clear();
+  //  ssRecv.Clear();
     ssSend.Clear();
     
     StartReadHeader();
@@ -352,7 +352,6 @@ void CDbpClient::SendResponse(int statusCode,const std::string& description)
 
 void CDbpClient::StartReadHeader()
 {
-    ssRecv.Clear();
     pClient->Read(ssRecv,4,
     boost::bind(&CDbpClient::HandleReadHeader,this,_1));
 }
@@ -370,9 +369,14 @@ void CDbpClient::HandleReadHeader(std::size_t nTransferred)
               << " StreamBuffer: " << ssRecv.GetSize()
               << std::endl ;
 
-    if(nTransferred != 0)
+    if(nTransferred == 4)
     {
-        uint32_t nMsgHeaderLen = CDbpUtils::parseLenFromMsgHeader(ssRecv.GetData() + ssRecv.GetSize() - 4,4);
+        
+        std::string lenBuffer(4,0);
+        CBinary lenBinary(&lenBuffer[0],lenBuffer.size());
+        ssRecv >> lenBinary;
+        
+        uint32_t nMsgHeaderLen = CDbpUtils::parseLenFromMsgHeader(&lenBuffer[0],4);
         if(nMsgHeaderLen == 0)
         {
             std::cout << "Msg Base header length is 0" << std::endl;
@@ -380,16 +384,7 @@ void CDbpClient::HandleReadHeader(std::size_t nTransferred)
             return;
         }
 
-        if (nMsgHeaderLen > 0 && ssRecv.GetSize() < nMsgHeaderLen)
-        {
-            StartReadPayload(nMsgHeaderLen - ssRecv.GetSize());
-        }
-        else
-        {
-            HandleReadCompleted(nMsgHeaderLen);
-        }
-
-        //StartReadPayload(nMsgHeaderLen);
+        StartReadPayload(nMsgHeaderLen);
     }
     else
     {
@@ -405,7 +400,7 @@ void CDbpClient::HandleReadPayload(std::size_t nTransferred,uint32_t len)
                 << " StreamBuffer: " << ssRecv.GetSize()
                << std::endl ;
     
-    if(nTransferred != 0)
+    if(nTransferred == len)
     {
         HandleReadCompleted(len);
     }
@@ -420,7 +415,12 @@ void CDbpClient::HandleReadCompleted(uint32_t len)
     // start parse msg body(payload) by protobuf
     dbp::Base msgBase;
 
-    if(!msgBase.ParseFromArray(ssRecv.GetData() + ssRecv.GetSize() - len ,len))
+    
+    std::string payloadBuffer(len,0);
+    CBinary payloadBinary(&payloadBuffer[0],payloadBuffer.size());
+    ssRecv >> payloadBinary;
+    
+    if(!msgBase.ParseFromArray(&payloadBuffer[0],len))
     {        
         pServer->RespondError(this,400,"Parse Msg Base failed");
         pServer->HandleClientError(this);
