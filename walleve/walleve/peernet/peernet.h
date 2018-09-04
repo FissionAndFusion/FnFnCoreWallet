@@ -57,7 +57,7 @@ protected:
     std::size_t GetMaxOutBoundCount();
     bool ClientAccepted(const boost::asio::ip::tcp::endpoint& epService,CIOClient *pClient);
     bool ClientConnected(CIOClient *pClient);
-    void ClientFailToConnect(const boost::asio::ip::tcp::endpoint& epRemote);
+    virtual void ClientFailToConnect(const boost::asio::ip::tcp::endpoint& epRemote);
     void HostResolved(const CNetHost& host,const boost::asio::ip::tcp::endpoint& ep);
     CPeer* AddNewPeer(CIOClient *pClient,bool fInBound);
     void RewardPeer(CPeer *pPeer,const CEndpointManager::Bonus& bonus);

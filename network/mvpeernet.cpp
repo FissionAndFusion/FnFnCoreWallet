@@ -334,7 +334,11 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                     AddNewNode(CNetHost(cep,cep.address().to_string(),boost::any(uint64(network::NODE_NETWORK))));
                 }
                 //断开当前节点并移除
-                if(eplist.size()>0) RemoveNode( pMvPeer->GetRemote());
+                if(eplist.size()>0) 
+                {
+                    RemoveNode(pMvPeer->GetRemote());
+                    RemovePeer(pMvPeer,CEndpointManager::CloseReason::HOST_CLOSE);
+                }
                 return true;
             }   
             break;

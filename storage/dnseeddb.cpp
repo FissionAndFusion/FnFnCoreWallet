@@ -63,7 +63,7 @@ bool DNSeedDB::deleteNode(SeedNode &node)
     std::vector<unsigned char> bt;
      this->getBinaryCharV4V6(bt,node._ep.address());
     oss << "DELETE FROM dnseednode"
-        <<            "where address =\'" << dbConn.ToEscString(bt) << "\'";
+        <<            "WHERE address = \'" << dbConn.ToEscString(bt) << "\'";
     return dbConn.Query(oss.str());
 }
 
@@ -112,7 +112,7 @@ bool DNSeedDB::CreateTable()
                        );
 }
 
-SeedNode* DNSeedDB::findOneWithAddress(std::string ip)
+bool DNSeedDB::findOneWithAddress(std::string ip,SeedNode &targetNode)
 {
     address addr=address::from_string(ip);
     std::vector<unsigned char> bt;
@@ -125,21 +125,20 @@ SeedNode* DNSeedDB::findOneWithAddress(std::string ip)
     CMvDBRes res(dbConn,str,true);
     while(res.GetRow())
     {
-        SeedNode* node=new SeedNode();
         std::vector<unsigned char>  addbyte;
         short port;
-        if (!res.GetField(0,node->_id) || !res.GetField(1,addbyte) || !res.GetField(2,port) 
-            || !res.GetField(3,node->_score))
+        if (!res.GetField(0,targetNode._id) || !res.GetField(1,addbyte) 
+            || !res.GetField(2,port)        || !res.GetField(3,targetNode._score))
         {
-            return 0;
+            return false;
         }
         address_v4::bytes_type byte;
         for(size_t i=0;i<4;i++)
         {
             byte[i]=addbyte[i];
         }
-        node->_ep=tcp::endpoint(address(address_v4(byte)),port);
-        return node;
+        targetNode._ep=tcp::endpoint(address(address_v4(byte)),port);
+        return true;
     }
-    return 0;
+    return false;
 }

@@ -113,12 +113,11 @@ bool CMvDNSeedPeer::HandshakeCompletd()
     // }
      nHsTimerId = 0;
      Read(MESSAGE_HEADER_SIZE,boost::bind(&CMvDNSeedPeer::HandleReadHeader,this));
-     if(!DNSeedService::getInstance()->isDNSeedService())
+     if(DNSeedService::getInstance()->isDNSeedService())
      {
-         SendMessage(MVPROTO_CHN_NETWORK,MVPROTO_CMD_GETDNSEED);
+         ((CMvPeerNet*)pPeerNet)->dnseedTestConnSuccess(this);
      }else{
-         //断开连接
-         //获取高度
+         SendMessage(MVPROTO_CHN_NETWORK,MVPROTO_CMD_GETDNSEED);     
      }
      
     return true;

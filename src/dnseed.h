@@ -21,9 +21,11 @@ public:
                                walleve::CWalleveBufStream& ssPayload)override;
     virtual bool HandlePeerHandshaked(walleve::CPeer *pPeer,uint32 nTimerId)override;
     virtual void BuildHello(walleve::CPeer *pPeer,walleve::CWalleveBufStream& ssPayload)override;
+    virtual void dnseedTestConnSuccess(walleve::CPeer *pPeer)override;
 protected:
     bool WalleveHandleInitialize();
     void WalleveHandleDeinitialize();
+    virtual void ClientFailToConnect(const boost::asio::ip::tcp::endpoint& epRemote)override;
     virtual void DestroyPeer(walleve::CPeer* pPeer) override;
     virtual void ProcessAskFor(walleve::CPeer* pPeer) override;
     virtual walleve::CPeer* CreatePeer(walleve::CIOClient *pClient,uint64 nNonce,bool fInBound)override;

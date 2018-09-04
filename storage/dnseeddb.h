@@ -37,7 +37,7 @@ public:
     bool deleteNode(SeedNode &node);
     bool updateNode(SeedNode &node);
     bool selectAllNode(std::vector<SeedNode> & nodeList);
-    SeedNode* findOneWithAddress(std::string ip);
+    bool findOneWithAddress(std::string ip,SeedNode &targetNode);
 private:
     void deinit();
     bool CreateTable();

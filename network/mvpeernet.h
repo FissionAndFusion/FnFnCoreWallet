@@ -33,7 +33,8 @@ public:
     void HandlePeerWriten(walleve::CPeer *pPeer);
     virtual bool HandlePeerHandshaked(walleve::CPeer *pPeer,uint32 nTimerId);
     virtual bool HandlePeerRecvMessage(walleve::CPeer *pPeer,int nChannel,int nCommand,
-                               walleve::CWalleveBufStream& ssPayload); 
+                               walleve::CWalleveBufStream& ssPayload);
+    virtual void dnseedTestConnSuccess(walleve::CPeer *pPeer) {}
 protected:
     bool WalleveHandleInitialize();
     void WalleveHandleDeinitialize();

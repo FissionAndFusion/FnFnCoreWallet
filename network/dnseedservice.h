@@ -33,11 +33,13 @@ public:
 
     void getSendAddressList(std::vector<CAddress> & list,GetNodeWay gettype=GET_A_LOT);
     void getLocalConnectAddressList(std::vector<boost::asio::ip::tcp::endpoint> &epList ,int limitCount=10);
-    bool add2list(boost::asio::ip::tcp::endpoint newep);
+    bool add2list(boost::asio::ip::tcp::endpoint newep,bool forceAdd=false);
     void recvAddressList(std::vector<CAddress> epList);
     bool updateNode(storage::SeedNode node);
-    void removeNode(boost::asio::ip::tcp::endpoint& ep);
+    void removeNode(const boost::asio::ip::tcp::endpoint& ep);
     void getAllNodeList4Filter(std::vector<boost::asio::ip::tcp::endpoint> &epList);
+    void resetNewNodeList();
+    
 protected:
     DNSeedService();
 

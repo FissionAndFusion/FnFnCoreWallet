@@ -16,7 +16,7 @@ using namespace std;
 
 #define HANDSHAKE_TIMEOUT               5
 #define NODE_ACTIVE_TIME                (3 * 60 * 60)
-#define TIMING_FILTER_INTERVAL (boost::posix_time::seconds(15))//(24*60*60)
+#define TIMING_FILTER_INTERVAL (boost::posix_time::seconds(60))//(24*60*60)
 
 CDNSeed::CDNSeed()
 :timerFilter(ioService,TIMING_FILTER_INTERVAL),
@@ -140,9 +140,9 @@ bool CDNSeed::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CWall
                 tcp::endpoint ep(pMvPeer->GetRemote().address(),NetworkConfig()->nPort);
                 DNSeedService::getInstance()->add2list(ep);
                 WalleveLog("xp [receive] MVPROTO_CMD_GETDNSEED      height:%d\n",pMvPeer->nStartingHeight);
+                std::vector<CAddress> vAddrs;
                 DNSeedService::getInstance()->getSendAddressList(vAddrs);
                 
-                std::vector<CAddress> vAddrs;
                 CWalleveBufStream ss;
                 ss << vAddrs;
                 return pMvPeer->SendMessage(MVPROTO_CHN_NETWORK,MVPROTO_CMD_DNSEED,ss);
@@ -223,7 +223,7 @@ void CDNSeed::IOThreadFunc()
     timerFilter.async_wait(boost::bind(&CDNSeed::IOProcFilter,this,_1));
     ioService.run();
     timerFilter.cancel();
-    std::cout<<"end"<<std::endl;
+    WalleveLog("dnseedservice stop");
 }
 
 void CDNSeed::IOProcFilter(const boost::system::error_code& err)
@@ -242,14 +242,37 @@ void CDNSeed::filterAddressList()
 {
     std::vector<tcp::endpoint> testList;
     DNSeedService::getInstance()->getAllNodeList4Filter(testList);
+    DNSeedService::getInstance()->resetNewNodeList();
     for(tcp::endpoint cep : testList)
     {
+        WalleveLog("[dnseed] filterAddressList:%s:%d\n"
+                    ,cep.address().to_string().c_str(),cep.port());
         this->AddNewNode(CNetHost(cep,"activeTest",boost::any(uint64(network::NODE_NETWORK))));
     }
-    
-    //建立连接
-    //检查高度
-    //断开连接
-    //todo
+}
 
+void CDNSeed::dnseedTestConnSuccess(walleve::CPeer *pPeer)
+{
+    tcp::endpoint ep=pPeer->GetRemote();
+    //过滤正常连接获取地址的握手
+    string strName = GetNodeName(ep);
+    if (strName != "activeTest") return;
+    //获取高度对比 TODO
+
+    //有效节点
+    DNSeedService::getInstance()->add2list(ep,true);
+    
+    //断开连接
+    WalleveLog("[dnseed]TestConnSuccess:%s:%d  h:%d\n"
+                    ,ep.address().to_string().c_str()
+                    ,ep.port()
+                    ,((CMvPeer*)pPeer)->nStartingHeight);
+    this->RemovePeer(pPeer,CEndpointManager::CloseReason::HOST_CLOSE);
+}
+
+void CDNSeed::ClientFailToConnect(const tcp::endpoint& epRemote)
+{
+    CPeerNet::ClientFailToConnect(epRemote);
+    WalleveLog("ClientFailToConnect>>>%s\n",epRemote.address().to_string().c_str());
+    DNSeedService::getInstance()->removeNode(epRemote);
 }

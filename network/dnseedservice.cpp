@@ -45,7 +45,7 @@ void DNSeedService::enableDNSeedServer()
     _isDNSeedServiceNode=true;
 }
 
-bool DNSeedService::add2list(boost::asio::ip::tcp::endpoint newep)
+bool DNSeedService::add2list(boost::asio::ip::tcp::endpoint newep,bool forceAdd)
 {
     //过滤局域网地址
     if(!IsRoutable(newep.address())) return false;
@@ -56,9 +56,10 @@ bool DNSeedService::add2list(boost::asio::ip::tcp::endpoint newep)
     else
     {
         SeedNode sn(newep); 
-        if(isDNSeedService())
+        if(isDNSeedService()&&!forceAdd)
         {
             this->_newNodeList.push_back(sn);
+            return true;
         }
         else
         {
@@ -145,11 +146,12 @@ bool DNSeedService::updateNode(SeedNode node)
     return false;
 }
 
-void DNSeedService::removeNode(boost::asio::ip::tcp::endpoint &ep)
+void DNSeedService::removeNode(const boost::asio::ip::tcp::endpoint &ep)
 {
-    if(!this->hasAddress(ep)) return;
-    this->_db.deleteNode(SeedNode(ep));
-    
+    //if(!this->hasAddress(ep)) return;
+    SeedNode sn(ep);
+    bool rzt=this->_db.deleteNode(sn);
+    std::cout<<"delete:"<<rzt<<std::endl;
     for(auto it=this->_activeNodeList.begin();it!=this->_activeNodeList.end();it++)
     {
         if(it->_ep==ep)
@@ -167,10 +169,15 @@ void DNSeedService::getAllNodeList4Filter(std::vector<boost::asio::ip::tcp::endp
     
     for(SeedNode & sn :this->_activeNodeList)
     {
-        eplist.push_back(sn._ep);
+        epList.push_back(sn._ep);
     }
     for(SeedNode & sn :this->_newNodeList)
     {
-        eplist.push_back(sn._ep);
+        epList.push_back(sn._ep);
     }
+}
+
+void DNSeedService::resetNewNodeList()
+{
+    this->_newNodeList.clear();
 }
