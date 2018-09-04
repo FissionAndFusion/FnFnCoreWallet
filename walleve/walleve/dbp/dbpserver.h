@@ -79,9 +79,9 @@ protected:
     void StartReadHeader();
     void StartReadPayload(std::size_t nLength);
 
-    void HandleReadHeader(std::size_t len, std::size_t nTransferred);
-    void HandleReadPayload(std::size_t len, std::size_t nTransferred);
-    void HandleReadCompleted();
+    void HandleReadHeader(std::size_t nTransferred);
+    void HandleReadPayload(std::size_t nTransferred, uint32_t len);
+    void HandleReadCompleted(uint32_t len);
     void HandleWritenResponse(std::size_t nTransferred);
 private:
     void SendMessage(dbp::Base* pBaseMsg);
@@ -91,8 +91,8 @@ protected:
     CIOClient* pClient;
     uint64 nNonce;
     bool fEventStream;
-    CWalleveBufStream ssRecv;
     CWalleveBufStream ssSend;
+    CWalleveBufStream ssRecv;
 };
 
 class CSessionProfile

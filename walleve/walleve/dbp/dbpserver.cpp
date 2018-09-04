@@ -20,7 +20,10 @@ using namespace walleve;
 
 CDbpClient::~CDbpClient()
 {
-    if(pClient) pClient->Close();
+    if(pClient)
+    { 
+        pClient->Close();
+    }
 }
 
 CDbpProfile *CDbpClient::GetProfile()
@@ -46,7 +49,7 @@ void CDbpClient::SetEventStream()
 void CDbpClient::Activate()
 {
     fEventStream = false;
-    ssRecv.Clear();
+  //  ssRecv.Clear();
     ssSend.Clear();
     
     StartReadHeader();
@@ -350,31 +353,38 @@ void CDbpClient::SendResponse(int statusCode,const std::string& description)
 void CDbpClient::StartReadHeader()
 {
     pClient->Read(ssRecv,4,
-    boost::bind(&CDbpClient::HandleReadHeader,this, 4, _1));
+    boost::bind(&CDbpClient::HandleReadHeader,this, _1));
 }
 
 void CDbpClient::StartReadPayload(std::size_t nLength)
 {
     pClient->Read(ssRecv,nLength,
-        boost::bind(&CDbpClient::HandleReadPayload,this, nLength, _1));
+        boost::bind(&CDbpClient::HandleReadPayload,this,_1,nLength));
 }
 
 
-void CDbpClient::HandleReadHeader(std::size_t len, std::size_t nTransferred)
-{
-    std::cout << "read header len:" << len << ", nTransferred:" << nTransferred << std::endl;
-    if(nTransferred != 0)
+void CDbpClient::HandleReadHeader(std::size_t nTransferred)
+{ 
+    std::cout << "[ReadHeaderHandler] transferred: " << nTransferred 
+              << " StreamBuffer: " << ssRecv.GetSize()
+              << std::endl ;
+
+    if(nTransferred == 4)
     {
-        uint32_t len = CDbpUtils::parseLenFromMsgHeader(ssRecv.GetData(),4);
-        if(len == 0)
+        
+        std::string lenBuffer(4,0);
+        CBinary lenBinary(&lenBuffer[0],lenBuffer.size());
+        ssRecv >> lenBinary;
+        
+        uint32_t nMsgHeaderLen = CDbpUtils::parseLenFromMsgHeader(&lenBuffer[0],4);
+        if(nMsgHeaderLen == 0)
         {
-            std::cout << "5" << std::endl;
-            // pServer->HandleClientError(this);
+            std::cout << "Msg Base header length is 0" << std::endl;
+            pServer->HandleClientError(this);
             return;
         }
 
-        //ssRecv.Clear();
-        StartReadPayload(len);
+        StartReadPayload(nMsgHeaderLen);
     }
     else
     {
@@ -383,12 +393,17 @@ void CDbpClient::HandleReadHeader(std::size_t len, std::size_t nTransferred)
     }
 }
 
-void CDbpClient::HandleReadPayload(std::size_t len, std::size_t nTransferred)
+void CDbpClient::HandleReadPayload(std::size_t nTransferred,uint32_t len)
 {
-    std::cout << "read payload len:" << len << ", nTransferred:" << nTransferred << std::endl;
-    if(nTransferred != 0)
+    
+    std::cout << "[ReadPayloadHandler] transferred: " << nTransferred 
+                << " MessageLen: " << len
+                << " StreamBuffer: " << ssRecv.GetSize()
+               << std::endl ;
+    
+    if(nTransferred == len)
     {
-        HandleReadCompleted();
+        HandleReadCompleted(len);
     }
     else
     {
@@ -397,11 +412,17 @@ void CDbpClient::HandleReadPayload(std::size_t len, std::size_t nTransferred)
     }
 }
 
-void CDbpClient::HandleReadCompleted()
+void CDbpClient::HandleReadCompleted(uint32_t len)
 {
     // start parse msg body(payload) by protobuf
     dbp::Base msgBase;
-    if(!msgBase.ParseFromArray(ssRecv.GetData() + 4,ssRecv.GetSize() - 4))
+
+    
+    std::string payloadBuffer(len,0);
+    CBinary payloadBinary(&payloadBuffer[0],payloadBuffer.size());
+    ssRecv >> payloadBinary;
+    
+    if(!msgBase.ParseFromArray(&payloadBuffer[0],len))
     {        
         pServer->RespondError(this,400,"Parse Msg Base failed");
 

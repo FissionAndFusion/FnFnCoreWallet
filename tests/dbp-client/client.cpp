@@ -242,7 +242,7 @@ void Client::ReadHandler(const boost::system::error_code &ec, std::shared_ptr<bo
             is_connected_ = true;
             session_ = connected.session();
 
-            m_timer_.reset(new boost::asio::steady_timer(m_io_, std::chrono::seconds{3}));
+            m_timer_.reset(new boost::asio::steady_timer(m_io_, std::chrono::seconds{5}));
             m_timer_->async_wait(boost::bind(&Client::TimerHandler, this, boost::asio::placeholders::error, sock));
         }
 
@@ -358,7 +358,7 @@ void Client::TimerHandler(const boost::system::error_code &ec, std::shared_ptr<b
         std::string id = SendPing();
     }
 
-    m_timer_->expires_from_now(std::chrono::seconds{3});
+    m_timer_->expires_from_now(std::chrono::seconds{5});
     m_timer_->async_wait(boost::bind(&Client::TimerHandler, this, boost::asio::placeholders::error, sock));
 }
 
