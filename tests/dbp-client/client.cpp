@@ -203,7 +203,7 @@ void Client::ReadHandler(const boost::system::error_code &ec, std::shared_ptr<bo
     if (ec)
     {
 
-        std::cerr << "read connection: " << ec.message() << ec << std::endl;
+        std::cerr << "read connection: " << ec.message() << ",code:" << ec << std::endl;
         is_connected_ = false;
         m_io_.post(boost::bind(&Client::ErrorHandler, this));
         return;
