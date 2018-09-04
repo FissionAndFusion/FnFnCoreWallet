@@ -16,8 +16,11 @@ using namespace std;
 
 #define HANDSHAKE_TIMEOUT               5
 #define NODE_ACTIVE_TIME                (3 * 60 * 60)
+#define TIMING_FILTER_INTERVAL (boost::posix_time::seconds(15))//(24*60*60)
 
 CDNSeed::CDNSeed()
+:timerFilter(ioService,TIMING_FILTER_INTERVAL),
+ thrIOProc("dnseedFilter",boost::bind(&CDNSeed::IOThreadFunc,this))
 //: CPeerNet("dnseed")
 {
 }
@@ -36,13 +39,19 @@ bool CDNSeed::WalleveHandleInitialize()
     DNSeedService::getInstance()->enableDNSeedServer();
     
     CPeerNetConfig config;
-    //启动端口监听6816
-    config.vecService.push_back(CPeerService(tcp::endpoint(tcp::v4(), NetworkConfig()->nDNSeedPort),
+    //启动端口监听
+    config.vecService.push_back(CPeerService(tcp::endpoint(tcp::v4(), NetworkConfig()->nPort),
                                                  NetworkConfig()->nMaxInBounds));
     config.nMaxOutBounds = NetworkConfig()->nMaxOutBounds;
-    config.nPortDefault = NetworkConfig()->nDNSeedPort;
+    config.nPortDefault = NetworkConfig()->nPort;
 
     ConfigNetwork(config);
+
+    if (!WalleveThreadStart(thrIOProc))
+    {
+        WalleveLog("Failed to start iothread\n");
+        return false;
+    }
 
     return true;
 }
@@ -130,9 +139,10 @@ bool CDNSeed::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CWall
             {
                 tcp::endpoint ep(pMvPeer->GetRemote().address(),NetworkConfig()->nPort);
                 DNSeedService::getInstance()->add2list(ep);
-                WalleveLog("xp [receive] MVPROTO_CMD_GETDNSEED\n");
+                WalleveLog("xp [receive] MVPROTO_CMD_GETDNSEED      height:%d\n",pMvPeer->nStartingHeight);
+                DNSeedService::getInstance()->getSendAddressList(vAddrs);
+                
                 std::vector<CAddress> vAddrs;
-                DNSeedService::getInstance()->getAddressList(vAddrs);
                 CWalleveBufStream ss;
                 ss << vAddrs;
                 return pMvPeer->SendMessage(MVPROTO_CHN_NETWORK,MVPROTO_CMD_DNSEED,ss);
@@ -151,7 +161,6 @@ bool CDNSeed::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CWall
                 // {
                 //     tcp::endpoint &cep=eplist[i];
                 //      std::cout<<cep.address().to_string()<<":"<<cep.port()<<std::endl;
-                //     // this->Connect(cep,10);
                 //     this->AddNewNode(CNetHost(cep,cep.address().to_string(),boost::any(uint64(network::NODE_NETWORK))));
                 // }
                 return true;
@@ -206,4 +215,41 @@ bool CDNSeed::HandlePeerHandshaked(CPeer *pPeer,uint32 nTimerId)
     //     pMvPeer->SendMessage(MVPROTO_CHN_NETWORK,MVPROTO_CMD_GETADDRESS);
     // }
     return true;
+}
+
+void CDNSeed::IOThreadFunc()
+{
+    ioService.reset(); 
+    timerFilter.async_wait(boost::bind(&CDNSeed::IOProcFilter,this,_1));
+    ioService.run();
+    timerFilter.cancel();
+    std::cout<<"end"<<std::endl;
+}
+
+void CDNSeed::IOProcFilter(const boost::system::error_code& err)
+{
+    if(!err)
+    {
+         /* restart deadline timer */
+        timerFilter.expires_at(timerFilter.expires_at() + TIMING_FILTER_INTERVAL);
+        timerFilter.async_wait(boost::bind(&CDNSeed::IOProcFilter,this,_1));
+
+        this->filterAddressList();
+    }
+}
+
+void CDNSeed::filterAddressList()
+{
+    std::vector<tcp::endpoint> testList;
+    DNSeedService::getInstance()->getAllNodeList4Filter(testList);
+    for(tcp::endpoint cep : testList)
+    {
+        this->AddNewNode(CNetHost(cep,"activeTest",boost::any(uint64(network::NODE_NETWORK))));
+    }
+    
+    //建立连接
+    //检查高度
+    //断开连接
+    //todo
+
 }

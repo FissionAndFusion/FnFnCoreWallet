@@ -8,6 +8,8 @@
 #include "dnseeddb.h"
 #include "mvproto.h"
 
+
+
 namespace multiverse 
 {
 
@@ -15,7 +17,7 @@ namespace network
 {
 
 
-class DNSeedService  
+class DNSeedService 
 {
 public: 
     static DNSeedService* getInstance();
@@ -27,34 +29,27 @@ public:
     };
     bool init(storage::CMvDBConfig & config);
     bool isDNSeedService(){return _isDNSeedServiceNode;}
-    void enableDNSeedServer(){_isDNSeedServiceNode=true;}
+    void enableDNSeedServer();
 
-    void getAddressList(std::vector<CAddress> & list,GetNodeWay gettype=GET_A_LOT);
-    void getConnectAddressList(std::vector<boost::asio::ip::tcp::endpoint> &epList ,int limitCount=10);
+    void getSendAddressList(std::vector<CAddress> & list,GetNodeWay gettype=GET_A_LOT);
+    void getLocalConnectAddressList(std::vector<boost::asio::ip::tcp::endpoint> &epList ,int limitCount=10);
     bool add2list(boost::asio::ip::tcp::endpoint newep);
     void recvAddressList(std::vector<CAddress> epList);
     bool updateNode(storage::SeedNode node);
-    void removeNode(boost::asio::ip::tcp::endpoint ep);
+    void removeNode(boost::asio::ip::tcp::endpoint& ep);
+    void getAllNodeList4Filter(std::vector<boost::asio::ip::tcp::endpoint> &epList);
 protected:
-    DNSeedService(){
-        _isDNSeedServiceNode=false;//todo config
-        _initTime=walleve::GetTime();
-        _runTime=0;
-    } 
-    
-    void startDNSeedService();
-    void filterAddressList();
+    DNSeedService();
+
     bool hasAddress(boost::asio::ip::tcp::endpoint ep);   
-    void getAddressList(std::vector<storage::SeedNode> & list,GetNodeWay gettype=GET_A_LOT);
     
 protected:
     static DNSeedService* p_instance;
-    std::vector<storage::SeedNode> _nodeList;
+    std::vector<storage::SeedNode> _activeNodeList;
+    std::vector<storage::SeedNode> _newNodeList;
     bool _isDNSeedServiceNode;
     multiverse::storage::DNSeedDB _db;
-    //timer
-    int64 _initTime;
-    int64 _runTime;
+    
 
 //advanced
     //定时任务

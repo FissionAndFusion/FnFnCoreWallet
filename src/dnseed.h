@@ -4,6 +4,8 @@
 #include "config.h"
 #include "mvbase.h"
 #include "mvpeernet.h"
+#include <boost/asio.hpp>
+#include "walleve/netio/netio.h"
 
 namespace multiverse
 {
@@ -34,8 +36,14 @@ protected:
     {
         return dynamic_cast<const CMvStorageConfig *>(walleve::IWalleveBase::WalleveConfig());
     }
+    void IOThreadFunc();
+    void IOProcFilter(const boost::system::error_code& err);
+    void filterAddressList();
 protected:
-
+    //timer
+    walleve::CWalleveThread thrIOProc;
+    boost::asio::io_service ioService;
+    boost::asio::deadline_timer timerFilter;
 };
 }
 #endif

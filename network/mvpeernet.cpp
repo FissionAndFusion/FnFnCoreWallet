@@ -96,9 +96,9 @@ bool CMvPeerNet::HandleEvent(CMvEventPeerBlock& eventBlock)
 CPeer* CMvPeerNet::CreatePeer(CIOClient *pClient,uint64 nNonce,bool fInBound)
 {
     uint32_t nTimerId = SetTimer(nNonce,HANDSHAKE_TIMEOUT);
-    //todo 
     CMvPeer *pPeer = NULL;
-    if(pClient->GetRemote().port()==6816)
+    string strName = GetNodeName(pClient->GetRemote());
+    if (strName == "dnseed")
     {
         pPeer = new CMvDNSeedPeer(this,pClient,nNonce,fInBound,nMagicNum,nTimerId);
     }
@@ -316,16 +316,8 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
         case MVPROTO_CMD_PONG:
             return true;
             break;
-        case MVPROTO_CMD_GETDNSEED:
-            {
-                WalleveLog("xp [receive] MVPROTO_CMD_GETDNSEED\n");
-                std::vector<CAddress> vAddrs;
-                DNSeedService::getInstance()->getAddressList(vAddrs);
-                CWalleveBufStream ss;
-                ss << vAddrs;
-                return pMvPeer->SendMessage(MVPROTO_CHN_NETWORK,MVPROTO_CMD_DNSEED,ss);
-            }
-            break;
+        // case MVPROTO_CMD_GETDNSEED:
+        //     break;
         case MVPROTO_CMD_DNSEED:
             {
                 WalleveLog("[receive] MVPROTO_CMD_DNSEED\n");
@@ -334,11 +326,11 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                 DNSeedService::getInstance()->recvAddressList(vAddrs);
                 
                 std::vector<tcp::endpoint> eplist;
-                DNSeedService::getInstance()->getConnectAddressList(eplist);
+                DNSeedService::getInstance()->getLocalConnectAddressList(eplist);
                 for(size_t i=0;i<eplist.size();i++)
                 {
                     tcp::endpoint &cep=eplist[i];
-                    WalleveLog("%s:%d\n",cep.address().to_string().c_str(),cep.port());
+                    WalleveLog("[dnseed] %s:%d\n",cep.address().to_string().c_str(),cep.port());
                     AddNewNode(CNetHost(cep,cep.address().to_string(),boost::any(uint64(network::NODE_NETWORK))));
                 }
                 //断开当前节点并移除

@@ -116,6 +116,9 @@ bool CMvDNSeedPeer::HandshakeCompletd()
      if(!DNSeedService::getInstance()->isDNSeedService())
      {
          SendMessage(MVPROTO_CHN_NETWORK,MVPROTO_CMD_GETDNSEED);
+     }else{
+         //断开连接
+         //获取高度
      }
      
     return true;

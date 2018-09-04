@@ -19,7 +19,6 @@ using namespace multiverse;
 #define DEFAULT_TESTNET_P2PPORT         6813
 #define DEFAULT_RPCPORT                 6812
 #define DEFAULT_TESTNET_RPCPORT         6814
-#define DEFAULT_DNSEED_PORT             6816
 
 #define DEFAULT_MAX_INBOUNDS            125
 #define DEFAULT_MAX_OUTBOUNDS           10
@@ -146,7 +145,6 @@ bool CMvNetworkConfig::PostLoad()
     {
         nPort = (unsigned short)nPortInt;
     }
-    nDNSeedPort=DEFAULT_DNSEED_PORT;
     nMaxOutBounds = DEFAULT_MAX_OUTBOUNDS;
     if (nMaxConnection <= DEFAULT_MAX_OUTBOUNDS)
     {

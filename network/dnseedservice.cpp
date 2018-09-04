@@ -7,7 +7,7 @@ using namespace multiverse;
 using namespace multiverse::network;
 using namespace multiverse::storage;
 
-#define TIMING_FILTER_INTERVAL (24*60*60)
+
 #define SEND_ADDRESS_LIMIT 50
 
 DNSeedService* DNSeedService::p_instance=NULL;
@@ -21,6 +21,10 @@ DNSeedService* DNSeedService::getInstance()
     return p_instance;
 }
 
+DNSeedService::DNSeedService()
+{
+    _isDNSeedServiceNode=false;     
+} 
 
 bool DNSeedService::init(CMvDBConfig & config)
 {
@@ -31,18 +35,14 @@ bool DNSeedService::init(CMvDBConfig & config)
         //WalleveLog("Failed to initialize DNSeed database\n");
         return false;
     }
-    if(_isDNSeedServiceNode)
-    {
-        startDNSeedService();
-    }
-    _db.selectAllNode(this->_nodeList);
+    _db.selectAllNode(this->_activeNodeList);
 
     return true;
 }
 
-void DNSeedService::startDNSeedService()
+void DNSeedService::enableDNSeedServer()
 {
-
+    _isDNSeedServiceNode=true;
 }
 
 bool DNSeedService::add2list(boost::asio::ip::tcp::endpoint newep)
@@ -56,49 +56,52 @@ bool DNSeedService::add2list(boost::asio::ip::tcp::endpoint newep)
     else
     {
         SeedNode sn(newep); 
-        // 入库
-        if(_db.insertNode(sn))
+        if(isDNSeedService())
         {
-            this->_nodeList.push_back(sn);
-            return true;
-        }else{
-            return false;
+            this->_newNodeList.push_back(sn);
         }
+        else
+        {
+            if(_db.insertNode(sn))
+            {
+                this->_activeNodeList.push_back(sn);
+                return true;
+            }else{
+                return false;
+            }
+        }
+       
     }
 
     
 }
 
-void DNSeedService::getAddressList(std::vector<CAddress> & list,GetNodeWay gettype)
+void DNSeedService::getSendAddressList(std::vector<CAddress> & list,GetNodeWay gettype)
 {
     std::vector<SeedNode> snlist;
-    getAddressList(snlist,gettype);
+
+    if(gettype==GET_ALL)
+    {
+        snlist=this->_activeNodeList;
+    }
+    //TODO 
+    for(size_t i=0;i<this->_activeNodeList.size()&&snlist.size()<SEND_ADDRESS_LIMIT;i++)
+    {
+        //TODO choose role
+        snlist.push_back(this->_activeNodeList[i]);
+    }
+
     for(size_t i=0;i<snlist.size();i++)
     {
         list.push_back(CAddress(-1,snlist[i]._ep));
     }
 }
 
-void DNSeedService::getAddressList(std::vector<SeedNode> & list,GetNodeWay gettype)
-{
-    if(gettype==GET_ALL)
-    {
-        list=_nodeList;
-    }
-   
-    for(size_t i=0;i<_nodeList.size()&&list.size()<SEND_ADDRESS_LIMIT;i++)
-    {
-        //TODO choose role
-        list.push_back(_nodeList[i]);
-    }
-    
-}
-
 bool DNSeedService::hasAddress(boost::asio::ip::tcp::endpoint ep)
 {
-    for(size_t i=0;i<_nodeList.size();i++)
+    for(size_t i=0;i<this->_activeNodeList.size();i++)
     {
-        if(_nodeList[i]._ep.address()==ep.address()) return true;
+        if(this->_activeNodeList[i]._ep.address()==ep.address()) return true;
     }
     return false;
 }
@@ -114,35 +117,27 @@ void DNSeedService::recvAddressList(std::vector<CAddress> epList)
     }
 }
 
-void DNSeedService::getConnectAddressList(std::vector<boost::asio::ip::tcp::endpoint> &epList,int limitCount)
+void DNSeedService::getLocalConnectAddressList(std::vector<boost::asio::ip::tcp::endpoint> &epList,int limitCount)
 {
     //TODO 排序,抽取评分高的节点
 
     //用于连接列表
-    for(size_t i=0;i<this->_nodeList.size() && i<limitCount;i++)
+    for(size_t i=0;i<this->_activeNodeList.size() && i<limitCount;i++)
     {
-        SeedNode &sn= _nodeList[i];
+        SeedNode &sn= this->_activeNodeList[i];
         epList.push_back(sn._ep);
     }
-}
-
-void DNSeedService::filterAddressList()
-{
-    //建立连接
-    //检查高度
-    //断开连接
-
 }
 
 bool DNSeedService::updateNode(SeedNode node)
 {
     if(this->_db.updateNode(node))
     {
-        for(size_t i=0;i< this->_nodeList.size();i++)
+        for(size_t i=0;i< this->_activeNodeList.size();i++)
         {
-            if(this->_nodeList[i]._ep.address()== node._ep.address())
+            if(this->_activeNodeList[i]._ep.address()== node._ep.address())
             {
-                this->_nodeList[i]._ep=node._ep;
+                this->_activeNodeList[i]._ep=node._ep;
                 return true;
             }
         }       
@@ -150,7 +145,32 @@ bool DNSeedService::updateNode(SeedNode node)
     return false;
 }
 
-void DNSeedService::removeNode(boost::asio::ip::tcp::endpoint ep)
+void DNSeedService::removeNode(boost::asio::ip::tcp::endpoint &ep)
 {
+    if(!this->hasAddress(ep)) return;
+    this->_db.deleteNode(SeedNode(ep));
+    
+    for(auto it=this->_activeNodeList.begin();it!=this->_activeNodeList.end();it++)
+    {
+        if(it->_ep==ep)
+        {
+            this->_activeNodeList.erase(it);
+            break;
+        }
+    }
 
+}
+
+void DNSeedService::getAllNodeList4Filter(std::vector<boost::asio::ip::tcp::endpoint> &epList)
+{
+    if(!this->isDNSeedService())return;
+    
+    for(SeedNode & sn :this->_activeNodeList)
+    {
+        eplist.push_back(sn._ep);
+    }
+    for(SeedNode & sn :this->_newNodeList)
+    {
+        eplist.push_back(sn._ep);
+    }
 }

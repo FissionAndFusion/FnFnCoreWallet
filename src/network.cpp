@@ -60,15 +60,15 @@ bool CNetwork::WalleveHandleInitialize()
                                               boost::any(uint64(network::NODE_NETWORK))));
         }
     }
+    //TODO 加载数据库中的节点列表
     if(config.vecNode.empty())
     {
-        //TODO 加载数据库中的节点列表
     }
     if(config.vecNode.empty())
     {
         BOOST_FOREACH(const string& seed,NetworkConfig()->vDNSeed)
         {
-            config.vecNode.push_back(CNetHost(seed,NetworkConfig()->nDNSeedPort,"dnseed",
+            config.vecNode.push_back(CNetHost(seed,NetworkConfig()->nPort,"dnseed",
                                               boost::any(uint64(network::NODE_NETWORK))));
         }
     }
