@@ -49,7 +49,7 @@ void CDbpClient::SetEventStream()
 void CDbpClient::Activate()
 {
     fEventStream = false;
-    ssRecv.Clear();
+   // ssRecv.Clear();
     ssSend.Clear();
     
     StartReadHeader();
@@ -352,6 +352,7 @@ void CDbpClient::SendResponse(int statusCode,const std::string& description)
 
 void CDbpClient::StartReadHeader()
 {
+    ssRecv.Clear();
     pClient->Read(ssRecv,4,
     boost::bind(&CDbpClient::HandleReadHeader,this,_1));
 }
@@ -359,55 +360,67 @@ void CDbpClient::StartReadHeader()
 void CDbpClient::StartReadPayload(std::size_t nLength)
 {
     pClient->Read(ssRecv,nLength,
-        boost::bind(&CDbpClient::HandleReadPayload,this,_1));
+        boost::bind(&CDbpClient::HandleReadPayload,this,_1,nLength));
 }
 
 
 void CDbpClient::HandleReadHeader(std::size_t nTransferred)
-{
-    
-    nMsgHeaderBufSize = ssRecv.GetSize();
-    
-    if(nTransferred == 4)
+{ 
+    std::cout << "[ReadHeaderHandler] transferred: " << nTransferred 
+              << " StreamBuffer: " << ssRecv.GetSize()
+              << std::endl ;
+
+    if(nTransferred != 0)
     {
-        nMsgHeaderLen = CDbpUtils::parseLenFromMsgHeader(ssRecv.GetData(),4);
+        uint32_t nMsgHeaderLen = CDbpUtils::parseLenFromMsgHeader(ssRecv.GetData() + ssRecv.GetSize() - 4,4);
         if(nMsgHeaderLen == 0)
         {
-            pServer->RespondError(this,400,"Msg Base header length is 0");
+            std::cout << "Msg Base header length is 0" << std::endl;
             pServer->HandleClientError(this);
             return;
         }
 
-        StartReadPayload(nMsgHeaderLen);
+        if (nMsgHeaderLen > 0 && ssRecv.GetSize() < nMsgHeaderLen)
+        {
+            StartReadPayload(nMsgHeaderLen - ssRecv.GetSize());
+        }
+        else
+        {
+            HandleReadCompleted(nMsgHeaderLen);
+        }
+
+        //StartReadPayload(nMsgHeaderLen);
     }
     else
     {
-        pServer->RespondError(this,400,"Read Header transferred size is: " + 
-                                std::to_string(nTransferred));
         pServer->HandleClientError(this);
     }
 }
 
-void CDbpClient::HandleReadPayload(std::size_t nTransferred)
+void CDbpClient::HandleReadPayload(std::size_t nTransferred,uint32_t len)
 {
-    if(nTransferred == nMsgHeaderLen)
+    
+    std::cout << "[ReadPayloadHandler] transferred: " << nTransferred 
+                << " MessageLen: " << len
+                << " StreamBuffer: " << ssRecv.GetSize()
+               << std::endl ;
+    
+    if(nTransferred != 0)
     {
-        HandleReadCompleted();
+        HandleReadCompleted(len);
     }
     else
     {
-        pServer->RespondError(this,400,"Read Payload transferred size and Msg Head Len is: " + 
-                                std::to_string(nTransferred) + "  " + std::to_string(nMsgHeaderLen));
         pServer->HandleClientError(this);
     }
 }
 
-void CDbpClient::HandleReadCompleted()
+void CDbpClient::HandleReadCompleted(uint32_t len)
 {
     // start parse msg body(payload) by protobuf
     dbp::Base msgBase;
 
-    if(!msgBase.ParseFromArray(ssRecv.GetData() + nMsgHeaderBufSize ,nMsgHeaderLen))
+    if(!msgBase.ParseFromArray(ssRecv.GetData() + ssRecv.GetSize() - len ,len))
     {        
         pServer->RespondError(this,400,"Parse Msg Base failed");
         pServer->HandleClientError(this);
