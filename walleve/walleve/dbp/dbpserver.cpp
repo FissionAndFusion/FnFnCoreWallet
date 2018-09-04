@@ -49,7 +49,7 @@ void CDbpClient::SetEventStream()
 void CDbpClient::Activate()
 {
     fEventStream = false;
-  //  ssRecv.Clear();
+    ssRecv.Clear();
     ssSend.Clear();
     
     StartReadHeader();
@@ -434,38 +434,45 @@ void CDbpClient::HandleReadCompleted(uint32_t len)
     switch(currentMsgType)
     {
     case dbp::CONNECT:
+        std::cout << "connect =========" << std::endl;
         pServer->HandleClientRecv(this,&anyObj);
+        // Activate();
         break;
-    case dbp::SUB:
-        pServer->HandleClientRecv(this,&anyObj);
-        break;
-    case dbp::UNSUB:
-        pServer->HandleClientRecv(this,&anyObj);
-        break;
-    case dbp::METHOD:
-        pServer->HandleClientRecv(this,&anyObj);
-        break;
-    case dbp::PONG:
-        pServer->HandleClientRecv(this,&anyObj);
-        break;
+    // case dbp::SUB:
+    //     pServer->HandleClientRecv(this,&anyObj);
+    //     break;
+    // case dbp::UNSUB:
+    //     pServer->HandleClientRecv(this,&anyObj);
+    //     break;
+    // case dbp::METHOD:
+    //     pServer->HandleClientRecv(this,&anyObj);
+    //     break;
+    // case dbp::PONG:
+    //     pServer->HandleClientRecv(this,&anyObj);
+    //     break;
     case dbp::PING:
+        std::cout << "ping =========" << std::endl;
         pServer->HandleClientRecv(this,&anyObj);
+        // SendPong("");
         break;
     default:
         pServer->RespondError(this,400,"is not Message Base Type is unknown.");
         pServer->HandleClientError(this);
         break;
     }
+    // Activate();
 }
 
 void CDbpClient::HandleWritenResponse(std::size_t nTransferred)
 {
     if(nTransferred != 0)
     {
+        std::cout << "!=0 =========" << std::endl;
         pServer->HandleClientSent(this);
     }
     else
     {
+        std::cout << "==0 =========" << std::endl;
         std::cout << "1" << std::endl;
         pServer->HandleClientError(this);
     }
@@ -504,7 +511,47 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
         RespondError(pDbpClient,500,"protobuf msg base any object pointer is null.");
         return;
     }
-    
+
+    if(any->Is<dbp::Connect>())
+    {
+        dbp::Connect connectMsg;
+        any->UnpackTo(&connectMsg);
+        std::string session = CDbpUtils::RandomString();
+
+        dbp::Base connectedMsgBase;
+        connectedMsgBase.set_msg(dbp::Msg::CONNECTED);
+
+        dbp::Connected connectedMsg;
+        connectedMsg.set_session(session);
+
+        google::protobuf::Any *any = new google::protobuf::Any();
+        any->PackFrom(connectedMsg);
+
+        connectedMsgBase.set_allocated_object(any);
+
+        pDbpClient->SendMessage(&connectedMsgBase);
+    }
+
+    if(any->Is<dbp::Ping>())
+    {
+        // if (sessionClientBimap.right.find(pDbpClient) == sessionClientBimap.right.end())
+        // {
+        //     RespondError(pDbpClient,400,"dbp ping message not had assiociated session,please connect first");
+        //     return;
+        // }
+
+        dbp::Ping pingMsg;
+        any->UnpackTo(&pingMsg);
+
+        WalleveLog("recv ping:\n");
+        WalleveLog(pingMsg.id().c_str());
+        WalleveLog("\n");
+        pDbpClient->SendPong(pingMsg.id());
+        WalleveLog("sended pong\n");
+    }
+
+    return;
+
     if(any->Is<dbp::Connect>())
     {
         

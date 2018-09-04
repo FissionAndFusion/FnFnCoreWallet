@@ -11,6 +11,7 @@
 
 void callback(Client *cl)
 {
+    return;
     HandlePair sub_hp;
     std::string id = cl->SendSub("all-block", sub_hp);
     // cl->SendUnsub(id);

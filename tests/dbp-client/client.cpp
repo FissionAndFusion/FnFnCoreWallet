@@ -37,6 +37,9 @@ void Client::SockConnect()
     is_connected_ = true;
     SendConnect(session_);
     sock_->async_read_some(boost::asio::buffer(m_buf_), boost::bind(&Client::ReadHandler, this, boost::asio::placeholders::error, sock_));
+
+            m_timer_.reset(new boost::asio::steady_timer(m_io_, std::chrono::seconds{1}));
+            m_timer_->async_wait(boost::bind(&Client::TimerHandler, this, boost::asio::placeholders::error, sock_));
 }
 
 void Client::Start()
@@ -242,8 +245,8 @@ void Client::ReadHandler(const boost::system::error_code &ec, std::shared_ptr<bo
             is_connected_ = true;
             session_ = connected.session();
 
-            m_timer_.reset(new boost::asio::steady_timer(m_io_, std::chrono::seconds{5}));
-            m_timer_->async_wait(boost::bind(&Client::TimerHandler, this, boost::asio::placeholders::error, sock));
+            // m_timer_.reset(new boost::asio::steady_timer(m_io_, std::chrono::seconds{5}));
+            // m_timer_->async_wait(boost::bind(&Client::TimerHandler, this, boost::asio::placeholders::error, sock));
         }
 
         m_io_.post(boost::bind(&Client::TestHandle, this, this));
@@ -275,6 +278,7 @@ void Client::ReadHandler(const boost::system::error_code &ec, std::shared_ptr<bo
 
     if(base.msg() == dbp::Msg::PING)
     {
+        std::cout << "[read_handler]ping recv" << std::endl;
         dbp::Ping ping;
         base.object().UnpackTo(&ping);
         SendPong(ping.id());
@@ -282,6 +286,7 @@ void Client::ReadHandler(const boost::system::error_code &ec, std::shared_ptr<bo
 
     if(base.msg() == dbp::Msg::PONG)
     {
+        std::cout << "[read_handler]pong recv" << std::endl;
         dbp::Pong pong;
         base.object().UnpackTo(&pong);
     }
@@ -358,7 +363,7 @@ void Client::TimerHandler(const boost::system::error_code &ec, std::shared_ptr<b
         std::string id = SendPing();
     }
 
-    m_timer_->expires_from_now(std::chrono::seconds{5});
+    m_timer_->expires_from_now(std::chrono::seconds{1});
     m_timer_->async_wait(boost::bind(&Client::TimerHandler, this, boost::asio::placeholders::error, sock));
 }
 

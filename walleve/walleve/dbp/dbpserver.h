@@ -74,6 +74,7 @@ public:
     void SendPing(const std::string& id);
     void SendPong(const std::string& id);
     void SendResponse(int statusCode,const std::string& description);
+    void SendMessage(dbp::Base* pBaseMsg);
 
 protected:
     void StartReadHeader();
@@ -84,7 +85,6 @@ protected:
     void HandleReadCompleted(uint32_t len);
     void HandleWritenResponse(std::size_t nTransferred);
 private:
-    void SendMessage(dbp::Base* pBaseMsg);
 protected:
     CDbpServer* pServer;
     CDbpProfile *pProfile;
