@@ -71,8 +71,20 @@ std::vector<char> Client::Serialize(dbp::Base base)
 
 void Client::Send(std::vector<char> buf, std::string explain)
 {
+    char *b = buf.data();
+    int size_buf = ntohl(*((uint32_t *)b));
+    // std::cout << "size of buf:" << size_buf << std::endl;
+
+    dbp::Base base;
+    if(!base.ParseFromArray(&b[4], size_buf))
+    {
+        std::cerr << "[send]parse base msg false" << std::endl;
+        return;
+    }
+
     boost::shared_ptr<std::string> pstr(new std::string(explain));
-    sock_->async_write_some(boost::asio::buffer(buf, buf.size()), boost::bind(&Client::WriteHandler, this, pstr, _1, _2));
+    // sock_->async_write_some(boost::asio::buffer(buf, buf.size()), boost::bind(&Client::WriteHandler, this, pstr, _1, _2));
+    boost::asio::async_write(*sock_, boost::asio::buffer(buf), boost::bind(&Client::WriteHandler, this, pstr, _1, _2));
 }
 
 void Client::SendConnect(std::string session)
@@ -317,7 +329,7 @@ void Client::ReadHandler(const boost::system::error_code &ec, std::shared_ptr<bo
     {
         dbp::Error error;
         base.object().UnpackTo(&error);
-        std::cout << "reason:" << error.reason() << ", explain:" << error.explain() << std::endl;
+        std::cout << "[read_handler]error reason:" << error.reason() << ", explain:" << error.explain() << std::endl;
     }
 
     sock->async_read_some(boost::asio::buffer(m_buf_), boost::bind(&Client::ReadHandler, this, boost::asio::placeholders::error, sock));

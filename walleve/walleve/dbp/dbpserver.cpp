@@ -350,24 +350,26 @@ void CDbpClient::SendResponse(int statusCode,const std::string& description)
 void CDbpClient::StartReadHeader()
 {
     pClient->Read(ssRecv,4,
-    boost::bind(&CDbpClient::HandleReadHeader,this,_1));
+    boost::bind(&CDbpClient::HandleReadHeader,this, 4, _1));
 }
 
 void CDbpClient::StartReadPayload(std::size_t nLength)
 {
     pClient->Read(ssRecv,nLength,
-        boost::bind(&CDbpClient::HandleReadPayload,this,_1));
+        boost::bind(&CDbpClient::HandleReadPayload,this, nLength, _1));
 }
 
 
-void CDbpClient::HandleReadHeader(std::size_t nTransferred)
+void CDbpClient::HandleReadHeader(std::size_t len, std::size_t nTransferred)
 {
+    std::cout << "read header len:" << len << ", nTransferred:" << nTransferred << std::endl;
     if(nTransferred != 0)
     {
         uint32_t len = CDbpUtils::parseLenFromMsgHeader(ssRecv.GetData(),4);
         if(len == 0)
         {
-            pServer->HandleClientError(this);
+            std::cout << "5" << std::endl;
+            // pServer->HandleClientError(this);
             return;
         }
 
@@ -376,18 +378,21 @@ void CDbpClient::HandleReadHeader(std::size_t nTransferred)
     }
     else
     {
+        std::cout << "4" << std::endl;
         pServer->HandleClientError(this);
     }
 }
 
-void CDbpClient::HandleReadPayload(std::size_t nTransferred)
+void CDbpClient::HandleReadPayload(std::size_t len, std::size_t nTransferred)
 {
+    std::cout << "read payload len:" << len << ", nTransferred:" << nTransferred << std::endl;
     if(nTransferred != 0)
     {
         HandleReadCompleted();
     }
     else
     {
+        std::cout << "3" << std::endl;
         pServer->HandleClientError(this);
     }
 }
@@ -399,6 +404,8 @@ void CDbpClient::HandleReadCompleted()
     if(!msgBase.ParseFromArray(ssRecv.GetData() + 4,ssRecv.GetSize() - 4))
     {        
         pServer->RespondError(this,400,"Parse Msg Base failed");
+
+        std::cout << "2" << std::endl;
         pServer->HandleClientError(this);
         return;
     }
@@ -440,6 +447,7 @@ void CDbpClient::HandleWritenResponse(std::size_t nTransferred)
     }
     else
     {
+        std::cout << "1" << std::endl;
         pServer->HandleClientError(this);
     }
 }

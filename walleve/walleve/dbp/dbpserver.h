@@ -79,8 +79,8 @@ protected:
     void StartReadHeader();
     void StartReadPayload(std::size_t nLength);
 
-    void HandleReadHeader(std::size_t nTransferred);
-    void HandleReadPayload(std::size_t nTransferred);
+    void HandleReadHeader(std::size_t len, std::size_t nTransferred);
+    void HandleReadPayload(std::size_t len, std::size_t nTransferred);
     void HandleReadCompleted();
     void HandleWritenResponse(std::size_t nTransferred);
 private:
