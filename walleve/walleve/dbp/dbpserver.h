@@ -90,6 +90,8 @@ protected:
     CDbpProfile *pProfile;
     CIOClient* pClient;
     uint64 nNonce;
+    uint32 nMsgHeaderLen;
+    uint32 nMsgHeaderBufSize;
     bool fEventStream;
     CWalleveBufStream ssRecv;
     CWalleveBufStream ssSend;
