@@ -447,7 +447,8 @@ void CDbpClient::HandleWritenResponse(std::size_t nTransferred)
 CDbpServer::CDbpServer()
 : CIOProc("dbpserver")
 {
-
+    pingTimerPtr_.reset(new boost::asio::deadline_timer(this->GetIoService(),
+        boost::posix_time::seconds(5)));
 }
 
 CDbpServer::~CDbpServer()
@@ -503,6 +504,9 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
             {
                 session = CDbpUtils::RandomString();
             }
+
+            WalleveLog(session.c_str());
+            WalleveLog("\n");
             
             CSessionProfile profile;
             profile.sessionId = session;
@@ -524,6 +528,8 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
         {
             
             WalleveLog("reconnect:\n");
+            WalleveLog(session.c_str());
+            WalleveLog("\n");
             
             if(sessionProfileMap.count(session))
             {
@@ -897,8 +903,7 @@ void CDbpServer::RespondError(CDbpClient *pDbpClient,int nStatusCode,const std::
 }
 
 void CDbpServer::SendPingHandler(const boost::system::error_code& err,CDbpClient *pDbpClient)
-{
-    
+{ 
     if(err != boost::system::errc::success)
     {
         return;
@@ -910,10 +915,10 @@ void CDbpServer::SendPingHandler(const boost::system::error_code& err,CDbpClient
     WalleveLog("\n");
     pDbpClient->SendPing(utc);
     
-    pingTimerPtr_.reset(new boost::asio::deadline_timer(this->GetIoService(),boost::posix_time::seconds(5)));
     pingTimerPtr_->expires_at(pingTimerPtr_->expires_at() + boost::posix_time::seconds(5));
     pingTimerPtr_->async_wait(boost::bind(&CDbpServer::SendPingHandler, 
         this, boost::asio::placeholders::error, pDbpClient));
+    
 } 
 
 bool CDbpServer::HandleEvent(CWalleveEventDbpConnected& event)
@@ -929,10 +934,7 @@ bool CDbpServer::HandleEvent(CWalleveEventDbpConnected& event)
 
     pDbpClient->SendResponse(connectedBody);
 
-    
-    pingTimerPtr_.reset(new boost::asio::deadline_timer(this->GetIoService(),boost::posix_time::seconds(5)));
-    pingTimerPtr_->expires_at(pingTimerPtr_->expires_at() + boost::posix_time::seconds(5));
-    
+    pingTimerPtr_->expires_at(pingTimerPtr_->expires_at() + boost::posix_time::seconds(5));    
     pingTimerPtr_->async_wait(boost::bind(&CDbpServer::SendPingHandler, 
         this, boost::asio::placeholders::error, pDbpClient));
     
