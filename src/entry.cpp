@@ -245,26 +245,6 @@ bool CMvEntry::InitializeDNSeedService()
         cerr << "Failed to open log file : " << (mvConfig.pathData / "multiverse.log") << "\n";
         return false; 
     }
-    ICoreProtocol *pCoreProtocol = mvConfig.fTestNet ?
-                                   new CMvTestNetCoreProtocol : new CMvCoreProtocol();
-    if (!pCoreProtocol || !walleveDocker.Attach(pCoreProtocol))
-    {
-        delete pCoreProtocol;
-        return false;
-    }
-
-    CWorldLine *pWorldLine = new CWorldLine();
-    if (!pWorldLine || !walleveDocker.Attach(pWorldLine))
-    {
-        delete pWorldLine;
-        return false;
-    }
-    CWallet *pWallet = new CWallet();
-    if (!pWallet || !walleveDocker.Attach(pWallet))
-    {
-        delete pWallet;
-        return false;
-    }
 
     CDNSeed * pDnseed = new CDNSeed();
     if (!pDnseed || !walleveDocker.Attach(pDnseed))
