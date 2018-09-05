@@ -14,8 +14,9 @@ void HandlePair::AddBlock(lws::Block &block)
     std::cout << "recived block, nVersion:" << block.nversion() << "nType:" << block.ntype() << std::endl;
 }
 
-void HandlePair::AddTx()
+void HandlePair::AddTx(lws::Transaction &tx)
 {
+    std::cout << "recived transaction, nVersion:" << tx.nversion() << "nType:" << tx.ntype() << std::endl;
 }
 
 void HandlePair::SubHandler(std::string type, std::string name, google::protobuf::Any object)
@@ -29,7 +30,9 @@ void HandlePair::SubHandler(std::string type, std::string name, google::protobuf
 
     if("all-tx" == name)
     {
-        AddTx();
+        lws::Transaction tx;
+        object.UnpackTo(&tx);
+        AddTx(tx);
     }
 }
 
