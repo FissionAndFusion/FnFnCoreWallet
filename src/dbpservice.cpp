@@ -1,5 +1,8 @@
 #include "dbpservice.h"
 
+#ifndef WIN32
+#include <unistd.h>
+#endif
 #include <boost/assign/list_of.hpp>
 #include <boost/lexical_cast.hpp>
 
@@ -54,6 +57,27 @@ void CDbpService::WalleveHandleDeinitialize()
     pDbpServer = NULL;
     pService = NULL;
     pWallet = NULL;
+}
+
+bool CDbpService::HandleEvent(walleve::CWalleveEventDbpPing& event)
+{
+    (void)event;
+    
+#ifndef WIN32
+    sleep(5);
+#endif
+
+    uint64 nonce = event.nNonce;
+    walleve::CWalleveEventDbpPing eventConnected(nonce);
+    pDbpServer->DispatchEvent(&eventConnected);
+    
+    return true;
+}
+
+bool CDbpService::HandleEvent(walleve::CWalleveEventDbpPong& event)
+{
+    (void)event;
+    return true;
 }
 
 bool CDbpService::HandleEvent(walleve::CWalleveEventDbpConnect& event)

@@ -131,6 +131,7 @@ protected:
     bool HandleEvent(CWalleveEventDbpReady& event) override;
     bool HandleEvent(CWalleveEventDbpAdded& event) override;
     bool HandleEvent(CWalleveEventDbpMethodResult& event) override;
+    bool HandleEvent(CWalleveEventDbpPing& event) override;
 
     bool IsSessionTimeOut(CDbpClient* pDbpClient);
 

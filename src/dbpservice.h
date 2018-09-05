@@ -23,6 +23,8 @@ public:
     bool HandleEvent(walleve::CWalleveEventDbpSub& event) override;
     bool HandleEvent(walleve::CWalleveEventDbpUnSub& event) override;
     bool HandleEvent(walleve::CWalleveEventDbpMethod& event) override;
+    bool HandleEvent(walleve::CWalleveEventDbpPing& event) override;
+    bool HandleEvent(walleve::CWalleveEventDbpPong& event) override;
 
     // notify add msg(block tx ...) to event handler
     bool HandleEvent(CMvEventDbpUpdateNewBlock& event) override;

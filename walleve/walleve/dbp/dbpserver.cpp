@@ -508,46 +508,6 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
         return;
     }
 
-   /* if(any->Is<dbp::Connect>())
-    {
-        dbp::Connect connectMsg;
-        any->UnpackTo(&connectMsg);
-        std::string session = CDbpUtils::RandomString();
-
-        dbp::Base connectedMsgBase;
-        connectedMsgBase.set_msg(dbp::Msg::CONNECTED);
-
-        dbp::Connected connectedMsg;
-        connectedMsg.set_session(session);
-
-        google::protobuf::Any *any = new google::protobuf::Any();
-        any->PackFrom(connectedMsg);
-
-        connectedMsgBase.set_allocated_object(any);
-
-        pDbpClient->SendMessage(&connectedMsgBase);
-    }
-
-    if(any->Is<dbp::Ping>())
-    {
-        if (sessionClientBimap.right.find(pDbpClient) == sessionClientBimap.right.end())
-        {
-            RespondError(pDbpClient,400,"dbp ping message not had assiociated session,please connect first");
-            return;
-        }
-
-        dbp::Ping pingMsg;
-        any->UnpackTo(&pingMsg);
-
-        WalleveLog("recv ping:\n");
-        WalleveLog(pingMsg.id().c_str());
-        WalleveLog("\n");
-        pDbpClient->SendPong(pingMsg.id());
-        WalleveLog("sended pong\n");
-    }*/
-
-    //return;
-
     if(any->Is<dbp::Connect>())
     {
         
@@ -758,9 +718,20 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
         dbp::Ping pingMsg;
         any->UnpackTo(&pingMsg);
 
+        std::cout << "recv ping" << pingMsg.id() << std::endl;
         pDbpClient->SendPong(pingMsg.id());
        
+        CWalleveEventDbpPing *pEventDbpPing = new CWalleveEventDbpPing(pDbpClient->GetNonce());
+        if(!pEventDbpPing)
+        {
+            RespondError(pDbpClient,500,"dbp event ping create failed.");
+            return;
+        }
 
+        CWalleveDbpPing &pingBody = pEventDbpPing->data;
+        pingBody.id = pingMsg.id();
+
+        pDbpProfile->pIOModule->PostEvent(pEventDbpPing);
     }
     else if(any->Is<dbp::Pong>())
     {
@@ -773,8 +744,7 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
         dbp::Pong pongMsg;
         any->UnpackTo(&pongMsg);
 
-        WalleveLog("recv pong:\n");
-        WalleveLog(pongMsg.id().c_str());
+        std::cout << "recv pong" << pongMsg.id() << std::endl;
 
         if(sessionClientBimap.right.find(pDbpClient) != sessionClientBimap.right.end())
         {
@@ -1005,8 +975,6 @@ bool CDbpServer::HandleEvent(CWalleveEventDbpConnected& event)
   //  pingTimerPtr_->expires_at(pingTimerPtr_->expires_at() + boost::posix_time::seconds(5));    
     //pingTimerPtr_->async_wait(boost::bind(&CDbpServer::SendPingHandler, 
       //  this, boost::asio::placeholders::error, pDbpClient));
-
-    pDbpClient->SendPing("kkkkk");
     
     return true;
 }
@@ -1093,8 +1061,21 @@ bool CDbpServer::HandleEvent(CWalleveEventDbpMethodResult& event)
     return true;
 }
 
- bool CDbpServer::IsSessionTimeOut(CDbpClient* pDbpClient)
- {
+bool CDbpServer::HandleEvent(CWalleveEventDbpPing& event)
+{
+    std::map<uint64,CDbpClient*>::iterator it = mapClient.find(event.nNonce);
+    if (it == mapClient.end())
+    {
+        return false;
+    }
+
+   // CDbpClient *pDbpClient = (*it).second;
+   // pDbpClient->SendPing("kkkk");
+    return true;
+}
+
+bool CDbpServer::IsSessionTimeOut(CDbpClient* pDbpClient)
+{
     auto timeout = pDbpClient->GetProfile()->nSessionTimeout;
     auto iter = sessionClientBimap.right.find(pDbpClient);
     if(iter != sessionClientBimap.right.end())
@@ -1107,4 +1088,4 @@ bool CDbpServer::HandleEvent(CWalleveEventDbpMethodResult& event)
     {
         return true;
     }
- }
+}
