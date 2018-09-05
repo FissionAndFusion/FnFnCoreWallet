@@ -74,8 +74,10 @@ public:
     void SendResponse(CWalleveDbpMethodResult& body);
     void SendPing(const std::string& id);
     void SendPong(const std::string& id);
+    void SendSyncPing(const std::string& id);
     void SendResponse(int statusCode,const std::string& description);
     void SendMessage(dbp::Base* pBaseMsg);
+    void SendSyncMessage(dbp::Base* pBaseMsg);
 
 protected:
     void StartReadHeader();
@@ -85,6 +87,7 @@ protected:
     void HandleReadPayload(std::size_t nTransferred, uint32_t len);
     void HandleReadCompleted(uint32_t len);
     void HandleWritenResponse(std::size_t nTransferred);
+    void HandleWritenResponse(std::size_t nTransferred, int type);
 private:
 protected:
     CDbpServer* pServer;
@@ -94,6 +97,9 @@ protected:
     bool fEventStream;
     CWalleveBufStream ssSend;
     CWalleveBufStream ssRecv;
+
+    CWalleveBufStream ssPingSend;
+
 };
 
 class CSessionProfile
