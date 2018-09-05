@@ -12,7 +12,7 @@ set(sources
 	mvpeer.cpp mvpeer.h
 	mvpeernet.cpp mvpeernet.h
 	dnseedservice.cpp dnseedservice.h
-	mvdnseedpeer.cpp mvdnseedpeer.h
+	mvdnseedpeer.cpp  mvdnseedpeer.h
 )
 
 add_library(network ${sources})
