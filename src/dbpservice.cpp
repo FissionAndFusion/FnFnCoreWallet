@@ -84,13 +84,16 @@ bool CDbpService::HandleEvent(walleve::CWalleveEventDbpConnect& event)
 {
     bool isReconnect = event.data.isReconnect;
 
+    WalleveLog("connect \n");
     if(isReconnect)
     {
          // reply normal
         uint64 nonce = event.nNonce;
         walleve::CWalleveEventDbpConnected eventConnected(nonce);
         eventConnected.data.session = event.data.session;
+        WalleveLog("re-connect \n");
         pDbpServer->DispatchEvent(&eventConnected);
+        WalleveLog("re-connect dispatched\n");
     }
     else
     {
@@ -111,7 +114,9 @@ bool CDbpService::HandleEvent(walleve::CWalleveEventDbpConnect& event)
             uint64 nonce = event.nNonce;
             walleve::CWalleveEventDbpConnected eventConnected(nonce);
             eventConnected.data.session = event.data.session;
+            WalleveLog("connect dispatch entry\n");
             pDbpServer->DispatchEvent(&eventConnected);
+            WalleveLog("connect dispatched\n");
         }
     }
     
@@ -123,15 +128,13 @@ bool CDbpService::HandleEvent(walleve::CWalleveEventDbpSub& event)
     std::string id = event.data.id;
     std::string topicName = event.data.name;
 
-    WalleveLog("Sub topic is:\n");
-    WalleveLog(topicName.c_str());
-    WalleveLog("\n");
+    std::cout << "Sub topic is:" << topicName << std::endl;
 
     // if topic not exists
     if(currentTopicExistMap.count(topicName) == 0 )
     {
          // reply nosub
-        WalleveLog("Sub topic not exists\n");
+        std::cout << "Sub topic not exists: " << topicName << std::endl;
         uint64 nonce = event.nNonce;
         walleve::CWalleveEventDbpNoSub eventNoSub(nonce);
         eventNoSub.data.id = event.data.id;
@@ -139,7 +142,7 @@ bool CDbpService::HandleEvent(walleve::CWalleveEventDbpSub& event)
     }
     else
     {
-        WalleveLog("Sub topic  exists\n");
+        std::cout << "Sub topic  exists: " << topicName << std::endl;
         if(idSubedTopicsMap.count(id) == 0)
         {
             TopicSet topics{topicName};
@@ -169,13 +172,13 @@ bool CDbpService::HandleEvent(walleve::CWalleveEventDbpUnSub& event)
     if(idSubedTopicsMap.count(id) != 0)
     {
         // unsub is actual delete subed topic
-        WalleveLog("[SubedTopicsMap] UnSub topic  success\n");
+        std::cout << "[SubedTopicsMap] UnSub topic  success"  << std::endl;
         idSubedTopicsMap.erase(id);
     }
 
     if(idSubedNonceMap.count(id) != 0)
     {
-        WalleveLog("[SubedNonceMap] UnSub topic  success\n");
+        std::cout << "[SubedNonceMap] UnSub topic  success"  << std::endl;
         idSubedNonceMap.erase(id);
     }
     
@@ -431,24 +434,23 @@ bool CDbpService::HandleEvent(CMvEventDbpUpdateNewBlock& event)
     uint256 forkHash;
     int blockHeight;
 
-    WalleveLog("new block event added,block hash is:\n");
-    WalleveLog(blockHash.ToString().c_str());
-    WalleveLog("\n");
-    
+   // std::cout << "new block event added,block hash is: " <<  blockHash.ToString() << std::endl;
+   
     if(pService->GetBlock(blockHash,newBlock,forkHash,blockHeight))
     {
         walleve::CWalleveDbpBlock block;
         CreateDbpBlock(newBlock,forkHash,blockHeight,block);
+     //   std::cout << "get dbp block success: " <<  blockHash.ToString() << std::endl;
         
         // push new block to dbpclient when new-block-event comes 
         for(const auto& kv : idSubedNonceMap)
         {
             std::string id = kv.first;
-            int nonce = kv.second;
+            uint64 nonce = kv.second;
             
             walleve::CWalleveEventDbpAdded eventAdded(nonce);
             eventAdded.data.id = id;
-            eventAdded.data.name = "added";
+            eventAdded.data.name = "all-block";
             eventAdded.data.type = walleve::CWalleveDbpAdded::BLOCK;
             eventAdded.data.anyObject = &block;
 
@@ -466,9 +468,7 @@ bool CDbpService::HandleEvent(CMvEventDbpUpdateNewTx& event)
     walleve::CWalleveDbpTransaction dbpTx;
     CreateDbpTransaction(newtx,dbpTx);
 
-    WalleveLog("new tx event added,tx hash is:\n");
-    WalleveLog(newtx.GetHash().ToString().c_str());
-    WalleveLog("\n");
+   // std::cout << "new tx event added,tx hash is: " <<  newtx.GetHash().ToString() << std::endl;
 
     // push new tx to dbpclient when new-tx-event comes
     for(const auto& kv : idSubedNonceMap)
@@ -478,7 +478,7 @@ bool CDbpService::HandleEvent(CMvEventDbpUpdateNewTx& event)
         
         walleve::CWalleveEventDbpAdded eventAdded(nonce);
         eventAdded.data.id = id;
-        eventAdded.data.name = "added";
+        eventAdded.data.name = "all-tx";
         eventAdded.data.type = walleve::CWalleveDbpAdded::TX;
         eventAdded.data.anyObject = &dbpTx;
 

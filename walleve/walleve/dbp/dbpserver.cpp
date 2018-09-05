@@ -72,7 +72,7 @@ void CDbpClient::SendMessage(dbp::Base* pBaseMsg)
     pClient->Write(ssSend,boost::bind(&CDbpClient::HandleWritenResponse,this,_1));
 }
 
-void CDbpClient::SendSyncMessage(dbp::Base* pBaseMsg)
+void CDbpClient::SendPingNoActiveMessage(dbp::Base* pBaseMsg)
 {
     ssPingSend.Clear();
     
@@ -87,6 +87,23 @@ void CDbpClient::SendSyncMessage(dbp::Base* pBaseMsg)
     ssPingSend.Write((char*)byteBuf,byteSize);
 
     pClient->Write(ssPingSend,boost::bind(&CDbpClient::HandleWritenResponse,this,_1,0));   
+}
+
+void CDbpClient::SendAddedNoActiveMessage(dbp::Base* pBaseMsg)
+{
+    ssAddedSend.Clear();
+    
+    int byteSize = pBaseMsg->ByteSize();
+    unsigned char byteBuf[byteSize];
+
+    pBaseMsg->SerializeToArray(byteBuf,byteSize);
+
+    unsigned char msgLenBuf[4];
+    CDbpUtils::writeLenToMsgHeader(byteSize,(char*)msgLenBuf,4);
+    ssAddedSend.Write((char*)msgLenBuf,4);
+    ssAddedSend.Write((char*)byteBuf,byteSize);
+
+    pClient->Write(ssAddedSend,boost::bind(&CDbpClient::HandleWritenResponse,this,_1,1));   
 }
 
 void CDbpClient::SendResponse(CWalleveDbpConnected& body)
@@ -245,6 +262,8 @@ void CDbpClient::SendResponse(CWalleveDbpAdded& body)
         google::protobuf::Any *anyBlock = new google::protobuf::Any();
         anyBlock->PackFrom(block);
         addedMsg.set_allocated_object(anyBlock);
+
+        std::cout << "Added Block: "  <<std::endl;
     }
     else if(body.type == CWalleveDbpAdded::AddedType::TX)
     {
@@ -264,7 +283,8 @@ void CDbpClient::SendResponse(CWalleveDbpAdded& body)
 
     addedMsgBase.set_allocated_object(anyAdded);
  
-    SendMessage(&addedMsgBase);
+    std::cout << "Send No ActiveMessage: "  <<std::endl;
+    SendAddedNoActiveMessage(&addedMsgBase);
 }
 
 void CDbpClient::SendResponse(CWalleveDbpMethodResult& body)
@@ -350,7 +370,7 @@ void CDbpClient::SendPong(const std::string& id)
     SendMessage(&pongMsgBase);
 }
 
-void CDbpClient::SendSyncPing(const std::string& id)
+void CDbpClient::SendNocActivePing(const std::string& id)
 {
     dbp::Base pingMsgBase;
     pingMsgBase.set_msg(dbp::Msg::PING);
@@ -363,7 +383,7 @@ void CDbpClient::SendSyncPing(const std::string& id)
 
     pingMsgBase.set_allocated_object(any);
 
-    SendSyncMessage(&pingMsgBase);
+    SendPingNoActiveMessage(&pingMsgBase);
 }
 
 void CDbpClient::SendResponse(int statusCode,const std::string& description)
@@ -420,7 +440,6 @@ void CDbpClient::HandleReadHeader(std::size_t nTransferred)
     }
     else
     {
-        //std::cout << "4" << std::endl;
         pServer->HandleClientError(this);
     }
 }
@@ -439,7 +458,6 @@ void CDbpClient::HandleReadPayload(std::size_t nTransferred,uint32_t len)
     }
     else
     {
-        //std::cout << "3" << std::endl;
         pServer->HandleClientError(this);
     }
 }
@@ -456,8 +474,6 @@ void CDbpClient::HandleReadCompleted(uint32_t len)
     if(!msgBase.ParseFromArray(&payloadBuffer[0],len))
     {        
         pServer->RespondError(this,400,"Parse Msg Base failed");
-
-       // std::cout << "2" << std::endl;
         pServer->HandleClientError(this);
         return;
     }
@@ -496,13 +512,10 @@ void CDbpClient::HandleWritenResponse(std::size_t nTransferred)
 {
     if(nTransferred != 0)
     {
-      //  std::cout << "!=0 =========" << std::endl;
         pServer->HandleClientSent(this);
     }
     else
     {
-       // std::cout << "==0 =========" << std::endl;
-       // std::cout << "1" << std::endl;
         pServer->HandleClientError(this);
     }
 }
@@ -511,14 +524,17 @@ void CDbpClient::HandleWritenResponse(std::size_t nTransferred, int type)
 {
     if(nTransferred != 0)
     {
-      //  std::cout << "!=0 =========" << std::endl;
-       // pServer->HandleClientSent(this);
-      
+        if(type == 0)
+        {
+            std::cout << "ping transferred: " << nTransferred << std::endl;
+        }
+        else if(type == 1)
+        {
+            std::cout << "added transferred: " << nTransferred << std::endl;
+        }
     }
     else
     {
-       // std::cout << "==0 =========" << std::endl;
-       // std::cout << "1" << std::endl;
         pServer->HandleClientError(this);
     }
 }
@@ -603,6 +619,8 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
             
             pDbpProfile->pIOModule->PostEvent(pEventDbpConnect);
 
+            WalleveLog("Posted Event connect");
+
         }
         else
         {
@@ -656,7 +674,10 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
             return;
         }
 
-        if(IsSessionTimeOut(pDbpClient)) RemoveClient(pDbpClient);
+        if(IsSessionTimeOut(pDbpClient)) 
+        {
+            RemoveClient(pDbpClient);
+        }
         
         CWalleveEventDbpSub *pEventDbpSub = new CWalleveEventDbpSub(pDbpClient->GetNonce());
         if(!pEventDbpSub)
@@ -682,7 +703,10 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
             return;
         }
 
-        if(IsSessionTimeOut(pDbpClient)) RemoveClient(pDbpClient);
+        if(IsSessionTimeOut(pDbpClient)) 
+        {
+            RemoveClient(pDbpClient);
+        }
         
         CWalleveEventDbpUnSub *pEventDbpUnSub = new CWalleveEventDbpUnSub(pDbpClient->GetNonce());
         if(!pEventDbpUnSub)
@@ -707,7 +731,10 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
             return;
         }
 
-        if(IsSessionTimeOut(pDbpClient)) RemoveClient(pDbpClient);
+        if(IsSessionTimeOut(pDbpClient)) 
+        {
+            RemoveClient(pDbpClient);
+        }
               
         CWalleveEventDbpMethod *pEventDbpMethod = new CWalleveEventDbpMethod(pDbpClient->GetNonce());
         if(!pEventDbpMethod)
@@ -769,18 +796,6 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
 
         std::cout << "recv ping" << pingMsg.id() << std::endl;
         pDbpClient->SendPong(pingMsg.id());
-       
-        CWalleveEventDbpPing *pEventDbpPing = new CWalleveEventDbpPing(pDbpClient->GetNonce());
-        if(!pEventDbpPing)
-        {
-            RespondError(pDbpClient,500,"dbp event ping create failed.");
-            return;
-        }
-
-        CWalleveDbpPing &pingBody = pEventDbpPing->data;
-        pingBody.id = pingMsg.id();
-
-        pDbpProfile->pIOModule->PostEvent(pEventDbpPing);
     }
     else if(any->Is<dbp::Pong>())
     {
@@ -999,7 +1014,7 @@ void CDbpServer::SendPingHandler(const boost::system::error_code& err,CDbpClient
     }
     
     std::string utc = std::to_string(CDbpUtils::currentUTC());
-    pDbpClient->SendSyncPing(utc);
+    pDbpClient->SendNocActivePing(utc);
     
     pingTimerPtr_->expires_at(pingTimerPtr_->expires_at() + boost::posix_time::seconds(5));
     pingTimerPtr_->async_wait(boost::bind(&CDbpServer::SendPingHandler, 
@@ -1009,6 +1024,8 @@ void CDbpServer::SendPingHandler(const boost::system::error_code& err,CDbpClient
 
 bool CDbpServer::HandleEvent(CWalleveEventDbpConnected& event)
 {
+    WalleveLog("Recv connected");
+    
     std::map<uint64,CDbpClient*>::iterator it = mapClient.find(event.nNonce);
     if (it == mapClient.end())
     {
@@ -1082,12 +1099,14 @@ bool CDbpServer::HandleEvent(CWalleveEventDbpAdded& event)
     std::map<uint64,CDbpClient*>::iterator it = mapClient.find(event.nNonce);
     if (it == mapClient.end())
     {
+        std::cout << "cannot find: " << event.nNonce << std::endl;
         return false;
     }
 
     CDbpClient *pDbpClient = (*it).second;
     CWalleveDbpAdded &addedBody = event.data;
 
+    std::cout << "Added Send Response: "  <<std::endl;
     pDbpClient->SendResponse(addedBody);
     
     return true;
