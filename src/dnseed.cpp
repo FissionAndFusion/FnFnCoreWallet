@@ -15,13 +15,12 @@ using namespace multiverse::network;
 using namespace std;
 
 #define HANDSHAKE_TIMEOUT               5
-#define NODE_ACTIVE_TIME                (3 * 60 * 60)
-#define TIMING_FILTER_INTERVAL (boost::posix_time::seconds(60))//(24*60*60)
+#define TIMING_FILTER_INTERVAL (boost::posix_time::seconds(60*60))//(24*60*60)
 
 CDNSeed::CDNSeed()
 :timerFilter(ioService,TIMING_FILTER_INTERVAL),
- thrIOProc("dnseedFilter",boost::bind(&CDNSeed::IOThreadFunc,this))
-//: CPeerNet("dnseed")
+ thrIOProc("dnseedFilter",boost::bind(&CDNSeed::IOThreadFunc,this)),
+ _newestHeight(0)
 {
 }
 
@@ -82,8 +81,7 @@ void CDNSeed::BuildHello(CPeer *pPeer,CWalleveBufStream& ssPayload)
 
 int CDNSeed::GetPrimaryChainHeight()
 {
-    //todo 缓存的高度
-    return 0;
+    return this->_newestHeight;
 }
 
 CPeer* CDNSeed::CreatePeer(CIOClient *pClient,uint64 nNonce,bool fInBound)
@@ -139,7 +137,7 @@ bool CDNSeed::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CWall
             {
                 tcp::endpoint ep(pMvPeer->GetRemote().address(),NetworkConfig()->nPort);
                 DNSeedService::getInstance()->add2list(ep);
-                WalleveLog("xp [receive] MVPROTO_CMD_GETDNSEED      height:%d\n",pMvPeer->nStartingHeight);
+                WalleveLog("[receive] MVPROTO_CMD_GETDNSEED      height:%d\n",pMvPeer->nStartingHeight);
                 std::vector<CAddress> vAddrs;
                 DNSeedService::getInstance()->getSendAddressList(vAddrs);
                 
@@ -149,20 +147,11 @@ bool CDNSeed::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CWall
             }
             break;
         case MVPROTO_CMD_DNSEED:
-            {   //TODO betwen DNSeed servers change
-                // std::cout<<"xp [receive] MVPROTO_CMD_DNSEED"<<std::endl;
-                // std::vector<CAddress> vAddrs;
-                // ssPayload >> vAddrs;
-                // DNSeedService::getInstance()->recvAddressList(vAddrs);
-                
-                // std::vector<tcp::endpoint> eplist;
-                // DNSeedService::getInstance()->getConnectAddressList(eplist);
-                // for(size_t i=0;i<eplist.size();i++)
-                // {
-                //     tcp::endpoint &cep=eplist[i];
-                //      std::cout<<cep.address().to_string()<<":"<<cep.port()<<std::endl;
-                //     this->AddNewNode(CNetHost(cep,cep.address().to_string(),boost::any(uint64(network::NODE_NETWORK))));
-                // }
+            {   // betwen DNSeed servers change to test
+                std::cout<<"xp [receive] MVPROTO_CMD_DNSEED"<<std::endl;
+                std::vector<CAddress> vAddrs;
+                ssPayload >> vAddrs;
+                DNSeedService::getInstance()->recvAddressList(vAddrs);
                 return true;
             }   
             break;
@@ -173,7 +162,7 @@ bool CDNSeed::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CWall
     return false;
 }
 
-//
+
 bool CDNSeed::HandlePeerHandshaked(CPeer *pPeer,uint32 nTimerId)
 {
     cout<<"HandlePeerHandshaked()"<<endl;
@@ -201,19 +190,7 @@ bool CDNSeed::HandlePeerHandshaked(CPeer *pPeer,uint32 nTimerId)
         SetNodeData(ep,boost::any(pMvPeer->nService));
     }
     WalleveUpdateNetTime(pMvPeer->GetRemote().address(),pMvPeer->nTimeDelta);
-    // CMvEventPeerActive* pEventActive = new CMvEventPeerActive(pMvPeer->GetNonce());
-    // if (pEventActive == NULL)
-    // {
-    //     return false;
-    // }   
-    // pEventActive->data = CAddress(pMvPeer->nService,pMvPeer->GetRemote());
-    // pNetChannel->PostEvent(pEventActive);
-    // //
-    // cout<<"HandlePeerHandshaked()4"<<endl;
-    // if (!fEnclosed)
-    // {
-    //     pMvPeer->SendMessage(MVPROTO_CHN_NETWORK,MVPROTO_CMD_GETADDRESS);
-    // }
+
     return true;
 }
 
@@ -258,21 +235,18 @@ void CDNSeed::dnseedTestConnSuccess(walleve::CPeer *pPeer)
     string strName = GetNodeName(ep);
     if (strName != "activeTest") return;
     //获取高度对比 TODO
+    uint32 peerHeight=((CMvPeer*)pPeer)->nStartingHeight;
+
+    this->_newestHeight=_newestHeight>peerHeight ? _newestHeight:peerHeight;
 
     //有效节点
     DNSeedService::getInstance()->add2list(ep,true);
     
     //断开连接
-    WalleveLog("[dnseed]TestConnSuccess:%s:%d  h:%d\n"
+    WalleveLog("[dnseed]TestSuccess:%s:%d  h:%d\n"
                     ,ep.address().to_string().c_str()
                     ,ep.port()
-                    ,((CMvPeer*)pPeer)->nStartingHeight);
+                    ,peerHeight);
     this->RemovePeer(pPeer,CEndpointManager::CloseReason::HOST_CLOSE);
 }
 
-void CDNSeed::ClientFailToConnect(const tcp::endpoint& epRemote)
-{
-    CPeerNet::ClientFailToConnect(epRemote);
-    WalleveLog("ClientFailToConnect>>>%s\n",epRemote.address().to_string().c_str());
-    DNSeedService::getInstance()->removeNode(epRemote);
-}

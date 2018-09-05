@@ -49,20 +49,20 @@ bool CNetwork::WalleveHandleInitialize()
     }
     if (config.vecNode.empty())
     {
-        // BOOST_FOREACH(const string& seed,NetworkConfig()->vDNSeed)
-        // {
-        //     config.vecNode.push_back(CNetHost(seed,config.nPortDefault,"dnseed",
-        //                                       boost::any(uint64(network::NODE_NETWORK))));
-        // }
         BOOST_FOREACH(const string& node,NetworkConfig()->vNode)
         {
             config.vecNode.push_back(CNetHost(node,config.nPortDefault,node,
                                               boost::any(uint64(network::NODE_NETWORK))));
         }
     }
-    //TODO 加载数据库中的节点列表
-    if(config.vecNode.empty())
+    //加载数据库中的节点列表
+    std::vector<tcp::endpoint> eplist;
+    network::DNSeedService::getInstance()->getLocalConnectAddressList(eplist,NetworkConfig()->nMaxOutBounds);
+    BOOST_FOREACH(tcp::endpoint ep,eplist)
     {
+        std::string ip=ep.address().to_string();
+        config.vecNode.push_back(CNetHost(ip,ep.port(),ip,
+                                          boost::any(uint64(network::NODE_NETWORK))));
     }
     if(config.vecNode.empty())
     {
@@ -90,4 +90,24 @@ bool CNetwork::CheckPeerVersion(uint32 nVersionIn,uint64 nServiceIn,const string
         return false;
     }
     return true;
+}
+
+void CNetwork::ClientFailToConnect(const tcp::endpoint& epRemote)
+{
+    CMvPeerNet::ClientFailToConnect(epRemote);
+    //TODO 检查是否有peer和待连接的节点,如果都空了,连接DNseed
+    CWalleveEventPeerNetGetPeers eventGetPeers(0);
+    this->DispatchEvent(&eventGetPeers);
+   
+    if(eventGetPeers.result.size() == 0 && this->GetCandidateNodeCount()<=0)
+    {
+        WalleveLog("Connect 2 DnSeed server");
+        BOOST_FOREACH(const string& seed,NetworkConfig()->vDNSeed)
+        {
+            this->AddNewNode(CNetHost(seed,NetworkConfig()->nPort,"dnseed",
+                                              boost::any(uint64(network::NODE_NETWORK))));
+            
+        }
+    }
+
 }

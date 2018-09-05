@@ -93,6 +93,14 @@ bool CMvPeerNet::HandleEvent(CMvEventPeerBlock& eventBlock)
     return SendDataMessage(eventBlock.nNonce,MVPROTO_CMD_BLOCK,ssPayload);
 }
 
+void CMvPeerNet::ClientFailToConnect(const tcp::endpoint& epRemote)
+{
+    CPeerNet::ClientFailToConnect(epRemote);
+    WalleveLog("ConnectFailTo>>>%s\n",epRemote.address().to_string().c_str());
+    DNSeedService::getInstance()->removeNode(epRemote);
+    this->RemoveNode(epRemote);
+}
+
 CPeer* CMvPeerNet::CreatePeer(CIOClient *pClient,uint64 nNonce,bool fInBound)
 {
     uint32_t nTimerId = SetTimer(nNonce,HANDSHAKE_TIMEOUT);
@@ -415,3 +423,4 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
     }
     return false;
 }
+

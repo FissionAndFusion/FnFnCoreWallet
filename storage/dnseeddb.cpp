@@ -62,8 +62,8 @@ bool DNSeedDB::deleteNode(SeedNode &node)
     std::ostringstream oss;
     std::vector<unsigned char> bt;
      this->getBinaryCharV4V6(bt,node._ep.address());
-    oss << "DELETE FROM dnseednode"
-        <<            "WHERE address = \'" << dbConn.ToEscString(bt) << "\'";
+    oss << "DELETE FROM dnseednode "
+         << " WHERE address = " << "\'" << dbConn.ToEscString(bt) << "\'";
     return dbConn.Query(oss.str());
 }
 

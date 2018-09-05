@@ -86,6 +86,7 @@ protected:
     bool HandleEvent(CWalleveEventPeerNetClrBanned& eventClrBanned);
     bool HandleEvent(CWalleveEventPeerNetReward& eventReward);
     bool HandleEvent(CWalleveEventPeerNetClose& eventClose);
+    int GetCandidateNodeCount(){return epMngr.GetCandidateNodeCount();}
 protected:
     CPeerNetConfig confNetwork; 
     boost::asio::ip::address localIP;

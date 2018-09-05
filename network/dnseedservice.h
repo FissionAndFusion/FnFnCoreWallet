@@ -7,7 +7,7 @@
 #include "walleve/walleve.h"
 #include "dnseeddb.h"
 #include "mvproto.h"
-
+#include <mutex>
 
 
 namespace multiverse 
@@ -23,15 +23,12 @@ public:
     static DNSeedService* getInstance();
     ~DNSeedService(){}
 public:
-    enum GetNodeWay{
-        GET_ALL,
-        GET_A_LOT
-    };
+
     bool init(storage::CMvDBConfig & config);
     bool isDNSeedService(){return _isDNSeedServiceNode;}
     void enableDNSeedServer();
 
-    void getSendAddressList(std::vector<CAddress> & list,GetNodeWay gettype=GET_A_LOT);
+    void getSendAddressList(std::vector<CAddress> & list);
     void getLocalConnectAddressList(std::vector<boost::asio::ip::tcp::endpoint> &epList ,int limitCount=10);
     bool add2list(boost::asio::ip::tcp::endpoint newep,bool forceAdd=false);
     void recvAddressList(std::vector<CAddress> epList);
@@ -46,12 +43,31 @@ protected:
     bool hasAddress(boost::asio::ip::tcp::endpoint ep);   
     
 protected:
+    std::mutex _activeListLocker;
     static DNSeedService* p_instance;
     std::vector<storage::SeedNode> _activeNodeList;
     std::vector<storage::SeedNode> _newNodeList;
     bool _isDNSeedServiceNode;
     multiverse::storage::DNSeedDB _db;
-    
+private:
+    //test
+    int _maxNumber;
+    std::set<int> _rdmNumber; 
+    void initRandomTool(int maxNumber)
+    {
+        _maxNumber=maxNumber;
+        _rdmNumber.clear();
+        srand((unsigned)time(0));
+    } 
+    int getRandomIndex()
+    {
+        int newNum;
+        do{
+            newNum=rand()%_maxNumber;
+        }while(_rdmNumber.count(newNum));
+        _rdmNumber.insert(newNum);
+        return newNum;
+    }
 
 //advanced
     //定时任务

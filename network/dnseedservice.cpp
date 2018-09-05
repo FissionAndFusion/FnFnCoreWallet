@@ -28,15 +28,11 @@ DNSeedService::DNSeedService()
 
 bool DNSeedService::init(CMvDBConfig & config)
 {
-    //const CMvStorageConfig * config=dynamic_cast<const CMvStorageConfig *>(IWalleveBase::WalleveConfig());
-    //CMvDBConfig dbConfig("127.0.0.1",3306,"multiverse","multiverse","multiverse");
     if(!_db.init(config))
     {
-        //WalleveLog("Failed to initialize DNSeed database\n");
         return false;
     }
     _db.selectAllNode(this->_activeNodeList);
-
     return true;
 }
 
@@ -65,7 +61,9 @@ bool DNSeedService::add2list(boost::asio::ip::tcp::endpoint newep,bool forceAdd)
         {
             if(_db.insertNode(sn))
             {
+                this->_activeListLocker.lock();
                 this->_activeNodeList.push_back(sn);
+                this->_activeListLocker.unlock();
                 return true;
             }else{
                 return false;
@@ -77,19 +75,22 @@ bool DNSeedService::add2list(boost::asio::ip::tcp::endpoint newep,bool forceAdd)
     
 }
 
-void DNSeedService::getSendAddressList(std::vector<CAddress> & list,GetNodeWay gettype)
+void DNSeedService::getSendAddressList(std::vector<CAddress> & list)
 {
     std::vector<SeedNode> snlist;
-
-    if(gettype==GET_ALL)
-    {
-        snlist=this->_activeNodeList;
-    }
-    //TODO 
-    for(size_t i=0;i<this->_activeNodeList.size()&&snlist.size()<SEND_ADDRESS_LIMIT;i++)
+    bool needFilter=this->_activeNodeList.size()>SEND_ADDRESS_LIMIT;
+    if(needFilter) this->initRandomTool(_activeNodeList.size());
+    for(size_t i=0;i<this->_activeNodeList.size()&& (snlist.size()<SEND_ADDRESS_LIMIT);i++)
     {
         //TODO choose role
-        snlist.push_back(this->_activeNodeList[i]);
+        if(needFilter)
+        {
+            snlist.push_back(this->_activeNodeList[getRandomIndex()]);
+        }else
+        {
+            snlist.push_back(this->_activeNodeList[i]);
+        }
+        
     }
 
     for(size_t i=0;i<snlist.size();i++)
@@ -132,6 +133,8 @@ void DNSeedService::getLocalConnectAddressList(std::vector<boost::asio::ip::tcp:
 
 bool DNSeedService::updateNode(SeedNode node)
 {
+    this->_activeListLocker.lock();
+    bool rzt=false;
     if(this->_db.updateNode(node))
     {
         for(size_t i=0;i< this->_activeNodeList.size();i++)
@@ -139,19 +142,21 @@ bool DNSeedService::updateNode(SeedNode node)
             if(this->_activeNodeList[i]._ep.address()== node._ep.address())
             {
                 this->_activeNodeList[i]._ep=node._ep;
-                return true;
+                rzt= true;
+                break;
             }
         }       
     }
-    return false;
+    this->_activeListLocker.unlock();
+    return rzt;
 }
 
 void DNSeedService::removeNode(const boost::asio::ip::tcp::endpoint &ep)
 {
     //if(!this->hasAddress(ep)) return;
+    this->_activeListLocker.lock();
     SeedNode sn(ep);
     bool rzt=this->_db.deleteNode(sn);
-    std::cout<<"delete:"<<rzt<<std::endl;
     for(auto it=this->_activeNodeList.begin();it!=this->_activeNodeList.end();it++)
     {
         if(it->_ep==ep)
@@ -160,7 +165,7 @@ void DNSeedService::removeNode(const boost::asio::ip::tcp::endpoint &ep)
             break;
         }
     }
-
+    this->_activeListLocker.unlock();
 }
 
 void DNSeedService::getAllNodeList4Filter(std::vector<boost::asio::ip::tcp::endpoint> &epList)
