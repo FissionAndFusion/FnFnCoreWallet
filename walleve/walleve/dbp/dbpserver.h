@@ -73,10 +73,10 @@ public:
     void SendResponse(CWalleveDbpMethodResult& body);
     void SendPing(const std::string& id);
     void SendPong(const std::string& id);
-    void SendSyncPing(const std::string& id);
+    void SendNocActivePing(const std::string& id);
     void SendResponse(int statusCode,const std::string& description);
     void SendMessage(dbp::Base* pBaseMsg);
-    void SendSyncMessage(dbp::Base* pBaseMsg);
+    void SendNoActiveMessage(dbp::Base* pBaseMsg);
 
 protected:
     void StartReadHeader();
