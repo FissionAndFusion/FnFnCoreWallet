@@ -47,7 +47,7 @@ protected:
 private:
     typedef std::set<std::string> TopicSet;
     std::map<std::string,TopicSet> idSubedTopicsMap; // id => subed topics
-    std::map<std::string,int> idSubedNonceMap; // id => nonce
+    std::map<std::string,uint64> idSubedNonceMap; // id => nonce
     std::map<std::string,bool> currentTopicExistMap;
 };
 

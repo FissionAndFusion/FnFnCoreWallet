@@ -77,7 +77,8 @@ public:
     void SendNocActivePing(const std::string& id);
     void SendResponse(int statusCode,const std::string& description);
     void SendMessage(dbp::Base* pBaseMsg);
-    void SendNoActiveMessage(dbp::Base* pBaseMsg);
+    void SendPingNoActiveMessage(dbp::Base* pBaseMsg);
+    void SendAddedNoActiveMessage(dbp::Base* pBaseMsg);
 
 protected:
     void StartReadHeader();
@@ -99,6 +100,7 @@ protected:
     CWalleveBufStream ssRecv;
 
     CWalleveBufStream ssPingSend;
+    CWalleveBufStream ssAddedSend;
 
 };
 
