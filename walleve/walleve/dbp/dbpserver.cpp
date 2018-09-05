@@ -387,7 +387,7 @@ void CDbpClient::HandleReadHeader(std::size_t nTransferred)
     }
     else
     {
-        std::cout << "4" << std::endl;
+        //std::cout << "4" << std::endl;
         pServer->HandleClientError(this);
     }
 }
@@ -406,7 +406,7 @@ void CDbpClient::HandleReadPayload(std::size_t nTransferred,uint32_t len)
     }
     else
     {
-        std::cout << "3" << std::endl;
+        //std::cout << "3" << std::endl;
         pServer->HandleClientError(this);
     }
 }
@@ -424,7 +424,7 @@ void CDbpClient::HandleReadCompleted(uint32_t len)
     {        
         pServer->RespondError(this,400,"Parse Msg Base failed");
 
-        std::cout << "2" << std::endl;
+       // std::cout << "2" << std::endl;
         pServer->HandleClientError(this);
         return;
     }
@@ -436,44 +436,40 @@ void CDbpClient::HandleReadCompleted(uint32_t len)
     case dbp::CONNECT:
         std::cout << "connect =========" << std::endl;
         pServer->HandleClientRecv(this,&anyObj);
-        // Activate();
         break;
-    // case dbp::SUB:
-    //     pServer->HandleClientRecv(this,&anyObj);
-    //     break;
-    // case dbp::UNSUB:
-    //     pServer->HandleClientRecv(this,&anyObj);
-    //     break;
-    // case dbp::METHOD:
-    //     pServer->HandleClientRecv(this,&anyObj);
-    //     break;
-    // case dbp::PONG:
-    //     pServer->HandleClientRecv(this,&anyObj);
-    //     break;
-    case dbp::PING:
-        std::cout << "ping =========" << std::endl;
+    case dbp::SUB:
         pServer->HandleClientRecv(this,&anyObj);
-        // SendPong("");
+        break;
+    case dbp::UNSUB:
+        pServer->HandleClientRecv(this,&anyObj);
+        break;
+    case dbp::METHOD:
+        pServer->HandleClientRecv(this,&anyObj);
+        break;
+    case dbp::PONG:
+        pServer->HandleClientRecv(this,&anyObj);
+        break;
+    case dbp::PING:
+        pServer->HandleClientRecv(this,&anyObj);
         break;
     default:
         pServer->RespondError(this,400,"is not Message Base Type is unknown.");
         pServer->HandleClientError(this);
         break;
     }
-    // Activate();
 }
 
 void CDbpClient::HandleWritenResponse(std::size_t nTransferred)
 {
     if(nTransferred != 0)
     {
-        std::cout << "!=0 =========" << std::endl;
+      //  std::cout << "!=0 =========" << std::endl;
         pServer->HandleClientSent(this);
     }
     else
     {
-        std::cout << "==0 =========" << std::endl;
-        std::cout << "1" << std::endl;
+       // std::cout << "==0 =========" << std::endl;
+       // std::cout << "1" << std::endl;
         pServer->HandleClientError(this);
     }
 }
@@ -512,7 +508,7 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
         return;
     }
 
-    if(any->Is<dbp::Connect>())
+   /* if(any->Is<dbp::Connect>())
     {
         dbp::Connect connectMsg;
         any->UnpackTo(&connectMsg);
@@ -534,11 +530,11 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
 
     if(any->Is<dbp::Ping>())
     {
-        // if (sessionClientBimap.right.find(pDbpClient) == sessionClientBimap.right.end())
-        // {
-        //     RespondError(pDbpClient,400,"dbp ping message not had assiociated session,please connect first");
-        //     return;
-        // }
+        if (sessionClientBimap.right.find(pDbpClient) == sessionClientBimap.right.end())
+        {
+            RespondError(pDbpClient,400,"dbp ping message not had assiociated session,please connect first");
+            return;
+        }
 
         dbp::Ping pingMsg;
         any->UnpackTo(&pingMsg);
@@ -548,9 +544,9 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
         WalleveLog("\n");
         pDbpClient->SendPong(pingMsg.id());
         WalleveLog("sended pong\n");
-    }
+    }*/
 
-    return;
+    //return;
 
     if(any->Is<dbp::Connect>())
     {
@@ -597,6 +593,7 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
             connectBody.client  = connectMsg.client();
             
             pDbpProfile->pIOModule->PostEvent(pEventDbpConnect);
+
         }
         else
         {
@@ -614,7 +611,7 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
                     WalleveLog("reconnect session exists and reconstruct sessionClientBimap\n");
                     auto pDbplient = sessionClientBimap.left.at(session);
                     sessionClientBimap.left.erase(session);
-                    //sessionClientBimap.right.erase(pDbpClient);
+                    sessionClientBimap.right.erase(pDbpClient);
                 }
                 
                 sessionProfileMap[session].pDbpClient = pDbpClient;
@@ -761,11 +758,8 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
         dbp::Ping pingMsg;
         any->UnpackTo(&pingMsg);
 
-        WalleveLog("recv ping:\n");
-        WalleveLog(pingMsg.id().c_str());
-        WalleveLog("\n");
         pDbpClient->SendPong(pingMsg.id());
-        WalleveLog("sended pong\n");
+       
 
     }
     else if(any->Is<dbp::Pong>())
@@ -1008,9 +1002,11 @@ bool CDbpServer::HandleEvent(CWalleveEventDbpConnected& event)
 
     pDbpClient->SendResponse(connectedBody);
 
-    pingTimerPtr_->expires_at(pingTimerPtr_->expires_at() + boost::posix_time::seconds(5));    
-    pingTimerPtr_->async_wait(boost::bind(&CDbpServer::SendPingHandler, 
-        this, boost::asio::placeholders::error, pDbpClient));
+  //  pingTimerPtr_->expires_at(pingTimerPtr_->expires_at() + boost::posix_time::seconds(5));    
+    //pingTimerPtr_->async_wait(boost::bind(&CDbpServer::SendPingHandler, 
+      //  this, boost::asio::placeholders::error, pDbpClient));
+
+    pDbpClient->SendPing("kkkkk");
     
     return true;
 }
