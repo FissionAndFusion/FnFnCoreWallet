@@ -65,7 +65,8 @@ public:
     bool IsEventStream();
     void SetEventStream();
     void Activate();
-    void SendResponse(CWalleveDbpConnected& body);
+    void ReadActive();
+    void SendResponse(CWalleveDbpConnected &body);
     void SendResponse(CWalleveDbpFailed& body);
     void SendResponse(CWalleveDbpNoSub& body);
     void SendResponse(CWalleveDbpReady& body);

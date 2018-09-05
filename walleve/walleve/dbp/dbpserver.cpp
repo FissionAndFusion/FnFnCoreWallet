@@ -55,6 +55,12 @@ void CDbpClient::Activate()
     StartReadHeader();
 }
 
+void CDbpClient::ReadActive()
+{
+    ssRecv.Clear();
+    StartReadHeader();
+}
+
 void CDbpClient::SendMessage(dbp::Base* pBaseMsg)
 {
     ssSend.Clear();
@@ -470,18 +476,18 @@ void CDbpClient::HandleReadCompleted(uint32_t len)
         std::cout << "connect =========" << std::endl;
         pServer->HandleClientRecv(this,&anyObj);
         break;
-    case dbp::SUB:
-        pServer->HandleClientRecv(this,&anyObj);
-        break;
-    case dbp::UNSUB:
-        pServer->HandleClientRecv(this,&anyObj);
-        break;
-    case dbp::METHOD:
-        pServer->HandleClientRecv(this,&anyObj);
-        break;
-    case dbp::PONG:
-        pServer->HandleClientRecv(this,&anyObj);
-        break;
+    // case dbp::SUB:
+    //     pServer->HandleClientRecv(this,&anyObj);
+    //     break;
+    // case dbp::UNSUB:
+    //     pServer->HandleClientRecv(this,&anyObj);
+    //     break;
+    // case dbp::METHOD:
+    //     pServer->HandleClientRecv(this,&anyObj);
+    //     break;
+    // case dbp::PONG:
+    //     pServer->HandleClientRecv(this,&anyObj);
+    //     break;
     case dbp::PING:
         pServer->HandleClientRecv(this,&anyObj);
         break;
@@ -542,6 +548,27 @@ CIOClient* CDbpServer::CreateIOClient(CIOContainer *pContainer)
 void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
 {
     CDbpProfile *pDbpProfile = pDbpClient->GetProfile();
+
+    google::protobuf::Any* any1 = static_cast<google::protobuf::Any*>(anyObj);
+    if(!any1)
+    {
+        RespondError(pDbpClient,500,"protobuf msg base any object pointer is null.");
+        return;
+    }
+
+    //TODO:add result msg to mq
+    if(any1->Is<dbp::Connect>())
+    {
+        std::cout << "dbp::connect......" << std::endl;
+    }
+
+    if(any1->Is<dbp::Ping>())
+    {
+        std::cout << "dbp::ping......" << std::endl;
+    }
+
+    pDbpClient->ReadActive();
+    return;
 
     google::protobuf::Any* any = static_cast<google::protobuf::Any*>(anyObj);
     if(!any)
@@ -952,7 +979,8 @@ CDbpClient* CDbpServer::AddNewClient(CIOClient *pClient,CDbpProfile *pDbpProfile
     if(pDbpClient)
     {
         mapClient.insert(std::make_pair(nNonce,pDbpClient));
-        pDbpClient->Activate();
+        // pDbpClient->Activate();
+        pDbpClient->ReadActive();
     }
 
 
