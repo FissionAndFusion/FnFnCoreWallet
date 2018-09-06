@@ -1,0 +1,23 @@
+#------------------------------------------------------------------------------
+# CMake file for Multiverse
+#
+# Copyright (c) 2018 The Multiverse developers
+# Distributed under the MIT/X11 software license, see the accompanying
+# file COPYING or http://www.opensource.org/licenses/mit-license.php.
+#------------------------------------------------------------------------------
+
+set(sources
+	test_fnfn_main.cpp
+	test_fnfn.h test_fnfn.cpp
+    uint256_tests.cpp
+    rpc_tests.cpp
+)
+
+add_executable(test_fnfn ${sources})
+
+include_directories(.. ../../walleve ../../crypto ../../common ../../storage ../../network)
+
+target_link_libraries(test_fnfn
+	Boost::unit_test_framework
+    Boost::system
+)
