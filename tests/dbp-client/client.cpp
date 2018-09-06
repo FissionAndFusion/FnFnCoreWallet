@@ -342,6 +342,8 @@ void Client::WriteHandler(boost::shared_ptr<std::string> pstr, const boost::syst
   if (ec)
   {
       std::cerr << "[write_handler]" << *pstr << " msg write error:" << ec.message() << ". len:" << bytes_transferred << std::endl;
+      is_connected_ = false;
+      m_io_.post(boost::bind(&Client::ErrorHandler, this));
       return;
   }
   std::cout << "[write_handler]" << *pstr << " msg write succeed. len:" << bytes_transferred << std::endl;
