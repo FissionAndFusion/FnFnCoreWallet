@@ -10,7 +10,8 @@ Client::Client(std::string ip, int port, int version, std::string client)
       m_ep_(boost::asio::ip::address_v4::from_string(ip), port),
       m_buf_(4096, 0),
       is_connected_(false),
-      session_("")
+      session_(""),
+      timer_expires_(5)
 {
     Start();
 }
@@ -26,7 +27,7 @@ void Client::SockConnect()
     {
         sock_.reset(new boost::asio::ip::tcp::socket(m_io_));
         sock_->connect(m_ep_, ec);
-        std::cerr << "socket connection: " << ec.message() << std::endl;
+        std::cerr << "[-]socket connection: " << ec.message() << std::endl;
 
         if (0 != ec)
         {
@@ -78,7 +79,7 @@ void Client::Send(std::vector<char> buf, std::string explain)
     dbp::Base base;
     if(!base.ParseFromArray(&b[4], size_buf))
     {
-        std::cerr << "[send]parse base msg false" << std::endl;
+        std::cerr << "[-]parse base msg false" << std::endl;
         return;
     }
 
@@ -185,12 +186,12 @@ void Client::ConnHandler(const boost::system::error_code &ec, std::shared_ptr<bo
 {
     if (ec)
     {
-        std::cerr << "connection failed: " << ec.message() << std::endl;
+        std::cerr << "[-]connection failed: " << ec.message() << std::endl;
         return;
     }
 
     SendConnect("");
-    std::cout << "[conn_handler]recive from " << sock->remote_endpoint().address() << std::endl;
+    std::cout << "[-]recive from " << sock->remote_endpoint().address() << std::endl;
     sock_->async_read_some(boost::asio::buffer(m_buf_), boost::bind(&Client::ReadHandler, this, boost::asio::placeholders::error, sock));
 }
 
@@ -215,7 +216,7 @@ void Client::ReadHandler(const boost::system::error_code &ec, std::shared_ptr<bo
     if (ec)
     {
 
-        std::cerr << "read connection: " << ec.message() << ",code:" << ec << std::endl;
+        std::cerr << "[-]read connection: " << ec.message() << ",code:" << ec << std::endl;
         is_connected_ = false;
         m_io_.post(boost::bind(&Client::ErrorHandler, this));
         return;
@@ -228,7 +229,7 @@ void Client::ReadHandler(const boost::system::error_code &ec, std::shared_ptr<bo
     dbp::Base base;
     if(!base.ParseFromArray(&m_buf_[4], len))
     {
-        std::cerr << "[read_handler]parse base msg false" << std::endl;
+        std::cerr << "[-]parse base msg false" << std::endl;
         return;
     }
 
@@ -238,11 +239,11 @@ void Client::ReadHandler(const boost::system::error_code &ec, std::shared_ptr<bo
         {
             dbp::Connected connected;
             base.object().UnpackTo(&connected);
-            std::cout << "[read_handler]connected session is:" << connected.session() << std::endl; 
+            std::cout << "[<]connected session is:" << connected.session() << std::endl; 
             is_connected_ = true;
             session_ = connected.session();
 
-            m_timer_.reset(new boost::asio::steady_timer(m_io_, std::chrono::seconds{1}));
+            m_timer_.reset(new boost::asio::steady_timer(m_io_, std::chrono::seconds{timer_expires_}));
             m_timer_->async_wait(boost::bind(&Client::TimerHandler, this, boost::asio::placeholders::error, sock));
         }
 
@@ -275,33 +276,33 @@ void Client::ReadHandler(const boost::system::error_code &ec, std::shared_ptr<bo
 
     if(base.msg() == dbp::Msg::PING)
     {
-        std::cout << "[read_handler]ping recv" << std::endl;
         dbp::Ping ping;
         base.object().UnpackTo(&ping);
         SendPong(ping.id());
+        std::cout << "[<]ping" << ping.id() << " recv" << std::endl;
     }
 
     if(base.msg() == dbp::Msg::PONG)
     {
-        std::cout << "[read_handler]pong recv" << std::endl;
         dbp::Pong pong;
         base.object().UnpackTo(&pong);
+        std::cout << "[<]pong" << pong.id() << " recv" << std::endl;
     }
 
     if(base.msg() == dbp::Msg::NOSUB)
     {
-        std::cout << "[read_handler]nosub recv" << std::endl;
         dbp::Nosub nosub;
         base.object().UnpackTo(&nosub);
         sub_map_.erase(nosub.id());
+        std::cout << "[<]nosub" << nosub.id() << " recv" << std::endl;
     }
      
     if(base.msg() == dbp::Msg::READY)
     {
-        std::cout << "[read_handler]ready recv" << std::endl;
         dbp::Ready ready;
         base.object().UnpackTo(&ready);
         sub_map_[ready.id()].enable = true;
+        std::cout << "[<]ready" << ready.id() << " recv" << std::endl;
     }
 
     if(base.msg() == dbp::Msg::ADDED)
@@ -331,7 +332,7 @@ void Client::ReadHandler(const boost::system::error_code &ec, std::shared_ptr<bo
     {
         dbp::Error error;
         base.object().UnpackTo(&error);
-        std::cout << "[read_handler]error reason:" << error.reason() << ", explain:" << error.explain() << std::endl;
+        std::cout << "[<]error reason:" << error.reason() << ", explain:" << error.explain() << std::endl;
     }
 
     sock->async_read_some(boost::asio::buffer(m_buf_), boost::bind(&Client::ReadHandler, this, boost::asio::placeholders::error, sock));
@@ -341,17 +342,19 @@ void Client::WriteHandler(boost::shared_ptr<std::string> pstr, const boost::syst
 {
   if (ec)
   {
-      std::cerr << "[write_handler]" << *pstr << " msg write error:" << ec.message() << ". len:" << bytes_transferred << std::endl;
+      std::cerr << "[-]" << *pstr << " msg write error:" << ec.message() << ". len:" << bytes_transferred << std::endl;
+      is_connected_ = false;
+      m_io_.post(boost::bind(&Client::ErrorHandler, this));
       return;
   }
-  std::cout << "[write_handler]" << *pstr << " msg write succeed. len:" << bytes_transferred << std::endl;
+  std::cout << "[>]" << *pstr << " msg write succeed. len:" << bytes_transferred << std::endl;
 }
 
 void Client::TimerHandler(const boost::system::error_code &ec, std::shared_ptr<boost::asio::ip::tcp::socket> sock)
 {
     if(ec)
     {
-        std::cerr << "cancel timer" << std::endl;
+        std::cerr << "[-]cancel timer" << std::endl;
         return;
     }
 
@@ -360,7 +363,7 @@ void Client::TimerHandler(const boost::system::error_code &ec, std::shared_ptr<b
         std::string id = SendPing();
     }
 
-    m_timer_->expires_from_now(std::chrono::seconds{1});
+    m_timer_->expires_from_now(std::chrono::seconds{timer_expires_});
     m_timer_->async_wait(boost::bind(&Client::TimerHandler, this, boost::asio::placeholders::error, sock));
 }
 

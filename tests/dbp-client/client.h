@@ -46,6 +46,7 @@ class Client
     std::vector<char> m_buf_;
     boost::asio::ip::tcp::endpoint m_ep_;
     std::shared_ptr<boost::asio::steady_timer> m_timer_;
+    int timer_expires_;
     std::shared_ptr<boost::asio::ip::tcp::socket> sock_;
     bool is_connected_;
     std::string session_;

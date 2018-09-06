@@ -1,4 +1,5 @@
 #include <iostream>
+#include <algorithm>
 #include "dbp.pb.h"
 #include "lws.pb.h"
 
@@ -14,6 +15,7 @@ class HandlePair
 
       HandlePair();
       ~HandlePair();
+      std::string GetHex(std::string data);
       void AddBlock(lws::Block &block);
       void AddTx(lws::Transaction &tx);
       void SubHandler(std::string type, std::string name, google::protobuf::Any object);
