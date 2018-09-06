@@ -10,6 +10,12 @@ namespace dbp{
     class Base;
 }
 
+namespace google {
+    namespace protobuf{
+        class Any;
+    }
+}
+
 namespace walleve{
 
 class CDbpServer;
@@ -117,11 +123,21 @@ public:
     CDbpServer();
     virtual ~CDbpServer();
     virtual CIOClient* CreateIOClient(CIOContainer *pContainer) override;
+    
     void HandleClientRecv(CDbpClient *pDbpClient,void* anyObj);
     void HandleClientSent(CDbpClient *pDbpClient);
     void HandleClientError(CDbpClient *pDbpClient);
+
+    void HandleClientConnect(CDbpClient *pDbpClient,google::protobuf::Any* any);
+    void HandleClientSub(CDbpClient *pDbpClient,google::protobuf::Any* any);
+    void HandleClientUnSub(CDbpClient *pDbpClient,google::protobuf::Any* any);
+    void HandleClientMethod(CDbpClient *pDbpClient,google::protobuf::Any* any);
+    void HandleClientPing(CDbpClient *pDbpClient,google::protobuf::Any* any);
+    void HandleClientPong(CDbpClient *pDbpClient,google::protobuf::Any* any);
+    
     void RespondError(CDbpClient *pDbpClient,int nStatusCode,const std::string& strError = "");
     void RespondFailed(CDbpClient* pDbpClient);
+    
     void AddNewHost(const CDbpHostConfig& confHost);
 protected:
     bool WalleveHandleInitialize() override;
@@ -134,6 +150,7 @@ protected:
     bool CreateProfile(const CDbpHostConfig& confHost);
     CDbpClient* AddNewClient(CIOClient *pClient,CDbpProfile *pDbpProfile);
     void RemoveClient(CDbpClient *pDbpClient);
+    
     bool HandleEvent(CWalleveEventDbpConnected& event) override;
     bool HandleEvent(CWalleveEventDbpFailed& event) override;
     bool HandleEvent(CWalleveEventDbpNoSub& event) override;
@@ -143,6 +160,13 @@ protected:
     bool HandleEvent(CWalleveEventDbpPing& event) override;
 
     bool IsSessionTimeOut(CDbpClient* pDbpClient);
+    bool IsSessionReconnect(const std::string & session);
+    bool IsSessionExist(const std::string& session);
+    bool HaveAssociatedSessionOf(CDbpClient* pDbpClient);
+
+    std::string GenerateSessionId();
+    void CreateSession(const std::string& session,CDbpClient* pDbpClient);
+    void UpdateSession(const std::string& session,CDbpClient* pDbpClient);
 
     void SendPingHandler(const boost::system::error_code& err,CDbpClient *pDbpClient); 
 

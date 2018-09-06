@@ -1,5 +1,6 @@
 #include "dbpserver.h"
 
+#include <memory>
 #include <openssl/rand.h>
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string/trim.hpp>
@@ -10,6 +11,8 @@
 #include "dbputils.hpp"
 
 using namespace walleve;
+
+static const std::size_t MSG_HEADER_LEN = 4;
 
  CDbpClient::CDbpClient(CDbpServer *pServerIn,CDbpProfile *pProfileIn,
                 CIOClient* pClientIn,uint64 nonce)
@@ -64,9 +67,9 @@ void CDbpClient::SendMessage(dbp::Base* pBaseMsg)
 
     pBaseMsg->SerializeToArray(byteBuf,byteSize);
 
-    unsigned char msgLenBuf[4];
-    CDbpUtils::writeLenToMsgHeader(byteSize,(char*)msgLenBuf,4);
-    ssSend.Write((char*)msgLenBuf,4);
+    unsigned char msgLenBuf[MSG_HEADER_LEN];
+    CDbpUtils::writeLenToMsgHeader(byteSize,(char*)msgLenBuf,MSG_HEADER_LEN);
+    ssSend.Write((char*)msgLenBuf,MSG_HEADER_LEN);
     ssSend.Write((char*)byteBuf,byteSize);
 
     pClient->Write(ssSend,boost::bind(&CDbpClient::HandleWritenResponse,this,_1));
@@ -81,9 +84,9 @@ void CDbpClient::SendPingNoActiveMessage(dbp::Base* pBaseMsg)
 
     pBaseMsg->SerializeToArray(byteBuf,byteSize);
 
-    unsigned char msgLenBuf[4];
-    CDbpUtils::writeLenToMsgHeader(byteSize,(char*)msgLenBuf,4);
-    ssPingSend.Write((char*)msgLenBuf,4);
+    unsigned char msgLenBuf[MSG_HEADER_LEN];
+    CDbpUtils::writeLenToMsgHeader(byteSize,(char*)msgLenBuf,MSG_HEADER_LEN);
+    ssPingSend.Write((char*)msgLenBuf,MSG_HEADER_LEN);
     ssPingSend.Write((char*)byteBuf,byteSize);
 
     pClient->Write(ssPingSend,boost::bind(&CDbpClient::HandleWritenResponse,this,_1,0));   
@@ -98,9 +101,9 @@ void CDbpClient::SendAddedNoActiveMessage(dbp::Base* pBaseMsg)
 
     pBaseMsg->SerializeToArray(byteBuf,byteSize);
 
-    unsigned char msgLenBuf[4];
-    CDbpUtils::writeLenToMsgHeader(byteSize,(char*)msgLenBuf,4);
-    ssAddedSend.Write((char*)msgLenBuf,4);
+    unsigned char msgLenBuf[MSG_HEADER_LEN];
+    CDbpUtils::writeLenToMsgHeader(byteSize,(char*)msgLenBuf,MSG_HEADER_LEN);
+    ssAddedSend.Write((char*)msgLenBuf,MSG_HEADER_LEN);
     ssAddedSend.Write((char*)byteBuf,byteSize);
 
     pClient->Write(ssAddedSend,boost::bind(&CDbpClient::HandleWritenResponse,this,_1,1));   
@@ -270,12 +273,12 @@ void CDbpClient::SendResponse(CWalleveDbpAdded& body)
     }
     else if(body.type == CWalleveDbpAdded::AddedType::TX)
     {
-        lws::Transaction *tx = new lws::Transaction();
-        CreateLwsTransaction(static_cast<CWalleveDbpTransaction*>(body.anyObject),tx);
+        std::unique_ptr<lws::Transaction> tx(std::make_unique<lws::Transaction>());
+        CreateLwsTransaction(static_cast<CWalleveDbpTransaction*>(body.anyObject),tx.get());
 
         google::protobuf::Any *anyTx = new google::protobuf::Any();
         anyTx->PackFrom(*tx);
-        delete tx;
+        
         addedMsg.set_allocated_object(anyTx);
     }
     else
@@ -312,10 +315,9 @@ void CDbpClient::SendResponse(CWalleveDbpMethodResult& body)
     {
         for(auto& obj : body.anyObjects)
         {
-            lws::Transaction *tx = new lws::Transaction();
-            CreateLwsTransaction(static_cast<CWalleveDbpTransaction*>(obj),tx);
+            std::unique_ptr<lws::Transaction> tx(std::make_unique<lws::Transaction>());
+            CreateLwsTransaction(static_cast<CWalleveDbpTransaction*>(obj),tx.get());
             resultMsg.add_result()->PackFrom(*tx);
-            delete tx;
         }
     }
     else if(body.resultType == CWalleveDbpMethodResult::ResultType::SEND_TX)
@@ -408,7 +410,7 @@ void CDbpClient::SendResponse(int statusCode,const std::string& description)
 
 void CDbpClient::StartReadHeader()
 {
-    pClient->Read(ssRecv,4,
+    pClient->Read(ssRecv,MSG_HEADER_LEN,
     boost::bind(&CDbpClient::HandleReadHeader,this, _1));
 }
 
@@ -425,13 +427,13 @@ void CDbpClient::HandleReadHeader(std::size_t nTransferred)
               << " StreamBuffer: " << ssRecv.GetSize()
               << std::endl ;
 
-    if(nTransferred == 4)
+    if(nTransferred == MSG_HEADER_LEN)
     {
         
-        std::string lenBuffer(4,0);
-        ssRecv.Read(&lenBuffer[0],4);
+        std::string lenBuffer(MSG_HEADER_LEN,0);
+        ssRecv.Read(&lenBuffer[0],MSG_HEADER_LEN);
         
-        uint32_t nMsgHeaderLen = CDbpUtils::parseLenFromMsgHeader(&lenBuffer[0],4);
+        uint32_t nMsgHeaderLen = CDbpUtils::parseLenFromMsgHeader(&lenBuffer[0],MSG_HEADER_LEN);
         if(nMsgHeaderLen == 0)
         {
             std::cout << "Msg Base header length is 0" << std::endl;
@@ -543,10 +545,10 @@ void CDbpClient::HandleWritenResponse(std::size_t nTransferred, int type)
 }
 
 CDbpServer::CDbpServer()
-: CIOProc("dbpserver")
+: CIOProc("dbpserver"),
+pingTimerPtr_(std::make_shared<boost::asio::deadline_timer>(this->GetIoService(),
+        boost::posix_time::seconds(5)))
 {
-    pingTimerPtr_.reset(new boost::asio::deadline_timer(this->GetIoService(),
-        boost::posix_time::seconds(5)));
 }
 
 CDbpServer::~CDbpServer()
@@ -565,10 +567,185 @@ CIOClient* CDbpServer::CreateIOClient(CIOContainer *pContainer)
     return CIOProc::CreateIOClient(pContainer);
 }
 
+void CDbpServer::HandleClientConnect(CDbpClient *pDbpClient,google::protobuf::Any* any)
+{
+    CWalleveEventDbpConnect *pEventDbpConnect = new CWalleveEventDbpConnect(pDbpClient->GetNonce());
+    if(!pEventDbpConnect)
+    {
+        RespondError(pDbpClient,500,"dbp connect event create failed.");
+        return;
+    }
+    
+    dbp::Connect connectMsg;
+    any->UnpackTo(&connectMsg);
+
+    std::string session = connectMsg.session();
+    if(!IsSessionReconnect(session))
+    { 
+        session = GenerateSessionId();
+        CreateSession(session,pDbpClient);           
+
+        CWalleveDbpConnect &connectBody = pEventDbpConnect->data;
+        connectBody.isReconnect = false;
+        connectBody.session = session;
+        connectBody.version = connectMsg.version();
+        connectBody.client  = connectMsg.client();
+        
+        pDbpClient->GetProfile()->pIOModule->PostEvent(pEventDbpConnect);
+        
+
+    }
+    else
+    {  
+        if(IsSessionExist(session))
+        { 
+            UpdateSession(session,pDbpClient);
+
+            CWalleveDbpConnect &connectBody = pEventDbpConnect->data;
+            connectBody.isReconnect = true;
+            connectBody.session = session;
+            connectBody.version = connectMsg.version();
+            connectBody.client  = connectMsg.client();
+        
+            pDbpClient->GetProfile()->pIOModule->PostEvent(pEventDbpConnect);
+        }
+        else
+        {
+            // if reconnect cannot find session,send failed msg
+            CWalleveEventDbpFailed failedEvent(pDbpClient->GetNonce());
+            failedEvent.data.session = session;
+            failedEvent.data.reason =  "002";
+
+            this->HandleEvent(failedEvent);
+        }
+        
+    }     
+}
+
+void CDbpServer::HandleClientSub(CDbpClient *pDbpClient,google::protobuf::Any* any)
+{
+    if(IsSessionTimeOut(pDbpClient)) 
+    {   
+        RespondFailed(pDbpClient);
+        return;
+    }
+        
+    CWalleveEventDbpSub *pEventDbpSub = new CWalleveEventDbpSub(pDbpClient->GetNonce());
+    if(!pEventDbpSub)
+    {
+        RespondError(pDbpClient,500,"dbp sub event create failed");
+        return;
+    }
+    
+    dbp::Sub subMsg;
+    any->UnpackTo(&subMsg);
+
+    CWalleveDbpSub &subBody = pEventDbpSub->data;
+    subBody.id = subMsg.id();
+    subBody.name = subMsg.name();
+    
+    pDbpClient->GetProfile()->pIOModule->PostEvent(pEventDbpSub);
+}
+
+void CDbpServer::HandleClientUnSub(CDbpClient *pDbpClient,google::protobuf::Any* any)
+{
+    CWalleveEventDbpUnSub *pEventDbpUnSub = new CWalleveEventDbpUnSub(pDbpClient->GetNonce());
+    if(!pEventDbpUnSub)
+    {
+        RespondError(pDbpClient,500,"dbp unsub event create failed.");
+        return;
+    }
+
+    dbp::Unsub unsubMsg;
+    any->UnpackTo(&unsubMsg);
+
+    CWalleveDbpUnSub &unsubBody = pEventDbpUnSub->data;
+    unsubBody.id = unsubMsg.id();
+    
+    pDbpClient->GetProfile()->pIOModule->PostEvent(pEventDbpUnSub);
+}
+
+void CDbpServer::HandleClientMethod(CDbpClient *pDbpClient,google::protobuf::Any* any)
+{
+    CWalleveEventDbpMethod *pEventDbpMethod = new CWalleveEventDbpMethod(pDbpClient->GetNonce());
+    if(!pEventDbpMethod)
+    {
+        RespondError(pDbpClient,500,"dbp event method create failed.");
+        return;
+    }
+    
+    dbp::Method methodMsg;
+    any->UnpackTo(&methodMsg);
+
+    CWalleveDbpMethod &methodBody = pEventDbpMethod->data;
+    methodBody.id = methodMsg.id();
+    
+    if(methodMsg.method() == "getblocks") methodBody.method = CWalleveDbpMethod::Method::GET_BLOCKS;
+    if(methodMsg.method() == "gettransaction") methodBody.method = CWalleveDbpMethod::Method::GET_TX;
+    if(methodMsg.method() == "sendtransaction") methodBody.method = CWalleveDbpMethod::Method::SEND_TX;
+
+    if(methodBody.method == CWalleveDbpMethod::Method::GET_BLOCKS
+        && methodMsg.params().Is<lws::GetBlocksArg>())
+    {
+        lws::GetBlocksArg args;
+        methodMsg.params().UnpackTo(&args);
+        methodBody.params.insert(std::make_pair("hash",args.hash())); 
+        methodBody.params.insert(std::make_pair("number",boost::lexical_cast<std::string>(args.number())));
+    }
+    else if(methodBody.method == CWalleveDbpMethod::Method::GET_TX 
+        && methodMsg.params().Is<lws::GetTxArg>())
+    {
+        lws::GetTxArg args;
+        methodMsg.params().UnpackTo(&args);
+        methodBody.params.insert(std::make_pair("hash",args.hash()));
+    }
+    else if(methodBody.method == CWalleveDbpMethod::Method::SEND_TX 
+        && methodMsg.params().Is<lws::SendTxArg>())
+    {
+        lws::SendTxArg args;
+        methodMsg.params().UnpackTo(&args);
+        methodBody.params.insert(std::make_pair("hash",args.hash()));
+    }   
+    else
+    {
+        RespondError(pDbpClient,400,"dbp method name is empty,please specify a method name.");
+        return;
+    }
+    
+    pDbpClient->GetProfile()->pIOModule->PostEvent(pEventDbpMethod);
+}
+
+void CDbpServer::HandleClientPing(CDbpClient *pDbpClient,google::protobuf::Any* any)
+{
+    dbp::Ping pingMsg;
+    any->UnpackTo(&pingMsg);
+
+    std::cout << "recv ping" << pingMsg.id() << std::endl;
+    pDbpClient->SendPong(pingMsg.id());
+}
+
+void CDbpServer::HandleClientPong(CDbpClient *pDbpClient,google::protobuf::Any* any)
+{
+    dbp::Pong pongMsg;
+    any->UnpackTo(&pongMsg);
+
+    std::cout << "recv pong" << pongMsg.id() << std::endl;
+
+    if(HaveAssociatedSessionOf(pDbpClient))
+    {
+        std::string session = sessionClientBimap.right.at(pDbpClient);
+        
+        if(IsSessionExist(session))
+        {
+            sessionProfileMap[session].timestamp = CDbpUtils::currentUTC();
+        }
+    }
+
+    this->HandleClientSent(pDbpClient);
+}
+
 void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
 {
-    CDbpProfile *pDbpProfile = pDbpClient->GetProfile();
-
     google::protobuf::Any* any = static_cast<google::protobuf::Any*>(anyObj);
     if(!any)
     {
@@ -578,130 +755,21 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
 
     if(any->Is<dbp::Connect>())
     {
-        
-        CWalleveEventDbpConnect *pEventDbpConnect = new CWalleveEventDbpConnect(pDbpClient->GetNonce());
-        if(!pEventDbpConnect)
-        {
-            RespondError(pDbpClient,500,"dbp connect event create failed.");
-            return;
-        }
-        
-        dbp::Connect connectMsg;
-        any->UnpackTo(&connectMsg);
-
-        //check session if exists
-        std::string session = connectMsg.session();
-        if(session.empty())
-        {
-            
-            WalleveLog("new connect:\n");
-            
-            // generate random session string
-            session = CDbpUtils::RandomString();    
-            while(sessionProfileMap.count(session))
-            {
-                session = CDbpUtils::RandomString();
-            }
-
-            WalleveLog(session.c_str());
-            WalleveLog("\n");
-            
-            CSessionProfile profile;
-            profile.sessionId = session;
-            profile.pDbpClient = pDbpClient;
-            profile.timestamp = CDbpUtils::currentUTC();
-          
-            sessionProfileMap.insert(std::make_pair(session,profile));
-            sessionClientBimap.insert(position_pair(session,pDbpClient));
-
-            CWalleveDbpConnect &connectBody = pEventDbpConnect->data;
-            connectBody.isReconnect = false;
-            connectBody.session = session;
-            connectBody.version = connectMsg.version();
-            connectBody.client  = connectMsg.client();
-            
-            pDbpProfile->pIOModule->PostEvent(pEventDbpConnect);
-
-            WalleveLog("Posted Event connect");
-
-        }
-        else
-        {
-            
-            WalleveLog("reconnect:\n");
-            WalleveLog(session.c_str());
-            WalleveLog("\n");
-            
-            if(sessionProfileMap.count(session))
-            {
-                
-                WalleveLog("reconnect session exists \n");
-                if(sessionClientBimap.left.find(session) != sessionClientBimap.left.end())
-                {
-                    WalleveLog("reconnect session exists and reconstruct sessionClientBimap\n");
-                    auto pDbplient = sessionClientBimap.left.at(session);
-                    sessionClientBimap.left.erase(session);
-                    sessionClientBimap.right.erase(pDbpClient);
-                }
-                
-                sessionProfileMap[session].pDbpClient = pDbpClient;
-                sessionProfileMap[session].timestamp = CDbpUtils::currentUTC();                
-                sessionClientBimap.insert(position_pair(session,pDbpClient));
-   
-                CWalleveDbpConnect &connectBody = pEventDbpConnect->data;
-                connectBody.isReconnect = true;
-                connectBody.session = session;
-                connectBody.version = connectMsg.version();
-                connectBody.client  = connectMsg.client();
-            
-                pDbpProfile->pIOModule->PostEvent(pEventDbpConnect);
-            }
-            else
-            {
-               // if reconnect cannot find session,send failed msg
-               CWalleveEventDbpFailed failedEvent(pDbpClient->GetNonce());
-               failedEvent.data.session = session;
-               failedEvent.data.reason =  "002";
-
-               this->HandleEvent(failedEvent);
-
-            }
-            
-        }     
+        HandleClientConnect(pDbpClient,any);
     }
     else if(any->Is<dbp::Sub>())
     {
-        if(sessionClientBimap.right.find(pDbpClient) == sessionClientBimap.right.end())
+        if(!HaveAssociatedSessionOf(pDbpClient))
         {
             RespondError(pDbpClient,400,"dbp sub message not had assiociated session,please connect first");
             return;
         }
 
-        if(IsSessionTimeOut(pDbpClient)) 
-        {   
-            RespondFailed(pDbpClient);
-            return;
-        }
-        
-        CWalleveEventDbpSub *pEventDbpSub = new CWalleveEventDbpSub(pDbpClient->GetNonce());
-        if(!pEventDbpSub)
-        {
-            RespondError(pDbpClient,500,"dbp sub event create failed");
-            return;
-        }
-        
-        dbp::Sub subMsg;
-        any->UnpackTo(&subMsg);
-
-        CWalleveDbpSub &subBody = pEventDbpSub->data;
-        subBody.id = subMsg.id();
-        subBody.name = subMsg.name();
-        
-        pDbpProfile->pIOModule->PostEvent(pEventDbpSub);
+        HandleClientSub(pDbpClient,any);
     }
     else if(any->Is<dbp::Unsub>())
     {
-        if(sessionClientBimap.right.find(pDbpClient) == sessionClientBimap.right.end())
+        if(!HaveAssociatedSessionOf(pDbpClient))
         {
             RespondError(pDbpClient,400,"dbp unsub message not had assiociated session,please connect first");
             return;
@@ -713,24 +781,11 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
             return;
         }
         
-        CWalleveEventDbpUnSub *pEventDbpUnSub = new CWalleveEventDbpUnSub(pDbpClient->GetNonce());
-        if(!pEventDbpUnSub)
-        {
-            RespondError(pDbpClient,500,"dbp unsub event create failed.");
-            return;
-        }
-
-        dbp::Unsub unsubMsg;
-        any->UnpackTo(&unsubMsg);
-
-        CWalleveDbpUnSub &unsubBody = pEventDbpUnSub->data;
-        unsubBody.id = unsubMsg.id();
-        
-        pDbpProfile->pIOModule->PostEvent(pEventDbpUnSub);
+        HandleClientUnSub(pDbpClient,any);
     }
     else if(any->Is<dbp::Method>())
     {
-        if(sessionClientBimap.right.find(pDbpClient) == sessionClientBimap.right.end())
+        if(!HaveAssociatedSessionOf(pDbpClient))
         {
             RespondError(pDbpClient,400,"dbp method message not had assiociated session,please connect first");
             return;
@@ -742,91 +797,27 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
             return;
         }
               
-        CWalleveEventDbpMethod *pEventDbpMethod = new CWalleveEventDbpMethod(pDbpClient->GetNonce());
-        if(!pEventDbpMethod)
-        {
-            RespondError(pDbpClient,500,"dbp event method create failed.");
-            return;
-        }
-        
-        dbp::Method methodMsg;
-        any->UnpackTo(&methodMsg);
-
-        CWalleveDbpMethod &methodBody = pEventDbpMethod->data;
-        methodBody.id = methodMsg.id();
-        
-        if(methodMsg.method() == "getblocks") methodBody.method = CWalleveDbpMethod::Method::GET_BLOCKS;
-        if(methodMsg.method() == "gettransaction") methodBody.method = CWalleveDbpMethod::Method::GET_TX;
-        if(methodMsg.method() == "sendtransaction") methodBody.method = CWalleveDbpMethod::Method::SEND_TX;
-
-        if(methodBody.method == CWalleveDbpMethod::Method::GET_BLOCKS
-            && methodMsg.params().Is<lws::GetBlocksArg>())
-        {
-            lws::GetBlocksArg args;
-            methodMsg.params().UnpackTo(&args);
-            methodBody.params.insert(std::make_pair("hash",args.hash())); 
-            methodBody.params.insert(std::make_pair("number",boost::lexical_cast<std::string>(args.number())));
-        }
-        else if(methodBody.method == CWalleveDbpMethod::Method::GET_TX 
-            && methodMsg.params().Is<lws::GetTxArg>())
-        {
-            lws::GetTxArg args;
-            methodMsg.params().UnpackTo(&args);
-            methodBody.params.insert(std::make_pair("hash",args.hash()));
-        }
-        else if(methodBody.method == CWalleveDbpMethod::Method::SEND_TX 
-            && methodMsg.params().Is<lws::SendTxArg>())
-        {
-            lws::SendTxArg args;
-            methodMsg.params().UnpackTo(&args);
-            methodBody.params.insert(std::make_pair("hash",args.hash()));
-        }   
-        else
-        {
-            RespondError(pDbpClient,400,"dbp method name is empty,please specify a method name.");
-            return;
-        }
-        
-        pDbpProfile->pIOModule->PostEvent(pEventDbpMethod);
+        HandleClientMethod(pDbpClient,any);
     }
     else if(any->Is<dbp::Ping>())
     {
-        if(sessionClientBimap.right.find(pDbpClient) == sessionClientBimap.right.end())
+        if(!HaveAssociatedSessionOf(pDbpClient))
         {
             RespondError(pDbpClient,400,"dbp ping message not had assiociated session,please connect first");
             return;
         }
 
-        dbp::Ping pingMsg;
-        any->UnpackTo(&pingMsg);
-
-        std::cout << "recv ping" << pingMsg.id() << std::endl;
-        pDbpClient->SendPong(pingMsg.id());
+        HandleClientPing(pDbpClient,any);
     }
     else if(any->Is<dbp::Pong>())
     {
-        if(sessionClientBimap.right.find(pDbpClient) == sessionClientBimap.right.end())
+        if(!HaveAssociatedSessionOf(pDbpClient))
         {
             RespondError(pDbpClient,400,"dbp pong message not had assiociated session,please connect first");
             return;
         }
 
-        dbp::Pong pongMsg;
-        any->UnpackTo(&pongMsg);
-
-        std::cout << "recv pong" << pongMsg.id() << std::endl;
-
-        if(sessionClientBimap.right.find(pDbpClient) != sessionClientBimap.right.end())
-        {
-            std::string session = sessionClientBimap.right.at(pDbpClient);
-            
-            if(sessionProfileMap.count(session) != 0)
-            {
-                sessionProfileMap[session].timestamp = CDbpUtils::currentUTC();
-            }
-        }
-
-        this->HandleClientSent(pDbpClient);
+        HandleClientPong(pDbpClient,any);     
     } 
     else
     {
@@ -840,7 +831,6 @@ void CDbpServer::HandleClientSent(CDbpClient *pDbpClient)
     // keep-alive connection,do not remove
     WalleveLog("continue active\n");
     pDbpClient->Activate();
-    //RemoveClient(pDbpClient);
     WalleveLog("continue actived\n");
 }
 
@@ -980,7 +970,6 @@ CDbpClient* CDbpServer::AddNewClient(CIOClient *pClient,CDbpProfile *pDbpProfile
         mapClient.insert(std::make_pair(nNonce,pDbpClient));
         pDbpClient->Activate();
     }
-
 
     return pDbpClient;
 }
@@ -1168,4 +1157,56 @@ bool CDbpServer::IsSessionTimeOut(CDbpClient* pDbpClient)
     {
         return true;
     }
+}
+
+bool CDbpServer::IsSessionReconnect(const std::string & session)
+{
+    return !session.empty();
+}
+
+bool CDbpServer::IsSessionExist(const std::string& session)
+{
+    return (sessionProfileMap.count(session) != 0) ? true : false;
+}
+
+bool CDbpServer::HaveAssociatedSessionOf(CDbpClient* pDbpClient)
+{
+    return (sessionClientBimap.right.find(pDbpClient) != sessionClientBimap.right.end())
+            ? true : false;
+}
+
+std::string CDbpServer::GenerateSessionId()
+{
+    std::string session = CDbpUtils::RandomString();    
+    while(IsSessionExist(session))
+    {
+        session = CDbpUtils::RandomString();
+    }
+    
+    return session; 
+}
+
+void CDbpServer::CreateSession(const std::string& session,CDbpClient* pDbpClient)
+{
+    CSessionProfile profile;
+    profile.sessionId = session;
+    profile.pDbpClient = pDbpClient;
+    profile.timestamp = CDbpUtils::currentUTC();
+          
+    sessionProfileMap.insert(std::make_pair(session,profile));
+    sessionClientBimap.insert(position_pair(session,pDbpClient));
+}
+
+void CDbpServer::UpdateSession(const std::string& session,CDbpClient* pDbpClient)
+{
+    if(sessionClientBimap.left.find(session) != sessionClientBimap.left.end())
+    {          
+        auto pDbplient = sessionClientBimap.left.at(session);
+        sessionClientBimap.left.erase(session);
+        sessionClientBimap.right.erase(pDbpClient);
+    }
+                
+    sessionProfileMap[session].pDbpClient = pDbpClient;
+    sessionProfileMap[session].timestamp = CDbpUtils::currentUTC();                
+    sessionClientBimap.insert(position_pair(session,pDbpClient));
 }
