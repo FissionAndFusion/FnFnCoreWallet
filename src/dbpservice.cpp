@@ -1,8 +1,5 @@
 #include "dbpservice.h"
 
-#ifndef WIN32
-#include <unistd.h>
-#endif
 #include <boost/assign/list_of.hpp>
 #include <boost/lexical_cast.hpp>
 
@@ -59,21 +56,6 @@ void CDbpService::WalleveHandleDeinitialize()
     pWallet = NULL;
 }
 
-bool CDbpService::HandleEvent(walleve::CWalleveEventDbpPing& event)
-{
-    (void)event;
-    
-#ifndef WIN32
-    sleep(5);
-#endif
-
-    uint64 nonce = event.nNonce;
-    walleve::CWalleveEventDbpPing eventConnected(nonce);
-    pDbpServer->DispatchEvent(&eventConnected);
-    
-    return true;
-}
-
 bool CDbpService::HandleEvent(walleve::CWalleveEventDbpPong& event)
 {
     (void)event;
@@ -84,16 +66,13 @@ bool CDbpService::HandleEvent(walleve::CWalleveEventDbpConnect& event)
 {
     bool isReconnect = event.data.isReconnect;
 
-    WalleveLog("connect \n");
     if(isReconnect)
     {
          // reply normal
         uint64 nonce = event.nNonce;
         walleve::CWalleveEventDbpConnected eventConnected(nonce);
         eventConnected.data.session = event.data.session;
-        WalleveLog("re-connect \n");
         pDbpServer->DispatchEvent(&eventConnected);
-        WalleveLog("re-connect dispatched\n");
     }
     else
     {
@@ -114,9 +93,7 @@ bool CDbpService::HandleEvent(walleve::CWalleveEventDbpConnect& event)
             uint64 nonce = event.nNonce;
             walleve::CWalleveEventDbpConnected eventConnected(nonce);
             eventConnected.data.session = event.data.session;
-            WalleveLog("connect dispatch entry\n");
             pDbpServer->DispatchEvent(&eventConnected);
-            WalleveLog("connect dispatched\n");
         }
     }
     
@@ -433,14 +410,11 @@ bool CDbpService::HandleEvent(CMvEventDbpUpdateNewBlock& event)
     CBlock newBlock;
     uint256 forkHash;
     int blockHeight;
-
-   // std::cout << "new block event added,block hash is: " <<  blockHash.ToString() << std::endl;
    
     if(pService->GetBlock(blockHash,newBlock,forkHash,blockHeight))
     {
         walleve::CWalleveDbpBlock block;
         CreateDbpBlock(newBlock,forkHash,blockHeight,block);
-     //   std::cout << "get dbp block success: " <<  blockHash.ToString() << std::endl;
         
         // push new block to dbpclient when new-block-event comes 
         for(const auto& kv : idSubedNonceMap)
@@ -467,8 +441,6 @@ bool CDbpService::HandleEvent(CMvEventDbpUpdateNewTx& event)
 
     walleve::CWalleveDbpTransaction dbpTx;
     CreateDbpTransaction(newtx,dbpTx);
-
-   // std::cout << "new tx event added,tx hash is: " <<  newtx.GetHash().ToString() << std::endl;
 
     // push new tx to dbpclient when new-tx-event comes
     for(const auto& kv : idSubedNonceMap)
