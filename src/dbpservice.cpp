@@ -391,6 +391,10 @@ int blockHeight, walleve::CWalleveDbpBlock& block)
         CreateDbpTransaction(tx,dbpTx);
         block.vtx.push_back(dbpTx);
     }
+
+    block.nHeight = blockHeight;
+    walleve::CWalleveODataStream hashStream(block.hash);
+    blockDetail.GetHash().ToDataStream(hashStream);
 }
 
 void CDbpService::CreateDbpTransaction(const CTransaction& tx,walleve::CWalleveDbpTransaction& dbptx)

@@ -12,12 +12,14 @@
 void callback(Client *cl)
 {
     HandlePair sub_hp;
-    std::string id = cl->SendSub("all-block", sub_hp);
+    std::string id_all_block = cl->SendSub("all-block", sub_hp);
+    usleep(100 * 10);
+    std::string id_all_tx = cl->SendSub("all-tx", sub_hp);
     // cl->SendUnsub(id);
 
     HandlePair method_hp;
     std::string mehtod_id = cl->SendMethod("getblocks", method_hp);
-    usleep(100 * 100);
+    usleep(100 * 10);
     std::string mehtod_id1 = cl->SendMethod("gettransaction", method_hp);
 }
 

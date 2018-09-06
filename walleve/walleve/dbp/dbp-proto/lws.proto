@@ -61,6 +61,8 @@ message Block
     Transaction txMint = 7; // 出块奖励交易
     repeated Transaction vtx = 8; //区块打包的所有交易
     bytes vchSig = 9; //区块签名
+    uint32 nHeight = 10; //区块高度
+    bytes hash = 11; //当前区块hash
 }
 
 message SendTxRet

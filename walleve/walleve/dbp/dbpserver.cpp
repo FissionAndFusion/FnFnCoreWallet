@@ -242,6 +242,9 @@ static void CreateLwsBlock(CWalleveDbpBlock* pBlock,lws::Block& block)
         CreateLwsTransaction(&tx,block.add_vtx());
     }
 
+    block.set_nheight(pBlock->nHeight);
+    std::string hash(pBlock->hash.begin(),pBlock->hash.end());
+    block.set_hash(hash);
 }
 
 
