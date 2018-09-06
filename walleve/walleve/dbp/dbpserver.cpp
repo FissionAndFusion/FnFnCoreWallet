@@ -270,7 +270,7 @@ void CDbpClient::SendResponse(CWalleveDbpAdded& body)
     }
     else if(body.type == CWalleveDbpAdded::AddedType::TX)
     {
-        std::unique_ptr<lws::Transaction> tx(new lws::Transaction());
+        std::unique_ptr<lws::Transaction> tx(std::make_unique<lws::Transaction>());
         CreateLwsTransaction(static_cast<CWalleveDbpTransaction*>(body.anyObject),tx.get());
 
         google::protobuf::Any *anyTx = new google::protobuf::Any();
@@ -312,7 +312,7 @@ void CDbpClient::SendResponse(CWalleveDbpMethodResult& body)
     {
         for(auto& obj : body.anyObjects)
         {
-            std::unique_ptr<lws::Transaction> tx(new lws::Transaction());
+            std::unique_ptr<lws::Transaction> tx(std::make_unique<lws::Transaction>());
             CreateLwsTransaction(static_cast<CWalleveDbpTransaction*>(obj),tx.get());
             resultMsg.add_result()->PackFrom(*tx);
         }
@@ -543,7 +543,7 @@ void CDbpClient::HandleWritenResponse(std::size_t nTransferred, int type)
 
 CDbpServer::CDbpServer()
 : CIOProc("dbpserver"),
-pingTimerPtr_(new boost::asio::deadline_timer(this->GetIoService(),
+pingTimerPtr_(std::make_shared<boost::asio::deadline_timer>(this->GetIoService(),
         boost::posix_time::seconds(5)))
 {
 }
