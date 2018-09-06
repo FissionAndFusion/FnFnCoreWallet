@@ -122,6 +122,7 @@ public:
     void HandleClientSent(CDbpClient *pDbpClient);
     void HandleClientError(CDbpClient *pDbpClient);
     void RespondError(CDbpClient *pDbpClient,int nStatusCode,const std::string& strError = "");
+    void RespondFailed(CDbpClient* pDbpClient);
     void AddNewHost(const CDbpHostConfig& confHost);
 protected:
     bool WalleveHandleInitialize() override;
