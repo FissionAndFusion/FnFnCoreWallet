@@ -11,6 +11,8 @@
 
 using namespace walleve;
 
+static const std::size_t MSG_HEADER_LEN = 4;
+
  CDbpClient::CDbpClient(CDbpServer *pServerIn,CDbpProfile *pProfileIn,
                 CIOClient* pClientIn,uint64 nonce)
 : pServer(pServerIn), pProfile(pProfileIn), pClient(pClientIn),nNonce(nonce)
@@ -64,9 +66,9 @@ void CDbpClient::SendMessage(dbp::Base* pBaseMsg)
 
     pBaseMsg->SerializeToArray(byteBuf,byteSize);
 
-    unsigned char msgLenBuf[4];
-    CDbpUtils::writeLenToMsgHeader(byteSize,(char*)msgLenBuf,4);
-    ssSend.Write((char*)msgLenBuf,4);
+    unsigned char msgLenBuf[MSG_HEADER_LEN];
+    CDbpUtils::writeLenToMsgHeader(byteSize,(char*)msgLenBuf,MSG_HEADER_LEN);
+    ssSend.Write((char*)msgLenBuf,MSG_HEADER_LEN);
     ssSend.Write((char*)byteBuf,byteSize);
 
     pClient->Write(ssSend,boost::bind(&CDbpClient::HandleWritenResponse,this,_1));
@@ -81,9 +83,9 @@ void CDbpClient::SendPingNoActiveMessage(dbp::Base* pBaseMsg)
 
     pBaseMsg->SerializeToArray(byteBuf,byteSize);
 
-    unsigned char msgLenBuf[4];
-    CDbpUtils::writeLenToMsgHeader(byteSize,(char*)msgLenBuf,4);
-    ssPingSend.Write((char*)msgLenBuf,4);
+    unsigned char msgLenBuf[MSG_HEADER_LEN];
+    CDbpUtils::writeLenToMsgHeader(byteSize,(char*)msgLenBuf,MSG_HEADER_LEN);
+    ssPingSend.Write((char*)msgLenBuf,MSG_HEADER_LEN);
     ssPingSend.Write((char*)byteBuf,byteSize);
 
     pClient->Write(ssPingSend,boost::bind(&CDbpClient::HandleWritenResponse,this,_1,0));   
@@ -98,9 +100,9 @@ void CDbpClient::SendAddedNoActiveMessage(dbp::Base* pBaseMsg)
 
     pBaseMsg->SerializeToArray(byteBuf,byteSize);
 
-    unsigned char msgLenBuf[4];
-    CDbpUtils::writeLenToMsgHeader(byteSize,(char*)msgLenBuf,4);
-    ssAddedSend.Write((char*)msgLenBuf,4);
+    unsigned char msgLenBuf[MSG_HEADER_LEN];
+    CDbpUtils::writeLenToMsgHeader(byteSize,(char*)msgLenBuf,MSG_HEADER_LEN);
+    ssAddedSend.Write((char*)msgLenBuf,MSG_HEADER_LEN);
     ssAddedSend.Write((char*)byteBuf,byteSize);
 
     pClient->Write(ssAddedSend,boost::bind(&CDbpClient::HandleWritenResponse,this,_1,1));   
@@ -405,7 +407,7 @@ void CDbpClient::SendResponse(int statusCode,const std::string& description)
 
 void CDbpClient::StartReadHeader()
 {
-    pClient->Read(ssRecv,4,
+    pClient->Read(ssRecv,MSG_HEADER_LEN,
     boost::bind(&CDbpClient::HandleReadHeader,this, _1));
 }
 
@@ -422,13 +424,13 @@ void CDbpClient::HandleReadHeader(std::size_t nTransferred)
               << " StreamBuffer: " << ssRecv.GetSize()
               << std::endl ;
 
-    if(nTransferred == 4)
+    if(nTransferred == MSG_HEADER_LEN)
     {
         
-        std::string lenBuffer(4,0);
-        ssRecv.Read(&lenBuffer[0],4);
+        std::string lenBuffer(MSG_HEADER_LEN,0);
+        ssRecv.Read(&lenBuffer[0],MSG_HEADER_LEN);
         
-        uint32_t nMsgHeaderLen = CDbpUtils::parseLenFromMsgHeader(&lenBuffer[0],4);
+        uint32_t nMsgHeaderLen = CDbpUtils::parseLenFromMsgHeader(&lenBuffer[0],MSG_HEADER_LEN);
         if(nMsgHeaderLen == 0)
         {
             std::cout << "Msg Base header length is 0" << std::endl;
@@ -965,7 +967,7 @@ CDbpClient* CDbpServer::AddNewClient(CIOClient *pClient,CDbpProfile *pDbpProfile
         mapClient.insert(std::make_pair(nNonce,pDbpClient));
         pDbpClient->Activate();
     }
-    
+
     return pDbpClient;
 }
 
