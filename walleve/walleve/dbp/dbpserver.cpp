@@ -675,8 +675,9 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
         }
 
         if(IsSessionTimeOut(pDbpClient)) 
-        {
-            RemoveClient(pDbpClient);
+        {   
+            RespondFailed(pDbpClient);
+            return;
         }
         
         CWalleveEventDbpSub *pEventDbpSub = new CWalleveEventDbpSub(pDbpClient->GetNonce());
@@ -705,7 +706,8 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
 
         if(IsSessionTimeOut(pDbpClient)) 
         {
-            RemoveClient(pDbpClient);
+            RespondFailed(pDbpClient);
+            return;
         }
         
         CWalleveEventDbpUnSub *pEventDbpUnSub = new CWalleveEventDbpUnSub(pDbpClient->GetNonce());
@@ -733,7 +735,8 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
 
         if(IsSessionTimeOut(pDbpClient)) 
         {
-            RemoveClient(pDbpClient);
+            RespondFailed(pDbpClient);
+            return;
         }
               
         CWalleveEventDbpMethod *pEventDbpMethod = new CWalleveEventDbpMethod(pDbpClient->GetNonce());
@@ -988,7 +991,7 @@ void CDbpServer::RemoveClient(CDbpClient *pDbpClient)
     {
         std::string assciatedSession = iter->second;
         sessionClientBimap.left.erase(assciatedSession);
-        //sessionClientBimap.right.erase(pDbpClient);
+        sessionClientBimap.right.erase(pDbpClient);
         sessionProfileMap.erase(assciatedSession);
     }
     
@@ -1004,6 +1007,15 @@ void CDbpServer::RemoveClient(CDbpClient *pDbpClient)
 void CDbpServer::RespondError(CDbpClient *pDbpClient,int nStatusCode,const std::string& strError)
 {
     pDbpClient->SendResponse(nStatusCode,strError);
+}
+
+void CDbpServer::RespondFailed(CDbpClient* pDbpClient)
+{
+    CWalleveEventDbpFailed failedEvent(pDbpClient->GetNonce());
+    failedEvent.data.session = sessionClientBimap.right.at(pDbpClient);
+    failedEvent.data.reason =  "400";
+
+    this->HandleEvent(failedEvent);
 }
 
 void CDbpServer::SendPingHandler(const boost::system::error_code& err,CDbpClient *pDbpClient)
