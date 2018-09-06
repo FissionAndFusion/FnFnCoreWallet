@@ -33,8 +33,10 @@ void HandlePair::AddBlock(lws::Block &block)
 
     std::string prev_hash(block.hashprev());
     reverse(prev_hash.begin(), prev_hash.end());
-    std::cout << "[<]recived block, hash:" << GetHex(hash) << ", height:" << block.nheight() << std::endl;
-    std::cout << "   prev block hash:" << GetHex(prev_hash) << std::endl;
+    std::cout << "[<]recived block," << std::endl;
+    std::cout << "   hash:" << GetHex(hash) << std::endl;
+    std::cout << "   height:" << block.nheight() << std::endl;
+    std::cout << "   prev hash:" << GetHex(prev_hash) << std::endl;
 }
 
 void HandlePair::AddTx(lws::Transaction &tx)
