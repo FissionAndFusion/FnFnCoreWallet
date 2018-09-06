@@ -1,5 +1,6 @@
 #include "dbpserver.h"
 
+#include <memory>
 #include <openssl/rand.h>
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string/trim.hpp>
@@ -269,12 +270,12 @@ void CDbpClient::SendResponse(CWalleveDbpAdded& body)
     }
     else if(body.type == CWalleveDbpAdded::AddedType::TX)
     {
-        lws::Transaction *tx = new lws::Transaction();
-        CreateLwsTransaction(static_cast<CWalleveDbpTransaction*>(body.anyObject),tx);
+        std::unique_ptr<lws::Transaction> tx(new lws::Transaction());
+        CreateLwsTransaction(static_cast<CWalleveDbpTransaction*>(body.anyObject),tx.get());
 
         google::protobuf::Any *anyTx = new google::protobuf::Any();
         anyTx->PackFrom(*tx);
-        delete tx;
+        
         addedMsg.set_allocated_object(anyTx);
     }
     else
@@ -311,10 +312,9 @@ void CDbpClient::SendResponse(CWalleveDbpMethodResult& body)
     {
         for(auto& obj : body.anyObjects)
         {
-            lws::Transaction *tx = new lws::Transaction();
-            CreateLwsTransaction(static_cast<CWalleveDbpTransaction*>(obj),tx);
+            std::unique_ptr<lws::Transaction> tx(new lws::Transaction());
+            CreateLwsTransaction(static_cast<CWalleveDbpTransaction*>(obj),tx.get());
             resultMsg.add_result()->PackFrom(*tx);
-            delete tx;
         }
     }
     else if(body.resultType == CWalleveDbpMethodResult::ResultType::SEND_TX)
