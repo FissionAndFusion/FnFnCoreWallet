@@ -105,8 +105,8 @@ public:
     CWalleveDbpTransaction txMint; // 出块奖励交易
     std::vector<CWalleveDbpTransaction> vtx; //区块打包的所有交易
     std::vector<uint8> vchSig; //区块签名
-    uint32 nHeight;
-    std::vector<uint8> hash; //前一区块的hash
+    uint32 nHeight; // 当前区块高度
+    std::vector<uint8> hash; //当前区块的hash
 };
 
 class CWalleveDbpAdded: public CWalleveDbpRespond
