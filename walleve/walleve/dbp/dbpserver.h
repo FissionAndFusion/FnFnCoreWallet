@@ -5,6 +5,7 @@
 #include "walleve/dbp/dbpevent.h"
 
 #include <boost/bimap.hpp>
+#include <boost/any.hpp>
 
 namespace dbp{
     class Base;
@@ -124,7 +125,7 @@ public:
     virtual ~CDbpServer();
     virtual CIOClient* CreateIOClient(CIOContainer *pContainer) override;
     
-    void HandleClientRecv(CDbpClient *pDbpClient,void* anyObj);
+    void HandleClientRecv(CDbpClient *pDbpClient, const boost::any& anyObj);
     void HandleClientSent(CDbpClient *pDbpClient);
     void HandleClientError(CDbpClient *pDbpClient);
 

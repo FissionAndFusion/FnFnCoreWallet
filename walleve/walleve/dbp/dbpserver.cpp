@@ -489,22 +489,22 @@ void CDbpClient::HandleReadCompleted(uint32_t len)
     {
     case dbp::CONNECT:
         std::cout << "connect =========" << std::endl;
-        pServer->HandleClientRecv(this,&anyObj);
+        pServer->HandleClientRecv(this,anyObj);
         break;
     case dbp::SUB:
-        pServer->HandleClientRecv(this,&anyObj);
+        pServer->HandleClientRecv(this,anyObj);
         break;
     case dbp::UNSUB:
-        pServer->HandleClientRecv(this,&anyObj);
+        pServer->HandleClientRecv(this,anyObj);
         break;
     case dbp::METHOD:
-        pServer->HandleClientRecv(this,&anyObj);
+        pServer->HandleClientRecv(this,anyObj);
         break;
     case dbp::PONG:
-        pServer->HandleClientRecv(this,&anyObj);
+        pServer->HandleClientRecv(this,anyObj);
         break;
     case dbp::PING:
-        pServer->HandleClientRecv(this,&anyObj);
+        pServer->HandleClientRecv(this,anyObj);
         break;
     default:
         pServer->RespondError(this,400,"is not Message Base Type is unknown.");
@@ -744,20 +744,24 @@ void CDbpServer::HandleClientPong(CDbpClient *pDbpClient,google::protobuf::Any* 
     this->HandleClientSent(pDbpClient);
 }
 
-void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
+void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient, const boost::any& anyObj)
 {
-    google::protobuf::Any* any = static_cast<google::protobuf::Any*>(anyObj);
-    if(!any)
+    google::protobuf::Any any;
+    try
+    {
+        any = boost::any_cast<google::protobuf::Any>(anyObj);
+    }
+    catch(boost::bad_any_cast &e)
     {
         RespondError(pDbpClient,500,"protobuf msg base any object pointer is null.");
         return;
     }
 
-    if(any->Is<dbp::Connect>())
+    if(any.Is<dbp::Connect>())
     {
-        HandleClientConnect(pDbpClient,any);
+        HandleClientConnect(pDbpClient,&any);
     }
-    else if(any->Is<dbp::Sub>())
+    else if(any.Is<dbp::Sub>())
     {
         if(!HaveAssociatedSessionOf(pDbpClient))
         {
@@ -765,9 +769,9 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
             return;
         }
 
-        HandleClientSub(pDbpClient,any);
+        HandleClientSub(pDbpClient,&any);
     }
-    else if(any->Is<dbp::Unsub>())
+    else if(any.Is<dbp::Unsub>())
     {
         if(!HaveAssociatedSessionOf(pDbpClient))
         {
@@ -781,9 +785,9 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
             return;
         }
         
-        HandleClientUnSub(pDbpClient,any);
+        HandleClientUnSub(pDbpClient,&any);
     }
-    else if(any->Is<dbp::Method>())
+    else if(any.Is<dbp::Method>())
     {
         if(!HaveAssociatedSessionOf(pDbpClient))
         {
@@ -797,9 +801,9 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
             return;
         }
               
-        HandleClientMethod(pDbpClient,any);
+        HandleClientMethod(pDbpClient,&any);
     }
-    else if(any->Is<dbp::Ping>())
+    else if(any.Is<dbp::Ping>())
     {
         if(!HaveAssociatedSessionOf(pDbpClient))
         {
@@ -807,9 +811,9 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
             return;
         }
 
-        HandleClientPing(pDbpClient,any);
+        HandleClientPing(pDbpClient,&any);
     }
-    else if(any->Is<dbp::Pong>())
+    else if(any.Is<dbp::Pong>())
     {
         if(!HaveAssociatedSessionOf(pDbpClient))
         {
@@ -817,7 +821,7 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient,void* anyObj)
             return;
         }
 
-        HandleClientPong(pDbpClient,any);     
+        HandleClientPong(pDbpClient,&any);     
     } 
     else
     {
