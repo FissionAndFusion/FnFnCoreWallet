@@ -1005,7 +1005,7 @@ void CDbpServer::RemoveClient(CDbpClient *pDbpClient)
     {
         std::string assciatedSession = iter->second;
         sessionClientBimap.left.erase(assciatedSession);
-        //sessionClientBimap.right.erase(pDbpClient);
+        sessionClientBimap.right.erase(pDbpClient);
         sessionProfileMap.erase(assciatedSession);
     }
     
@@ -1025,7 +1025,11 @@ void CDbpServer::RespondError(CDbpClient *pDbpClient,int nStatusCode,const std::
 
 void CDbpServer::RespondFailed(CDbpClient* pDbpClient)
 {
-    (void)pDbpClient;
+    CWalleveEventDbpFailed failedEvent(pDbpClient->GetNonce());
+    failedEvent.data.session = sessionClientBimap.right.at(pDbpClient);
+    failedEvent.data.reason =  "400";
+
+    this->HandleEvent(failedEvent);
 }
 
 void CDbpServer::SendPingHandler(const boost::system::error_code& err,CDbpClient *pDbpClient)
