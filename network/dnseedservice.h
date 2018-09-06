@@ -30,17 +30,21 @@ public:
 
     void getSendAddressList(std::vector<CAddress> & list);
     void getLocalConnectAddressList(std::vector<boost::asio::ip::tcp::endpoint> &epList ,int limitCount=10);
-    bool add2list(boost::asio::ip::tcp::endpoint newep,bool forceAdd=false);
     void recvAddressList(std::vector<CAddress> epList);
     bool updateNode(storage::SeedNode node);
     void removeNode(const boost::asio::ip::tcp::endpoint& ep);
     void getAllNodeList4Filter(std::vector<boost::asio::ip::tcp::endpoint> &epList);
     void resetNewNodeList();
-    
+    storage::SeedNode * findSeedNode(const boost::asio::ip::tcp::endpoint& ep);
+    void addNode(boost::asio::ip::tcp::endpoint& ep,bool forceAdd=false);
+    void goodNode(storage::SeedNode* node);
+    //Return result: whether to remove from the list 
+    bool badNode(storage::SeedNode* node);
 protected:
     DNSeedService();
 
     bool hasAddress(boost::asio::ip::tcp::endpoint ep);   
+    bool add2list(boost::asio::ip::tcp::endpoint newep,bool forceAdd=false);
     
 protected:
     std::mutex _activeListLocker;
@@ -49,6 +53,8 @@ protected:
     std::vector<storage::SeedNode> _newNodeList;
     bool _isDNSeedServiceNode;
     multiverse::storage::DNSeedDB _db;
+public:
+    unsigned int _maxConnectFailTimes=0;
 private:
     //test
     int _maxNumber;

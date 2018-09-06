@@ -24,11 +24,6 @@ CMvDNSeedPeer::~CMvDNSeedPeer()
 
 bool CMvDNSeedPeer::HandshakeCompletd()
 {
-    //std::cout<<"HandshakeCompletd()"<<std::endl;
-    // if (!((CMvPeerNet*)pPeerNet)->HandlePeerHandshaked(this,nHsTimerId))
-    // {
-    //     return false;
-    // }
      nHsTimerId = 0;
      Read(MESSAGE_HEADER_SIZE,boost::bind(&CMvDNSeedPeer::HandleReadHeader,this));
      if(DNSeedService::getInstance()->isDNSeedService())

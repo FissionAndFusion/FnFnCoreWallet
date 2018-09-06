@@ -25,6 +25,7 @@ public:
 protected:
     bool WalleveHandleInitialize();
     void WalleveHandleDeinitialize();
+    virtual void ClientFailToConnect(const boost::asio::ip::tcp::endpoint& epRemote)override;
     virtual void DestroyPeer(walleve::CPeer* pPeer) override;
     virtual void ProcessAskFor(walleve::CPeer* pPeer) override;
     virtual walleve::CPeer* CreatePeer(walleve::CIOClient *pClient,uint64 nNonce,bool fInBound)override;

@@ -40,7 +40,9 @@ bool CNetwork::WalleveHandleInitialize()
 
     storage::CMvDBConfig dbConfig(StorageConfig()->strDBHost,StorageConfig()->nDBPort
                         ,StorageConfig()->strDBName,StorageConfig()->strDBUser,StorageConfig()->strDBPass);
-    network::DNSeedService::getInstance()->init(dbConfig);
+    network::DNSeedService* dns=network::DNSeedService::getInstance();
+    dns->init(dbConfig);
+    dns->_maxConnectFailTimes=NetworkConfig()->nMaxTimes2ConnectFail;
 
     BOOST_FOREACH(const string& conn,NetworkConfig()->vConnectTo)
     {
@@ -57,7 +59,7 @@ bool CNetwork::WalleveHandleInitialize()
     }
     //加载数据库中的节点列表
     std::vector<tcp::endpoint> eplist;
-    network::DNSeedService::getInstance()->getLocalConnectAddressList(eplist,NetworkConfig()->nMaxOutBounds);
+    dns->getLocalConnectAddressList(eplist,NetworkConfig()->nMaxOutBounds);
     BOOST_FOREACH(tcp::endpoint ep,eplist)
     {
         std::string ip=ep.address().to_string();
@@ -94,11 +96,23 @@ bool CNetwork::CheckPeerVersion(uint32 nVersionIn,uint64 nServiceIn,const string
 
 void CNetwork::ClientFailToConnect(const tcp::endpoint& epRemote)
 {
-    CMvPeerNet::ClientFailToConnect(epRemote);
-    //TODO 检查是否有peer和待连接的节点,如果都空了,连接DNseed
+    CPeerNet::ClientFailToConnect(epRemote);
+    WalleveLog("ConnectFailTo>>>%s\n",epRemote.address().to_string().c_str());
+
+    network::DNSeedService * dns=network::DNSeedService::getInstance();
+    storage::SeedNode * sn=dns->findSeedNode(epRemote);
+    if(sn)
+    {
+        if(dns->badNode(sn))
+        {
+            this->RemoveNode(epRemote);
+            dns->removeNode(epRemote);
+        } 
+    }
+
+    //Check to see if there are peer and nodes to connect, and if they are empty, connect DNseed
     CWalleveEventPeerNetGetPeers eventGetPeers(0);
-    this->DispatchEvent(&eventGetPeers);
-   
+    this->DispatchEvent(&eventGetPeers); 
     if(eventGetPeers.result.size() == 0 && this->GetCandidateNodeCount()<=0)
     {
         WalleveLog("Connect 2 DnSeed server");

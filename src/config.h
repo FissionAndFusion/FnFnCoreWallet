@@ -57,6 +57,7 @@ public:
     std::vector<std::string> vNode;
     std::vector<std::string> vConnectTo;
     std::vector<std::string> vDNSeed;
+    unsigned int nMaxTimes2ConnectFail;
 protected:
     int nPortInt;
     int nMaxConnection;

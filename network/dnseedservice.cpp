@@ -45,34 +45,27 @@ bool DNSeedService::add2list(boost::asio::ip::tcp::endpoint newep,bool forceAdd)
 {
     //过滤局域网地址
     if(!IsRoutable(newep.address())) return false;
-    if(this->hasAddress(newep))
+    if(this->hasAddress(newep)) return false;
+
+    SeedNode sn(newep); 
+    if(isDNSeedService()&&!forceAdd)
     {
-        return this->updateNode(newep);
+        this->_newNodeList.push_back(sn);
+        return true;
     }
     else
     {
-        SeedNode sn(newep); 
-        if(isDNSeedService()&&!forceAdd)
+        if(_db.insertNode(sn))
         {
-            this->_newNodeList.push_back(sn);
+            this->_activeListLocker.lock();
+            this->_activeNodeList.push_back(sn);
+            this->_activeListLocker.unlock();
             return true;
+        }else{
+            return false;
         }
-        else
-        {
-            if(_db.insertNode(sn))
-            {
-                this->_activeListLocker.lock();
-                this->_activeNodeList.push_back(sn);
-                this->_activeListLocker.unlock();
-                return true;
-            }else{
-                return false;
-            }
-        }
-       
     }
-
-    
+ 
 }
 
 void DNSeedService::getSendAddressList(std::vector<CAddress> & list)
@@ -103,7 +96,7 @@ bool DNSeedService::hasAddress(boost::asio::ip::tcp::endpoint ep)
 {
     for(size_t i=0;i<this->_activeNodeList.size();i++)
     {
-        if(this->_activeNodeList[i]._ep.address()==ep.address()) return true;
+        if(this->_activeNodeList[i]._ep==ep ) return true;
     }
     return false;
 }
@@ -139,9 +132,10 @@ bool DNSeedService::updateNode(SeedNode node)
     {
         for(size_t i=0;i< this->_activeNodeList.size();i++)
         {
-            if(this->_activeNodeList[i]._ep.address()== node._ep.address())
+            if(this->_activeNodeList[i]._ep== node._ep)
             {
                 this->_activeNodeList[i]._ep=node._ep;
+                this->_activeNodeList[i]._score=node._score;
                 rzt= true;
                 break;
             }
@@ -185,4 +179,43 @@ void DNSeedService::getAllNodeList4Filter(std::vector<boost::asio::ip::tcp::endp
 void DNSeedService::resetNewNodeList()
 {
     this->_newNodeList.clear();
+}
+
+storage::SeedNode * DNSeedService::findSeedNode(const boost::asio::ip::tcp::endpoint& ep)
+{
+    for(size_t i=0;i<this->_activeNodeList.size();i++)
+    {
+        if(this->_activeNodeList[i]._ep.address()==ep.address()) return &this->_activeNodeList[i];
+    }
+    return NULL;
+}
+
+void DNSeedService::addNode(boost::asio::ip::tcp::endpoint& ep,bool forceAdd)
+{
+    SeedNode * sn=this->findSeedNode(ep);
+    if(sn)
+    {
+        this->goodNode(sn);
+    }
+    else
+    {
+        this->add2list(ep,forceAdd);
+    }
+}
+
+void DNSeedService::goodNode(storage::SeedNode* node)
+{
+    node->_score=0;
+    this->updateNode(*node);
+}
+
+bool DNSeedService::badNode(storage::SeedNode* node)
+{
+    node->_score--;
+    if(node->_score<=this->_maxConnectFailTimes)
+    {
+        return true;
+    }
+    this->updateNode(*node);
+    return false;
 }

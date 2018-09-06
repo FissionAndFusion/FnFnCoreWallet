@@ -23,6 +23,7 @@ using namespace multiverse;
 #define DEFAULT_MAX_INBOUNDS            125
 #define DEFAULT_MAX_OUTBOUNDS           10
 #define DEFAULT_CONNECT_TIMEOUT         5
+#define DNSEED__DEFAULT_MAX_TIMES_CONNECT_FAIL 10
 
 #define DEFAULT_RPC_MAX_CONNECTIONS     5
 #define DEFAULT_RPC_CONNECT_TIMEOUT     120
@@ -128,6 +129,7 @@ CMvNetworkConfig::CMvNetworkConfig()
     OPTUINT("timeout",nConnectTimeout,DEFAULT_CONNECT_TIMEOUT)
     OPTVEC("addnode",vNode)
     OPTVEC("connect",vConnectTo);
+    OPTUINT("dnseedmaxtimes",nMaxTimes2ConnectFail,DNSEED__DEFAULT_MAX_TIMES_CONNECT_FAIL);
 
     AddOptions(desc);
 }

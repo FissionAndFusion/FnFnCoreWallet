@@ -43,7 +43,6 @@ protected:
     bool HandleEvent(CMvEventPeerGetBlocks& eventGetBlocks);
     bool HandleEvent(CMvEventPeerTx& eventTx);
     bool HandleEvent(CMvEventPeerBlock& eventBlock);
-    virtual void ClientFailToConnect(const boost::asio::ip::tcp::endpoint& epRemote)override;
     virtual walleve::CPeer* CreatePeer(walleve::CIOClient *pClient,uint64 nNonce,bool fInBound);
     virtual void DestroyPeer(walleve::CPeer* pPeer);
     walleve::CPeerInfo* GetPeerInfo(walleve::CPeer* pPeer,walleve::CPeerInfo* pInfo);
