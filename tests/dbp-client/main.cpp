@@ -17,10 +17,18 @@ void callback(Client *cl)
     std::string id_all_tx = cl->SendSub("all-tx", sub_hp);
     // cl->SendUnsub(id);
 
-    HandlePair method_hp;
-    std::string mehtod_id = cl->SendMethod("getblocks", method_hp);
+    HandlePair block_hp;
+    lws::GetBlocksArg block_arg;
+    google::protobuf::Any *block_any = new google::protobuf::Any();
+    block_any->PackFrom(block_arg);
+    std::string mehtod_id = cl->SendMethod("getblocks", block_any, block_hp);
     usleep(100 * 10);
-    std::string mehtod_id1 = cl->SendMethod("gettransaction", method_hp);
+
+    HandlePair tx_hp;
+    lws::GetTxArg tx_arg;
+    google::protobuf::Any *tx_any = new google::protobuf::Any();
+    tx_any->PackFrom(block_arg);
+    std::string mehtod_id1 = cl->SendMethod("gettransaction", tx_any, tx_hp);
 }
 
 void run(std::string ip, int port)

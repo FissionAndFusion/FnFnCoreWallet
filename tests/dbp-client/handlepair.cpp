@@ -28,18 +28,23 @@ std::string HandlePair::GetHex(std::string data)
 
 void HandlePair::AddBlock(lws::Block &block)
 {
+    PrintBlock(block);
+}
+
+void HandlePair::PrintBlock(lws::Block &block)
+{
     std::string hash(block.hash());
     reverse(hash.begin(), hash.end());
 
     std::string prev_hash(block.hashprev());
     reverse(prev_hash.begin(), prev_hash.end());
-    std::cout << "[<]recived block," << std::endl;
+    std::cout << "[<]recived block" << std::endl;
     std::cout << "   hash:" << GetHex(hash) << std::endl;
     std::cout << "   height:" << block.nheight() << std::endl;
     std::cout << "   prev hash:" << GetHex(prev_hash) << std::endl;
 }
 
-void HandlePair::AddTx(lws::Transaction &tx)
+void HandlePair::PrintTx(lws::Transaction &tx)
 {
     std::string hash(tx.hash());
     reverse(hash.begin(), hash.end());
@@ -47,9 +52,14 @@ void HandlePair::AddTx(lws::Transaction &tx)
     std::string sig(tx.vchsig());
     reverse(sig.begin(), sig.end());
 
-    std::cout << "[<]recived transaction," << std::endl;
+    std::cout << "[<]recived transaction" << std::endl;
     std::cout << "   hash:" << GetHex(hash) << std::endl;
     std::cout << "   sig:" << GetHex(sig) << std::endl;
+}
+
+void HandlePair::AddTx(lws::Transaction &tx)
+{
+    PrintTx(tx);
 }
 
 void HandlePair::SubHandler(std::string type, std::string name, google::protobuf::Any object)
@@ -69,6 +79,46 @@ void HandlePair::SubHandler(std::string type, std::string name, google::protobuf
     }
 }
 
-void HandlePair::MethodHandler()
+void HandlePair::MethodHandler(dbp::Result &result)
 {
+    if(result.error().empty())
+    {
+        std::cout << "[-]method error:" << result.error() << std::endl;
+    }
+
+    if ("getblocks" == name)
+    {
+        int size = result.result_size();
+        for(int i = 0; i < size; i++)
+        {
+            google::protobuf::Any any = result.result(i); 
+            lws::Block block;
+            any.UnpackTo(&block);
+            PrintBlock(block);
+        }
+    }
+
+    if("gettransaction" == name)
+    {
+        int size = result.result_size();
+        for(int i = 0; i < size; i++)
+        {
+            google::protobuf::Any any = result.result(i); 
+            lws::Transaction tx;
+            any.UnpackTo(&tx);
+            PrintTx(tx);
+        }
+    }
+
+    if("sendtransaction" == name)
+    {
+        int size = result.result_size();
+        for(int i = 0; i < size; i++)
+        {
+            google::protobuf::Any any = result.result(i); 
+            lws::SendTxRet ret;
+            any.UnpackTo(&ret);
+            std::cout << "[<]txid:" << ret.hash() << std::endl;
+        }
+    }
 }

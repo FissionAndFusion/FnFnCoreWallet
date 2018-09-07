@@ -163,13 +163,15 @@ void Client::SendUnsub(std::string id)
     sub_map_.erase(id);
 }
 
-std::string Client::SendMethod(std::string method, HandlePair hp)
+std::string Client::SendMethod(std::string method, google::protobuf::Any *params, HandlePair hp)
 {
     std::string id(std::to_string(Random()));
 
     dbp::Method obj;
     obj.set_method(method);
     obj.set_id(id);
+    obj.set_allocated_params(params);
+
     dbp::Base obj_msg = CreateMsg(dbp::Msg::METHOD, obj);
     std::vector<char> ret = Serialize(obj_msg);
     Send(ret, "method" + id);
@@ -324,7 +326,7 @@ void Client::ReadHandler(const boost::system::error_code &ec, std::shared_ptr<bo
     {
         dbp::Result result;
         base.object().UnpackTo(&result);
-        method_map_[result.id()].MethodHandler();
+        method_map_[result.id()].MethodHandler(result);
         method_map_.erase(result.id());
     }
 
