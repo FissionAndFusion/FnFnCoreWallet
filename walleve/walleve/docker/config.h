@@ -16,25 +16,32 @@ namespace walleve
 class CWalleveConfig
 {
 public:
+    // Only parse command
+    static std::vector<std::string> ParseCmd(int argc,char *argv[]);
+public:
     CWalleveConfig();
     virtual ~CWalleveConfig();
     bool Load(int argc,char *argv[],const boost::filesystem::path& pathDefault,
               const std::string& strConfile);
     virtual bool PostLoad();
-    virtual std::string ListConfig();
+    virtual std::string ListConfig() const;
+
+    void SetIgnoreCmd(int number);
 protected:
     static std::pair<std::string,std::string> ExtraParser(const std::string& s);
     void AddOptions(boost::program_options::options_description& desc);
     bool TokenizeConfile(const char *pzConfile,std::vector<std::string>& tokens);
+
 public:
     bool fDebug;
-    bool fDaemon;
     bool fHelp;
+    bool fDaemon;
     boost::filesystem::path pathRoot;
     boost::filesystem::path pathData;
     std::vector<std::string> vecCommand;
 protected:
-    boost::program_options::options_description optDesc;
+    boost::program_options::options_description defaultDesc;
+    int ignoreCmd;
 };
 
 } // namespace walleve
