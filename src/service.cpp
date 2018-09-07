@@ -84,11 +84,11 @@ bool CService::WalleveHandleInitialize()
         return false;
     }
 
-    // if (!WalleveGetObject("dbpservice", pDbpSocket))
-    // {
-    //     WalleveLog("Failed to request DbpSocket\n");
-    //     return false;
-    // }
+    if (!WalleveGetObject("dbpservice", pDbpSocket))
+    {
+        WalleveLog("Failed to request DbpSocket\n");
+        return false;
+    }
 
     return true;
 }

@@ -16,5 +16,4 @@ cmake-build-release/
 
 multiverse
 multiverse.exe
-multiverse-*
 CMakeSettings.json

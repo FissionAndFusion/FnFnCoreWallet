@@ -9,14 +9,15 @@
 
 using namespace multiverse;
 
+static CMvEntry mvEntry;
+
 void MvShutdown()
 {
-    CMvEntry::GetInstance().Stop();
+    mvEntry.Stop();
 }
 
 int main(int argc,char **argv)
 {
-    CMvEntry& mvEntry = CMvEntry::GetInstance();
     try
     {
         if (mvEntry.Initialize(argc,argv))
