@@ -23,9 +23,9 @@ public:
 protected:
     bool WalleveHandleInitialize();
     void WalleveHandleDeinitialize();
-    const CMvConfig* WalleveConfig()
+    const CMvNetworkConfig* WalleveConfig()
     {
-        return dynamic_cast<const CMvConfig *>(walleve::IWalleveBase::WalleveConfig());
+        return dynamic_cast<const CMvNetworkConfig*>(walleve::IWalleveBase::WalleveConfig());
     }
 
     void JsonReply(uint64 nNonce,const json_spirit::Value& result,
