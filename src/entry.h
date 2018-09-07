@@ -15,16 +15,14 @@ namespace multiverse
 class CMvEntry : public walleve::CWalleveEntry
 {
 public:
-    static CMvEntry& GetInstance();
-public:
+    CMvEntry();
     ~CMvEntry();
     bool Initialize(int argc,char *argv[]);
     bool Run();
     void Exit();
 protected:
-    bool InitializeModules(const EModeType& mode);
-    bool AttachModule(walleve::IWalleveBase *pWalleveBase);
-
+    bool InitializeService();
+    bool InitializeClient();
     walleve::CHttpHostConfig GetRPCHostConfig();
 
     boost::filesystem::path GetDefaultDataDir();
@@ -36,9 +34,6 @@ protected:
     CMvConfig mvConfig;
     walleve::CWalleveLog walleveLog;
     walleve::CWalleveDocker walleveDocker;
-
-private:
-    CMvEntry();
 };
 
 } // namespace multiverse

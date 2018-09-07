@@ -37,15 +37,8 @@ using namespace multiverse;
 using namespace boost::filesystem;
 
 extern void DisplayUsage();
-
 //////////////////////////////
 // CMvEntry
-
-CMvEntry& CMvEntry::GetInstance()
-{
-    static CMvEntry entry;
-    return entry;
-}
 
 CMvEntry::CMvEntry()
 {
@@ -58,23 +51,19 @@ CMvEntry::~CMvEntry()
 
 bool CMvEntry::Initialize(int argc,char *argv[])
 {
-    if (!mvConfig.Load(argc, argv, GetDefaultDataDir(), "multiverse.conf") || !mvConfig.GetConfig()->PostLoad())
+    if (!mvConfig.Load(argc,argv,GetDefaultDataDir(),"multiverse.conf") || !mvConfig.PostLoad())
     {
         cerr << "Failed to load/parse arguments and config file\n";
         return false;
     }
-
-    mvConfig.GetConfig()->ListConfig();
-
-    // help
-    if (mvConfig.GetConfig()->fHelp)
+  
+    if (mvConfig.fHelp)
     {
         DisplayUsage();
         return false;
     }
 
-    // path
-    path& pathData = mvConfig.GetConfig()->pathData;
+    path& pathData = mvConfig.pathData;
     if (!exists(pathData))
     {
         create_directories(pathData);
@@ -86,9 +75,7 @@ bool CMvEntry::Initialize(int argc,char *argv[])
         return false;
     }
 
-    // daemon
-    if (mvConfig.GetConfig()->fDaemon && 
-        (mvConfig.GetModeType() == EModeType::SERVER || mvConfig.GetModeType() == EModeType::MINER))
+    if (mvConfig.fDaemon && mvConfig.vecCommand.empty())
     {
         if (!RunInBackground(pathData))
         {
@@ -97,198 +84,163 @@ bool CMvEntry::Initialize(int argc,char *argv[])
         cout << "multiverse server starting\n";
     }
 
-    // log
-    if ((mvConfig.GetModeType() == EModeType::SERVER || mvConfig.GetModeType() == EModeType::MINER)
+    if (mvConfig.vecCommand.empty() 
         && !walleveLog.SetLogFilePath((pathData / "multiverse.log").string()))
     {
         cerr << "Failed to open log file : " << (pathData / "multiverse.log") << "\n";
         return false; 
     }
 
-    // docker
-    if (!walleveDocker.Initialize(mvConfig.GetConfig(),&walleveLog))
+    if (!walleveDocker.Initialize(&mvConfig,&walleveLog))
     {
         cerr << "Failed to initialize docker\n";
         return false;
     }
 
-    // modules
-    return InitializeModules(mvConfig.GetModeType());
+    return (mvConfig.vecCommand.empty() ? InitializeService() : InitializeClient());
 }
 
-bool CMvEntry::AttachModule(IWalleveBase *pWalleveBase) 
+bool CMvEntry::InitializeService()
 {
-    if (!pWalleveBase || !walleveDocker.Attach(pWalleveBase))
+    // single instance
+    if (!TryLockFile((mvConfig.pathData / ".lock").string()))
     {
-        delete pWalleveBase;
+        cerr << "Cannot obtain a lock on data directory " << mvConfig.pathData << "\n"
+             << "Multiverse is probably already running.\n";
         return false;
     }
 
-    return true;
-}
-
-bool CMvEntry::InitializeModules(const EModeType& mode)
-{
-    const std::vector<EModuleType>& modules = CMode::GetModules(mode);
-
-    for (auto& m : modules)
+    ICoreProtocol *pCoreProtocol = mvConfig.fTestNet ?
+                                   new CMvTestNetCoreProtocol : new CMvCoreProtocol();
+    if (!pCoreProtocol || !walleveDocker.Attach(pCoreProtocol))
     {
-        switch(m) 
-        {
-        case EModuleType::LOCK:
-            {
-                if (!TryLockFile((mvConfig.GetConfig()->pathData / ".lock").string()))
-                {
-                    cerr << "Cannot obtain a lock on data directory " << mvConfig.GetConfig()->pathData << "\n"
-                        << "Multiverse is probably already running.\n";
-                    return false;
-                }
-                break;
-            }
-        case EModuleType::BLOCKMAKER:
-            {
-                if (!AttachModule(new CBlockMaker()))
-                {
-                    return false;
-                }
-                break;
-            }
-        case EModuleType::COREPROTOCOL:
-            {
-                if (!AttachModule(mvConfig.GetConfig()->fTestNet ? new CMvTestNetCoreProtocol : new CMvCoreProtocol()))
-                {
-                    return false;
-                }
-                break;
-            }
-        case EModuleType::DISPATCHER:
-            {
-                if (!AttachModule(new CDispatcher()))
-                {
-                    return false;
-                }
-                break;
-            }
-        case EModuleType::HTTPGET:
-            {
-                if (!AttachModule(new CHttpGet()))
-                {
-                    return false;
-                }
-                break;
-            }
-        case EModuleType::HTTPSERVER:
-            {
-                if (!AttachModule(new CHttpServer()))
-                {
-                    return false;
-                }
-                break;
-            }
-        case EModuleType::MINER:
-            {
-                if (!AttachModule(new CMiner(mvConfig.GetConfig()->vecCommand)))
-                {
-                    return false;
-                }
-                break;
-            }
-        case EModuleType::NETCHANNEL:
-            {
-                if (!AttachModule(new CNetChannel()))
-                {
-                    return false;
-                }
-                break;
-            }
-        case EModuleType::NETWORK:
-            {
-                if (!AttachModule(new CNetwork()))
-                {
-                    return false;
-                }
-                break;
-            }
-        case EModuleType::RPCDISPATCH:
-            {
-                if (!AttachModule(mvConfig.GetConfig()->vecCommand.empty() 
-                        ? new CRPCDispatch() : new CRPCDispatch(mvConfig.GetConfig()->vecCommand)))
-                {
-                    return false;
-                }
-                break;
-            }
-        case EModuleType::RPCMODE:
-            {
-                auto pBase = walleveDocker.GetObject("httpserver");
-                if (!pBase)
-                {
-                    return false;
-                }
-                dynamic_cast<CHttpServer*>(pBase)->AddNewHost(GetRPCHostConfig());
-
-                if (!AttachModule(new CRPCMod()))
-                {
-                    return false;
-                }
-                break;
-            }
-        case EModuleType::SERVICE:
-            {
-                if (!AttachModule(new CService()))
-                {
-                    return false;
-                }
-                break;
-            }
-        case EModuleType::TXPOOL:
-            {
-                if (!AttachModule(new CTxPool()))
-                {
-                    return false;
-                }
-                break;
-            }
-        case EModuleType::WALLET:
-            {
-                if (!AttachModule(new CWallet()))
-                {
-                    return false;
-                }
-                break;
-            }
-        case EModuleType::WORLDLINE:
-            {
-                if (!AttachModule(new CWorldLine()))
-                {
-                    return false;
-                }
-                break;
-            }
-        default:
-            cerr << "Unknown module:%d" << CMode::TypeValue(m) << endl;
-            break;
-        }
+        delete pCoreProtocol;
+        return false;
     }
 
+    CWorldLine *pWorldLine = new CWorldLine();
+    if (!pWorldLine || !walleveDocker.Attach(pWorldLine))
+    {
+        delete pWorldLine;
+        return false;
+    }
+    
+    CTxPool *pTxPool = new CTxPool();
+    if (!pTxPool || !walleveDocker.Attach(pTxPool))
+    {
+        delete pTxPool;
+        return false;
+    }
+
+    CWallet *pWallet = new CWallet();
+    if (!pWallet || !walleveDocker.Attach(pWallet))
+    {
+        delete pWallet;
+        return false;
+    }
+
+    CDispatcher *pDispatcher = new CDispatcher();
+    if (!pDispatcher || !walleveDocker.Attach(pDispatcher))
+    {
+        delete pDispatcher;
+        return false;
+    }
+
+    CNetwork *pNetwork = new CNetwork();
+    if (!pNetwork || !walleveDocker.Attach(pNetwork))
+    {
+        delete pNetwork;
+        return false;
+    }
+
+    CNetChannel *pNetChannel = new CNetChannel();
+    if (!pNetChannel || !walleveDocker.Attach(pNetChannel))
+    {
+        delete pNetChannel;
+        return false;
+    }
+
+    CService *pService = new CService();
+    if (!pService || !walleveDocker.Attach(pService))
+    {
+        delete pService;
+        return false;
+    }
+
+    CHttpServer *pServer = new CHttpServer();
+    if (!pServer || !walleveDocker.Attach(pServer))
+    {
+        delete pServer;
+        return false;
+    }
+   
+    pServer->AddNewHost(GetRPCHostConfig());
+
+    CRPCMod *pRPCMod = new CRPCMod();
+    if (!pRPCMod || !walleveDocker.Attach(pRPCMod))
+    {
+        delete pRPCMod;
+        return false;
+    }
+
+    CBlockMaker *pBlockMaker = new CBlockMaker();
+    if (!pBlockMaker || !walleveDocker.Attach(pBlockMaker))
+    {
+        delete pBlockMaker;
+        return false;
+    }
+
+    // TODO
+    
+
     return true;
 }
+
+bool CMvEntry::InitializeClient()
+{
+    CHttpGet *pHttpGet = new CHttpGet();
+    if (!pHttpGet || !walleveDocker.Attach(pHttpGet))
+    {
+        delete pHttpGet;
+        return false;
+    }
+
+    if (mvConfig.vecCommand[0] != "miner")
+    {
+        CRPCDispatch *pRPCDispatch = mvConfig.vecCommand[0] == "console" ?
+                                     new CRPCDispatch() : new CRPCDispatch(mvConfig.vecCommand);
+        if (!pRPCDispatch || !walleveDocker.Attach(pRPCDispatch))
+        {
+            delete pRPCDispatch;
+            return false;
+        }
+    }
+    else
+    {
+        CMiner *pMiner = new CMiner(mvConfig.vecCommand);
+        if (!pMiner || !walleveDocker.Attach(pMiner))
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
 
 CHttpHostConfig CMvEntry::GetRPCHostConfig()
 {
-    const CMvRPCConfig* config = CastConfigPtr<CMvRPCConfig*>(mvConfig.GetConfig());
-    CIOSSLOption sslRPC(config->fRPCSSLEnable,config->fRPCSSLVerify,
-                        config->strRPCCAFile,config->strRPCCertFile,
-                        config->strRPCPKFile,config->strRPCCiphers);
+    CIOSSLOption sslRPC(mvConfig.fRPCSSLEnable,mvConfig.fRPCSSLVerify,
+                        mvConfig.strRPCCAFile,mvConfig.strRPCCertFile,
+                        mvConfig.strRPCPKFile,mvConfig.strRPCCiphers);
     
     map<string,string> mapUsrRPC;
-    if (!config->strRPCUser.empty())
+    if (!mvConfig.strRPCUser.empty())
     {
-        mapUsrRPC[config->strRPCUser] = config->strRPCPass;
+        mapUsrRPC[mvConfig.strRPCUser] = mvConfig.strRPCPass;
     }
 
-    return CHttpHostConfig(config->epRPC,config->nRPCMaxConnections,sslRPC,mapUsrRPC,
-                           config->vRPCAllowIP,"rpcmod");
+    return CHttpHostConfig(mvConfig.epRPC,mvConfig.nRPCMaxConnections,sslRPC,mapUsrRPC,
+                           mvConfig.vRPCAllowIP,"rpcmod");
 }
 
 bool CMvEntry::Run()
@@ -305,9 +257,9 @@ void CMvEntry::Exit()
 {
     walleveDocker.Exit();
 
-    if (mvConfig.GetConfig()->fDaemon && mvConfig.GetConfig()->vecCommand.empty() && !mvConfig.GetConfig()->fHelp)
+    if (mvConfig.fDaemon && mvConfig.vecCommand.empty() && !mvConfig.fHelp)
     {
-        ExitBackground(mvConfig.GetConfig()->pathData);
+        ExitBackground(mvConfig.pathData);
     }
 }
 

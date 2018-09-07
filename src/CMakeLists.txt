@@ -6,7 +6,6 @@
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 #------------------------------------------------------------------------------
 
-aux_source_directory(mode mode_src)
 set(sources
 	multiverse.cpp
 	usage.cpp
@@ -32,12 +31,11 @@ set(sources
 	blockmaker.cpp blockmaker.h
 	rpcclient.cpp rpcclient.h
 	miner.cpp miner.h
-	${mode_src}
 )
 
 add_executable(multiverse ${sources})
 
-include_directories(../walleve ../crypto ../common ../storage ../network ./)
+include_directories(../walleve ../crypto ../common ../storage ../network)
 
 target_link_libraries(multiverse
 	Boost::system
