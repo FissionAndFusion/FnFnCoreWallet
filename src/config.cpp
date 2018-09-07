@@ -39,44 +39,50 @@ bool CMvConfig::Load(int argc, char* argv[], const fs::path& pathDefault,
     std::string cmd = (vecCmd.size() > 0) ? vecCmd[0] : "";
 
     int ignoreCmd = 0;
-    if ((exec == "multiverse-server") ||
-        (exec == "multiverse" && cmd == "server") ||
-        (exec == "multiverse" && cmd == ""))
+    if (exec == "multiverse-server")
     {
         emMode = EModeType::SERVER;
-
-        if (cmd == "server")
-        {
-            ignoreCmd = 1;
-        }
     }
-    else if (exec == "multiverse-miner" ||
-             (exec == "multiverse" && cmd == "miner"))
+    else if (exec == "multiverse-miner" || cmd == "miner")
     {
         emMode = EModeType::MINER;
-
-        if (cmd == "miner")
-        {
-            ignoreCmd = 1;
-        }
     }
-    else if (exec == "multiverse-dnseed" ||
-             (exec == "multiverse" && cmd == "dnseed"))
+    else if (exec == "multiverse-dnseed")
     {
-        emMode = EModeType::MINER;
-
-        if (cmd == "dnseed")
-        {
-            ignoreCmd = 1;
-        }
+        emMode = EModeType::DNSEED;
     }
-    else if (exec == "multiverse-console" || exec == "multiverse")
+    else if (exec == "multiverse-cli")
     {
         emMode = EModeType::CONSOLE;
-
-        if (cmd == "console")
+    }
+    else
+    {
+        if (cmd == "server" || cmd == "")
         {
+            emMode = EModeType::SERVER;
+
+            if (cmd == "server")
+            {
+                ignoreCmd = 1;
+            }
+        }
+        else if (cmd == "miner")
+        {
+            emMode = EModeType::MINER;
             ignoreCmd = 1;
+        }
+        else if (cmd == "dnseed")
+        {
+            emMode = EModeType::DNSEED;
+            ignoreCmd = 1;
+        }
+        else
+        {
+            emMode = EModeType::CONSOLE;
+            if (cmd == "console")
+            {
+                ignoreCmd = 1;
+            }
         }
     }
 

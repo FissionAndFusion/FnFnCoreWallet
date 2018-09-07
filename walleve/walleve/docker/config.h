@@ -31,8 +31,6 @@ protected:
     static std::pair<std::string,std::string> ExtraParser(const std::string& s);
     void AddOptions(boost::program_options::options_description& desc);
     bool TokenizeConfile(const char *pzConfile,std::vector<std::string>& tokens);
-    void AddExtraDescription(const std::string& command, const boost::program_options::options_description& desc);
-    void AddExtraDescription(const std::map<std::string, const boost::program_options::options_description&>& desc);
 
 public:
     bool fDebug;
@@ -44,7 +42,6 @@ public:
 protected:
     boost::program_options::options_description defaultDesc;
     int ignoreCmd;
-    std::map<std::string, const boost::program_options::options_description&> extraDesc;
 };
 
 } // namespace walleve

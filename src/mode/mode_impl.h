@@ -167,7 +167,7 @@ public:
 #undef GENERATE_CONFIG
         else
         {
-            return NULL;
+            return create<EConfigType::BASIC>();
         }
     }
 

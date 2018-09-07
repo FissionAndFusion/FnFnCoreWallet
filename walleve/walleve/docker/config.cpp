@@ -38,13 +38,16 @@ bool CWalleveConfig::Load(int argc,char *argv[],const fs::path& pathDefault,cons
     fs::path pathConfile;
     try
     { 
+        vector<string> vecIgnoreCmd;
+
         defaultDesc.add_options()
         ("cmd", po::value<vector<string> >(&vecCommand))
         ("help", po::value<bool>(&fHelp)->default_value(false))
         ("daemon", po::value<bool>(&fDaemon)->default_value(false))
         ("debug", po::value<bool>(&fDebug)->default_value(false))
         ("datadir", po::value<fs::path>(&pathRoot)->default_value(pathDefault))
-        ("conf", po::value<fs::path>(&pathConfile)->default_value(fs::path(strConfile)));
+        ("conf", po::value<fs::path>(&pathConfile)->default_value(fs::path(strConfile)))
+        ("ignore", po::value<vector<string> >(&vecIgnoreCmd));
 
         po::positional_options_description defaultPosDesc;
         defaultPosDesc.add("cmd",-1).add("ignore", ignoreCmd);
@@ -95,18 +98,6 @@ string CWalleveConfig::ListConfig() const
     oss << "Debug : " << (fDebug ? "Y" : "N") << "\n"
         << "Data Path : " << pathData << "\n";
     return oss.str();
-}
-
-void CWalleveConfig::AddExtraDescription(const string& command, const boost::program_options::options_description& desc)
-{
-    extraDesc.insert(make_pair(command, desc));
-}
-void CWalleveConfig::AddExtraDescription(const std::map<string, const boost::program_options::options_description&>& desc)
-{
-    auto x = desc.size();
-    for (auto& d : desc) {
-        AddExtraDescription(d.first, d.second);
-    }
 }
 
 pair<string,string> CWalleveConfig::ExtraParser(const string& s)
