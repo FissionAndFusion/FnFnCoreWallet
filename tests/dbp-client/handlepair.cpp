@@ -41,7 +41,15 @@ void HandlePair::AddBlock(lws::Block &block)
 
 void HandlePair::AddTx(lws::Transaction &tx)
 {
-    std::cout << "[<]recived transaction, nVersion:" << tx.nversion() << "nType:" << tx.ntype() << std::endl;
+    std::string hash(tx.hash());
+    reverse(hash.begin(), hash.end());
+
+    std::string sig(tx.vchsig());
+    reverse(sig.begin(), sig.end());
+
+    std::cout << "[<]recived transaction," << std::endl;
+    std::cout << "   hash:" << GetHex(hash) << std::endl;
+    std::cout << "   sig:" << GetHex(sig) << std::endl;
 }
 
 void HandlePair::SubHandler(std::string type, std::string name, google::protobuf::Any object)
