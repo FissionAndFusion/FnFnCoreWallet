@@ -23,11 +23,11 @@ void callback(Client *cl)
     std::string mehtod_id1 = cl->SendMethod("gettransaction", method_hp);
 }
 
-void run()
+void run(std::string ip, int port)
 {
     try
     {
-        Client cl("127.0.0.1", 6815, 1, "lws-test");
+        Client cl(ip, port, 1, "lws-test");
         cl.SetCallBackFn(callback);
         cl.Run();
     }
@@ -39,6 +39,21 @@ void run()
 
 int main(int argc, char* argv[])
 {
-    run();
+    std::string ip("127.0.0.1");
+    int port(6815);
+
+    if(argc > 1)
+    {
+        ip = std::string(argv[1]);
+    }
+
+    if(argc > 2)
+    {
+        port = atoi(argv[2]);
+    }
+
+    std::cout << "[-]core wallet:" << ip << ":" << port << std::endl;
+
+    run(ip, port);
     return 0;
 }
