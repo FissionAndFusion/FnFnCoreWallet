@@ -14,6 +14,7 @@ CDbpService::CDbpService()
 
     std::map<std::string,bool> temp_map = boost::assign::map_list_of
                     ("all-block",true)
+                    ("all-tx",true)
                     ("changed",true)
                     ("removed",true);
     
