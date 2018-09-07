@@ -265,6 +265,14 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
                 }
                 break;
             }
+        case EModuleType::DBPSOCKET:
+            {
+                if (!AttachModule(new CDummyDbpSocket()))
+                {
+                    return false;
+                }
+                break;
+            }
         default:
             cerr << "Unknown module:%d" << CMode::TypeValue(m) << endl;
             break;
