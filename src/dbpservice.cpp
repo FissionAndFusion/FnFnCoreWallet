@@ -69,8 +69,7 @@ bool CDbpService::HandleEvent(walleve::CWalleveEventDbpConnect& event)
     if(isReconnect)
     {
          // reply normal
-        uint64 nonce = event.nNonce;
-        walleve::CWalleveEventDbpConnected eventConnected(nonce);
+        walleve::CWalleveEventDbpConnected eventConnected(event.session_);
         eventConnected.data.session = event.data.session;
         pDbpServer->DispatchEvent(&eventConnected);
     }
@@ -79,9 +78,8 @@ bool CDbpService::HandleEvent(walleve::CWalleveEventDbpConnect& event)
         if(event.data.version != 1)
         {
             // reply failed
-            uint64 nonce = event.nNonce;
             std::vector<int> versions{1};
-            walleve::CWalleveEventDbpFailed eventFailed(nonce);
+            walleve::CWalleveEventDbpFailed eventFailed(event.session_);
             eventFailed.data.reason = "001";
             eventFailed.data.versions = versions;
             eventFailed.data.session  = event.data.session;
@@ -90,8 +88,7 @@ bool CDbpService::HandleEvent(walleve::CWalleveEventDbpConnect& event)
         else
         {
             // reply normal
-            uint64 nonce = event.nNonce;
-            walleve::CWalleveEventDbpConnected eventConnected(nonce);
+            walleve::CWalleveEventDbpConnected eventConnected(event.session_);
             eventConnected.data.session = event.data.session;
             pDbpServer->DispatchEvent(&eventConnected);
         }
@@ -112,8 +109,7 @@ bool CDbpService::HandleEvent(walleve::CWalleveEventDbpSub& event)
     {
          // reply nosub
         std::cout << "Sub topic not exists: " << topicName << std::endl;
-        uint64 nonce = event.nNonce;
-        walleve::CWalleveEventDbpNoSub eventNoSub(nonce);
+        walleve::CWalleveEventDbpNoSub eventNoSub(event.session_);
         eventNoSub.data.id = event.data.id;
         pDbpServer->DispatchEvent(&eventNoSub);
     }
@@ -131,11 +127,10 @@ bool CDbpService::HandleEvent(walleve::CWalleveEventDbpSub& event)
             topics.insert(topicName);
         }
 
-        idSubedNonceMap.insert(std::make_pair(id,event.nNonce));
+        idSubedSessionMap.insert(std::make_pair(id,event.session_));
 
         //reply ready
-        uint64 nonce = event.nNonce;
-        walleve::CWalleveEventDbpReady eventReady(nonce);
+        walleve::CWalleveEventDbpReady eventReady(event.session_);
         eventReady.data.id = event.data.id;
         pDbpServer->DispatchEvent(&eventReady);
     }

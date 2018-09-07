@@ -67,8 +67,13 @@ public:
     CDbpClient(CDbpServer *pServerIn,CDbpProfile *pProfileIn,
                 CIOClient* pClientIn,uint64 nonce);
     ~CDbpClient();
+    
     CDbpProfile *GetProfile();
     uint64 GetNonce();
+
+    std::string GetSession() const;
+    void SetSession(const std::string& session);
+    
     bool IsEventStream();
     void SetEventStream();
     void Activate();
@@ -96,6 +101,7 @@ protected:
     void HandleWritenResponse(std::size_t nTransferred);
     void HandleWritenResponse(std::size_t nTransferred, int type);
 private:
+    std::string session_;
 protected:
     CDbpServer* pServer;
     CDbpProfile *pProfile;

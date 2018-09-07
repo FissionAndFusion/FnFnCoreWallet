@@ -33,7 +33,9 @@ class CWalleveEvent
     friend class CWalleveStream;
 public:
     CWalleveEvent(uint64 nNonceIn,int nTypeIn)
-        : nNonce(nNonceIn), nType(nTypeIn) {} 
+        : nNonce(nNonceIn), nType(nTypeIn) {}
+    CWalleveEvent(const std::string& session,int nTypeIn)
+        : session_(session), nType(nTypeIn) {}  
     virtual ~CWalleveEvent() {}
     virtual bool Handle(CWalleveEventListener& listener) {return listener.HandleEvent(*this);}
     virtual void Free() {delete this;}
@@ -44,6 +46,7 @@ protected:
 public:
     uint64 nNonce;
     int nType;
+    std::string session_;
 };
 
 template <int type,typename L,typename D,typename R>
@@ -53,6 +56,8 @@ class CWalleveEventCategory : public CWalleveEvent
 public:
     CWalleveEventCategory(uint64 nNonceIn)
         : CWalleveEvent(nNonceIn,type) {}
+    CWalleveEventCategory(const std::string& session)
+        : CWalleveEvent(session,type){}
     virtual ~CWalleveEventCategory() {}
     virtual bool Handle(CWalleveEventListener& listener) override
     {

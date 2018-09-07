@@ -40,6 +40,16 @@ uint64 CDbpClient::GetNonce()
     return nNonce;
 }
 
+std::string CDbpClient::GetSession() const
+{
+    return session_;
+}
+
+void CDbpClient::SetSession(const std::string& session)
+{
+    session_ = session;
+}
+
 bool CDbpClient::IsEventStream()
 {
     return fEventStream;
@@ -575,12 +585,6 @@ CIOClient* CDbpServer::CreateIOClient(CIOContainer *pContainer)
 
 void CDbpServer::HandleClientConnect(CDbpClient *pDbpClient,google::protobuf::Any* any)
 {
-    CWalleveEventDbpConnect *pEventDbpConnect = new CWalleveEventDbpConnect(pDbpClient->GetNonce());
-    if(!pEventDbpConnect)
-    {
-        RespondError(pDbpClient,500,"dbp connect event create failed.");
-        return;
-    }
     
     dbp::Connect connectMsg;
     any->UnpackTo(&connectMsg);
@@ -589,7 +593,15 @@ void CDbpServer::HandleClientConnect(CDbpClient *pDbpClient,google::protobuf::An
     if(!IsSessionReconnect(session))
     { 
         session = GenerateSessionId();
-        CreateSession(session,pDbpClient);           
+        CreateSession(session,pDbpClient);
+
+        CWalleveEventDbpConnect *pEventDbpConnect = new CWalleveEventDbpConnect(session);
+        if(!pEventDbpConnect)
+        {
+            RespondError(pDbpClient,500,"dbp connect event create failed.");
+            return;
+        }
+
 
         CWalleveDbpConnect &connectBody = pEventDbpConnect->data;
         connectBody.isReconnect = false;
@@ -598,14 +610,20 @@ void CDbpServer::HandleClientConnect(CDbpClient *pDbpClient,google::protobuf::An
         connectBody.client  = connectMsg.client();
         
         pDbpClient->GetProfile()->pIOModule->PostEvent(pEventDbpConnect);
-        
-
     }
     else
     {  
         if(IsSessionExist(session))
         { 
             UpdateSession(session,pDbpClient);
+
+            CWalleveEventDbpConnect *pEventDbpConnect = new CWalleveEventDbpConnect(session);
+            if(!pEventDbpConnect)
+            {
+                RespondError(pDbpClient,500,"dbp connect event create failed.");
+                return;
+            }
+
 
             CWalleveDbpConnect &connectBody = pEventDbpConnect->data;
             connectBody.isReconnect = true;
@@ -636,7 +654,7 @@ void CDbpServer::HandleClientSub(CDbpClient *pDbpClient,google::protobuf::Any* a
         return;
     }
         
-    CWalleveEventDbpSub *pEventDbpSub = new CWalleveEventDbpSub(pDbpClient->GetNonce());
+    CWalleveEventDbpSub *pEventDbpSub = new CWalleveEventDbpSub(pDbpClient->GetSession());
     if(!pEventDbpSub)
     {
         RespondError(pDbpClient,500,"dbp sub event create failed");
@@ -1034,15 +1052,14 @@ void CDbpServer::SendPingHandler(const boost::system::error_code& err,CDbpClient
 
 bool CDbpServer::HandleEvent(CWalleveEventDbpConnected& event)
 {
-    WalleveLog("Recv connected");
-    
-    std::map<uint64,CDbpClient*>::iterator it = mapClient.find(event.nNonce);
-    if (it == mapClient.end())
+    auto it = sessionProfileMap.find(event.session_);
+    if(it == sessionProfileMap.end())
     {
+        std::cout << "cannot find session [Connected] " << event.session_ << std::endl;
         return false;
     }
 
-    CDbpClient *pDbpClient = (*it).second;
+    CDbpClient *pDbpClient = (*it).second.pDbpClient;
     CWalleveDbpConnected &connectedBody = event.data;
 
     pDbpClient->SendResponse(connectedBody);
@@ -1074,13 +1091,14 @@ bool CDbpServer::HandleEvent(CWalleveEventDbpFailed& event)
 
 bool CDbpServer::HandleEvent(CWalleveEventDbpNoSub& event)
 {
-    std::map<uint64,CDbpClient*>::iterator it = mapClient.find(event.nNonce);
-    if (it == mapClient.end())
+    auto it = sessionProfileMap.find(event.session_);
+    if(it == sessionProfileMap.end())
     {
+        std::cout << "cannot find session [NoSub] " << event.session_ << std::endl;
         return false;
     }
 
-    CDbpClient *pDbpClient = (*it).second;
+    CDbpClient *pDbpClient = (*it).second.pDbpClient;
     CWalleveDbpNoSub &noSubBody = event.data;
 
     pDbpClient->SendResponse(noSubBody);
@@ -1090,13 +1108,14 @@ bool CDbpServer::HandleEvent(CWalleveEventDbpNoSub& event)
 
 bool CDbpServer::HandleEvent(CWalleveEventDbpReady& event)
 {
-    std::map<uint64,CDbpClient*>::iterator it = mapClient.find(event.nNonce);
-    if (it == mapClient.end())
+    auto it = sessionProfileMap.find(event.session_);
+    if(it == sessionProfileMap.end())
     {
+        std::cout << "cannot find session [Ready] " << event.session_ << std::endl;
         return false;
     }
 
-    CDbpClient *pDbpClient = (*it).second;
+    CDbpClient *pDbpClient = (*it).second.pDbpClient;
     CWalleveDbpReady &readyBody = event.data;
 
     pDbpClient->SendResponse(readyBody);
@@ -1198,6 +1217,8 @@ void CDbpServer::CreateSession(const std::string& session,CDbpClient* pDbpClient
     profile.sessionId = session;
     profile.pDbpClient = pDbpClient;
     profile.timestamp = CDbpUtils::currentUTC();
+
+    pDbpClient->SetSession(session);
           
     sessionProfileMap.insert(std::make_pair(session,profile));
     sessionClientBimap.insert(position_pair(session,pDbpClient));
