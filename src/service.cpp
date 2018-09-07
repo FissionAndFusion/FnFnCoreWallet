@@ -3,6 +3,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "service.h"
+#include "event.h"
 
 using namespace std;
 using namespace walleve;
@@ -38,6 +39,7 @@ CService::CService()
     pDispatcher = NULL;
     pWallet = NULL;
     pNetwork = NULL;
+    pDbpSocket = NULL;
 }
 
 CService::~CService()
@@ -82,6 +84,12 @@ bool CService::WalleveHandleInitialize()
         return false;
     }
 
+    if (!WalleveGetObject("dbpservice", pDbpSocket))
+    {
+        WalleveLog("Failed to request DbpSocket\n");
+        return false;
+    }
+
     return true;
 }
 
@@ -93,6 +101,7 @@ void CService::WalleveHandleDeinitialize()
     pDispatcher = NULL;
     pWallet = NULL;
     pNetwork = NULL;
+    pDbpSocket = NULL;
 }
 
 bool CService::WalleveHandleInvoke()
@@ -114,27 +123,42 @@ void CService::WalleveHandleHalt()
 
 void CService::NotifyWorldLineUpdate(const CWorldLineUpdate& update)
 {
-    boost::unique_lock<boost::shared_mutex> wlock(rwForkStatus);
-    map<uint256,CForkStatus>::iterator it = mapForkStatus.find(update.hashFork);
-    if (it == mapForkStatus.end())
     {
-        it = mapForkStatus.insert(make_pair(update.hashFork,CForkStatus(update.hashFork,update.hashParent,update.nOriginHeight))).first;
-        if (update.hashParent != 0)
+        boost::unique_lock<boost::shared_mutex> wlock(rwForkStatus);
+        map<uint256,CForkStatus>::iterator it = mapForkStatus.find(update.hashFork);
+        if (it == mapForkStatus.end())
         {
-            mapForkStatus[update.hashParent].mapSubline.insert(make_pair(update.nOriginHeight,update.hashFork));
+            it = mapForkStatus.insert(make_pair(update.hashFork,CForkStatus(update.hashFork,update.hashParent,update.nOriginHeight))).first;
+            if (update.hashParent != 0)
+            {
+                mapForkStatus[update.hashParent].mapSubline.insert(make_pair(update.nOriginHeight,update.hashFork));
+            }
         }
+
+        CForkStatus &status = (*it).second;
+        status.hashLastBlock = update.hashLastBlock;
+        status.nLastBlockTime = update.nLastBlockTime;
+        status.nLastBlockHeight = update.nLastBlockHeight;
+        status.nMoneySupply = update.nMoneySupply;
     }
-    
-    CForkStatus& status = (*it).second;
-    status.hashLastBlock = update.hashLastBlock;
-    status.nLastBlockTime = update.nLastBlockTime;
-    status.nLastBlockHeight = update.nLastBlockHeight;
-    status.nMoneySupply = update.nMoneySupply;
+
+    uint64 nNonce;
+    CMvEventDbpUpdateNewBlock *pUpdateNewBlockEvent = new CMvEventDbpUpdateNewBlock(nNonce, update.hashFork);
+    pUpdateNewBlockEvent->data = update.hashLastBlock;
+    pDbpSocket->PostEvent(pUpdateNewBlockEvent);
 }
 
 void CService::NotifyNetworkPeerUpdate(const CNetworkPeerUpdate& update)
 {
     (void)update;
+}
+
+void CService::NotifyTransactionUpdate(const CTransactionUpdate& update)
+{
+    uint64 nNonce;
+    CMvEventDbpUpdateNewTx *pUpdateNewTxEvent = new CMvEventDbpUpdateNewTx(nNonce, update.hashFork);
+    pUpdateNewTxEvent->data = update.txUpdate;
+    pDbpSocket->PostEvent(pUpdateNewTxEvent);
 }
 
 void CService::Shutdown()
