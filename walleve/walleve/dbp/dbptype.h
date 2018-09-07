@@ -145,17 +145,9 @@ public:
 class CWalleveDbpMethodResult : public CWalleveDbpRespond
 {
 public:
-    enum ResultType{
-        BLOCKS,
-        TX,
-        SEND_TX,
-        ERROR
-    };
-public:
-    ResultType resultType;
     std::string id;
     std::string error;
-    std::vector<void*> anyObjects; // blocks,tx,send_tx_ret
+    std::vector<boost::any> anyResultObjs; // blocks,tx,send_tx_ret
 };
 
 class CWalleveDbpError: public CWalleveDbpRespond

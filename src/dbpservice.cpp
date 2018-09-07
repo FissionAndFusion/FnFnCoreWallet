@@ -180,8 +180,7 @@ void CDbpService::HandleGetTransaction(walleve::CWalleveEventDbpMethod& event)
         uint64 nonce = event.nNonce;
         walleve::CWalleveEventDbpMethodResult eventResult(nonce);
         eventResult.data.id = id;
-        eventResult.data.resultType = walleve::CWalleveDbpMethodResult::ResultType::TX;
-        eventResult.data.anyObjects.push_back(&dbpTx);
+        eventResult.data.anyResultObjs.push_back(dbpTx);
         pDbpServer->DispatchEvent(&eventResult);
     }
     else
@@ -189,7 +188,6 @@ void CDbpService::HandleGetTransaction(walleve::CWalleveEventDbpMethod& event)
         uint64 nonce = event.nNonce;
         walleve::CWalleveEventDbpMethodResult eventResult(nonce);
         eventResult.data.id = id;
-        eventResult.data.resultType = walleve::CWalleveDbpMethodResult::ResultType::ERROR;
         eventResult.data.error = "404";
         pDbpServer->DispatchEvent(&eventResult);
     }
@@ -214,7 +212,6 @@ void CDbpService::HandleSendTransaction(walleve::CWalleveEventDbpMethod& event)
         uint64 nonce = event.nNonce;
         walleve::CWalleveEventDbpMethodResult eventResult(nonce);
         eventResult.data.id = event.data.id;
-        eventResult.data.resultType = walleve::CWalleveDbpMethodResult::ResultType::ERROR;
         eventResult.data.error = "400";
         pDbpServer->DispatchEvent(&eventResult);
         return;
@@ -226,11 +223,10 @@ void CDbpService::HandleSendTransaction(walleve::CWalleveEventDbpMethod& event)
         uint64 nonce = event.nNonce;
         walleve::CWalleveEventDbpMethodResult eventResult(nonce);
         eventResult.data.id = event.data.id;
-        eventResult.data.resultType = walleve::CWalleveDbpMethodResult::ResultType::SEND_TX;
         
         walleve::CWalleveDbpSendTxRet sendTxRet;
         sendTxRet.hash = txid;
-        eventResult.data.anyObjects.push_back(&sendTxRet);
+        eventResult.data.anyResultObjs.push_back(sendTxRet);
         
         pDbpServer->DispatchEvent(&eventResult);
     }
@@ -239,7 +235,6 @@ void CDbpService::HandleSendTransaction(walleve::CWalleveEventDbpMethod& event)
         uint64 nonce = event.nNonce;
         walleve::CWalleveEventDbpMethodResult eventResult(nonce);
         eventResult.data.id = event.data.id;
-        eventResult.data.resultType = walleve::CWalleveDbpMethodResult::ResultType::ERROR;
         eventResult.data.error = "400";
         pDbpServer->DispatchEvent(&eventResult);
     }
@@ -300,11 +295,10 @@ void CDbpService::HandleGetBlocks(walleve::CWalleveEventDbpMethod& event)
         uint64 nonce = event.nNonce;
         walleve::CWalleveEventDbpMethodResult eventResult(nonce);
         eventResult.data.id = event.data.id;
-        eventResult.data.resultType = walleve::CWalleveDbpMethodResult::ResultType::BLOCKS;
         
         for(auto& block : blocks)
         {
-            eventResult.data.anyObjects.push_back(&block);
+           eventResult.data.anyResultObjs.push_back(block);
         }
     
         pDbpServer->DispatchEvent(&eventResult);
@@ -314,7 +308,7 @@ void CDbpService::HandleGetBlocks(walleve::CWalleveEventDbpMethod& event)
         uint64 nonce = event.nNonce;
         walleve::CWalleveEventDbpMethodResult eventResult(nonce);
         eventResult.data.id = event.data.id;
-        eventResult.data.resultType = walleve::CWalleveDbpMethodResult::ResultType::ERROR;
+        //eventResult.data.resultType = walleve::CWalleveDbpMethodResult::ResultType::ERROR;
         eventResult.data.error = "400";
         pDbpServer->DispatchEvent(&eventResult);
     }
@@ -322,7 +316,6 @@ void CDbpService::HandleGetBlocks(walleve::CWalleveEventDbpMethod& event)
 
 bool CDbpService::HandleEvent(walleve::CWalleveEventDbpMethod& event)
 {
-
     if(event.data.method == walleve::CWalleveDbpMethod::Method::GET_BLOCKS)
     {
         HandleGetBlocks(event);    
@@ -337,6 +330,7 @@ bool CDbpService::HandleEvent(walleve::CWalleveEventDbpMethod& event)
     }
     else
     {
+        return false;
     }
     
     return true;

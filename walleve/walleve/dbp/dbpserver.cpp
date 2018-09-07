@@ -1,6 +1,7 @@
 #include "dbpserver.h"
 
 #include <memory>
+#include <algorithm>
 #include <openssl/rand.h>
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string/trim.hpp>
@@ -307,39 +308,40 @@ void CDbpClient::SendResponse(CWalleveDbpMethodResult& body)
     resultMsg.set_id(body.id);
     resultMsg.set_error(body.error);
 
-    if(body.resultType == CWalleveDbpMethodResult::ResultType::BLOCKS)
-    {
-        for(auto& obj : body.anyObjects)
+    auto dispatchHandler = [&](const boost::any& obj) -> void {
+                      
+        if(obj.type() == typeid(CWalleveDbpBlock))
         {
+            CWalleveDbpBlock tempBlock = boost::any_cast<CWalleveDbpBlock>(obj);
+            
             lws::Block block;
-            CreateLwsBlock(static_cast<CWalleveDbpBlock*>(obj),block);
+            CreateLwsBlock(&tempBlock,block);
             resultMsg.add_result()->PackFrom(block);
         }
-    }
-    else if(body.resultType == CWalleveDbpMethodResult::ResultType::TX)
-    {
-        for(auto& obj : body.anyObjects)
+        else if(obj.type() == typeid(CWalleveDbpTransaction))
         {
+            CWalleveDbpTransaction tempTx = boost::any_cast<CWalleveDbpTransaction>(obj);
+            
             std::unique_ptr<lws::Transaction> tx(std::make_unique<lws::Transaction>());
-            CreateLwsTransaction(static_cast<CWalleveDbpTransaction*>(obj),tx.get());
+            CreateLwsTransaction(&tempTx,tx.get());
             resultMsg.add_result()->PackFrom(*tx);
         }
-    }
-    else if(body.resultType == CWalleveDbpMethodResult::ResultType::SEND_TX)
-    {
-        for(auto& obj : body.anyObjects)
+        else if(obj.type() == typeid(CWalleveDbpSendTxRet))
         {
+            CWalleveDbpSendTxRet txret =  boost::any_cast<CWalleveDbpSendTxRet>(obj); 
             lws::SendTxRet sendTxRet;
-            CWalleveDbpSendTxRet *txret = static_cast<CWalleveDbpSendTxRet*>(obj); 
-            sendTxRet.set_hash(txret->hash);
+           
+            sendTxRet.set_hash(txret.hash);
             resultMsg.add_result()->PackFrom(sendTxRet);
         }
-    }
-    else if(body.resultType == CWalleveDbpMethodResult::ResultType::ERROR)
-    {}
-    else
-    {}
-    
+        else
+        {
+
+        }
+    };  
+
+    std::for_each(body.anyResultObjs.begin(),body.anyResultObjs.end(),dispatchHandler);
+
     google::protobuf::Any *anyResult = new google::protobuf::Any();
     anyResult->PackFrom(resultMsg);
 
