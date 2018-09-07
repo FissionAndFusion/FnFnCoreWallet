@@ -429,8 +429,7 @@ bool CDbpService::HandleEvent(CMvEventDbpUpdateNewBlock& event)
             walleve::CWalleveEventDbpAdded eventAdded(nonce);
             eventAdded.data.id = id;
             eventAdded.data.name = "all-block";
-            eventAdded.data.type = walleve::CWalleveDbpAdded::BLOCK;
-            eventAdded.data.anyObject = &block;
+            eventAdded.data.anyAddedObj = block;
 
             pDbpServer->DispatchEvent(&eventAdded);
 
@@ -455,8 +454,7 @@ bool CDbpService::HandleEvent(CMvEventDbpUpdateNewTx& event)
         walleve::CWalleveEventDbpAdded eventAdded(nonce);
         eventAdded.data.id = id;
         eventAdded.data.name = "all-tx";
-        eventAdded.data.type = walleve::CWalleveDbpAdded::TX;
-        eventAdded.data.anyObject = &dbpTx;
+        eventAdded.data.anyAddedObj = dbpTx;
 
         pDbpServer->DispatchEvent(&eventAdded);
     }

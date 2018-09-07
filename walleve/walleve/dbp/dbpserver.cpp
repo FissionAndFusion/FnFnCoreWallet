@@ -260,21 +260,26 @@ void CDbpClient::SendResponse(CWalleveDbpAdded& body)
     addedMsg.set_id(body.id);
     addedMsg.set_name(body.name);
 
-    if(body.type == CWalleveDbpAdded::AddedType::BLOCK)
+    if(body.anyAddedObj.type() == typeid(CWalleveDbpBlock))
     {
-        lws::Block block;
-        CreateLwsBlock(static_cast<CWalleveDbpBlock*>(body.anyObject),block);
+        CWalleveDbpBlock tempBlock = boost::any_cast<CWalleveDbpBlock>(body.anyAddedObj);
         
+        lws::Block block;
+        CreateLwsBlock(&tempBlock,block);
+
         google::protobuf::Any *anyBlock = new google::protobuf::Any();
         anyBlock->PackFrom(block);
         addedMsg.set_allocated_object(anyBlock);
 
         std::cout << "Added Block: "  <<std::endl;
+
     }
-    else if(body.type == CWalleveDbpAdded::AddedType::TX)
+    else if(body.anyAddedObj.type() == typeid(CWalleveDbpTransaction))
     {
+        CWalleveDbpTransaction tempTx = boost::any_cast<CWalleveDbpTransaction>(body.anyAddedObj);
+
         std::unique_ptr<lws::Transaction> tx(std::make_unique<lws::Transaction>());
-        CreateLwsTransaction(static_cast<CWalleveDbpTransaction*>(body.anyObject),tx.get());
+        CreateLwsTransaction(&tempTx,tx.get());
 
         google::protobuf::Any *anyTx = new google::protobuf::Any();
         anyTx->PackFrom(*tx);
@@ -472,7 +477,6 @@ void CDbpClient::HandleReadCompleted(uint32_t len)
     // start parse msg body(payload) by protobuf
     dbp::Base msgBase;
 
-    
     std::string payloadBuffer(len,0);
     ssRecv.Read(&payloadBuffer[0],len);
     
@@ -751,7 +755,7 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient, const boost::any& anyO
     {
         any = boost::any_cast<google::protobuf::Any>(anyObj);
     }
-    catch(boost::bad_any_cast &e)
+    catch(const boost::bad_any_cast &e)
     {
         RespondError(pDbpClient,500,"protobuf msg base any object pointer is null.");
         return;
@@ -833,18 +837,14 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient, const boost::any& anyO
 void CDbpServer::HandleClientSent(CDbpClient *pDbpClient)
 {
     // keep-alive connection,do not remove
-    WalleveLog("continue active\n");
     pDbpClient->Activate();
-    WalleveLog("continue actived\n");
 }
 
 void CDbpServer::HandleClientError(CDbpClient *pDbpClient)
 {
     WalleveLog("Client error\n");
     pingTimerPtr_->cancel();
-    WalleveLog("Timer canceled\n");
     RemoveClient(pDbpClient);
-    WalleveLog("Removed client\n");
 }
 
 void CDbpServer::AddNewHost(const CDbpHostConfig& confHost)
@@ -899,7 +899,7 @@ void CDbpServer::EnterLoop()
 
 void CDbpServer::LeaveLoop()
 {
-    std::vector<CDbpClient *>vClient;
+    std::vector<CDbpClient*> vClient;
     for (std::map<uint64,CDbpClient*>::iterator it = mapClient.begin();it != mapClient.end();++it)
     {
         vClient.push_back((*it).second);

@@ -1,6 +1,8 @@
 #ifndef WALLEVE_DBP_TYPE_H
 #define WALLEVE_DBP_TYPE_H
 
+#include <boost/any.hpp>
+
 namespace walleve{
 
 class CWalleveDbpContent
@@ -112,15 +114,9 @@ public:
 class CWalleveDbpAdded: public CWalleveDbpRespond
 {
 public:
-    enum AddedType{
-        BLOCK,
-        TX
-    };
-public:
     std::string name;
     std::string id;
-    AddedType type;
-    void* anyObject; // busniess object (block,tx...)
+    boost::any anyAddedObj; // busniess object (block,tx...)
 };
 
 class CWalleveDbpMethod: public CWalleveDbpRequest
