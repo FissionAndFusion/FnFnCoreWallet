@@ -12,8 +12,9 @@ CDbpService::CDbpService()
     pWallet = NULL;
     pDbpServer = NULL;
 
-    std::map<std::string,bool> temp_map = boost::assign::map_list_of
+    std::unordered_map<std::string,bool> temp_map = boost::assign::map_list_of
                     ("all-block",true)
+                    ("all-tx",true)
                     ("changed",true)
                     ("removed",true);
     
@@ -104,8 +105,7 @@ bool CDbpService::HandleEvent(walleve::CWalleveEventDbpSub& event)
 
     std::cout << "Sub topic is:" << topicName << std::endl;
 
-    // if topic not exists
-    if(currentTopicExistMap.count(topicName) == 0 )
+    if(!IsTopicExist(topicName))
     {
          // reply nosub
         std::cout << "Sub topic not exists: " << topicName << std::endl;
@@ -114,21 +114,9 @@ bool CDbpService::HandleEvent(walleve::CWalleveEventDbpSub& event)
         pDbpServer->DispatchEvent(&eventNoSub);
     }
     else
-    {
-        std::cout << "Sub topic  exists: " << topicName << std::endl;
-        if(idSubedTopicsMap.count(id) == 0)
-        {
-            TopicSet topics{topicName};
-            idSubedTopicsMap.insert(std::make_pair(id,topics));
-        }
-        else
-        {
-            auto & topics = idSubedTopicsMap[id];
-            topics.insert(topicName);
-        }
-
-        idSubedSessionMap.insert(std::make_pair(id,event.session_));
-
+    { 
+        SubTopic(id,event.session_,topicName);
+        
         //reply ready
         walleve::CWalleveEventDbpReady eventReady(event.session_);
         eventReady.data.id = event.data.id;
@@ -140,20 +128,7 @@ bool CDbpService::HandleEvent(walleve::CWalleveEventDbpSub& event)
 
 bool CDbpService::HandleEvent(walleve::CWalleveEventDbpUnSub& event)
 {
-    std::string id = event.data.id;    
-    if(idSubedTopicsMap.count(id) != 0)
-    {
-        // unsub is actual delete subed topic
-        std::cout << "[SubedTopicsMap] UnSub topic  success"  << std::endl;
-        idSubedTopicsMap.erase(id);
-    }
-
-    if(idSubedNonceMap.count(id) != 0)
-    {
-        std::cout << "[SubedNonceMap] UnSub topic  success"  << std::endl;
-        idSubedNonceMap.erase(id);
-    }
-    
+    UnSubTopic(event.data.id);   
     return true;
 }
 
@@ -172,16 +147,14 @@ void CDbpService::HandleGetTransaction(walleve::CWalleveEventDbpMethod& event)
         walleve::CWalleveDbpTransaction dbpTx;
         CreateDbpTransaction(tx,dbpTx);
 
-        uint64 nonce = event.nNonce;
-        walleve::CWalleveEventDbpMethodResult eventResult(nonce);
+        walleve::CWalleveEventDbpMethodResult eventResult(event.session_);
         eventResult.data.id = id;
         eventResult.data.anyResultObjs.push_back(dbpTx);
         pDbpServer->DispatchEvent(&eventResult);
     }
     else
     {
-        uint64 nonce = event.nNonce;
-        walleve::CWalleveEventDbpMethodResult eventResult(nonce);
+        walleve::CWalleveEventDbpMethodResult eventResult(event.session_);
         eventResult.data.id = id;
         eventResult.data.error = "404";
         pDbpServer->DispatchEvent(&eventResult);
@@ -204,8 +177,7 @@ void CDbpService::HandleSendTransaction(walleve::CWalleveEventDbpMethod& event)
     }
     catch (const std::exception &e)
     {
-        uint64 nonce = event.nNonce;
-        walleve::CWalleveEventDbpMethodResult eventResult(nonce);
+        walleve::CWalleveEventDbpMethodResult eventResult(event.session_);
         eventResult.data.id = event.data.id;
         eventResult.data.error = "400";
         pDbpServer->DispatchEvent(&eventResult);
@@ -215,8 +187,7 @@ void CDbpService::HandleSendTransaction(walleve::CWalleveEventDbpMethod& event)
     MvErr err = pService->SendTransaction(rawTx);
     if (err == MV_OK)
     {
-        uint64 nonce = event.nNonce;
-        walleve::CWalleveEventDbpMethodResult eventResult(nonce);
+        walleve::CWalleveEventDbpMethodResult eventResult(event.session_);
         eventResult.data.id = event.data.id;
         
         walleve::CWalleveDbpSendTxRet sendTxRet;
@@ -227,12 +198,42 @@ void CDbpService::HandleSendTransaction(walleve::CWalleveEventDbpMethod& event)
     }
     else
     {
-        uint64 nonce = event.nNonce;
-        walleve::CWalleveEventDbpMethodResult eventResult(nonce);
+        walleve::CWalleveEventDbpMethodResult eventResult(event.session_);
         eventResult.data.id = event.data.id;
         eventResult.data.error = "400";
         pDbpServer->DispatchEvent(&eventResult);
     }
+}
+
+bool CDbpService::IsTopicExist(const std::string& topic)
+{
+    return currentTopicExistMap.find(topic) != currentTopicExistMap.end();
+}
+
+bool CDbpService::IsHaveSubedTopicOf(const std::string& id)
+{
+    return idSubedTopicMap.find(id) != idSubedTopicMap.end();
+}
+
+void CDbpService::SubTopic(const std::string& id, const std::string& session,const std::string& topic)
+{
+    idSubedTopicMap.insert(std::make_pair(id,topic));
+    subedTopicIdMap.insert(std::make_pair(topic,id));
+    idSubedSessionMap.insert(std::make_pair(id,session));
+}
+
+void CDbpService::UnSubTopic(const std::string& id)
+{
+    auto it = idSubedTopicMap.find(id);
+    if(it != idSubedTopicMap.end()) subedTopicIdMap.erase(it->second);
+    
+    idSubedTopicMap.erase(id);
+    idSubedSessionMap.erase(id);
+}
+
+void CDbpService::PushTopic(const std::string& topic)
+{
+    
 }
 
 bool CDbpService::GetBlocks(const uint256& startHash, int32 n, std::vector<walleve::CWalleveDbpBlock>& blocks)
@@ -287,8 +288,7 @@ void CDbpService::HandleGetBlocks(walleve::CWalleveEventDbpMethod& event)
     std::vector<walleve::CWalleveDbpBlock> blocks;
     if(GetBlocks(startBlockHash,blockNum,blocks))
     {
-        uint64 nonce = event.nNonce;
-        walleve::CWalleveEventDbpMethodResult eventResult(nonce);
+        walleve::CWalleveEventDbpMethodResult eventResult(event.session_);
         eventResult.data.id = event.data.id;
         
         for(auto& block : blocks)
@@ -300,10 +300,8 @@ void CDbpService::HandleGetBlocks(walleve::CWalleveEventDbpMethod& event)
     }
     else
     {
-        uint64 nonce = event.nNonce;
-        walleve::CWalleveEventDbpMethodResult eventResult(nonce);
+        walleve::CWalleveEventDbpMethodResult eventResult(event.session_);
         eventResult.data.id = event.data.id;
-        //eventResult.data.resultType = walleve::CWalleveDbpMethodResult::ResultType::ERROR;
         eventResult.data.error = "400";
         pDbpServer->DispatchEvent(&eventResult);
     }
@@ -410,12 +408,12 @@ bool CDbpService::HandleEvent(CMvEventDbpUpdateNewBlock& event)
         CreateDbpBlock(newBlock,forkHash,blockHeight,block);
         
         // push new block to dbpclient when new-block-event comes 
-        for(const auto& kv : idSubedNonceMap)
+        for(const auto& kv : idSubedSessionMap)
         {
             std::string id = kv.first;
-            uint64 nonce = kv.second;
+            std::string session = kv.second;
             
-            walleve::CWalleveEventDbpAdded eventAdded(nonce);
+            walleve::CWalleveEventDbpAdded eventAdded(session);
             eventAdded.data.id = id;
             eventAdded.data.name = "all-block";
             eventAdded.data.anyAddedObj = block;
@@ -435,12 +433,12 @@ bool CDbpService::HandleEvent(CMvEventDbpUpdateNewTx& event)
     CreateDbpTransaction(newtx,dbpTx);
 
     // push new tx to dbpclient when new-tx-event comes
-    for(const auto& kv : idSubedNonceMap)
+    for(const auto& kv : idSubedSessionMap)
     {
         std::string id = kv.first;
-        int nonce = kv.second;
+        std::string session = kv.second;
         
-        walleve::CWalleveEventDbpAdded eventAdded(nonce);
+        walleve::CWalleveEventDbpAdded eventAdded(session);
         eventAdded.data.id = id;
         eventAdded.data.name = "all-tx";
         eventAdded.data.anyAddedObj = dbpTx;

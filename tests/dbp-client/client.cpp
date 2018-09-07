@@ -29,11 +29,11 @@ void Client::SockConnect()
         sock_->connect(m_ep_, ec);
         std::cerr << "[-]socket connection: " << ec.message() << std::endl;
 
-        if (0 != ec)
+        if (ec)
         {
             sleep(1);
         }
-    } while (ec != 0);
+    } while (ec);
 
     is_connected_ = true;
     SendConnect(session_);

@@ -1125,14 +1125,15 @@ bool CDbpServer::HandleEvent(CWalleveEventDbpReady& event)
 
 bool CDbpServer::HandleEvent(CWalleveEventDbpAdded& event)
 {
-    std::map<uint64,CDbpClient*>::iterator it = mapClient.find(event.nNonce);
-    if (it == mapClient.end())
+    auto it = sessionProfileMap.find(event.session_);
+    if(it == sessionProfileMap.end())
     {
-        std::cout << "cannot find: " << event.nNonce << std::endl;
+        std::cout << "cannot find session [Added] " << event.session_ << std::endl;
         return false;
     }
 
-    CDbpClient *pDbpClient = (*it).second;
+
+    CDbpClient *pDbpClient = (*it).second.pDbpClient;
     CWalleveDbpAdded &addedBody = event.data;
 
     std::cout << "Added Send Response: "  <<std::endl;
@@ -1143,28 +1144,18 @@ bool CDbpServer::HandleEvent(CWalleveEventDbpAdded& event)
 
 bool CDbpServer::HandleEvent(CWalleveEventDbpMethodResult& event)
 {
-    std::map<uint64,CDbpClient*>::iterator it = mapClient.find(event.nNonce);
-    if (it == mapClient.end())
+    auto it = sessionProfileMap.find(event.session_);
+    if(it == sessionProfileMap.end())
     {
+        std::cout << "cannot find session [Method Result] " << event.session_ << std::endl;
         return false;
     }
 
-    CDbpClient *pDbpClient = (*it).second;
+    CDbpClient *pDbpClient = (*it).second.pDbpClient;
     CWalleveDbpMethodResult &resultBody = event.data;
 
     pDbpClient->SendResponse(resultBody);
     
-    return true;
-}
-
-bool CDbpServer::HandleEvent(CWalleveEventDbpPing& event)
-{
-    std::map<uint64,CDbpClient*>::iterator it = mapClient.find(event.nNonce);
-    if (it == mapClient.end())
-    {
-        return false;
-    }
-
     return true;
 }
 
@@ -1191,13 +1182,12 @@ bool CDbpServer::IsSessionReconnect(const std::string & session)
 
 bool CDbpServer::IsSessionExist(const std::string& session)
 {
-    return (sessionProfileMap.count(session) != 0) ? true : false;
+    return sessionProfileMap.find(session) != sessionProfileMap.end();
 }
 
 bool CDbpServer::HaveAssociatedSessionOf(CDbpClient* pDbpClient)
 {
-    return (sessionClientBimap.right.find(pDbpClient) != sessionClientBimap.right.end())
-            ? true : false;
+    return sessionClientBimap.right.find(pDbpClient) != sessionClientBimap.right.end();
 }
 
 std::string CDbpServer::GenerateSessionId()
