@@ -215,6 +215,9 @@ static void CreateLwsTransaction(const CWalleveDbpTransaction* dbptx,lws::Transa
 
     std::string mintVchSig(dbptx->vchData.begin(),dbptx->vchData.end());
     tx->set_vchsig(mintVchSig);
+
+    std::string hash(dbptx->hash.begin(),dbptx->hash.end());
+    tx->set_hash(hash);
 }
 
 static void CreateLwsBlock(CWalleveDbpBlock* pBlock,lws::Block& block)

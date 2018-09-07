@@ -48,6 +48,7 @@ message Transaction
     int64 nTxFee = 8; //网络交易费 
     bytes vchData = 9; //输出参数(模板地址参数、跨分支交易共轭交易)
     bytes vchSig = 10; //交易签名
+    bytes hash = 11; //当前tx hash
 }
 
 message Block
