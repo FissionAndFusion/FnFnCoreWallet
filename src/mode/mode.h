@@ -199,6 +199,7 @@ public:
                     EModuleType::NETWORK,
                     EModuleType::NETCHANNEL,
                     EModuleType::SERVICE,
+                    EModuleType::DBPSOCKET,
                     EModuleType::HTTPSERVER,
                     EModuleType::RPCMODE,
                     EModuleType::BLOCKMAKER
