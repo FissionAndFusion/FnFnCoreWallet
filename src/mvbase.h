@@ -211,6 +211,13 @@ public:
     virtual MvErr SubmitWork(const std::vector<unsigned char>& vchWorkData,CTemplatePtr& templMint,crypto::CKey& keyMint,uint256& hashBlock) = 0;
 };
 
+// temporary dummy class for DbpSocket 
+class CDummyDbpSocket : public walleve::IIOModule
+{
+public:
+    CDummyDbpSocket() : IIOModule("dbpservice") {}
+};
+
 } // namespace multiverse
 
 #endif //MULTIVERSE_BASE_H
