@@ -48,7 +48,7 @@ void CHttpEventStream::RegisterEvent(const string& strEventName,CHttpSSEGenerato
     }
     else
     {
-        mapGenerator.insert(strEventName,auto_ptr<CHttpSSEGenerator>(pGenerator));
+        mapGenerator.insert(strEventName,std::unique_ptr<CHttpSSEGenerator>(pGenerator));
     }
 }
 
