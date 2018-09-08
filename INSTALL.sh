@@ -17,7 +17,13 @@ mkdir build
 cd build
 
 # cmake
-cmake ..
+flag=""
+if [ "$1" == "debug" ]; then
+    flag="-DCMAKE_BUILD_TYPE=debug"
+fi
+
+cmake .. $flag
+
 if [ $? -ne 0 ]; then 
     exit 1 
 fi 
