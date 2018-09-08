@@ -97,18 +97,19 @@ bool CNetwork::CheckPeerVersion(uint32 nVersionIn,uint64 nServiceIn,const string
 void CNetwork::ClientFailToConnect(const tcp::endpoint& epRemote)
 {
     CPeerNet::ClientFailToConnect(epRemote);
-    WalleveLog("ConnectFailTo>>>%s\n",epRemote.address().to_string().c_str());
-
+    WalleveLog("ConnectFailTo>>>%s %d\n",epRemote.address().to_string().c_str(),epRemote.port());
+    /*In order to make the disconnected nodes return to the network 
+    as soon as possible, some optimization is made here*/
     network::DNSeedService * dns=network::DNSeedService::getInstance();
-    storage::SeedNode * sn=dns->findSeedNode(epRemote);
-    if(sn)
-    {
-        if(dns->badNode(sn))
-        {
+    // storage::SeedNode * sn=dns->findSeedNode(epRemote);
+    // if(sn)
+    // {
+    //     if(dns->badNode(sn))
+    //     {
             this->RemoveNode(epRemote);
             dns->removeNode(epRemote);
-        } 
-    }
+    //     } 
+    // }
 
     //Check to see if there are peer and nodes to connect, and if they are empty, connect DNseed
     CWalleveEventPeerNetGetPeers eventGetPeers(0);

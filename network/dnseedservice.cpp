@@ -185,7 +185,7 @@ storage::SeedNode * DNSeedService::findSeedNode(const boost::asio::ip::tcp::endp
 {
     for(size_t i=0;i<this->_activeNodeList.size();i++)
     {
-        if(this->_activeNodeList[i]._ep.address()==ep.address()) return &this->_activeNodeList[i];
+        if(this->_activeNodeList[i]._ep==ep) return &this->_activeNodeList[i];
     }
     return NULL;
 }

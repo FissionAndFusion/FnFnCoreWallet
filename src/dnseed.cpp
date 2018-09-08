@@ -139,10 +139,13 @@ bool CDNSeed::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CWall
         case MVPROTO_CMD_GETDNSEED:
             {
                 tcp::endpoint ep(pMvPeer->GetRemote().address(),NetworkConfig()->nPort);
-                DNSeedService::getInstance()->addNode(ep);
-                WalleveLog("[receive] MVPROTO_CMD_GETDNSEED      height:%d\n",pMvPeer->nStartingHeight);
+                DNSeedService* dns=DNSeedService::getInstance();
+                //In order to facilitate the rapid formation of early network, all nodes connected to DNseed are considered as tested nodes.
+                dns->addNode(ep,true);
                 std::vector<CAddress> vAddrs;
-                DNSeedService::getInstance()->getSendAddressList(vAddrs);
+                dns->getSendAddressList(vAddrs);
+                WalleveLog(" MVPROTO_CMD_GETDNSEED[%s:%d] height:%d  sendNum:%d\n",
+                            ep.address().to_string().c_str(),ep.port(),pMvPeer->nStartingHeight,vAddrs.size());
                 
                 CWalleveBufStream ss;
                 ss << vAddrs;
