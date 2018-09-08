@@ -3,7 +3,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 //
 //
-// Introduce functions related Mode:
+// Introduction about Mode:
 // 
 // Concept:
 //  - Mode: Program execution mode. e.g. server, console, miner, dnseed...
