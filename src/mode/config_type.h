@@ -30,7 +30,7 @@ enum class EConfigType
     STORAGE,  // CMvStorageConfig
 };
 
-namespace configtype
+namespace config_type
 {
 // config type class template
 static const auto ___ConfigTypeTemplate = std::make_tuple(
@@ -39,7 +39,7 @@ static const auto ___ConfigTypeTemplate = std::make_tuple(
     (CMvNetworkConfig*)NULL,
     (CMvRPCConfig*)NULL, 
     (CMvStorageConfig*)NULL);
-}  // namespace configtype
+}  // namespace config_type
 
 }  // namespace multiverse
 

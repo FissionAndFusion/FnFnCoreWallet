@@ -105,7 +105,7 @@ public:
 protected:
     void Range(uint32_t carry)
     {
-        while (carry = ((carry << 1) + (value[7] >> 31)) * 19)
+        while ((carry = ((carry << 1) + (value[7] >> 31)) * 19))
         {
             value[7] &= 0x7FFFFFFF;
             for (int i = 0;i < 8;i++)

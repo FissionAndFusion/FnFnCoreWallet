@@ -274,7 +274,7 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
                 break;
             }
         default:
-            cerr << "Unknown module:%d" << CMode::TypeValue(m) << endl;
+            cerr << "Unknown module:%d" << CMode::IntValue(m) << endl;
             break;
         }
     }
