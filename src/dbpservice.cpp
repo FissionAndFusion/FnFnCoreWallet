@@ -395,6 +395,9 @@ void CDbpService::CreateDbpTransaction(const CTransaction& tx,walleve::CWalleveD
 
     dbptx.vchData = tx.vchData;
     dbptx.vchSig = tx.vchSig;
+
+    walleve::CWalleveODataStream hashStream(dbptx.hash);
+    tx.GetHash().ToDataStream(hashStream);
 }
 
 bool CDbpService::HandleEvent(CMvEventDbpUpdateNewBlock& event)

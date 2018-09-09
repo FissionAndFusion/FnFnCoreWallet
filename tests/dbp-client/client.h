@@ -24,7 +24,7 @@ class Client
     void SendPong(std::string id);
     std::string SendSub(std::string name, HandlePair hp);
     void SendUnsub(std::string id);
-    std::string SendMethod(std::string method, HandlePair hp);
+    std::string SendMethod(std::string method, google::protobuf::Any *params, HandlePair hp);
     void Close();
 
   private:

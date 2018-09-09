@@ -93,6 +93,7 @@ public:
     int64 nTxFee; //网络交易费 
     std::vector<uint8> vchData; //输出参数(模板地址参数、跨分支交易共轭交易)
     std::vector<uint8> vchSig; //交易签名
+    std::vector<uint8> hash;
 };
 
 class CWalleveDbpBlock
