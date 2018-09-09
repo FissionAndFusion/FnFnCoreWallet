@@ -218,14 +218,17 @@ bool CDbpService::IsHaveSubedTopicOf(const std::string& id)
 void CDbpService::SubTopic(const std::string& id, const std::string& session,const std::string& topic)
 {
     idSubedTopicMap.insert(std::make_pair(id,topic));
-    subedTopicIdMap.insert(std::make_pair(topic,id));
+
+    if(topic == "all-block") subedAllBlocksIds.insert(id);
+    if(topic == "all-tx") subedAllTxIdIds.insert(id);
+
     idSubedSessionMap.insert(std::make_pair(id,session));
 }
 
 void CDbpService::UnSubTopic(const std::string& id)
-{
-    auto it = idSubedTopicMap.find(id);
-    if(it != idSubedTopicMap.end()) subedTopicIdMap.erase(it->second);
+{ 
+    subedAllBlocksIds.erase(id);
+    subedAllTxIdIds.erase(id);
     
     idSubedTopicMap.erase(id);
     idSubedSessionMap.erase(id);
@@ -406,19 +409,21 @@ bool CDbpService::HandleEvent(CMvEventDbpUpdateNewBlock& event)
     {
         walleve::CWalleveDbpBlock block;
         CreateDbpBlock(newBlock,forkHash,blockHeight,block);
-        
+
         // push new block to dbpclient when new-block-event comes 
         for(const auto& kv : idSubedSessionMap)
         {
             std::string id = kv.first;
             std::string session = kv.second;
-            
-            walleve::CWalleveEventDbpAdded eventAdded(session);
-            eventAdded.data.id = id;
-            eventAdded.data.name = "all-block";
-            eventAdded.data.anyAddedObj = block;
 
-            pDbpServer->DispatchEvent(&eventAdded);
+            if(subedAllBlocksIds.find(id) != subedAllBlocksIds.end())
+            {
+                walleve::CWalleveEventDbpAdded eventAdded(session);
+                eventAdded.data.id = id;
+                eventAdded.data.name = "all-block";
+                eventAdded.data.anyAddedObj = block;
+                pDbpServer->DispatchEvent(&eventAdded);
+            }
 
         }
     } 
@@ -437,13 +442,15 @@ bool CDbpService::HandleEvent(CMvEventDbpUpdateNewTx& event)
     {
         std::string id = kv.first;
         std::string session = kv.second;
-        
-        walleve::CWalleveEventDbpAdded eventAdded(session);
-        eventAdded.data.id = id;
-        eventAdded.data.name = "all-tx";
-        eventAdded.data.anyAddedObj = dbpTx;
 
-        pDbpServer->DispatchEvent(&eventAdded);
+        if(subedAllTxIdIds.find(id) != subedAllTxIdIds.end())
+        {
+            walleve::CWalleveEventDbpAdded eventAdded(session);
+            eventAdded.data.id = id;
+            eventAdded.data.name = "all-tx";
+            eventAdded.data.anyAddedObj = dbpTx;
+            pDbpServer->DispatchEvent(&eventAdded);
+        }
     }
 
     return true;

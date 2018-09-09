@@ -5,7 +5,7 @@
 #include "walleve/walleve.h"
 #include "event.h"
 
-#include <vector>
+#include <set>
 #include <utility>
 #include <unordered_map>
 
@@ -52,7 +52,10 @@ protected:
     IWallet *pWallet;
 private:
     std::map<std::string,std::string> idSubedTopicMap; // id => subed topic
-    std::map<std::string,std::string> subedTopicIdMap; // subed topic => id
+    
+    std::set<std::string>  subedAllBlocksIds; // block ids
+    std::set<std::string> subedAllTxIdIds; // tx ids
+
     std::map<std::string,std::string> idSubedSessionMap; // id => session
     std::unordered_map<std::string,bool> currentTopicExistMap; // topic => enabled
 };
