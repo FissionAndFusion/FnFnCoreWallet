@@ -164,8 +164,8 @@ bool CNetChannel::WalleveHandleInvoke()
 
 void CNetChannel::WalleveHandleHalt()
 {
-    mapSched.clear();
     network::IMvNetChannel::WalleveHandleHalt();
+    mapSched.clear();
 }
 
 int CNetChannel::GetPrimaryChainHeight()
