@@ -321,12 +321,15 @@ void CDbpClient::SendResponse(CWalleveDbpMethodResult& body)
     resultMsg.set_id(body.id);
     resultMsg.set_error(body.error);
 
+    std::cout << "reply id: " << body.id << std::endl;
+
     auto dispatchHandler = [&](const boost::any& obj) -> void {
                       
         if(obj.type() == typeid(CWalleveDbpBlock))
         {
             CWalleveDbpBlock tempBlock = boost::any_cast<CWalleveDbpBlock>(obj);
             
+            std::cout << "Add Block to result [GetBlocks]: " << tempBlock.nHeight << std::endl;
             lws::Block block;
             CreateLwsBlock(&tempBlock,block);
             resultMsg.add_result()->PackFrom(block);

@@ -81,13 +81,16 @@ void HandlePair::SubHandler(std::string type, std::string name, google::protobuf
 
 void HandlePair::MethodHandler(dbp::Result &result)
 {
-    if(result.error().empty())
+    if(!result.error().empty())
     {
         std::cout << "[-]method error:" << result.error() << std::endl;
     }
 
     if ("getblocks" == name)
     {
+        
+        std::cout << "[<]: getblocks result" << std::endl;
+        
         int size = result.result_size();
         for(int i = 0; i < size; i++)
         {

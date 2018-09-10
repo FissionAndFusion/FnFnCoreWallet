@@ -26,11 +26,11 @@ void callback(Client *cl)
     std::string mehtod_id = cl->SendMethod("getblocks", block_any, block_hp);
     usleep(100 * 10);
 
-    HandlePair tx_hp;
-    lws::GetTxArg tx_arg;
-    google::protobuf::Any *tx_any = new google::protobuf::Any();
-    tx_any->PackFrom(block_arg);
-    std::string mehtod_id1 = cl->SendMethod("gettransaction", tx_any, tx_hp);
+    //HandlePair tx_hp;
+   // lws::GetTxArg tx_arg;
+   // google::protobuf::Any *tx_any = new google::protobuf::Any();
+   // tx_any->PackFrom(block_arg);
+   // std::string mehtod_id1 = cl->SendMethod("gettransaction", tx_any, tx_hp);
 }
 
 void run(std::string ip, int port)

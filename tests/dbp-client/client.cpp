@@ -324,6 +324,9 @@ void Client::ReadHandler(const boost::system::error_code &ec, std::shared_ptr<bo
 
     if(base.msg() == dbp::Msg::RESULT)
     {
+        
+        std::cout << "[recv] result" << std::endl;
+        
         dbp::Result result;
         base.object().UnpackTo(&result);
         method_map_[result.id()].MethodHandler(result);
