@@ -676,7 +676,7 @@ void CDbpServer::HandleClientSub(CDbpClient *pDbpClient,google::protobuf::Any* a
 
 void CDbpServer::HandleClientUnSub(CDbpClient *pDbpClient,google::protobuf::Any* any)
 {
-    CWalleveEventDbpUnSub *pEventDbpUnSub = new CWalleveEventDbpUnSub(pDbpClient->GetNonce());
+    CWalleveEventDbpUnSub *pEventDbpUnSub = new CWalleveEventDbpUnSub(pDbpClient->GetSession());
     if(!pEventDbpUnSub)
     {
         RespondError(pDbpClient,500,"dbp unsub event create failed.");
@@ -694,7 +694,7 @@ void CDbpServer::HandleClientUnSub(CDbpClient *pDbpClient,google::protobuf::Any*
 
 void CDbpServer::HandleClientMethod(CDbpClient *pDbpClient,google::protobuf::Any* any)
 {
-    CWalleveEventDbpMethod *pEventDbpMethod = new CWalleveEventDbpMethod(pDbpClient->GetNonce());
+    CWalleveEventDbpMethod *pEventDbpMethod = new CWalleveEventDbpMethod(pDbpClient->GetSession());
     if(!pEventDbpMethod)
     {
         RespondError(pDbpClient,500,"dbp event method create failed.");
@@ -773,16 +773,13 @@ void CDbpServer::HandleClientPong(CDbpClient *pDbpClient,google::protobuf::Any* 
 
 void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient, const boost::any& anyObj)
 {
-    google::protobuf::Any any;
-    try
-    {
-        any = boost::any_cast<google::protobuf::Any>(anyObj);
-    }
-    catch(const boost::bad_any_cast &e)
+    if(anyObj.type() != typeid(google::protobuf::Any))
     {
         RespondError(pDbpClient,500,"protobuf msg base any object pointer is null.");
         return;
     }
+    
+    google::protobuf::Any any = boost::any_cast<google::protobuf::Any>(anyObj);
 
     if(any.Is<dbp::Connect>())
     {
