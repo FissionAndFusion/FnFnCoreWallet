@@ -706,6 +706,9 @@ void CDbpServer::HandleClientMethod(CDbpClient *pDbpClient,google::protobuf::Any
 
     CWalleveDbpMethod &methodBody = pEventDbpMethod->data;
     methodBody.id = methodMsg.id();
+
+    std::cout << "current id:" << methodBody.id << "current method name: " << methodMsg.method() 
+        << std::endl;
     
     if(methodMsg.method() == "getblocks") methodBody.method = CWalleveDbpMethod::Method::GET_BLOCKS;
     if(methodMsg.method() == "gettransaction") methodBody.method = CWalleveDbpMethod::Method::GET_TX;
@@ -723,6 +726,9 @@ void CDbpServer::HandleClientMethod(CDbpClient *pDbpClient,google::protobuf::Any
             RespondError(pDbpClient,400,"dbp method [getblocks] args hash is empty or number is 0.");
             return;
         }
+
+        std::cout << "id: " << methodBody.id << "hash: " << 
+            args.hash() << std::endl << "number: " << args.number() << std::endl;
         
         methodBody.params.insert(std::make_pair("hash",args.hash())); 
         methodBody.params.insert(std::make_pair("number",boost::lexical_cast<std::string>(args.number())));

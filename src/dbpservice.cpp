@@ -245,9 +245,13 @@ bool CDbpService::GetBlocks(const uint256& startHash, int32 n, std::vector<walle
     CBlock startBlock;
     uint256 forkHash;
     int currentHeight;
+
     
     if(pService->GetBlock(startHash,startBlock,forkHash,currentHeight))
     {
+        
+        std::cout << "Get First Block height: " << currentHeight << std::endl;
+
         walleve::CWalleveDbpBlock firstBlock;
         CreateDbpBlock(startBlock,forkHash,currentHeight,firstBlock);
         blocks.push_back(firstBlock);
@@ -255,11 +259,16 @@ bool CDbpService::GetBlocks(const uint256& startHash, int32 n, std::vector<walle
         
         for(int i = 0; i < n - 1; ++i)
         {
+            std::cout << "i: " << i << " height: " << nextHeight <<std::endl;
+            
             uint256 nextHash;
             CBlock block;
             if(pService->GetBlockHash(forkHash,nextHeight,nextHash) && 
                 pService->GetBlock(nextHash,block,forkHash,currentHeight))
             {
+                
+                std::cout << "height: " << nextHeight << "success" << std::endl;
+                
                 walleve::CWalleveDbpBlock dbpBlock;
                 CreateDbpBlock(block,forkHash,currentHeight,dbpBlock);
                 blocks.push_back(dbpBlock);
@@ -268,6 +277,7 @@ bool CDbpService::GetBlocks(const uint256& startHash, int32 n, std::vector<walle
             }
             else
             {
+                std::cout << "i: " << i << "break" << std::endl;
                 break;
             }
         }
@@ -276,6 +286,7 @@ bool CDbpService::GetBlocks(const uint256& startHash, int32 n, std::vector<walle
     }
     else
     {
+        std::cout << "GetBlocks return false" << std::endl;
         return false;
     } 
 }
@@ -284,13 +295,17 @@ void CDbpService::HandleGetBlocks(walleve::CWalleveEventDbpMethod& event)
 {
     std::string blockHash = event.data.params["hash"];
     int32 blockNum = boost::lexical_cast<int32>(event.data.params["number"]);
+
+    std::cout << "block hash[service]: " << blockHash << " block number: " << blockNum << std::endl;
     
     std::vector<unsigned char> hashData = walleve::ParseHexString(blockHash);
-    uint256 startBlockHash(hashData);
+    uint256 startBlockHash(hashData);  
 
     std::vector<walleve::CWalleveDbpBlock> blocks;
     if(GetBlocks(startBlockHash,blockNum,blocks))
     {
+        std::cout << "Get Blocks success[service]: " << blocks.size() << std::endl;
+        
         walleve::CWalleveEventDbpMethodResult eventResult(event.session_);
         eventResult.data.id = event.data.id;
         
@@ -303,6 +318,7 @@ void CDbpService::HandleGetBlocks(walleve::CWalleveEventDbpMethod& event)
     }
     else
     {
+        
         walleve::CWalleveEventDbpMethodResult eventResult(event.session_);
         eventResult.data.id = event.data.id;
         eventResult.data.error = "400";

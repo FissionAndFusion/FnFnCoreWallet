@@ -19,6 +19,8 @@ void callback(Client *cl)
 
     HandlePair block_hp;
     lws::GetBlocksArg block_arg;
+    block_arg.set_hash("3a06acc18ea014c383386f9ba86ad9585988685d473e3017bfc711367042ca8c");
+    block_arg.set_number(3);
     google::protobuf::Any *block_any = new google::protobuf::Any();
     block_any->PackFrom(block_arg);
     std::string mehtod_id = cl->SendMethod("getblocks", block_any, block_hp);
