@@ -119,7 +119,7 @@ void CNetwork::ClientFailToConnect(const tcp::endpoint& epRemote)
         WalleveLog("Connect 2 DnSeed server");
         BOOST_FOREACH(const string& seed,NetworkConfig()->vDNSeed)
         {
-            this->AddNewNode(CNetHost(seed,NetworkConfig()->nPort,"dnseed",
+            this->AddNewNode(CNetHost(seed,NetworkConfig()->nDNSeedPort,"dnseed",
                                               boost::any(uint64(network::NODE_NETWORK))));
             
         }

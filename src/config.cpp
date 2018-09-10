@@ -20,6 +20,7 @@ using namespace multiverse;
 #define DEFAULT_RPCPORT                 6812
 #define DEFAULT_TESTNET_RPCPORT         6814
 
+#define DEFAULT_DNSEED_PORT             6816
 #define DEFAULT_MAX_INBOUNDS            125
 #define DEFAULT_MAX_OUTBOUNDS           10
 #define DEFAULT_CONNECT_TIMEOUT         5
@@ -125,6 +126,7 @@ CMvNetworkConfig::CMvNetworkConfig()
     OPTBOOL("listen",fListen,false)
     OPTBOOL("bloom",fBloom,true)
     OPTINT("port",nPortInt,0)
+    OPTINT("dnseedport",nDNSeedPort,DEFAULT_DNSEED_PORT)
     OPTINT("maxconnections",nMaxConnection,DEFAULT_MAX_OUTBOUNDS + DEFAULT_MAX_INBOUNDS)
     OPTUINT("timeout",nConnectTimeout,DEFAULT_CONNECT_TIMEOUT)
     OPTVEC("addnode",vNode)

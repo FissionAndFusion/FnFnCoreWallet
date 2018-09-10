@@ -58,6 +58,8 @@ public:
     std::vector<std::string> vConnectTo;
     std::vector<std::string> vDNSeed;
     unsigned int nMaxTimes2ConnectFail;
+    
+    int nDNSeedPort;
 protected:
     int nPortInt;
     int nMaxConnection;

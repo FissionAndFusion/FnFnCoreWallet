@@ -34,7 +34,10 @@ bool CDNSeed::WalleveHandleInitialize()
 
     //标记为 DNSeedServer
     CMvDBConfig dbConfig(StorageConfig()->strDBHost,StorageConfig()->nDBPort
-                        ,StorageConfig()->strDBName,StorageConfig()->strDBUser,StorageConfig()->strDBPass);
+                        ,/*StorageConfig()->strDBName"dnseed"
+                        ,StorageConfig()->strDBUser,StorageConfig()->strDBPass*/
+                        "dnseed","dnseed","dnseed"
+                        );
     DNSeedService* dns=DNSeedService::getInstance();
     dns->init(dbConfig);
     dns->enableDNSeedServer();
@@ -42,16 +45,16 @@ bool CDNSeed::WalleveHandleInitialize()
     
     CPeerNetConfig config;
     //启动端口监听
-    config.vecService.push_back(CPeerService(tcp::endpoint(tcp::v4(), NetworkConfig()->nPort),
+    config.vecService.push_back(CPeerService(tcp::endpoint(tcp::v4(), NetworkConfig()->nDNSeedPort),
                                                  NetworkConfig()->nMaxInBounds));
     config.nMaxOutBounds = NetworkConfig()->nMaxOutBounds;
-    config.nPortDefault = NetworkConfig()->nPort;
+    config.nPortDefault = NetworkConfig()->nDNSeedPort;
 
     ConfigNetwork(config);
 
     if (!WalleveThreadStart(thrIOProc))
     {
-        WalleveLog("Failed to start iothread\n");
+        WalleveLog("Failed to start filter timer thread\n");
         return false;
     }
 
