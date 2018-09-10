@@ -246,6 +246,7 @@ bool CDbpService::GetBlocks(const uint256& startHash, int32 n, std::vector<walle
     uint256 forkHash;
     int currentHeight;
 
+    std::cout << "HEx string start hash: " << startHash.ToString() << std::endl;
     
     if(pService->GetBlock(startHash,startBlock,forkHash,currentHeight))
     {
@@ -298,8 +299,7 @@ void CDbpService::HandleGetBlocks(walleve::CWalleveEventDbpMethod& event)
 
     std::cout << "block hash[service]: " << blockHash << " block number: " << blockNum << std::endl;
     
-    std::vector<unsigned char> hashData = walleve::ParseHexString(blockHash);
-    uint256 startBlockHash(hashData);  
+    uint256 startBlockHash(blockHash);  
 
     std::vector<walleve::CWalleveDbpBlock> blocks;
     if(GetBlocks(startBlockHash,blockNum,blocks))
