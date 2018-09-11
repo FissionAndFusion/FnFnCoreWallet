@@ -58,7 +58,7 @@ CRPCMod::CRPCMod()
                  ("createtransaction",     &CRPCMod::RPCCreateTransaction)
                  ("signtransaction",       &CRPCMod::RPCSignTransaction)
                  ("signmessage",           &CRPCMod::RPCSignMessage)
-                 ("listalladdresses",      &CRPCMod::RPCListAllAddresses)
+                 ("listaddress",           &CRPCMod::RPCListAddress)
                  ("verifymessage",         &CRPCMod::RPCVerifyMessage)
                  ("makekeypair",           &CRPCMod::RPCMakeKeyPair)
                  ("getpubkeyaddress",      &CRPCMod::RPCGetPubKeyAddress)
@@ -1433,12 +1433,12 @@ Value CRPCMod::RPCSignMessage(const Array& params,bool fHelp)
     return ToHexString(vchSig);
 }
 
-Value CRPCMod::RPCListAllAddresses(const Array& params, bool fHelp)
+Value CRPCMod::RPCListAddress(const Array& params, bool fHelp)
 {
     if (fHelp || params.size() != 0)
     {
         throw runtime_error(
-                "listalladdresses\n"
+                "listaddress\n"
                 "list all of addresses from pub keys and template ids\n");
     }
 
@@ -1517,7 +1517,6 @@ Value CRPCMod::RPCListAllAddresses(const Array& params, bool fHelp)
                     }
                     break;
                 default:
-                    BOOST_ASSERT_MSG(false, "no type of templates matches for this");
                     break;
             }
             ret.push_back(Pair(CMvAddress(des).ToString(), o));

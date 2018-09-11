@@ -87,7 +87,7 @@ private:
     json_spirit::Value RPCCreateTransaction(const json_spirit::Array& params,bool fHelp);
     json_spirit::Value RPCSignTransaction(const json_spirit::Array& params,bool fHelp);
     json_spirit::Value RPCSignMessage(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCListAllAddresses(const json_spirit::Array& params,bool fHelp);
+    json_spirit::Value RPCListAddress(const json_spirit::Array& params,bool fHelp);
     /* Util */
     json_spirit::Value RPCVerifyMessage(const json_spirit::Array& params,bool fHelp);
     json_spirit::Value RPCMakeKeyPair(const json_spirit::Array& params,bool fHelp);
