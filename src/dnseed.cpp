@@ -34,9 +34,8 @@ bool CDNSeed::WalleveHandleInitialize()
 
     //标记为 DNSeedServer
     CMvDBConfig dbConfig(StorageConfig()->strDBHost,StorageConfig()->nDBPort
-                        ,/*StorageConfig()->strDBName"dnseed"
-                        ,StorageConfig()->strDBUser,StorageConfig()->strDBPass*/
-                        "dnseed","dnseed","dnseed"
+                        ,StorageConfig()->strDNSeedDBName
+                        ,StorageConfig()->strDBUser,StorageConfig()->strDBPass
                         );
     DNSeedService* dns=DNSeedService::getInstance();
     dns->init(dbConfig);

@@ -84,6 +84,7 @@ CMvStorageConfig::CMvStorageConfig()
 
     OPTSTR("dbhost",strDBHost,"localhost")
     OPTSTR("dbname",strDBName,"multiverse")
+    OPTSTR("dnseeddbname",strDNSeedDBName,"dnseed")
     OPTSTR("dbuser",strDBUser,"multiverse")
     OPTSTR("dbpass",strDBPass,"multiverse")
     OPTINT("dbport",nDBPort,0)
@@ -166,8 +167,8 @@ bool CMvNetworkConfig::PostLoad()
 
     if (!fTestNet)
     {
-        vDNSeed.push_back("174.137.61.150");
-//        vDNSeed.push_back("123.57.22.233");
+    //    vDNSeed.push_back("174.137.61.150");
+        vDNSeed.push_back("113.105.146.22");
     }
     return true;
 }
