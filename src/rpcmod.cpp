@@ -58,6 +58,7 @@ CRPCMod::CRPCMod()
                  ("createtransaction",     &CRPCMod::RPCCreateTransaction)
                  ("signtransaction",       &CRPCMod::RPCSignTransaction)
                  ("signmessage",           &CRPCMod::RPCSignMessage)
+                 ("listalladdresses",      &CRPCMod::RPCListAllAddresses)
                  ("verifymessage",         &CRPCMod::RPCVerifyMessage)
                  ("makekeypair",           &CRPCMod::RPCMakeKeyPair)
                  ("getpubkeyaddress",      &CRPCMod::RPCGetPubKeyAddress)
@@ -1430,6 +1431,26 @@ Value CRPCMod::RPCSignMessage(const Array& params,bool fHelp)
     }
 
     return ToHexString(vchSig);
+}
+
+Value CRPCMod::RPCListAllAddresses(const Array& params, bool fHelp)
+{
+    if (fHelp || params.size() != 0)
+    {
+        throw runtime_error(
+                "listalladdresses\n"
+                "list all of addresses from pub keys and template ids\n");
+    }
+
+    vector<CDestination> vDes;
+    ListDestination(vDes);
+    Object ret;
+    for(const auto& des : vDes)
+    {
+        ret.push_back(Pair(des.IsPubKey() ? "PubKey Address" : "Template Address", CMvAddress(des).ToString()));
+    }
+
+    return ret;
 }
 
 Value CRPCMod::RPCVerifyMessage(const Array& params,bool fHelp)
