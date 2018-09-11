@@ -9,6 +9,7 @@ CDbpService::CDbpService()
 :walleve::IIOModule("dbpservice")
 {
     pService = NULL;
+    pCoreProtocol = NULL;
     pWallet = NULL;
     pDbpServer = NULL;
 
@@ -29,6 +30,13 @@ CDbpService::~CDbpService()
 
 bool CDbpService::WalleveHandleInitialize()
 {
+    if (!WalleveGetObject("coreprotocol",pCoreProtocol))
+    {
+        WalleveLog("Failed to request coreprotocol\n");
+        return false;
+    }
+    
+    
     if (!WalleveGetObject("service",pService))
     {
         WalleveLog("Failed to request service\n");
@@ -54,6 +62,7 @@ void CDbpService::WalleveHandleDeinitialize()
 {
     pDbpServer = NULL;
     pService = NULL;
+    pCoreProtocol = NULL;
     pWallet = NULL;
 }
 
@@ -247,8 +256,15 @@ bool CDbpService::GetBlocks(const uint256& startHash, int32 n, std::vector<walle
     int currentHeight;
 
     std::cout << "HEx string start hash: " << startHash.ToString() << std::endl;
-    
-    if(pService->GetBlock(startHash,startBlock,forkHash,currentHeight))
+
+    // Get Genesis block if hash is empty
+    uint256 start = startHash;
+    if(startHash.ToString().empty())
+    {
+       start = pCoreProtocol->GetGenesisBlockHash();
+    }
+   
+    if(pService->GetBlock(start,startBlock,forkHash,currentHeight))
     {
         
         std::cout << "Get First Block height: " << currentHeight << std::endl;
@@ -257,6 +273,7 @@ bool CDbpService::GetBlocks(const uint256& startHash, int32 n, std::vector<walle
         CreateDbpBlock(startBlock,forkHash,currentHeight,firstBlock);
         blocks.push_back(firstBlock);
         int nextHeight = currentHeight + 1;
+    
         
         for(int i = 0; i < n - 1; ++i)
         {
@@ -289,7 +306,7 @@ bool CDbpService::GetBlocks(const uint256& startHash, int32 n, std::vector<walle
     {
         std::cout << "GetBlocks return false" << std::endl;
         return false;
-    } 
+    }  
 }
 
 void CDbpService::HandleGetBlocks(walleve::CWalleveEventDbpMethod& event)

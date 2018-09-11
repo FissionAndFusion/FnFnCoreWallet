@@ -49,6 +49,7 @@ private:
 protected:
     walleve::IIOProc *pDbpServer;
     IService *pService;
+    ICoreProtocol *pCoreProtocol;
     IWallet *pWallet;
 private:
     std::map<std::string,std::string> idSubedTopicMap; // id => subed topic
