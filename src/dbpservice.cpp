@@ -312,16 +312,13 @@ bool CDbpService::GetBlocks(const uint256& startHash, int32 n, std::vector<walle
 void CDbpService::HandleGetBlocks(walleve::CWalleveEventDbpMethod& event)
 {
     std::string blockHash = event.data.params["hash"];
-    reverse(blockHash.begin(), blockHash.end());
-    uint256 *startBlockHash = (uint256 *)blockHash.c_str();
+    std::reverse(blockHash.begin(), blockHash.end());
+
     int32 blockNum = boost::lexical_cast<int32>(event.data.params["number"]);
-
-    // std::cout << "block hash[service]: " << blockHash << " block number: " << blockNum << std::endl;
     
-    // uint256 startBlockHash(blockHash);  
-
+    uint256 startBlockHash(std::vector<unsigned char>(blockHash.begin(),blockHash.end()));
     std::vector<walleve::CWalleveDbpBlock> blocks;
-    if(GetBlocks(*startBlockHash,blockNum,blocks))
+    if(GetBlocks(startBlockHash,blockNum,blocks))
     {
         std::cout << "Get Blocks success[service]: " << blocks.size() << std::endl;
         
