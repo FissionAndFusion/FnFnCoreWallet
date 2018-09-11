@@ -730,9 +730,9 @@ void CDbpServer::HandleClientMethod(CDbpClient *pDbpClient,google::protobuf::Any
             return;
         }
 
-        std::cout << "id: " << methodBody.id << "hash: " << 
-            args.hash() << std::endl << "number: " << args.number() << std::endl;
-        
+        // std::cout << "id: " << methodBody.id << "hash: " << 
+        //     args.hash() << std::endl << "number: " << args.number() << std::endl;
+
         methodBody.params.insert(std::make_pair("hash",args.hash())); 
         methodBody.params.insert(std::make_pair("number",boost::lexical_cast<std::string>(args.number())));
     }
@@ -754,17 +754,17 @@ void CDbpServer::HandleClientMethod(CDbpClient *pDbpClient,google::protobuf::Any
     else if(methodBody.method == CWalleveDbpMethod::Method::SEND_TX 
         && methodMsg.params().Is<lws::SendTxArg>())
     {
-        lws::SendTxArg args;
-        methodMsg.params().UnpackTo(&args);
+        // lws::SendTxArg args;
+        // methodMsg.params().UnpackTo(&args);
         
-        if(args.hash().empty())
-        {
-            delete pEventDbpMethod;
-            RespondError(pDbpClient,400,"dbp method [sendtransaction] args hash is empty.");
-            return;
-        }
+        // if(args.hash().empty())
+        // {
+        //     delete pEventDbpMethod;
+        //     RespondError(pDbpClient,400,"dbp method [sendtransaction] args hash is empty.");
+        //     return;
+        // }
         
-        methodBody.params.insert(std::make_pair("hash",args.hash()));
+        // methodBody.params.insert(std::make_pair("hash",args.hash()));
     }   
     else
     {

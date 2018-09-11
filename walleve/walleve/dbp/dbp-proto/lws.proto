@@ -4,18 +4,18 @@ package lws;
 
 message GetBlocksArg 
 {
-    string hash = 1; //起始块hash
+    bytes hash = 1; //起始块hash
     int32 number = 2; //将要获取的最大块数
 }
 
 message GetTxArg
 {
-    string hash = 1; //txid
+    bytes hash = 1; //txid
 }
 
 message SendTxArg
 {
-    string hash = 1; //txid
+    bytes data = 1; //上链的tx数据
 }
 
 message Transaction 
@@ -68,5 +68,7 @@ message Block
 
 message SendTxRet
 {
-    string hash = 1; //txid
+    bytes hash = 1; //上链数据的hash
+    string result = 2; //处理结果 succeed/failed/processing
+    string reason = 3; //错误原因
 }

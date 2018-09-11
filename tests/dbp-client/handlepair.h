@@ -16,6 +16,7 @@ class HandlePair
       HandlePair();
       ~HandlePair();
       std::string GetHex(std::string data);
+      std::string SetHex(std::string data);
       void AddBlock(lws::Block &block);
       void PrintBlock(lws::Block &block);
       void AddTx(lws::Transaction &tx);

@@ -26,6 +26,54 @@ std::string HandlePair::GetHex(std::string data)
     return ret;
 }
 
+std::string HandlePair::SetHex(std::string data)
+{
+    int len = data.length();
+    std::string ret;
+
+    std::map<char, int> c_map = {
+        {'0', 0},
+        {'1', 1},
+        {'2', 2},
+        {'3', 3},
+        {'4', 4},
+        {'5', 5},
+        {'6', 6},
+        {'7', 7},
+        {'8', 8},
+        {'9', 9},
+        {'a', 10},
+        {'b', 11},
+        {'c', 12},
+        {'d', 13},
+        {'e', 14},
+        {'f', 15}
+    };
+
+    unsigned char temp;
+    for(int i = 0; i < len; i++)
+    {
+
+        unsigned char c = data[i];
+        unsigned char t = c_map[c];
+
+        if(0 == i % 2)
+        {
+            temp = 0xff;
+            t = t << 4;
+            temp = temp & t;
+        }
+
+        if(1 == i % 2)
+        {
+            temp = t | temp;
+            ret.push_back(temp);
+        }
+    }
+
+    return ret;
+}
+
 void HandlePair::AddBlock(lws::Block &block)
 {
     PrintBlock(block);
