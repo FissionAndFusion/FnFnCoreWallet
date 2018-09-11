@@ -113,7 +113,6 @@ protected:
 
     CWalleveBufStream ssPingSend;
     CWalleveBufStream ssAddedSend;
-
 };
 
 class CSessionProfile
