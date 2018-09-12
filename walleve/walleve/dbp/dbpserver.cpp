@@ -722,13 +722,6 @@ void CDbpServer::HandleClientMethod(CDbpClient *pDbpClient,google::protobuf::Any
     {
         lws::GetBlocksArg args;
         methodMsg.params().UnpackTo(&args);
-        
-        if(args.hash().empty() || args.number() == 0)
-        {
-            delete pEventDbpMethod;
-            RespondError(pDbpClient,400,"dbp method [getblocks] args hash is empty or number is 0.");
-            return;
-        }
 
         // std::cout << "id: " << methodBody.id << "hash: " << 
         //     args.hash() << std::endl << "number: " << args.number() << std::endl;
