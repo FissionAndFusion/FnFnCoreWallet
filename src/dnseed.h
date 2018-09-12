@@ -40,7 +40,7 @@ protected:
     }
     void IOThreadFunc();
     void IOProcFilter(const boost::system::error_code& err);
-    void filterAddressList();
+    int filterAddressList();
 protected:
     //timer
     walleve::CWalleveThread thrIOProc;

@@ -156,7 +156,7 @@ bool CDNSeed::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CWall
             break;
         case MVPROTO_CMD_DNSEED:
             {   // betwen DNSeed servers change to test
-                std::cout<<"xp [receive] MVPROTO_CMD_DNSEED"<<std::endl;
+                WalleveLog("xp [receive] MVPROTO_CMD_DNSEED");
                 std::vector<CAddress> vAddrs;
                 ssPayload >> vAddrs;
                 DNSeedService::getInstance()->recvAddressList(vAddrs);
@@ -173,7 +173,6 @@ bool CDNSeed::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CWall
 
 bool CDNSeed::HandlePeerHandshaked(CPeer *pPeer,uint32 nTimerId)
 {
-    cout<<"HandlePeerHandshaked()"<<endl;
     CMvPeer *pMvPeer = static_cast<CMvPeer *>(pPeer);
     CancelTimer(nTimerId);
     if (!CheckPeerVersion(pMvPeer->nVersion,pMvPeer->nService,pMvPeer->strSubVer))
@@ -215,15 +214,23 @@ void CDNSeed::IOProcFilter(const boost::system::error_code& err)
 {
     if(!err)
     {
+        int testNum=this->filterAddressList();
          /* restart deadline timer */
-        timerFilter.expires_at(timerFilter.expires_at() + TIMING_FILTER_INTERVAL);
+        boost::posix_time::seconds needTime(testNum);
+        if(needTime<TIMING_FILTER_INTERVAL)
+        {
+            needTime=TIMING_FILTER_INTERVAL;
+        }else{
+           // needTime=needTime;//You can also add a compensation value here
+        }
+        timerFilter.expires_at(timerFilter.expires_at() + needTime);
         timerFilter.async_wait(boost::bind(&CDNSeed::IOProcFilter,this,_1));
 
-        this->filterAddressList();
+        
     }
 }
 
-void CDNSeed::filterAddressList()
+int CDNSeed::filterAddressList()
 {
     std::vector<tcp::endpoint> testList;
     DNSeedService::getInstance()->getAllNodeList4Filter(testList);

@@ -70,7 +70,7 @@ bool CNetwork::WalleveHandleInitialize()
     {
         BOOST_FOREACH(const string& seed,NetworkConfig()->vDNSeed)
         {
-            config.vecNode.push_back(CNetHost(seed,NetworkConfig()->nPort,"dnseed",
+            config.vecNode.push_back(CNetHost(seed,NetworkConfig()->nDNSeedPort,"dnseed",
                                               boost::any(uint64(network::NODE_NETWORK))));
         }
     }
@@ -116,7 +116,7 @@ void CNetwork::ClientFailToConnect(const tcp::endpoint& epRemote)
     this->DispatchEvent(&eventGetPeers); 
     if(eventGetPeers.result.size() == 0 && this->GetCandidateNodeCount()<=0)
     {
-        WalleveLog("Connect 2 DnSeed server");
+        WalleveLog("Connect 2 DnSeed server\n");
         BOOST_FOREACH(const string& seed,NetworkConfig()->vDNSeed)
         {
             this->AddNewNode(CNetHost(seed,NetworkConfig()->nDNSeedPort,"dnseed",
