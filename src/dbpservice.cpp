@@ -259,7 +259,7 @@ bool CDbpService::GetBlocks(const uint256& startHash, int32 n, std::vector<walle
     "0000000000000000000000000000000000000000000000000000000000000000")
     {
        blockHash = pCoreProtocol->GetGenesisBlockHash();
-       std::cout << "empty hash" << std::endl;
+       std::cout << "Genesis Block Hash: " << blockHash.ToString() << std::endl;
     }
 
     uint256 forkHash;
@@ -303,8 +303,6 @@ bool CDbpService::GetBlocks(const uint256& startHash, int32 n, std::vector<walle
 void CDbpService::HandleGetBlocks(walleve::CWalleveEventDbpMethod& event)
 {
     std::string blockHash = event.data.params["hash"];
-    std::reverse(blockHash.begin(), blockHash.end());
-
     int32 blockNum = boost::lexical_cast<int32>(event.data.params["number"]);
     
     uint256 startBlockHash(std::vector<unsigned char>(blockHash.begin(),blockHash.end()));

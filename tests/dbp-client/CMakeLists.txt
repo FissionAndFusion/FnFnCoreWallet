@@ -22,6 +22,7 @@ add_executable(dbpclient ${sources}  ${PROTO_SRCS} ${PROTO_HDRS})
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${Protobuf_INCLUDE_DIRS})
+include_directories(../../walleve)
 
 target_link_libraries(dbpclient
 Boost::system

@@ -8,6 +8,7 @@
 #include "handlepair.h"
 #include "dbp.pb.h"
 #include "lws.pb.h"
+#include "../../crypto/uint256.h"
 
 void callback(Client *cl)
 {
@@ -19,9 +20,10 @@ void callback(Client *cl)
 
     HandlePair block_hp;
     lws::GetBlocksArg block_arg;
-    // block_arg.set_hash("5b1456237a0fe7a1129875b71bd038b8b0ff4d2e2c69f725dda4f501ec8ef9a3");
-   // block_arg.set_hash(block_hp.SetHex("5b1456237a0fe7a1129875b71bd038b8b0ff4d2e2c69f725dda4f501ec8ef9a3"));
-    block_arg.set_hash(std::string());
+    uint256 hash;
+    hash.SetHex("a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0");
+    block_arg.set_hash(std::string(hash.begin(),hash.end()));
+   // block_arg.set_hash(std::string());   
     block_arg.set_number(5);
     google::protobuf::Any *block_any = new google::protobuf::Any();
     block_any->PackFrom(block_arg);
