@@ -252,15 +252,21 @@ bool CDbpService::GetBlocks(const uint256& startHash, int32 n, std::vector<walle
 {
     // Get Genesis block if hash is empty
     uint256 blockHash = startHash;
-    if(blockHash.ToString().empty())
+
+    std::cout << "blockhash: " << blockHash.ToString() << std::endl;
+
+    if(blockHash.ToString() == 
+    "0000000000000000000000000000000000000000000000000000000000000000")
     {
        blockHash = pCoreProtocol->GetGenesisBlockHash();
+       std::cout << "empty hash" << std::endl;
     }
 
     uint256 forkHash;
     int currentHeight = 0;
     if(!pService->GetBlockLocation(blockHash,forkHash,currentHeight)) 
     {
+        std::cout << "block not exists" << std::endl;
         return false;
     }
 
