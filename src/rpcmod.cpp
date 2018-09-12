@@ -58,6 +58,7 @@ CRPCMod::CRPCMod()
                  ("createtransaction",     &CRPCMod::RPCCreateTransaction)
                  ("signtransaction",       &CRPCMod::RPCSignTransaction)
                  ("signmessage",           &CRPCMod::RPCSignMessage)
+                 ("listaddress",           &CRPCMod::RPCListAddress)
                  ("verifymessage",         &CRPCMod::RPCVerifyMessage)
                  ("makekeypair",           &CRPCMod::RPCMakeKeyPair)
                  ("getpubkeyaddress",      &CRPCMod::RPCGetPubKeyAddress)
@@ -1430,6 +1431,99 @@ Value CRPCMod::RPCSignMessage(const Array& params,bool fHelp)
     }
 
     return ToHexString(vchSig);
+}
+
+Value CRPCMod::RPCListAddress(const Array& params, bool fHelp)
+{
+    if (fHelp || params.size() != 0)
+    {
+        throw runtime_error(
+                "listaddress\n"
+                "list all of addresses from pub keys and template ids\n");
+    }
+
+    vector<CDestination> vDes;
+    ListDestination(vDes);
+    Object ret;
+    for(const auto& des : vDes)
+    {
+        if(des.IsPubKey())
+        {
+            Object o;
+            o.push_back(Pair("type", "pubkey"));
+            o.push_back(Pair("pubkey", des.GetHex()));
+            ret.push_back(Pair(CMvAddress(des).ToString(), o));
+        }
+
+        if(des.IsTemplate())
+        {
+            Object o;
+            CTemplateId tid;
+            des.GetTemplateId(tid);
+            CTemplatePtr ptr;
+            uint16 nType = tid.GetType();
+            pService->GetTemplate(tid,ptr);
+            o.push_back(Pair("type", "template"));
+            o.push_back(Pair("template",CTemplateGeneric::GetTypeName(nType)));
+            vector<unsigned char> vchTemplate;
+            ptr->Export(vchTemplate);
+            o.push_back(Pair("hex",ToHexString(vchTemplate)));
+            switch(nType)
+            {
+                case TEMPLATE_WEIGHTED:
+                    {
+                        CTemplateWeighted* p = dynamic_cast<CTemplateWeighted*>(ptr.get());
+                        o.push_back(Pair("sigsrequired", p->nRequired));
+                        Object addresses;
+                        for (const auto& it : p->mapPubKeyWeight)
+                        {
+                            addresses.push_back(Pair(CMvAddress(it.first).ToString(),
+                                                     static_cast<boost::uint64_t>(it.second)));
+                        }
+                        o.push_back(Pair("addresses", addresses));
+                    }
+                    break;
+                case TEMPLATE_MULTISIG:
+                    {
+                        CTemplateMultiSig* p = dynamic_cast<CTemplateMultiSig*>(ptr.get());
+                        o.push_back(Pair("sigsrequired", p->nRequired));
+                        Array addresses;
+                        for (const auto& it : p->mapPubKeyWeight)
+                        {
+                            addresses.push_back(CMvAddress(it.first).ToString());
+                        }
+                        o.push_back(Pair("addresses", addresses));
+                    }
+                    break;
+                case TEMPLATE_FORK:
+                    {
+                        CTemplateFork* p = dynamic_cast<CTemplateFork*>(ptr.get());
+                        o.push_back(Pair("fork", p->hashFork.GetHex()));
+                        o.push_back(Pair("redeem", CMvAddress(p->destRedeem).ToString()));
+                    }
+                    break;
+                case TEMPLATE_MINT:
+                    {
+                        CTemplateMint* p = dynamic_cast<CTemplateMint*>(ptr.get());
+                        o.push_back(Pair("mint", CMvAddress(p->keyMint).ToString()));
+                        o.push_back(Pair("spend", CMvAddress(p->destSpend).ToString()));
+                    }
+                    break;
+                case TEMPLATE_DELEGATE:
+                    {
+                        CTemplateDelegate* p = dynamic_cast<CTemplateDelegate*>(ptr.get());
+                        o.push_back(Pair("delegate", CMvAddress(p->keyDelegate).ToString()));
+                        o.push_back(Pair("owner", CMvAddress(p->destOwner).ToString()));
+                    }
+                    break;
+                default:
+                    break;
+            }
+            ret.push_back(Pair(CMvAddress(des).ToString(), o));
+        }
+    }
+
+    return ret;
 }
 
 Value CRPCMod::RPCVerifyMessage(const Array& params,bool fHelp)
