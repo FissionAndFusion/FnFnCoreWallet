@@ -250,18 +250,18 @@ void CDbpService::PushTopic(const std::string& topic)
 
 bool CDbpService::GetBlocks(const uint256& startHash, int32 n, std::vector<walleve::CWalleveDbpBlock>& blocks)
 {
-    uint256 forkHash;
-    int currentHeight = 0;
-    if(!pService->GetBlockLocation(startHash,forkHash,currentHeight)) 
-    {
-        return false;
-    }
-    
     // Get Genesis block if hash is empty
     uint256 blockHash = startHash;
-    if(startHash.ToString().empty())
+    if(blockHash.ToString().empty())
     {
        blockHash = pCoreProtocol->GetGenesisBlockHash();
+    }
+
+    uint256 forkHash;
+    int currentHeight = 0;
+    if(!pService->GetBlockLocation(blockHash,forkHash,currentHeight)) 
+    {
+        return false;
     }
 
     const std::size_t mainBlockMaxNum = n;
