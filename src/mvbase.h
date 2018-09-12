@@ -177,7 +177,6 @@ public:
     virtual int  GetBlockCount(const uint256& hashFork) = 0;
     virtual bool GetBlockHash(const uint256& hashFork,int nHeight,uint256& hashBlock) = 0;
     virtual bool GetBlock(const uint256& hashBlock,CBlock& block,uint256& hashFork,int& nHeight) = 0;
-    virtual bool GetForksOfBlock(const uint256& hashBlock, std::vector<uint256>& forksHash) = 0;
     virtual void GetTxPool(const uint256& hashFork,std::vector<std::pair<uint256,std::size_t> >& vTxPool) = 0;
     virtual bool GetTransaction(const uint256& txid,CTransaction& tx,uint256& hashFork,int& nHeight) = 0;
     virtual MvErr SendTransaction(CTransaction& tx) = 0;

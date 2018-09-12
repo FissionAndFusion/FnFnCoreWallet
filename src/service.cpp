@@ -269,11 +269,6 @@ bool CService::GetBlock(const uint256& hashBlock,CBlock& block,uint256& hashFork
            && pWorldLine->GetBlockLocation(hashBlock,hashFork,nHeight);
 }
 
-bool CService::GetForksOfBlock(const uint256& hashBlock, std::vector<uint256>& forksHash)
-{
-    return false;
-}
-
 void CService::GetTxPool(const uint256& hashFork,vector<pair<uint256,size_t> >& vTxPool)
 {
     vTxPool.clear();

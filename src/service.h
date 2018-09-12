@@ -37,7 +37,6 @@ public:
     int  GetBlockCount(const uint256& hashFork) override;
     bool GetBlockHash(const uint256& hashFork,int nHeight,uint256& hashBlock) override;
     bool GetBlock(const uint256& hashBlock,CBlock& block,uint256& hashFork,int& nHeight) override;
-    bool GetForksOfBlock(const uint256& hashBlock, std::vector<uint256>& forksHash) override;
 
     void GetTxPool(const uint256& hashFork,std::vector<std::pair<uint256,std::size_t> >& vTxPool) override;
     bool GetTransaction(const uint256& txid,CTransaction& tx,uint256& hashFork,int& nHeight) override;
