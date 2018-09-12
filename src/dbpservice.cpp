@@ -250,63 +250,48 @@ void CDbpService::PushTopic(const std::string& topic)
 
 bool CDbpService::GetBlocks(const uint256& startHash, int32 n, std::vector<walleve::CWalleveDbpBlock>& blocks)
 {
-     // first, find start block from block hash
-    CBlock startBlock;
     uint256 forkHash;
-    int currentHeight;
-
-    std::cout << "HEx string start hash: " << startHash.ToString() << std::endl;
-
+    int currentHeight = 0;
+    if(!pService->GetBlockLocation(startHash,forkHash,currentHeight)) 
+    {
+        return false;
+    }
+    
     // Get Genesis block if hash is empty
-    uint256 start = startHash;
+    uint256 blockHash = startHash;
     if(startHash.ToString().empty())
     {
-       start = pCoreProtocol->GetGenesisBlockHash();
+       blockHash = pCoreProtocol->GetGenesisBlockHash();
     }
-   
-    if(pService->GetBlock(start,startBlock,forkHash,currentHeight))
-    {
-        
-        std::cout << "Get First Block height: " << currentHeight << std::endl;
 
-        walleve::CWalleveDbpBlock firstBlock;
-        CreateDbpBlock(startBlock,forkHash,currentHeight,firstBlock);
-        blocks.push_back(firstBlock);
-        int nextHeight = currentHeight + 1;
-    
-        
-        for(int i = 0; i < n - 1; ++i)
+    const std::size_t mainBlockMaxNum = n;
+    std::size_t mainBlockCount = 0;
+    while(mainBlockCount != mainBlockMaxNum)
+    {
+        CBlock block;
+        if(pService->GetBlock(blockHash,block,forkHash,currentHeight))
         {
-            std::cout << "i: " << i << " height: " << nextHeight <<std::endl;
+            if(block.nType == CBlock::BLOCK_PRIMARY)
+            {
+                mainBlockCount++;
+            }
             
-            uint256 nextHash;
-            CBlock block;
-            if(pService->GetBlockHash(forkHash,nextHeight,nextHash) && 
-                pService->GetBlock(nextHash,block,forkHash,currentHeight))
-            {
-                
-                std::cout << "height: " << nextHeight << "success" << std::endl;
-                
-                walleve::CWalleveDbpBlock dbpBlock;
-                CreateDbpBlock(block,forkHash,currentHeight,dbpBlock);
-                blocks.push_back(dbpBlock);
+            walleve::CWalleveDbpBlock DbpBlock;
+            CreateDbpBlock(block,forkHash,currentHeight,DbpBlock);
+            blocks.push_back(DbpBlock);
 
-                nextHeight = currentHeight + 1;
-            }
-            else
-            {
-                std::cout << "i: " << i << "break" << std::endl;
-                break;
-            }
+            currentHeight = currentHeight + 1;
+
+            if(!pService->GetBlockHash(forkHash,currentHeight,blockHash))   break;
+
         }
-        
-        return true;  
+        else
+        {
+            break;
+        }
     }
-    else
-    {
-        std::cout << "GetBlocks return false" << std::endl;
-        return false;
-    }  
+    
+    return true; 
 }
 
 void CDbpService::HandleGetBlocks(walleve::CWalleveEventDbpMethod& event)
