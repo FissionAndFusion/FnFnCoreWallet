@@ -50,19 +50,8 @@ void CDbpClient::SetSession(const std::string& session)
     session_ = session;
 }
 
-bool CDbpClient::IsEventStream()
-{
-    return fEventStream;
-}
-
-void CDbpClient::SetEventStream()
-{
-    fEventStream = true;
-}
-
 void CDbpClient::Activate()
 {
-    fEventStream = false;
     ssRecv.Clear();
     ssSend.Clear();
     
@@ -1041,7 +1030,6 @@ void CDbpServer::RemoveClient(CDbpClient *pDbpClient)
     CWalleveEventDbpBroken *pEventBroken = new CWalleveEventDbpBroken(pDbpClient->GetNonce());
     if (pEventBroken != NULL)
     {
-        pEventBroken->data.fEventStream = pDbpClient->IsEventStream();
         pDbpClient->GetProfile()->pIOModule->PostEvent(pEventBroken);
     }
     delete pDbpClient;

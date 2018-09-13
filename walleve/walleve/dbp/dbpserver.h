@@ -74,8 +74,6 @@ public:
     std::string GetSession() const;
     void SetSession(const std::string& session);
     
-    bool IsEventStream();
-    void SetEventStream();
     void Activate();
     void SendResponse(CWalleveDbpConnected &body);
     void SendResponse(CWalleveDbpFailed& body);
@@ -107,7 +105,7 @@ protected:
     CDbpProfile *pProfile;
     CIOClient* pClient;
     uint64 nNonce;
-    bool fEventStream;
+  
     CWalleveBufStream ssSend;
     CWalleveBufStream ssRecv;
 
