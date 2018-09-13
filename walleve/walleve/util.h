@@ -156,6 +156,20 @@ inline std::size_t ParseHexString(const std::string& str,unsigned char* p,std::s
     return ParseHexString(str.c_str(),p,n);
 }
 
+#ifdef __GNUG__
+#include <cxxabi.h>
+inline const char* TypeName(const std::type_info& info)
+{
+    int status = 0;
+    return abi::__cxa_demangle(info.name(), 0, 0, &status);
+}
+#else
+inline const char* TypeName(const std::type_info& info)
+{
+    return info.name();
+}
+#endif
+
 } // namespace walleve
 
 #endif //WALLEVE_UTIL_H

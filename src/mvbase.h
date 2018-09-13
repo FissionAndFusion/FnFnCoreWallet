@@ -161,6 +161,7 @@ public:
     /* Notify */
     virtual void NotifyWorldLineUpdate(const CWorldLineUpdate& update) = 0;
     virtual void NotifyNetworkPeerUpdate(const CNetworkPeerUpdate& update) = 0;
+    virtual void NotifyTransactionUpdate(const CTransactionUpdate& update) = 0;
     /* System */
     virtual void Shutdown() = 0;
     /* Network */ 
@@ -208,6 +209,13 @@ public:
     /* Mint */
     virtual bool GetWork(std::vector<unsigned char>& vchWorkData,uint256& hashPrev,uint32& nPrevTime,int& nAlgo,int& nBits) = 0;
     virtual MvErr SubmitWork(const std::vector<unsigned char>& vchWorkData,CTemplatePtr& templMint,crypto::CKey& keyMint,uint256& hashBlock) = 0;
+};
+
+// temporary dummy class for DbpSocket 
+class CDummyDbpSocket : public walleve::IIOModule
+{
+public:
+    CDummyDbpSocket() : IIOModule("dbpservice") {}
 };
 
 } // namespace multiverse

@@ -172,7 +172,12 @@ MvErr CDispatcher::AddNewTx(CTransaction& tx,uint64 nNonce)
     {
         return MV_ERR_SYS_DATABASE_ERROR;
     }
-    
+
+    CTransactionUpdate updateTransaction;
+    updateTransaction.hashFork = hashFork; 
+    updateTransaction.txUpdate = tx;
+    pService->NotifyTransactionUpdate(updateTransaction);
+
     if (!nNonce)
     {
         pNetChannel->BroadcastTxInv(hashFork);
