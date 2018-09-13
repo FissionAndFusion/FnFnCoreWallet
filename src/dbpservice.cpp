@@ -125,11 +125,17 @@ bool CDbpService::HandleEvent(walleve::CWalleveEventDbpSub& event)
     else
     { 
         SubTopic(id,event.session_,topicName);
+
+        std::cout << "subed topic: " << topicName << "id: " 
+        << id << std::endl;
         
-        //reply ready
+        // reply ready
         walleve::CWalleveEventDbpReady eventReady(event.session_);
-        eventReady.data.id = event.data.id;
+        eventReady.data.id = id;
         pDbpServer->DispatchEvent(&eventReady);
+
+        std::cout << "sended ready: " << topicName << "id: " 
+        << id << std::endl;
     }
     
     return true;
