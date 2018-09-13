@@ -15,7 +15,7 @@ void callback(Client *cl)
     HandlePair sub_hp;
     std::string id_all_block = cl->SendSub("all-block", sub_hp);
     usleep(100 * 10);
-    std::string id_all_tx = cl->SendSub("all-tx", sub_hp);
+
     // cl->SendUnsub(id);
 
     HandlePair block_hp;
@@ -35,6 +35,8 @@ void callback(Client *cl)
    // google::protobuf::Any *tx_any = new google::protobuf::Any();
    // tx_any->PackFrom(block_arg);
    // std::string mehtod_id1 = cl->SendMethod("gettransaction", tx_any, tx_hp);
+    HandlePair sub_tx_hp;
+    std::string id_all_tx = cl->SendSub("all-tx", sub_tx_hp);
 }
 
 void run(std::string ip, int port)
