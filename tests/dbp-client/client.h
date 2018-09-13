@@ -19,6 +19,7 @@ class Client
 
     typedef void (*CallBackFn)(Client *cl);
     void SetCallBackFn(CallBackFn cb);
+    void SetMethodCallBackFn(CallBackFn cb);
     void SendConnect(std::string session);
     std::string SendPing();
     void SendPong(std::string id);
@@ -33,6 +34,7 @@ class Client
     void ConnHandler(const boost::system::error_code& ec, std::shared_ptr<boost::asio::ip::tcp::socket> sock);
     void ReadHandler(const boost::system::error_code &ec, std::shared_ptr<boost::asio::ip::tcp::socket> sock);
     void TimerHandler(const boost::system::error_code &ec, std::shared_ptr<boost::asio::ip::tcp::socket> sock);
+    void MethodTimerHandler(const boost::system::error_code &ec, std::shared_ptr<boost::asio::ip::tcp::socket> sock);
     void WriteHandler(boost::shared_ptr<std::string> pstr, const boost::system::error_code &ec, size_t bytes_transferred);
     void ErrorHandler();
     void TestHandle(Client *cl);
@@ -53,8 +55,10 @@ class Client
     std::string client_;
     int version_;
     CallBackFn cb_;
+    CallBackFn method_cb_;
     std::map<std::string, HandlePair> sub_map_;
     std::map<std::string, HandlePair> method_map_;
+    std::shared_ptr<boost::asio::steady_timer> test_timer_;
 
   protected:
 };

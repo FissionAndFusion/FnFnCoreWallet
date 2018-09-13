@@ -200,12 +200,18 @@ void Client::ConnHandler(const boost::system::error_code &ec, std::shared_ptr<bo
 void Client::ErrorHandler()
 {
     m_timer_->cancel();
+    test_timer_->cancel();
     SockConnect();
 }
 
 void Client::SetCallBackFn(CallBackFn cb)
 {
     cb_ = cb;
+}
+
+void Client::SetMethodCallBackFn(CallBackFn cb)
+{
+    method_cb_ = cb;
 }
 
 void Client::TestHandle(Client *cl)
@@ -247,6 +253,9 @@ void Client::ReadHandler(const boost::system::error_code &ec, std::shared_ptr<bo
 
             m_timer_.reset(new boost::asio::steady_timer(m_io_, std::chrono::seconds{timer_expires_}));
             m_timer_->async_wait(boost::bind(&Client::TimerHandler, this, boost::asio::placeholders::error, sock));
+
+            test_timer_.reset(new boost::asio::steady_timer(m_io_, std::chrono::seconds{30}));
+            test_timer_->async_wait(boost::bind(&Client::MethodTimerHandler, this, boost::asio::placeholders::error, sock));
         }
 
         m_io_.post(boost::bind(&Client::TestHandle, this, this));
@@ -371,6 +380,24 @@ void Client::TimerHandler(const boost::system::error_code &ec, std::shared_ptr<b
     m_timer_->expires_from_now(std::chrono::seconds{timer_expires_});
     m_timer_->async_wait(boost::bind(&Client::TimerHandler, this, boost::asio::placeholders::error, sock));
 }
+
+void Client::MethodTimerHandler(const boost::system::error_code &ec, std::shared_ptr<boost::asio::ip::tcp::socket> sock)
+{
+    if(ec)
+    {
+        std::cerr << "[-]cancel test timer" << std::endl;
+        return;
+    }
+
+    if(is_connected_)
+    {
+        method_cb_(this);
+    }
+
+    test_timer_->expires_from_now(std::chrono::seconds{30});
+    test_timer_->async_wait(boost::bind(&Client::MethodTimerHandler, this, boost::asio::placeholders::error, sock));
+}
+
 
 void Client::Run()
 {
