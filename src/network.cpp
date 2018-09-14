@@ -38,8 +38,9 @@ bool CNetwork::WalleveHandleInitialize()
     config.nMaxOutBounds = NetworkConfig()->nMaxOutBounds;
     config.nPortDefault = NetworkConfig()->nPort;
 
-    storage::CMvDBConfig dbConfig(StorageConfig()->strDBHost,StorageConfig()->nDBPort
-                        ,StorageConfig()->strDBName,StorageConfig()->strDBUser,StorageConfig()->strDBPass);
+    storage::CMvDBConfig dbConfig(StorageConfig()->strDBHost,StorageConfig()->nDBPort,
+                                  StorageConfig()->strDBName,StorageConfig()->strDBUser,
+                                  StorageConfig()->strDBPass);
     network::DNSeedService* dns=network::DNSeedService::getInstance();
     dns->init(dbConfig);
     dns->_maxConnectFailTimes=NetworkConfig()->nMaxTimes2ConnectFail;
@@ -82,6 +83,7 @@ bool CNetwork::WalleveHandleInitialize()
 void CNetwork::WalleveHandleDeinitialize()
 {
     network::CMvPeerNet::WalleveHandleDeinitialize();
+    network::DNSeedService::Release();
 }
 
 bool CNetwork::CheckPeerVersion(uint32 nVersionIn,uint64 nServiceIn,const string& subVersionIn)

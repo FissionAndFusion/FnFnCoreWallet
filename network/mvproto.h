@@ -36,8 +36,6 @@ enum
     MVPROTO_CMD_ADDRESS     = 4,
     MVPROTO_CMD_PING        = 5,
     MVPROTO_CMD_PONG        = 6,
-    MVPROTO_CMD_GETDNSEED   = 7,
-    MVPROTO_CMD_DNSEED      = 8
 };
 
 enum

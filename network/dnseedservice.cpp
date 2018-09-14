@@ -1,4 +1,6 @@
-// Copyright (c) 2017-2018 The Multiverse developers xp@fnfn
+// Copyright (c) 2017-2018 The Multiverse developers
+// Distributed under the MIT/X11 software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
 #include "dnseedservice.h"
 
 
@@ -16,9 +18,18 @@ DNSeedService* DNSeedService::getInstance()
 {
     if(p_instance == NULL)
     {
-        p_instance=new DNSeedService();
+        p_instance = new DNSeedService();
     }
     return p_instance;
+}
+
+void DNSeedService::Release()
+{
+    if(p_instance != NULL)
+    {
+        delete p_instance;
+        p_instance = NULL;
+    }
 }
 
 DNSeedService::DNSeedService()

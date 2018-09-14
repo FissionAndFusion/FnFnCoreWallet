@@ -21,7 +21,7 @@ public:
 protected:
     bool WalleveHandleInitialize();
     void WalleveHandleDeinitialize();
-    virtual void ClientFailToConnect(const boost::asio::ip::tcp::endpoint& epRemote)override;
+    void ClientFailToConnect(const boost::asio::ip::tcp::endpoint& epRemote);
     const CMvNetworkConfig * NetworkConfig()
     {
         return dynamic_cast<const CMvNetworkConfig *>(walleve::IWalleveBase::WalleveConfig());

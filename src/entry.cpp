@@ -99,7 +99,9 @@ bool CMvEntry::Initialize(int argc,char *argv[])
     }
 
     // log
-    if ((mvConfig.GetModeType() == EModeType::SERVER || mvConfig.GetModeType() == EModeType::MINER)
+    if ((mvConfig.GetModeType() == EModeType::SERVER 
+        || mvConfig.GetModeType() == EModeType::MINER 
+        || mvConfig.GetModeType() == EModeType::DNSEED)
         && !walleveLog.SetLogFilePath((pathData / "multiverse.log").string()))
     {
         cerr << "Failed to open log file : " << (pathData / "multiverse.log") << "\n";

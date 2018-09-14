@@ -1,3 +1,6 @@
+// Copyright (c) 2017-2018 The Multiverse developers
+// Distributed under the MIT/X11 software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
 #include "dnseed.h"
 #include "version.h"
 #include <boost/bind.hpp>
@@ -33,10 +36,11 @@ bool CDNSeed::WalleveHandleInitialize()
 {
 
     //标记为 DNSeedServer
-    CMvDBConfig dbConfig(StorageConfig()->strDBHost,StorageConfig()->nDBPort
-                        ,StorageConfig()->strDNSeedDBName
-                        ,StorageConfig()->strDBUser,StorageConfig()->strDBPass
-                        );
+    CMvDBConfig dbConfig(StorageConfig()->strDBHost,
+                         StorageConfig()->nDBPort,
+                         StorageConfig()->strDNSeedDBName,
+                         StorageConfig()->strDBUser,
+                         StorageConfig()->strDBPass);
     DNSeedService* dns=DNSeedService::getInstance();
     dns->init(dbConfig);
     dns->enableDNSeedServer();
@@ -63,7 +67,7 @@ bool CDNSeed::WalleveHandleInitialize()
 void CDNSeed::WalleveHandleDeinitialize()
 {
     network::CMvPeerNet::WalleveHandleDeinitialize();
-   
+    DNSeedService::Release();
 }
 
 bool CDNSeed::CheckPeerVersion(uint32 nVersionIn,uint64 nServiceIn,const std::string& subVersionIn)
@@ -138,7 +142,7 @@ bool CDNSeed::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CWall
     {
         switch (nCommand)
         {
-        case MVPROTO_CMD_GETDNSEED:
+        case MVPROTO_CMD_GETADDRESS:
             {
                 tcp::endpoint ep(pMvPeer->GetRemote().address(),NetworkConfig()->nPort);
                 DNSeedService* dns=DNSeedService::getInstance();
@@ -146,17 +150,17 @@ bool CDNSeed::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CWall
                 dns->addNode(ep,true);
                 std::vector<CAddress> vAddrs;
                 dns->getSendAddressList(vAddrs);
-                WalleveLog(" MVPROTO_CMD_GETDNSEED[%s:%d] height:%d  sendNum:%d\n",
+                WalleveLog(" MVPROTO_CMD_GETADDRESS[%s:%d] height:%d  sendNum:%d\n",
                             ep.address().to_string().c_str(),ep.port(),pMvPeer->nStartingHeight,vAddrs.size());
                 
                 CWalleveBufStream ss;
                 ss << vAddrs;
-                return pMvPeer->SendMessage(MVPROTO_CHN_NETWORK,MVPROTO_CMD_DNSEED,ss);
+                return pMvPeer->SendMessage(MVPROTO_CHN_NETWORK,MVPROTO_CMD_ADDRESS,ss);
             }
             break;
-        case MVPROTO_CMD_DNSEED:
+        case MVPROTO_CMD_ADDRESS:
             {   // betwen DNSeed servers change to test
-                WalleveLog("xp [receive] MVPROTO_CMD_DNSEED");
+                WalleveLog("xp [receive] MVPROTO_CMD_ADDRESS");
                 std::vector<CAddress> vAddrs;
                 ssPayload >> vAddrs;
                 DNSeedService::getInstance()->recvAddressList(vAddrs);

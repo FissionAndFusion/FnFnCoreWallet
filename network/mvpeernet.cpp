@@ -305,6 +305,8 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                 if (setDNSeed.count(ep_))
                 {
                     RemoveNode(ep_);
+                    RemovePeer(pMvPeer,CEndpointManager::CloseReason::HOST_CLOSE);
+                    DNSeedService::getInstance()->recvAddressList(vAddr);
                 }else 
                 {
                     DNSeedService::getInstance()->addNode(ep_);
@@ -317,32 +319,6 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
             break;
         case MVPROTO_CMD_PONG:
             return true;
-            break;
-        // case MVPROTO_CMD_GETDNSEED:
-        //     break;
-        case MVPROTO_CMD_DNSEED:
-            {
-                WalleveLog("[receive] MVPROTO_CMD_DNSEED\n");
-                std::vector<CAddress> vAddrs;
-                ssPayload >> vAddrs;
-                DNSeedService::getInstance()->recvAddressList(vAddrs);
-                
-                std::vector<tcp::endpoint> eplist;
-                DNSeedService::getInstance()->getLocalConnectAddressList(eplist);
-                for(size_t i=0;i<eplist.size();i++)
-                {
-                    tcp::endpoint &cep=eplist[i];
-                    WalleveLog("[dnseed] %s:%d\n",cep.address().to_string().c_str(),cep.port());
-                    AddNewNode(CNetHost(cep,cep.address().to_string(),boost::any(uint64(network::NODE_NETWORK))));
-                }
-                //断开当前节点并移除
-                if(eplist.size()>0) 
-                {
-                    RemoveNode(pMvPeer->GetRemote());
-                    RemovePeer(pMvPeer,CEndpointManager::CloseReason::HOST_CLOSE);
-                }
-                return true;
-            }   
             break;
         default:
             break;

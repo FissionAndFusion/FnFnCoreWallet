@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The Multiverse developers xp
+// Copyright (c) 2017-2018 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 #ifndef __DNSEED_SERVER__
@@ -21,9 +21,9 @@ class DNSeedService
 {
 public: 
     static DNSeedService* getInstance();
+    static void Release();
     ~DNSeedService(){}
 public:
-
     bool init(storage::CMvDBConfig & config);
     bool isDNSeedService(){return _isDNSeedServiceNode;}
     void enableDNSeedServer();
@@ -74,9 +74,6 @@ private:
         _rdmNumber.insert(newNum);
         return newNum;
     }
-
-//advanced
-    //定时任务
 
 };
 }

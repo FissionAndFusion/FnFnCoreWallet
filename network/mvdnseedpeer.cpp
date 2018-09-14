@@ -30,7 +30,7 @@ bool CMvDNSeedPeer::HandshakeCompletd()
      {
          ((CMvPeerNet*)pPeerNet)->dnseedTestConnSuccess(this);
      }else{
-         SendMessage(MVPROTO_CHN_NETWORK,MVPROTO_CMD_GETDNSEED);     
+         SendMessage(MVPROTO_CHN_NETWORK,MVPROTO_CMD_GETADDRESS);     
      }
      
     return true;

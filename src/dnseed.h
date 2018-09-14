@@ -1,3 +1,6 @@
+// Copyright (c) 2017-2018 The Multiverse developers
+// Distributed under the MIT/X11 software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
 #ifndef MULTIVERSE_DNSEED_H
 #define MULTIVERSE_DNSEED_H
 
@@ -25,7 +28,7 @@ public:
 protected:
     bool WalleveHandleInitialize();
     void WalleveHandleDeinitialize();
-    virtual void ClientFailToConnect(const boost::asio::ip::tcp::endpoint& epRemote)override;
+    void ClientFailToConnect(const boost::asio::ip::tcp::endpoint& epRemote)override;
     virtual void DestroyPeer(walleve::CPeer* pPeer) override;
     virtual void ProcessAskFor(walleve::CPeer* pPeer) override;
     virtual walleve::CPeer* CreatePeer(walleve::CIOClient *pClient,uint64 nNonce,bool fInBound)override;
