@@ -21,9 +21,9 @@ public:
     CMvPeer(walleve::CPeerNet *pPeerNetIn, walleve::CIOClient* pClientIn,uint64 nNonceIn,
             bool fInBoundIn,uint32 nMsgMagicIn,uint32 nHsTimerIdIn);
     ~CMvPeer();
-    virtual void Activate();
-    virtual bool IsHandshaked();
-    virtual bool SendMessage(int nChannel,int nCommand,walleve::CWalleveBufStream& ssPayload);
+    void Activate();
+    bool IsHandshaked();
+    bool SendMessage(int nChannel,int nCommand,walleve::CWalleveBufStream& ssPayload);
     bool SendMessage(int nChannel,int nCommand)
     {
         walleve::CWalleveBufStream ssPayload;
@@ -34,14 +34,14 @@ public:
     void AskFor(const uint256& hashFork,std::vector<CInv>& vInv);
     bool FetchAskFor(uint256& hashFork,CInv& inv);
 protected:
-    virtual void SendHello();
-    virtual void SendHelloAck();
-    virtual bool ParseMessageHeader();
-    virtual bool HandshakeReadHeader();
-    virtual bool HandshakeReadCompletd();
-    virtual bool HandshakeCompletd();
-    virtual bool HandleReadHeader();
-    virtual bool HandleReadCompleted();
+    void SendHello();
+    void SendHelloAck();
+    bool ParseMessageHeader();
+    bool HandshakeReadHeader();
+    bool HandshakeReadCompletd();
+    bool HandshakeCompletd();
+    bool HandleReadHeader();
+    bool HandleReadCompleted();
 public:
     int nVersion;
     uint64 nService;

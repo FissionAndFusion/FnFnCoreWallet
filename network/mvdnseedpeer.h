@@ -21,7 +21,7 @@ public:
     
 protected:
 
-    virtual bool HandshakeCompletd()override;
+    bool HandshakeCompletd();
 
 
 };
