@@ -138,7 +138,7 @@ MvErr CMvCoreProtocol::ValidateTransaction(const CTransaction& tx)
     return MV_OK;
 }
 
-MvErr CMvCoreProtocol::ValidateBlock(CBlock& block)
+MvErr CMvCoreProtocol::ValidateBlock(const CBlock& block)
 {
     // These are checks that are independent of context
     // Check timestamp
@@ -178,7 +178,7 @@ MvErr CMvCoreProtocol::ValidateBlock(CBlock& block)
         return DEBUG(MV_ERR_BLOCK_DUPLICATED_TRANSACTION,"duplicate tx\n");
     }
 
-    BOOST_FOREACH(CTransaction& tx,block.vtx)
+    BOOST_FOREACH(const CTransaction& tx,block.vtx)
     {
         if (tx.IsMintTx() || ValidateTransaction(tx) != MV_OK)
         {
@@ -193,14 +193,14 @@ MvErr CMvCoreProtocol::ValidateBlock(CBlock& block)
     return MV_OK;
 }
 
-MvErr CMvCoreProtocol::VerifyBlock(CBlock& block,CBlockIndex* pIndexPrev)
+MvErr CMvCoreProtocol::VerifyBlock(const CBlock& block,CBlockIndex* pIndexPrev)
 {
     (void)block;
     (void)pIndexPrev;
     return MV_OK;
 }
 
-MvErr CMvCoreProtocol::VerifyBlockTx(CTransaction& tx,CTxContxt& txContxt,CBlockIndex* pIndexPrev)
+MvErr CMvCoreProtocol::VerifyBlockTx(const CTransaction& tx,const CTxContxt& txContxt,CBlockIndex* pIndexPrev)
 {
     (void)tx;
     (void)txContxt;
@@ -208,7 +208,7 @@ MvErr CMvCoreProtocol::VerifyBlockTx(CTransaction& tx,CTxContxt& txContxt,CBlock
     return MV_OK;
 }
 
-MvErr CMvCoreProtocol::VerifyTransaction(CTransaction& tx,const vector<CTxOutput>& vPrevOutput,int nForkHeight)
+MvErr CMvCoreProtocol::VerifyTransaction(const CTransaction& tx,const vector<CTxOutput>& vPrevOutput,int nForkHeight)
 {
     CDestination destIn = vPrevOutput[0].destTo;
     int64 nValueIn = 0;

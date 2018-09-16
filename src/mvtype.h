@@ -113,6 +113,15 @@ public:
     CTransaction txUpdate;
 };
 
+class CDelegateRoutine
+{
+public:
+    std::vector<CTransaction> vEnrollTx;
+    bool fPublishCompleted;
+public:
+    CDelegateRoutine() : fPublishCompleted(false) {}
+};
+
 /* Proof */
 /*
 class CMPSSProof

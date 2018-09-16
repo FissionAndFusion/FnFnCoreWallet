@@ -3,6 +3,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "worldline.h"
+#include "mvdelegatecomm.h"
 
 using namespace std;
 using namespace walleve;
@@ -190,7 +191,7 @@ bool CWorldLine::FilterTx(CTxFilter& filter)
     return cntrBlock.FilterTx(filter);
 }
 
-MvErr CWorldLine::AddNewBlock(CBlock& block,CWorldLineUpdate& update)
+MvErr CWorldLine::AddNewBlock(const CBlock& block,CWorldLineUpdate& update)
 {
     uint256 hash = block.GetHash();
     MvErr err = MV_OK;
@@ -236,7 +237,7 @@ MvErr CWorldLine::AddNewBlock(CBlock& block,CWorldLineUpdate& update)
 
     vTxContxt.reserve(block.vtx.size());
 
-    BOOST_FOREACH(CTransaction& tx,block.vtx)
+    BOOST_FOREACH(const CTransaction& tx,block.vtx)
     {
         uint256 txid = tx.GetHash();
         CTxContxt txContxt;
@@ -318,6 +319,57 @@ bool CWorldLine::GetBlockLocator(const uint256& hashFork,CBlockLocator& locator)
 bool CWorldLine::GetBlockInv(const uint256& hashFork,const CBlockLocator& locator,vector<uint256>& vBlockHash,size_t nMaxCount)
 {
     return cntrBlock.GetForkBlockInv(hashFork,locator,vBlockHash,nMaxCount);
+}
+
+bool CWorldLine::GetBlockDelegateEnrolled(const uint256& hashBlock,map<CDestination,size_t>& mapWeight,
+                                                                   map<CDestination,vector<unsigned char> >& mapEnrollData)
+{
+    mapWeight.clear();
+    mapEnrollData.clear();
+
+    CBlockIndex* pIndex;
+    if (!cntrBlock.RetrieveIndex(hashBlock,&pIndex))
+    {
+        WalleveLog("GetBlockDelegateEnrolled : Retrieve block Index Error: %s \n",hashBlock.ToString().c_str());
+        return false;
+    }
+    int64 nDelegateWeightRatio = pIndex->GetMoneySupply() / DELEGATE_THRESH;
+
+    if (pIndex->GetBlockHeight() < MV_CONSENSUS_ENROLL_INTERVAL)
+    {
+        return true;
+    }
+    for (int i = 0;i < MV_CONSENSUS_ENROLL_INTERVAL;i++)
+    {
+        pIndex = pIndex->pPrev;
+    }
+    
+    map<CDestination,int64> mapDelegate;
+    if (!cntrBlock.RetrieveDelegate(hashBlock,nDelegateWeightRatio,mapDelegate))
+    {
+        WalleveLog("GetBlockDelegateEnrolled : Retrieve Delegate Error: %s \n",hashBlock.ToString().c_str());
+        return false;
+    }
+
+    map<CDestination,vector<unsigned char> > mapEnrollDataAll;
+    if (!cntrBlock.RetrieveEnroll(pIndex->GetBlockHash(),hashBlock,mapEnrollDataAll))
+    {
+        WalleveLog("GetBlockDelegateEnrolled : Retrieve Enroll Error: %s \n",hashBlock.ToString().c_str());
+        return false;
+    }
+
+    for (map<CDestination,int64>::iterator it = mapDelegate.begin();it != mapDelegate.end();++it)
+    {
+        const CDestination& dest = (*it).first;
+        map<CDestination,vector<unsigned char> >::iterator mi = mapEnrollDataAll.find(dest);
+        if (mi != mapEnrollDataAll.end())
+        {
+            mapWeight.insert(make_pair(dest,size_t((*it).second / nDelegateWeightRatio)));
+            mapEnrollData.insert((*mi));
+        }
+    }
+
+    return true;
 }
 
 bool CWorldLine::CheckContainer()

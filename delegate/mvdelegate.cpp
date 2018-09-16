@@ -27,7 +27,6 @@ bool CMvDelegate::Initialize()
 
 void CMvDelegate::Deinitialize()
 {
-    setDelegate.clear();
     mapVote.clear(); 
 }
 
