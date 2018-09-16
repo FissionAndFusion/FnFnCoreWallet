@@ -98,7 +98,7 @@ public:
 class IConsensus : public walleve::IWalleveBase
 {
 public:
-    IConsensus() : IWalleveBase("consesus") {}
+    IConsensus() : IWalleveBase("consensus") {}
     const CMvMintConfig * MintConfig()
     {
         return dynamic_cast<const CMvMintConfig *>(walleve::IWalleveBase::WalleveConfig());
