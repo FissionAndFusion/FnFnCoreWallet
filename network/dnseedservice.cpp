@@ -201,16 +201,17 @@ storage::SeedNode * DNSeedService::findSeedNode(const boost::asio::ip::tcp::endp
     return NULL;
 }
 
-void DNSeedService::addNode(boost::asio::ip::tcp::endpoint& ep,bool forceAdd)
+bool DNSeedService::addNode(boost::asio::ip::tcp::endpoint& ep,bool forceAdd)
 {
     SeedNode * sn=this->findSeedNode(ep);
     if(sn)
     {
         this->goodNode(sn);
+        return true;
     }
     else
     {
-        this->add2list(ep,forceAdd);
+        return this->add2list(ep,forceAdd);
     }
 }
 

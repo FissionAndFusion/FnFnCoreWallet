@@ -39,9 +39,9 @@ protected:
     bool ParseMessageHeader();
     bool HandshakeReadHeader();
     bool HandshakeReadCompletd();
-    bool HandshakeCompletd();
+    virtual bool HandshakeCompletd();
     bool HandleReadHeader();
-    bool HandleReadCompleted();
+    virtual bool HandleReadCompleted();
 public:
     int nVersion;
     uint64 nService;

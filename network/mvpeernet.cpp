@@ -305,12 +305,8 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                 if (setDNSeed.count(ep_))
                 {
                     RemoveNode(ep_);
-                    RemovePeer(pMvPeer,CEndpointManager::CloseReason::HOST_CLOSE);
-                    DNSeedService::getInstance()->recvAddressList(vAddr);
-                }else 
-                {
-                    DNSeedService::getInstance()->addNode(ep_);
-                }
+                } 
+                
                 return true;
             }
             break;

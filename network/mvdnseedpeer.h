@@ -20,8 +20,8 @@ public:
     ~CMvDNSeedPeer();
     
 protected:
-
-    bool HandshakeCompletd();
+    virtual bool HandshakeCompletd()override;
+    virtual bool HandleReadCompleted()override;
 
 
 };

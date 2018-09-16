@@ -19,7 +19,6 @@ CMvStorageConfig::CMvStorageConfig()
     AddOpt<std::string>(desc, "dbpass", strDBPass, "multiverse");
     AddOpt<int>(desc, "dbport", nDBPort, 0);
     AddOpt<int>(desc, "dbconn", nDBConn, DEFAULT_DB_CONNECTION);
-    AddOpt<std::string>(desc, "dnseeddbname", strDNSeedDBName, "dnseed");
 
     AddOptions(desc);
 }

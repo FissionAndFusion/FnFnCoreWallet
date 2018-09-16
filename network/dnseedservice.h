@@ -36,7 +36,7 @@ public:
     void getAllNodeList4Filter(std::vector<boost::asio::ip::tcp::endpoint> &epList);
     void resetNewNodeList();
     storage::SeedNode * findSeedNode(const boost::asio::ip::tcp::endpoint& ep);
-    void addNode(boost::asio::ip::tcp::endpoint& ep,bool forceAdd=false);
+    bool addNode(boost::asio::ip::tcp::endpoint& ep,bool forceAdd=false);
     void goodNode(storage::SeedNode* node);
     //Return result: whether to remove from the list 
     bool badNode(storage::SeedNode* node);

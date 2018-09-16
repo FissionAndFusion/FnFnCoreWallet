@@ -26,7 +26,7 @@ public:
     std::string strDBPass;
     int nDBPort;
     int nDBConn;
-    std::string strDNSeedDBName;
+
 };
 
 }  // namespace multiverse

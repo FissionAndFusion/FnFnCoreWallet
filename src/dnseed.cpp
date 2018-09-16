@@ -38,7 +38,7 @@ bool CDNSeed::WalleveHandleInitialize()
     //标记为 DNSeedServer
     CMvDBConfig dbConfig(StorageConfig()->strDBHost,
                          StorageConfig()->nDBPort,
-                         StorageConfig()->strDNSeedDBName,
+                         StorageConfig()->strDBName,
                          StorageConfig()->strDBUser,
                          StorageConfig()->strDBPass);
     DNSeedService* dns=DNSeedService::getInstance();
@@ -147,10 +147,12 @@ bool CDNSeed::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CWall
                 tcp::endpoint ep(pMvPeer->GetRemote().address(),NetworkConfig()->nPort);
                 DNSeedService* dns=DNSeedService::getInstance();
                 //In order to facilitate the rapid formation of early network, all nodes connected to DNseed are considered as tested nodes.
-                dns->addNode(ep,true);
+                bool rzt=dns->addNode(ep,true);
+
                 std::vector<CAddress> vAddrs;
                 dns->getSendAddressList(vAddrs);
-                WalleveLog(" MVPROTO_CMD_GETADDRESS[%s:%d] height:%d  sendNum:%d\n",
+                WalleveLog(" MVPROTO_CMD_GETADDRESS [addnode:%d][%s:%d] height:%d  sendNum:%d\n",
+                            (int)rzt,
                             ep.address().to_string().c_str(),ep.port(),pMvPeer->nStartingHeight,vAddrs.size());
                 
                 CWalleveBufStream ss;

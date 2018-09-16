@@ -35,3 +35,28 @@ bool CMvDNSeedPeer::HandshakeCompletd()
      
     return true;
 }
+
+bool CMvDNSeedPeer::HandleReadCompleted()
+{
+    //CMvPeer::HandleReadCompleted();
+    CWalleveBufStream& ss = ReadStream();
+    uint256 hash = multiverse::crypto::CryptoHash(ss.GetData(),ss.GetSize());
+    if (hdrRecv.nPayloadChecksum == hash.Get32())
+    {
+        try
+        {
+            if (((CMvPeerNet*)pPeerNet)->HandlePeerRecvMessage(this,hdrRecv.GetChannel(),hdrRecv.GetCommand(),ss))
+            {
+                Read(MESSAGE_HEADER_SIZE,boost::bind(&CMvDNSeedPeer::HandleReadHeader,this));
+                if(hdrRecv.GetChannel()==MVPROTO_CHN_NETWORK && hdrRecv.GetCommand()==MVPROTO_CMD_GETADDRESS)
+                {
+                    ((CMvPeerNet*)pPeerNet)->RemoveNode(this->GetRemote());//
+                }
+                return true;
+            }
+        }
+        catch (...)
+        {}
+    }
+    return false;
+}
