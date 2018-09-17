@@ -256,6 +256,13 @@ void CDbpService::UnSubTopic(const std::string& id)
     idSubedSessionMap.erase(id);
 }
 
+bool CDbpService::IsEmpty(const uint256& hash)
+{
+    static const std::string EMPTY_HASH
+    ("0000000000000000000000000000000000000000000000000000000000000000");
+    return hash.ToString() == EMPTY_HASH;
+}
+
 bool CDbpService::GetBlocks(const uint256& startHash, int32 n, std::vector<walleve::CWalleveDbpBlock>& blocks)
 {
     // Get Genesis block if hash is empty
@@ -263,8 +270,7 @@ bool CDbpService::GetBlocks(const uint256& startHash, int32 n, std::vector<walle
 
     std::cout << "blockhash: " << blockHash.ToString() << std::endl;
 
-    if(blockHash.ToString() == 
-    "0000000000000000000000000000000000000000000000000000000000000000")
+    if(IsEmpty(blockHash))
     {
        blockHash = pCoreProtocol->GetGenesisBlockHash();
        std::cout << "Genesis Block Hash: " << blockHash.ToString() << std::endl;

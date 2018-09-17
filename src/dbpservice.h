@@ -35,6 +35,7 @@ private:
     int blockHeight,walleve::CWalleveDbpBlock& block);
     void CreateDbpTransaction(const CTransaction& tx,walleve::CWalleveDbpTransaction& dbptx);
     bool GetBlocks(const uint256& startHash, int32 n, std::vector<walleve::CWalleveDbpBlock>& blocks);
+    bool IsEmpty(const uint256& hash);
     void HandleGetBlocks(walleve::CWalleveEventDbpMethod& event);
     void HandleGetTransaction(walleve::CWalleveEventDbpMethod& event);
     void HandleSendTransaction(walleve::CWalleveEventDbpMethod& event);
