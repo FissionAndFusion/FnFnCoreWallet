@@ -256,11 +256,6 @@ void CDbpService::UnSubTopic(const std::string& id)
     idSubedSessionMap.erase(id);
 }
 
-void CDbpService::PushTopic(const std::string& topic)
-{
-    
-}
-
 bool CDbpService::GetBlocks(const uint256& startHash, int32 n, std::vector<walleve::CWalleveDbpBlock>& blocks)
 {
     // Get Genesis block if hash is empty
@@ -434,6 +429,43 @@ void CDbpService::CreateDbpTransaction(const CTransaction& tx,walleve::CWalleveD
     tx.GetHash().ToDataStream(hashStream);
 }
 
+void CDbpService::PushBlock(const walleve::CWalleveDbpBlock& block)
+{
+    for(const auto& kv : idSubedSessionMap)
+    {
+        std::string id = kv.first;
+        std::string session = kv.second;
+
+        if(subedAllBlocksIds.find(id) != subedAllBlocksIds.end())
+        {
+            walleve::CWalleveEventDbpAdded eventAdded(session);
+            eventAdded.data.id = id;
+            eventAdded.data.name = "all-block";
+            eventAdded.data.anyAddedObj = block;
+            pDbpServer->DispatchEvent(&eventAdded);
+        }
+
+    }
+}
+
+void CDbpService::PushTx(const walleve::CWalleveDbpTransaction& dbptx)
+{
+    for(const auto& kv : idSubedSessionMap)
+    {
+        std::string id = kv.first;
+        std::string session = kv.second;
+
+        if(subedAllTxIdIds.find(id) != subedAllTxIdIds.end())
+        {
+            walleve::CWalleveEventDbpAdded eventAdded(session);
+            eventAdded.data.id = id;
+            eventAdded.data.name = "all-tx";
+            eventAdded.data.anyAddedObj = dbptx;
+            pDbpServer->DispatchEvent(&eventAdded);
+        }
+    }
+}
+
 bool CDbpService::HandleEvent(CMvEventDbpUpdateNewBlock& event)
 {
     // get details about new block
@@ -446,24 +478,9 @@ bool CDbpService::HandleEvent(CMvEventDbpUpdateNewBlock& event)
     {
         walleve::CWalleveDbpBlock block;
         CreateDbpBlock(newBlock,forkHash,blockHeight,block);
-
-        // push new block to dbpclient when new-block-event comes 
-        for(const auto& kv : idSubedSessionMap)
-        {
-            std::string id = kv.first;
-            std::string session = kv.second;
-
-            if(subedAllBlocksIds.find(id) != subedAllBlocksIds.end())
-            {
-                walleve::CWalleveEventDbpAdded eventAdded(session);
-                eventAdded.data.id = id;
-                eventAdded.data.name = "all-block";
-                eventAdded.data.anyAddedObj = block;
-                pDbpServer->DispatchEvent(&eventAdded);
-            }
-
-        }
+        PushBlock(block);
     } 
+    
     return true;
 }
 
@@ -473,22 +490,7 @@ bool CDbpService::HandleEvent(CMvEventDbpUpdateNewTx& event)
 
     walleve::CWalleveDbpTransaction dbpTx;
     CreateDbpTransaction(newtx,dbpTx);
-
-    // push new tx to dbpclient when new-tx-event comes
-    for(const auto& kv : idSubedSessionMap)
-    {
-        std::string id = kv.first;
-        std::string session = kv.second;
-
-        if(subedAllTxIdIds.find(id) != subedAllTxIdIds.end())
-        {
-            walleve::CWalleveEventDbpAdded eventAdded(session);
-            eventAdded.data.id = id;
-            eventAdded.data.name = "all-tx";
-            eventAdded.data.anyAddedObj = dbpTx;
-            pDbpServer->DispatchEvent(&eventAdded);
-        }
-    }
+    PushTx(dbpTx);
 
     return true;
 }

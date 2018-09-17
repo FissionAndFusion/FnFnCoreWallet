@@ -45,7 +45,8 @@ private:
     void SubTopic(const std::string& id, const std::string& session, const std::string& topic);
     void UnSubTopic(const std::string& id);
 
-    void PushTopic(const std::string& topic);
+    void PushBlock(const walleve::CWalleveDbpBlock& block);
+    void PushTx(const walleve::CWalleveDbpTransaction& dbptx);
 protected:
     walleve::IIOProc *pDbpServer;
     IService *pService;
