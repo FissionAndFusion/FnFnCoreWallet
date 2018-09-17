@@ -280,29 +280,21 @@ bool CDbpService::GetBlocks(const uint256& startHash, int32 n, std::vector<walle
 
     const std::size_t mainBlockMaxNum = n;
     std::size_t mainBlockCount = 0;
-    while(mainBlockCount != mainBlockMaxNum)
+    while(mainBlockCount != mainBlockMaxNum
+    && pService->GetBlockHash(forkHash,currentHeight,blockHash))
     {
         CBlock block;
-        if(pService->GetBlock(blockHash,block,forkHash,currentHeight))
+        pService->GetBlock(blockHash,block,forkHash,currentHeight);
+        if(block.nType == CBlock::BLOCK_PRIMARY)
         {
-            if(block.nType == CBlock::BLOCK_PRIMARY)
-            {
-                mainBlockCount++;
-            }
-            
-            walleve::CWalleveDbpBlock DbpBlock;
-            CreateDbpBlock(block,forkHash,currentHeight,DbpBlock);
-            blocks.push_back(DbpBlock);
-
-            currentHeight = currentHeight + 1;
-
-            if(!pService->GetBlockHash(forkHash,currentHeight,blockHash))   break;
-
+            mainBlockCount++;
         }
-        else
-        {
-            break;
-        }
+        
+        walleve::CWalleveDbpBlock DbpBlock;
+        CreateDbpBlock(block,forkHash,currentHeight,DbpBlock);
+        blocks.push_back(DbpBlock);
+        
+        currentHeight++;
     }
     
     return true; 
