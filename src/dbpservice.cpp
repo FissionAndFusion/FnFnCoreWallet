@@ -242,7 +242,7 @@ void CDbpService::SubTopic(const std::string& id, const std::string& session,con
     idSubedTopicMap.insert(std::make_pair(id,topic));
 
     if(topic == "all-block") subedAllBlocksIds.insert(id);
-    if(topic == "all-tx") subedAllTxIdIds.insert(id);
+    if(topic == "all-tx") subedAllTxIds.insert(id);
 
     idSubedSessionMap.insert(std::make_pair(id,session));
 }
@@ -250,7 +250,7 @@ void CDbpService::SubTopic(const std::string& id, const std::string& session,con
 void CDbpService::UnSubTopic(const std::string& id)
 { 
     subedAllBlocksIds.erase(id);
-    subedAllTxIdIds.erase(id);
+    subedAllTxIds.erase(id);
     
     idSubedTopicMap.erase(id);
     idSubedSessionMap.erase(id);
@@ -451,7 +451,7 @@ void CDbpService::PushTx(const walleve::CWalleveDbpTransaction& dbptx)
         std::string id = kv.first;
         std::string session = kv.second;
 
-        if(subedAllTxIdIds.find(id) != subedAllTxIdIds.end())
+        if(subedAllTxIds.find(id) != subedAllTxIds.end())
         {
             walleve::CWalleveEventDbpAdded eventAdded(session);
             eventAdded.data.id = id;
