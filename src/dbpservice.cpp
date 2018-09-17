@@ -216,7 +216,13 @@ void CDbpService::HandleSendTransaction(walleve::CWalleveEventDbpMethod& event)
     {
         walleve::CWalleveEventDbpMethodResult eventResult(event.session_);
         eventResult.data.id = event.data.id;
-        eventResult.data.error = "400";
+      
+        walleve::CWalleveDbpSendTxRet sendTxRet;
+        sendTxRet.hash = data;
+        sendTxRet.result = "failed";
+        sendTxRet.reason = std::string(MvErrString(err));
+        eventResult.data.anyResultObjs.push_back(sendTxRet);
+        
         pDbpServer->DispatchEvent(&eventResult);
     }
 }
