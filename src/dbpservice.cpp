@@ -179,9 +179,9 @@ void CDbpService::HandleGetTransaction(walleve::CWalleveEventDbpMethod& event)
 
 void CDbpService::HandleSendTransaction(walleve::CWalleveEventDbpMethod& event)
 {
-    std::string txid = event.data.params["hash"];
+    std::string data = event.data.params["data"];
 
-    std::vector<unsigned char> txData = walleve::ParseHexString(txid);
+    std::vector<unsigned char> txData(data.begin(),data.end());
     walleve::CWalleveBufStream ss;
     ss.Write((char *)&txData[0],txData.size());
     
@@ -206,7 +206,8 @@ void CDbpService::HandleSendTransaction(walleve::CWalleveEventDbpMethod& event)
         eventResult.data.id = event.data.id;
         
         walleve::CWalleveDbpSendTxRet sendTxRet;
-        sendTxRet.hash = txid;
+        sendTxRet.hash = data;
+        sendTxRet.result = "succeed";
         eventResult.data.anyResultObjs.push_back(sendTxRet);
         
         pDbpServer->DispatchEvent(&eventResult);

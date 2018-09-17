@@ -723,30 +723,14 @@ void CDbpServer::HandleClientMethod(CDbpClient *pDbpClient,google::protobuf::Any
     {
         lws::GetTxArg args;
         methodMsg.params().UnpackTo(&args);
-        
-        if(args.hash().empty())
-        {
-            delete pEventDbpMethod;
-            RespondError(pDbpClient,400,"dbp method [gettransaction] args hash is empty.");
-            return;
-        }
-        
         methodBody.params.insert(std::make_pair("hash",args.hash()));
     }
     else if(methodBody.method == CWalleveDbpMethod::Method::SEND_TX 
         && methodMsg.params().Is<lws::SendTxArg>())
     {
-        // lws::SendTxArg args;
-        // methodMsg.params().UnpackTo(&args);
-        
-        // if(args.hash().empty())
-        // {
-        //     delete pEventDbpMethod;
-        //     RespondError(pDbpClient,400,"dbp method [sendtransaction] args hash is empty.");
-        //     return;
-        // }
-        
-        // methodBody.params.insert(std::make_pair("hash",args.hash()));
+        lws::SendTxArg args;
+        methodMsg.params().UnpackTo(&args);
+        methodBody.params.insert(std::make_pair("data",args.data()));
     }   
     else
     {

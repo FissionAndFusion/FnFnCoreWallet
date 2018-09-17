@@ -141,6 +141,8 @@ class CWalleveDbpSendTxRet
 {
 public:
     std::string hash;
+    std::string result;
+    std::string reason;
 };
 
 class CWalleveDbpMethodResult : public CWalleveDbpRespond
