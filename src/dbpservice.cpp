@@ -265,9 +265,7 @@ bool CDbpService::IsEmpty(const uint256& hash)
 
 bool CDbpService::GetBlocks(const uint256& startHash, int32 n, std::vector<walleve::CWalleveDbpBlock>& blocks)
 {
-    // Get Genesis block if hash is empty
     uint256 blockHash = startHash;
-
     std::cout << "blockhash: " << blockHash.ToString() << std::endl;
 
     if(IsEmpty(blockHash))
@@ -277,30 +275,30 @@ bool CDbpService::GetBlocks(const uint256& startHash, int32 n, std::vector<walle
     }
 
     uint256 forkHash;
-    int currentHeight = 0;
-    if(!pService->GetBlockLocation(blockHash,forkHash,currentHeight)) 
+    int blockHeight = 0;
+    if(!pService->GetBlockLocation(blockHash,forkHash,blockHeight)) 
     {
         std::cout << "block not exists" << std::endl;
         return false;
     }
 
-    const std::size_t mainBlockMaxNum = n;
-    std::size_t mainBlockCount = 0;
-    while(mainBlockCount != mainBlockMaxNum
-    && pService->GetBlockHash(forkHash,currentHeight,blockHash))
+    const std::size_t primaryBlockMaxNum = n;
+    std::size_t primaryBlockCount = 0;
+    while(primaryBlockCount != primaryBlockMaxNum
+    && pService->GetBlockHash(forkHash,blockHeight,blockHash))
     {
         CBlock block;
-        pService->GetBlock(blockHash,block,forkHash,currentHeight);
+        pService->GetBlock(blockHash,block,forkHash,blockHeight);
         if(block.nType == CBlock::BLOCK_PRIMARY)
         {
-            mainBlockCount++;
+            primaryBlockCount++;
         }
         
         walleve::CWalleveDbpBlock DbpBlock;
-        CreateDbpBlock(block,forkHash,currentHeight,DbpBlock);
+        CreateDbpBlock(block,forkHash,blockHeight,DbpBlock);
         blocks.push_back(DbpBlock);
         
-        currentHeight++;
+        blockHeight++;
     }
     
     return true; 
