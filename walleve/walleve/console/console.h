@@ -43,8 +43,8 @@ private:
     void HandleRead(boost::system::error_code const& err,size_t nTransferred);
     void ConsoleThreadFunc();
     void ConsoleHandleEvent(CWalleveEvent* pEvent,CIOCompletion& compltHandle);
-    void ConsoleHandleLine(const std::string strLine);
-    void ConsoleHandleOutput(const std::string strOutput);
+    void ConsoleHandleLine(const std::string& strLine);
+    void ConsoleHandleOutput(const std::string& strOutput);
 public:
     static CConsole* pCurrentConsole;
     static boost::mutex mutexConsole;

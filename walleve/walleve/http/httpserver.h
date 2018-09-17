@@ -20,7 +20,7 @@ public:
     CHttpHostConfig() {}
     CHttpHostConfig(const boost::asio::ip::tcp::endpoint& epHostIn,unsigned int nMaxConnectionsIn,
                     const CIOSSLOption& optSSLIn,const std::map<std::string,std::string>& mapUserPassIn,
-                    const std::vector<std::string> vAllowMaskIn,const std::string& strIOModuleIn)
+                    const std::vector<std::string>& vAllowMaskIn,const std::string& strIOModuleIn)
     : epHost(epHostIn),nMaxConnections(nMaxConnectionsIn),optSSL(optSSLIn),
       mapUserPass(mapUserPassIn),vAllowMask(vAllowMaskIn),strIOModule(strIOModuleIn)
     {

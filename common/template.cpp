@@ -226,7 +226,7 @@ CTemplateMultiSig::CTemplateMultiSig(const vector<CPubKey>& vPubKeyIn,int nRequi
     {
         mapPubKeyWeight.insert(make_pair(vPubKeyIn[i],1));
     }
-    int nWeightTotal = vPubKeyIn.size();
+    
     if (nRequired > 0 && vPubKeyIn.size() >= nRequired && mapPubKeyWeight.size() == vPubKeyIn.size() && vPubKeyIn.size() <= 16)
     {
         BuildTemplate();
