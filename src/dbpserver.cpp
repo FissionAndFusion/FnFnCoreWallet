@@ -68,14 +68,14 @@ void CDbpClient::SendMessage(dbp::Base* pBaseMsg)
     ssSend.Clear();
     
     int byteSize = pBaseMsg->ByteSize();
-    unsigned char byteBuf[byteSize];
-
-    pBaseMsg->SerializeToArray(byteBuf,byteSize);
+    std::unique_ptr<unsigned char[]> byteBuf(new unsigned char[byteSize]);
+    std::cout << "Send Message Len is: " << byteSize << std::endl;
+    pBaseMsg->SerializeToArray(byteBuf.get(),byteSize);
 
     unsigned char msgLenBuf[MSG_HEADER_LEN];
     CDbpUtils::writeLenToMsgHeader(byteSize,(char*)msgLenBuf,MSG_HEADER_LEN);
     ssSend.Write((char*)msgLenBuf,MSG_HEADER_LEN);
-    ssSend.Write((char*)byteBuf,byteSize);
+    ssSend.Write((char*)byteBuf.get(),byteSize);
 
     pClient->Write(ssSend,boost::bind(&CDbpClient::HandleWritenResponse,this,_1));
 }
@@ -102,14 +102,14 @@ void CDbpClient::SendAddedNoActiveMessage(dbp::Base* pBaseMsg)
     ssAddedSend.Clear();
     
     int byteSize = pBaseMsg->ByteSize();
-    unsigned char byteBuf[byteSize];
+    std::unique_ptr<unsigned char[]> byteBuf(new unsigned char[byteSize]);
 
-    pBaseMsg->SerializeToArray(byteBuf,byteSize);
+    pBaseMsg->SerializeToArray(byteBuf.get(),byteSize);
 
     unsigned char msgLenBuf[MSG_HEADER_LEN];
     CDbpUtils::writeLenToMsgHeader(byteSize,(char*)msgLenBuf,MSG_HEADER_LEN);
     ssAddedSend.Write((char*)msgLenBuf,MSG_HEADER_LEN);
-    ssAddedSend.Write((char*)byteBuf,byteSize);
+    ssAddedSend.Write((char*)byteBuf.get(),byteSize);
 
     pClient->Write(ssAddedSend,boost::bind(&CDbpClient::HandleWritenResponse,this,_1,1));   
 }
