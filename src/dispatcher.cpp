@@ -94,7 +94,7 @@ void CDispatcher::WalleveHandleHalt()
 {
 }
 
-MvErr CDispatcher::AddNewBlock(CBlock& block,uint64 nNonce)
+MvErr CDispatcher::AddNewBlock(const CBlock& block,uint64 nNonce)
 {
     MvErr err = MV_OK;
     if (!pWorldLine->Exists(block.hashPrev))
@@ -121,6 +121,11 @@ MvErr CDispatcher::AddNewBlock(CBlock& block,uint64 nNonce)
 
     pService->NotifyWorldLineUpdate(updateWorldLine);
 
+    if (!nNonce)
+    {
+        pNetChannel->BroadcastBlockInv(updateWorldLine.hashFork,block.GetHash());
+    }
+
     if (block.IsPrimary())
     {
         CMvEventBlockMakerUpdate *pBlockMakerUpdate = new CMvEventBlockMakerUpdate(0);
@@ -132,15 +137,10 @@ MvErr CDispatcher::AddNewBlock(CBlock& block,uint64 nNonce)
         }
     }
 
-    if (!nNonce)
-    {
-        pNetChannel->BroadcastBlockInv(updateWorldLine.hashFork,block.GetHash());
-    }
-
     return MV_OK;
 }
 
-MvErr CDispatcher::AddNewTx(CTransaction& tx,uint64 nNonce)
+MvErr CDispatcher::AddNewTx(const CTransaction& tx,uint64 nNonce)
 {
     MvErr err = MV_OK;
     err = pCoreProtocol->ValidateTransaction(tx);
