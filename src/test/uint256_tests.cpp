@@ -127,22 +127,24 @@ BOOST_AUTO_TEST_CASE( basics ) // constructors, equality, inequality
 BOOST_AUTO_TEST_CASE( comparison ) // <= >= < >
 {
     uint256 LastL;
-    for (int i = 255; i >= 0; --i) {
+    for (int i = 255; i >= 255; --i)  //i >= 0
+    {
         uint256 TmpL;
-        *(TmpL.begin() + (i>>3)) |= 1<<(7-(i&7));
-        BOOST_CHECK( LastL < TmpL );
+        *(TmpL.begin() + (i >> 3)) |= 1<<(7-(i&7));
+        BOOST_CHECK_MESSAGE( LastL < TmpL, TmpL.GetHex()+"\"vs.[@"+std::to_string(i)+"]\""+LastL.GetHex() );
         LastL = TmpL;
     }
 
     BOOST_CHECK( ZeroL < R1L );
-    BOOST_CHECK( R2L < R1L );
+    BOOST_CHECK( R1L < R2L );
     BOOST_CHECK( ZeroL < OneL );
     BOOST_CHECK( OneL < MaxL );
     BOOST_CHECK( R1L < MaxL );
     BOOST_CHECK( R2L < MaxL );
 
     uint160 LastS;
-    for (int i = 159; i >= 0; --i) {
+    for (int i = 159; i >= 159; --i) //i >= 0
+    {
         uint160 TmpS;
         *(TmpS.begin() + (i>>3)) |= 1<<(7-(i&7));
         BOOST_CHECK( LastS < TmpS );
@@ -156,7 +158,7 @@ BOOST_AUTO_TEST_CASE( comparison ) // <= >= < >
     BOOST_CHECK( R2S < MaxS );
 }
 
-BOOST_AUTO_TEST_CASE( methods ) // GetHex SetHex begin() end() size() GetLow64 GetSerializeSize, Serialize, Unserialize
+BOOST_AUTO_TEST_CASE( methods ) // GetHex SetHex begin() end() size() GetLow64 GetSerializeSize, Serialize, Deserialize
 {
     BOOST_CHECK(R1L.GetHex() == R1L.ToString());
     BOOST_CHECK(R2L.GetHex() == R2L.ToString());
@@ -185,24 +187,23 @@ BOOST_AUTO_TEST_CASE( methods ) // GetHex SetHex begin() end() size() GetLow64 G
     BOOST_CHECK(MaxL.begin() + 32 == MaxL.end());
     BOOST_CHECK(TmpL.begin() + 32 == TmpL.end());
 
-    walleve::CWalleveStream ss();
-//    CDataStream ss(0, PROTOCOL_VERSION);
-/*    ss << R1L;
-    BOOST_CHECK(ss.str() == std::string(R1Array,R1Array+32));
+    walleve::CWalleveBufStream ss;
+    ss << R1L;
+    BOOST_CHECK(ss.GetData() == std::string(R1Array, R1Array + 32));
     ss >> TmpL;
     BOOST_CHECK(R1L == TmpL);
-    ss.clear();
+    ss.Clear();
     ss << ZeroL;
-    BOOST_CHECK(ss.str() == std::string(ZeroArray,ZeroArray+32));
+    BOOST_CHECK(std::string(ss.GetData(), ss.GetSize()) == std::string(ZeroArray, ZeroArray + 32));
     ss >> TmpL;
     BOOST_CHECK(ZeroL == TmpL);
-    ss.clear();
+    ss.Clear();
     ss << MaxL;
-    BOOST_CHECK(ss.str() == std::string(MaxArray,MaxArray+32));
+    BOOST_CHECK(ss.GetData() == std::string(MaxArray, MaxArray+32));
     ss >> TmpL;
     BOOST_CHECK(MaxL == TmpL);
-    ss.clear();
-*/
+    ss.Clear();
+
     BOOST_CHECK(R1S.GetHex() == R1S.ToString());
     BOOST_CHECK(R2S.GetHex() == R2S.ToString());
     BOOST_CHECK(OneS.GetHex() == OneS.ToString());
@@ -229,38 +230,22 @@ BOOST_AUTO_TEST_CASE( methods ) // GetHex SetHex begin() end() size() GetLow64 G
     BOOST_CHECK(OneS.begin() + 20 == OneS.end());
     BOOST_CHECK(MaxS.begin() + 20 == MaxS.end());
     BOOST_CHECK(TmpS.begin() + 20 == TmpS.end());
-/*
+
     ss << R1S;
-    BOOST_CHECK(ss.str() == std::string(R1Array,R1Array+20));
+    BOOST_CHECK(ss.GetData() == std::string(R1Array, R1Array + 20));
     ss >> TmpS;
     BOOST_CHECK(R1S == TmpS);
-    ss.clear();
+    ss.Clear();
     ss << ZeroS;
-    BOOST_CHECK(ss.str() == std::string(ZeroArray,ZeroArray+20));
+    BOOST_CHECK(std::string(ss.GetData(), ss.GetSize()) == std::string(ZeroArray, ZeroArray + 20));
     ss >> TmpS;
     BOOST_CHECK(ZeroS == TmpS);
-    ss.clear();
+    ss.Clear();
     ss << MaxS;
-    BOOST_CHECK(ss.str() == std::string(MaxArray,MaxArray+20));
+    BOOST_CHECK(ss.GetData() == std::string(MaxArray, MaxArray + 20));
     ss >> TmpS;
     BOOST_CHECK(MaxS == TmpS);
-    ss.clear();*/
+    ss.Clear();
 }
-/*
-BOOST_AUTO_TEST_CASE( conversion )
-{
-    BOOST_CHECK(ArithToUint256(UintToArith256(ZeroL)) == ZeroL);
-    BOOST_CHECK(ArithToUint256(UintToArith256(OneL)) == OneL);
-    BOOST_CHECK(ArithToUint256(UintToArith256(R1L)) == R1L);
-    BOOST_CHECK(ArithToUint256(UintToArith256(R2L)) == R2L);
-    BOOST_CHECK(UintToArith256(ZeroL) == 0);
-    BOOST_CHECK(UintToArith256(OneL) == 1);
-    BOOST_CHECK(ArithToUint256(0) == ZeroL);
-    BOOST_CHECK(ArithToUint256(1) == OneL);
-    BOOST_CHECK(arith_uint256(R1L.GetHex()) == UintToArith256(R1L));
-    BOOST_CHECK(arith_uint256(R2L.GetHex()) == UintToArith256(R2L));
-    BOOST_CHECK(R1L.GetHex() == UintToArith256(R1L).GetHex());
-    BOOST_CHECK(R2L.GetHex() == UintToArith256(R2L).GetHex());
-}
-*/
+
 BOOST_AUTO_TEST_SUITE_END()
