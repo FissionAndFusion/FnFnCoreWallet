@@ -33,10 +33,10 @@ public:
     virtual const uint256& GetGenesisBlockHash() = 0;
     virtual void GetGenesisBlock(CBlock& block) = 0;
     virtual MvErr ValidateTransaction(const CTransaction& tx) = 0;
-    virtual MvErr ValidateBlock(CBlock& block) = 0;
-    virtual MvErr VerifyBlock(CBlock& block,CBlockIndex* pIndexPrev) = 0;
-    virtual MvErr VerifyBlockTx(CTransaction& tx,CTxContxt& txContxt,CBlockIndex* pIndexPrev) = 0;
-    virtual MvErr VerifyTransaction(CTransaction& tx,const std::vector<CTxOutput>& vPrevOutput,int nForkHeight) = 0;
+    virtual MvErr ValidateBlock(const CBlock& block) = 0;
+    virtual MvErr VerifyBlock(const CBlock& block,CBlockIndex* pIndexPrev) = 0;
+    virtual MvErr VerifyBlockTx(const CTransaction& tx,const CTxContxt& txContxt,CBlockIndex* pIndexPrev) = 0;
+    virtual MvErr VerifyTransaction(const CTransaction& tx,const std::vector<CTxOutput>& vPrevOutput,int nForkHeight) = 0;
     virtual bool GetProofOfWorkTarget(CBlockIndex* pIndexPrev,int nAlgo,int& nBits,int64& nReward) = 0;
     virtual int GetProofOfWorkRunTimeBits(int nBits,int64 nTime,int64 nPrevTime) = 0;
 };
@@ -57,11 +57,12 @@ public:
                                                       std::vector<CTxOutput>& vOutput) = 0;
     virtual bool ExistsTx(const uint256& txid) = 0;
     virtual bool FilterTx(CTxFilter& filter) = 0;
-    virtual MvErr AddNewBlock(CBlock& block,CWorldLineUpdate& update) = 0;    
+    virtual MvErr AddNewBlock(const CBlock& block,CWorldLineUpdate& update) = 0;    
     virtual bool GetProofOfWorkTarget(const uint256& hashPrev,int nAlgo,int& nBits,int64& nReward) = 0;
     virtual bool GetBlockLocator(const uint256& hashFork,CBlockLocator& locator) = 0;
     virtual bool GetBlockInv(const uint256& hashFork,const CBlockLocator& locator,std::vector<uint256>& vBlockHash,std::size_t nMaxCount) = 0;
-
+    virtual bool GetBlockDelegateEnrolled(const uint256& hashBlock,std::map<CDestination,std::size_t>& mapWeight,
+                                                                   std::map<CDestination,std::vector<unsigned char> >& mapEnrollData) = 0;
     const CMvBasicConfig * WalleveConfig()
     {
         return dynamic_cast<const CMvBasicConfig *>(walleve::IWalleveBase::WalleveConfig());
@@ -79,7 +80,7 @@ public:
     virtual bool Exists(const uint256& txid) = 0;
     virtual void Clear() = 0;
     virtual std::size_t Count(const uint256& fork) const = 0;
-    virtual MvErr Push(CTransaction& tx,uint256& hashFork,CDestination& destIn,int64& nValueIn) = 0;
+    virtual MvErr Push(const CTransaction& tx,uint256& hashFork,CDestination& destIn,int64& nValueIn) = 0;
     virtual void Pop(const uint256& txid) = 0;
     virtual bool Get(const uint256& txid,CTransaction& tx) const = 0;
     virtual void ListTx(const uint256& hashFork,std::vector<std::pair<uint256,std::size_t> >& vTxPool) = 0;
@@ -92,6 +93,19 @@ public:
     {
         return dynamic_cast<const CMvStorageConfig *>(walleve::IWalleveBase::WalleveConfig());
     }
+};
+
+class IConsensus : public walleve::IWalleveBase
+{
+public:
+    IConsensus() : IWalleveBase("consensus") {}
+    const CMvMintConfig * MintConfig()
+    {
+        return dynamic_cast<const CMvMintConfig *>(walleve::IWalleveBase::WalleveConfig());
+    }
+    virtual void PrimaryUpdate(CWorldLineUpdate& update,CTxSetChange& change,CDelegateRoutine& routine) = 0;
+    virtual void GetAgreement(int nTargetHeight,uint256& nAgreement,std::size_t& nWeight,
+                                                std::vector<CDestination>& vBallot) = 0;
 };
 
 class IBlockMaker : public walleve::CWalleveEventProc
@@ -150,8 +164,8 @@ class IDispatcher : public walleve::IWalleveBase
 {
 public:
     IDispatcher() : IWalleveBase("dispatcher") {}
-    virtual MvErr AddNewBlock(CBlock& block,uint64 nNonce=0) = 0;
-    virtual MvErr AddNewTx(CTransaction& tx,uint64 nNonce=0) = 0;
+    virtual MvErr AddNewBlock(const CBlock& block,uint64 nNonce=0) = 0;
+    virtual MvErr AddNewTx(const CTransaction& tx,uint64 nNonce=0) = 0;
 };
 
 class IService : public walleve::IWalleveBase
@@ -209,6 +223,13 @@ public:
     /* Mint */
     virtual bool GetWork(std::vector<unsigned char>& vchWorkData,uint256& hashPrev,uint32& nPrevTime,int& nAlgo,int& nBits) = 0;
     virtual MvErr SubmitWork(const std::vector<unsigned char>& vchWorkData,CTemplatePtr& templMint,crypto::CKey& keyMint,uint256& hashBlock) = 0;
+};
+
+// temporary dummy class for DbpSocket 
+class CDummyDbpSocket : public walleve::IIOModule
+{
+public:
+    CDummyDbpSocket() : IIOModule("dbpservice") {}
 };
 
 } // namespace multiverse

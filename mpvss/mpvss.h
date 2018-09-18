@@ -41,14 +41,18 @@ class CMPSecretShare
 public:
     CMPSecretShare();
     CMPSecretShare(const MPUInt256& nIdentIn);
+    const MPUInt256 GetIdent() const { return nIdent; }
     bool IsEnrolled() const { return (nIndex != 0); }
     void Setup(std::size_t nMaxThresh,CMPSealedBox& sealed);
+    void SetupWitness();
     void Enroll(const std::vector<CMPCandidate>& vCandidate);
     void Distribute(std::map<MPUInt256,std::vector<MPUInt256> >& mapShare);
     bool Accept(const MPUInt256& nIdentFrom,const std::vector<MPUInt256>& vEncrypedShare);
     void Publish(std::map<MPUInt256,std::vector<MPUInt256> >& mapShare);
-    bool Collect(const MPUInt256& nIdentFrom,const std::map<MPUInt256,std::vector<MPUInt256> >& mapShare);
-    void Reconstruct(std::map<MPUInt256,MPUInt256>& mapSecret);
+    bool Collect(const MPUInt256& nIdentFrom,const std::map<MPUInt256,std::vector<MPUInt256> >& mapShare,bool& fCompleted);
+    void Reconstruct(std::map<MPUInt256,std::pair<MPUInt256,std::size_t> >& mapSecret);
+    void Signature(const MPUInt256& hash,MPUInt256& nR,MPUInt256& nS);
+    bool VerifySignature(const MPUInt256& nIdentFrom,const MPUInt256& hash,const MPUInt256& nR,const MPUInt256& nS);
 protected:
     virtual void RandGeneretor(MPUInt256& r);
     const MPUInt256 RandShare();

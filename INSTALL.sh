@@ -5,6 +5,10 @@ cd `dirname $0`
 # delete build directory
 rm -rf build
 rm -f multiverse
+rm -f multiverse-cli
+rm -f multiverse-server
+rm -f multiverse-miner
+rm -f multiverse-dnseed
 
 # create build directory
 mkdir build
@@ -13,16 +17,27 @@ mkdir build
 cd build
 
 # cmake
-cmake ..
+flag=""
+if [ "$1" == "debug" ]; then
+    flag="-DCMAKE_BUILD_TYPE=debug"
+fi
+
+cmake .. $flag
+
 if [ $? -ne 0 ]; then 
     exit 1 
 fi 
 
 # make
-make
+make -j8
 if [ $? -ne 0 ]; then 
     exit 1 
 fi 
 
 # install
 cp src/multiverse ../
+cd ..
+ln -s multiverse multiverse-cli
+ln -s multiverse multiverse-server
+ln -s multiverse multiverse-miner
+ln -s multiverse multiverse-dnseed

@@ -466,7 +466,7 @@ bool CBlockBase::RetrieveTxLocation(const uint256& txid,uint256& hashFork,int& n
     {
         return false;
     }
-    CBlockIndex* pIndex = GetIndex(hashAnchor);
+    CBlockIndex* pIndex = (hashAnchor != 0 ? GetIndex(hashAnchor) : GetOriginIndex(txid));
     if (pIndex == NULL)
     {
         return false;
@@ -691,7 +691,7 @@ bool CBlockBase::LoadTx(CTransaction& tx,uint32 nTxFile,uint32 nTxOffset,uint256
     {
         return false;
     }
-    CBlockIndex* pIndex = GetIndex(tx.hashAnchor);
+    CBlockIndex* pIndex = (tx.hashAnchor != 0 ? GetIndex(tx.hashAnchor) : GetOriginIndex(tx.GetHash()));
     if (pIndex == NULL)
     {
         return false;
@@ -809,6 +809,20 @@ CBlockIndex* CBlockBase::GetBranch(CBlockIndex* pIndexRef,CBlockIndex* pIndex,ve
         pIndexRef = pIndexRef->pPrev;
     }
     return pIndex;
+}
+
+CBlockIndex* CBlockBase::GetOriginIndex(const uint256& txidMint) const
+{
+    CBlockIndex* pIndex = NULL;
+    for (map<uint256,CBlockFork>::const_iterator mi = mapFork.begin();mi != mapFork.end();++mi)
+    {
+        CBlockIndex* pIndex = (*mi).second.GetOrigin();
+        if (pIndex->txidMint == txidMint)
+        {
+            return pIndex;
+        }
+    }
+    return NULL;
 }
 
 CBlockIndex* CBlockBase::AddNewIndex(const uint256& hash,CBlock& block,uint32 nFile,uint32 nOffset)

@@ -86,8 +86,8 @@ bool CService::WalleveHandleInitialize()
 
     if (!WalleveGetObject("dbpservice", pDbpSocket))
     {
-        WalleveLog("Failed to request DbpSocket\n");
-        return false;
+         WalleveLog("Failed to request DbpSocket\n");
+         return false;
     }
 
     return true;
