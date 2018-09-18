@@ -132,7 +132,7 @@ virtual public CMvDBPEventListener
 {
 public:
     CDbpServer();
-    virtual ~CDbpServer();
+    virtual ~CDbpServer() noexcept;
     virtual CIOClient* CreateIOClient(CIOContainer *pContainer) override;
     
     void HandleClientRecv(CDbpClient *pDbpClient, const boost::any& anyObj);
