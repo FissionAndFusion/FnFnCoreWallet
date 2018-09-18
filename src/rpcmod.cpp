@@ -843,15 +843,28 @@ Value CRPCMod::RPCLockKey(const Array& params,bool fHelp)
     if (fHelp || params.size() != 1)
     {
         throw runtime_error(
-            "lockkey <pubkey>\n"
+            "lockkey <pubkey | pubkey address>\n"
             "Removes the encryption key from memory, locking the key.\n"
-            "After calling this method, you will need to call unlockkey again."
+            "After calling this method, you will need to call unlockkey again"
             "before being able to call any methods which require the key to be unlocked.");
     }
 
+    CMvAddress address(params[0].get_str());
+    if(address.IsTemplate())
+    {
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "This method only accepts pubkey or pubkey address as parameter rather than template address you supplied.");
+    }
+
     crypto::CPubKey pubkey;
-    pubkey.SetHex(params[0].get_str());
-   
+    if(address.IsPubKey())
+    {
+        address.GetPubKey(pubkey);
+    }
+    else
+    {
+        pubkey.SetHex(params[0].get_str());
+    }
+
     int nVersion;
     bool fLocked;
     int64 nAutoLockTime; 
@@ -871,13 +884,27 @@ Value CRPCMod::RPCUnlockKey(const Array& params,bool fHelp)
     if (fHelp || params.size() < 2 || params.size() > 3)
     {
         throw runtime_error(
-            "unlockkey <pubkey> <passphrase> [timeout=0]\n"
-            "If [timeout] > 0,stores the wallet decryption key in memory for [timeout] seconds."
+            "unlockkey <pubkey | pubkey address> <passphrase> [timeout=0]\n"
+            "If [timeout] > 0,stores the wallet decryption key in memory for [timeout] seconds"
             "before being able to call any methods which require the key to be locked.");
     }
 
+    CMvAddress address(params[0].get_str());
+    if(address.IsTemplate())
+    {
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "This method only accepts pubkey or pubkey address as parameter rather than template address you supplied.");
+    }
+
     crypto::CPubKey pubkey;
-    pubkey.SetHex(params[0].get_str());
+    if(address.IsPubKey())
+    {
+        address.GetPubKey(pubkey);
+    }
+    else
+    {
+        pubkey.SetHex(params[0].get_str());
+    }
+
     crypto::CCryptoString strPassphrase;
     strPassphrase = params[1].get_str().c_str();
     int64 nTimeout = 0;

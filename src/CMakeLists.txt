@@ -38,7 +38,7 @@ set(sources
 
 add_executable(multiverse ${sources})
 
-include_directories(../walleve ../crypto ../common ../storage ../network ./)
+include_directories(../walleve ../crypto ../common ../storage ../network ../delegate ../mpvss ./)
 
 target_link_libraries(multiverse
 	Boost::system
@@ -52,7 +52,8 @@ target_link_libraries(multiverse
 	walleve
 	crypto	
 	storage	
-	network	
+	network
+	delegate	
 	${WS2_32_LIB}
 	${WSSOCK32_LIB}
 	${Readline_LIBRARY}

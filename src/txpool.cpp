@@ -280,7 +280,7 @@ size_t CTxPool::Count(const uint256& fork) const
     return 0;
 }
 
-MvErr CTxPool::Push(CTransaction& tx,uint256& hashFork,CDestination& destIn,int64& nValueIn)
+MvErr CTxPool::Push(const CTransaction& tx,uint256& hashFork,CDestination& destIn,int64& nValueIn)
 {
     boost::unique_lock<boost::shared_mutex> wlock(rwAccess);
     uint256 txid = tx.GetHash();
@@ -585,7 +585,7 @@ bool CTxPool::LoadDB()
     return dbTxPool.WalkThroughTx(walker);
 }
 
-MvErr CTxPool::AddNew(CTxPoolView& txView,const uint256& txid,CTransaction& tx,const uint256& hashFork,int nForkHeight)
+MvErr CTxPool::AddNew(CTxPoolView& txView,const uint256& txid,const CTransaction& tx,const uint256& hashFork,int nForkHeight)
 {
     vector<CTxOutput> vPrevOutput;
     if (!pWorldLine->GetTxUnspent(hashFork,tx.vInput,vPrevOutput))
