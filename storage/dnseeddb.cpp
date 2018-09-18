@@ -80,7 +80,7 @@ bool DNSeedDB::updateNode(SeedNode &node)
 
 bool DNSeedDB::selectAllNode(std::vector<SeedNode> & nodeList)
 {
-    CMvDBRes res(dbConn,"SELECT id,address,port,score FROM dnseednode limit 100",true);
+    CMvDBRes res(dbConn,"SELECT id,address,port,score FROM dnseednode ",true);
     while (res.GetRow())
     {
        
