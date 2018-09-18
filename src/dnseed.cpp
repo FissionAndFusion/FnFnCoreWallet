@@ -5,7 +5,6 @@
 #include "version.h"
 #include <boost/bind.hpp>
 #include <boost/any.hpp>
-#include "dnseedservice.h"
 #include "mvdnseedpeer.h"
 #include "mvproto.h"
 #include "config.h"
@@ -17,14 +16,17 @@ using namespace multiverse::storage;
 using namespace multiverse::network;
 using namespace std;
 
-#define HANDSHAKE_TIMEOUT               5
-#define TIMING_FILTER_INTERVAL (boost::posix_time::seconds(60*60))//(24*60*60)
-
+#define HANDSHAKE_TIMEOUT           5
+#define TIMING_FILTER_INTERVAL      (boost::posix_time::seconds(10*60))//(12*60*60)
+#define TIMING_GET_TRUSTED_HEIGHT   (boost::posix_time::seconds(1*60))
+#define FORGIVE_HEIGHT_ERROR_VALUE  5
 
 CDNSeed::CDNSeed()
-:timerFilter(ioService,TIMING_FILTER_INTERVAL),
- thrIOProc("dnseedTimerFilter",boost::bind(&CDNSeed::IOThreadFunc,this)),
- _newestHeight(0)
+:timerFilter(ioService_test,TIMING_FILTER_INTERVAL),
+ thrIOProc_test("dnseedTimerFilter",boost::bind(&CDNSeed::IOThreadFunc_test,this)),
+ timer_th(ioService_th,TIMING_GET_TRUSTED_HEIGHT),
+ thrIOProc_th("dnseedTimerTrustedHeight",boost::bind(&CDNSeed::IOThreadFunc_th,this)),
+ _confidentHeight(0)
 {
 }
 
@@ -41,11 +43,10 @@ bool CDNSeed::WalleveHandleInitialize()
                          StorageConfig()->strDBName,
                          StorageConfig()->strDBUser,
                          StorageConfig()->strDBPass);
-    DNSeedService* dns=DNSeedService::getInstance();
-    dns->init(dbConfig);
-    dns->enableDNSeedServer();
-    dns->_maxConnectFailTimes=NetworkConfig()->nMaxTimes2ConnectFail;
-    
+    _dnseedService.init(dbConfig);
+    _dnseedService._maxConnectFailTimes=NetworkConfig()->nMaxTimes2ConnectFail;
+    this->_confidentAddress=NetworkConfig()->strConfidentAddress;
+
     CPeerNetConfig config;
     //启动端口监听
     config.vecService.push_back(CPeerService(tcp::endpoint(tcp::v4(), NetworkConfig()->nDNSeedPort),
@@ -54,12 +55,23 @@ bool CDNSeed::WalleveHandleInitialize()
     config.nPortDefault = NetworkConfig()->nDNSeedPort;
 
     ConfigNetwork(config);
-
-    if (!WalleveThreadStart(thrIOProc))
+    if (!WalleveThreadStart(thrIOProc_test))
     {
         WalleveLog("Failed to start filter timer thread\n");
         return false;
     }
+
+    /*If you need to get the latest altitude in real time, 
+     *you can release the following code and modify the timing filter logic appropriately
+    */
+    // if(!this->_confidentAddress.empty())
+    // {
+    //     if (!WalleveThreadStart(thrIOProc_th))
+    //     {
+    //         WalleveLog("Failed to start GetTrustHeight thread \n");
+    //         return false;
+    //     }
+    // }
 
     return true;
 }
@@ -67,7 +79,6 @@ bool CDNSeed::WalleveHandleInitialize()
 void CDNSeed::WalleveHandleDeinitialize()
 {
     network::CMvPeerNet::WalleveHandleDeinitialize();
-    DNSeedService::Release();
 }
 
 bool CDNSeed::CheckPeerVersion(uint32 nVersionIn,uint64 nServiceIn,const std::string& subVersionIn)
@@ -90,13 +101,14 @@ void CDNSeed::BuildHello(CPeer *pPeer,CWalleveBufStream& ssPayload)
 
 int CDNSeed::GetPrimaryChainHeight()
 {
-    return this->_newestHeight;
+    return _confidentHeight;
 }
 
 CPeer* CDNSeed::CreatePeer(CIOClient *pClient,uint64 nNonce,bool fInBound)
 {
     uint32_t nTimerId = SetTimer(nNonce,HANDSHAKE_TIMEOUT);
     CMvDNSeedPeer *pPeer = new CMvDNSeedPeer(this,pClient,nNonce,fInBound,nMagicNum,nTimerId);
+    if(!fInBound) pPeer->_isTestPeer=true;
     if (pPeer == NULL)
     {   
         CancelTimer(nTimerId);
@@ -145,14 +157,12 @@ bool CDNSeed::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CWall
         case MVPROTO_CMD_GETADDRESS:
             {
                 tcp::endpoint ep(pMvPeer->GetRemote().address(),NetworkConfig()->nPort);
-                DNSeedService* dns=DNSeedService::getInstance();
-                //In order to facilitate the rapid formation of early network, all nodes connected to DNseed are considered as tested nodes.
-                bool rzt=dns->addNode(ep,true);
+                 
+                _dnseedService.addNewNode(ep);
 
                 std::vector<CAddress> vAddrs;
-                dns->getSendAddressList(vAddrs);
-                WalleveLog(" MVPROTO_CMD_GETADDRESS [addnode:%d][%s:%d] height:%d  sendNum:%d\n",
-                            (int)rzt,
+                _dnseedService.getSendAddressList(vAddrs);
+                WalleveLog(" MVPROTO_CMD_GETADDRESS [%s:%d] height:%d  sendNum:%d\n",
                             ep.address().to_string().c_str(),ep.port(),pMvPeer->nStartingHeight,vAddrs.size());
                 
                 CWalleveBufStream ss;
@@ -160,15 +170,15 @@ bool CDNSeed::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CWall
                 return pMvPeer->SendMessage(MVPROTO_CHN_NETWORK,MVPROTO_CMD_ADDRESS,ss);
             }
             break;
-        case MVPROTO_CMD_ADDRESS:
-            {   // betwen DNSeed servers change to test
-                WalleveLog("xp [receive] MVPROTO_CMD_ADDRESS");
-                std::vector<CAddress> vAddrs;
-                ssPayload >> vAddrs;
-                DNSeedService::getInstance()->recvAddressList(vAddrs);
-                return true;
-            }   
-            break;
+        // case MVPROTO_CMD_ADDRESS:
+        //     {   // betwen DNSeed servers change to test
+        //         WalleveLog("xp [receive] MVPROTO_CMD_ADDRESS");
+        //         std::vector<CAddress> vAddrs;
+        //         ssPayload >> vAddrs;
+        //         _dnseedService.recvAddressList(vAddrs);
+        //         return true;
+        //     }   
+        //     break;
         default:
             break;
         }
@@ -207,20 +217,21 @@ bool CDNSeed::HandlePeerHandshaked(CPeer *pPeer,uint32 nTimerId)
     return true;
 }
 
-void CDNSeed::IOThreadFunc()
+void CDNSeed::IOThreadFunc_test()
 {
-    ioService.reset(); 
+    ioService_test.reset(); 
     timerFilter.async_wait(boost::bind(&CDNSeed::IOProcFilter,this,_1));
-    ioService.run();
+    ioService_test.run();
     timerFilter.cancel();
-    WalleveLog("dnseedservice stop");
+    WalleveLog("dnseedservice stop\n");
 }
 
 void CDNSeed::IOProcFilter(const boost::system::error_code& err)
 {
     if(!err)
     {
-        int testNum=this->filterAddressList();
+        WalleveLog("Filter run\n");
+        int testNum=this->beginFilterList();
          /* restart deadline timer */
         boost::posix_time::seconds needTime(testNum);
         if(needTime<TIMING_FILTER_INTERVAL)
@@ -235,53 +246,166 @@ void CDNSeed::IOProcFilter(const boost::system::error_code& err)
         
     }
 }
-
-int CDNSeed::filterAddressList()
+void CDNSeed::IOThreadFunc_th()
 {
-    std::vector<tcp::endpoint> testList;
-    DNSeedService::getInstance()->getAllNodeList4Filter(testList);
-    DNSeedService::getInstance()->resetNewNodeList();
-    for(tcp::endpoint cep : testList)
+    ioService_th.reset(); 
+    timer_th.async_wait(boost::bind(&CDNSeed::IOProc_th,this,_1));
+    ioService_th.run();
+    timer_th.cancel();
+    WalleveLog("Timer Of Get Trusted Height Stop\n");
+}
+
+void CDNSeed::IOProc_th(const boost::system::error_code& err)
+{
+    if(!err)
+    {
+        this->requestGetTrustedHeight();
+        timer_th.expires_at(timer_th.expires_at() + TIMING_GET_TRUSTED_HEIGHT);
+        timer_th.async_wait(boost::bind(&CDNSeed::IOProc_th,this,_1));  
+    }
+}
+
+int CDNSeed::beginFilterList()
+{
+    _testListBuf.clear();
+    _dnseedService.getAllNodeList4Filter(_testListBuf);
+    _dnseedService.resetNewNodeList();
+    this->beginVoteHeight();
+    if(!this->_confidentAddress.empty())
+    {
+        this->requestGetTrustedHeight();
+    }else{
+        this->filterAddressList();
+    }
+    return _testListBuf.size()+1;
+}
+
+void CDNSeed::filterAddressList()
+{  
+    for(tcp::endpoint cep : _testListBuf)
     {
         WalleveLog("[dnseed] filterAddressList:%s:%d\n"
                     ,cep.address().to_string().c_str(),cep.port());
         this->AddNewNode(CNetHost(cep,"activeTest",boost::any(uint64(network::NODE_NETWORK))));
     }
+    _testListBuf.clear();
 }
 
 void CDNSeed::dnseedTestConnSuccess(walleve::CPeer *pPeer)
 {
     tcp::endpoint ep=pPeer->GetRemote();
-    //过滤正常连接获取地址的握手
     string strName = GetNodeName(ep);
+    uint32 peerHeight=((CMvPeer*)pPeer)->nStartingHeight;
+    if(strName == "trustedNode")
+    {
+        _confidentHeight=peerHeight;
+        _isConfidentNodeCanConnect=true;
+        this->RemovePeer(pPeer,CEndpointManager::CloseReason::HOST_CLOSE);
+        this->RemoveNode(ep);
+        WalleveLog("trusted height: %d\n",peerHeight);
+        this->filterAddressList();
+        return;
+    }
     if (strName != "activeTest") return;
-    // //获取高度对比 TODO
-     uint32 peerHeight=((CMvPeer*)pPeer)->nStartingHeight;
-    // this->_newestHeight=_newestHeight>peerHeight ? _newestHeight:peerHeight;
-    DNSeedService::getInstance()->addNode(ep,true);
-    
-    //断开连接
-    WalleveLog("[dnseed]TestSuccess:%s:%d  h:%d\n"
-                    ,ep.address().to_string().c_str()
-                    ,ep.port()
-                    ,peerHeight);
+    SeedNode * sn=_dnseedService.findSeedNode(ep);
+    if(_confidentAddress.empty() || !_isConfidentNodeCanConnect)
+    {
+        this->voteHeight(peerHeight);
+    }
+    if(sn)
+    {
+        DNSeedService::CanTrust canTrust=DNSeedService::CanTrust::dontKown;
+        if(this->_confidentHeight>0)
+        {
+            if(abs((long)_confidentHeight - (long)peerHeight) <= FORGIVE_HEIGHT_ERROR_VALUE)
+            {
+                canTrust=DNSeedService::CanTrust::yes;
+            }else{
+                canTrust=DNSeedService::CanTrust::no;
+            }
+        }
+        _dnseedService.goodNode(sn,canTrust);
+    }
+
+    WalleveLog("[dnseed]TestSuccess:%s:%d  h:%d  score:%d\n",
+                ep.address().to_string().c_str(),ep.port(),peerHeight,sn->_score);
     this->RemovePeer(pPeer,CEndpointManager::CloseReason::HOST_CLOSE);
+    this->RemoveNode(ep);
+}
+
+void CDNSeed::requestGetTrustedHeight()
+{
+    if(!this->_confidentAddress.empty())
+    { 
+        this->AddNewNode(CNetHost(_confidentAddress,NetworkConfig()->nPort,
+                         "trustedNode",boost::any(uint64(network::NODE_NETWORK))));
+    }
 }
 
 void CDNSeed::ClientFailToConnect(const tcp::endpoint& epRemote)
 {
     CPeerNet::ClientFailToConnect(epRemote);
     WalleveLog("ConnectFailTo>>>%s\n",epRemote.address().to_string().c_str());
-    this->RemoveNode(epRemote);
-    DNSeedService * dns=DNSeedService::getInstance();
-    SeedNode * sn=dns->findSeedNode(epRemote);
+    
+    SeedNode * sn=_dnseedService.findSeedNode(epRemote);
     if(sn)
     {
-        if(dns->badNode(sn))
-        {
-            dns->removeNode(epRemote);
-        } 
+        _dnseedService.badNode(sn);
     }
-    
-    
+
+    string strName = GetNodeName(epRemote);
+    if(strName=="trustedNode")
+    {
+        _isConfidentNodeCanConnect=false;
+        this->filterAddressList();
+    }
+    this->RemoveNode(epRemote);
+}
+
+void CDNSeed::beginVoteHeight()
+{
+    if(this->_confidentAddress.empty()|| !_isConfidentNodeCanConnect)
+    {
+        _confidentHeight=0;
+        _voteBox.clear();
+    }
+}
+
+void CDNSeed::voteHeight(uint32 height)
+{
+    //totest
+    bool hadSame=false;
+    uint32 sumH=0;
+    uint32 avgH=0;
+    if(_confidentHeight>0) return;
+    for(auto vote : _voteBox)
+    {
+        if(vote.first ==height)
+        {
+            vote.second++;
+            hadSame=true;
+        }
+        sumH+=vote.first;
+        if(vote.second>=5)
+        {
+            _confidentHeight=vote.first;
+            WalleveLog("vote Height:%d \n",_confidentHeight);
+            return;
+        }
+    }
+    if(!_voteBox.empty())avgH=sumH/_voteBox.size();
+    if(!hadSame && _voteBox.size()<5)
+    {
+        _voteBox.push_back(std::make_pair(height,1));
+    }else{
+        for(auto it=_voteBox.begin();it!=_voteBox.end();)
+        {
+            if(abs(it->first-avgH)>abs(height-avgH)&& it->second==1)
+            {
+                it=_voteBox.erase(it);
+                _voteBox.push_back(std::make_pair(height,1));
+            }
+            else it++;
+        }
+    }
 }

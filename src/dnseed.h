@@ -6,6 +6,7 @@
 
 #include "config.h"
 #include "mvbase.h"
+#include "dnseedservice.h"
 #include "mvpeernet.h"
 #include <boost/asio.hpp>
 #include "walleve/netio/netio.h"
@@ -41,15 +42,33 @@ protected:
     {
         return dynamic_cast<const CMvStorageConfig *>(walleve::IWalleveBase::WalleveConfig());
     }
-    void IOThreadFunc();
+    int beginFilterList();
+    void filterAddressList();
+    void requestGetTrustedHeight();
+    void IOThreadFunc_test();
     void IOProcFilter(const boost::system::error_code& err);
-    int filterAddressList();
+    void IOThreadFunc_th();
+    void IOProc_th(const boost::system::error_code& err);
+    //trusted height
+    void beginVoteHeight();
+    void voteHeight(uint32 height);
 protected:
+    network::DNSeedService _dnseedService;
+    std::string _confidentAddress;
+    uint32  _confidentHeight;
+    std::vector<std::pair<uint32,int>> _voteBox;
+    bool _beginFilter=false;
+    bool _isConfidentNodeCanConnect=false;
+    std::vector<boost::asio::ip::tcp::endpoint> _testListBuf;
     //timer
-    walleve::CWalleveThread thrIOProc;
-    boost::asio::io_service ioService;
+    walleve::CWalleveThread thrIOProc_test;
+    boost::asio::io_service ioService_test;
     boost::asio::deadline_timer timerFilter;
-    uint32  _newestHeight;
+    //TrustedHeight timer
+    walleve::CWalleveThread thrIOProc_th;
+    boost::asio::io_service ioService_th;
+    boost::asio::deadline_timer timer_th;
+    
 };
 }
 #endif

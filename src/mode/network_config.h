@@ -30,6 +30,7 @@ public:
     std::vector<std::string> vNode;
     std::vector<std::string> vConnectTo;
     std::vector<std::string> vDNSeed;
+    std::string strConfidentAddress;
     unsigned int nMaxTimes2ConnectFail;
     int nDNSeedPort;
 protected:

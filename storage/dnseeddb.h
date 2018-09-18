@@ -20,12 +20,14 @@ public:
     {
         this->_id=-1;
         this->_ep=ep;
+        this->_reconnTimes=0;
         this->_score=score;
     }
 public:
     int _id;
     boost::asio::ip::tcp::endpoint _ep;
     int _score;
+    int _reconnTimes;
 };
 
 class DNSeedDB

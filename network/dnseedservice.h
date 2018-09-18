@@ -20,41 +20,39 @@ namespace network
 class DNSeedService 
 {
 public: 
-    static DNSeedService* getInstance();
-    static void Release();
+    DNSeedService();
     ~DNSeedService(){}
 public:
+    unsigned int _maxConnectFailTimes=0;
+    enum CanTrust{
+        yes,no,dontKown
+    };
+public:
     bool init(storage::CMvDBConfig & config);
-    bool isDNSeedService(){return _isDNSeedServiceNode;}
-    void enableDNSeedServer();
 
+    storage::SeedNode * findSeedNode(const boost::asio::ip::tcp::endpoint& ep);
+    storage::SeedNode * addNewNode(boost::asio::ip::tcp::endpoint& ep);
     void getSendAddressList(std::vector<CAddress> & list);
-    void getLocalConnectAddressList(std::vector<boost::asio::ip::tcp::endpoint> &epList ,int limitCount=10);
     void recvAddressList(std::vector<CAddress> epList);
     bool updateNode(storage::SeedNode node);
     void removeNode(const boost::asio::ip::tcp::endpoint& ep);
     void getAllNodeList4Filter(std::vector<boost::asio::ip::tcp::endpoint> &epList);
     void resetNewNodeList();
-    storage::SeedNode * findSeedNode(const boost::asio::ip::tcp::endpoint& ep);
-    bool addNode(boost::asio::ip::tcp::endpoint& ep,bool forceAdd=false);
-    void goodNode(storage::SeedNode* node);
+    void goodNode(storage::SeedNode* node,CanTrust canTrust);
     //Return result: whether to remove from the list 
     bool badNode(storage::SeedNode* node);
-protected:
-    DNSeedService();
 
+protected:
+
+    storage::SeedNode * addNode(boost::asio::ip::tcp::endpoint& ep,bool forceAdd=false);
     bool hasAddress(boost::asio::ip::tcp::endpoint ep);   
     bool add2list(boost::asio::ip::tcp::endpoint newep,bool forceAdd=false);
     
 protected:
     std::mutex _activeListLocker;
-    static DNSeedService* p_instance;
     std::vector<storage::SeedNode> _activeNodeList;
     std::vector<storage::SeedNode> _newNodeList;
-    bool _isDNSeedServiceNode;
     multiverse::storage::DNSeedDB _db;
-public:
-    unsigned int _maxConnectFailTimes=0;
 private:
     //test
     int _maxNumber;

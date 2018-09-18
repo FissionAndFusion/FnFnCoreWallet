@@ -32,6 +32,10 @@ void CPeerNet::ConfigNetwork(CPeerNetConfig& config)
     confNetwork = config;
 }
 
+void CPeerNet::HandlePeerClose(CPeer * pPeer)
+{
+    RemovePeer(pPeer,CEndpointManager::HOST_CLOSE);
+}
 void CPeerNet::HandlePeerViolate(CPeer *pPeer)
 {
     RemovePeer(pPeer,CEndpointManager::PROTOCOL_INVALID);

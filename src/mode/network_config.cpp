@@ -13,7 +13,7 @@ using namespace multiverse;
 #define DEFAULT_MAX_INBOUNDS 125
 #define DEFAULT_MAX_OUTBOUNDS 10
 #define DEFAULT_CONNECT_TIMEOUT 5
-#define DNSEED__DEFAULT_MAX_TIMES_CONNECT_FAIL 10
+#define DNSEED__DEFAULT_MAX_TIMES_CONNECT_FAIL 5
 
 CMvNetworkConfig::CMvNetworkConfig()
 {
@@ -28,9 +28,11 @@ CMvNetworkConfig::CMvNetworkConfig()
                          DEFAULT_CONNECT_TIMEOUT);
     AddOpt<std::vector<std::string> >(desc, "addnode", vNode);
     AddOpt<std::vector<std::string> >(desc, "connect", vConnectTo);
+    AddOpt<std::vector<std::string> >(desc, "dnseednode", vDNSeed);
     AddOpt<int>(desc, "dnseedport",nDNSeedPort,DEFAULT_DNSEED_PORT);
     AddOpt<unsigned int>(desc, "dnseedmaxtimes",nMaxTimes2ConnectFail,
                                 DNSEED__DEFAULT_MAX_TIMES_CONNECT_FAIL);
+    AddOpt<std::string>(desc, "confidentAddress", strConfidentAddress, "");                              
     AddOptions(desc);
 }
 CMvNetworkConfig::~CMvNetworkConfig() {}

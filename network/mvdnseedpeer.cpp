@@ -14,7 +14,7 @@ CMvDNSeedPeer::CMvDNSeedPeer(CPeerNet *pPeerNetIn, CIOClient* pClientIn,uint64 n
                      bool fInBoundIn,uint32 nMsgMagicIn,uint32 nHsTimerIdIn)
 : CMvPeer(pPeerNetIn,pClientIn,nNonceIn,fInBoundIn,nMsgMagicIn,nHsTimerIdIn)
 {   
-    
+    _isTestPeer=false;
 }   
     
 CMvDNSeedPeer::~CMvDNSeedPeer()
@@ -26,7 +26,7 @@ bool CMvDNSeedPeer::HandshakeCompletd()
 {
      nHsTimerId = 0;
      Read(MESSAGE_HEADER_SIZE,boost::bind(&CMvDNSeedPeer::HandleReadHeader,this));
-     if(DNSeedService::getInstance()->isDNSeedService())
+     if(_isTestPeer)
      {
          ((CMvPeerNet*)pPeerNet)->dnseedTestConnSuccess(this);
      }else{
@@ -38,7 +38,6 @@ bool CMvDNSeedPeer::HandshakeCompletd()
 
 bool CMvDNSeedPeer::HandleReadCompleted()
 {
-    //CMvPeer::HandleReadCompleted();
     CWalleveBufStream& ss = ReadStream();
     uint256 hash = multiverse::crypto::CryptoHash(ss.GetData(),ss.GetSize());
     if (hdrRecv.nPayloadChecksum == hash.Get32())
@@ -47,11 +46,11 @@ bool CMvDNSeedPeer::HandleReadCompleted()
         {
             if (((CMvPeerNet*)pPeerNet)->HandlePeerRecvMessage(this,hdrRecv.GetChannel(),hdrRecv.GetCommand(),ss))
             {
-                Read(MESSAGE_HEADER_SIZE,boost::bind(&CMvDNSeedPeer::HandleReadHeader,this));
-                if(hdrRecv.GetChannel()==MVPROTO_CHN_NETWORK && hdrRecv.GetCommand()==MVPROTO_CMD_GETADDRESS)
+                if(hdrRecv.GetChannel()==MVPROTO_CHN_NETWORK && hdrRecv.GetCommand()==MVPROTO_CMD_ADDRESS)
                 {
-                    ((CMvPeerNet*)pPeerNet)->RemoveNode(this->GetRemote());//
+                    ((CMvPeerNet*)pPeerNet)->HandlePeerClose(this);
                 }
+                Read(MESSAGE_HEADER_SIZE,boost::bind(&CMvDNSeedPeer::HandleReadHeader,this));
                 return true;
             }
         }

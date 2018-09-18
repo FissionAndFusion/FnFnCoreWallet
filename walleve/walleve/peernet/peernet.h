@@ -46,6 +46,7 @@ public:
     CPeerNet(const std::string& walleveOwnKeyIn);
     ~CPeerNet();
     void ConfigNetwork(CPeerNetConfig& config);
+    void HandlePeerClose(CPeer * pPeer);
     void HandlePeerViolate(CPeer *pPeer);
     void HandlePeerError(CPeer *pPeer);
     virtual void HandlePeerWriten(CPeer *pPeer);
