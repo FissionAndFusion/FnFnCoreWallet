@@ -15,8 +15,8 @@ handlepair.cpp
 )
 
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS 
-../../walleve/walleve/dbp/dbp-proto/dbp.proto 
-../../walleve/walleve/dbp/dbp-proto/lws.proto)
+../../src/dbp-proto/dbp.proto 
+../../src/dbp-proto/lws.proto)
 
 add_executable(dbpclient ${sources}  ${PROTO_SRCS} ${PROTO_HDRS})
 

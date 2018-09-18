@@ -31,12 +31,26 @@ set(sources
 	blockmaker.cpp blockmaker.h
 	rpcclient.cpp rpcclient.h
 	miner.cpp miner.h
+
 	dbpservice.cpp dbpservice.h
+	dbptype.h
+	dbpserver.h
+	dbpserver.cpp
+	dbputils.hpp
 )
 
-add_executable(multiverse ${sources})
+protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS 
+dbp-proto/dbp.proto 
+dbp-proto/lws.proto)
 
-include_directories(../walleve ../crypto ../common ../storage ../network)
+add_executable(multiverse ${sources} ${PROTO_SRCS} ${PROTO_HDRS})
+
+
+
+include_directories(../walleve ../crypto ../common ../storage 
+../network)
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
+include_directories(${Protobuf_INCLUDE_DIRS})
 
 target_link_libraries(multiverse
 	Boost::system

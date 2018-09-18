@@ -1,9 +1,9 @@
-#ifndef WALLEVE_DBP_TYPE_H
-#define WALLEVE_DBP_TYPE_H
+#ifndef DBP_TYPE_H
+#define DBP_TYPE_H
 
 #include <boost/any.hpp>
 
-namespace walleve{
+namespace multiverse{
 
 class CWalleveDbpContent
 {
@@ -190,5 +190,5 @@ class CWalleveDbpBroken
 public:
     bool fEventStream;
 };
-} // namespace walleve
-#endif//WALLEVE_DBP_TYPE_H
+} // namespace multiverse
+#endif //DBP_TYPE_H

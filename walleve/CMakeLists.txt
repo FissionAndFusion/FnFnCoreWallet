@@ -44,24 +44,12 @@ set(sources
 	walleve/http/httpevent.h
 	walleve/peernet/peerevent.h
 	walleve/peernet/peerinfo.h
-
-	# DBP server src
-	walleve/dbp/dbpevent.h
-	walleve/dbp/dbptype.h
-	walleve/dbp/dbpserver.h
-	walleve/dbp/dbpserver.cpp
-	walleve/dbp/dbputils.hpp
 )
 
-protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS 
-walleve/dbp/dbp-proto/dbp.proto 
-walleve/dbp/dbp-proto/lws.proto)
-
-add_library(walleve ${sources}  ${PROTO_SRCS} ${PROTO_HDRS})
+add_library(walleve ${sources})
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
-include_directories(${Protobuf_INCLUDE_DIRS})
-include_directories(${PROJECT_SOURCE_DIR}/walleve)
+include_directories(./)
 
 target_link_libraries(walleve
 	Boost::system
@@ -72,6 +60,5 @@ target_link_libraries(walleve
 	Boost::regex
         OpenSSL::SSL
         OpenSSL::Crypto
-	${Protobuf_LIBRARIES}
 	${Readline_LIBRARY}
 )

@@ -1,11 +1,13 @@
-#ifndef WALLEVE_DBP_SERVER_H
-#define WALLEVE_DBP_SERVER_H
+#ifndef DBP_SERVER_H
+#define DBP_SERVER_H
 
 #include "walleve/netio/ioproc.h"
-#include "walleve/dbp/dbpevent.h"
+#include "event.h"
 
 #include <boost/bimap.hpp>
 #include <boost/any.hpp>
+
+using namespace walleve;
 
 namespace dbp{
     class Base;
@@ -17,7 +19,7 @@ namespace google {
     }
 }
 
-namespace walleve{
+namespace multiverse{
 
 class CDbpServer;
 
@@ -121,7 +123,8 @@ public:
     uint64 timestamp;
 };
 
-class CDbpServer : public CIOProc, virtual public CWalleveDBPEventListener
+class CDbpServer : public CIOProc, virtual public CDBPEventListener,
+virtual public CMvDBPEventListener
 {
 public:
     CDbpServer();
@@ -185,5 +188,5 @@ protected:
 
     std::shared_ptr<boost::asio::deadline_timer> pingTimerPtr_;
 };
-} //namespace walleve
-#endif //WALLEVE_DBP_SERVER_H
+} //namespace multiverse
+#endif //DBP_SERVER_H

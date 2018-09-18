@@ -6,6 +6,7 @@
 #define  MULTIVERSE_EVENT_H
 
 #include "mvtype.h"
+#include "dbptype.h"
 #include "block.h"
 #include "transaction.h"
 #include "mvpeerevent.h"
@@ -75,12 +76,55 @@ public:
     D data;
 };
 
+
+enum {
+    WALLEVE_EVENT_DBP_REQ,
+    WALLEVE_EVENT_DBP_RSP,
+    WALLEVE_EVENT_DBP_CONNECT,
+    WALLEVE_EVENT_DBP_CONNECTED,
+    WALLEVE_EVENT_DBP_FAILED,
+    WALLEVE_EVENT_DBP_SUB,
+    WALLEVE_EVENT_DBP_UNSUB,
+    WALLEVE_EVENT_DBP_NOSUB,
+    WALLEVE_EVENT_DBP_READY,
+    WALLEVE_EVENT_DBP_ADDED,
+    WALLEVE_EVENT_DBP_METHOD,
+    WALLEVE_EVENT_DBP_RESULT,
+
+    WALLEVE_EVENT_DBP_PING,
+    WALLEVE_EVENT_DBP_PONG,
+
+    WALLEVE_EVENT_DBP_BROKEN
+};
+
 class CMvDBPEventListener;
+class CDBPEventListener;
 #define TYPE_DBPEVENT(type,body)       \
         CMvEventDbpSocketData<type,CMvDBPEventListener,body>
 
+#define TYPE_DBP_EVENT(type,body) 	\
+	walleve::CWalleveEventCategory<type,CDBPEventListener,body,bool>
+
 typedef TYPE_DBPEVENT(MV_EVENT_DBP_SOCKET_ADD_NEW_BLOCK,uint256) CMvEventDbpUpdateNewBlock;
 typedef TYPE_DBPEVENT(MV_EVENT_DBP_SOCKET_ADD_NEW_TX,CTransaction) CMvEventDbpUpdateNewTx;
+
+typedef TYPE_DBP_EVENT(WALLEVE_EVENT_DBP_REQ,CWalleveDbpRequest) CWalleveEventDbpRequest;
+typedef TYPE_DBP_EVENT(WALLEVE_EVENT_DBP_RSP,CWalleveDbpRespond) CWalleveEventDbpRespond;
+typedef TYPE_DBP_EVENT(WALLEVE_EVENT_DBP_CONNECT,CWalleveDbpConnect) CWalleveEventDbpConnect;
+typedef TYPE_DBP_EVENT(WALLEVE_EVENT_DBP_CONNECTED,CWalleveDbpConnected) CWalleveEventDbpConnected;
+typedef TYPE_DBP_EVENT(WALLEVE_EVENT_DBP_FAILED,CWalleveDbpFailed) CWalleveEventDbpFailed;
+typedef TYPE_DBP_EVENT(WALLEVE_EVENT_DBP_SUB,CWalleveDbpSub) CWalleveEventDbpSub;
+typedef TYPE_DBP_EVENT(WALLEVE_EVENT_DBP_UNSUB,CWalleveDbpUnSub) CWalleveEventDbpUnSub;
+typedef TYPE_DBP_EVENT(WALLEVE_EVENT_DBP_NOSUB,CWalleveDbpNoSub) CWalleveEventDbpNoSub;
+typedef TYPE_DBP_EVENT(WALLEVE_EVENT_DBP_READY,CWalleveDbpReady) CWalleveEventDbpReady;
+typedef TYPE_DBP_EVENT(WALLEVE_EVENT_DBP_ADDED,CWalleveDbpAdded) CWalleveEventDbpAdded;
+typedef TYPE_DBP_EVENT(WALLEVE_EVENT_DBP_METHOD,CWalleveDbpMethod) CWalleveEventDbpMethod;
+typedef TYPE_DBP_EVENT(WALLEVE_EVENT_DBP_RESULT,CWalleveDbpMethodResult) CWalleveEventDbpMethodResult;
+typedef TYPE_DBP_EVENT(WALLEVE_EVENT_DBP_BROKEN,CWalleveDbpBroken) CWalleveEventDbpBroken;
+
+// HeartBeats
+typedef TYPE_DBP_EVENT(WALLEVE_EVENT_DBP_PING,CWalleveDbpPing) CWalleveEventDbpPing;
+typedef TYPE_DBP_EVENT(WALLEVE_EVENT_DBP_PONG,CWalleveDbpPong) CWalleveEventDbpPong;
 
 class CMvDBPEventListener : virtual public walleve::CWalleveEventListener
 {
@@ -88,6 +132,28 @@ public:
     virtual ~CMvDBPEventListener() {}
     DECLARE_EVENTHANDLER(CMvEventDbpUpdateNewBlock);
     DECLARE_EVENTHANDLER(CMvEventDbpUpdateNewTx);
+};
+
+class CDBPEventListener : virtual public walleve::CWalleveEventListener
+{
+public:
+    virtual ~CDBPEventListener() {}
+    DECLARE_EVENTHANDLER(CWalleveEventDbpRequest);
+    DECLARE_EVENTHANDLER(CWalleveEventDbpRespond);
+    DECLARE_EVENTHANDLER(CWalleveEventDbpConnect);
+    DECLARE_EVENTHANDLER(CWalleveEventDbpConnected);
+    DECLARE_EVENTHANDLER(CWalleveEventDbpFailed);
+    DECLARE_EVENTHANDLER(CWalleveEventDbpSub);
+    DECLARE_EVENTHANDLER(CWalleveEventDbpUnSub);
+    DECLARE_EVENTHANDLER(CWalleveEventDbpNoSub);
+    DECLARE_EVENTHANDLER(CWalleveEventDbpReady);
+    DECLARE_EVENTHANDLER(CWalleveEventDbpAdded);
+    DECLARE_EVENTHANDLER(CWalleveEventDbpMethod);
+    DECLARE_EVENTHANDLER(CWalleveEventDbpMethodResult);
+    DECLARE_EVENTHANDLER(CWalleveEventDbpBroken);
+
+    DECLARE_EVENTHANDLER(CWalleveEventDbpPing);
+    DECLARE_EVENTHANDLER(CWalleveEventDbpPong);
 };
 
 } // namespace multiverse

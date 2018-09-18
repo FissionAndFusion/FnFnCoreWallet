@@ -11,6 +11,7 @@
 #include "lws.pb.h"
 #include "dbputils.hpp"
 
+using namespace multiverse;
 using namespace walleve;
 
 static const std::size_t MSG_HEADER_LEN = 4;

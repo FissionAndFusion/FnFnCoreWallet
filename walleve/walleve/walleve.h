@@ -32,7 +32,6 @@
 #include <walleve/http/httpevent.h>
 #include <walleve/http/httpget.h>
 #include <walleve/http/httpserver.h>
-#include <walleve/dbp/dbpserver.h>
 
 #endif //WALLEVE_H
 

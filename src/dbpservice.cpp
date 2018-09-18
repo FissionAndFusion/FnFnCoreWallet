@@ -66,20 +66,20 @@ void CDbpService::WalleveHandleDeinitialize()
     pWallet = NULL;
 }
 
-bool CDbpService::HandleEvent(walleve::CWalleveEventDbpPong& event)
+bool CDbpService::HandleEvent(CWalleveEventDbpPong& event)
 {
     (void)event;
     return true;
 }
 
-bool CDbpService::HandleEvent(walleve::CWalleveEventDbpConnect& event)
+bool CDbpService::HandleEvent(CWalleveEventDbpConnect& event)
 {
     bool isReconnect = event.data.isReconnect;
 
     if(isReconnect)
     {
          // reply normal
-        walleve::CWalleveEventDbpConnected eventConnected(event.session_);
+        CWalleveEventDbpConnected eventConnected(event.session_);
         eventConnected.data.session = event.data.session;
         pDbpServer->DispatchEvent(&eventConnected);
     }
@@ -89,7 +89,7 @@ bool CDbpService::HandleEvent(walleve::CWalleveEventDbpConnect& event)
         {
             // reply failed
             std::vector<int> versions{1};
-            walleve::CWalleveEventDbpFailed eventFailed(event.session_);
+            CWalleveEventDbpFailed eventFailed(event.session_);
             eventFailed.data.reason = "001";
             eventFailed.data.versions = versions;
             eventFailed.data.session  = event.data.session;
@@ -98,7 +98,7 @@ bool CDbpService::HandleEvent(walleve::CWalleveEventDbpConnect& event)
         else
         {
             // reply normal
-            walleve::CWalleveEventDbpConnected eventConnected(event.session_);
+            CWalleveEventDbpConnected eventConnected(event.session_);
             eventConnected.data.session = event.data.session;
             pDbpServer->DispatchEvent(&eventConnected);
         }
@@ -107,7 +107,7 @@ bool CDbpService::HandleEvent(walleve::CWalleveEventDbpConnect& event)
     return true;
 }
 
-bool CDbpService::HandleEvent(walleve::CWalleveEventDbpSub& event)
+bool CDbpService::HandleEvent(CWalleveEventDbpSub& event)
 {
     std::string id = event.data.id;
     std::string topicName = event.data.name;
@@ -118,7 +118,7 @@ bool CDbpService::HandleEvent(walleve::CWalleveEventDbpSub& event)
     {
          // reply nosub
         std::cout << "Sub topic not exists: " << topicName << std::endl;
-        walleve::CWalleveEventDbpNoSub eventNoSub(event.session_);
+        CWalleveEventDbpNoSub eventNoSub(event.session_);
         eventNoSub.data.id = event.data.id;
         pDbpServer->DispatchEvent(&eventNoSub);
     }
@@ -130,7 +130,7 @@ bool CDbpService::HandleEvent(walleve::CWalleveEventDbpSub& event)
         << id << std::endl;
         
         // reply ready
-        walleve::CWalleveEventDbpReady eventReady(event.session_);
+        CWalleveEventDbpReady eventReady(event.session_);
         eventReady.data.id = id;
         pDbpServer->DispatchEvent(&eventReady);
 
@@ -141,13 +141,13 @@ bool CDbpService::HandleEvent(walleve::CWalleveEventDbpSub& event)
     return true;
 }
 
-bool CDbpService::HandleEvent(walleve::CWalleveEventDbpUnSub& event)
+bool CDbpService::HandleEvent(CWalleveEventDbpUnSub& event)
 {
     UnSubTopic(event.data.id);   
     return true;
 }
 
-void CDbpService::HandleGetTransaction(walleve::CWalleveEventDbpMethod& event)
+void CDbpService::HandleGetTransaction(CWalleveEventDbpMethod& event)
 {
     std::string id = event.data.id;
     std::string txid = event.data.params["hash"];
@@ -159,17 +159,17 @@ void CDbpService::HandleGetTransaction(walleve::CWalleveEventDbpMethod& event)
     
     if(pService->GetTransaction(txHash,tx,forkHash,blockHeight))
     {
-        walleve::CWalleveDbpTransaction dbpTx;
+        CWalleveDbpTransaction dbpTx;
         CreateDbpTransaction(tx,dbpTx);
 
-        walleve::CWalleveEventDbpMethodResult eventResult(event.session_);
+        CWalleveEventDbpMethodResult eventResult(event.session_);
         eventResult.data.id = id;
         eventResult.data.anyResultObjs.push_back(dbpTx);
         pDbpServer->DispatchEvent(&eventResult);
     }
     else
     {
-        walleve::CWalleveEventDbpMethodResult eventResult(event.session_);
+        CWalleveEventDbpMethodResult eventResult(event.session_);
         eventResult.data.id = id;
         eventResult.data.error = "404";
         pDbpServer->DispatchEvent(&eventResult);
@@ -177,7 +177,7 @@ void CDbpService::HandleGetTransaction(walleve::CWalleveEventDbpMethod& event)
 
 }
 
-void CDbpService::HandleSendTransaction(walleve::CWalleveEventDbpMethod& event)
+void CDbpService::HandleSendTransaction(CWalleveEventDbpMethod& event)
 {
     std::string data = event.data.params["data"];
 
@@ -192,7 +192,7 @@ void CDbpService::HandleSendTransaction(walleve::CWalleveEventDbpMethod& event)
     }
     catch (const std::exception &e)
     {
-        walleve::CWalleveEventDbpMethodResult eventResult(event.session_);
+        CWalleveEventDbpMethodResult eventResult(event.session_);
         eventResult.data.id = event.data.id;
         eventResult.data.error = "400";
         pDbpServer->DispatchEvent(&eventResult);
@@ -202,10 +202,10 @@ void CDbpService::HandleSendTransaction(walleve::CWalleveEventDbpMethod& event)
     MvErr err = pService->SendTransaction(rawTx);
     if (err == MV_OK)
     {
-        walleve::CWalleveEventDbpMethodResult eventResult(event.session_);
+        CWalleveEventDbpMethodResult eventResult(event.session_);
         eventResult.data.id = event.data.id;
         
-        walleve::CWalleveDbpSendTxRet sendTxRet;
+        CWalleveDbpSendTxRet sendTxRet;
         sendTxRet.hash = data;
         sendTxRet.result = "succeed";
         eventResult.data.anyResultObjs.push_back(sendTxRet);
@@ -214,10 +214,10 @@ void CDbpService::HandleSendTransaction(walleve::CWalleveEventDbpMethod& event)
     }
     else
     {
-        walleve::CWalleveEventDbpMethodResult eventResult(event.session_);
+        CWalleveEventDbpMethodResult eventResult(event.session_);
         eventResult.data.id = event.data.id;
       
-        walleve::CWalleveDbpSendTxRet sendTxRet;
+        CWalleveDbpSendTxRet sendTxRet;
         sendTxRet.hash = data;
         sendTxRet.result = "failed";
         sendTxRet.reason = std::string(MvErrString(err));
@@ -263,7 +263,7 @@ bool CDbpService::IsEmpty(const uint256& hash)
     return hash.ToString() == EMPTY_HASH;
 }
 
-bool CDbpService::GetBlocks(const uint256& startHash, int32 n, std::vector<walleve::CWalleveDbpBlock>& blocks)
+bool CDbpService::GetBlocks(const uint256& startHash, int32 n, std::vector<CWalleveDbpBlock>& blocks)
 {
     uint256 blockHash = startHash;
     std::cout << "blockhash: " << blockHash.ToString() << std::endl;
@@ -294,7 +294,7 @@ bool CDbpService::GetBlocks(const uint256& startHash, int32 n, std::vector<walle
             primaryBlockCount++;
         }
         
-        walleve::CWalleveDbpBlock DbpBlock;
+        CWalleveDbpBlock DbpBlock;
         CreateDbpBlock(block,forkHash,blockHeight,DbpBlock);
         blocks.push_back(DbpBlock);
         
@@ -304,18 +304,18 @@ bool CDbpService::GetBlocks(const uint256& startHash, int32 n, std::vector<walle
     return true; 
 }
 
-void CDbpService::HandleGetBlocks(walleve::CWalleveEventDbpMethod& event)
+void CDbpService::HandleGetBlocks(CWalleveEventDbpMethod& event)
 {
     std::string blockHash = event.data.params["hash"];
     int32 blockNum = boost::lexical_cast<int32>(event.data.params["number"]);
     
     uint256 startBlockHash(std::vector<unsigned char>(blockHash.begin(),blockHash.end()));
-    std::vector<walleve::CWalleveDbpBlock> blocks;
+    std::vector<CWalleveDbpBlock> blocks;
     if(GetBlocks(startBlockHash,blockNum,blocks))
     {
         std::cout << "Get Blocks success[service]: " << blocks.size() << std::endl;
         
-        walleve::CWalleveEventDbpMethodResult eventResult(event.session_);
+        CWalleveEventDbpMethodResult eventResult(event.session_);
         eventResult.data.id = event.data.id;
         
         for(auto& block : blocks)
@@ -328,24 +328,24 @@ void CDbpService::HandleGetBlocks(walleve::CWalleveEventDbpMethod& event)
     else
     {
         
-        walleve::CWalleveEventDbpMethodResult eventResult(event.session_);
+        CWalleveEventDbpMethodResult eventResult(event.session_);
         eventResult.data.id = event.data.id;
         eventResult.data.error = "400";
         pDbpServer->DispatchEvent(&eventResult);
     }
 }
 
-bool CDbpService::HandleEvent(walleve::CWalleveEventDbpMethod& event)
+bool CDbpService::HandleEvent(CWalleveEventDbpMethod& event)
 {
-    if(event.data.method == walleve::CWalleveDbpMethod::Method::GET_BLOCKS)
+    if(event.data.method == CWalleveDbpMethod::Method::GET_BLOCKS)
     {
         HandleGetBlocks(event);    
     }
-    else if(event.data.method == walleve::CWalleveDbpMethod::Method::GET_TX)
+    else if(event.data.method == CWalleveDbpMethod::Method::GET_TX)
     {
         HandleGetTransaction(event);
     }
-    else if(event.data.method == walleve::CWalleveDbpMethod::Method::SEND_TX)
+    else if(event.data.method == CWalleveDbpMethod::Method::SEND_TX)
     {
         HandleSendTransaction(event);
     }
@@ -358,7 +358,7 @@ bool CDbpService::HandleEvent(walleve::CWalleveEventDbpMethod& event)
 }
 
 void CDbpService::CreateDbpBlock(const CBlock& blockDetail,const uint256& forkHash, 
-int blockHeight, walleve::CWalleveDbpBlock& block)
+int blockHeight, CWalleveDbpBlock& block)
 {
     block.nVersion = blockDetail.nVersion;
     block.nType = blockDetail.nType;
@@ -379,7 +379,7 @@ int blockHeight, walleve::CWalleveDbpBlock& block)
     // vtx
     for(const auto& tx : blockDetail.vtx)
     {
-        walleve::CWalleveDbpTransaction dbpTx;
+        CWalleveDbpTransaction dbpTx;
         CreateDbpTransaction(tx,dbpTx);
         block.vtx.push_back(dbpTx);
     }
@@ -389,7 +389,7 @@ int blockHeight, walleve::CWalleveDbpBlock& block)
     blockDetail.GetHash().ToDataStream(hashStream);
 }
 
-void CDbpService::CreateDbpTransaction(const CTransaction& tx,walleve::CWalleveDbpTransaction& dbptx)
+void CDbpService::CreateDbpTransaction(const CTransaction& tx,CWalleveDbpTransaction& dbptx)
 {
     dbptx.nVersion = tx.nVersion;
     dbptx.nType = tx.nType;
@@ -400,7 +400,7 @@ void CDbpService::CreateDbpTransaction(const CTransaction& tx,walleve::CWalleveD
 
     for(const auto& input : tx.vInput)
     {
-        walleve::CWalleveDbpTxIn txin;
+        CWalleveDbpTxIn txin;
         txin.n = input.prevout.n;
         
         walleve::CWalleveODataStream txInHashStream(txin.hash);
@@ -425,7 +425,7 @@ void CDbpService::CreateDbpTransaction(const CTransaction& tx,walleve::CWalleveD
     tx.GetHash().ToDataStream(hashStream);
 }
 
-void CDbpService::PushBlock(const walleve::CWalleveDbpBlock& block)
+void CDbpService::PushBlock(const CWalleveDbpBlock& block)
 {
     for(const auto& kv : idSubedSessionMap)
     {
@@ -434,7 +434,7 @@ void CDbpService::PushBlock(const walleve::CWalleveDbpBlock& block)
 
         if(subedAllBlocksIds.find(id) != subedAllBlocksIds.end())
         {
-            walleve::CWalleveEventDbpAdded eventAdded(session);
+            CWalleveEventDbpAdded eventAdded(session);
             eventAdded.data.id = id;
             eventAdded.data.name = "all-block";
             eventAdded.data.anyAddedObj = block;
@@ -444,7 +444,7 @@ void CDbpService::PushBlock(const walleve::CWalleveDbpBlock& block)
     }
 }
 
-void CDbpService::PushTx(const walleve::CWalleveDbpTransaction& dbptx)
+void CDbpService::PushTx(const CWalleveDbpTransaction& dbptx)
 {
     for(const auto& kv : idSubedSessionMap)
     {
@@ -453,7 +453,7 @@ void CDbpService::PushTx(const walleve::CWalleveDbpTransaction& dbptx)
 
         if(subedAllTxIds.find(id) != subedAllTxIds.end())
         {
-            walleve::CWalleveEventDbpAdded eventAdded(session);
+            CWalleveEventDbpAdded eventAdded(session);
             eventAdded.data.id = id;
             eventAdded.data.name = "all-tx";
             eventAdded.data.anyAddedObj = dbptx;
@@ -472,7 +472,7 @@ bool CDbpService::HandleEvent(CMvEventDbpUpdateNewBlock& event)
    
     if(pService->GetBlock(blockHash,newBlock,forkHash,blockHeight))
     {
-        walleve::CWalleveDbpBlock block;
+        CWalleveDbpBlock block;
         CreateDbpBlock(newBlock,forkHash,blockHeight,block);
         PushBlock(block);
     } 
@@ -484,7 +484,7 @@ bool CDbpService::HandleEvent(CMvEventDbpUpdateNewTx& event)
 {
     decltype(event.data) & newtx = event.data;
 
-    walleve::CWalleveDbpTransaction dbpTx;
+    CWalleveDbpTransaction dbpTx;
     CreateDbpTransaction(newtx,dbpTx);
     PushTx(dbpTx);
 

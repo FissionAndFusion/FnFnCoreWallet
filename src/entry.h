@@ -6,6 +6,7 @@
 #define  MULTIVERSE_ENTRY_H
 
 #include "config.h"
+#include "dbpserver.h"
 #include <walleve/walleve.h>
 #include <boost/filesystem.hpp>
 
@@ -24,7 +25,7 @@ protected:
     bool InitializeService();
     bool InitializeClient();
     walleve::CHttpHostConfig GetRPCHostConfig();
-    walleve::CDbpHostConfig GetDbpHostConfig();
+    CDbpHostConfig GetDbpHostConfig();
 
     boost::filesystem::path GetDefaultDataDir();
 
