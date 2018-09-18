@@ -307,7 +307,7 @@ bool CMvDbpConfig::PostLoad()
         nDbpConnectTimeout = 10;
     }
 
-    epDbp = tcp::endpoint(!vDbpAllowIP.empty()
+    epDbp = tcp::endpoint(vDbpAllowIP.empty()
                               ? boost::asio::ip::address_v4::any()
                                 : boost::asio::ip::address_v4::loopback(),
                           nDbpPort);
