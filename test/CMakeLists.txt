@@ -15,7 +15,7 @@ set(sources
 
 add_executable(test_fnfn ${sources})
 
-include_directories(.. ../../walleve ../../crypto ../../common ../../storage ../../network)
+include_directories(../src ../walleve ../crypto ../common ../storage ../network)
 
 target_link_libraries(test_fnfn
 	Boost::unit_test_framework
