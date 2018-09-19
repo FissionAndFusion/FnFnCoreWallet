@@ -485,11 +485,10 @@ void CDbpClient::HandleReadPayload(std::size_t nTransferred, uint32_t len)
 void CDbpClient::HandleReadCompleted(uint32_t len)
 {
     // start parse msg body(payload) by protobuf
-    dbp::Base msgBase;
-
     std::string payloadBuffer(len, 0);
     ssRecv.Read(&payloadBuffer[0], len);
 
+    dbp::Base msgBase;
     if (!msgBase.ParseFromArray(&payloadBuffer[0], len))
     {
         pServer->RespondError(this, 400, "Parse Msg Base failed");
