@@ -169,7 +169,9 @@ void HandlePair::MethodHandler(dbp::Result &result)
             google::protobuf::Any any = result.result(i); 
             lws::SendTxRet ret;
             any.UnpackTo(&ret);
-            std::cout << "[<]txid:" << ret.hash() << std::endl;
+            std::cout << "[<]sendtransaction txid: " << ret.hash() << std::endl;
+            std::cout << "[<]sendtransaction result: " << ret.result() << std::endl;
+            std::cout << "[<]sendtransaction reason: " << ret.reason() << std::endl;
         }
     }
 }

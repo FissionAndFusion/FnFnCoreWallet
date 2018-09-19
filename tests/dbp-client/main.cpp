@@ -51,6 +51,11 @@ void callback1(Client *cl)
     lws::SendTxArg sendtx_arg;
   
     CTransaction tx;
+    tx.SetNull();
+    tx.nAmount = 120;
+    tx.nVersion = 1;
+    tx.nTxFee = 1;
+    
     walleve::CWalleveBufStream ss;
     ss << tx;
     

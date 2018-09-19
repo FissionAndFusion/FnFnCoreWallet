@@ -342,6 +342,8 @@ void CDbpClient::SendResponse(CWalleveDbpMethodResult& body)
             lws::SendTxRet sendTxRet;
            
             sendTxRet.set_hash(txret.hash);
+            sendTxRet.set_result(txret.result);
+            sendTxRet.set_reason(txret.reason);
             resultMsg.add_result()->PackFrom(sendTxRet);
         }
         else

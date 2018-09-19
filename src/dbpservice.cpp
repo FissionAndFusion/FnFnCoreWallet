@@ -196,16 +196,27 @@ void CDbpService::HandleSendTransaction(CWalleveEventDbpMethod& event)
     }
     catch (const std::exception &e)
     {
+        
+        std::cout << "stream to CTransaction failed " << std::endl;
+        
         CWalleveEventDbpMethodResult eventResult(event.session_);
         eventResult.data.id = event.data.id;
         eventResult.data.error = "400";
         pDbpServer->DispatchEvent(&eventResult);
         return;
     }
+
+    std::cout << "stream to CTransaction successed " << std::endl;
+    std::cout << "tx amount: " << rawTx.nAmount << std::endl;
+    std::cout << "tx version: " << rawTx.nVersion << std::endl;
+    std::cout << "tx fee: " << rawTx.nTxFee << std::endl;
     
     MvErr err = pService->SendTransaction(rawTx);
     if (err == MV_OK)
     {
+        
+        std::cout << "tx send success" << std::endl;
+        
         CWalleveEventDbpMethodResult eventResult(event.session_);
         eventResult.data.id = event.data.id;
         
@@ -218,6 +229,8 @@ void CDbpService::HandleSendTransaction(CWalleveEventDbpMethod& event)
     }
     else
     {
+        std::cout << "tx send failed" << std::endl;
+        
         CWalleveEventDbpMethodResult eventResult(event.session_);
         eventResult.data.id = event.data.id;
       
