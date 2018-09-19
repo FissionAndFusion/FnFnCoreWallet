@@ -9,6 +9,10 @@
 #include "dbp.pb.h"
 #include "lws.pb.h"
 #include "../../crypto/uint256.h"
+#include "../../common/transaction.h"
+#include "../../walleve/walleve/stream/stream.h"
+
+using namespace walleve;
 
 void callback(Client *cl)
 {
@@ -31,7 +35,7 @@ void callback(Client *cl)
 
 void callback1(Client *cl)
 {
-    HandlePair block_hp;
+    /*HandlePair block_hp;
     lws::GetBlocksArg block_arg;
     uint256 hash;
     hash.SetHex("a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0");
@@ -39,7 +43,22 @@ void callback1(Client *cl)
     block_arg.set_number(5);
     google::protobuf::Any *block_any = new google::protobuf::Any();
     block_any->PackFrom(block_arg);
-    std::string mehtod_id = cl->SendMethod("getblocks", block_any, block_hp);
+    std::string mehtod_id = cl->SendMethod("getblocks", block_any, block_hp);*/
+
+    ///////////////////////////////////////////////////////////////////////
+
+    HandlePair sendtx_hp;
+    lws::SendTxArg sendtx_arg;
+  
+    CTransaction tx;
+    walleve::CWalleveBufStream ss;
+    ss << tx;
+    
+    std::string data(ss.GetData(),ss.GetSize());
+    sendtx_arg.set_data(data);
+    google::protobuf::Any *tx_any = new google::protobuf::Any();
+    tx_any->PackFrom(sendtx_arg);
+    std::string mehtod_id = cl->SendMethod("sendtransaction", tx_any, sendtx_hp);
 }
 
 void run(std::string ip, int port)

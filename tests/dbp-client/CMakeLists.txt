@@ -23,6 +23,7 @@ add_executable(dbpclient ${sources}  ${PROTO_SRCS} ${PROTO_HDRS})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${Protobuf_INCLUDE_DIRS})
 include_directories(../../walleve)
+include_directories(../../crypto)
 
 target_link_libraries(dbpclient
 Boost::system
@@ -33,5 +34,7 @@ Boost::date_time
 Boost::regex
     OpenSSL::SSL
     OpenSSL::Crypto
+walleve
+crypto
 ${Protobuf_LIBRARIES}
 )
