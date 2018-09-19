@@ -17,7 +17,6 @@ using namespace std;
 
 #define HANDSHAKE_TIMEOUT 5
 #define TIMING_FILTER_INTERVAL (boost::posix_time::seconds(10 * 60)) //(12*60*60)
-#define TIMING_GET_TRUSTED_HEIGHT (boost::posix_time::seconds(1 * 60))
 #define FORGIVE_HEIGHT_ERROR_VALUE 5
 
 CMvDNSeedPeer::CMvDNSeedPeer(CPeerNet *pPeerNetIn, CIOClient *pClientIn, uint64 nNonceIn,
