@@ -1,5 +1,41 @@
 #include "client.h"
 
+#include <algorithm>
+
+void DbpStream::write(const std::vector<unsigned char> &buf)
+{
+    std::ostream os(&buffer_);
+    os << std::string(buf.begin(), buf.end());
+}
+
+void DbpStream::read(std::vector<unsigned char> &buf, std::size_t n)
+{
+    // buffer_.prepare(n);
+    // buffer_.commit(n);
+
+    buf.resize(n);
+    buffer_.sgetn((char *)&buf[0], n);
+
+    // buf.assign(s.begin(), s.end());
+
+    buffer_.consume(n);
+}
+
+void DbpStream::clear()
+{
+    buffer_.consume(buffer_.size());
+}
+
+boost::asio::streambuf &DbpStream::get_data()
+{
+    return buffer_;
+}
+
+std::size_t DbpStream::get_size() const
+{
+    return buffer_.size();
+}
+
 Client::Client()
 {
 }
@@ -37,7 +73,7 @@ void Client::SockConnect()
 
     is_connected_ = true;
     SendConnect(session_);
-    sock_->async_read_some(boost::asio::buffer(m_buf_), boost::bind(&Client::ReadHandler, this, boost::asio::placeholders::error, sock_));
+    // sock_->async_read_some(boost::asio::buffer(m_buf_), boost::bind(&Client::ReadHandler, this, boost::asio::placeholders::error, sock_));
 }
 
 void Client::Start()
@@ -66,7 +102,7 @@ std::vector<char> Client::Serialize(dbp::Base base)
     std::memcpy(array, &nl, 4);
     base.SerializeToArray(array + 4, len);
     std::vector<char> ret(array, array + (len + 4));
-    delete [] array;
+    delete[] array;
     return ret;
 }
 
@@ -77,7 +113,7 @@ void Client::Send(std::vector<char> buf, std::string explain)
     // std::cout << "size of buf:" << size_buf << std::endl;
 
     dbp::Base base;
-    if(!base.ParseFromArray(&b[4], size_buf))
+    if (!base.ParseFromArray(&b[4], size_buf))
     {
         std::cerr << "[-]parse base msg false" << std::endl;
         return;
@@ -92,7 +128,7 @@ void Client::SendConnect(std::string session)
 {
     dbp::Connect connect;
     connect.set_session(session);
-    if("" == session)
+    if ("" == session)
     {
         connect.set_client(client_);
         connect.set_version(version_);
@@ -194,7 +230,7 @@ void Client::ConnHandler(const boost::system::error_code &ec, std::shared_ptr<bo
 
     SendConnect("");
     std::cout << "[-]recive from " << sock->remote_endpoint().address() << std::endl;
-    sock_->async_read_some(boost::asio::buffer(m_buf_), boost::bind(&Client::ReadHandler, this, boost::asio::placeholders::error, sock));
+    //  sock_->async_read_some(boost::asio::buffer(m_buf_), boost::bind(&Client::ReadHandler, this, boost::asio::placeholders::error, sock));
 }
 
 void Client::ErrorHandler()
@@ -219,7 +255,52 @@ void Client::TestHandle(Client *cl)
     cb_(cl);
 }
 
-void Client::ReadHandler(const boost::system::error_code &ec, std::shared_ptr<boost::asio::ip::tcp::socket> sock)
+void Client::ReadHeaderHandler(const boost::system::error_code &ec, std::shared_ptr<boost::asio::ip::tcp::socket> sock,
+                               std::size_t bytes_size)
+{
+    if (bytes_size != 4)
+    {
+        //std::cerr << "[-]read connection: " << ec.message() << ",code:" << ec << std::endl;
+        std::cerr << "byte size[read header handler]: " << bytes_size << std::endl;
+        // is_connected_ = false;
+        // m_io_.post(boost::bind(&Client::ErrorHandler, this));
+        std::cout << "Recv buffer size[read header handler]: " << ssRecv.get_size() << std::endl;
+        return;
+    }
+
+    std::cout << "transfer  size[read header handler]: " << bytes_size << std::endl;
+    std::cout << "Recv buffer size[read header handler]: " << ssRecv.get_size() << std::endl;
+
+    std::vector<unsigned char> headerBuf;
+    ssRecv.read(headerBuf, 4);
+
+    std::cout << " readed Recv buffer size[read header handler]: " << ssRecv.get_size() << std::endl;
+    std::cout << " header buffer size[read header handler]: " << headerBuf.size() << std::endl;
+
+    uint32_t b;
+    std::memcpy(&b, &headerBuf[0], 4);
+    uint32_t len = ntohl(b);
+
+    if (len == 0)
+    {
+        std::cerr << "len [read header handler]: 0 " << std::endl;
+        //is_connected_ = false;
+        // m_io_.post(boost::bind(&Client::ErrorHandler, this));
+        return;
+    }
+
+    std::cerr << "len [read header handler]:  " << len << std::endl;
+
+    boost::asio::async_read(*sock_, ssRecv.get_data(),
+                            boost::asio::transfer_exactly(len),
+                            boost::bind(&Client::ReadHandler,
+                                        this,
+                                        boost::asio::placeholders::error,
+                                        sock_,
+                                        boost::asio::placeholders::bytes_transferred, len));
+}
+
+void Client::ReadHandler(const boost::system::error_code &ec, std::shared_ptr<boost::asio::ip::tcp::socket> sock, std::size_t bytes_size, int len)
 {
     if (ec)
     {
@@ -230,24 +311,29 @@ void Client::ReadHandler(const boost::system::error_code &ec, std::shared_ptr<bo
         return;
     }
 
-    uint32_t b;
-    std::memcpy(&b, &m_buf_[0], 4);
-    uint32_t len = ntohl(b);
+    std::cout << "  transfer size:[read  handler]: " << bytes_size << std::endl;
+    std::cout << "  Recv buffer size[read  handler]: " << ssRecv.get_size() << std::endl;
 
+    std::cout << "msg len[read handler]: " << len << std::endl;
+
+    std::vector<unsigned char> payloadBuf;
+    ssRecv.read(payloadBuf, len);
+    std::cout << " readed Recv buffer size[read  handler]: " << ssRecv.get_size() << std::endl;
+    std::cout << " payload buffer size[read handler]: " << payloadBuf.size() << std::endl;
     dbp::Base base;
-    if(!base.ParseFromArray(&m_buf_[4], len))
+    if (!base.ParseFromArray(&payloadBuf[0], len))
     {
         std::cerr << "[-]parse base msg false" << std::endl;
         return;
     }
 
-    if(base.msg() == dbp::Msg::CONNECTED)
+    if (base.msg() == dbp::Msg::CONNECTED)
     {
-        if(base.object().Is<dbp::Connected>())
+        if (base.object().Is<dbp::Connected>())
         {
             dbp::Connected connected;
             base.object().UnpackTo(&connected);
-            std::cout << "[<]connected session is:" << connected.session() << std::endl; 
+            std::cout << "[<]connected session is:" << connected.session() << std::endl;
             is_connected_ = true;
             session_ = connected.session();
 
@@ -261,31 +347,31 @@ void Client::ReadHandler(const boost::system::error_code &ec, std::shared_ptr<bo
         m_io_.post(boost::bind(&Client::TestHandle, this, this));
     }
 
-    if(base.msg() == dbp::Msg::FAILED)
+    if (base.msg() == dbp::Msg::FAILED)
     {
         dbp::Failed failed;
         base.object().UnpackTo(&failed);
-        if("002" == failed.reason())
+        if ("002" == failed.reason())
         {
             session_ = "";
             SendConnect(session_);
         }
 
-        if("001" == failed.reason())
+        if ("001" == failed.reason())
         {
             session_ = "";
             version_ = failed.version()[0];
             SendConnect(session_);
         }
 
-        if("003" == failed.reason())
+        if ("003" == failed.reason())
         {
             session_ = "";
             SendConnect(session_);
         }
     }
 
-    if(base.msg() == dbp::Msg::PING)
+    if (base.msg() == dbp::Msg::PING)
     {
         dbp::Ping ping;
         base.object().UnpackTo(&ping);
@@ -293,22 +379,22 @@ void Client::ReadHandler(const boost::system::error_code &ec, std::shared_ptr<bo
         std::cout << "[<]ping" << ping.id() << " recv" << std::endl;
     }
 
-    if(base.msg() == dbp::Msg::PONG)
+    if (base.msg() == dbp::Msg::PONG)
     {
         dbp::Pong pong;
         base.object().UnpackTo(&pong);
         std::cout << "[<]pong" << pong.id() << " recv" << std::endl;
     }
 
-    if(base.msg() == dbp::Msg::NOSUB)
+    if (base.msg() == dbp::Msg::NOSUB)
     {
         dbp::Nosub nosub;
         base.object().UnpackTo(&nosub);
         sub_map_.erase(nosub.id());
         std::cout << "[<]nosub" << nosub.id() << " recv" << std::endl;
     }
-     
-    if(base.msg() == dbp::Msg::READY)
+
+    if (base.msg() == dbp::Msg::READY)
     {
         dbp::Ready ready;
         base.object().UnpackTo(&ready);
@@ -316,65 +402,73 @@ void Client::ReadHandler(const boost::system::error_code &ec, std::shared_ptr<bo
         std::cout << "[<]ready" << ready.id() << " recv" << std::endl;
     }
 
-    if(base.msg() == dbp::Msg::ADDED)
+    if (base.msg() == dbp::Msg::ADDED)
     {
         dbp::Added added;
         base.object().UnpackTo(&added);
         sub_map_[added.id()].SubHandler("added", added.name(), added.object());
     }
 
-    if(base.msg() == dbp::Msg::CHANGED)
+    if (base.msg() == dbp::Msg::CHANGED)
     {
     }
 
-    if(base.msg() == dbp::Msg::REMOVED)
+    if (base.msg() == dbp::Msg::REMOVED)
     {
     }
 
-    if(base.msg() == dbp::Msg::RESULT)
+    if (base.msg() == dbp::Msg::RESULT)
     {
-        
+
         std::cout << "[<]result" << std::endl;
-        
+
         dbp::Result result;
         base.object().UnpackTo(&result);
         method_map_[result.id()].MethodHandler(result);
         method_map_.erase(result.id());
     }
 
-    if(base.msg() == dbp::Msg::ERROR)
+    if (base.msg() == dbp::Msg::ERROR)
     {
         dbp::Error error;
         base.object().UnpackTo(&error);
         std::cout << "[<]error reason:" << error.reason() << ", explain:" << error.explain() << std::endl;
     }
 
-    sock->async_read_some(boost::asio::buffer(m_buf_), boost::bind(&Client::ReadHandler, this, boost::asio::placeholders::error, sock));
+    //sock->async_read_some(boost::asio::buffer(m_buf_), boost::bind(&Client::ReadHandler, this, boost::asio::placeholders::error, sock));
 }
 
 void Client::WriteHandler(boost::shared_ptr<std::string> pstr, const boost::system::error_code &ec, size_t bytes_transferred)
 {
-  if (ec)
-  {
-      std::cerr << "[-]" << *pstr << " msg write error:" << ec.message() << ". len:" << bytes_transferred << std::endl;
-      is_connected_ = false;
-      m_io_.post(boost::bind(&Client::ErrorHandler, this));
-      return;
-  }
-  std::cout << "[>]" << *pstr << " msg write succeed. len:" << bytes_transferred << std::endl;
+    if (ec)
+    {
+        std::cerr << "[-]" << *pstr << " msg write error:" << ec.message() << ". len:" << bytes_transferred << std::endl;
+        is_connected_ = false;
+        m_io_.post(boost::bind(&Client::ErrorHandler, this));
+        return;
+    }
+    std::cout << "[>]" << *pstr << " msg write succeed. len:" << bytes_transferred << std::endl;
+
+    boost::asio::async_read(*sock_, ssRecv.get_data(),
+                            boost::asio::transfer_exactly(4),
+                            boost::bind(&Client::ReadHeaderHandler,
+                                        this,
+                                        boost::asio::placeholders::error,
+                                        sock_,
+                                        boost::asio::placeholders::bytes_transferred));
 }
 
 void Client::TimerHandler(const boost::system::error_code &ec, std::shared_ptr<boost::asio::ip::tcp::socket> sock)
 {
-    if(ec)
+    if (ec)
     {
         std::cerr << "[-]cancel timer" << std::endl;
         return;
     }
 
-    if(is_connected_)
+    if (is_connected_)
     {
-        std::string id = SendPing();
+        //std::string id = SendPing();
     }
 
     m_timer_->expires_from_now(std::chrono::seconds{timer_expires_});
@@ -383,13 +477,13 @@ void Client::TimerHandler(const boost::system::error_code &ec, std::shared_ptr<b
 
 void Client::MethodTimerHandler(const boost::system::error_code &ec, std::shared_ptr<boost::asio::ip::tcp::socket> sock)
 {
-    if(ec)
+    if (ec)
     {
         std::cerr << "[-]cancel test timer" << std::endl;
         return;
     }
 
-    if(is_connected_)
+    if (is_connected_)
     {
         method_cb_(this);
     }
@@ -397,7 +491,6 @@ void Client::MethodTimerHandler(const boost::system::error_code &ec, std::shared
     test_timer_->expires_from_now(std::chrono::seconds{30});
     test_timer_->async_wait(boost::bind(&Client::MethodTimerHandler, this, boost::asio::placeholders::error, sock));
 }
-
 
 void Client::Run()
 {
