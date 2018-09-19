@@ -85,13 +85,13 @@ void CNetwork::ClientFailToConnect(const tcp::endpoint& epRemote)
 
     //Check to see if there are peer and nodes to connect, and if they are empty, connect DNseed
     CWalleveEventPeerNetGetPeers eventGetPeers(0);
-    this->DispatchEvent(&eventGetPeers); 
-    if(eventGetPeers.result.size() == 0 && this->GetCandidateNodeCount()<=0)
+    DispatchEvent(&eventGetPeers); 
+    if(eventGetPeers.result.size() == 0 && GetCandidateNodeCount()<=0)
     {
         WalleveLog("Connect 2 DnSeed server\n");
         BOOST_FOREACH(const string& seed,NetworkConfig()->vDNSeed)
         {
-            this->AddNewNode(CNetHost(seed,NetworkConfig()->nDNSeedPort,"dnseed",
+            AddNewNode(CNetHost(seed,NetworkConfig()->nDNSeedPort,"dnseed",
                                               boost::any(uint64(network::NODE_NETWORK))));
             
         }

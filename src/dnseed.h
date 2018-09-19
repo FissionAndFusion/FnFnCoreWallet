@@ -14,6 +14,20 @@
 namespace multiverse
 {
 
+namespace network
+{
+class CMvDNSeedPeer : public CMvPeer
+{
+public:
+    CMvDNSeedPeer(walleve::CPeerNet *pPeerNetIn, walleve::CIOClient* pClientIn,uint64 nNonceIn,
+            bool fInBoundIn,uint32 nMsgMagicIn,uint32 nHsTimerIdIn);
+    ~CMvDNSeedPeer(){}
+    bool fIsTestPeer;
+protected:
+    virtual bool HandshakeCompletd()override;
+};
+}
+
 class CDNSeed: public network::CMvPeerNet
 {
 public:
@@ -25,7 +39,7 @@ public:
                                walleve::CWalleveBufStream& ssPayload)override;
     virtual bool HandlePeerHandshaked(walleve::CPeer *pPeer,uint32 nTimerId)override;
     virtual void BuildHello(walleve::CPeer *pPeer,walleve::CWalleveBufStream& ssPayload)override;
-    virtual void dnseedTestConnSuccess(walleve::CPeer *pPeer)override;
+    void DnseedTestConnSuccess(walleve::CPeer *pPeer);
 protected:
     bool WalleveHandleInitialize();
     void WalleveHandleDeinitialize();
@@ -42,32 +56,25 @@ protected:
     {
         return dynamic_cast<const CMvStorageConfig *>(walleve::IWalleveBase::WalleveConfig());
     }
-    int beginFilterList();
-    void filterAddressList();
-    void requestGetTrustedHeight();
+    int BeginFilterList();
+    void FilterAddressList();
+    void RequestGetTrustedHeight();
     void IOThreadFunc_test();
     void IOProcFilter(const boost::system::error_code& err);
-    void IOThreadFunc_th();
-    void IOProc_th(const boost::system::error_code& err);
     //trusted height
-    void beginVoteHeight();
-    void voteHeight(uint32 height);
+    void BeginVoteHeight();
+    void VoteHeight(uint32 height);
 protected:
-    network::DNSeedService _dnseedService;
-    std::string _confidentAddress;
-    uint32  _confidentHeight;
-    std::vector<std::pair<uint32,int>> _voteBox;
-    bool _beginFilter=false;
-    bool _isConfidentNodeCanConnect=false;
-    std::vector<boost::asio::ip::tcp::endpoint> _testListBuf;
+    network::DNSeedService dnseedService;
+    std::string srtConfidentAddress;
+    uint32  nConfidentHeight;
+    std::vector<std::pair<uint32,int>> vVoteBox;
+    bool fIsConfidentNodeCanConnect=false;
+    std::vector<boost::asio::ip::tcp::endpoint> vTestListBuf;
     //timer
     walleve::CWalleveThread thrIOProc_test;
     boost::asio::io_service ioService_test;
     boost::asio::deadline_timer timerFilter;
-    //TrustedHeight timer
-    walleve::CWalleveThread thrIOProc_th;
-    boost::asio::io_service ioService_th;
-    boost::asio::deadline_timer timer_th;
     
 };
 }

@@ -18,16 +18,16 @@ public:
     SeedNode(){}
     SeedNode(boost::asio::ip::tcp::endpoint ep,int score=0)
     {
-        this->_id=-1;
-        this->_ep=ep;
-        this->_reconnTimes=0;
-        this->_score=score;
+        this->nId=-1;
+        this->ep=ep;
+        this->nReconnTimes=0;
+        this->nScore=score;
     }
 public:
-    int _id;
-    boost::asio::ip::tcp::endpoint _ep;
-    int _score;
-    int _reconnTimes;
+    int nId;
+    boost::asio::ip::tcp::endpoint ep;
+    int nScore;
+    int nReconnTimes;
 };
 
 class DNSeedDB
@@ -36,16 +36,16 @@ public:
     DNSeedDB();
     ~DNSeedDB();
 
-    bool init(const CMvDBConfig& config);
-    bool insertNode(SeedNode &node);
-    bool deleteNode(SeedNode &node);
-    bool updateNode(SeedNode &node);
-    bool selectAllNode(std::vector<SeedNode> & nodeList);
-    bool findOneWithAddress(std::string ip,SeedNode &targetNode);
+    bool Init(const CMvDBConfig& config);
+    bool InsertNode(SeedNode &node);
+    bool DeleteNode(SeedNode &node);
+    bool UpdateNode(SeedNode &node);
+    bool SelectAllNode(std::vector<SeedNode> & nodeList);
+    bool FindOneWithAddress(std::string ip,SeedNode &targetNode);
 private:
-    void deinit();
+    void Deinit();
     bool CreateTable();
-    void getBinaryCharV4V6(std::vector<unsigned char> & bytes
+    void GetBinaryCharV4V6(std::vector<unsigned char> & bytes
                             ,boost::asio::ip::address addr);
 protected:
     CMvDBConn dbConn;

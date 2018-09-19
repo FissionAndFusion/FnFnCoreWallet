@@ -23,53 +23,53 @@ public:
     DNSeedService();
     ~DNSeedService(){}
 public:
-    unsigned int _maxConnectFailTimes=0;
+    unsigned int nMaxConnectFailTimes=0;
     enum CanTrust{
         yes,no,dontKown
     };
 public:
-    bool init(storage::CMvDBConfig & config);
+    bool Init(storage::CMvDBConfig & config);
 
-    storage::SeedNode * findSeedNode(const boost::asio::ip::tcp::endpoint& ep);
-    storage::SeedNode * addNewNode(boost::asio::ip::tcp::endpoint& ep);
-    void getSendAddressList(std::vector<CAddress> & list);
-    void recvAddressList(std::vector<CAddress> epList);
-    bool updateNode(storage::SeedNode node);
-    void removeNode(const boost::asio::ip::tcp::endpoint& ep);
-    void getAllNodeList4Filter(std::vector<boost::asio::ip::tcp::endpoint> &epList);
-    void resetNewNodeList();
-    void goodNode(storage::SeedNode* node,CanTrust canTrust);
+    storage::SeedNode * FindSeedNode(const boost::asio::ip::tcp::endpoint& ep);
+    storage::SeedNode * AddNewNode(boost::asio::ip::tcp::endpoint& ep);
+    void GetSendAddressList(std::vector<CAddress> & list);
+    void RecvAddressList(std::vector<CAddress> epList);
+    bool UpdateNode(storage::SeedNode node);
+    void RemoveNode(const boost::asio::ip::tcp::endpoint& ep);
+    void GetAllNodeList4Filter(std::vector<boost::asio::ip::tcp::endpoint> &epList);
+    void ResetNewNodeList();
+    void GoodNode(storage::SeedNode* node,CanTrust canTrust);
     //Return result: whether to remove from the list 
-    bool badNode(storage::SeedNode* node);
+    bool BadNode(storage::SeedNode* node);
 
 protected:
 
-    storage::SeedNode * addNode(boost::asio::ip::tcp::endpoint& ep,bool forceAdd=false);
-    bool hasAddress(boost::asio::ip::tcp::endpoint ep);   
-    bool add2list(boost::asio::ip::tcp::endpoint newep,bool forceAdd=false);
+    storage::SeedNode * AddNode(boost::asio::ip::tcp::endpoint& ep,bool forceAdd=false);
+    bool HasAddress(boost::asio::ip::tcp::endpoint ep);   
+    bool Add2list(boost::asio::ip::tcp::endpoint newep,bool forceAdd=false);
     
 protected:
-    std::mutex _activeListLocker;
-    std::vector<storage::SeedNode> _activeNodeList;
-    std::vector<storage::SeedNode> _newNodeList;
-    multiverse::storage::DNSeedDB _db;
+    std::mutex activeListLocker;
+    std::vector<storage::SeedNode> vActiveNodeList;
+    std::vector<storage::SeedNode> vNewNodeList;
+    multiverse::storage::DNSeedDB db;
 private:
     //test
-    int _maxNumber;
-    std::set<int> _rdmNumber; 
-    void initRandomTool(int maxNumber)
+    int nMaxNumber;
+    std::set<int> setRdmNumber; 
+    void InitRandomTool(int maxNumber)
     {
-        _maxNumber=maxNumber;
-        _rdmNumber.clear();
+        nMaxNumber=maxNumber;
+        setRdmNumber.clear();
         srand((unsigned)time(0));
     } 
-    int getRandomIndex()
+    int GetRandomIndex()
     {
         int newNum;
         do{
-            newNum=rand()%_maxNumber;
-        }while(_rdmNumber.count(newNum));
-        _rdmNumber.insert(newNum);
+            newNum=rand()%nMaxNumber;
+        }while(setRdmNumber.count(newNum));
+        setRdmNumber.insert(newNum);
         return newNum;
     }
 

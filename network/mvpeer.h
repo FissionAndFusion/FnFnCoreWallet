@@ -41,7 +41,7 @@ protected:
     bool HandshakeReadCompletd();
     virtual bool HandshakeCompletd();
     bool HandleReadHeader();
-    virtual bool HandleReadCompleted();
+    bool HandleReadCompleted();
 public:
     int nVersion;
     uint64 nService;
