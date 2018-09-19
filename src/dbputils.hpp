@@ -2,30 +2,32 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef DBP_UTILS_HPP
-#define DBP_UTILS_HPP
+#ifndef MULTIVERSE_DBP_UTILS_HPP
+#define MULTIVERSE_DBP_UTILS_HPP
 
 #include <arpa/inet.h>
 #include <cstring>
 #include <random>
 
+
+namespace multiverse{
 class CDbpUtils
 {
 public:
-    static uint32_t parseLenFromMsgHeader(const char* header, int size)
+    static uint32_t ParseLenFromMsgHeader(const char* header, int size)
     {
         uint32_t lenNetWorkOrder = 0;
         std::memcpy(&lenNetWorkOrder,header,4);
         return ntohl(lenNetWorkOrder);
     }
 
-    static void writeLenToMsgHeader(uint32_t len,char* header,int size)
+    static void WriteLenToMsgHeader(uint32_t len,char* header,int size)
     {
         uint32_t lenNetWorkOrder = htonl(len);
         std::memcpy(header,&lenNetWorkOrder,4);
     }
 
-    static uint64 currentUTC()
+    static uint64 CurrentUTC()
     {
         boost::posix_time::ptime epoch(boost::gregorian::date(1970, boost::gregorian::Jan, 1));
         boost::posix_time::time_duration time_from_epoch =
@@ -54,5 +56,5 @@ public:
         return s;
     }
 };
-
-#endif
+} // namespace multiverse
+#endif // MULTIVERSE_DBP_UTILS_HPP

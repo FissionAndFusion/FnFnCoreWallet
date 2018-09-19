@@ -2,8 +2,8 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef DBP_SERVER_H
-#define DBP_SERVER_H
+#ifndef MULTIVERSE_DBP_SERVER_H
+#define MULTIVERSE_DBP_SERVER_H
 
 #include "walleve/netio/ioproc.h"
 #include "event.h"
@@ -81,12 +81,12 @@ public:
     void SetSession(const std::string& session);
     
     void Activate();
-    void SendResponse(CWalleveDbpConnected &body);
-    void SendResponse(CWalleveDbpFailed& body);
-    void SendResponse(CWalleveDbpNoSub& body);
-    void SendResponse(CWalleveDbpReady& body);
-    void SendResponse(CWalleveDbpAdded& body);
-    void SendResponse(CWalleveDbpMethodResult& body);
+    void SendResponse(CMvDbpConnected &body);
+    void SendResponse(CMvDbpFailed& body);
+    void SendResponse(CMvDbpNoSub& body);
+    void SendResponse(CMvDbpReady& body);
+    void SendResponse(CMvDbpAdded& body);
+    void SendResponse(CMvDbpMethodResult& body);
     void SendPing(const std::string& id);
     void SendPong(const std::string& id);
     void SendNocActivePing(const std::string& id);
@@ -162,12 +162,12 @@ protected:
     CDbpClient* AddNewClient(CIOClient *pClient,CDbpProfile *pDbpProfile);
     void RemoveClient(CDbpClient *pDbpClient);
     
-    bool HandleEvent(CWalleveEventDbpConnected& event) override;
-    bool HandleEvent(CWalleveEventDbpFailed& event) override;
-    bool HandleEvent(CWalleveEventDbpNoSub& event) override;
-    bool HandleEvent(CWalleveEventDbpReady& event) override;
-    bool HandleEvent(CWalleveEventDbpAdded& event) override;
-    bool HandleEvent(CWalleveEventDbpMethodResult& event) override;
+    bool HandleEvent(CMvEventDbpConnected& event) override;
+    bool HandleEvent(CMvEventDbpFailed& event) override;
+    bool HandleEvent(CMvEventDbpNoSub& event) override;
+    bool HandleEvent(CMvEventDbpReady& event) override;
+    bool HandleEvent(CMvEventDbpAdded& event) override;
+    bool HandleEvent(CMvEventDbpMethodResult& event) override;
 
     bool IsSessionTimeOut(CDbpClient* pDbpClient);
     bool IsSessionReconnect(const std::string & session);
@@ -193,4 +193,4 @@ protected:
     std::shared_ptr<boost::asio::deadline_timer> pingTimerPtr_;
 };
 } //namespace multiverse
-#endif //DBP_SERVER_H
+#endif //MULTIVERSE_DBP_SERVER_H

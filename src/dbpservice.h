@@ -23,11 +23,11 @@ public:
     CDbpService();
     virtual ~CDbpService();
 
-    bool HandleEvent(CWalleveEventDbpConnect& event) override;
-    bool HandleEvent(CWalleveEventDbpSub& event) override;
-    bool HandleEvent(CWalleveEventDbpUnSub& event) override;
-    bool HandleEvent(CWalleveEventDbpMethod& event) override;
-    bool HandleEvent(CWalleveEventDbpPong& event) override;
+    bool HandleEvent(CMvEventDbpConnect& event) override;
+    bool HandleEvent(CMvEventDbpSub& event) override;
+    bool HandleEvent(CMvEventDbpUnSub& event) override;
+    bool HandleEvent(CMvEventDbpMethod& event) override;
+    bool HandleEvent(CMvEventDbpPong& event) override;
 
     // notify add msg(block tx ...) to event handler
     bool HandleEvent(CMvEventDbpUpdateNewBlock& event) override;
@@ -37,13 +37,13 @@ protected:
     void WalleveHandleDeinitialize() override;
 private:
     void CreateDbpBlock(const CBlock& blockDetail,const uint256& forkHash, 
-    int blockHeight,CWalleveDbpBlock& block);
-    void CreateDbpTransaction(const CTransaction& tx,CWalleveDbpTransaction& dbptx);
-    bool GetBlocks(const uint256& startHash, int32 n, std::vector<CWalleveDbpBlock>& blocks);
+    int blockHeight,CMvDbpBlock& block);
+    void CreateDbpTransaction(const CTransaction& tx,CMvDbpTransaction& dbptx);
+    bool GetBlocks(const uint256& startHash, int32 n, std::vector<CMvDbpBlock>& blocks);
     bool IsEmpty(const uint256& hash);
-    void HandleGetBlocks(CWalleveEventDbpMethod& event);
-    void HandleGetTransaction(CWalleveEventDbpMethod& event);
-    void HandleSendTransaction(CWalleveEventDbpMethod& event);
+    void HandleGetBlocks(CMvEventDbpMethod& event);
+    void HandleGetTransaction(CMvEventDbpMethod& event);
+    void HandleSendTransaction(CMvEventDbpMethod& event);
 
     bool IsTopicExist(const std::string& topic);
     bool IsHaveSubedTopicOf(const std::string& id);
@@ -51,8 +51,8 @@ private:
     void SubTopic(const std::string& id, const std::string& session, const std::string& topic);
     void UnSubTopic(const std::string& id);
 
-    void PushBlock(const CWalleveDbpBlock& block);
-    void PushTx(const CWalleveDbpTransaction& dbptx);
+    void PushBlock(const CMvDbpBlock& block);
+    void PushTx(const CMvDbpTransaction& dbptx);
 protected:
     walleve::IIOProc *pDbpServer;
     IService *pService;

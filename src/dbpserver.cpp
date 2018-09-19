@@ -73,7 +73,7 @@ void CDbpClient::SendMessage(dbp::Base* pBaseMsg)
     pBaseMsg->SerializeToArray(byteBuf.get(),byteSize);
 
     unsigned char msgLenBuf[MSG_HEADER_LEN];
-    CDbpUtils::writeLenToMsgHeader(byteSize,(char*)msgLenBuf,MSG_HEADER_LEN);
+    CDbpUtils::WriteLenToMsgHeader(byteSize,(char*)msgLenBuf,MSG_HEADER_LEN);
     ssSend.Write((char*)msgLenBuf,MSG_HEADER_LEN);
     ssSend.Write((char*)byteBuf.get(),byteSize);
 
@@ -90,7 +90,7 @@ void CDbpClient::SendPingNoActiveMessage(dbp::Base* pBaseMsg)
     pBaseMsg->SerializeToArray(byteBuf,byteSize);
 
     unsigned char msgLenBuf[MSG_HEADER_LEN];
-    CDbpUtils::writeLenToMsgHeader(byteSize,(char*)msgLenBuf,MSG_HEADER_LEN);
+    CDbpUtils::WriteLenToMsgHeader(byteSize,(char*)msgLenBuf,MSG_HEADER_LEN);
     ssPingSend.Write((char*)msgLenBuf,MSG_HEADER_LEN);
     ssPingSend.Write((char*)byteBuf,byteSize);
 
@@ -107,14 +107,14 @@ void CDbpClient::SendAddedNoActiveMessage(dbp::Base* pBaseMsg)
     pBaseMsg->SerializeToArray(byteBuf.get(),byteSize);
 
     unsigned char msgLenBuf[MSG_HEADER_LEN];
-    CDbpUtils::writeLenToMsgHeader(byteSize,(char*)msgLenBuf,MSG_HEADER_LEN);
+    CDbpUtils::WriteLenToMsgHeader(byteSize,(char*)msgLenBuf,MSG_HEADER_LEN);
     ssAddedSend.Write((char*)msgLenBuf,MSG_HEADER_LEN);
     ssAddedSend.Write((char*)byteBuf.get(),byteSize);
 
     pClient->Write(ssAddedSend,boost::bind(&CDbpClient::HandleWritenResponse,this,_1,1));   
 }
 
-void CDbpClient::SendResponse(CWalleveDbpConnected& body)
+void CDbpClient::SendResponse(CMvDbpConnected& body)
 {
   
     dbp::Base connectedMsgBase;
@@ -131,7 +131,7 @@ void CDbpClient::SendResponse(CWalleveDbpConnected& body)
     SendMessage(&connectedMsgBase);
 }
 
-void CDbpClient::SendResponse(CWalleveDbpFailed& body)
+void CDbpClient::SendResponse(CMvDbpFailed& body)
 {
     dbp::Base failedMsgBase;
     failedMsgBase.set_msg(dbp::Msg::FAILED);
@@ -154,7 +154,7 @@ void CDbpClient::SendResponse(CWalleveDbpFailed& body)
     SendMessage(&failedMsgBase);
 }
 
-void CDbpClient::SendResponse(CWalleveDbpNoSub& body)
+void CDbpClient::SendResponse(CMvDbpNoSub& body)
 {
     dbp::Base noSubMsgBase;
     noSubMsgBase.set_msg(dbp::Msg::NOSUB);
@@ -171,7 +171,7 @@ void CDbpClient::SendResponse(CWalleveDbpNoSub& body)
     SendMessage(&noSubMsgBase);
 }
 
-void CDbpClient::SendResponse(CWalleveDbpReady& body)
+void CDbpClient::SendResponse(CMvDbpReady& body)
 {
     dbp::Base readyMsgBase;
     readyMsgBase.set_msg(dbp::Msg::READY);
@@ -187,7 +187,7 @@ void CDbpClient::SendResponse(CWalleveDbpReady& body)
     SendMessage(&readyMsgBase);
 }
 
-static void CreateLwsTransaction(const CWalleveDbpTransaction* dbptx,lws::Transaction* tx)
+static void CreateLwsTransaction(const CMvDbpTransaction* dbptx,lws::Transaction* tx)
 {
     tx->set_nversion(dbptx->nVersion);
     tx->set_ntype(dbptx->nType);
@@ -224,7 +224,7 @@ static void CreateLwsTransaction(const CWalleveDbpTransaction* dbptx,lws::Transa
     tx->set_hash(hash);
 }
 
-static void CreateLwsBlock(CWalleveDbpBlock* pBlock,lws::Block& block)
+static void CreateLwsBlock(CMvDbpBlock* pBlock,lws::Block& block)
 {
     block.set_nversion(pBlock->nVersion);
     block.set_ntype(pBlock->nType);
@@ -259,7 +259,7 @@ static void CreateLwsBlock(CWalleveDbpBlock* pBlock,lws::Block& block)
 }
 
 
-void CDbpClient::SendResponse(CWalleveDbpAdded& body)
+void CDbpClient::SendResponse(CMvDbpAdded& body)
 { 
     dbp::Base addedMsgBase;
     addedMsgBase.set_msg(dbp::Msg::ADDED);
@@ -268,9 +268,9 @@ void CDbpClient::SendResponse(CWalleveDbpAdded& body)
     addedMsg.set_id(body.id);
     addedMsg.set_name(body.name);
 
-    if(body.anyAddedObj.type() == typeid(CWalleveDbpBlock))
+    if(body.anyAddedObj.type() == typeid(CMvDbpBlock))
     {
-        CWalleveDbpBlock tempBlock = boost::any_cast<CWalleveDbpBlock>(body.anyAddedObj);
+        CMvDbpBlock tempBlock = boost::any_cast<CMvDbpBlock>(body.anyAddedObj);
         
         lws::Block block;
         CreateLwsBlock(&tempBlock,block);
@@ -282,9 +282,9 @@ void CDbpClient::SendResponse(CWalleveDbpAdded& body)
         std::cout << "Added Block: "  <<std::endl;
 
     }
-    else if(body.anyAddedObj.type() == typeid(CWalleveDbpTransaction))
+    else if(body.anyAddedObj.type() == typeid(CMvDbpTransaction))
     {
-        CWalleveDbpTransaction tempTx = boost::any_cast<CWalleveDbpTransaction>(body.anyAddedObj);
+        CMvDbpTransaction tempTx = boost::any_cast<CMvDbpTransaction>(body.anyAddedObj);
 
         std::unique_ptr<lws::Transaction> tx(std::make_unique<lws::Transaction>());
         CreateLwsTransaction(&tempTx,tx.get());
@@ -306,7 +306,7 @@ void CDbpClient::SendResponse(CWalleveDbpAdded& body)
     SendAddedNoActiveMessage(&addedMsgBase);
 }
 
-void CDbpClient::SendResponse(CWalleveDbpMethodResult& body)
+void CDbpClient::SendResponse(CMvDbpMethodResult& body)
 {  
     dbp::Base resultMsgBase;
     resultMsgBase.set_msg(dbp::Msg::RESULT);
@@ -319,26 +319,26 @@ void CDbpClient::SendResponse(CWalleveDbpMethodResult& body)
 
     auto dispatchHandler = [&](const boost::any& obj) -> void {
                       
-        if(obj.type() == typeid(CWalleveDbpBlock))
+        if(obj.type() == typeid(CMvDbpBlock))
         {
-            CWalleveDbpBlock tempBlock = boost::any_cast<CWalleveDbpBlock>(obj);
+            CMvDbpBlock tempBlock = boost::any_cast<CMvDbpBlock>(obj);
             
             std::cout << "Add Block to result [GetBlocks]: " << tempBlock.nHeight << std::endl;
             lws::Block block;
             CreateLwsBlock(&tempBlock,block);
             resultMsg.add_result()->PackFrom(block);
         }
-        else if(obj.type() == typeid(CWalleveDbpTransaction))
+        else if(obj.type() == typeid(CMvDbpTransaction))
         {
-            CWalleveDbpTransaction tempTx = boost::any_cast<CWalleveDbpTransaction>(obj);
+            CMvDbpTransaction tempTx = boost::any_cast<CMvDbpTransaction>(obj);
             
             std::unique_ptr<lws::Transaction> tx(std::make_unique<lws::Transaction>());
             CreateLwsTransaction(&tempTx,tx.get());
             resultMsg.add_result()->PackFrom(*tx);
         }
-        else if(obj.type() == typeid(CWalleveDbpSendTxRet))
+        else if(obj.type() == typeid(CMvDbpSendTxRet))
         {
-            CWalleveDbpSendTxRet txret =  boost::any_cast<CWalleveDbpSendTxRet>(obj); 
+            CMvDbpSendTxRet txret =  boost::any_cast<CMvDbpSendTxRet>(obj); 
             lws::SendTxRet sendTxRet;
            
             sendTxRet.set_hash(txret.hash);
@@ -452,7 +452,7 @@ void CDbpClient::HandleReadHeader(std::size_t nTransferred)
         std::string lenBuffer(MSG_HEADER_LEN,0);
         ssRecv.Read(&lenBuffer[0],MSG_HEADER_LEN);
         
-        uint32_t nMsgHeaderLen = CDbpUtils::parseLenFromMsgHeader(&lenBuffer[0],MSG_HEADER_LEN);
+        uint32_t nMsgHeaderLen = CDbpUtils::ParseLenFromMsgHeader(&lenBuffer[0],MSG_HEADER_LEN);
         if(nMsgHeaderLen == 0)
         {
             std::cout << "Msg Base header length is 0" << std::endl;
@@ -597,7 +597,7 @@ void CDbpServer::HandleClientConnect(CDbpClient *pDbpClient,google::protobuf::An
         session = GenerateSessionId();
         CreateSession(session,pDbpClient);
 
-        CWalleveEventDbpConnect *pEventDbpConnect = new CWalleveEventDbpConnect(session);
+        CMvEventDbpConnect *pEventDbpConnect = new CMvEventDbpConnect(session);
         if(!pEventDbpConnect)
         {
             RespondError(pDbpClient,500,"dbp connect event create failed.");
@@ -605,7 +605,7 @@ void CDbpServer::HandleClientConnect(CDbpClient *pDbpClient,google::protobuf::An
         }
 
 
-        CWalleveDbpConnect &connectBody = pEventDbpConnect->data;
+        CMvDbpConnect &connectBody = pEventDbpConnect->data;
         connectBody.isReconnect = false;
         connectBody.session = session;
         connectBody.version = connectMsg.version();
@@ -619,7 +619,7 @@ void CDbpServer::HandleClientConnect(CDbpClient *pDbpClient,google::protobuf::An
         { 
             UpdateSession(session,pDbpClient);
 
-            CWalleveEventDbpConnect *pEventDbpConnect = new CWalleveEventDbpConnect(session);
+            CMvEventDbpConnect *pEventDbpConnect = new CMvEventDbpConnect(session);
             if(!pEventDbpConnect)
             {
                 RespondError(pDbpClient,500,"dbp connect event create failed.");
@@ -627,7 +627,7 @@ void CDbpServer::HandleClientConnect(CDbpClient *pDbpClient,google::protobuf::An
             }
 
 
-            CWalleveDbpConnect &connectBody = pEventDbpConnect->data;
+            CMvDbpConnect &connectBody = pEventDbpConnect->data;
             connectBody.isReconnect = true;
             connectBody.session = session;
             connectBody.version = connectMsg.version();
@@ -638,7 +638,7 @@ void CDbpServer::HandleClientConnect(CDbpClient *pDbpClient,google::protobuf::An
         else
         {
             // if reconnect cannot find session,send failed msg
-            CWalleveEventDbpFailed failedEvent(pDbpClient->GetNonce());
+            CMvEventDbpFailed failedEvent(pDbpClient->GetNonce());
             failedEvent.data.session = session;
             failedEvent.data.reason =  "002";
 
@@ -656,7 +656,7 @@ void CDbpServer::HandleClientSub(CDbpClient *pDbpClient,google::protobuf::Any* a
         return;
     }
         
-    CWalleveEventDbpSub *pEventDbpSub = new CWalleveEventDbpSub(pDbpClient->GetSession());
+    CMvEventDbpSub *pEventDbpSub = new CMvEventDbpSub(pDbpClient->GetSession());
     if(!pEventDbpSub)
     {
         RespondError(pDbpClient,500,"dbp sub event create failed");
@@ -666,7 +666,7 @@ void CDbpServer::HandleClientSub(CDbpClient *pDbpClient,google::protobuf::Any* a
     dbp::Sub subMsg;
     any->UnpackTo(&subMsg);
 
-    CWalleveDbpSub &subBody = pEventDbpSub->data;
+    CMvDbpSub &subBody = pEventDbpSub->data;
     subBody.id = subMsg.id();
     subBody.name = subMsg.name();
     
@@ -675,7 +675,7 @@ void CDbpServer::HandleClientSub(CDbpClient *pDbpClient,google::protobuf::Any* a
 
 void CDbpServer::HandleClientUnSub(CDbpClient *pDbpClient,google::protobuf::Any* any)
 {
-    CWalleveEventDbpUnSub *pEventDbpUnSub = new CWalleveEventDbpUnSub(pDbpClient->GetSession());
+    CMvEventDbpUnSub *pEventDbpUnSub = new CMvEventDbpUnSub(pDbpClient->GetSession());
     if(!pEventDbpUnSub)
     {
         RespondError(pDbpClient,500,"dbp unsub event create failed.");
@@ -685,7 +685,7 @@ void CDbpServer::HandleClientUnSub(CDbpClient *pDbpClient,google::protobuf::Any*
     dbp::Unsub unsubMsg;
     any->UnpackTo(&unsubMsg);
 
-    CWalleveDbpUnSub &unsubBody = pEventDbpUnSub->data;
+    CMvDbpUnSub &unsubBody = pEventDbpUnSub->data;
     unsubBody.id = unsubMsg.id();
     
     pDbpClient->GetProfile()->pIOModule->PostEvent(pEventDbpUnSub);
@@ -693,7 +693,7 @@ void CDbpServer::HandleClientUnSub(CDbpClient *pDbpClient,google::protobuf::Any*
 
 void CDbpServer::HandleClientMethod(CDbpClient *pDbpClient,google::protobuf::Any* any)
 {
-    CWalleveEventDbpMethod *pEventDbpMethod = new CWalleveEventDbpMethod(pDbpClient->GetSession());
+    CMvEventDbpMethod *pEventDbpMethod = new CMvEventDbpMethod(pDbpClient->GetSession());
     if(!pEventDbpMethod)
     {
         RespondError(pDbpClient,500,"dbp event method create failed.");
@@ -703,17 +703,17 @@ void CDbpServer::HandleClientMethod(CDbpClient *pDbpClient,google::protobuf::Any
     dbp::Method methodMsg;
     any->UnpackTo(&methodMsg);
 
-    CWalleveDbpMethod &methodBody = pEventDbpMethod->data;
+    CMvDbpMethod &methodBody = pEventDbpMethod->data;
     methodBody.id = methodMsg.id();
 
     std::cout << "current id:" << methodBody.id << "current method name: " << methodMsg.method() 
         << std::endl;
     
-    if(methodMsg.method() == "getblocks") methodBody.method = CWalleveDbpMethod::Method::GET_BLOCKS;
-    if(methodMsg.method() == "gettransaction") methodBody.method = CWalleveDbpMethod::Method::GET_TX;
-    if(methodMsg.method() == "sendtransaction") methodBody.method = CWalleveDbpMethod::Method::SEND_TX;
+    if(methodMsg.method() == "getblocks") methodBody.method = CMvDbpMethod::Method::GET_BLOCKS;
+    if(methodMsg.method() == "gettransaction") methodBody.method = CMvDbpMethod::Method::GET_TX;
+    if(methodMsg.method() == "sendtransaction") methodBody.method = CMvDbpMethod::Method::SEND_TX;
 
-    if(methodBody.method == CWalleveDbpMethod::Method::GET_BLOCKS
+    if(methodBody.method == CMvDbpMethod::Method::GET_BLOCKS
         && methodMsg.params().Is<lws::GetBlocksArg>())
     {
         lws::GetBlocksArg args;
@@ -725,14 +725,14 @@ void CDbpServer::HandleClientMethod(CDbpClient *pDbpClient,google::protobuf::Any
         methodBody.params.insert(std::make_pair("hash",args.hash())); 
         methodBody.params.insert(std::make_pair("number",boost::lexical_cast<std::string>(args.number())));
     }
-    else if(methodBody.method == CWalleveDbpMethod::Method::GET_TX 
+    else if(methodBody.method == CMvDbpMethod::Method::GET_TX 
         && methodMsg.params().Is<lws::GetTxArg>())
     {
         lws::GetTxArg args;
         methodMsg.params().UnpackTo(&args);
         methodBody.params.insert(std::make_pair("hash",args.hash()));
     }
-    else if(methodBody.method == CWalleveDbpMethod::Method::SEND_TX 
+    else if(methodBody.method == CMvDbpMethod::Method::SEND_TX 
         && methodMsg.params().Is<lws::SendTxArg>())
     {
         lws::SendTxArg args;
@@ -771,7 +771,7 @@ void CDbpServer::HandleClientPong(CDbpClient *pDbpClient,google::protobuf::Any* 
         
         if(IsSessionExist(session))
         {
-            sessionProfileMap[session].timestamp = CDbpUtils::currentUTC();
+            sessionProfileMap[session].timestamp = CDbpUtils::CurrentUTC();
         }
     }
 
@@ -1018,7 +1018,7 @@ void CDbpServer::RemoveClient(CDbpClient *pDbpClient)
         sessionProfileMap.erase(assciatedSession);
     }
     
-    CWalleveEventDbpBroken *pEventBroken = new CWalleveEventDbpBroken(pDbpClient->GetNonce());
+    CMvEventDbpBroken *pEventBroken = new CMvEventDbpBroken(pDbpClient->GetNonce());
     if (pEventBroken != NULL)
     {
         pDbpClient->GetProfile()->pIOModule->PostEvent(pEventBroken);
@@ -1033,7 +1033,7 @@ void CDbpServer::RespondError(CDbpClient *pDbpClient,int nStatusCode,const std::
 
 void CDbpServer::RespondFailed(CDbpClient* pDbpClient)
 {
-    CWalleveEventDbpFailed failedEvent(pDbpClient->GetNonce());
+    CMvEventDbpFailed failedEvent(pDbpClient->GetNonce());
     failedEvent.data.session = sessionClientBimap.right.at(pDbpClient);
     failedEvent.data.reason =  "400";
 
@@ -1047,7 +1047,7 @@ void CDbpServer::SendPingHandler(const boost::system::error_code& err,CDbpClient
         return;
     }
     
-    std::string utc = std::to_string(CDbpUtils::currentUTC());
+    std::string utc = std::to_string(CDbpUtils::CurrentUTC());
     pDbpClient->SendNocActivePing(utc);
     
     pingTimerPtr_->expires_at(pingTimerPtr_->expires_at() + boost::posix_time::seconds(5));
@@ -1056,7 +1056,7 @@ void CDbpServer::SendPingHandler(const boost::system::error_code& err,CDbpClient
     
 } 
 
-bool CDbpServer::HandleEvent(CWalleveEventDbpConnected& event)
+bool CDbpServer::HandleEvent(CMvEventDbpConnected& event)
 {
     auto it = sessionProfileMap.find(event.session_);
     if(it == sessionProfileMap.end())
@@ -1066,7 +1066,7 @@ bool CDbpServer::HandleEvent(CWalleveEventDbpConnected& event)
     }
 
     CDbpClient *pDbpClient = (*it).second.pDbpClient;
-    CWalleveDbpConnected &connectedBody = event.data;
+    CMvDbpConnected &connectedBody = event.data;
 
     pDbpClient->SendResponse(connectedBody);
 
@@ -1077,7 +1077,7 @@ bool CDbpServer::HandleEvent(CWalleveEventDbpConnected& event)
     return true;
 }
     
-bool CDbpServer::HandleEvent(CWalleveEventDbpFailed& event)
+bool CDbpServer::HandleEvent(CMvEventDbpFailed& event)
 {
     std::map<uint64,CDbpClient*>::iterator it = mapClient.find(event.nNonce);
     if (it == mapClient.end())
@@ -1086,7 +1086,7 @@ bool CDbpServer::HandleEvent(CWalleveEventDbpFailed& event)
     }
 
     CDbpClient *pDbpClient = (*it).second;
-    CWalleveDbpFailed &failedBody = event.data;
+    CMvDbpFailed &failedBody = event.data;
 
     pDbpClient->SendResponse(failedBody);
     
@@ -1095,7 +1095,7 @@ bool CDbpServer::HandleEvent(CWalleveEventDbpFailed& event)
     return true;
 }
 
-bool CDbpServer::HandleEvent(CWalleveEventDbpNoSub& event)
+bool CDbpServer::HandleEvent(CMvEventDbpNoSub& event)
 {
     auto it = sessionProfileMap.find(event.session_);
     if(it == sessionProfileMap.end())
@@ -1105,14 +1105,14 @@ bool CDbpServer::HandleEvent(CWalleveEventDbpNoSub& event)
     }
 
     CDbpClient *pDbpClient = (*it).second.pDbpClient;
-    CWalleveDbpNoSub &noSubBody = event.data;
+    CMvDbpNoSub &noSubBody = event.data;
 
     pDbpClient->SendResponse(noSubBody);
     
     return true;
 }
 
-bool CDbpServer::HandleEvent(CWalleveEventDbpReady& event)
+bool CDbpServer::HandleEvent(CMvEventDbpReady& event)
 {
     auto it = sessionProfileMap.find(event.session_);
     if(it == sessionProfileMap.end())
@@ -1122,14 +1122,14 @@ bool CDbpServer::HandleEvent(CWalleveEventDbpReady& event)
     }
 
     CDbpClient *pDbpClient = (*it).second.pDbpClient;
-    CWalleveDbpReady &readyBody = event.data;
+    CMvDbpReady &readyBody = event.data;
 
     pDbpClient->SendResponse(readyBody);
     
     return true;
 }
 
-bool CDbpServer::HandleEvent(CWalleveEventDbpAdded& event)
+bool CDbpServer::HandleEvent(CMvEventDbpAdded& event)
 {
     auto it = sessionProfileMap.find(event.session_);
     if(it == sessionProfileMap.end())
@@ -1140,7 +1140,7 @@ bool CDbpServer::HandleEvent(CWalleveEventDbpAdded& event)
 
 
     CDbpClient *pDbpClient = (*it).second.pDbpClient;
-    CWalleveDbpAdded &addedBody = event.data;
+    CMvDbpAdded &addedBody = event.data;
 
     std::cout << "Added Send Response: "  <<std::endl;
     pDbpClient->SendResponse(addedBody);
@@ -1148,7 +1148,7 @@ bool CDbpServer::HandleEvent(CWalleveEventDbpAdded& event)
     return true;
 }
 
-bool CDbpServer::HandleEvent(CWalleveEventDbpMethodResult& event)
+bool CDbpServer::HandleEvent(CMvEventDbpMethodResult& event)
 {
     auto it = sessionProfileMap.find(event.session_);
     if(it == sessionProfileMap.end())
@@ -1158,7 +1158,7 @@ bool CDbpServer::HandleEvent(CWalleveEventDbpMethodResult& event)
     }
 
     CDbpClient *pDbpClient = (*it).second.pDbpClient;
-    CWalleveDbpMethodResult &resultBody = event.data;
+    CMvDbpMethodResult &resultBody = event.data;
 
     pDbpClient->SendResponse(resultBody);
     
@@ -1173,7 +1173,7 @@ bool CDbpServer::IsSessionTimeOut(CDbpClient* pDbpClient)
     {
         std::string assciatedSession = iter->second;
         uint64 lastTimeStamp = sessionProfileMap[assciatedSession].timestamp;
-        return (CDbpUtils::currentUTC() - lastTimeStamp > timeout) ? true : false;
+        return (CDbpUtils::CurrentUTC() - lastTimeStamp > timeout) ? true : false;
     }
     else
     {
@@ -1212,7 +1212,7 @@ void CDbpServer::CreateSession(const std::string& session,CDbpClient* pDbpClient
     CSessionProfile profile;
     profile.sessionId = session;
     profile.pDbpClient = pDbpClient;
-    profile.timestamp = CDbpUtils::currentUTC();
+    profile.timestamp = CDbpUtils::CurrentUTC();
 
     pDbpClient->SetSession(session);
           
@@ -1230,6 +1230,6 @@ void CDbpServer::UpdateSession(const std::string& session,CDbpClient* pDbpClient
     }
                 
     sessionProfileMap[session].pDbpClient = pDbpClient;
-    sessionProfileMap[session].timestamp = CDbpUtils::currentUTC();                
+    sessionProfileMap[session].timestamp = CDbpUtils::CurrentUTC();                
     sessionClientBimap.insert(position_pair(session,pDbpClient));
 }

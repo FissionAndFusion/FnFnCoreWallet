@@ -2,31 +2,31 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef DBP_TYPE_H
-#define DBP_TYPE_H
+#ifndef MULTIVERSE_DBP_TYPE_H
+#define MULTIVERSE_DBP_TYPE_H
 
 #include <boost/any.hpp>
 
 namespace multiverse{
 
-class CWalleveDbpContent
+class CMvDbpContent
 {
 public:
 };
 
-class CWalleveDbpRequest: public CWalleveDbpContent
-{
-public:
-
-};
-
-class CWalleveDbpRespond: public CWalleveDbpContent
+class CMvDbpRequest: public CMvDbpContent
 {
 public:
 
 };
 
-class CWalleveDbpConnect: public CWalleveDbpRequest
+class CMvDbpRespond: public CMvDbpContent
+{
+public:
+
+};
+
+class CMvDbpConnect: public CMvDbpRequest
 {
 public:
     bool isReconnect;
@@ -35,40 +35,40 @@ public:
     std::string client;
 };
 
-class CWalleveDbpSub: public CWalleveDbpRequest
+class CMvDbpSub: public CMvDbpRequest
 {
 public:
     std::string id;
     std::string name;
 };
 
-class CWalleveDbpUnSub: public CWalleveDbpRequest
+class CMvDbpUnSub: public CMvDbpRequest
 {
 public:
     std::string id;
 };
 
-class CWalleveDbpNoSub: public CWalleveDbpRespond
+class CMvDbpNoSub: public CMvDbpRespond
 {
 public:
     std::string id;
     std::string error;
 };
 
-class CWalleveDbpReady: public CWalleveDbpRespond
+class CMvDbpReady: public CMvDbpRespond
 {
 public:
     std::string id;    
 };
 
-class  CWalleveDbpTxIn
+class  CMvDbpTxIn
 {
 public:
     std::vector<uint8> hash;
     uint32 n;
 };
 
-class  CWalleveDbpDestination
+class  CMvDbpDestination
 {
 public:
     enum PREFIX
@@ -84,15 +84,15 @@ public:
     uint32 size; //设置为33
 };
 
-class CWalleveDbpTransaction
+class CMvDbpTransaction
 {
 public:
     uint32 nVersion; //版本号,目前交易版本为 0x0001
     uint32 nType; //类型, 区分公钥地址交易、模板地址交易、即时业务交易和跨分支交易
     uint32 nLockUntil; //交易冻结至高度为 nLockUntil 区块
     std::vector<uint8> hashAnchor; //交易有效起始区块 HASH
-    std::vector<CWalleveDbpTxIn> vInput;
-    CWalleveDbpDestination cDestination; // 输出地址
+    std::vector<CMvDbpTxIn> vInput;
+    CMvDbpDestination cDestination; // 输出地址
     int64 nAmount; //输出金额
     int64 nTxFee; //网络交易费 
     std::vector<uint8> vchData; //输出参数(模板地址参数、跨分支交易共轭交易)
@@ -100,7 +100,7 @@ public:
     std::vector<uint8> hash;
 };
 
-class CWalleveDbpBlock
+class CMvDbpBlock
 {
 public:
     uint32 nVersion;
@@ -109,14 +109,14 @@ public:
     std::vector<uint8> hashPrev; //前一区块的hash
     std::vector<uint8> hashMerkle; //Merkle tree的根
     std::vector<uint8> vchProof;  //用于校验共识合法性数据
-    CWalleveDbpTransaction txMint; // 出块奖励交易
-    std::vector<CWalleveDbpTransaction> vtx; //区块打包的所有交易
+    CMvDbpTransaction txMint; // 出块奖励交易
+    std::vector<CMvDbpTransaction> vtx; //区块打包的所有交易
     std::vector<uint8> vchSig; //区块签名
     uint32 nHeight; // 当前区块高度
     std::vector<uint8> hash; //当前区块的hash
 };
 
-class CWalleveDbpAdded: public CWalleveDbpRespond
+class CMvDbpAdded: public CMvDbpRespond
 {
 public:
     std::string name;
@@ -124,7 +124,7 @@ public:
     boost::any anyAddedObj; // busniess object (block,tx...)
 };
 
-class CWalleveDbpMethod: public CWalleveDbpRequest
+class CMvDbpMethod: public CMvDbpRequest
 {
 public:
     enum Method{
@@ -141,7 +141,7 @@ public:
     ParamMap params;
 };
 
-class CWalleveDbpSendTxRet
+class CMvDbpSendTxRet
 {
 public:
     std::string hash;
@@ -149,7 +149,7 @@ public:
     std::string reason;
 };
 
-class CWalleveDbpMethodResult : public CWalleveDbpRespond
+class CMvDbpMethodResult : public CMvDbpRespond
 {
 public:
     std::string id;
@@ -157,31 +157,31 @@ public:
     std::vector<boost::any> anyResultObjs; // blocks,tx,send_tx_ret
 };
 
-class CWalleveDbpError: public CWalleveDbpRespond
+class CMvDbpError: public CMvDbpRespond
 {
 public:
 
 };
 
-class CWalleveDbpConnected: public CWalleveDbpRespond
+class CMvDbpConnected: public CMvDbpRespond
 {
 public:
     std::string session;
 };
 
-class CWalleveDbpPing : public CWalleveDbpRequest, public CWalleveDbpRespond
+class CMvDbpPing : public CMvDbpRequest, public CMvDbpRespond
 {
 public:
     std::string id;
 };
 
-class CWalleveDbpPong : public CWalleveDbpRequest, public CWalleveDbpRespond
+class CMvDbpPong : public CMvDbpRequest, public CMvDbpRespond
 {
 public:
     std::string id;
 };
 
-class CWalleveDbpFailed: public CWalleveDbpRespond
+class CMvDbpFailed: public CMvDbpRespond
 {
 public:
     std::string reason; // failed reason
@@ -189,10 +189,10 @@ public:
     std::vector<int32> versions;
 };
 
-class CWalleveDbpBroken
+class CMvDbpBroken
 {
 public:
     bool fEventStream;
 };
 } // namespace multiverse
-#endif //DBP_TYPE_H
+#endif //MULTIVERSE_DBP_TYPE_H
