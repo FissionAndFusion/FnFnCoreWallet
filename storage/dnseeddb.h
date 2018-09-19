@@ -13,17 +13,19 @@ namespace multiverse
 namespace storage
 {
 
-class SeedNode{
-public:
-    SeedNode(){}
-    SeedNode(boost::asio::ip::tcp::endpoint ep,int score=0)
+class SeedNode
+{
+  public:
+    SeedNode() {}
+    SeedNode(boost::asio::ip::tcp::endpoint ep, int score = 0)
     {
-        this->nId=-1;
-        this->ep=ep;
-        this->nReconnTimes=0;
-        this->nScore=score;
+        this->nId = -1;
+        this->ep = ep;
+        this->nReconnTimes = 0;
+        this->nScore = score;
     }
-public:
+
+  public:
     int nId;
     boost::asio::ip::tcp::endpoint ep;
     int nScore;
@@ -32,25 +34,26 @@ public:
 
 class DNSeedDB
 {
-public:
+  public:
     DNSeedDB();
     ~DNSeedDB();
 
-    bool Init(const CMvDBConfig& config);
+    bool Init(const CMvDBConfig &config);
     bool InsertNode(SeedNode &node);
     bool DeleteNode(SeedNode &node);
     bool UpdateNode(SeedNode &node);
-    bool SelectAllNode(std::vector<SeedNode> & nodeList);
-    bool FindOneWithAddress(std::string ip,SeedNode &targetNode);
-private:
+    bool SelectAllNode(std::vector<SeedNode> &nodeList);
+    bool FindOneWithAddress(std::string ip, SeedNode &targetNode);
+
+  private:
     void Deinit();
     bool CreateTable();
-    void GetBinaryCharV4V6(std::vector<unsigned char> & bytes
-                            ,boost::asio::ip::address addr);
-protected:
+    void GetBinaryCharV4V6(std::vector<unsigned char> &bytes, boost::asio::ip::address addr);
+
+  protected:
     CMvDBConn dbConn;
 };
 
-}
-}
-#endif 
+} // namespace storage
+} // namespace multiverse
+#endif

@@ -18,41 +18,43 @@ namespace network
 {
 class CMvDNSeedPeer : public CMvPeer
 {
-public:
-    CMvDNSeedPeer(walleve::CPeerNet *pPeerNetIn, walleve::CIOClient* pClientIn,uint64 nNonceIn,
-            bool fInBoundIn,uint32 nMsgMagicIn,uint32 nHsTimerIdIn);
-    ~CMvDNSeedPeer(){}
+  public:
+    CMvDNSeedPeer(walleve::CPeerNet *pPeerNetIn, walleve::CIOClient *pClientIn, uint64 nNonceIn,
+                  bool fInBoundIn, uint32 nMsgMagicIn, uint32 nHsTimerIdIn);
+    ~CMvDNSeedPeer() {}
     bool fIsTestPeer;
-protected:
-    virtual bool HandshakeCompletd()override;
-};
-}
 
-class CDNSeed: public network::CMvPeerNet
+  protected:
+    virtual bool HandshakeCompletd() override;
+};
+} // namespace network
+
+class CDNSeed : public network::CMvPeerNet
 {
-public:
+  public:
     CDNSeed();
     ~CDNSeed();
-    bool CheckPeerVersion(uint32 nVersionIn,uint64 nServiceIn,const std::string& subVersionIn)override;
+    bool CheckPeerVersion(uint32 nVersionIn, uint64 nServiceIn, const std::string &subVersionIn) override;
     virtual int GetPrimaryChainHeight();
-    virtual bool HandlePeerRecvMessage(walleve::CPeer *pPeer,int nChannel,int nCommand,
-                               walleve::CWalleveBufStream& ssPayload)override;
-    virtual bool HandlePeerHandshaked(walleve::CPeer *pPeer,uint32 nTimerId)override;
-    virtual void BuildHello(walleve::CPeer *pPeer,walleve::CWalleveBufStream& ssPayload)override;
+    virtual bool HandlePeerRecvMessage(walleve::CPeer *pPeer, int nChannel, int nCommand,
+                                       walleve::CWalleveBufStream &ssPayload) override;
+    virtual bool HandlePeerHandshaked(walleve::CPeer *pPeer, uint32 nTimerId) override;
+    virtual void BuildHello(walleve::CPeer *pPeer, walleve::CWalleveBufStream &ssPayload) override;
     void DnseedTestConnSuccess(walleve::CPeer *pPeer);
-protected:
+
+  protected:
     bool WalleveHandleInitialize();
     void WalleveHandleDeinitialize();
-    void ClientFailToConnect(const boost::asio::ip::tcp::endpoint& epRemote)override;
-    virtual void DestroyPeer(walleve::CPeer* pPeer) override;
-    virtual void ProcessAskFor(walleve::CPeer* pPeer) override;
-    virtual walleve::CPeer* CreatePeer(walleve::CIOClient *pClient,uint64 nNonce,bool fInBound)override;
+    void ClientFailToConnect(const boost::asio::ip::tcp::endpoint &epRemote) override;
+    virtual void DestroyPeer(walleve::CPeer *pPeer) override;
+    virtual void ProcessAskFor(walleve::CPeer *pPeer) override;
+    virtual walleve::CPeer *CreatePeer(walleve::CIOClient *pClient, uint64 nNonce, bool fInBound) override;
 
-    const CMvNetworkConfig * NetworkConfig()
+    const CMvNetworkConfig *NetworkConfig()
     {
         return dynamic_cast<const CMvNetworkConfig *>(walleve::IWalleveBase::WalleveConfig());
     }
-    const CMvStorageConfig * StorageConfig()
+    const CMvStorageConfig *StorageConfig()
     {
         return dynamic_cast<const CMvStorageConfig *>(walleve::IWalleveBase::WalleveConfig());
     }
@@ -60,22 +62,22 @@ protected:
     void FilterAddressList();
     void RequestGetTrustedHeight();
     void IOThreadFunc_test();
-    void IOProcFilter(const boost::system::error_code& err);
+    void IOProcFilter(const boost::system::error_code &err);
     //trusted height
     void BeginVoteHeight();
     void VoteHeight(uint32 height);
-protected:
+
+  protected:
     network::DNSeedService dnseedService;
     std::string srtConfidentAddress;
-    uint32  nConfidentHeight;
-    std::vector<std::pair<uint32,int>> vVoteBox;
-    bool fIsConfidentNodeCanConnect=false;
+    uint32 nConfidentHeight;
+    std::vector<std::pair<uint32, int>> vVoteBox;
+    bool fIsConfidentNodeCanConnect = false;
     std::vector<boost::asio::ip::tcp::endpoint> vTestListBuf;
     //timer
     walleve::CWalleveThread thrIOProc_test;
     boost::asio::io_service ioService_test;
     boost::asio::deadline_timer timerFilter;
-    
 };
-}
+} // namespace multiverse
 #endif
