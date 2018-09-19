@@ -9,37 +9,37 @@
 #include <cstring>
 #include <random>
 
-
-namespace multiverse{
+namespace multiverse
+{
 class CDbpUtils
 {
-public:
-    static uint32_t ParseLenFromMsgHeader(const char* header, int size)
+  public:
+    static uint32_t ParseLenFromMsgHeader(const char *header, int size)
     {
         uint32_t lenNetWorkOrder = 0;
-        std::memcpy(&lenNetWorkOrder,header,4);
+        std::memcpy(&lenNetWorkOrder, header, 4);
         return ntohl(lenNetWorkOrder);
     }
 
-    static void WriteLenToMsgHeader(uint32_t len,char* header,int size)
+    static void WriteLenToMsgHeader(uint32_t len, char *header, int size)
     {
         uint32_t lenNetWorkOrder = htonl(len);
-        std::memcpy(header,&lenNetWorkOrder,4);
+        std::memcpy(header, &lenNetWorkOrder, 4);
     }
 
     static uint64 CurrentUTC()
     {
         boost::posix_time::ptime epoch(boost::gregorian::date(1970, boost::gregorian::Jan, 1));
         boost::posix_time::time_duration time_from_epoch =
-        boost::posix_time::second_clock::universal_time() - epoch;
+            boost::posix_time::second_clock::universal_time() - epoch;
         return time_from_epoch.total_seconds();
     }
 
     static std::string RandomString()
     {
-        static auto& chrs = "0123456789"
-        "abcdefghijklmnopqrstuvwxyz"
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        static auto &chrs = "0123456789"
+                            "abcdefghijklmnopqrstuvwxyz"
+                            "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
         thread_local static std::mt19937 rg{std::random_device{}()};
         thread_local static std::uniform_int_distribution<std::string::size_type> pick(0, sizeof(chrs) - 2);
@@ -50,7 +50,7 @@ public:
 
         s.reserve(length);
 
-        while(length--)
+        while (length--)
             s += chrs[pick(rg)];
 
         return s;

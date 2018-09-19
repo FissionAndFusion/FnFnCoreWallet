@@ -14,61 +14,63 @@
 #include <utility>
 #include <unordered_map>
 
-namespace multiverse{
-
-class CDbpService : public walleve::IIOModule, virtual public CDBPEventListener,
-virtual public CMvDBPEventListener
+namespace multiverse
 {
-public:
+
+class CDbpService : public walleve::IIOModule, virtual public CDBPEventListener, virtual public CMvDBPEventListener
+{
+  public:
     CDbpService();
     virtual ~CDbpService();
 
-    bool HandleEvent(CMvEventDbpConnect& event) override;
-    bool HandleEvent(CMvEventDbpSub& event) override;
-    bool HandleEvent(CMvEventDbpUnSub& event) override;
-    bool HandleEvent(CMvEventDbpMethod& event) override;
-    bool HandleEvent(CMvEventDbpPong& event) override;
+    bool HandleEvent(CMvEventDbpConnect &event) override;
+    bool HandleEvent(CMvEventDbpSub &event) override;
+    bool HandleEvent(CMvEventDbpUnSub &event) override;
+    bool HandleEvent(CMvEventDbpMethod &event) override;
+    bool HandleEvent(CMvEventDbpPong &event) override;
 
     // notify add msg(block tx ...) to event handler
-    bool HandleEvent(CMvEventDbpUpdateNewBlock& event) override;
-    bool HandleEvent(CMvEventDbpUpdateNewTx& event) override;
-protected:
+    bool HandleEvent(CMvEventDbpUpdateNewBlock &event) override;
+    bool HandleEvent(CMvEventDbpUpdateNewTx &event) override;
+
+  protected:
     bool WalleveHandleInitialize() override;
     void WalleveHandleDeinitialize() override;
-private:
-    void CreateDbpBlock(const CBlock& blockDetail,const uint256& forkHash, 
-    int blockHeight,CMvDbpBlock& block);
-    void CreateDbpTransaction(const CTransaction& tx,CMvDbpTransaction& dbptx);
-    bool GetBlocks(const uint256& startHash, int32 n, std::vector<CMvDbpBlock>& blocks);
-    bool IsEmpty(const uint256& hash);
-    void HandleGetBlocks(CMvEventDbpMethod& event);
-    void HandleGetTransaction(CMvEventDbpMethod& event);
-    void HandleSendTransaction(CMvEventDbpMethod& event);
 
-    bool IsTopicExist(const std::string& topic);
-    bool IsHaveSubedTopicOf(const std::string& id);
-    
-    void SubTopic(const std::string& id, const std::string& session, const std::string& topic);
-    void UnSubTopic(const std::string& id);
+  private:
+    void CreateDbpBlock(const CBlock &blockDetail, const uint256 &forkHash,
+                        int blockHeight, CMvDbpBlock &block);
+    void CreateDbpTransaction(const CTransaction &tx, CMvDbpTransaction &dbptx);
+    bool GetBlocks(const uint256 &startHash, int32 n, std::vector<CMvDbpBlock> &blocks);
+    bool IsEmpty(const uint256 &hash);
+    void HandleGetBlocks(CMvEventDbpMethod &event);
+    void HandleGetTransaction(CMvEventDbpMethod &event);
+    void HandleSendTransaction(CMvEventDbpMethod &event);
 
-    void PushBlock(const CMvDbpBlock& block);
-    void PushTx(const CMvDbpTransaction& dbptx);
-protected:
+    bool IsTopicExist(const std::string &topic);
+    bool IsHaveSubedTopicOf(const std::string &id);
+
+    void SubTopic(const std::string &id, const std::string &session, const std::string &topic);
+    void UnSubTopic(const std::string &id);
+
+    void PushBlock(const CMvDbpBlock &block);
+    void PushTx(const CMvDbpTransaction &dbptx);
+
+  protected:
     walleve::IIOProc *pDbpServer;
     IService *pService;
     ICoreProtocol *pCoreProtocol;
     IWallet *pWallet;
-private:
-    std::map<std::string,std::string> idSubedTopicMap; // id => subed topic
-    
-    std::set<std::string>  subedAllBlocksIds; // block ids
-    std::set<std::string> subedAllTxIds; // tx ids
 
-    std::map<std::string,std::string> idSubedSessionMap; // id => session
-    std::unordered_map<std::string,bool> currentTopicExistMap; // topic => enabled
+  private:
+    std::map<std::string, std::string> idSubedTopicMap; // id => subed topic
+
+    std::set<std::string> subedAllBlocksIds; // block ids
+    std::set<std::string> subedAllTxIds;     // tx ids
+
+    std::map<std::string, std::string> idSubedSessionMap;       // id => session
+    std::unordered_map<std::string, bool> currentTopicExistMap; // topic => enabled
 };
-
-
 
 } // namespace multiverse
 
