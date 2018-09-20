@@ -99,8 +99,8 @@ public:
   void SendMessage(dbp::Base *pBaseMsg);
   void SendPongMessage(dbp::Base *pBaseMsg);
   void SendResultMessage(dbp::Base *pBaseMsg);
-  void SendPingNoActiveMessage(dbp::Base *pBaseMsg);
-  void SendAddedNoActiveMessage(dbp::Base *pBaseMsg);
+  void SendPingMessage(dbp::Base *pBaseMsg);
+  void SendAddedMessage(dbp::Base *pBaseMsg);
 
 protected:
   void StartReadHeader();

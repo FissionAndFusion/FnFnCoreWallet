@@ -113,7 +113,7 @@ void CDbpClient::SendMessage(dbp::Base *pBaseMsg)
     pClient->Write(ssSend, boost::bind(&CDbpClient::HandleWritenResponse, this, _1, 100));
 }
 
-void CDbpClient::SendPingNoActiveMessage(dbp::Base *pBaseMsg)
+void CDbpClient::SendPingMessage(dbp::Base *pBaseMsg)
 {
     ssPingSend.Clear();
 
@@ -129,7 +129,7 @@ void CDbpClient::SendPingNoActiveMessage(dbp::Base *pBaseMsg)
     pClient->Write(ssPingSend, boost::bind(&CDbpClient::HandleWritenResponse, this, _1, 0));
 }
 
-void CDbpClient::SendAddedNoActiveMessage(dbp::Base *pBaseMsg)
+void CDbpClient::SendAddedMessage(dbp::Base *pBaseMsg)
 {
     ssAddedSend.Clear();
 
@@ -309,7 +309,7 @@ void CDbpClient::SendResponse(CMvDbpAdded &body)
         anyBlock->PackFrom(block);
         addedMsg.set_allocated_object(anyBlock);
 
-        std::cout << "Added Block: " << std::endl;
+        std::cout << "Added Block: " << tempBlock.nHeight << std::endl;
     }
     else if (body.anyAddedObj.type() == typeid(CMvDbpTransaction))
     {
@@ -331,9 +331,7 @@ void CDbpClient::SendResponse(CMvDbpAdded &body)
     anyAdded->PackFrom(addedMsg);
 
     addedMsgBase.set_allocated_object(anyAdded);
-
-    std::cout << "Send No ActiveMessage: " << std::endl;
-    SendAddedNoActiveMessage(&addedMsgBase);
+    SendAddedMessage(&addedMsgBase);
 }
 
 void CDbpClient::SendResponse(CMvDbpMethodResult &body)
@@ -437,7 +435,7 @@ void CDbpClient::SendNocActivePing(const std::string &id)
 
     pingMsgBase.set_allocated_object(any);
 
-    SendPingNoActiveMessage(&pingMsgBase);
+    SendPingMessage(&pingMsgBase);
 }
 
 void CDbpClient::SendResponse(int statusCode, const std::string &description)
@@ -471,10 +469,6 @@ void CDbpClient::StartReadPayload(std::size_t nLength)
 
 void CDbpClient::HandleReadHeader(std::size_t nTransferred)
 {
-    std::cout << "[ReadHeaderHandler] transferred: " << nTransferred
-              << " StreamBuffer: " << ssRecv.GetSize()
-              << std::endl;
-
     if (nTransferred == MSG_HEADER_LEN)
     {
 
@@ -485,7 +479,8 @@ void CDbpClient::HandleReadHeader(std::size_t nTransferred)
         if (nMsgHeaderLen == 0)
         {
             std::cout << "Msg Base header length is 0" << std::endl;
-            pServer->HandleClientError(this);
+            //  pServer->HandleClientError(this);
+            pServer->HandleClientSent(this);
             return;
         }
 
@@ -493,25 +488,20 @@ void CDbpClient::HandleReadHeader(std::size_t nTransferred)
     }
     else
     {
-        pServer->HandleClientError(this);
+        pServer->HandleClientSent(this);
     }
 }
 
 void CDbpClient::HandleReadPayload(std::size_t nTransferred, uint32_t len)
 {
-
-    std::cout << "[ReadPayloadHandler] transferred: " << nTransferred
-              << " MessageLen: " << len
-              << " StreamBuffer: " << ssRecv.GetSize()
-              << std::endl;
-
     if (nTransferred == len)
     {
         HandleReadCompleted(len);
     }
     else
     {
-        pServer->HandleClientError(this);
+        // pServer->HandleClientError(this);
+        pServer->HandleClientSent(this);
     }
 }
 
@@ -525,7 +515,8 @@ void CDbpClient::HandleReadCompleted(uint32_t len)
     if (!msgBase.ParseFromArray(&payloadBuffer[0], len))
     {
         pServer->RespondError(this, 400, "Parse Msg Base failed");
-        pServer->HandleClientError(this);
+        // pServer->HandleClientError(this);
+        pServer->HandleClientSent(this);
         return;
     }
 
@@ -554,7 +545,8 @@ void CDbpClient::HandleReadCompleted(uint32_t len)
         break;
     default:
         pServer->RespondError(this, 400, "is not Message Base Type is unknown.");
-        pServer->HandleClientError(this);
+        // pServer->HandleClientError(this);
+        pServer->HandleClientSent(this);
         break;
     }
 }
@@ -588,7 +580,8 @@ void CDbpClient::HandleWritenResponse(std::size_t nTransferred, int type)
     }
     else
     {
-        pServer->HandleClientError(this);
+        // pServer->HandleClientError(this);
+        pServer->HandleClientSent(this);
     }
 }
 
@@ -780,7 +773,7 @@ void CDbpServer::HandleClientPing(CDbpClient *pDbpClient, google::protobuf::Any 
     dbp::Ping pingMsg;
     any->UnpackTo(&pingMsg);
 
-    std::cout << "recv ping" << pingMsg.id() << std::endl;
+    std::cout << "RECV PING: " << pingMsg.id() << std::endl;
     pDbpClient->SendPong(pingMsg.id());
 }
 
@@ -789,7 +782,7 @@ void CDbpServer::HandleClientPong(CDbpClient *pDbpClient, google::protobuf::Any 
     dbp::Pong pongMsg;
     any->UnpackTo(&pongMsg);
 
-    std::cout << "recv pong" << pongMsg.id() << std::endl;
+    std::cout << "RECV PONG: " << pongMsg.id() << std::endl;
 
     if (HaveAssociatedSessionOf(pDbpClient))
     {
