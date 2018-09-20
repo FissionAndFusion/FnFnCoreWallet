@@ -19,17 +19,25 @@ CBlockDB::~CBlockDB()
 {
 }
 
-bool CBlockDB::Initialize(const CMvDBConfig& config,int nMaxDBConn)
+bool CBlockDB::DBPoolInitialize(const CMvDBConfig& config,int nMaxDBConn)
 {
+
     if (!dbPool.Initialize(config,nMaxDBConn))
     {
         return false;
     }
+
+    return true;
+}
+
+bool CBlockDB::Initialize()
+{
+
     if (!CreateTable())
     {
         return false;
     }
-    
+
     return LoadFork();
 }
 
@@ -737,5 +745,32 @@ bool CBlockDB::LoadFork()
         }
     }
     return true;
+}
+
+
+bool CBlockDB::InnoDB()
+{
+    CMvDBInst db(&dbPool);
+    if (!db.Available())
+    {
+        return false;
+    }
+
+    vector<unsigned char> support;
+
+    CMvDBRes res(*db,"SHOW ENGINES",true);
+
+    while (res.GetRow())
+    {
+        res.GetField(0,support);
+
+        string engine(support.begin(),support.end());
+
+        if (engine == "InnoDB"){
+            return true;
+        }
+    }
+
+    return false;
 }
 

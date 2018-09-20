@@ -247,12 +247,23 @@ bool CBlockBase::Initialize(const CMvDBConfig& dbConfig,int nMaxDBConn,const pat
 
     Log("B","Initializing... (Path : %s)\n",pathDataLocation.string().c_str());
 
-    if (!dbBlock.Initialize(dbConfig,nMaxDBConn))
+    if (!dbBlock.DBPoolInitialize(dbConfig,nMaxDBConn))
+    {
+        Error("B","Failed MySQL not connect\n");
+        return false;
+    }
+
+    if (!dbBlock.InnoDB()){
+        Error("B","Failed MySQL not Support InnoDB\n");
+        return false;
+    }
+
+    if (!dbBlock.Initialize())
     {
         Error("B","Failed to initialize block db\n");
         return false;
     }
-     
+
     if (!tsBlock.Initialize(pathDataLocation / "block",BLOCKFILE_PREFIX))
     {
         dbBlock.Deinitialize();
@@ -1026,14 +1037,7 @@ bool CBlockBase::LoadDB()
 
 bool CBlockBase::SetupLog(const path& pathLocation,bool fDebug)
 {
-    if (!exists(pathLocation))
-    {
-        create_directories(pathLocation);
-    }
-    if (!is_directory(pathLocation))
-    {
-        return false;
-    }
+
     if (!walleveLog.SetLogFilePath((pathLocation / LOGFILE_NAME).string()))
     {
         return false;

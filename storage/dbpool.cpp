@@ -94,8 +94,10 @@ bool CMvDBPool::Create(const CMvDBConfig& config,int nMaxInstance)
         if (!pConn->Connect(config))
         {
             delete pConn;
+            cerr << " Failed: MySQL connection";
             return false;
         }
+
         setDBConn.insert(pConn);
         queFreeDBConn.push(pConn);
     }
