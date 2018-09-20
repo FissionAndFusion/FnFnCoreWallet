@@ -6,16 +6,16 @@
 using namespace multiverse::storage;
 using namespace boost::asio::ip;
 
-DNSeedDB::DNSeedDB()
+CDNSeedDB::CDNSeedDB()
 {
 }
 
-DNSeedDB::~DNSeedDB()
+CDNSeedDB::~CDNSeedDB()
 {
     Deinit();
 }
 
-bool DNSeedDB::Init(const CMvDBConfig &config)
+bool CDNSeedDB::Init(const CMvDBConfig &config)
 {
     if (!dbConn.Connect(config))
     {
@@ -24,12 +24,12 @@ bool DNSeedDB::Init(const CMvDBConfig &config)
     return CreateTable();
 }
 
-void DNSeedDB::Deinit()
+void CDNSeedDB::Deinit()
 {
     dbConn.Disconnect();
 }
 
-void DNSeedDB::GetBinaryCharV4V6(std::vector<unsigned char> &bytes, boost::asio::ip::address addr)
+void CDNSeedDB::GetBinaryCharV4V6(std::vector<unsigned char> &bytes, boost::asio::ip::address addr)
 {
     if (addr.is_v4())
     {
@@ -45,7 +45,7 @@ void DNSeedDB::GetBinaryCharV4V6(std::vector<unsigned char> &bytes, boost::asio:
     }
 }
 
-bool DNSeedDB::InsertNode(SeedNode &node)
+bool CDNSeedDB::InsertNode(CSeedNode &node)
 {
     std::ostringstream oss;
     std::vector<unsigned char> bt;
@@ -60,7 +60,7 @@ bool DNSeedDB::InsertNode(SeedNode &node)
     return dbConn.Query(oss.str());
 }
 
-bool DNSeedDB::DeleteNode(SeedNode &node)
+bool CDNSeedDB::DeleteNode(CSeedNode &node)
 {
     std::ostringstream oss;
     std::vector<unsigned char> bt;
@@ -71,7 +71,7 @@ bool DNSeedDB::DeleteNode(SeedNode &node)
     return dbConn.Query(oss.str());
 }
 
-bool DNSeedDB::UpdateNode(SeedNode &node)
+bool CDNSeedDB::UpdateNode(CSeedNode &node)
 {
     std::ostringstream oss;
     std::vector<unsigned char> bt;
@@ -82,13 +82,13 @@ bool DNSeedDB::UpdateNode(SeedNode &node)
     return dbConn.Query(oss.str());
 }
 
-bool DNSeedDB::SelectAllNode(std::vector<SeedNode> &nodeList)
+bool CDNSeedDB::SelectAllNode(std::vector<CSeedNode> &nodeList)
 {
     CMvDBRes res(dbConn, "SELECT id,address,port,score FROM dnseednode ", true);
     while (res.GetRow())
     {
 
-        SeedNode node;
+        CSeedNode node;
         std::vector<unsigned char> addbyte;
         short port;
         if (!res.GetField(0, node.nId) || !res.GetField(1, addbyte) || !res.GetField(2, port) || !res.GetField(3, node.nScore))
@@ -106,7 +106,7 @@ bool DNSeedDB::SelectAllNode(std::vector<SeedNode> &nodeList)
     return true;
 }
 
-bool DNSeedDB::CreateTable()
+bool CDNSeedDB::CreateTable()
 {
     return dbConn.Query("CREATE TABLE IF NOT EXISTS dnseednode("
                         "id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,"
@@ -115,7 +115,7 @@ bool DNSeedDB::CreateTable()
                         "score INT NOT NULL)");
 }
 
-bool DNSeedDB::FindOneWithAddress(std::string ip, SeedNode &targetNode)
+bool CDNSeedDB::FindOneWithAddress(std::string ip, CSeedNode &targetNode)
 {
     address addr = address::from_string(ip);
     std::vector<unsigned char> bt;

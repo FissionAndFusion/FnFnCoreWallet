@@ -36,7 +36,6 @@ bool CNetwork::WalleveHandleInitialize()
     }
     config.nMaxOutBounds = NetworkConfig()->nMaxOutBounds;
     config.nPortDefault = NetworkConfig()->nPort;
-
     BOOST_FOREACH(const string& conn,NetworkConfig()->vConnectTo)
     {
         config.vecNode.push_back(CNetHost(conn,config.nPortDefault,conn,

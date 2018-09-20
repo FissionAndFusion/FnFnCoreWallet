@@ -13,45 +13,45 @@ namespace multiverse
 namespace storage
 {
 
-class SeedNode
+class CSeedNode
 {
-  public:
-    SeedNode() {}
-    SeedNode(boost::asio::ip::tcp::endpoint ep, int score = 0)
-    {
-        this->nId = -1;
-        this->ep = ep;
-        this->nReconnTimes = 0;
-        this->nScore = score;
-    }
+public:
+  CSeedNode() {}
+  CSeedNode(boost::asio::ip::tcp::endpoint ep, int score = 0)
+  {
+    this->nId = -1;
+    this->ep = ep;
+    this->nReconnTimes = 0;
+    this->nScore = score;
+  }
 
-  public:
-    int nId;
-    boost::asio::ip::tcp::endpoint ep;
-    int nScore;
-    int nReconnTimes;
+public:
+  int nId;
+  boost::asio::ip::tcp::endpoint ep;
+  int nScore;
+  int nReconnTimes;
 };
 
-class DNSeedDB
+class CDNSeedDB
 {
-  public:
-    DNSeedDB();
-    ~DNSeedDB();
+public:
+  CDNSeedDB();
+  ~CDNSeedDB();
 
-    bool Init(const CMvDBConfig &config);
-    bool InsertNode(SeedNode &node);
-    bool DeleteNode(SeedNode &node);
-    bool UpdateNode(SeedNode &node);
-    bool SelectAllNode(std::vector<SeedNode> &nodeList);
-    bool FindOneWithAddress(std::string ip, SeedNode &targetNode);
+  bool Init(const CMvDBConfig &config);
+  bool InsertNode(CSeedNode &node);
+  bool DeleteNode(CSeedNode &node);
+  bool UpdateNode(CSeedNode &node);
+  bool SelectAllNode(std::vector<CSeedNode> &nodeList);
+  bool FindOneWithAddress(std::string ip, CSeedNode &targetNode);
 
-  private:
-    void Deinit();
-    bool CreateTable();
-    void GetBinaryCharV4V6(std::vector<unsigned char> &bytes, boost::asio::ip::address addr);
+private:
+  void Deinit();
+  bool CreateTable();
+  void GetBinaryCharV4V6(std::vector<unsigned char> &bytes, boost::asio::ip::address addr);
 
-  protected:
-    CMvDBConn dbConn;
+protected:
+  CMvDBConn dbConn;
 };
 
 } // namespace storage

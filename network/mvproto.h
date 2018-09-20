@@ -35,7 +35,7 @@ enum
     MVPROTO_CMD_GETADDRESS  = 3,
     MVPROTO_CMD_ADDRESS     = 4,
     MVPROTO_CMD_PING        = 5,
-    MVPROTO_CMD_PONG        = 6,
+    MVPROTO_CMD_PONG        = 6
 };
 
 enum

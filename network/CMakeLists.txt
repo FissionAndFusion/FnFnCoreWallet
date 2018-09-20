@@ -11,7 +11,7 @@ set(sources
 	mvpeerevent.h
 	mvpeer.cpp mvpeer.h
 	mvpeernet.cpp mvpeernet.h
-	dnseedservice.cpp dnseedservice.h
+	mvdnseedservice.cpp mvdnseedservice.h
 )
 
 add_library(network ${sources})

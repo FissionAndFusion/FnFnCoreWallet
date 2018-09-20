@@ -1,7 +1,7 @@
 // Copyright (c) 2017-2018 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
-#include "dnseedservice.h"
+#include "mvdnseedservice.h"
 
 using namespace walleve;
 using namespace multiverse;
@@ -10,7 +10,7 @@ using namespace multiverse::storage;
 
 #define SEND_ADDRESS_LIMIT 20
 
-bool DNSeedService::Init(CMvDBConfig &config)
+bool CMvDNSeedService::Init(CMvDBConfig &config)
 {
     if (!db.Init(config))
     {
@@ -20,7 +20,7 @@ bool DNSeedService::Init(CMvDBConfig &config)
     return true;
 }
 
-bool DNSeedService::Add2list(boost::asio::ip::tcp::endpoint newep, bool forceAdd)
+bool CMvDNSeedService::Add2list(boost::asio::ip::tcp::endpoint newep, bool forceAdd)
 {
     //过滤局域网地址
     if (!IsRoutable(newep.address()))
@@ -28,7 +28,7 @@ bool DNSeedService::Add2list(boost::asio::ip::tcp::endpoint newep, bool forceAdd
     if (HasAddress(newep))
         return false;
 
-    SeedNode sn(newep);
+    CSeedNode sn(newep);
     if (!forceAdd)
     {
         vNewNodeList.push_back(sn);
@@ -50,9 +50,9 @@ bool DNSeedService::Add2list(boost::asio::ip::tcp::endpoint newep, bool forceAdd
     }
 }
 
-void DNSeedService::GetSendAddressList(std::vector<CAddress> &list)
+void CMvDNSeedService::GetSendAddressList(std::vector<CAddress> &list)
 {
-    std::vector<SeedNode> snlist;
+    std::vector<CSeedNode> snlist;
     size_t vSize = vActiveNodeList.size();
     if (vSize <= SEND_ADDRESS_LIMIT)
     {
@@ -60,7 +60,7 @@ void DNSeedService::GetSendAddressList(std::vector<CAddress> &list)
     }
     else
     {
-        std::sort(vActiveNodeList.begin(), vActiveNodeList.end(), [=](SeedNode s1, SeedNode s2) {
+        std::sort(vActiveNodeList.begin(), vActiveNodeList.end(), [=](CSeedNode s1, CSeedNodede s2) {
             return s1.nScore > s2.nScore;
         });
         //To avoid all nodes getting exactly the same list
@@ -79,7 +79,7 @@ void DNSeedService::GetSendAddressList(std::vector<CAddress> &list)
     }
 }
 
-bool DNSeedService::HasAddress(boost::asio::ip::tcp::endpoint ep)
+bool CMvDNSeedService::HasAddress(boost::asio::ip::tcp::endpoint ep)
 {
     for (size_t i = 0; i < vActiveNodeList.size(); i++)
     {
@@ -89,7 +89,7 @@ bool DNSeedService::HasAddress(boost::asio::ip::tcp::endpoint ep)
     return false;
 }
 
-void DNSeedService::RecvAddressList(std::vector<CAddress> epList)
+void CMvDNSeedService::RecvAddressList(std::vector<CAddress> epList)
 {
     for (size_t i = 0; i < epList.size(); i++)
     {
@@ -100,7 +100,7 @@ void DNSeedService::RecvAddressList(std::vector<CAddress> epList)
     }
 }
 
-bool DNSeedService::UpdateNode(SeedNode node)
+bool CMvDNSeedService::UpdateNode(CSeedNode node)
 {
     activeListLocker.lock();
     bool rzt = false;
@@ -121,10 +121,10 @@ bool DNSeedService::UpdateNode(SeedNode node)
     return rzt;
 }
 
-void DNSeedService::RemoveNode(const boost::asio::ip::tcp::endpoint &ep)
+void CMvDNSeedService::RemoveNode(const boost::asio::ip::tcp::endpoint &ep)
 {
     activeListLocker.lock();
-    SeedNode sn(ep);
+    CSeedNode sn(ep);
     bool rzt = db.DeleteNode(sn);
     for (auto it = vActiveNodeList.begin(); it != vActiveNodeList.end(); it++)
     {
@@ -137,24 +137,24 @@ void DNSeedService::RemoveNode(const boost::asio::ip::tcp::endpoint &ep)
     activeListLocker.unlock();
 }
 
-void DNSeedService::GetAllNodeList4Filter(std::vector<boost::asio::ip::tcp::endpoint> &epList)
+void CMvDNSeedService::GetAllNodeList4Filter(std::vector<boost::asio::ip::tcp::endpoint> &epList)
 {
-    for (SeedNode &sn : vActiveNodeList)
+    for (CSeedNode &sn : vActiveNodeList)
     {
         epList.push_back(sn.ep);
     }
-    for (SeedNode &sn : vNewNodeList)
+    for (CSeedNode &sn : vNewNodeList)
     {
         epList.push_back(sn.ep);
     }
 }
 
-void DNSeedService::ResetNewNodeList()
+void CMvDNSeedService::ResetNewNodeList()
 {
     vNewNodeList.clear();
 }
 
-storage::SeedNode *DNSeedService::FindSeedNode(const boost::asio::ip::tcp::endpoint &ep)
+storage::CSeedNode *CMvDNSeedService::FindCSeedNode(const boost::asio::ip::tcp::endpoint &ep)
 {
     for (size_t i = 0; i < vActiveNodeList.size(); i++)
     {
@@ -164,17 +164,17 @@ storage::SeedNode *DNSeedService::FindSeedNode(const boost::asio::ip::tcp::endpo
     return NULL;
 }
 
-storage::SeedNode *DNSeedService::AddNode(boost::asio::ip::tcp::endpoint &ep, bool forceAdd)
+storage::CSeedNode *CMvDNSeedService::AddNode(boost::asio::ip::tcp::endpoint &ep, bool forceAdd)
 {
 
     if (Add2list(ep, forceAdd))
     {
-        return FindSeedNode(ep);
+        return FindCSeedNode(ep);
     }
     return NULL;
 }
 
-storage::SeedNode *DNSeedService::AddNewNode(boost::asio::ip::tcp::endpoint &ep)
+storage::CSeedNode *CMvDNSeedService::AddNewNode(boost::asio::ip::tcp::endpoint &ep)
 {
     if (vActiveNodeList.size() < SEND_ADDRESS_LIMIT)
     {
@@ -186,7 +186,7 @@ storage::SeedNode *DNSeedService::AddNewNode(boost::asio::ip::tcp::endpoint &ep)
     }
 }
 
-void DNSeedService::GoodNode(storage::SeedNode *node, CanTrust canTrust)
+void CMvDNSeedService::GoodNode(storage::CSeedNode *node, CanTrust canTrust)
 {
     node->nReconnTimes = 0;
     if (canTrust == CanTrust::dontKown)
@@ -215,7 +215,7 @@ void DNSeedService::GoodNode(storage::SeedNode *node, CanTrust canTrust)
     UpdateNode(*node);
 }
 
-bool DNSeedService::BadNode(storage::SeedNode *node)
+bool CMvDNSeedService::BadNode(storage::CSeedNode *node)
 {
     node->nReconnTimes--;
     if (node->nReconnTimes <= -nMaxConnectFailTimes)
