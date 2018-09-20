@@ -289,7 +289,7 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                     {   
                         AddNewNode(ep,ep.address().to_string(),boost::any(addr.nService));
                     }
-                } 
+                }
                 if (setDNSeed.count(pMvPeer->GetRemote()))
                 {
                     RemoveNode(pMvPeer->GetRemote());

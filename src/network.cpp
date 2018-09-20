@@ -43,17 +43,14 @@ bool CNetwork::WalleveHandleInitialize()
     }
     if (config.vecNode.empty())
     {
-        BOOST_FOREACH(const string& node,NetworkConfig()->vNode)
-        {
-            config.vecNode.push_back(CNetHost(node,config.nPortDefault,node,
-                                              boost::any(uint64(network::NODE_NETWORK))));
-        }
-    }
-    if(config.vecNode.empty())
-    {
         BOOST_FOREACH(const string& seed,NetworkConfig()->vDNSeed)
         {
             config.vecNode.push_back(CNetHost(seed,NetworkConfig()->nDNSeedPort,"dnseed",
+                                              boost::any(uint64(network::NODE_NETWORK))));
+        }
+        BOOST_FOREACH(const string& node,NetworkConfig()->vNode)
+        {
+            config.vecNode.push_back(CNetHost(node,config.nPortDefault,node,
                                               boost::any(uint64(network::NODE_NETWORK))));
         }
     }
