@@ -216,6 +216,7 @@ void CMvDelegateVote::GetAgreement(uint256& nAgreement,size_t& nWeight,map<CDest
 {
     nAgreement = 0;
     nWeight = 0;
+    mapBallot.clear();
 
     map<MPUInt256,pair<MPUInt256,size_t> > mapSecret;
 

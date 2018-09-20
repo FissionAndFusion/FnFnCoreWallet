@@ -24,6 +24,7 @@ enum
     MV_EVENT_BLOCKMAKER_ENROLL,
     MV_EVENT_BLOCKMAKER_DISTRIBUTE,
     MV_EVENT_BLOCKMAKER_PUBLISH,
+    MV_EVENT_BLOCKMAKER_AGREE,
     MV_EVENT_DBP_SOCKET_ADD_NEW_BLOCK,
     MV_EVENT_DBP_SOCKET_ADD_NEW_TX
 };
@@ -31,15 +32,16 @@ enum
 class CMvBlockMakerEventListener;
 #define TYPE_BLOCKMAKEREVENT(type,body)       \
         walleve::CWalleveEventCategory<type,CMvBlockMakerEventListener,body,CNil>
-typedef std::pair<uint256,int64> PairHashTime;
 
-typedef TYPE_BLOCKMAKEREVENT(MV_EVENT_BLOCKMAKER_UPDATE,PairHashTime) CMvEventBlockMakerUpdate;
+typedef TYPE_BLOCKMAKEREVENT(MV_EVENT_BLOCKMAKER_UPDATE,CBlockMakerUpdate) CMvEventBlockMakerUpdate;
+typedef TYPE_BLOCKMAKEREVENT(MV_EVENT_BLOCKMAKER_AGREE,CBlockMakerAgreement) CMvEventBlockMakerAgree;
 
 class CMvBlockMakerEventListener : virtual public walleve::CWalleveEventListener
 {
 public:
     virtual ~CMvBlockMakerEventListener() {}
     DECLARE_EVENTHANDLER(CMvEventBlockMakerUpdate);
+    DECLARE_EVENTHANDLER(CMvEventBlockMakerAgree);
 };
 
 template <int type,typename L,typename D>

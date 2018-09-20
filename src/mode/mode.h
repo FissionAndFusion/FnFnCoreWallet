@@ -194,6 +194,7 @@ public:
                     EModuleType::COREPROTOCOL,
                     EModuleType::WORLDLINE,
                     EModuleType::TXPOOL,
+                    EModuleType::CONSENSUS,
                     EModuleType::WALLET,
                     EModuleType::DISPATCHER,
                     EModuleType::NETWORK,

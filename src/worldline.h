@@ -31,6 +31,7 @@ public:
     bool FilterTx(CTxFilter& filter);
     MvErr AddNewBlock(const CBlock& block,CWorldLineUpdate& update);
     bool GetProofOfWorkTarget(const uint256& hashPrev,int nAlgo,int& nBits,int64& nReward);
+    bool GetDelegatedProofOfStakeReward(const uint256& hashPrev,std::size_t nWeight,int64& nReward);
     bool GetBlockLocator(const uint256& hashFork,CBlockLocator& locator);
     bool GetBlockInv(const uint256& hashFork,const CBlockLocator& locator,std::vector<uint256>& vBlockHash,std::size_t nMaxCount);
     bool GetBlockDelegateEnrolled(const uint256& hashBlock,std::map<CDestination,std::size_t>& mapWeight,

@@ -25,6 +25,7 @@ enum class EModuleType
     TXPOOL,        // CTxPool
     WALLET,        // CWallet
     WORLDLINE,     // CWorldLine
+    CONSENSUS,     // CConsensus
     DBPSOCKET,     // CDummyDbpSocket
 };
 

@@ -29,6 +29,7 @@ set(sources
 	service.cpp service.h
 	rpcjson.cpp rpcjson.h
 	rpcmod.cpp rpcmod.h
+	consensus.cpp consensus.h
 	blockmaker.cpp blockmaker.h
 	rpcclient.cpp rpcclient.h
 	miner.cpp miner.h

@@ -6,6 +6,7 @@
 #include "core.h"
 #include "worldline.h"
 #include "txpool.h"
+#include "consensus.h"
 #include "wallet.h"
 #include "dispatcher.h"
 #include "network.h"
@@ -260,6 +261,14 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
         case EModuleType::WORLDLINE:
             {
                 if (!AttachModule(new CWorldLine()))
+                {
+                    return false;
+                }
+                break;
+            }
+        case EModuleType::CONSENSUS:
+            {
+                if (!AttachModule(new CConsensus()))
                 {
                     return false;
                 }

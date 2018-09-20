@@ -4,6 +4,7 @@
 
 #include "dispatcher.h"
 #include "event.h"
+#include <boost/foreach.hpp>
 
 using namespace std;
 using namespace walleve;
@@ -17,6 +18,7 @@ CDispatcher::CDispatcher()
     pCoreProtocol = NULL;
     pWorldLine = NULL;
     pTxPool = NULL;
+    pConsensus = NULL;
     pWallet = NULL;
     pService = NULL;
     pBlockMaker = NULL;
@@ -44,6 +46,12 @@ bool CDispatcher::WalleveHandleInitialize()
     if (!WalleveGetObject("txpool",pTxPool))
     {
         WalleveLog("Failed to request txpool\n");
+        return false;
+    }
+
+    if (!WalleveGetObject("consensus",pConsensus))
+    {
+        WalleveLog("Failed to request consensus\n");
         return false;
     }
 
@@ -79,6 +87,7 @@ void CDispatcher::WalleveHandleDeinitialize()
     pCoreProtocol = NULL;
     pWorldLine = NULL;
     pTxPool = NULL;
+    pConsensus = NULL;
     pWallet = NULL;
     pService = NULL;
     pBlockMaker = NULL;
@@ -128,11 +137,20 @@ MvErr CDispatcher::AddNewBlock(const CBlock& block,uint64 nNonce)
 
     if (block.IsPrimary())
     {
+        CDelegateRoutine routineDelegate;
+        pConsensus->PrimaryUpdate(updateWorldLine,changeTxSet,routineDelegate);
+        BOOST_FOREACH(const CTransaction& tx,routineDelegate.vEnrollTx)
+        {
+            MvErr err = AddNewTx(tx);
+            WalleveLog("Send DelegateTx %s (%s)\n",MvErrString(err),tx.GetHash().GetHex().c_str());
+        }
+
         CMvEventBlockMakerUpdate *pBlockMakerUpdate = new CMvEventBlockMakerUpdate(0);
         if (pBlockMakerUpdate != NULL)
         {
-            pBlockMakerUpdate->data.first = block.GetHash();
-            pBlockMakerUpdate->data.second = block.GetBlockTime();
+            pBlockMakerUpdate->data.hashBlock = updateWorldLine.hashLastBlock;
+            pBlockMakerUpdate->data.nBlockTime = updateWorldLine.nLastBlockTime;
+            pBlockMakerUpdate->data.nBlockHeight = updateWorldLine.nLastBlockHeight;
             pBlockMaker->PostEvent(pBlockMakerUpdate);
         }
     }
@@ -181,6 +199,11 @@ MvErr CDispatcher::AddNewTx(const CTransaction& tx,uint64 nNonce)
     if (!nNonce)
     {
         pNetChannel->BroadcastTxInv(hashFork);
+    }
+
+    if (hashFork == pCoreProtocol->GetGenesisBlockHash())
+    {
+        pConsensus->AddNewTx(CAssembledTx(tx,-1,destIn,nValueIn));
     }
     return MV_OK;
 }

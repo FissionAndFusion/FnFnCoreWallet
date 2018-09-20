@@ -56,7 +56,7 @@ CBlockMaker::CBlockMaker()
     pWorldLine = NULL;
     pTxPool = NULL;
     pDispatcher = NULL;
-    pWallet = NULL;
+    pConsensus = NULL;
     mapHashAlgo[POWA_BLAKE512] = new CHashAlgo_Blake512(INITIAL_HASH_RATE);    
     
 }
@@ -96,9 +96,9 @@ bool CBlockMaker::WalleveHandleInitialize()
         return false;
     }
 
-    if (!WalleveGetObject("wallet",pWallet))
+    if (!WalleveGetObject("consensus",pConsensus))
     {
-        WalleveLog("Failed to request wallet\n");
+        WalleveLog("Failed to request consensus\n");
         return false;
     }
 
@@ -129,7 +129,7 @@ void CBlockMaker::WalleveHandleDeinitialize()
     pWorldLine = NULL;
     pTxPool = NULL;
     pDispatcher = NULL;
-    pWallet = NULL;
+    pConsensus = NULL;
 
     mapProfile.clear();
 }
@@ -140,8 +140,7 @@ bool CBlockMaker::WalleveHandleInvoke()
     {
         return false;
     }
-    int nHeight;
-    if (!pWorldLine->GetLastBlock(pCoreProtocol->GetGenesisBlockHash(),hashLastBlock,nHeight,nLastBlockTime))
+    if (!pWorldLine->GetLastBlock(pCoreProtocol->GetGenesisBlockHash(),hashLastBlock,nLastBlockHeight,nLastBlockTime))
     {
         return false;
     }
@@ -176,8 +175,9 @@ bool CBlockMaker::HandleEvent(CMvEventBlockMakerUpdate& eventUpdate)
     {
         boost::unique_lock<boost::mutex> lock(mutex);
         nMakerStatus = MAKER_RESET;
-        hashLastBlock = eventUpdate.data.first;
-        nLastBlockTime = eventUpdate.data.second;
+        hashLastBlock = eventUpdate.data.hashBlock;
+        nLastBlockTime = eventUpdate.data.nBlockTime;
+        nLastBlockHeight = eventUpdate.data.nBlockHeight;
     }
     cond.notify_all();
     
@@ -199,13 +199,25 @@ bool CBlockMaker::Wait(long nSeconds)
     return (nMakerStatus == MAKER_RUN);
 }
 
-bool CBlockMaker::CreateNewBlock(CBlock& block,const uint256& hashPrev,int64 nPrevTime)
+bool CBlockMaker::CreateNewBlock(CBlock& block,const uint256& hashPrev,int64 nPrevTime,int nPrevHeight,const CBlockMakerAgreement& agreement)
 {
     block.nType = CBlock::BLOCK_PRIMARY;
-    block.nTimeStamp = nPrevTime + BLOCK_TARGET_SPACING - 10;
+    block.nTimeStamp = nPrevTime + BLOCK_TARGET_SPACING;
     block.hashPrev = hashPrev;
-   
-    int nConsensus = CM_BLAKE512;
+    CProofOfSecretShare proof;
+    proof.nWeight = agreement.nWeight;
+    proof.nAgreement = agreement.nAgreement;
+    if (agreement.nAgreement != 0)
+    {
+        pConsensus->GetProof(nPrevHeight + 1,block.vchProof);
+    }
+     
+    int nConsensus = CM_MPVSS;
+    if (agreement.vBallot.empty())
+    {
+        nConsensus = CM_BLAKE512;
+        block.nTimeStamp -= 5;
+    } 
     map<int,CBlockMakerProfile>::iterator it = mapProfile.find(nConsensus);
     if (it == mapProfile.end())
     {
@@ -213,7 +225,19 @@ bool CBlockMaker::CreateNewBlock(CBlock& block,const uint256& hashPrev,int64 nPr
     } 
 
     CBlockMakerProfile& profile = (*it).second;
-    if (!CreateProofOfWork(block,profile.nAlgo,CDestination(profile.templMint->GetTemplateId())))
+    CDestination destMint = CDestination(profile.templMint->GetTemplateId());
+    if (nConsensus == CM_MPVSS)
+    {
+        if (agreement.vBallot[0] != destMint)
+        {
+            return false;
+        }
+        if (!CreateDelegatedProofOfStake(block,agreement.nWeight,destMint))
+        {
+            return false;
+        }
+    }
+    else if (!CreateProofOfWork(block,profile.nAlgo,destMint))
     {
         return false;
     }
@@ -243,6 +267,30 @@ bool CBlockMaker::SignBlock(CBlock& block,CBlockMakerProfile& profile)
     return profile.templMint->BuildBlockSignature(hashSig,vchMintSig,block.vchSig);
 }
 
+bool CBlockMaker::WaitAgreement(CBlockMakerAgreement& agree,int64 nTimeAgree,int nHeight)
+{
+    int64 nWait = nTimeAgree - WalleveGetNetTime();
+    if (nWait > 0 && !Wait(nWait))
+    {
+        return false;
+    }
+    pConsensus->GetAgreement(nHeight,agree.nAgreement,agree.nWeight,agree.vBallot);
+    return true;
+}
+
+bool CBlockMaker::CreateDelegatedProofOfStake(CBlock& block,size_t nWeight,const CDestination& dest)
+{
+    CTransaction& txMint = block.txMint;
+    txMint.nType = CTransaction::TX_STAKE;
+    txMint.hashAnchor = block.hashPrev;
+    txMint.sendTo = dest;
+    if (!pWorldLine->GetDelegatedProofOfStakeReward(block.hashPrev,nWeight,txMint.nAmount))
+    {
+        return false;
+    }
+    return true;
+}
+
 bool CBlockMaker::CreateProofOfWork(CBlock& block,int nAlgo,const CDestination& dest)
 {
     int nBits;
@@ -256,13 +304,13 @@ bool CBlockMaker::CreateProofOfWork(CBlock& block,int nAlgo,const CDestination& 
     txMint.hashAnchor = block.hashPrev;
     txMint.sendTo = dest;
     txMint.nAmount = nReward;
-    CProofOfHashWork proof;
-    proof.nWeight = 0;
-    proof.nAgreement = 0;
+    
+    block.vchProof.resize(block.vchProof.size() + CProofOfHashWorkCompact::PROOFHASHWORK_SIZE);
+    CProofOfHashWorkCompact proof;
     proof.nAlgo = nAlgo;
     proof.nBits = nBits;
     proof.nNonce = 0;
-    proof.Save(block.vchProof);
+    proof.Save(block.vchProof);    
     if (WalleveGetNetTime() > block.nTimeStamp)
     {
         block.nTimeStamp = WalleveGetNetTime();
@@ -336,6 +384,7 @@ void CBlockMaker::BlockMakerThreadFunc()
     {
         uint256 hashPrev;
         int64 nPrevTime;
+        int nPrevHeight;
         {
             boost::unique_lock<boost::mutex> lock(mutex);
             while (nMakerStatus == MAKER_HOLD)
@@ -346,16 +395,23 @@ void CBlockMaker::BlockMakerThreadFunc()
             {
                 break;
             }
-            nMakerStatus = MAKER_RUN;
             hashPrev = hashLastBlock;
             nPrevTime = nLastBlockTime;
+            nPrevHeight = nLastBlockHeight;
+            nMakerStatus = MAKER_RUN;
+        }
+
+        CBlockMakerAgreement agree;
+        if (!WaitAgreement(agree,nPrevTime + BLOCK_TARGET_SPACING - 5,nPrevHeight + 1))
+        {
+            continue;
         }
 
         CBlock block;
         try
         {
             int nNextStatus = MAKER_HOLD;
-            if (CreateNewBlock(block,hashPrev,nPrevTime))
+            if (CreateNewBlock(block,hashPrev,nPrevTime,nPrevHeight,agree))
             {
                 if (!DispatchNewBlock(block))
                 {

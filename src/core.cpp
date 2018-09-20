@@ -89,11 +89,11 @@ void CMvCoreProtocol::GetGenesisBlock(CBlock& block)
 MvErr CMvCoreProtocol::ValidateTransaction(const CTransaction& tx)
 {
     // Basic checks that don't depend on any context
-    if (tx.vInput.empty() && tx.nType != CTransaction::TX_GENESIS && tx.nType != CTransaction::TX_WORK)
+    if (tx.vInput.empty() && tx.nType != CTransaction::TX_GENESIS && tx.nType != CTransaction::TX_WORK && tx.nType != CTransaction::TX_STAKE)
     {
         return DEBUG(MV_ERR_TRANSACTION_INVALID,"tx vin is empty\n");
     }
-    if (!tx.vInput.empty() && (tx.nType == CTransaction::TX_GENESIS || tx.nType == CTransaction::TX_WORK))
+    if (!tx.vInput.empty() && (tx.nType == CTransaction::TX_GENESIS || tx.nType == CTransaction::TX_WORK || tx.nType == CTransaction::TX_STAKE))
     {
         return DEBUG(MV_ERR_TRANSACTION_INVALID,"tx vin is not empty for genesis or work tx\n");
     }
@@ -303,6 +303,43 @@ int CMvCoreProtocol::GetProofOfWorkRunTimeBits(int nBits,int64 nTime,int64 nPrev
         nBits = nProofOfWorkLimit;
     }
     return nBits;
+}
+
+int64 CMvCoreProtocol::GetDelegatedProofOfStakeReward(CBlockIndex* pIndexPrev,size_t nWeight)
+{
+    return (15 * COIN);    
+}
+
+void CMvCoreProtocol::GetDelegatedBallot(const uint256& nAgreement,size_t nWeight,
+                                         const map<CDestination,size_t>& mapBallot,vector<CDestination>& vBallot)
+{
+    vBallot.clear();
+    int nSelected = 0;
+    for (const unsigned char* p = nAgreement.begin();p != nAgreement.end();++p)
+    {
+        nSelected ^= *p;
+    }
+    size_t nWeightWork = ((DELEGATE_THRESH - nWeight) * (DELEGATE_THRESH - nWeight) * (DELEGATE_THRESH - nWeight))
+                         / (DELEGATE_THRESH * DELEGATE_THRESH);
+    if (nSelected >= nWeightWork * 256 / (nWeightWork + nWeight))
+    {
+        size_t nTrust = nWeight;
+        for (const unsigned char* p = nAgreement.begin();p != nAgreement.end() && nTrust != 0;++p)
+        {
+            nSelected += *p;
+            size_t n = nSelected % nWeight;
+            for (map<CDestination,size_t>::const_iterator it = mapBallot.begin();it != mapBallot.end();++it)
+            {
+                if (n < (*it).second)
+                {
+                    vBallot.push_back((*it).first);
+                    break;
+                }
+                n -= (*it).second;
+            }
+            nTrust >>= 1;
+        }
+    }
 }
 
 int64 CMvCoreProtocol::GetProofOfWorkReward(CBlockIndex* pIndexPrev)

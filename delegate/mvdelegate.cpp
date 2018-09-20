@@ -45,7 +45,7 @@ void CMvDelegate::Evolve(int nBlockHeight,const map<CDestination,size_t>& mapWei
                                           CMvDelegateEvolveResult& result)
 {
     const int nTarget = nBlockHeight + MV_CONSENSUS_INTERVAL;
-    const int nEnrollEnd = nBlockHeight + MV_CONSENSUS_DISTRIBUTE_INTERVAL;
+    const int nEnrollEnd = nBlockHeight + MV_CONSENSUS_DISTRIBUTE_INTERVAL + 1;
     const int nPublish = nBlockHeight + 1;
 
     result.Clear();

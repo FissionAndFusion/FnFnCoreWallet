@@ -311,6 +311,24 @@ bool CWorldLine::GetProofOfWorkTarget(const uint256& hashPrev,int nAlgo,int& nBi
     return true;
 }
 
+bool CWorldLine::GetDelegatedProofOfStakeReward(const uint256& hashPrev,size_t nWeight,int64& nReward)
+{
+    CBlockIndex* pIndexPrev;
+    if (!cntrBlock.RetrieveIndex(hashPrev,&pIndexPrev))
+    {
+        WalleveLog("GetDelegatedProofOfStakeReward : Retrieve Prev Index Error: %s \n",hashPrev.ToString().c_str());
+        return false;
+    }
+    if (!pIndexPrev->IsPrimary())
+    {
+        WalleveLog("GetDelegatedProofOfStakeReward : Previous is not primary: %s \n",hashPrev.ToString().c_str());
+        return false;
+    }
+    
+    nReward = pCoreProtocol->GetDelegatedProofOfStakeReward(pIndexPrev,nWeight);
+    return true;
+}
+
 bool CWorldLine::GetBlockLocator(const uint256& hashFork,CBlockLocator& locator)
 {
     return cntrBlock.GetForkBlockLocator(hashFork,locator);
@@ -333,7 +351,7 @@ bool CWorldLine::GetBlockDelegateEnrolled(const uint256& hashBlock,map<CDestinat
         WalleveLog("GetBlockDelegateEnrolled : Retrieve block Index Error: %s \n",hashBlock.ToString().c_str());
         return false;
     }
-    int64 nDelegateWeightRatio = pIndex->GetMoneySupply() / DELEGATE_THRESH;
+    int64 nDelegateWeightRatio = (pIndex->GetMoneySupply() + DELEGATE_THRESH - 1) / DELEGATE_THRESH;
 
     if (pIndex->GetBlockHeight() < MV_CONSENSUS_ENROLL_INTERVAL)
     {
