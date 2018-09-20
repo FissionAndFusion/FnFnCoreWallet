@@ -1649,7 +1649,7 @@ Value CRPCMod::RPCDecodeTransaction(const Array& params,bool fHelp)
     if (fHelp || params.size() != 1)
     {
         throw runtime_error(
-            "decoderawtransaction <hex string>\n"
+            "decodetransaction <hex string>\n"
             "Return a JSON object representing the serialized, hex-encoded transaction.");
     }
     vector<unsigned char> txData(ParseHexString(params[0].get_str()));
