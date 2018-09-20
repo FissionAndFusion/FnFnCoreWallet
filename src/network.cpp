@@ -45,7 +45,7 @@ bool CNetwork::WalleveHandleInitialize()
     {
         BOOST_FOREACH(const string& seed,NetworkConfig()->vDNSeed)
         {
-            config.vecNode.push_back(CNetHost(seed,config.nPortDefault,"dnseed",
+            config.vecNode.push_back(CNetHost(seed,NetworkConfig()->nDNSeedPort,"dnseed",
                                               boost::any(uint64(network::NODE_NETWORK))));
         }
         BOOST_FOREACH(const string& node,NetworkConfig()->vNode)
@@ -72,4 +72,25 @@ bool CNetwork::CheckPeerVersion(uint32 nVersionIn,uint64 nServiceIn,const string
         return false;
     }
     return true;
+}
+
+void CNetwork::ClientFailToConnect(const tcp::endpoint& epRemote)
+{
+    CPeerNet::ClientFailToConnect(epRemote);
+    WalleveLog("ConnectFailTo>>>%s %d\n",epRemote.address().to_string().c_str(),epRemote.port());
+
+    //Check to see if there are peer and nodes to connect, and if they are empty, connect DNseed
+    CWalleveEventPeerNetGetPeers eventGetPeers(0);
+    DispatchEvent(&eventGetPeers); 
+    if(eventGetPeers.result.size() == 0 && GetCandidateNodeCount()<=0)
+    {
+        WalleveLog("Connect 2 DnSeed server\n");
+        BOOST_FOREACH(const string& seed,NetworkConfig()->vDNSeed)
+        {
+            AddNewNode(CNetHost(seed,NetworkConfig()->nDNSeedPort,"dnseed",
+                                              boost::any(uint64(network::NODE_NETWORK))));
+            
+        }
+    }
+
 }

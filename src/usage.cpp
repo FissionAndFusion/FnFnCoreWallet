@@ -24,7 +24,7 @@ void DisplayUsage()
             "  multiverse [options] help              \t\t  " + _("List commands") + "\n" +
             "  multiverse [options] help <command>    \t\t  " + _("Get help for a command") + "\n" +
           _("Options:") + "\n" +
-            "  -conf=<file>     \t\t  " + _("Specify configuration file (default: lomocoin.conf)") + "\n" +
+            "  -conf=<file>     \t\t  " + _("Specify configuration file (default: multiverse.conf)") + "\n" +
             "  -pid=<file>      \t\t  " + _("Specify pid file (default: multiverse.pid)") + "\n" +
             "  -datadir=<dir>   \t\t  " + _("Specify data directory") + "\n" +
             "  -dbhost=<host>   \t\t  " + _("Set mysql host (default: localhost)") + "\n" +
@@ -36,7 +36,7 @@ void DisplayUsage()
             "  -timeout=<n>     \t  "   + _("Specify connection timeout (in milliseconds)") + "\n" +
             "  -proxy=<ip:port> \t  "   + _("Connect through socks4 proxy") + "\n" +
             "  -dns             \t  "   + _("Allow DNS lookups for addnode and connect") + "\n" +
-            "  -port=<port>     \t\t  " + _("Listen for connections on <port> (default: 6801 or testnet: 6803)") + "\n" +
+            "  -port=<port>     \t\t  " + _("Listen for connections on <port> (default: 6811 or testnet: 6813)") + "\n" +
             "  -maxconnections=<n>\t  " + _("Maintain at most <n> connections to peers (default: 125)") + "\n" +
             "  -addnode=<ip>    \t  "   + _("Add a node to connect to and attempt to keep the connection open") + "\n" +
             "  -connect=<ip>    \t\t  " + _("Connect only to the specified node") + "\n" +
@@ -52,7 +52,7 @@ void DisplayUsage()
             "  -debug           \t\t  " + _("Output extra debugging information") + "\n" +
             "  -rpcuser=<user>  \t  "   + _("Username for JSON-RPC connections") + "\n" +
             "  -rpcpassword=<pw>\t  "   + _("Password for JSON-RPC connections") + "\n" +
-            "  -rpcport=<port>  \t\t  " + _("Listen for JSON-RPC connections on <port> (default: 6802)") + "\n" +
+            "  -rpcport=<port>  \t\t  " + _("Listen for JSON-RPC connections on <port> (default: 6812)") + "\n" +
             "  -rpcallowip=<ip> \t\t  " + _("Allow JSON-RPC connections from specified IP address") + "\n" +
             "  -rpcconnect=<ip> \t  "   + _("Send commands to node running on <ip> (default: 127.0.0.1)") + "\n" +
             "  -keypool=<n>     \t  "   + _("Set key pool size to <n> (default: 100)") + "\n" +

@@ -16,6 +16,7 @@
 #include "blockmaker.h"
 #include "rpcclient.h"
 #include "miner.h"
+#include "dnseed.h"
 
 #include <map>
 #include <string>
@@ -99,7 +100,9 @@ bool CMvEntry::Initialize(int argc,char *argv[])
     }
 
     // log
-    if ((mvConfig.GetModeType() == EModeType::SERVER || mvConfig.GetModeType() == EModeType::MINER)
+    if ((mvConfig.GetModeType() == EModeType::SERVER 
+        || mvConfig.GetModeType() == EModeType::MINER 
+        || mvConfig.GetModeType() == EModeType::DNSEED)
         && !walleveLog.SetLogFilePath((pathData / "multiverse.log").string()))
     {
         cerr << "Failed to open log file : " << (pathData / "multiverse.log") << "\n";
@@ -282,6 +285,14 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
                 }
                 break;
             }
+        case EModuleType::DNSEED:
+            {
+                if (!AttachModule(new CDNSeed()))
+                {
+                    return false;
+                }
+                break;
+            }    
         default:
             cerr << "Unknown module:%d" << CMode::IntValue(m) << endl;
             break;

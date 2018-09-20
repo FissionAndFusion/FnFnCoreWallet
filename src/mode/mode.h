@@ -173,6 +173,13 @@ public:
                                 EConfigType::RPC
                              >();
             }
+            case EModeType::DNSEED:
+            {
+                return create<
+                                EConfigType::NETWORK,
+                                EConfigType::STORAGE
+                             >();
+            }
             // Add new mode-module relationship here.
             default:
             {
@@ -220,6 +227,13 @@ public:
                     EModuleType::MINER
                 }
             },
+            {
+                EModeType::DNSEED, 
+                {
+                    EModuleType::LOCK,
+                    EModuleType::DNSEED,
+                }
+            }
             // Add new mode-config relationship here.
         };
 

@@ -27,6 +27,7 @@ enum class EModuleType
     WORLDLINE,     // CWorldLine
     CONSENSUS,     // CConsensus
     DBPSOCKET,     // CDummyDbpSocket
+    DNSEED,        // CDNSeed
 };
 
 }  // namespace multiverse

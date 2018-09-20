@@ -33,6 +33,7 @@ set(sources
 	blockmaker.cpp blockmaker.h
 	rpcclient.cpp rpcclient.h
 	miner.cpp miner.h
+	dnseed.cpp dnseed.h
 	${mode_src}
 )
 
