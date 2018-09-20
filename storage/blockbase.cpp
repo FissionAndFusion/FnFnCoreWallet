@@ -247,14 +247,20 @@ bool CBlockBase::Initialize(const CMvDBConfig& dbConfig,int nMaxDBConn,const pat
 
     Log("B","Initializing... (Path : %s)\n",pathDataLocation.string().c_str());
 
-    if (!dbBlock.Initialize(dbConfig,nMaxDBConn))
+    if (!dbBlock.DBPoolInitialize(dbConfig,nMaxDBConn))
     {
-        Error("B","Failed to initialize block db\n");
+        Error("B","Failed MySQL not connect\n");
         return false;
     }
 
-    if (!dbBlock.InnoDB(dbConfig.strDBName)){
+    if (!dbBlock.InnoDB()){
         Error("B","Failed MySQL not Support InnoDB\n");
+        return false;
+    }
+
+    if (!dbBlock.Initialize())
+    {
+        Error("B","Failed to initialize block db\n");
         return false;
     }
 

@@ -19,17 +19,25 @@ CBlockDB::~CBlockDB()
 {
 }
 
-bool CBlockDB::Initialize(const CMvDBConfig& config,int nMaxDBConn)
+bool CBlockDB::DBPoolInitialize(const CMvDBConfig& config,int nMaxDBConn)
 {
+
     if (!dbPool.Initialize(config,nMaxDBConn))
     {
         return false;
     }
+
+    return true;
+}
+
+bool CBlockDB::Initialize()
+{
+
     if (!CreateTable())
     {
         return false;
     }
-    
+
     return LoadFork();
 }
 
@@ -739,7 +747,7 @@ bool CBlockDB::LoadFork()
 }
 
 
-bool CBlockDB::InnoDB(std::string strDBName)
+bool CBlockDB::InnoDB()
 {
     CMvDBInst db(&dbPool);
     if (!db.Available())
@@ -764,3 +772,4 @@ bool CBlockDB::InnoDB(std::string strDBName)
 
     return false;
 }
+
