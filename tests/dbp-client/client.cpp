@@ -119,6 +119,7 @@ void Client::Send(std::vector<char> buf, std::string explain)
         return;
     }
 
+    
     boost::shared_ptr<std::string> pstr(new std::string(explain));
     // sock_->async_write_some(boost::asio::buffer(buf, buf.size()), boost::bind(&Client::WriteHandler, this, pstr, _1, _2));
     boost::asio::async_write(*sock_, boost::asio::buffer(buf), boost::bind(&Client::WriteHandler, this, pstr, _1, _2));
@@ -268,6 +269,12 @@ void Client::ReadHeaderHandler(const boost::system::error_code &ec, std::shared_
         return;
     }
 
+    if (ssRecv.get_size() != 4)
+    {
+        std::cout << "Recv buffer size  is not 4 [header handler]" << std::endl;
+        return;
+    }
+
     std::cout << "transfer  size[read header handler]: " << bytes_size << std::endl;
     std::cout << "Recv buffer size[read header handler]: " << ssRecv.get_size() << std::endl;
 
@@ -311,6 +318,12 @@ void Client::ReadHandler(const boost::system::error_code &ec, std::shared_ptr<bo
         return;
     }
 
+    if (len != bytes_size)
+    {
+        std::cout << "len != bytes_size[ReadHandler]" << std::endl;
+        return;
+    }
+
     std::cout << "  transfer size:[read  handler]: " << bytes_size << std::endl;
     std::cout << "  Recv buffer size[read  handler]: " << ssRecv.get_size() << std::endl;
 
@@ -340,7 +353,7 @@ void Client::ReadHandler(const boost::system::error_code &ec, std::shared_ptr<bo
             m_timer_.reset(new boost::asio::steady_timer(m_io_, std::chrono::seconds{timer_expires_}));
             m_timer_->async_wait(boost::bind(&Client::TimerHandler, this, boost::asio::placeholders::error, sock));
 
-            test_timer_.reset(new boost::asio::steady_timer(m_io_, std::chrono::seconds{30}));
+            test_timer_.reset(new boost::asio::steady_timer(m_io_, std::chrono::seconds{10}));
             test_timer_->async_wait(boost::bind(&Client::MethodTimerHandler, this, boost::asio::placeholders::error, sock));
         }
 
@@ -468,7 +481,7 @@ void Client::TimerHandler(const boost::system::error_code &ec, std::shared_ptr<b
 
     if (is_connected_)
     {
-        //std::string id = SendPing();
+        std::string id = SendPing();
     }
 
     m_timer_->expires_from_now(std::chrono::seconds{timer_expires_});

@@ -40,7 +40,7 @@ void callback1(Client *cl)
     uint256 hash;
     hash.SetHex("a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0");
     block_arg.set_hash(std::string(hash.begin(), hash.end()));
-    block_arg.set_number(500);
+    block_arg.set_number(10);
     google::protobuf::Any *block_any = new google::protobuf::Any();
     block_any->PackFrom(block_arg);
     std::string mehtod_id = cl->SendMethod("getblocks", block_any, block_hp);

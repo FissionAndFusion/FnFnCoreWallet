@@ -1,6 +1,5 @@
 #include "handlepair.h"
 
-
 HandlePair::HandlePair() : enable(false)
 {
 }
@@ -17,7 +16,7 @@ std::string HandlePair::GetHex(std::string data)
                             '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 
     ret.reserve(n);
-    for(const unsigned char& c : data)
+    for (const unsigned char &c : data)
     {
         ret.push_back(c_map[c >> 4]);
         ret.push_back(c_map[c & 15]);
@@ -47,24 +46,23 @@ std::string HandlePair::SetHex(std::string data)
         {'c', 12},
         {'d', 13},
         {'e', 14},
-        {'f', 15}
-    };
+        {'f', 15}};
 
     unsigned char temp;
-    for(int i = 0; i < len; i++)
+    for (int i = 0; i < len; i++)
     {
 
         unsigned char c = data[i];
         unsigned char t = c_map[c];
 
-        if(0 == i % 2)
+        if (0 == i % 2)
         {
             temp = 0xff;
             t = t << 4;
             temp = temp & t;
         }
 
-        if(1 == i % 2)
+        if (1 == i % 2)
         {
             temp = t | temp;
             ret.push_back(temp);
@@ -112,14 +110,14 @@ void HandlePair::AddTx(lws::Transaction &tx)
 
 void HandlePair::SubHandler(std::string type, std::string name, google::protobuf::Any object)
 {
-    if("all-block" == name)
+    if ("all-block" == name)
     {
         lws::Block block;
         object.UnpackTo(&block);
         AddBlock(block);
     }
 
-    if("all-tx" == name)
+    if ("all-tx" == name)
     {
         lws::Transaction tx;
         object.UnpackTo(&tx);
@@ -129,44 +127,49 @@ void HandlePair::SubHandler(std::string type, std::string name, google::protobuf
 
 void HandlePair::MethodHandler(dbp::Result &result)
 {
-    if(!result.error().empty())
+    if (!result.error().empty())
     {
         std::cout << "[-]method error:" << result.error() << std::endl;
     }
 
     if ("getblocks" == name)
     {
-        
-        std::cout << "[<]: getblocks result" << std::endl;
-        
+
+        static int k = 0;
+
+        std::cout << "[<]: getblocks result: " << std::endl;
+
         int size = result.result_size();
-        for(int i = 0; i < size; i++)
+        for (int i = 0; i < size; i++)
         {
-            google::protobuf::Any any = result.result(i); 
+            google::protobuf::Any any = result.result(i);
             lws::Block block;
             any.UnpackTo(&block);
             PrintBlock(block);
         }
+
+        std::cout << "############################ --- " << k << std::endl;
+        ++k;
     }
 
-    if("gettransaction" == name)
+    if ("gettransaction" == name)
     {
         int size = result.result_size();
-        for(int i = 0; i < size; i++)
+        for (int i = 0; i < size; i++)
         {
-            google::protobuf::Any any = result.result(i); 
+            google::protobuf::Any any = result.result(i);
             lws::Transaction tx;
             any.UnpackTo(&tx);
             PrintTx(tx);
         }
     }
 
-    if("sendtransaction" == name)
+    if ("sendtransaction" == name)
     {
         int size = result.result_size();
-        for(int i = 0; i < size; i++)
+        for (int i = 0; i < size; i++)
         {
-            google::protobuf::Any any = result.result(i); 
+            google::protobuf::Any any = result.result(i);
             lws::SendTxRet ret;
             any.UnpackTo(&ret);
             std::cout << "[<]sendtransaction txid: " << ret.hash() << std::endl;
