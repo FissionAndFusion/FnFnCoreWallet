@@ -258,7 +258,7 @@ void CDNSeed::DnseedTestConnSuccess(walleve::CPeer *pPeer)
     }
     if (strName != "activeTest")
         return;
-    CSeedNode *sn = dnseedService.FindCSeedNode(ep);
+    CSeedNode *sn = dnseedService.FindSeedNode(ep);
     if (srtConfidentAddress.empty() || !fIsConfidentNodeCanConnect)
     {
         VoteHeight(peerHeight);
@@ -300,7 +300,7 @@ void CDNSeed::ClientFailToConnect(const tcp::endpoint &epRemote)
     CPeerNet::ClientFailToConnect(epRemote);
     WalleveLog("ConnectFailTo>>>%s\n", epRemote.address().to_string().c_str());
 
-    CSeedNode *sn = dnseedService.FindCSeedNode(epRemote);
+    CSeedNode *sn = dnseedService.FindSeedNode(epRemote);
     if (sn)
     {
         dnseedService.BadNode(sn);

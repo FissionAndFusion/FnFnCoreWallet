@@ -68,7 +68,7 @@ protected:
   void VoteHeight(uint32 height);
 
 protected:
-  network::CMvDNSeedServiceice dnseedService;
+  network::CMvDNSeedService dnseedService;
   std::string srtConfidentAddress;
   uint32 nConfidentHeight;
   std::vector<std::pair<uint32, int>> vVoteBox;

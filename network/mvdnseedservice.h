@@ -33,27 +33,27 @@ public:
 public:
   bool Init(storage::CMvDBConfig &config);
 
-  storage::CSeedNodee *FinCSeedNodede(const boost::asio::ip::tcp::endpoint &ep);
-  storage::CSeedNodee *AddNewNode(boost::asio::ip::tcp::endpoint &ep);
+  storage::CSeedNode *FindSeedNode(const boost::asio::ip::tcp::endpoint &ep);
+  storage::CSeedNode *AddNewNode(boost::asio::ip::tcp::endpoint &ep);
   void GetSendAddressList(std::vector<CAddress> &list);
   void RecvAddressList(std::vector<CAddress> epList);
-  bool UpdateNode(storage::CSeedNodee node);
+  bool UpdateNode(storage::CSeedNode node);
   void RemoveNode(const boost::asio::ip::tcp::endpoint &ep);
   void GetAllNodeList4Filter(std::vector<boost::asio::ip::tcp::endpoint> &epList);
   void ResetNewNodeList();
-  void GoodNode(storage::CSeedNodee *node, CanTrust canTrust);
+  void GoodNode(storage::CSeedNode *node, CanTrust canTrust);
   //Return result: whether to remove from the list
-  bool BadNode(storage::CSeedNodee *node);
+  bool BadNode(storage::CSeedNode *node);
 
 protected:
-  storage::CSeedNodee *AddNode(boost::asio::ip::tcp::endpoint &ep, bool forceAdd = false);
+  storage::CSeedNode *AddNode(boost::asio::ip::tcp::endpoint &ep, bool forceAdd = false);
   bool HasAddress(boost::asio::ip::tcp::endpoint ep);
   bool Add2list(boost::asio::ip::tcp::endpoint newep, bool forceAdd = false);
 
 protected:
   std::mutex activeListLocker;
-  std::vector<storage::CSeedNodee> vActiveNodeList;
-  std::vector<storage::CSeedNodee> vNewNodeList;
+  std::vector<storage::CSeedNode> vActiveNodeList;
+  std::vector<storage::CSeedNode> vNewNodeList;
   multiverse::storage::CDNSeedDB db;
 
 private:

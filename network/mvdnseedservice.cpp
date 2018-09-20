@@ -60,7 +60,7 @@ void CMvDNSeedService::GetSendAddressList(std::vector<CAddress> &list)
     }
     else
     {
-        std::sort(vActiveNodeList.begin(), vActiveNodeList.end(), [=](CSeedNode s1, CSeedNodede s2) {
+        std::sort(vActiveNodeList.begin(), vActiveNodeList.end(), [=](CSeedNode s1, CSeedNode s2) {
             return s1.nScore > s2.nScore;
         });
         //To avoid all nodes getting exactly the same list
@@ -154,7 +154,7 @@ void CMvDNSeedService::ResetNewNodeList()
     vNewNodeList.clear();
 }
 
-storage::CSeedNode *CMvDNSeedService::FindCSeedNode(const boost::asio::ip::tcp::endpoint &ep)
+storage::CSeedNode *CMvDNSeedService::FindSeedNode(const boost::asio::ip::tcp::endpoint &ep)
 {
     for (size_t i = 0; i < vActiveNodeList.size(); i++)
     {
@@ -169,7 +169,7 @@ storage::CSeedNode *CMvDNSeedService::AddNode(boost::asio::ip::tcp::endpoint &ep
 
     if (Add2list(ep, forceAdd))
     {
-        return FindCSeedNode(ep);
+        return FindSeedNode(ep);
     }
     return NULL;
 }
