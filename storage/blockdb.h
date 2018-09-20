@@ -72,6 +72,7 @@ public:
     bool RetrieveDelegate(const uint256& hash,int64 nMinAmount,std::map<CDestination,int64>& mapDelegate);
     bool RetrieveEnroll(const uint256& hashAnchor,const std::set<uint256>& setBlockRange, 
                         std::map<CDestination,std::pair<uint32,uint32> >& mapEnrollTxPos);
+    bool InnoDB(std::string strDBName);
 protected:
     int GetForkIndex(const uint256& hash)
     {

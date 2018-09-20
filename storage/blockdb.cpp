@@ -738,3 +738,29 @@ bool CBlockDB::LoadFork()
     return true;
 }
 
+
+bool CBlockDB::InnoDB(std::string strDBName)
+{
+    CMvDBInst db(&dbPool);
+    if (!db.Available())
+    {
+        return false;
+    }
+
+    vector<unsigned char> support;
+
+    CMvDBRes res(*db,"SHOW ENGINES",true);
+
+    while (res.GetRow())
+    {
+        res.GetField(0,support);
+
+        string engine(support.begin(),support.end());
+
+        if (engine == "InnoDB"){
+            return true;
+        }
+    }
+
+    return false;
+}

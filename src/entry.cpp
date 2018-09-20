@@ -31,6 +31,8 @@
 #include "windows.h"
 #endif
 
+#define MINIMUM_HARD_DISK_AVAILABLE 104857600
+
 using namespace std;
 using namespace walleve;
 using namespace multiverse;
@@ -77,12 +79,29 @@ bool CMvEntry::Initialize(int argc,char *argv[])
     path& pathData = mvConfig.GetConfig()->pathData;
     if (!exists(pathData))
     {
-        create_directories(pathData);
+        if (!create_directories(pathData)){
+            cerr << "Failed create directory : " << pathData << "\n";
+            return false;
+        }
     }
 
     if (!is_directory(pathData))
     {
         cerr << "Failed to access data directory : " << pathData << "\n";
+        return false;
+    }
+
+    // log
+    if ((mvConfig.GetModeType() == EModeType::SERVER || mvConfig.GetModeType() == EModeType::MINER)
+        && !walleveLog.SetLogFilePath((pathData / "multiverse.log").string()))
+    {
+        cerr << "Failed to open log file : " << (pathData / "multiverse.log") << "\n";
+        return false;
+    }
+
+    // hard disk
+    if (space(pathData).available < MINIMUM_HARD_DISK_AVAILABLE){
+        cerr << "Warning: hard disk available < 100M\n";
         return false;
     }
 
@@ -94,15 +113,7 @@ bool CMvEntry::Initialize(int argc,char *argv[])
         {
             return false;
         }
-        cout << "multiverse server starting\n";
-    }
-
-    // log
-    if ((mvConfig.GetModeType() == EModeType::SERVER || mvConfig.GetModeType() == EModeType::MINER)
-        && !walleveLog.SetLogFilePath((pathData / "multiverse.log").string()))
-    {
-        cerr << "Failed to open log file : " << (pathData / "multiverse.log") << "\n";
-        return false; 
+        cout << "multiverse server starting";
     }
 
     // docker
