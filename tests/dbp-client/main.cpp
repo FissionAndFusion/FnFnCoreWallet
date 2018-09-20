@@ -81,7 +81,31 @@ void run(std::string ip, int port)
     }
 }
 
-int main(int argc, char *argv[])
+void test_stream()
+{
+    DbpStream ss;
+    std::cout << ss.get_size() << std::endl; // 0
+
+    std::string str("sssss");
+    ss.write(std::vector<unsigned char>(str.begin(), str.end()));
+    std::cout << ss.get_size() << std::endl; // 5
+    ss.clear();
+    std::cout << ss.get_size() << std::endl; // 0
+
+    std::vector<unsigned char> v(13000000, 255);
+    ss.write(v);
+    std::cout << ss.get_size() << std::endl; // 13000000
+    ss.clear();
+    std::cout << ss.get_size() << std::endl; // 0
+    ss.write(v);
+    std::cout << ss.get_size() << std::endl; // 13000000
+    std::vector<unsigned char> rbuf;
+    ss.read(rbuf, 3000000);
+    std::cout << ss.get_size() << std::endl; //  10000000
+    std::cout << rbuf.size() << std::endl;   //  3000000
+}
+
+void test_client(int argc, char *argv[])
 {
     std::string ip("127.0.0.1");
     int port(6815);
@@ -99,5 +123,11 @@ int main(int argc, char *argv[])
     std::cout << "[-]core wallet:" << ip << ":" << port << std::endl;
 
     run(ip, port);
+}
+
+int main(int argc, char *argv[])
+{
+    //test_stream();
+    test_client(argc, argv);
     return 0;
 }

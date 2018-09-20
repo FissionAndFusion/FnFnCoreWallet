@@ -18,7 +18,7 @@ void DbpStream::read(std::vector<unsigned char> &buf, std::size_t n)
 
     // buf.assign(s.begin(), s.end());
 
-    buffer_.consume(n);
+    // buffer_.consume(n);
 }
 
 void DbpStream::clear()
@@ -119,7 +119,6 @@ void Client::Send(std::vector<char> buf, std::string explain)
         return;
     }
 
-    
     boost::shared_ptr<std::string> pstr(new std::string(explain));
     // sock_->async_write_some(boost::asio::buffer(buf, buf.size()), boost::bind(&Client::WriteHandler, this, pstr, _1, _2));
     boost::asio::async_write(*sock_, boost::asio::buffer(buf), boost::bind(&Client::WriteHandler, this, pstr, _1, _2));

@@ -1,6 +1,5 @@
 #include <iostream>
 #include <vector>
-#include <mutex>
 #include <boost/asio.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/bind.hpp>
@@ -30,7 +29,6 @@ public:
 private:
   //std::vector<unsigned char> buffer_;
   boost::asio::streambuf buffer_;
-  std::mutex mutex_;
 };
 
 class Client
