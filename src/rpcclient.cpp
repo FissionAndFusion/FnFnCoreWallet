@@ -403,7 +403,7 @@ static const char *rpccmd[] =
     "addmultisigaddress",
     "createrawtransaction",
     "createsendfromaddress",
-    "decoderawtransaction",
+    "decodetransaction",
     "deladdressbook",
     "dumpprivkey",
     "encryptwallet",
