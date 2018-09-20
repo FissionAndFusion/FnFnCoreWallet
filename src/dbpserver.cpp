@@ -59,8 +59,44 @@ void CDbpClient::Activate()
 {
     ssRecv.Clear();
     ssSend.Clear();
+    ssResultSend.Clear();
+    ssPongSend.Clear();
 
     StartReadHeader();
+}
+
+void CDbpClient::SendPongMessage(dbp::Base *pBaseMsg)
+{
+    ssPongSend.Clear();
+
+    int byteSize = pBaseMsg->ByteSize();
+    std::unique_ptr<unsigned char[]> byteBuf(new unsigned char[byteSize]);
+    std::cout << "Send Pong Message Len is: " << byteSize << std::endl;
+    pBaseMsg->SerializeToArray(byteBuf.get(), byteSize);
+
+    unsigned char msgLenBuf[MSG_HEADER_LEN];
+    CDbpUtils::WriteLenToMsgHeader(byteSize, (char *)msgLenBuf, MSG_HEADER_LEN);
+    ssPongSend.Write((char *)msgLenBuf, MSG_HEADER_LEN);
+    ssPongSend.Write((char *)byteBuf.get(), byteSize);
+
+    pClient->Write(ssPongSend, boost::bind(&CDbpClient::HandleWritenResponse, this, _1, 3));
+}
+
+void CDbpClient::SendResultMessage(dbp::Base *pBaseMsg)
+{
+    ssResultSend.Clear();
+
+    int byteSize = pBaseMsg->ByteSize();
+    std::unique_ptr<unsigned char[]> byteBuf(new unsigned char[byteSize]);
+    std::cout << "Send Result Message Len is: " << byteSize << std::endl;
+    pBaseMsg->SerializeToArray(byteBuf.get(), byteSize);
+
+    unsigned char msgLenBuf[MSG_HEADER_LEN];
+    CDbpUtils::WriteLenToMsgHeader(byteSize, (char *)msgLenBuf, MSG_HEADER_LEN);
+    ssResultSend.Write((char *)msgLenBuf, MSG_HEADER_LEN);
+    ssResultSend.Write((char *)byteBuf.get(), byteSize);
+
+    pClient->Write(ssResultSend, boost::bind(&CDbpClient::HandleWritenResponse, this, _1, 2));
 }
 
 void CDbpClient::SendMessage(dbp::Base *pBaseMsg)
@@ -77,7 +113,7 @@ void CDbpClient::SendMessage(dbp::Base *pBaseMsg)
     ssSend.Write((char *)msgLenBuf, MSG_HEADER_LEN);
     ssSend.Write((char *)byteBuf.get(), byteSize);
 
-    pClient->Write(ssSend, boost::bind(&CDbpClient::HandleWritenResponse, this, _1));
+    pClient->Write(ssSend, boost::bind(&CDbpClient::HandleWritenResponse, this, _1, 100));
 }
 
 void CDbpClient::SendPingNoActiveMessage(dbp::Base *pBaseMsg)
@@ -356,7 +392,8 @@ void CDbpClient::SendResponse(CMvDbpMethodResult &body)
 
     resultMsgBase.set_allocated_object(anyResult);
 
-    SendMessage(&resultMsgBase);
+    // SendMessage(&resultMsgBase);
+    SendResultMessage(&resultMsgBase);
 }
 
 void CDbpClient::SendPing(const std::string &id)
@@ -388,7 +425,8 @@ void CDbpClient::SendPong(const std::string &id)
 
     pongMsgBase.set_allocated_object(any);
 
-    SendMessage(&pongMsgBase);
+    // SendMessage(&pongMsgBase);
+    SendPongMessage(&pongMsgBase);
 }
 
 void CDbpClient::SendNocActivePing(const std::string &id)
@@ -526,29 +564,31 @@ void CDbpClient::HandleReadCompleted(uint32_t len)
     }
 }
 
-void CDbpClient::HandleWritenResponse(std::size_t nTransferred)
-{
-    if (nTransferred != 0)
-    {
-        pServer->HandleClientSent(this);
-    }
-    else
-    {
-        pServer->HandleClientError(this);
-    }
-}
-
 void CDbpClient::HandleWritenResponse(std::size_t nTransferred, int type)
 {
     if (nTransferred != 0)
     {
         if (type == 0)
         {
-            std::cout << "ping transferred: " << nTransferred << std::endl;
+            std::cout << "PING transferred: " << nTransferred << std::endl;
         }
         else if (type == 1)
         {
-            std::cout << "added transferred: " << nTransferred << std::endl;
+            std::cout << "ADDED transferred: " << nTransferred << std::endl;
+        }
+        else if (type == 2)
+        {
+            std::cout << "RESULT transferred: " << nTransferred << std::endl;
+            pServer->HandleClientSent(this);
+        }
+        else if (type == 3)
+        {
+            std::cout << "PONG transferred: " << nTransferred << std::endl;
+            pServer->HandleClientSent(this);
+        }
+        else
+        {
+            pServer->HandleClientSent(this);
         }
     }
     else

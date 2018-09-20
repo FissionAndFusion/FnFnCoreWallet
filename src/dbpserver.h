@@ -33,171 +33,174 @@ class CDbpServer;
 
 class CDbpHostConfig
 {
-  public:
-    CDbpHostConfig() {}
-    CDbpHostConfig(const boost::asio::ip::tcp::endpoint &epHostIn, unsigned int nMaxConnectionsIn, unsigned int nSessionTimeoutIn,
-                   const CIOSSLOption &optSSLIn, const std::map<std::string, std::string> &mapUserPassIn,
-                   const std::vector<std::string> &vAllowMaskIn, const std::string &strIOModuleIn)
-        : epHost(epHostIn),
-          nMaxConnections(nMaxConnectionsIn),
-          nSessionTimeout(nSessionTimeoutIn),
-          optSSL(optSSLIn),
-          mapUserPass(mapUserPassIn),
-          vAllowMask(vAllowMaskIn),
-          strIOModule(strIOModuleIn)
-    {
-    }
+public:
+  CDbpHostConfig() {}
+  CDbpHostConfig(const boost::asio::ip::tcp::endpoint &epHostIn, unsigned int nMaxConnectionsIn, unsigned int nSessionTimeoutIn,
+                 const CIOSSLOption &optSSLIn, const std::map<std::string, std::string> &mapUserPassIn,
+                 const std::vector<std::string> &vAllowMaskIn, const std::string &strIOModuleIn)
+      : epHost(epHostIn),
+        nMaxConnections(nMaxConnectionsIn),
+        nSessionTimeout(nSessionTimeoutIn),
+        optSSL(optSSLIn),
+        mapUserPass(mapUserPassIn),
+        vAllowMask(vAllowMaskIn),
+        strIOModule(strIOModuleIn)
+  {
+  }
 
-  public:
-    boost::asio::ip::tcp::endpoint epHost;
-    unsigned int nMaxConnections;
-    unsigned int nSessionTimeout;
-    CIOSSLOption optSSL;
-    std::map<std::string, std::string> mapUserPass;
-    std::vector<std::string> vAllowMask;
-    std::string strIOModule;
+public:
+  boost::asio::ip::tcp::endpoint epHost;
+  unsigned int nMaxConnections;
+  unsigned int nSessionTimeout;
+  CIOSSLOption optSSL;
+  std::map<std::string, std::string> mapUserPass;
+  std::vector<std::string> vAllowMask;
+  std::string strIOModule;
 };
 
 class CDbpProfile
 {
-  public:
-    CDbpProfile() : pIOModule(NULL), pSSLContext(NULL) {}
+public:
+  CDbpProfile() : pIOModule(NULL), pSSLContext(NULL) {}
 
-  public:
-    IIOModule *pIOModule;
-    boost::asio::ssl::context *pSSLContext;
-    std::map<std::string, std::string> mapAuthrizeUser;
-    std::vector<std::string> vAllowMask;
-    unsigned int nMaxConnections;
-    unsigned int nSessionTimeout;
+public:
+  IIOModule *pIOModule;
+  boost::asio::ssl::context *pSSLContext;
+  std::map<std::string, std::string> mapAuthrizeUser;
+  std::vector<std::string> vAllowMask;
+  unsigned int nMaxConnections;
+  unsigned int nSessionTimeout;
 };
 
 class CDbpClient
 {
-  public:
-    CDbpClient(CDbpServer *pServerIn, CDbpProfile *pProfileIn,
-               CIOClient *pClientIn, uint64 nonce);
-    ~CDbpClient();
+public:
+  CDbpClient(CDbpServer *pServerIn, CDbpProfile *pProfileIn,
+             CIOClient *pClientIn, uint64 nonce);
+  ~CDbpClient();
 
-    CDbpProfile *GetProfile();
-    uint64 GetNonce();
+  CDbpProfile *GetProfile();
+  uint64 GetNonce();
 
-    std::string GetSession() const;
-    void SetSession(const std::string &session);
+  std::string GetSession() const;
+  void SetSession(const std::string &session);
 
-    void Activate();
-    void SendResponse(CMvDbpConnected &body);
-    void SendResponse(CMvDbpFailed &body);
-    void SendResponse(CMvDbpNoSub &body);
-    void SendResponse(CMvDbpReady &body);
-    void SendResponse(CMvDbpAdded &body);
-    void SendResponse(CMvDbpMethodResult &body);
-    void SendPing(const std::string &id);
-    void SendPong(const std::string &id);
-    void SendNocActivePing(const std::string &id);
-    void SendResponse(int statusCode, const std::string &description);
-    void SendMessage(dbp::Base *pBaseMsg);
-    void SendPingNoActiveMessage(dbp::Base *pBaseMsg);
-    void SendAddedNoActiveMessage(dbp::Base *pBaseMsg);
+  void Activate();
+  void SendResponse(CMvDbpConnected &body);
+  void SendResponse(CMvDbpFailed &body);
+  void SendResponse(CMvDbpNoSub &body);
+  void SendResponse(CMvDbpReady &body);
+  void SendResponse(CMvDbpAdded &body);
+  void SendResponse(CMvDbpMethodResult &body);
+  void SendPing(const std::string &id);
+  void SendPong(const std::string &id);
+  void SendNocActivePing(const std::string &id);
+  void SendResponse(int statusCode, const std::string &description);
+  void SendMessage(dbp::Base *pBaseMsg);
+  void SendPongMessage(dbp::Base *pBaseMsg);
+  void SendResultMessage(dbp::Base *pBaseMsg);
+  void SendPingNoActiveMessage(dbp::Base *pBaseMsg);
+  void SendAddedNoActiveMessage(dbp::Base *pBaseMsg);
 
-  protected:
-    void StartReadHeader();
-    void StartReadPayload(std::size_t nLength);
+protected:
+  void StartReadHeader();
+  void StartReadPayload(std::size_t nLength);
 
-    void HandleReadHeader(std::size_t nTransferred);
-    void HandleReadPayload(std::size_t nTransferred, uint32_t len);
-    void HandleReadCompleted(uint32_t len);
-    void HandleWritenResponse(std::size_t nTransferred);
-    void HandleWritenResponse(std::size_t nTransferred, int type);
+  void HandleReadHeader(std::size_t nTransferred);
+  void HandleReadPayload(std::size_t nTransferred, uint32_t len);
+  void HandleReadCompleted(uint32_t len);
+  void HandleWritenResponse(std::size_t nTransferred, int type);
 
-  private:
-    std::string session_;
+private:
+  std::string session_;
 
-  protected:
-    CDbpServer *pServer;
-    CDbpProfile *pProfile;
-    CIOClient *pClient;
-    uint64 nNonce;
+protected:
+  CDbpServer *pServer;
+  CDbpProfile *pProfile;
+  CIOClient *pClient;
+  uint64 nNonce;
 
-    CWalleveBufStream ssSend;
-    CWalleveBufStream ssRecv;
+  CWalleveBufStream ssSend;
+  CWalleveBufStream ssRecv;
 
-    CWalleveBufStream ssPingSend;
-    CWalleveBufStream ssAddedSend;
+  CWalleveBufStream ssPongSend;
+  CWalleveBufStream ssResultSend;
+  CWalleveBufStream ssPingSend;
+  CWalleveBufStream ssAddedSend;
 };
 
 class CSessionProfile
 {
-  public:
-    CDbpClient *pDbpClient;
-    std::string sessionId;
-    uint64 timestamp;
+public:
+  CDbpClient *pDbpClient;
+  std::string sessionId;
+  uint64 timestamp;
 };
 
 class CDbpServer : public CIOProc, virtual public CDBPEventListener, virtual public CMvDBPEventListener
 {
-  public:
-    CDbpServer();
-    virtual ~CDbpServer() noexcept;
-    virtual CIOClient *CreateIOClient(CIOContainer *pContainer) override;
+public:
+  CDbpServer();
+  virtual ~CDbpServer() noexcept;
+  virtual CIOClient *CreateIOClient(CIOContainer *pContainer) override;
 
-    void HandleClientRecv(CDbpClient *pDbpClient, const boost::any &anyObj);
-    void HandleClientSent(CDbpClient *pDbpClient);
-    void HandleClientError(CDbpClient *pDbpClient);
+  void HandleClientRecv(CDbpClient *pDbpClient, const boost::any &anyObj);
+  void HandleClientSent(CDbpClient *pDbpClient);
+  void HandleClientError(CDbpClient *pDbpClient);
 
-    void HandleClientConnect(CDbpClient *pDbpClient, google::protobuf::Any *any);
-    void HandleClientSub(CDbpClient *pDbpClient, google::protobuf::Any *any);
-    void HandleClientUnSub(CDbpClient *pDbpClient, google::protobuf::Any *any);
-    void HandleClientMethod(CDbpClient *pDbpClient, google::protobuf::Any *any);
-    void HandleClientPing(CDbpClient *pDbpClient, google::protobuf::Any *any);
-    void HandleClientPong(CDbpClient *pDbpClient, google::protobuf::Any *any);
+  void HandleClientConnect(CDbpClient *pDbpClient, google::protobuf::Any *any);
+  void HandleClientSub(CDbpClient *pDbpClient, google::protobuf::Any *any);
+  void HandleClientUnSub(CDbpClient *pDbpClient, google::protobuf::Any *any);
+  void HandleClientMethod(CDbpClient *pDbpClient, google::protobuf::Any *any);
+  void HandleClientPing(CDbpClient *pDbpClient, google::protobuf::Any *any);
+  void HandleClientPong(CDbpClient *pDbpClient, google::protobuf::Any *any);
 
-    void RespondError(CDbpClient *pDbpClient, int nStatusCode, const std::string &strError = "");
-    void RespondFailed(CDbpClient *pDbpClient);
+  void RespondError(CDbpClient *pDbpClient, int nStatusCode, const std::string &strError = "");
+  void RespondFailed(CDbpClient *pDbpClient);
 
-    void AddNewHost(const CDbpHostConfig &confHost);
+  void AddNewHost(const CDbpHostConfig &confHost);
 
-  protected:
-    bool WalleveHandleInitialize() override;
-    void WalleveHandleDeinitialize() override;
-    void EnterLoop() override;
-    void LeaveLoop() override;
+protected:
+  bool WalleveHandleInitialize() override;
+  void WalleveHandleDeinitialize() override;
+  void EnterLoop() override;
+  void LeaveLoop() override;
 
-    bool ClientAccepted(const boost::asio::ip::tcp::endpoint &epService, CIOClient *pClient) override;
+  bool ClientAccepted(const boost::asio::ip::tcp::endpoint &epService, CIOClient *pClient) override;
 
-    bool CreateProfile(const CDbpHostConfig &confHost);
-    CDbpClient *AddNewClient(CIOClient *pClient, CDbpProfile *pDbpProfile);
-    void RemoveClient(CDbpClient *pDbpClient);
+  bool CreateProfile(const CDbpHostConfig &confHost);
+  CDbpClient *AddNewClient(CIOClient *pClient, CDbpProfile *pDbpProfile);
+  void RemoveClient(CDbpClient *pDbpClient);
 
-    bool HandleEvent(CMvEventDbpConnected &event) override;
-    bool HandleEvent(CMvEventDbpFailed &event) override;
-    bool HandleEvent(CMvEventDbpNoSub &event) override;
-    bool HandleEvent(CMvEventDbpReady &event) override;
-    bool HandleEvent(CMvEventDbpAdded &event) override;
-    bool HandleEvent(CMvEventDbpMethodResult &event) override;
+  bool HandleEvent(CMvEventDbpConnected &event) override;
+  bool HandleEvent(CMvEventDbpFailed &event) override;
+  bool HandleEvent(CMvEventDbpNoSub &event) override;
+  bool HandleEvent(CMvEventDbpReady &event) override;
+  bool HandleEvent(CMvEventDbpAdded &event) override;
+  bool HandleEvent(CMvEventDbpMethodResult &event) override;
 
-    bool IsSessionTimeOut(CDbpClient *pDbpClient);
-    bool IsSessionReconnect(const std::string &session);
-    bool IsSessionExist(const std::string &session);
-    bool HaveAssociatedSessionOf(CDbpClient *pDbpClient);
+  bool IsSessionTimeOut(CDbpClient *pDbpClient);
+  bool IsSessionReconnect(const std::string &session);
+  bool IsSessionExist(const std::string &session);
+  bool HaveAssociatedSessionOf(CDbpClient *pDbpClient);
 
-    std::string GenerateSessionId();
-    void CreateSession(const std::string &session, CDbpClient *pDbpClient);
-    void UpdateSession(const std::string &session, CDbpClient *pDbpClient);
+  std::string GenerateSessionId();
+  void CreateSession(const std::string &session, CDbpClient *pDbpClient);
+  void UpdateSession(const std::string &session, CDbpClient *pDbpClient);
 
-    void SendPingHandler(const boost::system::error_code &err, CDbpClient *pDbpClient);
+  void SendPingHandler(const boost::system::error_code &err, CDbpClient *pDbpClient);
 
-  protected:
-    std::vector<CDbpHostConfig> vecHostConfig;
-    std::map<boost::asio::ip::tcp::endpoint, CDbpProfile> mapProfile;
-    std::map<uint64, CDbpClient *> mapClient; // nonce => CDbpClient
+protected:
+  std::vector<CDbpHostConfig> vecHostConfig;
+  std::map<boost::asio::ip::tcp::endpoint, CDbpProfile> mapProfile;
+  std::map<uint64, CDbpClient *> mapClient; // nonce => CDbpClient
 
-    typedef boost::bimap<std::string, CDbpClient *> SessionClientBimapType;
-    typedef SessionClientBimapType::value_type position_pair;
-    SessionClientBimapType sessionClientBimap;                //session id <=> CDbpClient
-    std::map<std::string, CSessionProfile> sessionProfileMap; // session id => session profile
+  typedef boost::bimap<std::string, CDbpClient *> SessionClientBimapType;
+  typedef SessionClientBimapType::value_type position_pair;
+  SessionClientBimapType sessionClientBimap;                //session id <=> CDbpClient
+  std::map<std::string, CSessionProfile> sessionProfileMap; // session id => session profile
 
-    std::shared_ptr<boost::asio::deadline_timer> pingTimerPtr_;
+  std::shared_ptr<boost::asio::deadline_timer> pingTimerPtr_;
 };
 } //namespace multiverse
 #endif //MULTIVERSE_DBP_SERVER_H
