@@ -6,6 +6,7 @@
 #include "core.h"
 #include "worldline.h"
 #include "txpool.h"
+#include "consensus.h"
 #include "wallet.h"
 #include "dispatcher.h"
 #include "network.h"
@@ -15,6 +16,7 @@
 #include "blockmaker.h"
 #include "rpcclient.h"
 #include "miner.h"
+#include "dnseed.h"
 
 #include <map>
 #include <string>
@@ -113,7 +115,17 @@ bool CMvEntry::Initialize(int argc,char *argv[])
         {
             return false;
         }
-        cout << "multiverse server starting";
+        cout << "multiverse server starting\n";
+    }
+
+    // log
+    if ((mvConfig.GetModeType() == EModeType::SERVER 
+        || mvConfig.GetModeType() == EModeType::MINER 
+        || mvConfig.GetModeType() == EModeType::DNSEED)
+        && !walleveLog.SetLogFilePath((pathData / "multiverse.log").string()))
+    {
+        cerr << "Failed to open log file : " << (pathData / "multiverse.log") << "\n";
+        return false; 
     }
 
     // docker
@@ -276,6 +288,14 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
                 }
                 break;
             }
+        case EModuleType::CONSENSUS:
+            {
+                if (!AttachModule(new CConsensus()))
+                {
+                    return false;
+                }
+                break;
+            }
         case EModuleType::DBPSOCKET:
             {
                 if (!AttachModule(new CDummyDbpSocket()))
@@ -284,6 +304,14 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
                 }
                 break;
             }
+        case EModuleType::DNSEED:
+            {
+                if (!AttachModule(new CDNSeed()))
+                {
+                    return false;
+                }
+                break;
+            }    
         default:
             cerr << "Unknown module:%d" << CMode::IntValue(m) << endl;
             break;

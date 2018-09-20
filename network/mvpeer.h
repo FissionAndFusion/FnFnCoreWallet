@@ -39,7 +39,7 @@ protected:
     bool ParseMessageHeader();
     bool HandshakeReadHeader();
     bool HandshakeReadCompletd();
-    bool HandshakeCompletd();
+    virtual bool HandshakeCompletd();
     bool HandleReadHeader();
     bool HandleReadCompleted();
 public:

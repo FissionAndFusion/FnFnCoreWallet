@@ -410,6 +410,7 @@ bool CBlockDB::UpdateEnroll(vector<pair<CTxIndex,uint256> >& vEnroll)
                 <<            txIndex.nOffset << ")"
                 <<  " ON DUPLICATE KEY UPDATE "
                               "block = VALUES(block),file = VALUES(file),offset = VALUES(offset)";
+                txn.Query(oss.str());
         }
         if (!txn.Commit()) 
         {

@@ -137,10 +137,10 @@ CSocketClient::~CSocketClient()
     CloseSocket();
 }
 
-void CSocketClient::AsyncAccept(tcp::acceptor& acceptor,CallBackConn fnAccepted)
+void CSocketClient::AsyncAccept(tcp::acceptor &acceptor, CallBackConn fnAccepted)
 {
-    acceptor.async_accept(sockClient,boost::bind(&CSocketClient::HandleConnCompleted,this,
-                                                 fnAccepted,boost::asio::placeholders::error));
+    acceptor.async_accept(sockClient, boost::bind(&CSocketClient::HandleConnCompleted, this,
+                                                  fnAccepted, boost::asio::placeholders::error));
 }
 
 void CSocketClient::AsyncConnect(const tcp::endpoint& epRemote,CallBackConn fnConnected)

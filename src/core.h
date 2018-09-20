@@ -24,12 +24,14 @@ public:
     virtual MvErr VerifyTransaction(const CTransaction& tx,const std::vector<CTxOutput>& vPrevOutput,int nForkHeight);
     virtual bool GetProofOfWorkTarget(CBlockIndex* pIndexPrev,int nAlgo,int& nBits,int64& nReward);
     virtual int GetProofOfWorkRunTimeBits(int nBits,int64 nTime,int64 nPrevTime);
-    //virtual MvErr 
+    virtual int64 GetDelegatedProofOfStakeReward(CBlockIndex* pIndexPrev,std::size_t nWeight);
+    virtual void GetDelegatedBallot(const uint256& nAgreement,std::size_t nWeight,
+                                    const std::map<CDestination,size_t>& mapBallot,std::vector<CDestination>& vBallot);
 protected:
     bool WalleveHandleInitialize();
     const MvErr Debug(const MvErr& err,const char* pszFunc,const char *pszFormat,...); 
     bool CheckBlockSignature(const CBlock& block);
-   int64 GetProofOfWorkReward(CBlockIndex* pIndexPrev);
+    int64 GetProofOfWorkReward(CBlockIndex* pIndexPrev);
 protected:
     uint256 hashGenesisBlock;
     int nProofOfWorkLimit;

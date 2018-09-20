@@ -28,6 +28,7 @@ protected:
     ICoreProtocol* pCoreProtocol;
     IWorldLine* pWorldLine;
     ITxPool* pTxPool;
+    IConsensus* pConsensus;
     IWallet* pWallet;
     IService* pService;
     IBlockMaker* pBlockMaker;

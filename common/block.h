@@ -106,6 +106,10 @@ public:
         {
             return 1; 
         }
+        else
+        {
+            return (uint64)vchProof[0];
+        }
         return 0;
     }
     int64 GetBlockMint(int64 nValueIn) const
