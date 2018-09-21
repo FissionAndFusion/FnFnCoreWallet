@@ -479,8 +479,8 @@ void CDbpClient::HandleReadHeader(std::size_t nTransferred)
         if (nMsgHeaderLen == 0)
         {
             std::cout << "Msg Base header length is 0" << std::endl;
-            //  pServer->HandleClientError(this);
-            pServer->HandleClientSent(this);
+            pServer->HandleClientError(this);
+            //pServer->HandleClientSent(this);
             return;
         }
 
@@ -488,7 +488,9 @@ void CDbpClient::HandleReadHeader(std::size_t nTransferred)
     }
     else
     {
-        pServer->HandleClientSent(this);
+        std::cout << "Msg Base header length is not 4 " << std::endl;
+        pServer->HandleClientError(this);
+        // pServer->HandleClientSent(this);
     }
 }
 
@@ -500,8 +502,9 @@ void CDbpClient::HandleReadPayload(std::size_t nTransferred, uint32_t len)
     }
     else
     {
-        // pServer->HandleClientError(this);
-        pServer->HandleClientSent(this);
+        std::cout << "pay load is not len. " << std::endl;
+        pServer->HandleClientError(this);
+        //pServer->HandleClientSent(this);
     }
 }
 
@@ -514,9 +517,9 @@ void CDbpClient::HandleReadCompleted(uint32_t len)
     dbp::Base msgBase;
     if (!msgBase.ParseFromArray(&payloadBuffer[0], len))
     {
-        pServer->RespondError(this, 400, "Parse Msg Base failed");
-        // pServer->HandleClientError(this);
-        pServer->HandleClientSent(this);
+        std::cout << "parse payload failed. " << std::endl;
+        pServer->HandleClientError(this);
+        // pServer->HandleClientSent(this);
         return;
     }
 
@@ -525,7 +528,6 @@ void CDbpClient::HandleReadCompleted(uint32_t len)
     switch (currentMsgType)
     {
     case dbp::CONNECT:
-        std::cout << "connect =========" << std::endl;
         pServer->HandleClientRecv(this, anyObj);
         break;
     case dbp::SUB:
@@ -544,9 +546,10 @@ void CDbpClient::HandleReadCompleted(uint32_t len)
         pServer->HandleClientRecv(this, anyObj);
         break;
     default:
-        pServer->RespondError(this, 400, "is not Message Base Type is unknown.");
-        // pServer->HandleClientError(this);
-        pServer->HandleClientSent(this);
+        //pServer->RespondError(this, 400, "is not Message Base Type is unknown.");
+        std::cout << "is not Message Base Type is unknown." << std::endl;
+        pServer->HandleClientError(this);
+
         break;
     }
 }
@@ -580,8 +583,7 @@ void CDbpClient::HandleWritenResponse(std::size_t nTransferred, int type)
     }
     else
     {
-        // pServer->HandleClientError(this);
-        pServer->HandleClientSent(this);
+        pServer->HandleClientError(this);
     }
 }
 
@@ -888,7 +890,7 @@ void CDbpServer::HandleClientSent(CDbpClient *pDbpClient)
 
 void CDbpServer::HandleClientError(CDbpClient *pDbpClient)
 {
-    WalleveLog("Client error\n");
+    std::cout << "Client Error. " << std::endl;
     pingTimerPtr_->cancel();
     RemoveClient(pDbpClient);
 }
