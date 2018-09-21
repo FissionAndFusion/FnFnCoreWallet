@@ -201,6 +201,7 @@ static bool write_msg(dbp::Msg type, google::protobuf::Any *any)
     std::size_t size = boost::asio::write(g_socket, boost::asio::buffer(bytes), err);
     if (err)
     {
+        state = CONNECT_SESSION;
         return false;
     }
     return true;
@@ -272,12 +273,14 @@ static bool read_msg(dbp::Base &base)
     return true;
 }
 
+static std::string session_id("");
+
 void connect_session()
 {
     std::cout << "################# CONNECT SESSION ##################" << std::endl;
 
     dbp::Connect connect;
-    connect.set_session("");
+    connect.set_session(session_id);
     connect.set_version(1);
     google::protobuf::Any *any = new google::protobuf::Any();
     any->PackFrom(connect);
@@ -300,6 +303,7 @@ void connect_session()
         dbp::Connected connected;
         base.object().UnpackTo(&connected);
         std::cout << "[<]connected session is: " << connected.session() << std::endl;
+        session_id = connected.session();
         state = SUB;
         return;
     }
@@ -319,7 +323,8 @@ void sub_func()
 
     dbp::Sub sub;
     sub.set_name("all-block");
-    sub.set_id("2asdawd214124");
+    std::string id(std::to_string(time(NULL)));
+    sub.set_id(id);
     google::protobuf::Any *any = new google::protobuf::Any();
     any->PackFrom(sub);
 
@@ -462,7 +467,6 @@ void recv_func()
         dbp::Pong pong;
         base.object().UnpackTo(&pong);
         std::cout << "[<]pong: " << pong.id() << std::endl;
-        state = PING;
         return;
     }
 
@@ -479,6 +483,7 @@ void recv_func()
         if (write_msg(dbp::Msg::PONG, any))
         {
             std::cout << "[>]pong: " << ping.id() << std::endl;
+            state = PING;
         }
 
         return;
