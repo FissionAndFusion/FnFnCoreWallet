@@ -10,15 +10,17 @@ void DbpStream::write(const std::vector<unsigned char> &buf)
 
 void DbpStream::read(std::vector<unsigned char> &buf, std::size_t n)
 {
-    // buffer_.prepare(n);
-    // buffer_.commit(n);
-
     buf.resize(n);
-    buffer_.sgetn((char *)&buf[0], n);
-
-    // buf.assign(s.begin(), s.end());
-
-    // buffer_.consume(n);
+    if (buffer_.size() >= n)
+    {
+        buffer_.sgetn((char *)&buf[0], n);
+    }
+    else
+    {
+        while (buffer_.size() < n)
+            ;
+        buffer_.sgetn((char *)&buf[0], n);
+    }
 }
 
 void DbpStream::clear()
