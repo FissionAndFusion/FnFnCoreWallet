@@ -438,13 +438,13 @@ void CDbpClient::SendNocActivePing(const std::string &id)
     SendPingMessage(&pingMsgBase);
 }
 
-void CDbpClient::SendResponse(int statusCode, const std::string &description)
+void CDbpClient::SendResponse(const std::string &reason, const std::string &description)
 {
     dbp::Base errorMsgBase;
     errorMsgBase.set_msg(dbp::Msg::ERROR);
 
     dbp::Error errorMsg;
-    errorMsg.set_reason(std::to_string(statusCode));
+    errorMsg.set_reason(reason);
     errorMsg.set_explain(description);
 
     google::protobuf::Any *any = new google::protobuf::Any();
@@ -515,11 +515,11 @@ void CDbpClient::HandleReadCompleted(uint32_t len)
     ssRecv.Read(&payloadBuffer[0], len);
 
     dbp::Base msgBase;
-    if (!msgBase.ParseFromArray(&payloadBuffer[0], len))
+    if (!msgBase.ParseFromString(payloadBuffer))
     {
         std::cout << "parse payload failed. " << std::endl;
+        pServer->RespondError(this, "002", "server recv invalid protobuf object");
         pServer->HandleClientError(this);
-        // pServer->HandleClientSent(this);
         return;
     }
 
@@ -546,10 +546,9 @@ void CDbpClient::HandleReadCompleted(uint32_t len)
         pServer->HandleClientRecv(this, anyObj);
         break;
     default:
-        //pServer->RespondError(this, 400, "is not Message Base Type is unknown.");
         std::cout << "is not Message Base Type is unknown." << std::endl;
+        pServer->RespondError(this, "003", "is not Message Base Type is unknown.");
         pServer->HandleClientError(this);
-
         break;
     }
 }
@@ -624,7 +623,6 @@ void CDbpServer::HandleClientConnect(CDbpClient *pDbpClient, google::protobuf::A
         CMvEventDbpConnect *pEventDbpConnect = new CMvEventDbpConnect(session);
         if (!pEventDbpConnect)
         {
-            RespondError(pDbpClient, 500, "dbp connect event create failed.");
             return;
         }
 
@@ -645,7 +643,6 @@ void CDbpServer::HandleClientConnect(CDbpClient *pDbpClient, google::protobuf::A
             CMvEventDbpConnect *pEventDbpConnect = new CMvEventDbpConnect(session);
             if (!pEventDbpConnect)
             {
-                RespondError(pDbpClient, 500, "dbp connect event create failed.");
                 return;
             }
 
@@ -659,28 +656,16 @@ void CDbpServer::HandleClientConnect(CDbpClient *pDbpClient, google::protobuf::A
         }
         else
         {
-            // if reconnect cannot find session,send failed msg
-            CMvEventDbpFailed failedEvent(pDbpClient->GetNonce());
-            failedEvent.data.session = session;
-            failedEvent.data.reason = "002";
-
-            this->HandleEvent(failedEvent);
+            RespondFailed(pDbpClient, "002");
         }
     }
 }
 
 void CDbpServer::HandleClientSub(CDbpClient *pDbpClient, google::protobuf::Any *any)
 {
-    if (IsSessionTimeOut(pDbpClient))
-    {
-        RespondFailed(pDbpClient);
-        return;
-    }
-
     CMvEventDbpSub *pEventDbpSub = new CMvEventDbpSub(pDbpClient->GetSession());
     if (!pEventDbpSub)
     {
-        RespondError(pDbpClient, 500, "dbp sub event create failed");
         return;
     }
 
@@ -699,7 +684,6 @@ void CDbpServer::HandleClientUnSub(CDbpClient *pDbpClient, google::protobuf::Any
     CMvEventDbpUnSub *pEventDbpUnSub = new CMvEventDbpUnSub(pDbpClient->GetSession());
     if (!pEventDbpUnSub)
     {
-        RespondError(pDbpClient, 500, "dbp unsub event create failed.");
         return;
     }
 
@@ -717,7 +701,6 @@ void CDbpServer::HandleClientMethod(CDbpClient *pDbpClient, google::protobuf::An
     CMvEventDbpMethod *pEventDbpMethod = new CMvEventDbpMethod(pDbpClient->GetSession());
     if (!pEventDbpMethod)
     {
-        RespondError(pDbpClient, 500, "dbp event method create failed.");
         return;
     }
 
@@ -763,7 +746,6 @@ void CDbpServer::HandleClientMethod(CDbpClient *pDbpClient, google::protobuf::An
     else
     {
         delete pEventDbpMethod;
-        RespondError(pDbpClient, 400, "dbp method name is empty,please specify a method name.");
         return;
     }
 
@@ -786,14 +768,10 @@ void CDbpServer::HandleClientPong(CDbpClient *pDbpClient, google::protobuf::Any 
 
     std::cout << "RECV PONG: " << pongMsg.id() << std::endl;
 
-    if (HaveAssociatedSessionOf(pDbpClient))
+    std::string session = sessionClientBimap.right.at(pDbpClient);
+    if (IsSessionExist(session))
     {
-        std::string session = sessionClientBimap.right.at(pDbpClient);
-
-        if (IsSessionExist(session))
-        {
-            sessionProfileMap[session].timestamp = CDbpUtils::CurrentUTC();
-        }
+        sessionProfileMap[session].timestamp = CDbpUtils::CurrentUTC();
     }
 
     this->HandleClientSent(pDbpClient);
@@ -803,7 +781,6 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient, const boost::any &anyO
 {
     if (anyObj.type() != typeid(google::protobuf::Any))
     {
-        RespondError(pDbpClient, 500, "protobuf msg base any object pointer is null.");
         return;
     }
 
@@ -817,7 +794,14 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient, const boost::any &anyO
     {
         if (!HaveAssociatedSessionOf(pDbpClient))
         {
-            RespondError(pDbpClient, 400, "dbp sub message not had assiociated session,please connect first");
+            RespondError(pDbpClient, "001", "need to connect first. ");
+            return;
+        }
+
+        if (IsSessionTimeOut(pDbpClient))
+        {
+            RespondFailed(pDbpClient, "002");
+            RemoveSession(pDbpClient);
             return;
         }
 
@@ -827,13 +811,14 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient, const boost::any &anyO
     {
         if (!HaveAssociatedSessionOf(pDbpClient))
         {
-            RespondError(pDbpClient, 400, "dbp unsub message not had assiociated session,please connect first");
+            RespondError(pDbpClient, "001", "need to connect first. ");
             return;
         }
 
         if (IsSessionTimeOut(pDbpClient))
         {
-            RespondFailed(pDbpClient);
+            RespondFailed(pDbpClient, "002");
+            RemoveSession(pDbpClient);
             return;
         }
 
@@ -843,13 +828,14 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient, const boost::any &anyO
     {
         if (!HaveAssociatedSessionOf(pDbpClient))
         {
-            RespondError(pDbpClient, 400, "dbp method message not had assiociated session,please connect first");
+            RespondError(pDbpClient, "001", "need to connect first. ");
             return;
         }
 
         if (IsSessionTimeOut(pDbpClient))
         {
-            RespondFailed(pDbpClient);
+            RespondFailed(pDbpClient, "002");
+            RemoveSession(pDbpClient);
             return;
         }
 
@@ -859,7 +845,14 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient, const boost::any &anyO
     {
         if (!HaveAssociatedSessionOf(pDbpClient))
         {
-            RespondError(pDbpClient, 400, "dbp ping message not had assiociated session,please connect first");
+            RespondError(pDbpClient, "001", "need to connect first. ");
+            return;
+        }
+
+        if (IsSessionTimeOut(pDbpClient))
+        {
+            RespondFailed(pDbpClient, "002");
+            RemoveSession(pDbpClient);
             return;
         }
 
@@ -869,7 +862,14 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient, const boost::any &anyO
     {
         if (!HaveAssociatedSessionOf(pDbpClient))
         {
-            RespondError(pDbpClient, 400, "dbp pong message not had assiociated session,please connect first");
+            RespondError(pDbpClient, "001", "need to connect first. ");
+            return;
+        }
+
+        if (IsSessionTimeOut(pDbpClient))
+        {
+            RespondFailed(pDbpClient, "002");
+            RemoveSession(pDbpClient);
             return;
         }
 
@@ -877,7 +877,7 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient, const boost::any &anyO
     }
     else
     {
-        RespondError(pDbpClient, 500, "unknown dbp message");
+        RespondError(pDbpClient, "003", "unknown dbp message");
         return;
     }
 }
@@ -1025,7 +1025,7 @@ CDbpClient *CDbpServer::AddNewClient(CIOClient *pClient, CDbpProfile *pDbpProfil
     return pDbpClient;
 }
 
-void CDbpServer::RemoveClient(CDbpClient *pDbpClient)
+void CDbpServer::RemoveSession(CDbpClient *pDbpClient)
 {
     mapClient.erase(pDbpClient->GetNonce());
 
@@ -1037,25 +1037,24 @@ void CDbpServer::RemoveClient(CDbpClient *pDbpClient)
         sessionClientBimap.right.erase(pDbpClient);
         sessionProfileMap.erase(assciatedSession);
     }
+}
 
-    CMvEventDbpBroken *pEventBroken = new CMvEventDbpBroken(pDbpClient->GetNonce());
-    if (pEventBroken != NULL)
-    {
-        pDbpClient->GetProfile()->pIOModule->PostEvent(pEventBroken);
-    }
+void CDbpServer::RemoveClient(CDbpClient *pDbpClient)
+{
+    RemoveSession(pDbpClient);
     delete pDbpClient;
 }
 
-void CDbpServer::RespondError(CDbpClient *pDbpClient, int nStatusCode, const std::string &strError)
+void CDbpServer::RespondError(CDbpClient *pDbpClient, const std::string &reason, const std::string &strError)
 {
-    pDbpClient->SendResponse(nStatusCode, strError);
+    pDbpClient->SendResponse(reason, strError);
 }
 
-void CDbpServer::RespondFailed(CDbpClient *pDbpClient)
+void CDbpServer::RespondFailed(CDbpClient *pDbpClient, const std::string &reason)
 {
     CMvEventDbpFailed failedEvent(pDbpClient->GetNonce());
     failedEvent.data.session = sessionClientBimap.right.at(pDbpClient);
-    failedEvent.data.reason = "400";
+    failedEvent.data.reason = reason;
 
     this->HandleEvent(failedEvent);
 }
@@ -1195,7 +1194,7 @@ bool CDbpServer::IsSessionTimeOut(CDbpClient *pDbpClient)
     }
     else
     {
-        return true;
+        return false;
     }
 }
 

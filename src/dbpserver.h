@@ -95,7 +95,7 @@ public:
   void SendPing(const std::string &id);
   void SendPong(const std::string &id);
   void SendNocActivePing(const std::string &id);
-  void SendResponse(int statusCode, const std::string &description);
+  void SendResponse(const std::string &reason, const std::string &description);
   void SendMessage(dbp::Base *pBaseMsg);
   void SendPongMessage(dbp::Base *pBaseMsg);
   void SendResultMessage(dbp::Base *pBaseMsg);
@@ -155,8 +155,8 @@ public:
   void HandleClientPing(CDbpClient *pDbpClient, google::protobuf::Any *any);
   void HandleClientPong(CDbpClient *pDbpClient, google::protobuf::Any *any);
 
-  void RespondError(CDbpClient *pDbpClient, int nStatusCode, const std::string &strError = "");
-  void RespondFailed(CDbpClient *pDbpClient);
+  void RespondError(CDbpClient *pDbpClient, const std::string &reason, const std::string &strError = "");
+  void RespondFailed(CDbpClient *pDbpClient, const std::string &reason);
 
   void AddNewHost(const CDbpHostConfig &confHost);
 
@@ -171,6 +171,7 @@ protected:
   bool CreateProfile(const CDbpHostConfig &confHost);
   CDbpClient *AddNewClient(CIOClient *pClient, CDbpProfile *pDbpProfile);
   void RemoveClient(CDbpClient *pDbpClient);
+  void RemoveSession(CDbpClient *pDbpClient);
 
   bool HandleEvent(CMvEventDbpConnected &event) override;
   bool HandleEvent(CMvEventDbpFailed &event) override;
