@@ -417,8 +417,6 @@ void CDbpClient::SendPong(const std::string &id)
     any->PackFrom(msg);
 
     pongMsgBase.set_allocated_object(any);
-
-    // SendMessage(&pongMsgBase);
     SendPongMessage(&pongMsgBase);
 }
 
@@ -480,7 +478,6 @@ void CDbpClient::HandleReadHeader(std::size_t nTransferred)
         {
             std::cout << "Msg Base header length is 0" << std::endl;
             pServer->HandleClientError(this);
-            //pServer->HandleClientSent(this);
             return;
         }
 
@@ -490,7 +487,6 @@ void CDbpClient::HandleReadHeader(std::size_t nTransferred)
     {
         std::cout << "Msg Base header length is not 4 " << std::endl;
         pServer->HandleClientError(this);
-        // pServer->HandleClientSent(this);
     }
 }
 
@@ -504,13 +500,11 @@ void CDbpClient::HandleReadPayload(std::size_t nTransferred, uint32_t len)
     {
         std::cout << "pay load is not len. " << std::endl;
         pServer->HandleClientError(this);
-        //pServer->HandleClientSent(this);
     }
 }
 
 void CDbpClient::HandleReadCompleted(uint32_t len)
 {
-    // start parse msg body(payload) by protobuf
     std::string payloadBuffer(len, 0);
     ssRecv.Read(&payloadBuffer[0], len);
 
@@ -724,9 +718,6 @@ void CDbpServer::HandleClientMethod(CDbpClient *pDbpClient, google::protobuf::An
     {
         lws::GetBlocksArg args;
         methodMsg.params().UnpackTo(&args);
-
-        // std::cout << "id: " << methodBody.id << "hash: " <<
-        //     args.hash() << std::endl << "number: " << args.number() << std::endl;
 
         methodBody.params.insert(std::make_pair("hash", args.hash()));
         methodBody.params.insert(std::make_pair("number", boost::lexical_cast<std::string>(args.number())));
