@@ -107,7 +107,7 @@ public:
     {
         return dynamic_cast<const CMvMintConfig *>(walleve::IWalleveBase::WalleveConfig());
     }
-    virtual void PrimaryUpdate(CWorldLineUpdate& update,CTxSetChange& change,CDelegateRoutine& routine) = 0;
+    virtual void PrimaryUpdate(const CWorldLineUpdate& update,const CTxSetChange& change,CDelegateRoutine& routine) = 0;
     virtual void AddNewTx(const CAssembledTx& tx) = 0;
     virtual void GetAgreement(int nTargetHeight,uint256& nAgreement,std::size_t& nWeight,
                                                 std::vector<CDestination>& vBallot) = 0;

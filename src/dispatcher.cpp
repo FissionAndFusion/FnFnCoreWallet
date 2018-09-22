@@ -130,29 +130,14 @@ MvErr CDispatcher::AddNewBlock(const CBlock& block,uint64 nNonce)
 
     pService->NotifyWorldLineUpdate(updateWorldLine);
 
-    if (!nNonce)
+    if (!nNonce && !block.IsOrigin())
     {
         pNetChannel->BroadcastBlockInv(updateWorldLine.hashFork,block.GetHash());
     }
 
     if (block.IsPrimary())
     {
-        CDelegateRoutine routineDelegate;
-        pConsensus->PrimaryUpdate(updateWorldLine,changeTxSet,routineDelegate);
-        BOOST_FOREACH(const CTransaction& tx,routineDelegate.vEnrollTx)
-        {
-            MvErr err = AddNewTx(tx);
-            WalleveLog("Send DelegateTx %s (%s)\n",MvErrString(err),tx.GetHash().GetHex().c_str());
-        }
-
-        CMvEventBlockMakerUpdate *pBlockMakerUpdate = new CMvEventBlockMakerUpdate(0);
-        if (pBlockMakerUpdate != NULL)
-        {
-            pBlockMakerUpdate->data.hashBlock = updateWorldLine.hashLastBlock;
-            pBlockMakerUpdate->data.nBlockTime = updateWorldLine.nLastBlockTime;
-            pBlockMakerUpdate->data.nBlockHeight = updateWorldLine.nLastBlockHeight;
-            pBlockMaker->PostEvent(pBlockMakerUpdate);
-        }
+        UpdatePrimaryBlock(updateWorldLine,changeTxSet);
     }
 
     return MV_OK;
@@ -206,4 +191,70 @@ MvErr CDispatcher::AddNewTx(const CTransaction& tx,uint64 nNonce)
         pConsensus->AddNewTx(CAssembledTx(tx,-1,destIn,nValueIn));
     }
     return MV_OK;
+}
+
+void CDispatcher::UpdatePrimaryBlock(const CWorldLineUpdate& updateWorldLine,const CTxSetChange& changeTxSet)
+{
+    CDelegateRoutine routineDelegate;
+    pConsensus->PrimaryUpdate(updateWorldLine,changeTxSet,routineDelegate);
+    BOOST_FOREACH(const CTransaction& tx,routineDelegate.vEnrollTx)
+    {
+        MvErr err = AddNewTx(tx);
+        WalleveLog("Send DelegateTx %s (%s)\n",MvErrString(err),tx.GetHash().GetHex().c_str());
+    }
+
+    CMvEventBlockMakerUpdate *pBlockMakerUpdate = new CMvEventBlockMakerUpdate(0);
+    if (pBlockMakerUpdate != NULL)
+    {
+        pBlockMakerUpdate->data.hashBlock = updateWorldLine.hashLastBlock;
+        pBlockMakerUpdate->data.nBlockTime = updateWorldLine.nLastBlockTime;
+        pBlockMakerUpdate->data.nBlockHeight = updateWorldLine.nLastBlockHeight;
+        pBlockMaker->PostEvent(pBlockMakerUpdate);
+    }
+
+    for (int i = updateWorldLine.vBlockAddNew.size() - 1;i >= 0;i--)
+    {
+        BOOST_FOREACH(const CTransaction& tx,updateWorldLine.vBlockAddNew[i].vtx)
+        {
+            CTemplateId tid;
+            if (tx.sendTo.GetTemplateId(tid) && tid.GetType() == TEMPLATE_FORK && !tx.vchData.empty())
+            {
+                ProcessForkTx(tx,updateWorldLine.nLastBlockHeight);
+            }
+        }
+    }
+}
+
+void CDispatcher::ProcessForkTx(const CTransaction& tx,int nPrimaryHeight)
+{
+    uint256 txid = tx.GetHash();
+
+    CBlock block;
+    try
+    {
+        CWalleveBufStream ss;
+        ss.Write((const char*)&tx.vchData[0],tx.vchData.size());
+        ss >> block;
+        if (!block.IsOrigin() || block.IsPrimary())
+        {
+            throw std::runtime_error("invalid block");
+        }
+    }
+    catch (...) 
+    { 
+        WalleveLog("Invalid orign block found in tx (%s)\n",txid.GetHex().c_str());
+        return;
+    }
+    
+    MvErr err = AddNewBlock(block);
+    if (err == MV_OK)
+    {
+        WalleveLog("Add origin block in tx (%s), hash=%s\n",txid.GetHex().c_str(),
+                                                            block.GetHash().GetHex().c_str());
+    }
+    else
+    {
+        WalleveLog("Add origin block in tx (%s) failed : %s\n",txid.GetHex().c_str(),
+                                                               MvErrString(err));
+    }
 }

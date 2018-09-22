@@ -544,7 +544,7 @@ Value CRPCMod::RPCGetForkGenealogy(const Array& params,bool fHelp)
         ancestry.push_back(Pair(vAncestry[i - 1].first.GetHex(),vAncestry[i - 1].second));
     }
     Object subline;
-    for (std::size_t i = 0;i > vSubline.size();i++)
+    for (std::size_t i = 0;i < vSubline.size();i++)
     {
         subline.push_back(Pair(vSubline[i].second.GetHex(),vSubline[i].first));
     }

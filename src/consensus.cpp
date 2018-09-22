@@ -254,7 +254,7 @@ void CConsensus::WalleveHandleHalt()
     }
 }
 
-void CConsensus::PrimaryUpdate(CWorldLineUpdate& update,CTxSetChange& change,CDelegateRoutine& routine)
+void CConsensus::PrimaryUpdate(const CWorldLineUpdate& update,const CTxSetChange& change,CDelegateRoutine& routine)
 {
     boost::unique_lock<boost::mutex> lock(mutex);
 

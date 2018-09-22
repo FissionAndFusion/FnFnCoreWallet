@@ -71,7 +71,7 @@ class CConsensus : public IConsensus
 public:
     CConsensus();
     ~CConsensus();
-    void PrimaryUpdate(CWorldLineUpdate& update,CTxSetChange& change,CDelegateRoutine& routine);
+    void PrimaryUpdate(const CWorldLineUpdate& update,const CTxSetChange& change,CDelegateRoutine& routine);
     void AddNewTx(const CAssembledTx& tx);
     void GetAgreement(int nTargetHeight,uint256& nAgreement,std::size_t& nWeight,
                                         std::vector<CDestination>& vBallot);

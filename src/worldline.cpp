@@ -92,11 +92,12 @@ void CWorldLine::GetForkStatus(map<uint256,CForkStatus>& mapForkStatus)
         uint256 hashFork = pIndex->GetOriginHash();
         uint256 hashParent = pIndex->GetParentHash();
 
-        map<uint256,CForkStatus>::iterator mi = mapForkStatus.insert(make_pair(hashFork,CForkStatus(hashFork,hashParent,nForkHeight))).first;
         if (hashParent != 0)
         {
             mapForkStatus[hashParent].mapSubline.insert(make_pair(nForkHeight,hashFork));
-        }     
+        } 
+
+        map<uint256,CForkStatus>::iterator mi = mapForkStatus.insert(make_pair(hashFork,CForkStatus(hashFork,hashParent,nForkHeight))).first;
         CForkStatus& status = (*mi).second;
         status.hashLastBlock = pIndex->GetBlockHash();
         status.nLastBlockTime = pIndex->GetBlockTime();
