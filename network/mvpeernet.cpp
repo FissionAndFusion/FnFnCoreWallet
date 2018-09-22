@@ -293,9 +293,7 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                 if (setDNSeed.count(pMvPeer->GetRemote()))
                 {
                     RemoveNode(pMvPeer->GetRemote());
-                    HandlePeerClose(pMvPeer);
-                } 
-                
+                }
                 return true;
             }
             break;

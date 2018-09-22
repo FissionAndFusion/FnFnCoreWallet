@@ -46,7 +46,7 @@ public:
     CPeerNet(const std::string& walleveOwnKeyIn);
     ~CPeerNet();
     void ConfigNetwork(CPeerNetConfig& config);
-    void HandlePeerClose(CPeer * pPeer);
+    void HandlePeerClose(CPeer *pPeer);
     void HandlePeerViolate(CPeer *pPeer);
     void HandlePeerError(CPeer *pPeer);
     virtual void HandlePeerWriten(CPeer *pPeer);
@@ -87,7 +87,7 @@ protected:
     bool HandleEvent(CWalleveEventPeerNetClrBanned& eventClrBanned);
     bool HandleEvent(CWalleveEventPeerNetReward& eventReward);
     bool HandleEvent(CWalleveEventPeerNetClose& eventClose);
-    int GetCandidateNodeCount(){return epMngr.GetCandidateNodeCount();}
+    int GetCandidateNodeCount(){return epMngr.GetCandidateNodeCount(); }
 protected:
     CPeerNetConfig confNetwork; 
     boost::asio::ip::address localIP;

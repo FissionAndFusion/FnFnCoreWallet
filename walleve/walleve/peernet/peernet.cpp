@@ -71,7 +71,6 @@ void CPeerNet::EnterLoop()
     {
         AddNewNode(host);
     }
-    
 }
 
 void CPeerNet::LeaveLoop()
@@ -184,8 +183,8 @@ CPeer* CPeerNet::AddNewPeer(CIOClient *pClient,bool fInBound)
         mapPeer.insert(make_pair(nNonce,pPeer));
     }
     
-    WalleveLog("Add New Peer : %s %d\n",pPeer->GetRemote().address().to_string().c_str()
-                ,pPeer->GetRemote().port());
+    WalleveLog("Add New Peer : %s %d\n",pPeer->GetRemote().address().to_string().c_str(),
+                                        pPeer->GetRemote().port());
 
     return pPeer;
 }

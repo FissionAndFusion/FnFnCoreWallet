@@ -7,7 +7,6 @@
 
 #include "mvpeernet.h"
 #include "config.h"
-#include "mvbase.h"
 
 namespace multiverse
 {
@@ -21,7 +20,6 @@ public:
 protected:
     bool WalleveHandleInitialize();
     void WalleveHandleDeinitialize();
-    void ClientFailToConnect(const boost::asio::ip::tcp::endpoint& epRemote);
     const CMvNetworkConfig * NetworkConfig()
     {
         return dynamic_cast<const CMvNetworkConfig *>(walleve::IWalleveBase::WalleveConfig());

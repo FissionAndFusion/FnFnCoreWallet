@@ -43,8 +43,8 @@ protected:
     bool HandleEvent(CMvEventPeerGetBlocks& eventGetBlocks);
     bool HandleEvent(CMvEventPeerTx& eventTx);
     bool HandleEvent(CMvEventPeerBlock& eventBlock);
-    virtual walleve::CPeer* CreatePeer(walleve::CIOClient *pClient,uint64 nNonce,bool fInBound);
-    virtual void DestroyPeer(walleve::CPeer* pPeer);
+    walleve::CPeer* CreatePeer(walleve::CIOClient *pClient,uint64 nNonce,bool fInBound);
+    void DestroyPeer(walleve::CPeer* pPeer);
     walleve::CPeerInfo* GetPeerInfo(walleve::CPeer* pPeer,walleve::CPeerInfo* pInfo);
     bool SendDataMessage(uint64 nNonce,int nCommand,walleve::CWalleveBufStream& ssPayload);
     void SetInvTimer(uint64 nNonce,std::vector<CInv>& vInv);
