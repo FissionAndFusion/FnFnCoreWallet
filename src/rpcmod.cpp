@@ -65,6 +65,7 @@ CRPCMod::CRPCMod()
                  ("gettemplateaddress",    &CRPCMod::RPCGetTemplateAddress)
                  ("maketemplate",          &CRPCMod::RPCMakeTemplate)
                  ("decodetransaction",     &CRPCMod::RPCDecodeTransaction)
+                 ("makeorigin",            &CRPCMod::RPCMakeOrigin)
                  ("getwork",               &CRPCMod::RPCGetWork)
                  ("submitwork",            &CRPCMod::RPCSubmitWork)
                  ;
@@ -1672,6 +1673,49 @@ Value CRPCMod::RPCDecodeTransaction(const Array& params,bool fHelp)
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Unknown anchor block");
     }
     return TxToJSON(rawTx.GetHash(),rawTx,hashFork,-1);
+}
+
+Value CRPCMod::RPCMakeOrigin(const Array& params,bool fHelp)
+{
+    if (fHelp || params.size() != 4)
+    {
+        throw runtime_error(
+            "makeorigin <prev blockhash> <address> <amount> <ident>\n"
+            "Return hex-encoded block.");
+    }
+    
+    uint256 hashPrev(params[0].get_str());
+    CMvAddress address(params[1].get_str());
+    int64 nAmount = AmountFromValue(params[2]);
+    string strIdent(params[3].get_str());
+
+    CBlock blockPrev;
+    uint256 fork;
+    int height;
+    if (!pService->GetBlock(hashPrev,blockPrev,fork,height))
+    {
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Unknown prev block");
+    }
+
+    CBlock block;
+    block.nVersion   = 1;
+    block.nType      = CBlock::BLOCK_ORIGIN;
+    block.nTimeStamp = blockPrev.nTimeStamp + BLOCK_TARGET_SPACING;
+    block.hashPrev   = hashPrev;
+    block.vchProof = vector<uint8>(strIdent.begin(),strIdent.end());
+
+    CTransaction& tx = block.txMint;
+    tx.nType = CTransaction::TX_GENESIS;
+    tx.sendTo  = static_cast<CDestination>(address);
+    tx.nAmount = nAmount;
+
+    CWalleveBufStream ss;
+    ss << block;
+    
+    Object ret;
+    ret.push_back(Pair("hash",block.GetHash().GetHex()));
+    ret.push_back(Pair("hex",ToHexString((const unsigned char*)ss.GetData(),ss.GetSize())));
+    return ret;
 }
 
 Value CRPCMod::RPCGetWork(const Array& params,bool fHelp)

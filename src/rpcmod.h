@@ -95,6 +95,7 @@ private:
     json_spirit::Value RPCGetTemplateAddress(const json_spirit::Array& params,bool fHelp);
     json_spirit::Value RPCMakeTemplate(const json_spirit::Array& params,bool fHelp);
     json_spirit::Value RPCDecodeTransaction(const json_spirit::Array& params,bool fHelp);
+    json_spirit::Value RPCMakeOrigin(const json_spirit::Array& params,bool fHelp);
     /* Mint */
     json_spirit::Value RPCGetWork(const json_spirit::Array& params,bool fHelp);
     json_spirit::Value RPCSubmitWork(const json_spirit::Array& params,bool fHelp);
