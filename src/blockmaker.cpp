@@ -207,6 +207,8 @@ bool CBlockMaker::CreateNewBlock(CBlock& block,const uint256& hashPrev,int64 nPr
     CProofOfSecretShare proof;
     proof.nWeight = agreement.nWeight;
     proof.nAgreement = agreement.nAgreement;
+    proof.Save(block.vchProof);
+
     if (agreement.nAgreement != 0)
     {
         pConsensus->GetProof(nPrevHeight + 1,block.vchProof);
@@ -289,6 +291,50 @@ bool CBlockMaker::CreateDelegatedProofOfStake(CBlock& block,size_t nWeight,const
         return false;
     }
     return true;
+}
+
+void CBlockMaker::CreatePiggyback(const CBlockMakerAgreement& agreement,const CBlock& refblock,int nPrevHeight)
+{
+    CProofOfPiggyback proof;
+    proof.nWeight = agreement.nWeight;
+    proof.nAgreement = agreement.nAgreement;
+    proof.hashRefBlock = refblock.GetHash();
+
+    CBlockMakerProfile& profile = mapProfile[CM_MPVSS];
+    CDestination destMint = CDestination(profile.templMint->GetTemplateId());
+
+    map<uint256,CForkStatus> mapForkStatus;
+    pWorldLine->GetForkStatus(mapForkStatus);
+    for (map<uint256,CForkStatus>::iterator it = mapForkStatus.begin();it != mapForkStatus.end();++it)
+    {
+        const uint256& hashFork = (*it).first;
+        CForkStatus& status = (*it).second;
+        if (hashFork != pCoreProtocol->GetGenesisBlockHash() 
+            && status.nLastBlockHeight == nPrevHeight
+            && status.nLastBlockTime < refblock.nTimeStamp)
+        {
+            CBlock block;
+            block.nType = CBlock::BLOCK_SUBSIDIARY;
+            block.nTimeStamp = refblock.nTimeStamp;
+            block.hashPrev = status.hashLastBlock;
+            proof.Save(block.vchProof);
+            CTransaction& txMint = block.txMint;
+            txMint.nType = CTransaction::TX_STAKE;
+            txMint.hashAnchor = block.hashPrev;
+            txMint.sendTo = destMint;
+            txMint.nAmount = 20 * COIN;
+            size_t nMaxTxSize = MAX_BLOCK_SIZE - GetSerializeSize(block) - profile.GetSignatureSize();
+            int64 nTotalTxFee = 0;
+            pTxPool->ArrangeBlockTx(hashFork,nMaxTxSize,block.vtx,nTotalTxFee); 
+            block.hashMerkle = block.CalcMerkleTreeRoot();
+            block.txMint.nAmount += nTotalTxFee;
+ 
+            if (SignBlock(block,profile))
+            {
+                DispatchNewBlock(block);
+            }
+        }
+    } 
 }
 
 bool CBlockMaker::CreateProofOfWork(CBlock& block,int nAlgo,const CDestination& dest)
@@ -416,6 +462,10 @@ void CBlockMaker::BlockMakerThreadFunc()
                 if (!DispatchNewBlock(block))
                 {
                     nNextStatus = MAKER_RESET;
+                }
+                else if (!block.IsProofOfWork())
+                {
+                    CreatePiggyback(agree,block,nPrevHeight);
                 }
             }
 

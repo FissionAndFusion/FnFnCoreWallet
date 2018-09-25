@@ -66,6 +66,7 @@ protected:
     bool SignBlock(CBlock& block,CBlockMakerProfile& profile);
     bool CreateDelegatedProofOfStake(CBlock& block,std::size_t nWeight,const CDestination& dest);
     bool CreateProofOfWork(CBlock& block,int nAlgo,const CDestination& dest);
+    void CreatePiggyback(const CBlockMakerAgreement& agreement,const CBlock& refblock,int nPrevHeight); 
     bool WaitAgreement(CBlockMakerAgreement& agree,int64 nTimeAgree,int nHeight);
 private:
     enum {MAKER_RUN=0,MAKER_RESET=1,MAKER_EXIT=2,MAKER_HOLD=3};
