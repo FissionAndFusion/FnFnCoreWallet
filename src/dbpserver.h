@@ -135,6 +135,7 @@ public:
   CDbpClient *pDbpClient;
   std::string sessionId;
   uint64 timestamp;
+  std::shared_ptr<boost::asio::deadline_timer> pingTimerPtr;
 };
 
 class CDbpServer : public CIOProc, virtual public CDBPEventListener, virtual public CMvDBPEventListener
@@ -189,7 +190,7 @@ protected:
   void CreateSession(const std::string &session, CDbpClient *pDbpClient);
   void UpdateSession(const std::string &session, CDbpClient *pDbpClient);
 
-  void SendPingHandler(const boost::system::error_code &err, CDbpClient *pDbpClient);
+  void SendPingHandler(const boost::system::error_code &err, const CSessionProfile &sessionProfile);
 
 protected:
   std::vector<CDbpHostConfig> vecHostConfig;
@@ -200,8 +201,6 @@ protected:
   typedef SessionClientBimapType::value_type position_pair;
   SessionClientBimapType sessionClientBimap;                //session id <=> CDbpClient
   std::map<std::string, CSessionProfile> sessionProfileMap; // session id => session profile
-
-  std::shared_ptr<boost::asio::deadline_timer> pingTimerPtr_;
 };
 } //namespace multiverse
 #endif //MULTIVERSE_DBP_SERVER_H

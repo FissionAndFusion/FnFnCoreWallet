@@ -581,9 +581,7 @@ void CDbpClient::HandleWritenResponse(std::size_t nTransferred, int type)
 }
 
 CDbpServer::CDbpServer()
-    : CIOProc("dbpserver"),
-      pingTimerPtr_(std::make_shared<boost::asio::deadline_timer>(this->GetIoService(),
-                                                                  boost::posix_time::seconds(5)))
+    : CIOProc("dbpserver")
 {
 }
 
@@ -882,7 +880,6 @@ void CDbpServer::HandleClientSent(CDbpClient *pDbpClient)
 void CDbpServer::HandleClientError(CDbpClient *pDbpClient)
 {
     std::cout << "Client Error. " << std::endl;
-    pingTimerPtr_->cancel();
     RemoveClient(pDbpClient);
 }
 
@@ -1026,6 +1023,7 @@ void CDbpServer::RemoveSession(CDbpClient *pDbpClient)
         std::string assciatedSession = iter->second;
         sessionClientBimap.left.erase(assciatedSession);
         sessionClientBimap.right.erase(pDbpClient);
+        sessionProfileMap[assciatedSession].pingTimerPtr->cancel();
         sessionProfileMap.erase(assciatedSession);
     }
 }
@@ -1050,7 +1048,7 @@ void CDbpServer::RespondFailed(CDbpClient *pDbpClient, const std::string &reason
     this->HandleEvent(failedEvent);
 }
 
-void CDbpServer::SendPingHandler(const boost::system::error_code &err, CDbpClient *pDbpClient)
+void CDbpServer::SendPingHandler(const boost::system::error_code &err, const CSessionProfile &sessionProfile)
 {
     if (err != boost::system::errc::success)
     {
@@ -1058,11 +1056,12 @@ void CDbpServer::SendPingHandler(const boost::system::error_code &err, CDbpClien
     }
 
     std::string utc = std::to_string(CDbpUtils::CurrentUTC());
-    pDbpClient->SendNocActivePing(utc);
+    sessionProfile.pDbpClient->SendNocActivePing(utc);
 
-    pingTimerPtr_->expires_at(pingTimerPtr_->expires_at() + boost::posix_time::seconds(5));
-    pingTimerPtr_->async_wait(boost::bind(&CDbpServer::SendPingHandler,
-                                          this, boost::asio::placeholders::error, pDbpClient));
+    sessionProfile.pingTimerPtr->expires_at(sessionProfile.pingTimerPtr->expires_at() + boost::posix_time::seconds(5));
+    sessionProfile.pingTimerPtr->async_wait(boost::bind(&CDbpServer::SendPingHandler,
+                                                        this, boost::asio::placeholders::error,
+                                                        boost::ref(sessionProfile)));
 }
 
 bool CDbpServer::HandleEvent(CMvEventDbpConnected &event)
@@ -1079,9 +1078,15 @@ bool CDbpServer::HandleEvent(CMvEventDbpConnected &event)
 
     pDbpClient->SendResponse(connectedBody);
 
-    pingTimerPtr_->expires_at(pingTimerPtr_->expires_at() + boost::posix_time::seconds(5));
-    pingTimerPtr_->async_wait(boost::bind(&CDbpServer::SendPingHandler,
-                                          this, boost::asio::placeholders::error, pDbpClient));
+    it->second.pingTimerPtr =
+        std::make_shared<boost::asio::deadline_timer>(this->GetIoService(),
+                                                      boost::posix_time::seconds(5));
+
+    it->second.pingTimerPtr->expires_at(it->second.pingTimerPtr->expires_at() +
+                                        boost::posix_time::seconds(5));
+    it->second.pingTimerPtr->async_wait(boost::bind(&CDbpServer::SendPingHandler,
+                                                    this, boost::asio::placeholders::error,
+                                                    boost::ref(it->second)));
 
     return true;
 }
