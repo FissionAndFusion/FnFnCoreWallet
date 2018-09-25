@@ -32,6 +32,7 @@ protected:
     const MvErr Debug(const MvErr& err,const char* pszFunc,const char *pszFormat,...); 
     bool CheckBlockSignature(const CBlock& block);
     int64 GetProofOfWorkReward(CBlockIndex* pIndexPrev);
+    MvErr ValidateVacantBlock(const CBlock& block);
 protected:
     uint256 hashGenesisBlock;
     int nProofOfWorkLimit;

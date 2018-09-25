@@ -146,6 +146,23 @@ bool CWorldLine::GetLastBlock(const uint256& hashFork,uint256& hashBlock,int& nH
     return true;
 }
 
+bool CWorldLine::GetLastBlockTime(const uint256& hashFork,int nDepth,vector<int64>& vTime)
+{
+    CBlockIndex* pIndex = NULL;
+    if (!cntrBlock.RetrieveFork(hashFork,&pIndex))
+    {
+        return false;
+    }
+
+    vTime.clear();
+    while ((nDepth--) > 0 && pIndex != NULL)
+    {
+        vTime.push_back(pIndex->GetBlockTime());
+        pIndex = pIndex->pPrev;
+    }
+    return true;
+}
+
 bool CWorldLine::GetBlock(const uint256& hashBlock,CBlock& block)
 {
     return cntrBlock.Retrieve(hashBlock,block);
@@ -230,8 +247,11 @@ MvErr CWorldLine::AddNewBlock(const CBlock& block,CWorldLineUpdate& update)
         WalleveLog("AddNewBlock Verify Block Error(%s) : %s \n",MvErrString(err),hash.ToString().c_str());
         return err;
     } 
-    
-    view.AddTx(block.txMint.GetHash(),block.txMint);
+
+    if (!block.IsVacant())
+    {
+        view.AddTx(block.txMint.GetHash(),block.txMint);
+    }
 
     CBlockEx blockex(block);
     vector<CTxContxt>& vTxContxt = blockex.vTxContxt;
@@ -270,7 +290,8 @@ MvErr CWorldLine::AddNewBlock(const CBlock& block,CWorldLineUpdate& update)
 
     CBlockIndex* pIndexFork = NULL;
     if (cntrBlock.RetrieveFork(pIndexNew->GetOriginHash(),&pIndexFork)
-        && pIndexFork->nChainTrust >= pIndexNew->nChainTrust )
+        && (pIndexFork->nChainTrust > pIndexNew->nChainTrust
+            || (pIndexFork->nChainTrust == pIndexNew->nChainTrust && !pIndexNew->IsEquivalent(pIndexFork))))
     {
         return MV_OK;
     }

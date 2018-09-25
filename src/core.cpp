@@ -152,7 +152,13 @@ MvErr CMvCoreProtocol::ValidateBlock(const CBlock& block)
     {
         return DEBUG(MV_ERR_BLOCK_TRANSACTIONS_INVALID,"empty extended block\n");
     }
-    
+  
+    // validate vacant block 
+    if (block.nType == CBlock::BLOCK_VACANT)
+    {
+        return ValidateVacantBlock(block);
+    }
+ 
     // Validate mint tx
     if (!block.txMint.IsMintTx() || ValidateTransaction(block.txMint) != MV_OK)
     {
@@ -352,6 +358,21 @@ bool CMvCoreProtocol::CheckBlockSignature(const CBlock& block)
 {
     (void)block;
     return true;
+}
+
+MvErr CMvCoreProtocol::ValidateVacantBlock(const CBlock& block)
+{
+    if (block.hashMerkle != 0 || !block.txMint.IsNull() || !block.vtx.empty())
+    {
+        return DEBUG(MV_ERR_BLOCK_TRANSACTIONS_INVALID,"vacant block tx is not empty.");
+    }
+    
+    if (!block.vchProof.empty() || !block.vchSig.empty())
+    {
+        return DEBUG(MV_ERR_BLOCK_SIGNATURE_INVALID,"vacant block proof or signature is not empty.");
+    }
+
+    return MV_OK;
 }
 
 ///////////////////////////////

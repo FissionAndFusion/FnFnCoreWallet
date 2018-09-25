@@ -204,7 +204,7 @@ protected:
     {
         va_list ap;
         va_start(ap, pszFormat);
-        walleveLog(pszIdent,"ERROR",pszFormat, ap);
+        walleveLog(pszIdent,"ERROR ",pszFormat, ap);
         va_end(ap);
     }
     void Debug(const char* pszIdent,const char *pszFormat,...)
@@ -213,7 +213,7 @@ protected:
         {
             va_list ap;
             va_start(ap, pszFormat);
-            walleveLog(pszIdent,"DEBUG",pszFormat, ap);
+            walleveLog(pszIdent,"DEBUG ",pszFormat, ap);
             va_end(ap);
         }
     }

@@ -52,6 +52,7 @@ public:
     virtual bool GetBlockLocation(const uint256& hashBlock,uint256& hashFork,int& nHeight) = 0;
     virtual bool GetBlockHash(const uint256& hashFork,int nHeight,uint256& hashBlock) = 0;
     virtual bool GetLastBlock(const uint256& hashFork,uint256& hashBlock,int& nHeight,int64& nTime) = 0;
+    virtual bool GetLastBlockTime(const uint256& hashFork,int nDepth,std::vector<int64>& vTime) = 0;
     virtual bool GetBlock(const uint256& hashBlock,CBlock& block) = 0;
     virtual bool Exists(const uint256& hashBlock) = 0;
     virtual bool GetTransaction(const uint256& txid,CTransaction& tx) = 0;

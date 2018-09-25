@@ -130,7 +130,7 @@ MvErr CDispatcher::AddNewBlock(const CBlock& block,uint64 nNonce)
 
     pService->NotifyWorldLineUpdate(updateWorldLine);
 
-    if (!nNonce && !block.IsOrigin())
+    if (!nNonce && !block.IsOrigin() && !block.IsVacant())
     {
         pNetChannel->BroadcastBlockInv(updateWorldLine.hashFork,block.GetHash());
     }
@@ -223,6 +223,8 @@ void CDispatcher::UpdatePrimaryBlock(const CWorldLineUpdate& updateWorldLine,con
             }
         }
     }
+
+    SyncForkHeight(updateWorldLine.nLastBlockHeight);
 }
 
 void CDispatcher::ProcessForkTx(const CTransaction& tx,int nPrimaryHeight)
@@ -256,5 +258,37 @@ void CDispatcher::ProcessForkTx(const CTransaction& tx,int nPrimaryHeight)
     {
         WalleveLog("Add origin block in tx (%s) failed : %s\n",txid.GetHex().c_str(),
                                                                MvErrString(err));
+    }
+}
+
+void CDispatcher::SyncForkHeight(int nPrimaryHeight)
+{
+    map<uint256,CForkStatus> mapForkStatus;
+    pWorldLine->GetForkStatus(mapForkStatus);
+    for (map<uint256,CForkStatus>::iterator it = mapForkStatus.begin();it != mapForkStatus.end();++it)
+    {
+        const uint256& hashFork = (*it).first;
+        CForkStatus& status = (*it).second;
+        
+        vector<int64> vTimeStamp;
+        int nDepth = nPrimaryHeight - status.nLastBlockHeight;
+
+        if (nDepth > 1 && hashFork != pCoreProtocol->GetGenesisBlockHash()
+            && pWorldLine->GetLastBlockTime(pCoreProtocol->GetGenesisBlockHash(),nDepth,vTimeStamp))
+        {
+            uint256 hashPrev = status.hashLastBlock;
+            for (int nHeight = status.nLastBlockHeight + 1;nHeight < nPrimaryHeight;nHeight++)
+            {
+                CBlock block;
+                block.nType = CBlock::BLOCK_VACANT;
+                block.hashPrev = hashPrev;
+                block.nTimeStamp = vTimeStamp[nPrimaryHeight - nHeight];
+                if (AddNewBlock(block) != MV_OK)
+                {
+                    break;
+                }
+                hashPrev = block.GetHash();
+            }
+        }
     }
 }
