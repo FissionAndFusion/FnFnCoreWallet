@@ -176,6 +176,7 @@ void connect_func()
     {
         std::cout << "connect socket failed: " << e.what() << std::endl;
         state = CONNECT;
+        sleep(5);
         return;
     }
 
