@@ -181,7 +181,6 @@ void CDbpClient::SendResponse(CMvDbpFailed &body)
     any->PackFrom(failedMsg);
 
     failedMsgBase.set_allocated_object(any);
-
     SendMessage(&failedMsgBase);
 }
 
@@ -1017,10 +1016,9 @@ void CDbpServer::RemoveSession(CDbpClient *pDbpClient)
 {
     mapClient.erase(pDbpClient->GetNonce());
 
-    auto iter = sessionClientBimap.right.find(pDbpClient);
-    if (iter != sessionClientBimap.right.end())
+    if (HaveAssociatedSessionOf(pDbpClient))
     {
-        std::string assciatedSession = iter->second;
+        std::string assciatedSession = sessionClientBimap.right.at(pDbpClient);
         sessionClientBimap.left.erase(assciatedSession);
         sessionClientBimap.right.erase(pDbpClient);
         sessionProfileMap[assciatedSession].pingTimerPtr->cancel();
@@ -1042,9 +1040,11 @@ void CDbpServer::RespondError(CDbpClient *pDbpClient, const std::string &reason,
 void CDbpServer::RespondFailed(CDbpClient *pDbpClient, const std::string &reason)
 {
     CMvEventDbpFailed failedEvent(pDbpClient->GetNonce());
-    failedEvent.data.session = sessionClientBimap.right.at(pDbpClient);
-    failedEvent.data.reason = reason;
 
+    std::string session =
+        HaveAssociatedSessionOf(pDbpClient) ? sessionClientBimap.right.at(pDbpClient) : "";
+    failedEvent.data.session = session;
+    failedEvent.data.reason = reason;
     this->HandleEvent(failedEvent);
 }
 
@@ -1096,6 +1096,7 @@ bool CDbpServer::HandleEvent(CMvEventDbpFailed &event)
     std::map<uint64, CDbpClient *>::iterator it = mapClient.find(event.nNonce);
     if (it == mapClient.end())
     {
+        std::cout << "cannot find nonce [failed]" << std::endl;
         return false;
     }
 
@@ -1180,11 +1181,10 @@ bool CDbpServer::HandleEvent(CMvEventDbpMethodResult &event)
 
 bool CDbpServer::IsSessionTimeOut(CDbpClient *pDbpClient)
 {
-    auto timeout = pDbpClient->GetProfile()->nSessionTimeout;
-    auto iter = sessionClientBimap.right.find(pDbpClient);
-    if (iter != sessionClientBimap.right.end())
+    if (HaveAssociatedSessionOf(pDbpClient))
     {
-        std::string assciatedSession = iter->second;
+        auto timeout = pDbpClient->GetProfile()->nSessionTimeout;
+        std::string assciatedSession = sessionClientBimap.right.at(pDbpClient);
         uint64 lastTimeStamp = sessionProfileMap[assciatedSession].timestamp;
         return (CDbpUtils::CurrentUTC() - lastTimeStamp > timeout) ? true : false;
     }
