@@ -163,6 +163,7 @@ State state;
 
 boost::asio::io_service io_;
 boost::asio::ip::tcp::endpoint ep(boost::asio::ip::address::from_string("127.0.0.1"), 6815);
+
 boost::asio::ip::tcp::socket g_socket(io_);
 
 void connect_func()
@@ -201,8 +202,11 @@ static bool write_msg(dbp::Msg type, google::protobuf::Any *any)
     std::size_t size = boost::asio::write(g_socket, boost::asio::buffer(bytes), err);
     if (err)
     {
-        state = CONNECT_SESSION;
-        std::cout << "wait to reconnect session" << std::endl;
+        state = CONNECT;
+        g_socket.cancel();
+        g_socket.close();
+        std::cout
+            << "wait to reconnect session" << std::endl;
         sleep(5);
         return false;
     }
