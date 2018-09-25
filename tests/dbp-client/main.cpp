@@ -202,6 +202,8 @@ static bool write_msg(dbp::Msg type, google::protobuf::Any *any)
     if (err)
     {
         state = CONNECT_SESSION;
+        std::cout << "wait to reconnect session" << std::endl;
+        sleep(5);
         return false;
     }
     return true;
@@ -313,6 +315,26 @@ void connect_session()
         dbp::Failed failed;
         base.object().UnpackTo(&failed);
         std::cout << "[<]connect session failed: " << failed.reason() << std::endl;
+
+        if ("002" == failed.reason())
+        {
+            session_id = "";
+            state = CONNECT_SESSION;
+        }
+
+        if ("001" == failed.reason())
+        {
+
+            std::cout << "support version: " << failed.version()[0] << std::endl;
+            session_id = "";
+            state = CONNECT_SESSION;
+        }
+
+        if ("003" == failed.reason())
+        {
+            session_id = "";
+            state = CONNECT_SESSION;
+        }
         return;
     }
 }
@@ -323,17 +345,31 @@ void sub_func()
 
     dbp::Sub sub;
     sub.set_name("all-block");
-    std::string id(std::to_string(time(NULL)));
+    std::string id(std::to_string(time(NULL)) + "blk");
     sub.set_id(id);
-    google::protobuf::Any *any = new google::protobuf::Any();
-    any->PackFrom(sub);
+    google::protobuf::Any *any_blk = new google::protobuf::Any();
+    any_blk->PackFrom(sub);
 
-    if (!write_msg(dbp::Msg::SUB, any))
+    if (!write_msg(dbp::Msg::SUB, any_blk))
     {
         return;
     }
 
     std::cout << "[>]sub all-block success. "
+              << std::endl;
+
+    sub.set_name("all-tx");
+    id = std::to_string(time(NULL)) + "tx";
+    sub.set_id(id);
+    google::protobuf::Any *any_tx = new google::protobuf::Any();
+    any_tx->PackFrom(sub);
+
+    if (!write_msg(dbp::Msg::SUB, any_tx))
+    {
+        return;
+    }
+
+    std::cout << "[>]sub all-tx success. "
               << std::endl;
 
     state = METHOD;
@@ -342,8 +378,6 @@ void sub_func()
 void ping_func()
 {
     std::cout << "################# PING ##################" << std::endl;
-
-    sleep(5);
 
     dbp::Ping ping;
     std::string id(std::to_string(time(NULL)));
@@ -364,7 +398,6 @@ void ping_func()
 
 void method_func()
 {
-    sleep(10);
 
     std::cout << "################# METHOD ##################" << std::endl;
 
@@ -426,6 +459,19 @@ static void print_block(lws::Block &block)
     std::cout << "   prev hash:" << GetHex(prev_hash) << std::endl;
 }
 
+static void print_tx(lws::Transaction &tx)
+{
+    std::string hash(tx.hash());
+    reverse(hash.begin(), hash.end());
+
+    std::string sig(tx.vchsig());
+    reverse(sig.begin(), sig.end());
+
+    std::cout << "[<]recived transaction" << std::endl;
+    std::cout << "   hash:" << GetHex(hash) << std::endl;
+    std::cout << "   sig:" << GetHex(sig) << std::endl;
+}
+
 void recv_func()
 {
     std::cout
@@ -437,14 +483,6 @@ void recv_func()
         state = METHOD;
         return;
     }
-
-    // invoke_cnt++;
-    // if (invoke_cnt == 4)
-    // {
-    //   invoke_cnt = 0;
-    //  state = PING;
-    // return;
-    //}
 
     if (base.msg() == dbp::Msg::READY)
     {
@@ -467,6 +505,15 @@ void recv_func()
         dbp::Pong pong;
         base.object().UnpackTo(&pong);
         std::cout << "[<]pong: " << pong.id() << std::endl;
+
+        static int pong_count = 0;
+        if (pong_count > 10)
+        {
+            state = METHOD;
+            pong_count = 0;
+        }
+        pong_count++;
+
         return;
     }
 
@@ -502,7 +549,12 @@ void recv_func()
             print_block(block);
         }
 
-        state = METHOD;
+        if (added.name() == "all-tx")
+        {
+            lws::Transaction tx;
+            added.object().UnpackTo(&tx);
+            print_tx(tx);
+        }
 
         return;
     }
