@@ -265,6 +265,7 @@ bool CWalletDB::CreateTable()
                           "version INT NOT NULL,"
                           "encrypted BINARY(48) NOT NULL,"
                           "nonce BIGINT UNSIGNED NOT NULL)"
+                          "ENGINE=InnoDB"
                        )
              &&
            dbConn.Query("CREATE TABLE IF NOT EXISTS wallettemplate("
@@ -272,6 +273,7 @@ bool CWalletDB::CreateTable()
                           "tid BINARY(32) NOT NULL UNIQUE KEY,"
                           "type SMALLINT NOT NULL,"
                           "data VARBINARY(640) NOT NULL)"
+                          "ENGINE=InnoDB"
                        )
              &&
            dbConn.Query("CREATE TABLE IF NOT EXISTS wallettx("
@@ -290,5 +292,6 @@ bool CWalletDB::CreateTable()
                           "fork BINARY(32) NOT NULL,"
                           "txspent BINARY(32) NOT NULL,"
                           "txchange BINARY(32) NOT NULL)"
+                          "ENGINE=InnoDB"
                        );
 }

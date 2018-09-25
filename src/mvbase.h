@@ -39,6 +39,9 @@ public:
     virtual MvErr VerifyTransaction(const CTransaction& tx,const std::vector<CTxOutput>& vPrevOutput,int nForkHeight) = 0;
     virtual bool GetProofOfWorkTarget(CBlockIndex* pIndexPrev,int nAlgo,int& nBits,int64& nReward) = 0;
     virtual int GetProofOfWorkRunTimeBits(int nBits,int64 nTime,int64 nPrevTime) = 0;
+    virtual int64 GetDelegatedProofOfStakeReward(CBlockIndex* pIndexPrev,std::size_t nWeight) = 0;
+    virtual void GetDelegatedBallot(const uint256& nAgreement,std::size_t nWeight,
+                                    const std::map<CDestination,size_t>& mapBallot,std::vector<CDestination>& vBallot) = 0;
 };
 
 class IWorldLine : public walleve::IWalleveBase
@@ -59,6 +62,7 @@ public:
     virtual bool FilterTx(CTxFilter& filter) = 0;
     virtual MvErr AddNewBlock(const CBlock& block,CWorldLineUpdate& update) = 0;    
     virtual bool GetProofOfWorkTarget(const uint256& hashPrev,int nAlgo,int& nBits,int64& nReward) = 0;
+    virtual bool GetDelegatedProofOfStakeReward(const uint256& hashPrev,std::size_t nWeight,int64& nReward) = 0;
     virtual bool GetBlockLocator(const uint256& hashFork,CBlockLocator& locator) = 0;
     virtual bool GetBlockInv(const uint256& hashFork,const CBlockLocator& locator,std::vector<uint256>& vBlockHash,std::size_t nMaxCount) = 0;
     virtual bool GetBlockDelegateEnrolled(const uint256& hashBlock,std::map<CDestination,std::size_t>& mapWeight,
@@ -103,9 +107,11 @@ public:
     {
         return dynamic_cast<const CMvMintConfig *>(walleve::IWalleveBase::WalleveConfig());
     }
-    virtual void PrimaryUpdate(CWorldLineUpdate& update,CTxSetChange& change,CDelegateRoutine& routine) = 0;
+    virtual void PrimaryUpdate(const CWorldLineUpdate& update,const CTxSetChange& change,CDelegateRoutine& routine) = 0;
+    virtual void AddNewTx(const CAssembledTx& tx) = 0;
     virtual void GetAgreement(int nTargetHeight,uint256& nAgreement,std::size_t& nWeight,
                                                 std::vector<CDestination>& vBallot) = 0;
+    virtual void GetProof(int nTargetHeight,std::vector<unsigned char>& vchProof) = 0;
 };
 
 class IBlockMaker : public walleve::CWalleveEventProc

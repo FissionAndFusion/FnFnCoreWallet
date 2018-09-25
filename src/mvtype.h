@@ -140,6 +140,22 @@ protected:
     void WalleveSerialize(walleve::CWalleveStream& s,O& opt) {}
 };
 
+class CBlockMakerUpdate
+{
+public:
+    uint256 hashBlock;
+    int64 nBlockTime;
+    int nBlockHeight;
+};
+
+class CBlockMakerAgreement
+{
+public:
+     uint256 nAgreement;
+     std::size_t nWeight;
+     std::vector<CDestination> vBallot;
+};
+
 /* Net Channel */
 class CPeerKnownTx
 {

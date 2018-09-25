@@ -19,17 +19,25 @@ CBlockDB::~CBlockDB()
 {
 }
 
-bool CBlockDB::Initialize(const CMvDBConfig& config,int nMaxDBConn)
+bool CBlockDB::DBPoolInitialize(const CMvDBConfig& config,int nMaxDBConn)
 {
+
     if (!dbPool.Initialize(config,nMaxDBConn))
     {
         return false;
     }
+
+    return true;
+}
+
+bool CBlockDB::Initialize()
+{
+
     if (!CreateTable())
     {
         return false;
     }
-    
+
     return LoadFork();
 }
 
@@ -113,7 +121,8 @@ bool CBlockDB::AddNewFork(const uint256& hash)
                 <<   "dest BINARY(33) NOT NULL,"
                 <<   "amount BIGINT NOT NULL,"
                 <<   "lockuntil INT UNSIGNED NOT NULL,"
-                <<   "UNIQUE KEY txid (txid,nout))";
+                <<   "UNIQUE KEY txid (txid,nout))"
+                <<   "ENGINE=InnoDB";
             txn.Query(oss.str());
         } 
         if (!txn.Commit()) 
@@ -401,6 +410,7 @@ bool CBlockDB::UpdateEnroll(vector<pair<CTxIndex,uint256> >& vEnroll)
                 <<            txIndex.nOffset << ")"
                 <<  " ON DUPLICATE KEY UPDATE "
                               "block = VALUES(block),file = VALUES(file),offset = VALUES(offset)";
+                txn.Query(oss.str());
         }
         if (!txn.Commit()) 
         {
@@ -653,7 +663,8 @@ bool CBlockDB::CreateTable()
         db->Query("CREATE TABLE IF NOT EXISTS fork ("
                     "id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,"
                     "hash BINARY(32) NOT NULL UNIQUE KEY,"
-                    "refblock BINARY(32) NOT NULL)")
+                    "refblock BINARY(32) NOT NULL)"
+                    "ENGINE=InnoDB")
            &&
         db->Query("CREATE TABLE IF NOT EXISTS block("
                     "id INT NOT NULL AUTO_INCREMENT,"
@@ -673,7 +684,7 @@ bool CBlockDB::CreateTable()
                     "file INT UNSIGNED NOT NULL,"
                     "offset INT UNSIGNED NOT NULL,"
                     "INDEX(id))"
-                    "PARTITION BY KEY(hash) PARTITIONS 16")
+                    "ENGINE=InnoDB PARTITION BY KEY(hash) PARTITIONS 16")
            &&
         db->Query("CREATE TABLE IF NOT EXISTS transaction("
                     "id INT NOT NULL AUTO_INCREMENT,"
@@ -690,14 +701,15 @@ bool CBlockDB::CreateTable()
                     "file INT UNSIGNED NOT NULL,"
                     "offset INT UNSIGNED NOT NULL,"
                     "INDEX(txid),INDEX(id))"
-                    "PARTITION BY KEY(txid) PARTITIONS 256")
+                    "ENGINE=InnoDB PARTITION BY KEY(txid) PARTITIONS 256")
            &&
         db->Query("CREATE TABLE IF NOT EXISTS delegate("
                     "id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,"
                     "block BINARY(32) NOT NULL,"
                     "dest BINARY(33) NOT NULL,"
                     "amount BIGINT UNSIGNED NOT NULL,"
-                    "INDEX(block,amount))")
+                    "INDEX(block,amount))"
+                    "ENGINE=InnoDB")
            &&
         db->Query("CREATE TABLE IF NOT EXISTS enroll("
                     "id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,"
@@ -707,7 +719,8 @@ bool CBlockDB::CreateTable()
                     "file INT UNSIGNED NOT NULL,"
                     "offset INT UNSIGNED NOT NULL,"
                     "UNIQUE KEY enroll (anchor,dest),"
-                    "INDEX(anchor))")
+                    "INDEX(anchor))"
+                    "ENGINE=InnoDB")
             );
 }
 
@@ -732,5 +745,32 @@ bool CBlockDB::LoadFork()
         }
     }
     return true;
+}
+
+
+bool CBlockDB::InnoDB()
+{
+    CMvDBInst db(&dbPool);
+    if (!db.Available())
+    {
+        return false;
+    }
+
+    vector<unsigned char> support;
+
+    CMvDBRes res(*db,"SHOW ENGINES",true);
+
+    while (res.GetRow())
+    {
+        res.GetField(0,support);
+
+        string engine(support.begin(),support.end());
+
+        if (engine == "InnoDB"){
+            return true;
+        }
+    }
+
+    return false;
 }
 

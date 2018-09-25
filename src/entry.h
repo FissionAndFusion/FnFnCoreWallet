@@ -22,6 +22,7 @@ public:
     bool Run();
     void Exit();
 protected:
+
     bool InitializeModules(const EModeType& mode);
     bool AttachModule(walleve::IWalleveBase *pWalleveBase);
 

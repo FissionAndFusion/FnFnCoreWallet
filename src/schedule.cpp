@@ -325,7 +325,7 @@ void CSchedule::RemoveOrphan(const network::CInv& inv)
     {
         orphanTx.Remove(inv.nHash);
     }
-    else if (inv.nType == network::CInv::MSG_TX)
+    else if (inv.nType == network::CInv::MSG_BLOCK)
     {
         orphanBlock.Remove(inv.nHash);
     }

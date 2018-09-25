@@ -23,11 +23,14 @@ protected:
     void WalleveHandleDeinitialize();
     bool WalleveHandleInvoke();
     void WalleveHandleHalt();
+    void UpdatePrimaryBlock(const CWorldLineUpdate& updateWorldLine,const CTxSetChange& changeTxSet);
+    void ProcessForkTx(const CTransaction& tx,int nPrimaryHeight);
 protected:
     boost::shared_mutex rwAccess;
     ICoreProtocol* pCoreProtocol;
     IWorldLine* pWorldLine;
     ITxPool* pTxPool;
+    IConsensus* pConsensus;
     IWallet* pWallet;
     IService* pService;
     IBlockMaker* pBlockMaker;

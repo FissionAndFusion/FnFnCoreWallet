@@ -14,6 +14,7 @@ set(sources
 	blockbase.cpp blockbase.h
 	walletdb.cpp walletdb.h
 	txpooldb.cpp txpooldb.h
+	dnseeddb.cpp dnseeddb.h
 )
 
 add_library(storage ${sources})

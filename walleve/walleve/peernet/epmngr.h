@@ -117,6 +117,7 @@ public:
     void CloseEndpoint(const boost::asio::ip::tcp::endpoint& ep,CloseReason reason);
     void RetrieveGoodNode(std::vector<CNodeAvail>& vGoodNode,
                           int64 nActiveTime,std::size_t nMaxCount);
+    int GetCandidateNodeCount(){ return mngrNode.GetCandidateNodeCount(); }
 protected:
     void CleanInactiveAddress();
 protected:

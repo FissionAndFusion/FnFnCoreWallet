@@ -32,6 +32,10 @@ void CPeerNet::ConfigNetwork(CPeerNetConfig& config)
     confNetwork = config;
 }
 
+void CPeerNet::HandlePeerClose(CPeer * pPeer)
+{
+    RemovePeer(pPeer,CEndpointManager::HOST_CLOSE);
+}
 void CPeerNet::HandlePeerViolate(CPeer *pPeer)
 {
     RemovePeer(pPeer,CEndpointManager::PROTOCOL_INVALID);
@@ -179,7 +183,8 @@ CPeer* CPeerNet::AddNewPeer(CIOClient *pClient,bool fInBound)
         mapPeer.insert(make_pair(nNonce,pPeer));
     }
     
-    WalleveLog("Add New Peer : %s\n",pPeer->GetRemote().address().to_string().c_str());
+    WalleveLog("Add New Peer : %s %d\n",pPeer->GetRemote().address().to_string().c_str(),
+                                        pPeer->GetRemote().port());
 
     return pPeer;
 }
