@@ -78,6 +78,8 @@ void CDbpClient::SendPongMessage(dbp::Base *pBaseMsg)
     ssPongSend.Write((char *)msgLenBuf, MSG_HEADER_LEN);
     ssPongSend.Write((char *)bytesBuf.data(), bytesBuf.size());
 
+    PongSendSaver.assign(std::string(ssPongSend.GetData(), ssPongSend.GetSize()));
+
     pClient->Write(ssPongSend, boost::bind(&CDbpClient::HandleWritenResponse, this, _1, 3));
 }
 
@@ -93,6 +95,8 @@ void CDbpClient::SendResultMessage(dbp::Base *pBaseMsg)
     CDbpUtils::WriteLenToMsgHeader(bytesBuf.size(), (char *)msgLenBuf, MSG_HEADER_LEN);
     ssResultSend.Write((char *)msgLenBuf, MSG_HEADER_LEN);
     ssResultSend.Write((char *)bytesBuf.data(), bytesBuf.size());
+
+    ResultSendSaver.assign(std::string(ssResultSend.GetData(), ssResultSend.GetSize()));
 
     pClient->Write(ssResultSend, boost::bind(&CDbpClient::HandleWritenResponse, this, _1, 2));
 }
@@ -110,6 +114,8 @@ void CDbpClient::SendMessage(dbp::Base *pBaseMsg)
     ssSend.Write((char *)msgLenBuf, MSG_HEADER_LEN);
     ssSend.Write((char *)bytesBuf.data(), bytesBuf.size());
 
+    SendSaver.assign(std::string(ssSend.GetData(), ssSend.GetSize()));
+
     pClient->Write(ssSend, boost::bind(&CDbpClient::HandleWritenResponse, this, _1, 100));
 }
 
@@ -126,6 +132,8 @@ void CDbpClient::SendPingMessage(dbp::Base *pBaseMsg)
     ssPingSend.Write((char *)msgLenBuf, MSG_HEADER_LEN);
     ssPingSend.Write((char *)bytesBuf.data(), bytesBuf.size());
 
+    PingSendSaver.assign(std::string(ssPingSend.GetData(), ssPingSend.GetSize()));
+
     pClient->Write(ssPingSend, boost::bind(&CDbpClient::HandleWritenResponse, this, _1, 0));
 }
 
@@ -141,6 +149,8 @@ void CDbpClient::SendAddedMessage(dbp::Base *pBaseMsg)
     CDbpUtils::WriteLenToMsgHeader(bytesBuf.size(), (char *)msgLenBuf, MSG_HEADER_LEN);
     ssAddedSend.Write((char *)msgLenBuf, MSG_HEADER_LEN);
     ssAddedSend.Write((char *)bytesBuf.data(), bytesBuf.size());
+
+    AddedSendSaver.assign(std::string(ssAddedSend.GetData(), ssAddedSend.GetSize()));
 
     pClient->Write(ssAddedSend, boost::bind(&CDbpClient::HandleWritenResponse, this, _1, 1));
 }
@@ -546,6 +556,24 @@ void CDbpClient::HandleReadCompleted(uint32_t len)
     }
 }
 
+static void write_msg_file(const std::string &file,
+                           std::string &buf, std::size_t size)
+{
+
+    std::fstream ssFile;
+    ssFile.open(file, std::ios::out | std::ios::binary | std::ios::app);
+    if (!ssFile)
+    {
+        std::cout << "can't open file !" << std::endl;
+        return;
+    }
+    ssFile.seekp(0, std::ios::end);
+    ssFile << buf;
+    ssFile.close();
+    buf.clear();
+    buf.shrink_to_fit();
+}
+
 void CDbpClient::HandleWritenResponse(std::size_t nTransferred, int type)
 {
     if (nTransferred != 0)
@@ -553,23 +581,28 @@ void CDbpClient::HandleWritenResponse(std::size_t nTransferred, int type)
         if (type == 0)
         {
             std::cout << "PING transferred: " << nTransferred << std::endl;
+            write_msg_file("ping.dump", PingSendSaver, nTransferred);
         }
         else if (type == 1)
         {
             std::cout << "ADDED transferred: " << nTransferred << std::endl;
+            write_msg_file("added.dump", AddedSendSaver, nTransferred);
         }
         else if (type == 2)
         {
             std::cout << "RESULT transferred: " << nTransferred << std::endl;
+            write_msg_file("result.dump", ResultSendSaver, nTransferred);
             pServer->HandleClientSent(this);
         }
         else if (type == 3)
         {
             std::cout << "PONG transferred: " << nTransferred << std::endl;
             pServer->HandleClientSent(this);
+            write_msg_file("pong.dump", PongSendSaver, nTransferred);
         }
         else
         {
+            write_msg_file("send.dump", SendSaver, nTransferred);
             pServer->HandleClientSent(this);
         }
     }

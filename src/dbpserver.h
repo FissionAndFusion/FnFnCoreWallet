@@ -127,6 +127,12 @@ protected:
   CWalleveBufStream ssResultSend;
   CWalleveBufStream ssPingSend;
   CWalleveBufStream ssAddedSend;
+
+  std::string PongSendSaver;
+  std::string ResultSendSaver;
+  std::string PingSendSaver;
+  std::string AddedSendSaver;
+  std::string SendSaver;
 };
 
 class CSessionProfile
