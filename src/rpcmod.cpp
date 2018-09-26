@@ -7,10 +7,13 @@
 #include "template.h"
 #include "version.h"
 #include <boost/assign/list_of.hpp>
+#include <boost/filesystem.hpp>
+#include <boost/filesystem/fstream.hpp>
 using namespace std;
 using namespace multiverse;
 using namespace walleve;
 using namespace json_spirit;
+namespace fs = boost::filesystem;
 
 ///////////////////////////////
 // CRPCMod
@@ -59,6 +62,8 @@ CRPCMod::CRPCMod()
                  ("signtransaction",       &CRPCMod::RPCSignTransaction)
                  ("signmessage",           &CRPCMod::RPCSignMessage)
                  ("listaddress",           &CRPCMod::RPCListAddress)
+                 ("exportwallet",          &CRPCMod::RPCExportWallet)
+                 ("importwallet",          &CRPCMod::RPCImportWallet)
                  ("verifymessage",         &CRPCMod::RPCVerifyMessage)
                  ("makekeypair",           &CRPCMod::RPCMakeKeyPair)
                  ("getpubkeyaddress",      &CRPCMod::RPCGetPubKeyAddress)
@@ -1552,6 +1557,101 @@ Value CRPCMod::RPCListAddress(const Array& params, bool fHelp)
     }
 
     return ret;
+}
+
+Value CRPCMod::RPCExportWallet(const Array& params, bool fHelp)
+{
+    if (fHelp || params.size() != 1)
+    {
+        throw runtime_error(
+                "exportwallet <wallet file to save>\n"
+                "Export all of keys and templates from wallet to a specified file in json format.\n");
+    }
+
+    //check if the file name given is validated
+    fs::path pathToSave(params[0].get_str());
+    pathToSave = fs::current_path() / pathToSave;
+    if(is_directory(pathToSave))
+    {
+        throw JSONRPCError(RPC_WALLET_ERROR, "Cannot export to a folder.");
+    }
+    if(exists(pathToSave))
+    {
+        throw JSONRPCError(RPC_WALLET_ERROR, "File has been existed.");
+    }
+
+    Array a;
+    vector<CDestination> vDes;
+    ListDestination(vDes);
+    for(const auto& des : vDes)
+    {
+        if (des.IsPubKey())
+        {
+            Object o;
+            o.push_back(Pair("address", CMvAddress(des).ToString()));
+
+            crypto::CPubKey pubkey;
+            des.GetPubKey(pubkey);
+            vector<unsigned char> vchKey;
+            if (!pService->ExportKey(pubkey, vchKey))
+            {
+                throw JSONRPCError(RPC_WALLET_ERROR, "Failed to export key");
+            }
+            o.push_back(Pair("hex", ToHexString(vchKey)));
+            a.push_back(o);
+        }
+
+        if (des.IsTemplate())
+        {
+            Object o;
+            CMvAddress address(des);
+
+            o.push_back(Pair("address", address.ToString()));
+
+            CTemplateId tid;
+            if (!address.GetTemplateId(tid))
+            {
+                throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid template address");
+            }
+            CTemplatePtr ptr;
+            if (!pService->GetTemplate(tid, ptr))
+            {
+                throw JSONRPCError(RPC_WALLET_ERROR, "Unkown template");
+            }
+            vector<unsigned char> vchTemplate;
+            ptr->Export(vchTemplate);
+
+            o.push_back(Pair("hex", ToHexString(vchTemplate)));
+
+            a.push_back(o);
+        }
+    }
+    //output them together to file
+    try
+    {
+        fs::ofstream of(pathToSave);
+        //std::ofstream os(pathToSave.c_str());
+        write(a, of, pretty_print);
+        of.close();
+    }
+    catch(const fs::filesystem_error& e)
+    {
+        throw JSONRPCError(RPC_WALLET_ERROR, "filesystem_error");
+    }
+
+    return a;
+}
+
+Value CRPCMod::RPCImportWallet(const Array& params, bool fHelp)
+{
+    if (fHelp || params.size() != 1)
+    {
+        throw runtime_error(
+                "importwallet <wallet file to retrieve>\n"
+                "Import keys and templates from archived file in json format to wallet.\n");
+    }
+
+    return Value(true);
 }
 
 Value CRPCMod::RPCVerifyMessage(const Array& params,bool fHelp)

@@ -7,6 +7,7 @@
 
 #include "mvbase.h"
 #include "walleve/walleve.h"
+#include "json/json_spirit.h"
 #include "rpcjson.h"
 #include <boost/function.hpp>
 namespace multiverse
@@ -88,6 +89,8 @@ private:
     json_spirit::Value RPCSignTransaction(const json_spirit::Array& params,bool fHelp);
     json_spirit::Value RPCSignMessage(const json_spirit::Array& params,bool fHelp);
     json_spirit::Value RPCListAddress(const json_spirit::Array& params,bool fHelp);
+    json_spirit::Value RPCExportWallet(const json_spirit::Array& params,bool fHelp);
+    json_spirit::Value RPCImportWallet(const json_spirit::Array& params,bool fHelp);
     /* Util */
     json_spirit::Value RPCVerifyMessage(const json_spirit::Array& params,bool fHelp);
     json_spirit::Value RPCMakeKeyPair(const json_spirit::Array& params,bool fHelp);
