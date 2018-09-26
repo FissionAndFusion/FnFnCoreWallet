@@ -416,6 +416,9 @@ void CDbpService::CreateDbpTransaction(const CTransaction &tx, CMvDbpTransaction
         input.prevout.hash.ToDataStream(txInHashStream);
 
         dbptx.vInput.push_back(txin);
+
+        uint256 testHash(txin.hash);
+        std::cout << "input hash: " << testHash.ToString() << std::endl;
     }
 
     dbptx.cDestination.prefix = tx.sendTo.prefix;

@@ -8,10 +8,6 @@
 
 set(sources
 main.cpp
-client.h
-client.cpp
-handlepair.h
-handlepair.cpp
 )
 
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS 
