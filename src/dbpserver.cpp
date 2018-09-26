@@ -561,6 +561,7 @@ static void write_msg_file(const std::string &file,
 {
 
     std::fstream ssFile;
+    std::string data(buf.c_str(), size);
     ssFile.open(file, std::ios::out | std::ios::binary | std::ios::app);
     if (!ssFile)
     {
@@ -568,7 +569,7 @@ static void write_msg_file(const std::string &file,
         return;
     }
     ssFile.seekp(0, std::ios::end);
-    ssFile << buf;
+    ssFile << data;
     ssFile.close();
     buf.clear();
     buf.shrink_to_fit();
@@ -581,24 +582,24 @@ void CDbpClient::HandleWritenResponse(std::size_t nTransferred, int type)
         if (type == 0)
         {
             std::cout << "PING transferred: " << nTransferred << std::endl;
-            write_msg_file("ping.dump", PingSendSaver, nTransferred);
+            write_msg_file("send.dump", PingSendSaver, nTransferred);
         }
         else if (type == 1)
         {
             std::cout << "ADDED transferred: " << nTransferred << std::endl;
-            write_msg_file("added.dump", AddedSendSaver, nTransferred);
+            write_msg_file("send.dump", AddedSendSaver, nTransferred);
         }
         else if (type == 2)
         {
             std::cout << "RESULT transferred: " << nTransferred << std::endl;
-            write_msg_file("result.dump", ResultSendSaver, nTransferred);
+            write_msg_file("send.dump", ResultSendSaver, nTransferred);
             pServer->HandleClientSent(this);
         }
         else if (type == 3)
         {
             std::cout << "PONG transferred: " << nTransferred << std::endl;
             pServer->HandleClientSent(this);
-            write_msg_file("pong.dump", PongSendSaver, nTransferred);
+            write_msg_file("send.dump", PongSendSaver, nTransferred);
         }
         else
         {
