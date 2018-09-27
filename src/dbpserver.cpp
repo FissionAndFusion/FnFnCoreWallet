@@ -582,28 +582,28 @@ void CDbpClient::HandleWritenResponse(std::size_t nTransferred, int type)
         if (type == 0)
         {
             std::cout << "PING transferred: " << nTransferred << std::endl;
-            write_msg_file("send.dump", PingSendSaver, nTransferred);
+            // write_msg_file("send.dump", PingSendSaver, nTransferred);
         }
         else if (type == 1)
         {
             std::cout << "ADDED transferred: " << nTransferred << std::endl;
-            write_msg_file("send.dump", AddedSendSaver, nTransferred);
+            // write_msg_file("send.dump", AddedSendSaver, nTransferred);
         }
         else if (type == 2)
         {
             std::cout << "RESULT transferred: " << nTransferred << std::endl;
-            write_msg_file("send.dump", ResultSendSaver, nTransferred);
+            // write_msg_file("send.dump", ResultSendSaver, nTransferred);
             pServer->HandleClientSent(this);
         }
         else if (type == 3)
         {
             std::cout << "PONG transferred: " << nTransferred << std::endl;
             pServer->HandleClientSent(this);
-            write_msg_file("send.dump", PongSendSaver, nTransferred);
+            // write_msg_file("send.dump", PongSendSaver, nTransferred);
         }
         else
         {
-            write_msg_file("send.dump", SendSaver, nTransferred);
+            //write_msg_file("send.dump", SendSaver, nTransferred);
             pServer->HandleClientSent(this);
         }
     }

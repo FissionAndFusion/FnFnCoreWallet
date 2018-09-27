@@ -11,35 +11,35 @@ using boost::asio::ip::tcp;
 using namespace walleve;
 using namespace multiverse;
 
-#define MAINNET_MAGICNUM                0xd5f97d23
-#define TESTNET_MAGICNUM                0xef93a7b2
-#define DEFAULT_DB_CONNECTION		8
+#define MAINNET_MAGICNUM 0xd5f97d23
+#define TESTNET_MAGICNUM 0xef93a7b2
+#define DEFAULT_DB_CONNECTION 8
 
-#define DEFAULT_P2PPORT                 6811
-#define DEFAULT_TESTNET_P2PPORT         6813
-#define DEFAULT_RPCPORT                 6812
-#define DEFAULT_TESTNET_RPCPORT         6814
-#define DEFAULT_DBPPORT                 6815
-#define DEFAULT_TESTNET_DBPPORT         6817
+#define DEFAULT_P2PPORT 6811
+#define DEFAULT_TESTNET_P2PPORT 6813
+#define DEFAULT_RPCPORT 6812
+#define DEFAULT_TESTNET_RPCPORT 6814
+#define DEFAULT_DBPPORT 6815
+#define DEFAULT_TESTNET_DBPPORT 6817
 
-#define DEFAULT_MAX_INBOUNDS            125
-#define DEFAULT_MAX_OUTBOUNDS           10
-#define DEFAULT_CONNECT_TIMEOUT         5
+#define DEFAULT_MAX_INBOUNDS 125
+#define DEFAULT_MAX_OUTBOUNDS 10
+#define DEFAULT_CONNECT_TIMEOUT 5
 
-#define DEFAULT_RPC_MAX_CONNECTIONS     5
-#define DEFAULT_RPC_CONNECT_TIMEOUT     120
+#define DEFAULT_RPC_MAX_CONNECTIONS 5
+#define DEFAULT_RPC_CONNECT_TIMEOUT 120
 
-#define DEFAULT_DBP_MAX_CONNECTIONS     10
-#define DEFAULT_DBP_CONNECT_TIMEOUT     150
-#define DEFAULT_DBP_SESSION_TIMEOUT     60*5
+#define DEFAULT_DBP_MAX_CONNECTIONS 100
+#define DEFAULT_DBP_CONNECT_TIMEOUT 150
+#define DEFAULT_DBP_SESSION_TIMEOUT 60 * 5
 
 namespace po = boost::program_options;
 
-#define OPTBOOL(name,var,def)           (name,po::value<bool>(&(var))->default_value(def))
-#define OPTUINT(name,var,def)           (name,po::value<unsigned int>(&(var))->default_value(def))
-#define OPTINT(name,var,def)            (name,po::value<int>(&(var))->default_value(def))
-#define OPTSTR(name,var,def)            (name,po::value<string>(&(var))->default_value(def))
-#define OPTVEC(name,var)                (name,po::value<vector<string> >(&(var)))
+#define OPTBOOL(name, var, def) (name, po::value<bool>(&(var))->default_value(def))
+#define OPTUINT(name, var, def) (name, po::value<unsigned int>(&(var))->default_value(def))
+#define OPTINT(name, var, def) (name, po::value<int>(&(var))->default_value(def))
+#define OPTSTR(name, var, def) (name, po::value<string>(&(var))->default_value(def))
+#define OPTVEC(name, var) (name, po::value<vector<string>>(&(var)))
 
 //////////////////////////////
 // CMvBasicConfig
@@ -50,7 +50,7 @@ CMvBasicConfig::CMvBasicConfig()
 
     desc.add_options()
 
-    OPTBOOL("testnet",fTestNet,false);
+        OPTBOOL("testnet", fTestNet, false);
 
     AddOptions(desc);
 }
@@ -62,16 +62,16 @@ CMvBasicConfig::~CMvBasicConfig()
 bool CMvBasicConfig::PostLoad()
 {
     if (fTestNet)
-    {   
+    {
         pathData /= "testnet";
     }
     nMagicNum = fTestNet ? TESTNET_MAGICNUM : MAINNET_MAGICNUM;
-    
+
     return true;
 }
 
 string CMvBasicConfig::ListConfig()
-{   
+{
     ostringstream oss;
     oss << "TestNet : " << (fTestNet ? "Y" : "N") << "\n";
     return oss.str();
@@ -86,12 +86,12 @@ CMvStorageConfig::CMvStorageConfig()
 
     desc.add_options()
 
-    OPTSTR("dbhost",strDBHost,"localhost")
-    OPTSTR("dbname",strDBName,"multiverse")
-    OPTSTR("dbuser",strDBUser,"multiverse")
-    OPTSTR("dbpass",strDBPass,"multiverse")
-    OPTINT("dbport",nDBPort,0)
-    OPTINT("dbconn",nDBConn,DEFAULT_DB_CONNECTION);
+        OPTSTR("dbhost", strDBHost, "localhost")
+            OPTSTR("dbname", strDBName, "multiverse")
+                OPTSTR("dbuser", strDBUser, "multiverse")
+                    OPTSTR("dbpass", strDBPass, "multiverse")
+                        OPTINT("dbport", nDBPort, 0)
+                            OPTINT("dbconn", nDBConn, DEFAULT_DB_CONNECTION);
 
     AddOptions(desc);
 }
@@ -127,13 +127,13 @@ CMvNetworkConfig::CMvNetworkConfig()
 
     desc.add_options()
 
-    OPTBOOL("listen",fListen,false)
-    OPTBOOL("bloom",fBloom,true)
-    OPTINT("port",nPortInt,0)
-    OPTINT("maxconnections",nMaxConnection,DEFAULT_MAX_OUTBOUNDS + DEFAULT_MAX_INBOUNDS)
-    OPTUINT("timeout",nConnectTimeout,DEFAULT_CONNECT_TIMEOUT)
-    OPTVEC("addnode",vNode)
-    OPTVEC("connect",vConnectTo);
+        OPTBOOL("listen", fListen, false)
+            OPTBOOL("bloom", fBloom, true)
+                OPTINT("port", nPortInt, 0)
+                    OPTINT("maxconnections", nMaxConnection, DEFAULT_MAX_OUTBOUNDS + DEFAULT_MAX_INBOUNDS)
+                        OPTUINT("timeout", nConnectTimeout, DEFAULT_CONNECT_TIMEOUT)
+                            OPTVEC("addnode", vNode)
+                                OPTVEC("connect", vConnectTo);
 
     AddOptions(desc);
 }
@@ -169,8 +169,8 @@ bool CMvNetworkConfig::PostLoad()
 
     if (!fTestNet)
     {
-//        vDNSeed.push_back("123.56.69.80");
-//        vDNSeed.push_back("123.57.22.233");
+        //        vDNSeed.push_back("123.56.69.80");
+        //        vDNSeed.push_back("123.57.22.233");
     }
     return true;
 }
@@ -189,22 +189,22 @@ CMvRPCConfig::CMvRPCConfig()
 
     desc.add_options()
 
-    OPTSTR("rpcconnect",strRPCConnect,"127.0.0.1")
-    OPTINT("rpcport",nRPCPortInt,0)
-    OPTUINT("rpctimeout",nRPCConnectTimeout,DEFAULT_RPC_CONNECT_TIMEOUT)
-    OPTUINT("rpcmaxconnections",nRPCMaxConnections,DEFAULT_RPC_MAX_CONNECTIONS)
-    OPTVEC("rpcallowip",vRPCAllowIP)
+        OPTSTR("rpcconnect", strRPCConnect, "127.0.0.1")
+            OPTINT("rpcport", nRPCPortInt, 0)
+                OPTUINT("rpctimeout", nRPCConnectTimeout, DEFAULT_RPC_CONNECT_TIMEOUT)
+                    OPTUINT("rpcmaxconnections", nRPCMaxConnections, DEFAULT_RPC_MAX_CONNECTIONS)
+                        OPTVEC("rpcallowip", vRPCAllowIP)
 
-    OPTSTR("rpcwallet",strRPCWallet,"")
-    OPTSTR("rpcuser",strRPCUser,"")
-    OPTSTR("rpcpassword",strRPCPass,"")
+                            OPTSTR("rpcwallet", strRPCWallet, "")
+                                OPTSTR("rpcuser", strRPCUser, "")
+                                    OPTSTR("rpcpassword", strRPCPass, "")
 
-    OPTBOOL("rpcssl",fRPCSSLEnable,false)
-    OPTBOOL("rpcsslverify",fRPCSSLVerify,true)
-    OPTSTR("rpcsslcafile",strRPCCAFile,"ca.crt")
-    OPTSTR("rpcsslcertificatechainfile",strRPCCertFile,"server.crt")
-    OPTSTR("rpcsslprivatekeyfile",strRPCPKFile,"server.key")
-    OPTSTR("rpcsslciphers",strRPCCiphers,"TLSv1+HIGH:!SSLv2:!aNULL:!eNULL:!AH:!3DES:@STRENGTH");
+                                        OPTBOOL("rpcssl", fRPCSSLEnable, false)
+                                            OPTBOOL("rpcsslverify", fRPCSSLVerify, true)
+                                                OPTSTR("rpcsslcafile", strRPCCAFile, "ca.crt")
+                                                    OPTSTR("rpcsslcertificatechainfile", strRPCCertFile, "server.crt")
+                                                        OPTSTR("rpcsslprivatekeyfile", strRPCPKFile, "server.key")
+                                                            OPTSTR("rpcsslciphers", strRPCCiphers, "TLSv1+HIGH:!SSLv2:!aNULL:!eNULL:!AH:!3DES:@STRENGTH");
 
     AddOptions(desc);
 }
@@ -231,7 +231,7 @@ bool CMvRPCConfig::PostLoad()
 
     epRPC = tcp::endpoint(!vRPCAllowIP.empty()
                               ? boost::asio::ip::address_v4::any()
-                                : boost::asio::ip::address_v4::loopback(),
+                              : boost::asio::ip::address_v4::loopback(),
                           nRPCPort);
 
     if (!path(strRPCCAFile).is_complete())
@@ -257,7 +257,6 @@ string CMvRPCConfig::ListConfig()
     return "";
 }
 
-
 //////////////////////////////
 // CMvDbpConfig
 
@@ -266,23 +265,23 @@ CMvDbpConfig::CMvDbpConfig()
     po::options_description desc("dbp");
     desc.add_options()
 
-    OPTSTR("dbpconnect",strDbpConnect,"127.0.0.1")
-    OPTINT("dbpport",nDbpPortInt,0)
-    OPTUINT("dbptimeout",nDbpConnectTimeout,DEFAULT_DBP_CONNECT_TIMEOUT)
-    OPTUINT("dbpsessiontimeout",nDbpSessionTimeout,DEFAULT_DBP_SESSION_TIMEOUT)
-    OPTUINT("dbpmaxconnections",nDbpMaxConnections,DEFAULT_DBP_MAX_CONNECTIONS)
-    OPTVEC("dbpallowip",vDbpAllowIP)
+        OPTSTR("dbpconnect", strDbpConnect, "127.0.0.1")
+            OPTINT("dbpport", nDbpPortInt, 0)
+                OPTUINT("dbptimeout", nDbpConnectTimeout, DEFAULT_DBP_CONNECT_TIMEOUT)
+                    OPTUINT("dbpsessiontimeout", nDbpSessionTimeout, DEFAULT_DBP_SESSION_TIMEOUT)
+                        OPTUINT("dbpmaxconnections", nDbpMaxConnections, DEFAULT_DBP_MAX_CONNECTIONS)
+                            OPTVEC("dbpallowip", vDbpAllowIP)
 
-    OPTSTR("dbpwallet",strDbpWallet,"")
-    OPTSTR("dbpuser",strDbpUser,"")
-    OPTSTR("dbppassword",strDbpPass,"")
+                                OPTSTR("dbpwallet", strDbpWallet, "")
+                                    OPTSTR("dbpuser", strDbpUser, "")
+                                        OPTSTR("dbppassword", strDbpPass, "")
 
-    OPTBOOL("dbpssl",fDbpSSLEnable,false)
-    OPTBOOL("dbpsslverify",fDbpSSLVerify,true)
-    OPTSTR("dbpsslcafile",strDbpCAFile,"ca.crt")
-    OPTSTR("dbpsslcertificatechainfile",strDbpCertFile,"server.crt")
-    OPTSTR("dbpsslprivatekeyfile",strDbpPKFile,"server.key")
-    OPTSTR("dbpsslciphers",strDbpCiphers,"TLSv1+HIGH:!SSLv2:!aNULL:!eNULL:!AH:!3DES:@STRENGTH");
+                                            OPTBOOL("dbpssl", fDbpSSLEnable, false)
+                                                OPTBOOL("dbpsslverify", fDbpSSLVerify, true)
+                                                    OPTSTR("dbpsslcafile", strDbpCAFile, "ca.crt")
+                                                        OPTSTR("dbpsslcertificatechainfile", strDbpCertFile, "server.crt")
+                                                            OPTSTR("dbpsslprivatekeyfile", strDbpPKFile, "server.key")
+                                                                OPTSTR("dbpsslciphers", strDbpCiphers, "TLSv1+HIGH:!SSLv2:!aNULL:!eNULL:!AH:!3DES:@STRENGTH");
 
     AddOptions(desc);
 }
@@ -309,7 +308,7 @@ bool CMvDbpConfig::PostLoad()
 
     epDbp = tcp::endpoint(vDbpAllowIP.empty()
                               ? boost::asio::ip::address_v4::any()
-                                : boost::asio::ip::address_v4::loopback(),
+                              : boost::asio::ip::address_v4::loopback(),
                           nDbpPort);
 
     if (!path(strDbpCAFile).is_complete())
@@ -344,10 +343,10 @@ CMvMintConfig::CMvMintConfig()
 
     desc.add_options()
 
-    OPTSTR("mpvssaddress",strAddressMPVss,"")
-    OPTSTR("mpvsskey",strKeyMPVss,"")
-    OPTSTR("blake512address",strAddressBlake512,"")
-    OPTSTR("blake512key",strKeyBlake512,"");
+        OPTSTR("mpvssaddress", strAddressMPVss, "")
+            OPTSTR("mpvsskey", strKeyMPVss, "")
+                OPTSTR("blake512address", strAddressBlake512, "")
+                    OPTSTR("blake512key", strKeyBlake512, "");
 
     AddOptions(desc);
 }
@@ -358,8 +357,8 @@ CMvMintConfig::~CMvMintConfig()
 
 bool CMvMintConfig::PostLoad()
 {
-    ExtractMintParamPair(strAddressMPVss,strKeyMPVss,destMPVss,keyMPVss);
-    ExtractMintParamPair(strAddressBlake512,strKeyBlake512,destBlake512,keyBlake512);
+    ExtractMintParamPair(strAddressMPVss, strKeyMPVss, destMPVss, keyMPVss);
+    ExtractMintParamPair(strAddressBlake512, strKeyBlake512, destBlake512, keyBlake512);
     return true;
 }
 
@@ -368,8 +367,8 @@ string CMvMintConfig::ListConfig()
     return "";
 }
 
-void CMvMintConfig::ExtractMintParamPair(const std::string& strAddress,const std::string& strKey,
-                                         CDestination& dest,uint256& privkey)
+void CMvMintConfig::ExtractMintParamPair(const std::string &strAddress, const std::string &strKey,
+                                         CDestination &dest, uint256 &privkey)
 {
     CMvAddress address;
     if (address.ParseString(strAddress) && !address.IsNull() && strKey.size() == 64)
@@ -392,20 +391,10 @@ CMvConfig::~CMvConfig()
 
 bool CMvConfig::PostLoad()
 {
-    return (CWalleveConfig::PostLoad()
-            && CMvBasicConfig::PostLoad()
-            && CMvNetworkConfig::PostLoad()
-            && CMvRPCConfig::PostLoad()
-            && CMvDbpConfig::PostLoad()
-            && CMvMintConfig::PostLoad());
+    return (CWalleveConfig::PostLoad() && CMvBasicConfig::PostLoad() && CMvNetworkConfig::PostLoad() && CMvRPCConfig::PostLoad() && CMvDbpConfig::PostLoad() && CMvMintConfig::PostLoad());
 }
 
 string CMvConfig::ListConfig()
 {
-    return (CWalleveConfig::ListConfig()
-            + CMvBasicConfig::ListConfig()
-            + CMvNetworkConfig::ListConfig()
-            + CMvRPCConfig::ListConfig()
-            + CMvDbpConfig::ListConfig()
-            + CMvMintConfig::ListConfig());
+    return (CWalleveConfig::ListConfig() + CMvBasicConfig::ListConfig() + CMvNetworkConfig::ListConfig() + CMvRPCConfig::ListConfig() + CMvDbpConfig::ListConfig() + CMvMintConfig::ListConfig());
 }
