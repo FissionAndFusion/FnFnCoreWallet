@@ -239,8 +239,9 @@ static void CreateLwsTransaction(const CMvDbpTransaction *dbptx, lws::Transactio
     for (const auto &input : dbptx->vInput)
     {
         std::string inputHash(input.hash.begin(), input.hash.end());
-        tx->add_vinput()->set_hash(inputHash);
-        tx->add_vinput()->set_n(input.n);
+        auto add = tx->add_vinput();
+        add->set_hash(inputHash);
+        add->set_n(input.n);
     }
 
     lws::Transaction::CDestination *dest = new lws::Transaction::CDestination();
