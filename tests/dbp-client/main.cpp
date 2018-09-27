@@ -513,15 +513,28 @@ void test_client(ThreadCxt &cxt)
 int main(int argc, char *argv[])
 {
 
-    std::thread threads[5];
-    ThreadCxt cxts[5];
+    if (argc != 2)
+    {
+        std::cout << "usage: dbpclient <test_thread_num>" << std::endl;
+        exit(-1);
+    }
 
-    for (int i = 0; i < 5; ++i)
+    const int num = std::atoi(argv[1]);
+
+    std::cout << "starting " << num << " threads to test."
+              << std::endl;
+
+    sleep(3);
+
+    std::thread threads[num];
+    ThreadCxt cxts[num];
+
+    for (int i = 0; i < num; ++i)
     {
         threads[i] = std::move(std::thread(test_client, std::ref(cxts[i])));
     }
 
-    for (int i = 0; i < 5; ++i)
+    for (int i = 0; i < num; ++i)
     {
         threads[i].join();
     }
