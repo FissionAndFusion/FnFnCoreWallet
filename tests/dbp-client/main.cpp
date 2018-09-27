@@ -2,11 +2,10 @@
 #include <vector>
 #include <sstream>
 #include <thread>
+#include <chrono>
 #include <boost/asio.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/bind.hpp>
-
-#include <arpa/inet.h>
 
 #include "dbp.pb.h"
 #include "lws.pb.h"
@@ -49,6 +48,22 @@ typedef struct ThreadCxt
     std::string session_id;
 } ThreadCxt;
 
+static std::string formatString(const char *name)
+{
+    char buffer[1024] = {0};
+
+    std::ostringstream oss;
+    oss << std::this_thread::get_id();
+    std::string stid = oss.str();
+    unsigned long long tid = std::stoull(stid);
+
+    sprintf(buffer, "######### [%s] [thread: %lld] [timestamp: %ld] ############",
+            name,
+            tid,
+            std::chrono::high_resolution_clock::now().time_since_epoch().count());
+    return std::string(buffer, 1024);
+}
+
 void connect_func(ThreadCxt &cxt)
 {
     try
@@ -59,7 +74,7 @@ void connect_func(ThreadCxt &cxt)
     {
         std::cout << "connect socket failed: " << e.what() << std::endl;
         cxt.state = CONNECT;
-        sleep(5);
+        std::this_thread::sleep_for(std::chrono::seconds(5));
         return;
     }
 
@@ -91,7 +106,7 @@ static bool write_msg(ThreadCxt &cxt, dbp::Msg type, google::protobuf::Any *any)
         cxt.g_socket.close();
         std::cout
             << "wait to reconnect session" << std::endl;
-        sleep(5);
+        std::this_thread::sleep_for(std::chrono::seconds(5));
         return false;
     }
     return true;
@@ -165,7 +180,7 @@ static bool read_msg(ThreadCxt &cxt, dbp::Base &base)
 
 void connect_session(ThreadCxt &cxt)
 {
-    std::cout << "################# CONNECT SESSION ##################" << std::endl;
+    std::cout << formatString("CONNECT") << std::endl;
 
     dbp::Connect connect;
     connect.set_session(cxt.session_id);
@@ -227,7 +242,7 @@ void connect_session(ThreadCxt &cxt)
 
 void sub_func(ThreadCxt &cxt)
 {
-    std::cout << "################# SUB ##################" << std::endl;
+    std::cout << formatString("SUB") << std::endl;
 
     dbp::Sub sub;
     sub.set_name("all-block");
@@ -263,7 +278,7 @@ void sub_func(ThreadCxt &cxt)
 
 void ping_func(ThreadCxt &cxt)
 {
-    std::cout << "################# PING ##################" << std::endl;
+    std::cout << formatString("PING") << std::endl;
 
     dbp::Ping ping;
     std::string id(std::to_string(time(NULL)));
@@ -284,8 +299,7 @@ void ping_func(ThreadCxt &cxt)
 
 void method_func(ThreadCxt &cxt)
 {
-
-    std::cout << "################# METHOD ##################" << std::endl;
+    std::cout << formatString("METHOD") << std::endl;
 
     lws::GetBlocksArg block_arg;
     uint256 hash;
@@ -360,8 +374,7 @@ static void print_tx(lws::Transaction &tx)
 
 void recv_func(ThreadCxt &cxt)
 {
-    std::cout
-        << "################# RECV" + std::to_string(time(NULL)) + "##################" << std::endl;
+    std::cout << formatString("RECV") << std::endl;
 
     dbp::Base base;
     if (!read_msg(cxt, base))
@@ -524,7 +537,7 @@ int main(int argc, char *argv[])
     std::cout << "starting " << num << " threads to test."
               << std::endl;
 
-    sleep(3);
+    std::this_thread::sleep_for(std::chrono::seconds(3));
 
     std::thread threads[num];
     ThreadCxt cxts[num];
