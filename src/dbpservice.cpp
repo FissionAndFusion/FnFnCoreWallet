@@ -273,20 +273,23 @@ bool CDbpService::IsEmpty(const uint256 &hash)
     return hash.ToString() == EMPTY_HASH;
 }
 
-bool CDbpService::GetBlocks(const uint256 &startHash, int32 n, std::vector<CMvDbpBlock> &blocks)
+bool CDbpService::GetBlocks(const uint256 &forkHash, const uint256 &startHash, int32 n, std::vector<CMvDbpBlock> &blocks)
 {
+    uint256 tempForkHash = forkHash;
     uint256 blockHash = startHash;
-    std::cout << "blockhash: " << blockHash.ToString() << std::endl;
+
+    if (IsEmpty(tempForkHash))
+    {
+        tempForkHash = pCoreProtocol->GetGenesisBlockHash();
+    }
 
     if (IsEmpty(blockHash))
     {
-        blockHash = pCoreProtocol->GetGenesisBlockHash();
-        std::cout << "Genesis Block Hash: " << blockHash.ToString() << std::endl;
+        pService->GetBlockHash(tempForkHash, 0, blockHash);
     }
 
-    uint256 forkHash;
     int blockHeight = 0;
-    if (!pService->GetBlockLocation(blockHash, forkHash, blockHeight))
+    if (!pService->GetBlockLocation(blockHash, tempForkHash, blockHeight))
     {
         std::cout << "block not exists" << std::endl;
         return false;
@@ -294,17 +297,17 @@ bool CDbpService::GetBlocks(const uint256 &startHash, int32 n, std::vector<CMvDb
 
     const std::size_t primaryBlockMaxNum = n;
     std::size_t primaryBlockCount = 0;
-    while (primaryBlockCount != primaryBlockMaxNum && pService->GetBlockHash(forkHash, blockHeight, blockHash))
+    while (primaryBlockCount != primaryBlockMaxNum && pService->GetBlockHash(tempForkHash, blockHeight, blockHash))
     {
         CBlock block;
-        pService->GetBlock(blockHash, block, forkHash, blockHeight);
+        pService->GetBlock(blockHash, block, tempForkHash, blockHeight);
         if (block.nType == CBlock::BLOCK_PRIMARY)
         {
             primaryBlockCount++;
         }
 
         CMvDbpBlock DbpBlock;
-        CreateDbpBlock(block, forkHash, blockHeight, DbpBlock);
+        CreateDbpBlock(block, tempForkHash, blockHeight, DbpBlock);
         blocks.push_back(DbpBlock);
 
         blockHeight++;
@@ -315,12 +318,14 @@ bool CDbpService::GetBlocks(const uint256 &startHash, int32 n, std::vector<CMvDb
 
 void CDbpService::HandleGetBlocks(CMvEventDbpMethod &event)
 {
+    std::string forkid = event.data.params["forkid"];
     std::string blockHash = event.data.params["hash"];
     int32 blockNum = boost::lexical_cast<int32>(event.data.params["number"]);
 
     uint256 startBlockHash(std::vector<unsigned char>(blockHash.begin(), blockHash.end()));
+    uint256 forkHash(std::vector<unsigned char>(forkid.begin(), forkid.end()));
     std::vector<CMvDbpBlock> blocks;
-    if (GetBlocks(startBlockHash, blockNum, blocks))
+    if (GetBlocks(forkHash, startBlockHash, blockNum, blocks))
     {
         std::cout << "Get Blocks success[service]: " << blocks.size() << std::endl;
 

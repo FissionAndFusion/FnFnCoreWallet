@@ -583,7 +583,7 @@ void CDbpClient::HandleWritenResponse(std::size_t nTransferred, int type)
         if (type == 0)
         {
             std::cout << "PING transferred: " << nTransferred << std::endl;
-            // write_msg_file("send.dump", PingSendSaver, nTransferred);
+            //write_msg_file("send.dump", PingSendSaver, nTransferred);
         }
         else if (type == 1)
         {
@@ -604,7 +604,7 @@ void CDbpClient::HandleWritenResponse(std::size_t nTransferred, int type)
         }
         else
         {
-            //write_msg_file("send.dump", SendSaver, nTransferred);
+            // write_msg_file("send.dump", SendSaver, nTransferred);
             pServer->HandleClientSent(this);
         }
     }
@@ -640,6 +640,7 @@ void CDbpServer::HandleClientConnect(CDbpClient *pDbpClient, google::protobuf::A
     dbp::Connect connectMsg;
     any->UnpackTo(&connectMsg);
 
+    auto customParamsMap = connectMsg.udata();
     std::string session = connectMsg.session();
     if (!IsSessionReconnect(session))
     {
@@ -736,9 +737,6 @@ void CDbpServer::HandleClientMethod(CDbpClient *pDbpClient, google::protobuf::An
     CMvDbpMethod &methodBody = pEventDbpMethod->data;
     methodBody.id = methodMsg.id();
 
-    std::cout << "current id:" << methodBody.id << "current method name: " << methodMsg.method()
-              << std::endl;
-
     if (methodMsg.method() == "getblocks")
         methodBody.method = CMvDbpMethod::Method::GET_BLOCKS;
     if (methodMsg.method() == "gettransaction")
@@ -751,6 +749,10 @@ void CDbpServer::HandleClientMethod(CDbpClient *pDbpClient, google::protobuf::An
         lws::GetBlocksArg args;
         methodMsg.params().UnpackTo(&args);
 
+        std::string forkid;
+        GetSessionForkId(pDbpClient, forkid);
+
+        methodBody.params.insert(std::make_pair("forkid", forkid));
         methodBody.params.insert(std::make_pair("hash", args.hash()));
         methodBody.params.insert(std::make_pair("number", boost::lexical_cast<std::string>(args.number())));
     }
@@ -1222,6 +1224,20 @@ bool CDbpServer::IsSessionTimeOut(CDbpClient *pDbpClient)
         std::string assciatedSession = sessionClientBimap.right.at(pDbpClient);
         uint64 lastTimeStamp = sessionProfileMap[assciatedSession].timestamp;
         return (CDbpUtils::CurrentUTC() - lastTimeStamp > timeout) ? true : false;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+bool CDbpServer::GetSessionForkId(CDbpClient *pDbpClient, std::string &forkid)
+{
+    if (HaveAssociatedSessionOf(pDbpClient))
+    {
+        std::string assciatedSession = sessionClientBimap.right.at(pDbpClient);
+        forkid = sessionProfileMap[assciatedSession].forkid;
+        return true;
     }
     else
     {

@@ -142,6 +142,7 @@ public:
   std::string sessionId;
   uint64 timestamp;
   std::shared_ptr<boost::asio::deadline_timer> pingTimerPtr;
+  std::string forkid;
 };
 
 class CDbpServer : public CIOProc, virtual public CDBPEventListener, virtual public CMvDBPEventListener
@@ -188,6 +189,7 @@ protected:
   bool HandleEvent(CMvEventDbpMethodResult &event) override;
 
   bool IsSessionTimeOut(CDbpClient *pDbpClient);
+  bool GetSessionForkId(CDbpClient *pDbpClient, std::string &forkid);
   bool IsSessionReconnect(const std::string &session);
   bool IsSessionExist(const std::string &session);
   bool HaveAssociatedSessionOf(CDbpClient *pDbpClient);
