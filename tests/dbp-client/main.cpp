@@ -1,19 +1,12 @@
 #include <iostream>
 #include <vector>
 #include <sstream>
-#include <boost/asio.hpp>
-#include <boost/asio/buffer.hpp>
-
+#include <thread>
 #include <boost/asio.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/bind.hpp>
-#include <boost/asio/steady_timer.hpp>
-#include <boost/asio/system_timer.hpp>
-#include <boost/asio/high_resolution_timer.hpp>
-#include <boost/random.hpp>
 
 #include <arpa/inet.h>
-
 
 #include "dbp.pb.h"
 #include "lws.pb.h"
@@ -38,31 +31,42 @@ enum State
     TERMINAL
 };
 
-State state;
+typedef struct ThreadCxt
+{
 
-boost::asio::io_service io_;
-boost::asio::ip::tcp::endpoint ep(boost::asio::ip::address::from_string("127.0.0.1"), 6815);
+    ThreadCxt() : ep(boost::asio::ip::address::from_string("127.0.0.1"), 6815),
+                  g_socket(io_), session_id("")
+    {
+    }
 
-boost::asio::ip::tcp::socket g_socket(io_);
+    State state;
 
-void connect_func()
+    boost::asio::io_service io_;
+    boost::asio::ip::tcp::endpoint ep;
+
+    boost::asio::ip::tcp::socket g_socket;
+    std::thread::id threadId;
+    std::string session_id;
+} ThreadCxt;
+
+void connect_func(ThreadCxt &cxt)
 {
     try
     {
-        g_socket.connect(ep);
+        cxt.g_socket.connect(cxt.ep);
     }
     catch (const std::exception &e)
     {
         std::cout << "connect socket failed: " << e.what() << std::endl;
-        state = CONNECT;
+        cxt.state = CONNECT;
         sleep(5);
         return;
     }
 
-    state = CONNECT_SESSION;
+    cxt.state = CONNECT_SESSION;
 }
 
-static bool write_msg(dbp::Msg type, google::protobuf::Any *any)
+static bool write_msg(ThreadCxt &cxt, dbp::Msg type, google::protobuf::Any *any)
 {
     dbp::Base base;
     base.set_msg(type);
@@ -79,12 +83,12 @@ static bool write_msg(dbp::Msg type, google::protobuf::Any *any)
     bytes.insert(0, len_buffer, 4);
 
     boost::system::error_code err;
-    std::size_t size = boost::asio::write(g_socket, boost::asio::buffer(bytes), err);
+    std::size_t size = boost::asio::write(cxt.g_socket, boost::asio::buffer(bytes), err);
     if (err)
     {
-        state = CONNECT;
-        g_socket.cancel();
-        g_socket.close();
+        cxt.state = CONNECT;
+        cxt.g_socket.cancel();
+        cxt.g_socket.close();
         std::cout
             << "wait to reconnect session" << std::endl;
         sleep(5);
@@ -93,11 +97,11 @@ static bool write_msg(dbp::Msg type, google::protobuf::Any *any)
     return true;
 }
 
-static bool read_header(std::size_t &len)
+static bool read_header(ThreadCxt &cxt, std::size_t &len)
 {
     char rlen_buffer[4];
     boost::system::error_code err;
-    std::size_t recv_size = boost::asio::read(g_socket, boost::asio::buffer(rlen_buffer), err);
+    std::size_t recv_size = boost::asio::read(cxt.g_socket, boost::asio::buffer(rlen_buffer), err);
     if (err)
     {
         std::cout << "read header failed. " << std::endl;
@@ -116,11 +120,11 @@ static bool read_header(std::size_t &len)
     return true;
 }
 
-static bool read_payload(dbp::Base &base, std::size_t len)
+static bool read_payload(ThreadCxt &cxt, dbp::Base &base, std::size_t len)
 {
     std::vector<unsigned char> payloadBuf(len, 0);
     boost::system::error_code err;
-    std::size_t size = boost::asio::read(g_socket, boost::asio::buffer(payloadBuf), err);
+    std::size_t size = boost::asio::read(cxt.g_socket, boost::asio::buffer(payloadBuf), err);
     if (err)
     {
         std::cout << "read payload failed. " << std::endl;
@@ -141,16 +145,16 @@ static bool read_payload(dbp::Base &base, std::size_t len)
     return true;
 }
 
-static bool read_msg(dbp::Base &base)
+static bool read_msg(ThreadCxt &cxt, dbp::Base &base)
 {
     std::size_t len;
-    if (!read_header(len))
+    if (!read_header(cxt, len))
     {
         std::cout << "read header failed. " << std::endl;
         return false;
     }
 
-    if (!read_payload(base, len))
+    if (!read_payload(cxt, base, len))
     {
         std::cout << "read payload failed. " << std::endl;
         return false;
@@ -159,19 +163,17 @@ static bool read_msg(dbp::Base &base)
     return true;
 }
 
-static std::string session_id("");
-
-void connect_session()
+void connect_session(ThreadCxt &cxt)
 {
     std::cout << "################# CONNECT SESSION ##################" << std::endl;
 
     dbp::Connect connect;
-    connect.set_session(session_id);
+    connect.set_session(cxt.session_id);
     connect.set_version(1);
     google::protobuf::Any *any = new google::protobuf::Any();
     any->PackFrom(connect);
 
-    if (!write_msg(dbp::CONNECT, any))
+    if (!write_msg(cxt, dbp::CONNECT, any))
     {
         return;
     }
@@ -179,7 +181,7 @@ void connect_session()
     std::cout << "[>]send connect session success. " << std::endl;
 
     dbp::Base base;
-    if (!read_msg(base))
+    if (!read_msg(cxt, base))
     {
         return;
     }
@@ -189,8 +191,8 @@ void connect_session()
         dbp::Connected connected;
         base.object().UnpackTo(&connected);
         std::cout << "[<]connected session is: " << connected.session() << std::endl;
-        session_id = connected.session();
-        state = SUB;
+        cxt.session_id = connected.session();
+        cxt.state = SUB;
         return;
     }
 
@@ -202,28 +204,28 @@ void connect_session()
 
         if ("002" == failed.reason())
         {
-            session_id = "";
-            state = CONNECT_SESSION;
+            cxt.session_id = "";
+            cxt.state = CONNECT_SESSION;
         }
 
         if ("001" == failed.reason())
         {
 
             std::cout << "support version: " << failed.version()[0] << std::endl;
-            session_id = "";
-            state = CONNECT_SESSION;
+            cxt.session_id = "";
+            cxt.state = CONNECT_SESSION;
         }
 
         if ("003" == failed.reason())
         {
-            session_id = "";
-            state = CONNECT_SESSION;
+            cxt.session_id = "";
+            cxt.state = CONNECT_SESSION;
         }
         return;
     }
 }
 
-void sub_func()
+void sub_func(ThreadCxt &cxt)
 {
     std::cout << "################# SUB ##################" << std::endl;
 
@@ -234,7 +236,7 @@ void sub_func()
     google::protobuf::Any *any_blk = new google::protobuf::Any();
     any_blk->PackFrom(sub);
 
-    if (!write_msg(dbp::Msg::SUB, any_blk))
+    if (!write_msg(cxt, dbp::Msg::SUB, any_blk))
     {
         return;
     }
@@ -248,7 +250,7 @@ void sub_func()
     google::protobuf::Any *any_tx = new google::protobuf::Any();
     any_tx->PackFrom(sub);
 
-    if (!write_msg(dbp::Msg::SUB, any_tx))
+    if (!write_msg(cxt, dbp::Msg::SUB, any_tx))
     {
         return;
     }
@@ -256,10 +258,10 @@ void sub_func()
     std::cout << "[>]sub all-tx success. "
               << std::endl;
 
-    state = METHOD;
+    cxt.state = METHOD;
 }
 
-void ping_func()
+void ping_func(ThreadCxt &cxt)
 {
     std::cout << "################# PING ##################" << std::endl;
 
@@ -269,7 +271,7 @@ void ping_func()
     google::protobuf::Any *any = new google::protobuf::Any();
     any->PackFrom(ping);
 
-    if (!write_msg(dbp::Msg::PING, any))
+    if (!write_msg(cxt, dbp::Msg::PING, any))
     {
         return;
     }
@@ -277,10 +279,10 @@ void ping_func()
     std::cout << "[>]PING success:   " << id
               << std::endl;
 
-    state = RECV;
+    cxt.state = RECV;
 }
 
-void method_func()
+void method_func(ThreadCxt &cxt)
 {
 
     std::cout << "################# METHOD ##################" << std::endl;
@@ -289,7 +291,7 @@ void method_func()
     uint256 hash;
     hash.SetHex("a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0");
     block_arg.set_hash(std::string(hash.begin(), hash.end()));
-    block_arg.set_number(1000);
+    block_arg.set_number(5);
     google::protobuf::Any *block_any = new google::protobuf::Any();
     block_any->PackFrom(block_arg);
 
@@ -302,7 +304,7 @@ void method_func()
     google::protobuf::Any *any = new google::protobuf::Any();
     any->PackFrom(method);
 
-    if (!write_msg(dbp::Msg::METHOD, any))
+    if (!write_msg(cxt, dbp::Msg::METHOD, any))
     {
         return;
     }
@@ -310,7 +312,7 @@ void method_func()
     std::cout << "[>]Method success:  " << id
               << std::endl;
 
-    state = PING;
+    cxt.state = PING;
 }
 
 static std::string GetHex(std::string data)
@@ -356,15 +358,15 @@ static void print_tx(lws::Transaction &tx)
     std::cout << "   sig:" << GetHex(sig) << std::endl;
 }
 
-void recv_func()
+void recv_func(ThreadCxt &cxt)
 {
     std::cout
         << "################# RECV" + std::to_string(time(NULL)) + "##################" << std::endl;
 
     dbp::Base base;
-    if (!read_msg(base))
+    if (!read_msg(cxt, base))
     {
-        state = METHOD;
+        cxt.state = METHOD;
         return;
     }
 
@@ -393,7 +395,7 @@ void recv_func()
         static int pong_count = 0;
         if (pong_count > 10)
         {
-            state = METHOD;
+            cxt.state = METHOD;
             pong_count = 0;
         }
         pong_count++;
@@ -411,10 +413,10 @@ void recv_func()
         pong.set_id(ping.id());
         google::protobuf::Any *any = new google::protobuf::Any();
         any->PackFrom(pong);
-        if (write_msg(dbp::Msg::PONG, any))
+        if (write_msg(cxt, dbp::Msg::PONG, any))
         {
             std::cout << "[>]pong: " << ping.id() << std::endl;
-            state = PING;
+            cxt.state = PING;
         }
 
         return;
@@ -470,47 +472,59 @@ void recv_func()
     return;
 }
 
-void run_state_machine()
+void run_state_machine(ThreadCxt &cxt)
 {
-    switch (state)
+    switch (cxt.state)
     {
     case START:
-        state = CONNECT;
+        cxt.state = CONNECT;
         break;
     case CONNECT:
-        connect_func();
+        connect_func(cxt);
         break;
     case CONNECT_SESSION:
-        connect_session();
+        connect_session(cxt);
         break;
     case SUB:
-        sub_func();
+        sub_func(cxt);
         break;
     case PING:
-        ping_func();
+        ping_func(cxt);
         break;
     case METHOD:
-        method_func();
+        method_func(cxt);
         break;
     case RECV:
-        recv_func();
+        recv_func(cxt);
         break;
     }
 }
 
-void test_client2()
+void test_client(ThreadCxt &cxt)
 {
-    state = START;
+    cxt.threadId = std::this_thread::get_id();
+    cxt.state = START;
     while (true)
     {
-        run_state_machine();
+        run_state_machine(cxt);
     }
 }
 
 int main(int argc, char *argv[])
 {
-    //test_stream();
-    // test_client(argc, argv);
-    test_client2();
+
+    std::thread threads[5];
+    ThreadCxt cxts[5];
+
+    for (int i = 0; i < 5; ++i)
+    {
+        threads[i] = std::move(std::thread(test_client, std::ref(cxts[i])));
+    }
+
+    for (int i = 0; i < 5; ++i)
+    {
+        threads[i].join();
+    }
+
     return 0;
 }
