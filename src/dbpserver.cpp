@@ -584,16 +584,40 @@ void CDbpClient::HandleWritenResponse(std::size_t nTransferred, int type)
         {
             std::cout << "PING transferred: " << nTransferred << std::endl;
             //write_msg_file("send.dump", PingSendSaver, nTransferred);
+            if (PingSendSaver.size() != nTransferred)
+            {
+                std::cout << "Ping Save size is not equal transferred" << std::endl;
+            }
+
+            PingSendSaver.clear();
+            PingSendSaver.shrink_to_fit();
         }
         else if (type == 1)
         {
             std::cout << "ADDED transferred: " << nTransferred << std::endl;
             // write_msg_file("send.dump", AddedSendSaver, nTransferred);
+
+            if (AddedSendSaver.size() != nTransferred)
+            {
+                std::cout << "Added Save size is not equal transferred" << std::endl;
+            }
+
+            AddedSendSaver.clear();
+            AddedSendSaver.shrink_to_fit();
         }
         else if (type == 2)
         {
             std::cout << "RESULT transferred: " << nTransferred << std::endl;
             // write_msg_file("send.dump", ResultSendSaver, nTransferred);
+
+            if (ResultSendSaver.size() != nTransferred)
+            {
+                std::cout << "Result Save size is not equal transferred " << std::endl;
+            }
+
+            ResultSendSaver.clear();
+            ResultSendSaver.shrink_to_fit();
+
             pServer->HandleClientSent(this);
         }
         else if (type == 3)
@@ -640,12 +664,13 @@ void CDbpServer::HandleClientConnect(CDbpClient *pDbpClient, google::protobuf::A
     dbp::Connect connectMsg;
     any->UnpackTo(&connectMsg);
 
-    auto customParamsMap = connectMsg.udata();
     std::string session = connectMsg.session();
+
     if (!IsSessionReconnect(session))
     {
         session = GenerateSessionId();
-        CreateSession(session, pDbpClient);
+        std::string forkid = GetUdata(&connectMsg, "forkid");
+        CreateSession(session, forkid, pDbpClient);
 
         CMvEventDbpConnect *pEventDbpConnect = new CMvEventDbpConnect(session);
         if (!pEventDbpConnect)
@@ -1117,10 +1142,10 @@ bool CDbpServer::HandleEvent(CMvEventDbpConnected &event)
 
     it->second.pingTimerPtr =
         std::make_shared<boost::asio::deadline_timer>(this->GetIoService(),
-                                                      boost::posix_time::seconds(5));
+                                                      boost::posix_time::seconds(1));
 
     it->second.pingTimerPtr->expires_at(it->second.pingTimerPtr->expires_at() +
-                                        boost::posix_time::seconds(5));
+                                        boost::posix_time::seconds(1));
     it->second.pingTimerPtr->async_wait(boost::bind(&CDbpServer::SendPingHandler,
                                                     this, boost::asio::placeholders::error,
                                                     boost::ref(it->second)));
@@ -1260,6 +1285,32 @@ bool CDbpServer::HaveAssociatedSessionOf(CDbpClient *pDbpClient)
     return sessionClientBimap.right.find(pDbpClient) != sessionClientBimap.right.end();
 }
 
+std::string CDbpServer::GetUdata(dbp::Connect *pConnect, const std::string &keyName)
+{
+    auto customParamsMap = pConnect->udata();
+
+    if (keyName == "forkid")
+    {
+        google::protobuf::Any paramAny = customParamsMap[keyName];
+        lws::ForkID forkidArg;
+
+        if (paramAny.Is<lws::ForkID>())
+        {
+            paramAny.UnpackTo(&forkidArg);
+            if (forkidArg.ids_size() != 0)
+                return forkidArg.ids(0);
+            else
+                return std::string();
+        }
+        else
+        {
+            return std::string();
+        }
+    }
+
+    return std::string();
+}
+
 std::string CDbpServer::GenerateSessionId()
 {
     std::string session = CDbpUtils::RandomString();
@@ -1271,10 +1322,11 @@ std::string CDbpServer::GenerateSessionId()
     return session;
 }
 
-void CDbpServer::CreateSession(const std::string &session, CDbpClient *pDbpClient)
+void CDbpServer::CreateSession(const std::string &session, const std::string &forkID, CDbpClient *pDbpClient)
 {
     CSessionProfile profile;
     profile.sessionId = session;
+    profile.forkid = forkID;
     profile.pDbpClient = pDbpClient;
     profile.timestamp = CDbpUtils::CurrentUTC();
 

@@ -184,6 +184,16 @@ void connect_session(ThreadCxt &cxt)
     dbp::Connect connect;
     connect.set_session(cxt.session_id);
     connect.set_version(1);
+
+    google::protobuf::Any anyFork;
+    lws::ForkID forkidMsg;
+
+    uint256 forkID256;
+    forkID256.SetHex("a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0");
+    forkidMsg.add_ids(std::string(forkID256.begin(), forkID256.end()));
+    anyFork.PackFrom(forkidMsg);
+    (*connect.mutable_udata())["forkid"] = anyFork;
+
     google::protobuf::Any *any = new google::protobuf::Any();
     any->PackFrom(connect);
 
@@ -304,7 +314,7 @@ void method_func(ThreadCxt &cxt)
     uint256 hash;
     hash.SetHex("06e274748ddc3f89e39f79dc758c55866d3a4f90b905d05aec85f4e147779d73");
     block_arg.set_hash(std::string(hash.begin(), hash.end()));
-    block_arg.set_number(1);
+    block_arg.set_number(2000);
     google::protobuf::Any *block_any = new google::protobuf::Any();
     block_any->PackFrom(block_arg);
 
@@ -357,7 +367,7 @@ static void print_block(lws::Block &block)
     std::cout << "   height:" << block.nheight() << std::endl;
     std::cout << "   prev hash:" << GetHex(prev_hash) << std::endl;
 
-    std::cout << "vtx size: " << block.vtx_size() << std::endl;
+    /*std::cout << "vtx size: " << block.vtx_size() << std::endl;
 
     std::cout << "vtx v input size: " << block.vtx(0).vinput_size() << std::endl;
     for (int i = 0; i < block.vtx(0).vinput_size(); ++i)
@@ -367,7 +377,7 @@ static void print_block(lws::Block &block)
 
         std::cout << "InputTxHash: " << GetHex(txhash) << std::endl;
         std::cout << "InputTx n: " << block.vtx(0).vinput(i).n() << std::endl;
-    }
+    }*/
 }
 
 static void print_tx(lws::Transaction &tx)

@@ -16,7 +16,8 @@ using namespace walleve;
 namespace dbp
 {
 class Base;
-}
+class Connect;
+} // namespace dbp
 
 namespace google
 {
@@ -194,8 +195,9 @@ protected:
   bool IsSessionExist(const std::string &session);
   bool HaveAssociatedSessionOf(CDbpClient *pDbpClient);
 
+  std::string GetUdata(dbp::Connect *pConnect, const std::string &keyName);
   std::string GenerateSessionId();
-  void CreateSession(const std::string &session, CDbpClient *pDbpClient);
+  void CreateSession(const std::string &session, const std::string &forkID, CDbpClient *pDbpClient);
   void UpdateSession(const std::string &session, CDbpClient *pDbpClient);
 
   void SendPingHandler(const boost::system::error_code &err, const CSessionProfile &sessionProfile);
