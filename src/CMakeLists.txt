@@ -7,6 +7,7 @@
 #------------------------------------------------------------------------------
 
 aux_source_directory(mode mode_src)
+aux_source_directory(json json_src)
 set(sources
 	multiverse.cpp
 	usage.cpp
@@ -35,6 +36,7 @@ set(sources
 	miner.cpp miner.h
 	dnseed.cpp dnseed.h
 	${mode_src}
+	${json_src}
 )
 
 add_executable(multiverse ${sources})
