@@ -1564,31 +1564,39 @@ Value CRPCMod::RPCExportWallet(const Array& params, bool fHelp)
     if (fHelp || params.size() != 1)
     {
         throw runtime_error(
-                "exportwallet <wallet file to save>\n"
+                "exportwallet </full/path/to/wallet_file_to_save>\n"
                 "Export all of keys and templates from wallet to a specified file in json format.\n");
     }
 
-    fs::path pathToSave(params[0].get_str());
-    pathToSave = fs::current_path() / pathToSave;
+    fs::path pSave(params[0].get_str());
     //check if the file name given is available
-    if(is_directory(pathToSave))
+    if(!pSave.is_absolute())
+    {
+        throw JSONRPCError(RPC_WALLET_ERROR, "Must be an absolute path.");
+    }
+    if(is_directory(pSave))
     {
         throw JSONRPCError(RPC_WALLET_ERROR, "Cannot export to a folder.");
     }
-    if(exists(pathToSave))
+    if(exists(pSave))
     {
         throw JSONRPCError(RPC_WALLET_ERROR, "File has been existed.");
     }
 
-    Array a;
+    if(!exists(pSave.parent_path()) && !create_directories(pSave.parent_path()))
+    {
+        throw JSONRPCError(RPC_WALLET_ERROR, "Failed to create directories.");
+    }
+
+    Array aAddr;
     vector<CDestination> vDes;
     ListDestination(vDes);
     for(const auto& des : vDes)
     {
         if (des.IsPubKey())
         {
-            Object o;
-            o.push_back(Pair("address", CMvAddress(des).ToString()));
+            Object oKey;
+            oKey.push_back(Pair("address", CMvAddress(des).ToString()));
 
             crypto::CPubKey pubkey;
             des.GetPubKey(pubkey);
@@ -1597,16 +1605,16 @@ Value CRPCMod::RPCExportWallet(const Array& params, bool fHelp)
             {
                 throw JSONRPCError(RPC_WALLET_ERROR, "Failed to export key");
             }
-            o.push_back(Pair("hex", ToHexString(vchKey)));
-            a.push_back(o);
+            oKey.push_back(Pair("hex", ToHexString(vchKey)));
+            aAddr.push_back(oKey);
         }
 
         if (des.IsTemplate())
         {
-            Object o;
+            Object oTemp;
             CMvAddress address(des);
 
-            o.push_back(Pair("address", address.ToString()));
+            oTemp.push_back(Pair("address", address.ToString()));
 
             CTemplateId tid;
             if (!address.GetTemplateId(tid))
@@ -1621,17 +1629,16 @@ Value CRPCMod::RPCExportWallet(const Array& params, bool fHelp)
             vector<unsigned char> vchTemplate;
             ptr->Export(vchTemplate);
 
-            o.push_back(Pair("hex", ToHexString(vchTemplate)));
+            oTemp.push_back(Pair("hex", ToHexString(vchTemplate)));
 
-            a.push_back(o);
+            aAddr.push_back(oTemp);
         }
     }
     //output them together to file
     try
     {
-        fs::ofstream ofs(pathToSave);
-        //std::ofstream os(pathToSave.c_str());
-        write(a, ofs, pretty_print);
+        std::ofstream ofs(pSave.string(), std::ios::out);
+        write(aAddr, ofs, pretty_print);
         ofs.close();
     }
     catch(const fs::filesystem_error& e)
@@ -1639,7 +1646,8 @@ Value CRPCMod::RPCExportWallet(const Array& params, bool fHelp)
         throw JSONRPCError(RPC_WALLET_ERROR, "filesystem_error");
     }
 
-    return a;
+    string sRes = string("Wallet file has been saved at: ") + pSave.string();
+    return Value(sRes);
 }
 
 Value CRPCMod::RPCImportWallet(const Array& params, bool fHelp)
@@ -1647,38 +1655,51 @@ Value CRPCMod::RPCImportWallet(const Array& params, bool fHelp)
     if (fHelp || params.size() != 1)
     {
         throw runtime_error(
-                "importwallet <wallet file to retrieve>\n"
+                "importwallet </full/path/to/wallet_file_to_load>\n"
                 "Import keys and templates from archived file in json format to wallet.\n");
     }
 
-    fs::path p(params[0].get_str());
-    p = fs::current_path() / p;
+    fs::path pLoad(params[0].get_str());
     //check if the file name given is available
-    if(!exists(p) || is_directory(p))
+    if(!exists(pLoad) || is_directory(pLoad))
     {
-        throw JSONRPCError(RPC_WALLET_ERROR, "file name is invalidated.");
+        throw JSONRPCError(RPC_WALLET_ERROR, "file name is invalid.");
     }
 
-    Value v;
+    Value vWallet;
     try
     {
-        fs::ifstream ifs(p);
-        read(ifs, v);
+        fs::ifstream ifs(pLoad);
+        read(ifs, vWallet);
         ifs.close();
     }
     catch(const fs::filesystem_error& e)
     {
-        throw JSONRPCError(RPC_WALLET_ERROR, "filesystem_error");
+        throw JSONRPCError(RPC_WALLET_ERROR, "Filesystem_error - failed to read.");
     }
 
-    Array a;
-    for(const auto& obj : v.get_array())
+    if(array_type != vWallet.type())
     {
-        CMvAddress addr(obj.get_obj()[0].value_.get_str());
-        //keys
+        throw JSONRPCError(RPC_WALLET_ERROR, "Wallet file exported is invalid, check it and try again.");
+    }
+
+    Array aAddr;
+    uint32 nKey = 0;
+    uint32 nTemp = 0;
+    for(const auto& oAddr : vWallet.get_array())
+    {
+        if(oAddr.get_obj()[0].name_ != "address" || oAddr.get_obj()[1].name_ != "hex")
+        {
+            throw JSONRPCError(RPC_WALLET_ERROR, "Data format is not correct, check it and try again.");
+        }
+        string sAddr = oAddr.get_obj()[0].value_.get_str(); //"address" field
+        string sHex = oAddr.get_obj()[1].value_.get_str();  //"hex" field
+
+        CMvAddress addr(sAddr);
+        //import keys
         if(addr.IsPubKey())
         {
-            vector<unsigned char> vchKey = ParseHexString(obj.get_obj()[1].value_.get_str());
+            vector<unsigned char> vchKey = ParseHexString(sHex);
             crypto::CKey key;
             if (!key.Load(vchKey))
             {
@@ -1696,13 +1717,14 @@ Value CRPCMod::RPCImportWallet(const Array& params, bool fHelp)
             {
                 throw JSONRPCError(RPC_WALLET_ERROR, "Failed to sync wallet tx");
             }
-            a.push_back(key.GetPubKey().GetHex());
+            aAddr.push_back(key.GetPubKey().GetHex());
+            ++nKey;
         }
 
-        //templates
+        //import templates
         if(addr.IsTemplate())
         {
-            vector<unsigned char> vchTemplate = ParseHexString(obj.get_obj()[1].value_.get_str());
+            vector<unsigned char> vchTemplate = ParseHexString(sHex);
             CTemplatePtr ptr = CTemplateGeneric::CreateTemplatePtr(vchTemplate);
             if (ptr == NULL || ptr->IsNull())
             {
@@ -1720,11 +1742,13 @@ Value CRPCMod::RPCImportWallet(const Array& params, bool fHelp)
             {
                 throw JSONRPCError(RPC_WALLET_ERROR,"Failed to sync wallet tx");
             }
-            a.push_back(CMvAddress(ptr->GetTemplateId()).ToString());
+            aAddr.push_back(CMvAddress(ptr->GetTemplateId()).ToString());
+            ++nTemp;
         }
     }
 
-    return a;
+    return Value(string("Import ") + std::to_string(nKey) + string(" keys and ")
+                 + std::to_string(nTemp) + string(" Templates."));
 }
 
 Value CRPCMod::RPCVerifyMessage(const Array& params,bool fHelp)
