@@ -1661,6 +1661,10 @@ Value CRPCMod::RPCImportWallet(const Array& params, bool fHelp)
 
     fs::path pLoad(params[0].get_str());
     //check if the file name given is available
+    if(!pLoad.is_absolute())
+    {
+        throw JSONRPCError(RPC_WALLET_ERROR, "Must be an absolute path.");
+    }
     if(!exists(pLoad) || is_directory(pLoad))
     {
         throw JSONRPCError(RPC_WALLET_ERROR, "file name is invalid.");
@@ -1707,7 +1711,7 @@ Value CRPCMod::RPCImportWallet(const Array& params, bool fHelp)
             }
             if (pService->HaveKey(key.GetPubKey()))
             {
-                throw JSONRPCError(RPC_WALLET_ERROR, "Already have key");
+                continue;   //step to next one to continue importing
             }
             if (!pService->AddKey(key))
             {
@@ -1732,7 +1736,7 @@ Value CRPCMod::RPCImportWallet(const Array& params, bool fHelp)
             }
             if (pService->HaveTemplate(addr.GetTemplateId()))
             {
-                throw JSONRPCError(RPC_WALLET_ERROR,"Already have template");
+                continue;   //step to next one to continue importing
             }
             if (!pService->AddTemplate(ptr))
             {
@@ -1747,8 +1751,8 @@ Value CRPCMod::RPCImportWallet(const Array& params, bool fHelp)
         }
     }
 
-    return Value(string("Import ") + std::to_string(nKey) + string(" keys and ")
-                 + std::to_string(nTemp) + string(" Templates."));
+    return Value(string("Imported ") + std::to_string(nKey) + string(" keys and ")
+                 + std::to_string(nTemp) + string(" templates."));
 }
 
 Value CRPCMod::RPCVerifyMessage(const Array& params,bool fHelp)
