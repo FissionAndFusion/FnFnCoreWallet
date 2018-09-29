@@ -153,6 +153,7 @@ static bool read_payload(ThreadCxt &cxt, dbp::Base &base, std::size_t len)
     if (!base.ParseFromString(std::string(payloadBuf.begin(), payloadBuf.end())))
     {
         std::cout << "Msg Base parse error. " << std::endl;
+        exit(-1);
         return false;
     }
 
@@ -312,9 +313,9 @@ void method_func(ThreadCxt &cxt)
 
     lws::GetBlocksArg block_arg;
     uint256 hash;
-    hash.SetHex("06e274748ddc3f89e39f79dc758c55866d3a4f90b905d05aec85f4e147779d73");
+    hash.SetHex("");
     block_arg.set_hash(std::string(hash.begin(), hash.end()));
-    block_arg.set_number(2000);
+    block_arg.set_number(500);
     google::protobuf::Any *block_any = new google::protobuf::Any();
     block_any->PackFrom(block_arg);
 
@@ -409,6 +410,14 @@ void recv_func(ThreadCxt &cxt)
         dbp::Ready ready;
         base.object().UnpackTo(&ready);
         std::cout << "[<]ready: " << ready.id() << std::endl;
+        return;
+    }
+
+    if (base.msg() == dbp::Msg::ERROR)
+    {
+        dbp::Error error;
+        base.object().UnpackTo(&error);
+        std::cout << "[<]error: " << error.reason() << "  " << error.explain() << std::endl;
         return;
     }
 
