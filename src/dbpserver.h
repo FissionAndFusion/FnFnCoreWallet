@@ -11,21 +11,10 @@
 #include <boost/bimap.hpp>
 #include <boost/any.hpp>
 
+#include "dbp.pb.h"
+#include "lws.pb.h"
+
 using namespace walleve;
-
-namespace dbp
-{
-class Base;
-class Connect;
-} // namespace dbp
-
-namespace google
-{
-namespace protobuf
-{
-class Any;
-}
-} // namespace google
 
 namespace multiverse
 {
@@ -76,6 +65,14 @@ public:
 class CDbpClient
 {
 public:
+  enum SendType
+  {
+    ADDED = 0,
+    PING = 1,
+    OTHER = 100
+  };
+
+public:
   CDbpClient(CDbpServer *pServerIn, CDbpProfile *pProfileIn,
              CIOClient *pClientIn, uint64 nonce);
   ~CDbpClient();
@@ -93,13 +90,10 @@ public:
   void SendResponse(CMvDbpReady &body);
   void SendResponse(CMvDbpAdded &body);
   void SendResponse(CMvDbpMethodResult &body);
-  void SendPing(const std::string &id);
   void SendPong(const std::string &id);
-  void SendNocActivePing(const std::string &id);
+  void SendPing(const std::string &id);
   void SendResponse(const std::string &reason, const std::string &description);
   void SendMessage(dbp::Base *pBaseMsg);
-  void SendPongMessage(dbp::Base *pBaseMsg);
-  void SendResultMessage(dbp::Base *pBaseMsg);
   void SendPingMessage(dbp::Base *pBaseMsg);
   void SendAddedMessage(dbp::Base *pBaseMsg);
 
@@ -110,10 +104,11 @@ protected:
   void HandleReadHeader(std::size_t nTransferred);
   void HandleReadPayload(std::size_t nTransferred, uint32_t len);
   void HandleReadCompleted(uint32_t len);
-  void HandleWritenResponse(std::size_t nTransferred, int type);
+  void HandleWritenResponse(std::size_t nTransferred, SendType type);
 
 private:
   std::string session_;
+  std::queue<dbp::Base> addedSendQueue;
 
 protected:
   CDbpServer *pServer;
@@ -124,15 +119,6 @@ protected:
   CWalleveBufStream ssSend;
   CWalleveBufStream ssRecv;
 
-  CWalleveBufStream ssPongSend;
-  CWalleveBufStream ssResultSend;
-  CWalleveBufStream ssPingSend;
-  CWalleveBufStream ssAddedSend;
-
-  std::string PongSendSaver;
-  std::string ResultSendSaver;
-  std::string PingSendSaver;
-  std::string AddedSendSaver;
   std::string SendSaver;
 };
 
