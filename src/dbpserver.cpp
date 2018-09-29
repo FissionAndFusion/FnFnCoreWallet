@@ -425,14 +425,13 @@ void CDbpClient::HandleReadHeader(std::size_t nTransferred)
 {
     if (nTransferred == MSG_HEADER_LEN)
     {
-
         std::string lenBuffer(MSG_HEADER_LEN, 0);
         ssRecv.Read(&lenBuffer[0], MSG_HEADER_LEN);
 
         uint32_t nMsgHeaderLen = CDbpUtils::ParseLenFromMsgHeader(&lenBuffer[0], MSG_HEADER_LEN);
         if (nMsgHeaderLen == 0)
         {
-            std::cout << "Msg Base header length is 0" << std::endl;
+            std::cerr << "Msg Base header length is 0" << std::endl;
             pServer->HandleClientError(this);
             return;
         }
@@ -441,7 +440,7 @@ void CDbpClient::HandleReadHeader(std::size_t nTransferred)
     }
     else
     {
-        std::cout << "Msg Base header length is not 4 " << std::endl;
+        std::cerr << "Msg Base header length is not 4 " << std::endl;
         pServer->HandleClientError(this);
     }
 }
@@ -454,7 +453,7 @@ void CDbpClient::HandleReadPayload(std::size_t nTransferred, uint32_t len)
     }
     else
     {
-        std::cout << "pay load is not len. " << std::endl;
+        std::cerr << "pay load is not len. " << std::endl;
         pServer->HandleClientError(this);
     }
 }
@@ -467,7 +466,7 @@ void CDbpClient::HandleReadCompleted(uint32_t len)
     dbp::Base msgBase;
     if (!msgBase.ParseFromString(payloadBuffer))
     {
-        std::cout << "parse payload failed. " << std::endl;
+        std::cerr << "parse payload failed. " << std::endl;
         pServer->RespondError(this, "002", "server recv invalid protobuf object");
         pServer->HandleClientError(this);
         return;
@@ -496,7 +495,7 @@ void CDbpClient::HandleReadCompleted(uint32_t len)
         pServer->HandleClientRecv(this, anyObj);
         break;
     default:
-        std::cout << "is not Message Base Type is unknown." << std::endl;
+        std::cerr << "is not Message Base Type is unknown." << std::endl;
         pServer->RespondError(this, "003", "is not Message Base Type is unknown.");
         pServer->HandleClientError(this);
         break;
@@ -506,13 +505,12 @@ void CDbpClient::HandleReadCompleted(uint32_t len)
 static void write_msg_file(const std::string &file,
                            std::string &buf)
 {
-
     std::fstream ssFile;
     std::string data(buf.c_str(), buf.size());
     ssFile.open(file, std::ios::out | std::ios::binary | std::ios::app);
     if (!ssFile)
     {
-        std::cout << "can't open file !" << std::endl;
+        std::cerr << "can't open file !" << std::endl;
         return;
     }
     ssFile.seekp(0, std::ios::end);
@@ -526,55 +524,36 @@ void CDbpClient::HandleWritenResponse(std::size_t nTransferred, CDbpClient::Send
 {
     if (nTransferred != 0)
     {
+        if (ssSend.GetSize() != 0)
+        {
+            pClient->Write(ssSend, boost::bind(&CDbpClient::HandleWritenResponse,
+                                               this, _1, type));
+        }
 
-        if (type == ADDED)
+        if (type == OTHER && ssSend.GetSize() == 0)
         {
-            if (ssSend.GetSize() != 0)
+            if (!addedSendQueue.empty())
             {
-                pClient->Write(ssSend, boost::bind(&CDbpClient::HandleWritenResponse,
-                                                   this, _1, type));
-            }
-        }
-        else if (type == PING)
-        {
-            if (ssSend.GetSize() != 0)
-            {
-                pClient->Write(ssSend, boost::bind(&CDbpClient::HandleWritenResponse,
-                                                   this, _1, type));
-            }
-        }
-        else
-        {
-            if (ssSend.GetSize() != 0)
-            {
-                pClient->Write(ssSend, boost::bind(&CDbpClient::HandleWritenResponse,
-                                                   this, _1, type));
+                std::string bytesBuf;
+                dbp::Base base;
+                base = addedSendQueue.front();
+                base.SerializeToString(&bytesBuf);
+                addedSendQueue.pop();
+                std::cout << "Send  Added Message Len is: " << bytesBuf.size() << std::endl;
+
+                unsigned char msgLenBuf[MSG_HEADER_LEN];
+                CDbpUtils::WriteLenToMsgHeader(bytesBuf.size(), (char *)msgLenBuf, MSG_HEADER_LEN);
+                ssSend.Write((char *)msgLenBuf, MSG_HEADER_LEN);
+                ssSend.Write((char *)bytesBuf.data(), bytesBuf.size());
+
+                SendSaver.append(std::string(ssSend.GetData(), ssSend.GetSize()));
+
+                pClient->Write(ssSend, boost::bind(&CDbpClient::HandleWritenResponse, this, _1, ADDED));
             }
             else
             {
-                if (!addedSendQueue.empty())
-                {
-                    std::string bytesBuf;
-                    dbp::Base base;
-                    base = addedSendQueue.front();
-                    base.SerializeToString(&bytesBuf);
-                    addedSendQueue.pop();
-                    std::cout << "Send  Added Message Len is: " << bytesBuf.size() << std::endl;
-
-                    unsigned char msgLenBuf[MSG_HEADER_LEN];
-                    CDbpUtils::WriteLenToMsgHeader(bytesBuf.size(), (char *)msgLenBuf, MSG_HEADER_LEN);
-                    ssSend.Write((char *)msgLenBuf, MSG_HEADER_LEN);
-                    ssSend.Write((char *)bytesBuf.data(), bytesBuf.size());
-
-                    SendSaver.append(std::string(ssSend.GetData(), ssSend.GetSize()));
-
-                    pClient->Write(ssSend, boost::bind(&CDbpClient::HandleWritenResponse, this, _1, ADDED));
-                }
-                else
-                {
-                    // write_msg_file("send.dump", SendSaver);
-                    pServer->HandleClientSent(this);
-                }
+                // write_msg_file("send.dump", SendSaver);
+                pServer->HandleClientSent(this);
             }
         }
     }
@@ -886,7 +865,7 @@ void CDbpServer::HandleClientSent(CDbpClient *pDbpClient)
 
 void CDbpServer::HandleClientError(CDbpClient *pDbpClient)
 {
-    std::cout << "Client Error. " << std::endl;
+    std::cerr << "Client Error. " << std::endl;
     RemoveClient(pDbpClient);
 }
 
@@ -1077,7 +1056,7 @@ bool CDbpServer::HandleEvent(CMvEventDbpConnected &event)
     auto it = sessionProfileMap.find(event.session_);
     if (it == sessionProfileMap.end())
     {
-        std::cout << "cannot find session [Connected] " << event.session_ << std::endl;
+        std::cerr << "cannot find session [Connected] " << event.session_ << std::endl;
         return false;
     }
 
@@ -1104,7 +1083,7 @@ bool CDbpServer::HandleEvent(CMvEventDbpFailed &event)
     std::map<uint64, CDbpClient *>::iterator it = mapClient.find(event.nNonce);
     if (it == mapClient.end())
     {
-        std::cout << "cannot find nonce [failed]" << std::endl;
+        std::cerr << "cannot find nonce [failed]" << std::endl;
         return false;
     }
 
@@ -1123,7 +1102,7 @@ bool CDbpServer::HandleEvent(CMvEventDbpNoSub &event)
     auto it = sessionProfileMap.find(event.session_);
     if (it == sessionProfileMap.end())
     {
-        std::cout << "cannot find session [NoSub] " << event.session_ << std::endl;
+        std::cerr << "cannot find session [NoSub] " << event.session_ << std::endl;
         return false;
     }
 
@@ -1140,7 +1119,7 @@ bool CDbpServer::HandleEvent(CMvEventDbpReady &event)
     auto it = sessionProfileMap.find(event.session_);
     if (it == sessionProfileMap.end())
     {
-        std::cout << "cannot find session [Ready] " << event.session_ << std::endl;
+        std::cerr << "cannot find session [Ready] " << event.session_ << std::endl;
         return false;
     }
 
@@ -1157,14 +1136,13 @@ bool CDbpServer::HandleEvent(CMvEventDbpAdded &event)
     auto it = sessionProfileMap.find(event.session_);
     if (it == sessionProfileMap.end())
     {
-        std::cout << "cannot find session [Added] " << event.session_ << std::endl;
+        std::cerr << "cannot find session [Added] " << event.session_ << std::endl;
         return false;
     }
 
     CDbpClient *pDbpClient = (*it).second.pDbpClient;
     CMvDbpAdded &addedBody = event.data;
 
-    std::cout << "Added Send Response: " << std::endl;
     pDbpClient->SendResponse(addedBody);
 
     return true;
@@ -1175,7 +1153,7 @@ bool CDbpServer::HandleEvent(CMvEventDbpMethodResult &event)
     auto it = sessionProfileMap.find(event.session_);
     if (it == sessionProfileMap.end())
     {
-        std::cout << "cannot find session [Method Result] " << event.session_ << std::endl;
+        std::cerr << "cannot find session [Method Result] " << event.session_ << std::endl;
         return false;
     }
 
