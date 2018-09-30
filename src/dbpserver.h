@@ -106,7 +106,8 @@ protected:
   void HandleReadCompleted(uint32_t len);
   void HandleWritenResponse(std::size_t nTransferred, SendType type);
 
-  void WriteBytesToSendStream(const std::string &bytes);
+  void WriteMessageToSendStream(dbp::Base *pBaseMsg);
+  bool IsSentComplete();
 
 private:
   std::string session_;
