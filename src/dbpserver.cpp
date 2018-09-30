@@ -78,7 +78,7 @@ void CDbpClient::SendMessage(dbp::Base *pBaseMsg)
 
 void CDbpClient::SendPingMessage(dbp::Base *pBaseMsg)
 {
-    if (ssSend.GetSize() != 0)
+    if (ssSend.GetSize() != 0 || !addedSendQueue.empty())
     {
         std::cout << "***********Not Sent Complete [Ping Message]********" << std::endl;
         return;
