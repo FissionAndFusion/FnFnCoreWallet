@@ -1,35 +1,6 @@
 #!/usr/bin/env python
 #-*-conding:utf-8-*-
-#
-# 1. option.json
-# Parse option json to generate config class
-#
-# Explanation:
-# CMvRPCBasicConfigOption": [             // Class name, content is array
-#   {                                   // Each object of array is one parameter
-#       "access": "protected",          // (optional, default="public"). The access modifier of c++ class
-#       "name": "nRPCPortInt",          // (required) parameter name
-#       "type": "int",                  // (required) parameter type
-#       "opt": "rpcport",               // (required) option of command-line
-#       "default": 0,                   // (optional) default value of parameter
-#       "format": "-rpcport=port",      // (required) show formatting when help
-#       "desc": "Listen for JSON-RPC"   // (optional) show description when help
-#   },
-#   ...     // next parameters
-# ]
-#
-# 2. mode.json
-# Set usage and description of mode 
-#
-# Explanation:
-# "EModeType::SERVER": {                        // Mode type, defiend in src/mode/mode_type.h
-#     "usage": "multiverse-server [OPTIONS]",   // Usage
-#     "desc": "Run multiverse server"           // description
-# },
-#
-# 3. rpc.json
-# Define rpc protocol
-#
+
 import sys
 sys.dont_write_bytecode = True
 
