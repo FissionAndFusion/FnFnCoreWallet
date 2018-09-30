@@ -17,9 +17,11 @@ copyright = \
 # attempt one tab equals how many blanks on terminal
 tab_len = 8
 # set max length of one line to show on terminal
-max_line_len = 100
+max_line_len = 80
+# example not split
+example_max_line_len = 1000
 # set max "format" length of one line to show on terminal
-max_format_len = 40
+max_format_len = 32
 # increasing step length, when format length is not enough
 step_len = 16
 
@@ -40,6 +42,7 @@ summary_indent = None
 example_req_indent = tab_to_space('>> ')
 example_resp_indent = tab_to_space('<< ')
 error_indent = tab_to_space('* ')
+
 
 
 def is_str(s):
@@ -71,13 +74,16 @@ def space(s, indent = None):
 
 
 # split string to multiple line by indent and max_line_len
-def split(s, indent = None):
+def split(s, indent = None, max_len = None):
     if indent == None:
         indent = ' ' * max_format_len
     else:
         indent = tab_to_space(indent)
+    
+    if max_len == None:
+        max_len = max_line_len
 
-    line_len = step(indent, max_line_len)
+    line_len = step(indent, max_len)
     line_len = line_len - len(indent)
 
     lines = []
@@ -89,8 +95,13 @@ def split(s, indent = None):
             end = enter + 1
         else:
             blank = s.find(' ', end - 1)
-            end = blank + 1 if blank >= 0 else len(s)
+            comma = s.find(',', end - 1)
+            colon = s.find(':', end - 1)
+            min_end = min(filter(lambda x: x >= 0, [blank, comma, colon]) + [len(s) - 1])
+            end = min_end + 1
 
+            if s == '''multiverse-cli maketemplate multisig '{"required": 1, "pubkeys": ["2e05c9ee45fdf58f7b007458298042fc3d3ad416a2f9977ace16d14164a3e882", "f4124c636d37b1308ba95c14b2487134030d5817f7fa93f11bcbc616aab7c3b9"]}\'''':
+                print end, [blank, comma, colon], filter(lambda x: x >= 0, [blank, comma, colon]), min(filter(lambda x: x >= 0, [blank, comma, colon]) + [len(s) - 1])
         line = s[begin:end]
         if begin != 0:
             line = indent + line

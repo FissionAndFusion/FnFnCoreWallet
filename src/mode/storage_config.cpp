@@ -23,6 +23,11 @@ CMvStorageConfig::~CMvStorageConfig() {}
 
 bool CMvStorageConfig::PostLoad()
 {
+    if (fHelp)
+    {
+        return true;
+    }
+
     if (fTestNet)
     {
         strDBName += "-testnet";

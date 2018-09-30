@@ -616,58 +616,61 @@ std::string Help(EModeType type, const std::string& subCmd, const std::string& o
 				oss << options << "\n";
 			}
 			oss << "Commands:\n";
-			oss << "  help                                  List commands, or get help for a command.\n";
-			oss << "  stop                                  Stop multiverse server.\n";
-			oss << "  getpeercount                          Returns the number of connections to other nodes.\n";
-			oss << "  listpeer                              Returns data about each connected network node.\n";
-			oss << "  addnode                               Attempts add a node into the addnode list.\n";
-			oss << "  removenode                            Attempts remove a node from the addnode list.\n";
-			oss << "  getforkcount                          Returns the number of forks.\n";
-			oss << "  getgenealogy                          Returns the list of ancestry and subline.\n";
-			oss << "  getblocklocation                      Returns the location with given block.\n";
-			oss << "  getblockcount                         Returns the number of blocks in the given fork.\n";
-			oss << "  getblockhash                          Returns hash of block in fork at <index>.\n";
-			oss << "  getblock                              Returns details of a block with given block-hash.\n";
-			oss << "  gettxpool                             Get transaction pool info\n";
-			oss << "  removependingtx                       Removes tx whose id is <txid> from txpool.\n";
-			oss << "  gettransaction                        get transaction info\n";
-			oss << "  sendtransaction                       Submits raw transaction (serialized, hex-encoded) to local node \n"
-			       "                                        and network.\n";
-			oss << "  listkey                               Returns Object that has pubkey as keys, associated status as \n"
-			       "                                        values.\n";
-			oss << "  getnewkey                             Returns a new pubkey for receiving payments.\n";
-			oss << "  encryptkey                            Encrypts the key.\n";
-			oss << "  lockkey                               Removes the encryption key from memory, locking the key.\n";
-			oss << "  unlockkey                             Unlock the key.\n";
-			oss << "  importprivkey                         Adds a private key (as returned by dumpprivkey) to your wallet.\n";
-			oss << "  importkey                             Reveals the serialized key corresponding to <pubkey>.\n";
-			oss << "  exportkey                             Reveals the serialized key corresponding to <pubkey>.\n";
-			oss << "  addnewtemplate                        Returns encoded address for the given template id.\n";
-			oss << "  importtemplate                        Returns encoded address for the given template.\n";
-			oss << "  exporttemplate                        Returns encoded address for the given template.\n";
-			oss << "  validateaddress                       Return information about <address>.\n";
-			oss << "  resyncwallet                          Resync wallet's transactions.\n";
-			oss << "  getbalance                            Get balance of address.\n";
-			oss << "  listtransaction                       Returns transactions list.\n";
-			oss << "  sendfrom                              Send a transaction.\n";
-			oss << "  createtransaction                     Create a transaction.\n";
-			oss << "  signtransaction                       Sign a transaction.\n";
-			oss << "  signmessage                           Sign a message with the private key of an pubkey\n";
-			oss << "  listaddress                           list all of addresses from pub keys and template ids\n";
-			oss << "  exportwallet                          Export all of keys and templates from wallet to a specified \n"
-			       "                                        file in json format.\n";
-			oss << "  importwallet                          Import keys and templates from archived file in json format \n"
-			       "                                        to wallet.\n";
-			oss << "  verifymessage                         Verify a signed message\n";
-			oss << "  makekeypair                           Make a public/private key pair.\n";
-			oss << "  getpubkeyaddress                      Returns encoded address for the given pubkey.\n";
-			oss << "  gettemplateaddress                    Returns encoded address for the given template id.\n";
-			oss << "  maketemplate                          Returns encoded address for the given template id.\n";
-			oss << "  decodetransaction                     Return a JSON object representing the serialized, hex-encoded \n"
-			       "                                        transaction.\n";
-			oss << "  makeorigin                            Return hex-encoded block.\n";
-			oss << "  getwork                               Get mint work\n";
-			oss << "  submitwork                            Submit mint work\n";
+			oss << "  help                          List commands, or get help for a command.\n";
+			oss << "  stop                          Stop multiverse server.\n";
+			oss << "  getpeercount                  Returns the number of connections to other nodes.\n";
+			oss << "  listpeer                      Returns data about each connected network node.\n";
+			oss << "  addnode                       Attempts add a node into the addnode list.\n";
+			oss << "  removenode                    Attempts remove a node from the addnode list.\n";
+			oss << "  getforkcount                  Returns the number of forks.\n";
+			oss << "  getgenealogy                  Returns the list of ancestry and subline.\n";
+			oss << "  getblocklocation              Returns the location with given block.\n";
+			oss << "  getblockcount                 Returns the number of blocks in the given fork.\n";
+			oss << "  getblockhash                  Returns hash of block in fork at <index>.\n";
+			oss << "  getblock                      Returns details of a block with given block-hash.\n";
+			oss << "  gettxpool                     Get transaction pool info\n";
+			oss << "  removependingtx               Removes tx whose id is <txid> from txpool.\n";
+			oss << "  gettransaction                get transaction info\n";
+			oss << "  sendtransaction               Submits raw transaction (serialized, hex-encoded) \n"
+			       "                                to local node and network.\n";
+			oss << "  listkey                       Returns Object that has pubkey as keys, associated \n"
+			       "                                status as values.\n";
+			oss << "  getnewkey                     Returns a new pubkey for receiving payments.\n";
+			oss << "  encryptkey                    Encrypts the key.\n";
+			oss << "  lockkey                       Removes the encryption key from memory, locking \n"
+			       "                                the key.\n";
+			oss << "  unlockkey                     Unlock the key.\n";
+			oss << "  importprivkey                 Adds a private key (as returned by dumpprivkey) \n"
+			       "                                to your wallet.\n";
+			oss << "  importkey                     Reveals the serialized key corresponding to <pubkey>.\n";
+			oss << "  exportkey                     Reveals the serialized key corresponding to <pubkey>.\n";
+			oss << "  addnewtemplate                Returns encoded address for the given template id.\n";
+			oss << "  importtemplate                Returns encoded address for the given template.\n";
+			oss << "  exporttemplate                Returns encoded address for the given template.\n";
+			oss << "  validateaddress               Return information about <address>.\n";
+			oss << "  resyncwallet                  Resync wallet's transactions.\n";
+			oss << "  getbalance                    Get balance of address.\n";
+			oss << "  listtransaction               Returns transactions list.\n";
+			oss << "  sendfrom                      Send a transaction.\n";
+			oss << "  createtransaction             Create a transaction.\n";
+			oss << "  signtransaction               Sign a transaction.\n";
+			oss << "  signmessage                   Sign a message with the private key of an pubkey\n";
+			oss << "  listaddress                   list all of addresses from pub keys and template \n"
+			       "                                ids\n";
+			oss << "  exportwallet                  Export all of keys and templates from wallet to \n"
+			       "                                a specified file in json format.\n";
+			oss << "  importwallet                  Import keys and templates from archived file in \n"
+			       "                                json format to wallet.\n";
+			oss << "  verifymessage                 Verify a signed message\n";
+			oss << "  makekeypair                   Make a public/private key pair.\n";
+			oss << "  getpubkeyaddress              Returns encoded address for the given pubkey.\n";
+			oss << "  gettemplateaddress            Returns encoded address for the given template id.\n";
+			oss << "  maketemplate                  Returns encoded address for the given template id.\n";
+			oss << "  decodetransaction             Return a JSON object representing the serialized,\n"
+			       "                                 hex-encoded transaction.\n";
+			oss << "  makeorigin                    Return hex-encoded block.\n";
+			oss << "  getwork                       Get mint work\n";
+			oss << "  submitwork                    Submit mint work\n";
 		}
 		if (subCmd == "all" || subCmd == "help")
 		{

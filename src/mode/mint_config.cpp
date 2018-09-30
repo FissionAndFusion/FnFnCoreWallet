@@ -24,6 +24,11 @@ CMvMintConfig::~CMvMintConfig() {}
 
 bool CMvMintConfig::PostLoad()
 {
+    if (fHelp)
+    {
+        return true;
+    }
+
     ExtractMintParamPair(strAddressMPVss, strKeyMPVss, destMPVss, keyMPVss);
     ExtractMintParamPair(strAddressBlake512, strKeyBlake512, destBlake512,
                          keyBlake512);

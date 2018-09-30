@@ -156,19 +156,19 @@ def get_cpp_json(value, type):
 
 def get_cpp_json_type(type):
     if type == 'int':
-        return 'json_spirit::int_type'
+        return 'int_type'
     elif type == 'uint':
-        return 'json_spirit::int_type'
+        return 'int_type'
     elif type == 'double':
-        return 'json_spirit::real_type'
+        return 'real_type'
     elif type == 'bool':
-        return 'json_spirit::bool_type'
+        return 'bool_type'
     elif type == 'string':
-        return 'json_spirit::str_type'
+        return 'str_type'
     elif type == 'array':
-        return 'json_spirit::array_type'
+        return 'array_type'
     else:
-        return 'json_spirit::obj_type'
+        return 'obj_type'
 
 
 def config_options_type(type):
@@ -252,7 +252,7 @@ def object_from_json(name, value, w, indent):
 
 
 def pod_to_json(name, value, w, indent):
-    w.write(indent + value + ' = json_spirit::Value(' + name + ');\n')
+    w.write(indent + value + ' = Value(' + name + ');\n')
 
 
 def array_to_json(name, cpp_type, sub_type, value, w, indent, n=0):
@@ -264,7 +264,7 @@ def array_to_json(name, cpp_type, sub_type, value, w, indent, n=0):
         arr_val = 'arr' + str(n)
 
         w.write(indent + 'auto& ' + arr_name + ' = v;\n')
-        w.write(indent + 'json_spirit::Array ' + arr_val + ';\n')
+        w.write(indent + 'Array ' + arr_val + ';\n')
         array_to_json(arr_name, arr_type, sub_type, arr_val, w, indent, n + 1)
         w.write(indent + value + '.push_back(' + arr_val + ');\n')
     elif is_pod(sub_type):
@@ -280,11 +280,11 @@ def object_to_json(key, name, type, cpp_type, sub_type, value, w, indent):
         val_name = convert_native_type(type) + '(' + name + ')'
     elif type == 'array':
         val_name = name + 'Array'
-        w.write(indent + 'json_spirit::Array ' + val_name + ';\n')
+        w.write(indent + 'Array ' + val_name + ';\n')
         array_to_json(name, cpp_type, sub_type, val_name, w, indent)
     else:
         val_name = name + '.ToJSON()'
-    w.write(indent + value + '.push_back(json_spirit::Pair("' + key + '", ' + val_name + '));\n')
+    w.write(indent + value + '.push_back(Pair("' + key + '", ' + val_name + '));\n')
 
 
 def find_subclass(p, subclass):
@@ -293,7 +293,69 @@ def find_subclass(p, subclass):
     return None
 
 
+def call_check_json_type(value, key, type, w, indent):
+    w.write(indent + 'CheckJSONType(' + value + ', ' + quote(type) + ', ' + quote(key) + ');\n')
+
+
+def from_json_value(value, key, name, type, w, indent):
+    call_check_json_type(value, key, type, w, indent)
+    if type == 'object':
+        w.write(indent + name + '.FromJSON(' + get_cpp_json(value, type) + ');\n')
+    else:
+        w.write(indent + name + ' = ' + get_cpp_json(value, type) + ';\n')
+
+def call_check_is_valid(value, key, w, indent):
+    w.write(indent + 'CheckIsValid(' + value + ', ' + quote(key) + ');\n')
+
+
 # generate function
+def check_json_type_fun(w):
+    w.write('static void CheckJSONType(const Value& value, const string& type, const string& key)\n')
+    indent = brace_begin(w)
+
+    w.write(indent + 'bool b;\n')
+
+    w.write(indent)
+    for t in json_type_list:
+        w.write('if (type == ' + quote(t) + ')\n')
+        indent = brace_begin(w, indent)
+        if type == 'uint':
+            w.write(indent + 'b = ((value.type() != ' + quote(get_cpp_json_type('uint'))
+                + ') || (!value.is_uint64() && ' + get_cpp_json('value', 'int') + ' < 0));\n')
+        elif type == 'double':
+            w.write(indent + 'b = ((value.type() != ' + quote(get_cpp_json_type('double'))
+                + ') && (value.type() != ' + quote(get_cpp_json_type('int')) + '));\n')
+        else:
+            w.write(indent + 'b = (value.type() == ' +  get_cpp_json_type(int) + ');\n')
+        indent = brace_end(w, indent)
+        w.write(indent + 'else ')
+    
+    empty_line(w)
+    indent = brace_begin(w, indent)
+    w.write(indent + 'b = false;\n')
+    indent = brace_end(w, indent)
+
+    w.write(indent + 'if (!b)\n')
+    indent = brace_begin(w, indent)
+    w.write(indent + 'throw CRPCException(RPC_INVALID_PARAMS, string("[") + key + "] type is not " + type);\n')
+    indent = brace_end(w, indent)
+
+    brace_end(w, indent)
+
+
+def check_is_valid_fun(w):
+    w.write('template <typename T>\n')
+    w.write('static void CheckIsValid(const T& value, const string& key)\n')
+    indent = brace_begin(w)
+
+    w.write(indent + 'if (!value.IsValid())\n')
+    indent = brace_begin(w, indent)
+    w.write(indent + 'throw CRPCException(RPC_INVALID_PARAMS, string("required param [") + key + "] is not valid");\n')
+    indent = brace_end(w, indent)
+
+    brace_end(w, indent)
+
+
 def constructor_h(name, params, w, indent):
     # default
     w.write(indent + name + '();\n')
@@ -338,23 +400,22 @@ def FromJSON_h(virtual, name, w, indent):
     w.write(indent + v_tag + name + '& FromJSON(const json_spirit::Value& v);\n')
 
 
-def FromJSON_cpp(name, params, container, w, scope):
+def FromJSON_cpp(key, name, params, container, w, scope):
     def one_param(p, value, indent):
-        if is_pod(p.type):
-            pod_from_json(p.cpp_name, p.type, value, w, indent)
-        elif p.type == 'object':
-            object_from_json(p.cpp_name, value, w, indent)
-        else:
+        if p.type == 'array':
             arr_val = p.cpp_name + 'Array'
-            w.write(indent + 'auto ' + arr_val + ' = ' + get_cpp_json(value, p.type) + ';\n')
+            from_json_value(value, p.key, 'auto ' + arr_val, p.type, w, indent)
             array_from_json(p.cpp_name, p.cpp_type, p.sub_type, arr_val, w, indent)
+        else:
+            from_json_value(value, p.key, p.cpp_name, p.type, w, indent)
 
     # begin
-    w.write(name + '& ' + scope + 'FromJSON(const json_spirit::Value& v)\n')
+    w.write(name + '& ' + scope + 'FromJSON(const Value& v)\n')
     indent = brace_begin(w)
 
     # object
     if container == 'object':
+        call_check_json_type('v', key, 'object', w, indent)
         w.write(indent + 'auto obj = v.get_obj();\n')
         for p in params:
             if p.cond_cpp_name:
@@ -364,20 +425,7 @@ def FromJSON_cpp(name, params, container, w, scope):
             val = 'val' + p.key.title()
             w.write(indent + 'auto ' + val + ' = find_value(obj, "' + p.key + '");\n')
 
-            if p.required:
-                w.write(indent + 'if (' + val + '.type() != ' + get_cpp_json_type(p.type) + ')\n')
-                indent = brace_begin(w, indent)
-                w.write(indent + 'throw CRPCException(RPC_INVALID_REQUEST, "[' + p.key +  '] type is not ' + p.type + '");\n')
-                indent =brace_end(w, indent)
-
-            if not p.required:
-                w.write(indent + 'if (!' + val + '.is_null())\n')
-                indent = brace_begin(w, indent)
-
             one_param(p, val, indent)
-
-            if not p.required:
-                indent = brace_end(w, indent)
 
             if p.cond_cpp_name:
                 indent = brace_end(w, indent)
@@ -398,32 +446,28 @@ def ToJSON_cpp(name, params, container, w, scope):
 
     def check_required(p, w, indent):
         if p.required:
-            w.write(indent + 'if (!' + p.cpp_name + '.IsValid())\n')
-            indent = brace_begin(w, indent)
-            w.write(
-                indent + 'throw CRPCException(RPC_INVALID_PARAMS, "required param [' + p.cpp_name + '] is not valid");\n')
-            indent = brace_end(w, indent)
+            call_check_is_valid(p.cpp_name, p.cpp_name, w, indent)
 
     # begin
-    w.write('json_spirit::Value ' + scope + 'ToJSON() const\n')
+    w.write('Value ' + scope + 'ToJSON() const\n')
     indent = brace_begin(w)
 
     if is_pod(container):
         p = params[0]
         check_required(p, w, indent)
-        w.write(indent + 'json_spirit::Value val;\n')
+        w.write(indent + 'Value val;\n')
         pod_to_json(p.cpp_name, 'val', w, indent)
         w.write(indent + 'return val;\n')
     # array
     elif container == 'array':
-        w.write(indent + 'json_spirit::Array ret;\n')
+        w.write(indent + 'Array ret;\n')
         p = params[0]
         # push array
         array_to_json(p.cpp_name, p.cpp_type, p.sub_type, 'ret', w, indent)
         w.write(indent + 'return ret;\n')
     # object
     elif container == 'object':
-        w.write(indent + 'json_spirit::Object ret;\n')
+        w.write(indent + 'Object ret;\n')
         for p in params:
             if p.cond_cpp_name:
                 w.write(indent + 'if (' + p.cond_cpp_name + ' == ' + p.cond_value + ')\n')
@@ -487,10 +531,7 @@ def IsValid_cpp(name, params, w, scope):
                 w.write(indent + 'if (' + p.cond_cpp_name + ' == ' + p.cond_value + ')\n')
                 indent = brace_begin(w, indent)
 
-            w.write(indent + 'if (!' + p.cpp_name + '.IsValid())\n')
-            indent = brace_begin(w, indent)
-            w.write(indent + 'return false;\n')
-            indent = brace_end(w, indent)
+            w.write(indent + 'if (!' + p.cpp_name + '.IsValid()) { return false; }\n')
 
             if p.cond_cpp_name:
                 indent = brace_end(w, indent)
@@ -605,12 +646,12 @@ def PostLoad_cpp(name, params, sub_params, w, scope):
             indent = brace_begin(w, indent)
 
         # find from vecCommand
-        w.write(indent + 'if (std::next(it, 1) != vecCommand.end())\n')
+        w.write(indent + 'if (next(it, 1) != vecCommand.end())\n')
         indent = brace_begin(w, indent)
         if is_pod(p.type):
-            w.write(indent + 'std::istringstream iss(*++it);\n')
+            w.write(indent + 'istringstream iss(*++it);\n')
             if p.type == 'bool':
-                w.write(indent + 'iss >> std::boolalpha >> ' + param_name + ';\n')
+                w.write(indent + 'iss >> boolalpha >> ' + param_name + ';\n')
             else:
                 w.write(indent + 'iss >> ' + param_name + ';\n')
             w.write(indent + 'if (!iss.eof())\n')
@@ -638,8 +679,8 @@ def PostLoad_cpp(name, params, sub_params, w, scope):
         if not is_pod(p.type):
             # read json string
             container_val = 'valOrigin' + p.key.title()
-            w.write(indent + 'json_spirit::Value ' + container_val + ';\n')
-            w.write(indent + 'if (!json_spirit::read_string(' + container_str + ', ' + container_val + '))\n')
+            w.write(indent + 'Value ' + container_val + ';\n')
+            w.write(indent + 'if (!read_string(' + container_str + ', ' + container_val + '))\n')
             indent = brace_begin(w, indent)
             w.write(indent + 'throw CRPCException(RPC_PARSE_ERROR, "parse json error");\n')
             indent = brace_end(w, indent)
@@ -682,8 +723,8 @@ def Help_h(w, indent):
 
 def Help_cpp(config, w, scope):
     # one line content
-    def one_line(container, content, indent):
-        l = split(content, indent)
+    def one_line(container, content, indent, max_length = None):
+        l = split(content, ' ' * len(indent), max_length)
         container.append((indent, l))
 
     # deal one command line argument
@@ -842,17 +883,17 @@ def Help_cpp(config, w, scope):
     # parse example
     if config.example:
         if isinstance(config.example, unicode):
-            one_line(example, config.example, example_req_indent)
+            one_line(example, config.example, example_req_indent, example_max_line_len)
         elif isinstance(config.example, list):
             for eg in config.example:
                 enter = '' if eg == config.example[0] else '\n'
                 if isinstance(eg, str):
-                    one_line(example, eg, enter + example_req_indent)
+                    one_line(example, eg, enter + example_req_indent, example_max_line_len)
                 elif isinstance(eg, dict):
                     if 'request' in eg:
-                        one_line(example, eg['request'], enter + example_req_indent)
+                        one_line(example, eg['request'], enter + example_req_indent, example_max_line_len)
                     if 'response' in eg:
-                        one_line(example, eg['response'], example_resp_indent)
+                        one_line(example, eg['response'], example_resp_indent, example_max_line_len)
 
     # parse error
     if config.error:
@@ -1106,7 +1147,7 @@ class SubClass:
         constructor_cpp(self.cls_name, self.params, w, next_scope)
         constructor_null_cpp(self.cls_name, self.params, w, next_scope)
         ToJSON_cpp(self.cls_name, self.params, 'object', w, next_scope)
-        FromJSON_cpp(cls_name, self.params, 'object', w, next_scope)
+        FromJSON_cpp(cls_name, cls_name, self.params, 'object', w, next_scope)
         IsValid_cpp(self.cls_name, self.params, w, next_scope)
 
 
@@ -1447,11 +1488,18 @@ def generate_cpp():
 # include "json/json_spirit_reader_template.h"
 # include "json/json_spirit_utils.h"
 
+using namespace std;
+using namespace json_spirit;
+
 namespace multiverse
 {
 namespace rpc
 {
 ''')
+        # inner function
+        check_json_type_fun(w)
+        check_is_valid_fun(w)
+
         # alone_classes
         for subclass in alone_classes.values():
             subclass.implement(w, '')
@@ -1477,7 +1525,7 @@ namespace rpc
             w.write('\n// ' + request.cls_name + '\n')
             constructor_cpp(request.cls_name, request.params, w, scope)
             ToJSON_cpp(request.cls_name, request.params, request.type, w, scope)
-            FromJSON_cpp(request.cls_name, request.params, request.type, w, scope)
+            FromJSON_cpp(request.cmd, request.cls_name, request.params, request.type, w, scope)
             Method_cpp(request.cmd, w, scope)
 
             # response begin
@@ -1492,7 +1540,7 @@ namespace rpc
                 w.write('\n// ' + response.cls_name + '\n')
                 constructor_cpp(response.cls_name, response.params, w, scope)
                 ToJSON_cpp(response.cls_name, response.params, response.type, w, scope)
-                FromJSON_cpp(response.cls_name, response.params, response.type, w, scope)
+                FromJSON_cpp(response.cmd, response.cls_name, response.params, response.type, w, scope)
                 Method_cpp(response.cmd, w, scope)
 
             # config begin

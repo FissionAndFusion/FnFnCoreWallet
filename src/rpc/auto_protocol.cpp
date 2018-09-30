@@ -5,10 +5,61 @@
 # include "json/json_spirit_reader_template.h"
 # include "json/json_spirit_utils.h"
 
+using namespace std;
+using namespace json_spirit;
+
 namespace multiverse
 {
 namespace rpc
 {
+static void CheckJSONType(const Value& value, const string& type, const string& key)
+{
+	bool b;
+	if (type == "int")
+	{
+		b = (value.type() == obj_type);
+	}
+	else if (type == "uint")
+	{
+		b = (value.type() == obj_type);
+	}
+	else if (type == "double")
+	{
+		b = (value.type() == obj_type);
+	}
+	else if (type == "bool")
+	{
+		b = (value.type() == obj_type);
+	}
+	else if (type == "string")
+	{
+		b = (value.type() == obj_type);
+	}
+	else if (type == "array")
+	{
+		b = (value.type() == obj_type);
+	}
+	else if (type == "object")
+	{
+		b = (value.type() == obj_type);
+	}
+	else 
+	{
+		b = false;
+	}
+	if (!b)
+	{
+		throw CRPCException(RPC_INVALID_PARAMS, string("[") + key + "] type is not " + type);
+	}
+}
+template <typename T>
+static void CheckIsValid(const T& value, const string& key)
+{
+	if (!value.IsValid())
+	{
+		throw CRPCException(RPC_INVALID_PARAMS, string("required param [") + key + "] is not valid");
+	}
+}
 
 // CTemplatePubKey
 CTemplatePubKey::CTemplatePubKey() {}
@@ -20,49 +71,32 @@ CTemplatePubKey::CTemplatePubKey(const CRPCType& null)
 	: strKey(null), strAddress(null)
 {
 }
-json_spirit::Value CTemplatePubKey::ToJSON() const
+Value CTemplatePubKey::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!strKey.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strKey] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("key", std::string(strKey)));
-	if (!strAddress.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strAddress] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("address", std::string(strAddress)));
+	Object ret;
+	CheckIsValid(strKey, "strKey");
+	ret.push_back(Pair("key", std::string(strKey)));
+	CheckIsValid(strAddress, "strAddress");
+	ret.push_back(Pair("address", std::string(strAddress)));
 
 	return ret;
 }
-CTemplatePubKey& CTemplatePubKey::FromJSON(const json_spirit::Value& v)
+CTemplatePubKey& CTemplatePubKey::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "CTemplatePubKey");
 	auto obj = v.get_obj();
 	auto valKey = find_value(obj, "key");
-	if (valKey.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[key] type is not string");
-	}
+	CheckJSONType(valKey, "string", "key");
 	strKey = valKey.get_str();
 	auto valAddress = find_value(obj, "address");
-	if (valAddress.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[address] type is not string");
-	}
+	CheckJSONType(valAddress, "string", "address");
 	strAddress = valAddress.get_str();
 	return *this;
 }
 bool CTemplatePubKey::IsValid() const
 {
-	if (!strKey.IsValid())
-	{
-		return false;
-	}
-	if (!strAddress.IsValid())
-	{
-		return false;
-	}
+	if (!strKey.IsValid()) { return false; }
+	if (!strAddress.IsValid()) { return false; }
 	return true;
 }
 
@@ -76,49 +110,32 @@ CTemplatePubKeyWeight::CTemplatePubKeyWeight(const CRPCType& null)
 	: strKey(null), nWeight(null)
 {
 }
-json_spirit::Value CTemplatePubKeyWeight::ToJSON() const
+Value CTemplatePubKeyWeight::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!strKey.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strKey] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("key", std::string(strKey)));
-	if (!nWeight.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [nWeight] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("weight", int64(nWeight)));
+	Object ret;
+	CheckIsValid(strKey, "strKey");
+	ret.push_back(Pair("key", std::string(strKey)));
+	CheckIsValid(nWeight, "nWeight");
+	ret.push_back(Pair("weight", int64(nWeight)));
 
 	return ret;
 }
-CTemplatePubKeyWeight& CTemplatePubKeyWeight::FromJSON(const json_spirit::Value& v)
+CTemplatePubKeyWeight& CTemplatePubKeyWeight::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "CTemplatePubKeyWeight");
 	auto obj = v.get_obj();
 	auto valKey = find_value(obj, "key");
-	if (valKey.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[key] type is not string");
-	}
+	CheckJSONType(valKey, "string", "key");
 	strKey = valKey.get_str();
 	auto valWeight = find_value(obj, "weight");
-	if (valWeight.type() != json_spirit::int_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[weight] type is not int");
-	}
+	CheckJSONType(valWeight, "int", "weight");
 	nWeight = valWeight.get_int64();
 	return *this;
 }
 bool CTemplatePubKeyWeight::IsValid() const
 {
-	if (!strKey.IsValid())
-	{
-		return false;
-	}
-	if (!nWeight.IsValid())
-	{
-		return false;
-	}
+	if (!strKey.IsValid()) { return false; }
+	if (!nWeight.IsValid()) { return false; }
 	return true;
 }
 
@@ -132,41 +149,30 @@ CTemplateRequest::CMultisig::CMultisig(const CRPCType& null)
 	: nRequired(null), vecPubkeys(null)
 {
 }
-json_spirit::Value CTemplateRequest::CMultisig::ToJSON() const
+Value CTemplateRequest::CMultisig::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!nRequired.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [nRequired] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("required", int64(nRequired)));
-	if (!vecPubkeys.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [vecPubkeys] is not valid");
-	}
-	json_spirit::Array vecPubkeysArray;
+	Object ret;
+	CheckIsValid(nRequired, "nRequired");
+	ret.push_back(Pair("required", int64(nRequired)));
+	CheckIsValid(vecPubkeys, "vecPubkeys");
+	Array vecPubkeysArray;
 	for (auto& v : vecPubkeys)
 	{
 		vecPubkeysArray.push_back(std::string(v));
 	}
-	ret.push_back(json_spirit::Pair("pubkeys", vecPubkeysArray));
+	ret.push_back(Pair("pubkeys", vecPubkeysArray));
 
 	return ret;
 }
-CTemplateRequest::CMultisig& CTemplateRequest::CMultisig::FromJSON(const json_spirit::Value& v)
+CTemplateRequest::CMultisig& CTemplateRequest::CMultisig::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "CTemplateRequest::CMultisig");
 	auto obj = v.get_obj();
 	auto valRequired = find_value(obj, "required");
-	if (valRequired.type() != json_spirit::int_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[required] type is not int");
-	}
+	CheckJSONType(valRequired, "int", "required");
 	nRequired = valRequired.get_int64();
 	auto valPubkeys = find_value(obj, "pubkeys");
-	if (valPubkeys.type() != json_spirit::array_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[pubkeys] type is not array");
-	}
+	CheckJSONType(valPubkeys, "array", "pubkeys");
 	auto vecPubkeysArray = valPubkeys.get_array();
 	for (auto& v : vecPubkeysArray)
 	{
@@ -176,14 +182,8 @@ CTemplateRequest::CMultisig& CTemplateRequest::CMultisig::FromJSON(const json_sp
 }
 bool CTemplateRequest::CMultisig::IsValid() const
 {
-	if (!nRequired.IsValid())
-	{
-		return false;
-	}
-	if (!vecPubkeys.IsValid())
-	{
-		return false;
-	}
+	if (!nRequired.IsValid()) { return false; }
+	if (!vecPubkeys.IsValid()) { return false; }
 	return true;
 }
 
@@ -197,49 +197,32 @@ CTemplateRequest::CFork::CFork(const CRPCType& null)
 	: strRedeem(null), strFork(null)
 {
 }
-json_spirit::Value CTemplateRequest::CFork::ToJSON() const
+Value CTemplateRequest::CFork::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!strRedeem.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strRedeem] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("redeem", std::string(strRedeem)));
-	if (!strFork.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strFork] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("fork", std::string(strFork)));
+	Object ret;
+	CheckIsValid(strRedeem, "strRedeem");
+	ret.push_back(Pair("redeem", std::string(strRedeem)));
+	CheckIsValid(strFork, "strFork");
+	ret.push_back(Pair("fork", std::string(strFork)));
 
 	return ret;
 }
-CTemplateRequest::CFork& CTemplateRequest::CFork::FromJSON(const json_spirit::Value& v)
+CTemplateRequest::CFork& CTemplateRequest::CFork::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "CTemplateRequest::CFork");
 	auto obj = v.get_obj();
 	auto valRedeem = find_value(obj, "redeem");
-	if (valRedeem.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[redeem] type is not string");
-	}
+	CheckJSONType(valRedeem, "string", "redeem");
 	strRedeem = valRedeem.get_str();
 	auto valFork = find_value(obj, "fork");
-	if (valFork.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[fork] type is not string");
-	}
+	CheckJSONType(valFork, "string", "fork");
 	strFork = valFork.get_str();
 	return *this;
 }
 bool CTemplateRequest::CFork::IsValid() const
 {
-	if (!strRedeem.IsValid())
-	{
-		return false;
-	}
-	if (!strFork.IsValid())
-	{
-		return false;
-	}
+	if (!strRedeem.IsValid()) { return false; }
+	if (!strFork.IsValid()) { return false; }
 	return true;
 }
 
@@ -253,49 +236,32 @@ CTemplateRequest::CDelegate::CDelegate(const CRPCType& null)
 	: strDelegate(null), strOwner(null)
 {
 }
-json_spirit::Value CTemplateRequest::CDelegate::ToJSON() const
+Value CTemplateRequest::CDelegate::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!strDelegate.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strDelegate] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("delegate", std::string(strDelegate)));
-	if (!strOwner.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strOwner] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("owner", std::string(strOwner)));
+	Object ret;
+	CheckIsValid(strDelegate, "strDelegate");
+	ret.push_back(Pair("delegate", std::string(strDelegate)));
+	CheckIsValid(strOwner, "strOwner");
+	ret.push_back(Pair("owner", std::string(strOwner)));
 
 	return ret;
 }
-CTemplateRequest::CDelegate& CTemplateRequest::CDelegate::FromJSON(const json_spirit::Value& v)
+CTemplateRequest::CDelegate& CTemplateRequest::CDelegate::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "CTemplateRequest::CDelegate");
 	auto obj = v.get_obj();
 	auto valDelegate = find_value(obj, "delegate");
-	if (valDelegate.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[delegate] type is not string");
-	}
+	CheckJSONType(valDelegate, "string", "delegate");
 	strDelegate = valDelegate.get_str();
 	auto valOwner = find_value(obj, "owner");
-	if (valOwner.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[owner] type is not string");
-	}
+	CheckJSONType(valOwner, "string", "owner");
 	strOwner = valOwner.get_str();
 	return *this;
 }
 bool CTemplateRequest::CDelegate::IsValid() const
 {
-	if (!strDelegate.IsValid())
-	{
-		return false;
-	}
-	if (!strOwner.IsValid())
-	{
-		return false;
-	}
+	if (!strDelegate.IsValid()) { return false; }
+	if (!strOwner.IsValid()) { return false; }
 	return true;
 }
 
@@ -309,49 +275,32 @@ CTemplateRequest::CMint::CMint(const CRPCType& null)
 	: strMint(null), strSpent(null)
 {
 }
-json_spirit::Value CTemplateRequest::CMint::ToJSON() const
+Value CTemplateRequest::CMint::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!strMint.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strMint] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("mint", std::string(strMint)));
-	if (!strSpent.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strSpent] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("spent", std::string(strSpent)));
+	Object ret;
+	CheckIsValid(strMint, "strMint");
+	ret.push_back(Pair("mint", std::string(strMint)));
+	CheckIsValid(strSpent, "strSpent");
+	ret.push_back(Pair("spent", std::string(strSpent)));
 
 	return ret;
 }
-CTemplateRequest::CMint& CTemplateRequest::CMint::FromJSON(const json_spirit::Value& v)
+CTemplateRequest::CMint& CTemplateRequest::CMint::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "CTemplateRequest::CMint");
 	auto obj = v.get_obj();
 	auto valMint = find_value(obj, "mint");
-	if (valMint.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[mint] type is not string");
-	}
+	CheckJSONType(valMint, "string", "mint");
 	strMint = valMint.get_str();
 	auto valSpent = find_value(obj, "spent");
-	if (valSpent.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[spent] type is not string");
-	}
+	CheckJSONType(valSpent, "string", "spent");
 	strSpent = valSpent.get_str();
 	return *this;
 }
 bool CTemplateRequest::CMint::IsValid() const
 {
-	if (!strMint.IsValid())
-	{
-		return false;
-	}
-	if (!strSpent.IsValid())
-	{
-		return false;
-	}
+	if (!strMint.IsValid()) { return false; }
+	if (!strSpent.IsValid()) { return false; }
 	return true;
 }
 
@@ -365,41 +314,30 @@ CTemplateRequest::CWeighted::CWeighted(const CRPCType& null)
 	: nRequired(null), vecPubkeys(null)
 {
 }
-json_spirit::Value CTemplateRequest::CWeighted::ToJSON() const
+Value CTemplateRequest::CWeighted::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!nRequired.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [nRequired] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("required", int64(nRequired)));
-	if (!vecPubkeys.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [vecPubkeys] is not valid");
-	}
-	json_spirit::Array vecPubkeysArray;
+	Object ret;
+	CheckIsValid(nRequired, "nRequired");
+	ret.push_back(Pair("required", int64(nRequired)));
+	CheckIsValid(vecPubkeys, "vecPubkeys");
+	Array vecPubkeysArray;
 	for (auto& v : vecPubkeys)
 	{
 		vecPubkeysArray.push_back(v.ToJSON());
 	}
-	ret.push_back(json_spirit::Pair("pubkeys", vecPubkeysArray));
+	ret.push_back(Pair("pubkeys", vecPubkeysArray));
 
 	return ret;
 }
-CTemplateRequest::CWeighted& CTemplateRequest::CWeighted::FromJSON(const json_spirit::Value& v)
+CTemplateRequest::CWeighted& CTemplateRequest::CWeighted::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "CTemplateRequest::CWeighted");
 	auto obj = v.get_obj();
 	auto valRequired = find_value(obj, "required");
-	if (valRequired.type() != json_spirit::int_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[required] type is not int");
-	}
+	CheckJSONType(valRequired, "int", "required");
 	nRequired = valRequired.get_int64();
 	auto valPubkeys = find_value(obj, "pubkeys");
-	if (valPubkeys.type() != json_spirit::array_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[pubkeys] type is not array");
-	}
+	CheckJSONType(valPubkeys, "array", "pubkeys");
 	auto vecPubkeysArray = valPubkeys.get_array();
 	for (auto& v : vecPubkeysArray)
 	{
@@ -409,14 +347,8 @@ CTemplateRequest::CWeighted& CTemplateRequest::CWeighted::FromJSON(const json_sp
 }
 bool CTemplateRequest::CWeighted::IsValid() const
 {
-	if (!nRequired.IsValid())
-	{
-		return false;
-	}
-	if (!vecPubkeys.IsValid())
-	{
-		return false;
-	}
+	if (!nRequired.IsValid()) { return false; }
+	if (!vecPubkeys.IsValid()) { return false; }
 	return true;
 }
 
@@ -430,153 +362,100 @@ CTemplateRequest::CTemplateRequest(const CRPCType& null)
 	: strType(null), delegate(null), fork(null), mint(null), multisig(null), weighted(null)
 {
 }
-json_spirit::Value CTemplateRequest::ToJSON() const
+Value CTemplateRequest::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!strType.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strType] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("type", std::string(strType)));
+	Object ret;
+	CheckIsValid(strType, "strType");
+	ret.push_back(Pair("type", std::string(strType)));
 	if (strType == "delegate")
 	{
-		if (!delegate.IsValid())
-		{
-			throw CRPCException(RPC_INVALID_PARAMS, "required param [delegate] is not valid");
-		}
-		ret.push_back(json_spirit::Pair("delegate", delegate.ToJSON()));
+		CheckIsValid(delegate, "delegate");
+		ret.push_back(Pair("delegate", delegate.ToJSON()));
 	}
 	if (strType == "fork")
 	{
-		if (!fork.IsValid())
-		{
-			throw CRPCException(RPC_INVALID_PARAMS, "required param [fork] is not valid");
-		}
-		ret.push_back(json_spirit::Pair("fork", fork.ToJSON()));
+		CheckIsValid(fork, "fork");
+		ret.push_back(Pair("fork", fork.ToJSON()));
 	}
 	if (strType == "mint")
 	{
-		if (!mint.IsValid())
-		{
-			throw CRPCException(RPC_INVALID_PARAMS, "required param [mint] is not valid");
-		}
-		ret.push_back(json_spirit::Pair("mint", mint.ToJSON()));
+		CheckIsValid(mint, "mint");
+		ret.push_back(Pair("mint", mint.ToJSON()));
 	}
 	if (strType == "multisig")
 	{
-		if (!multisig.IsValid())
-		{
-			throw CRPCException(RPC_INVALID_PARAMS, "required param [multisig] is not valid");
-		}
-		ret.push_back(json_spirit::Pair("multisig", multisig.ToJSON()));
+		CheckIsValid(multisig, "multisig");
+		ret.push_back(Pair("multisig", multisig.ToJSON()));
 	}
 	if (strType == "weighted")
 	{
-		if (!weighted.IsValid())
-		{
-			throw CRPCException(RPC_INVALID_PARAMS, "required param [weighted] is not valid");
-		}
-		ret.push_back(json_spirit::Pair("weighted", weighted.ToJSON()));
+		CheckIsValid(weighted, "weighted");
+		ret.push_back(Pair("weighted", weighted.ToJSON()));
 	}
 
 	return ret;
 }
-CTemplateRequest& CTemplateRequest::FromJSON(const json_spirit::Value& v)
+CTemplateRequest& CTemplateRequest::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "CTemplateRequest");
 	auto obj = v.get_obj();
 	auto valType = find_value(obj, "type");
-	if (valType.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[type] type is not string");
-	}
+	CheckJSONType(valType, "string", "type");
 	strType = valType.get_str();
 	if (strType == "delegate")
 	{
 		auto valDelegate = find_value(obj, "delegate");
-		if (valDelegate.type() != json_spirit::obj_type)
-		{
-			throw CRPCException(RPC_INVALID_REQUEST, "[delegate] type is not object");
-		}
-		delegate.FromJSON(valDelegate);
+		CheckJSONType(valDelegate, "object", "delegate");
+		delegate.FromJSON(valDelegate.get_obj());
 	}
 	if (strType == "fork")
 	{
 		auto valFork = find_value(obj, "fork");
-		if (valFork.type() != json_spirit::obj_type)
-		{
-			throw CRPCException(RPC_INVALID_REQUEST, "[fork] type is not object");
-		}
-		fork.FromJSON(valFork);
+		CheckJSONType(valFork, "object", "fork");
+		fork.FromJSON(valFork.get_obj());
 	}
 	if (strType == "mint")
 	{
 		auto valMint = find_value(obj, "mint");
-		if (valMint.type() != json_spirit::obj_type)
-		{
-			throw CRPCException(RPC_INVALID_REQUEST, "[mint] type is not object");
-		}
-		mint.FromJSON(valMint);
+		CheckJSONType(valMint, "object", "mint");
+		mint.FromJSON(valMint.get_obj());
 	}
 	if (strType == "multisig")
 	{
 		auto valMultisig = find_value(obj, "multisig");
-		if (valMultisig.type() != json_spirit::obj_type)
-		{
-			throw CRPCException(RPC_INVALID_REQUEST, "[multisig] type is not object");
-		}
-		multisig.FromJSON(valMultisig);
+		CheckJSONType(valMultisig, "object", "multisig");
+		multisig.FromJSON(valMultisig.get_obj());
 	}
 	if (strType == "weighted")
 	{
 		auto valWeighted = find_value(obj, "weighted");
-		if (valWeighted.type() != json_spirit::obj_type)
-		{
-			throw CRPCException(RPC_INVALID_REQUEST, "[weighted] type is not object");
-		}
-		weighted.FromJSON(valWeighted);
+		CheckJSONType(valWeighted, "object", "weighted");
+		weighted.FromJSON(valWeighted.get_obj());
 	}
 	return *this;
 }
 bool CTemplateRequest::IsValid() const
 {
-	if (!strType.IsValid())
-	{
-		return false;
-	}
+	if (!strType.IsValid()) { return false; }
 	if (strType == "delegate")
 	{
-		if (!delegate.IsValid())
-		{
-			return false;
-		}
+		if (!delegate.IsValid()) { return false; }
 	}
 	if (strType == "fork")
 	{
-		if (!fork.IsValid())
-		{
-			return false;
-		}
+		if (!fork.IsValid()) { return false; }
 	}
 	if (strType == "mint")
 	{
-		if (!mint.IsValid())
-		{
-			return false;
-		}
+		if (!mint.IsValid()) { return false; }
 	}
 	if (strType == "multisig")
 	{
-		if (!multisig.IsValid())
-		{
-			return false;
-		}
+		if (!multisig.IsValid()) { return false; }
 	}
 	if (strType == "weighted")
 	{
-		if (!weighted.IsValid())
-		{
-			return false;
-		}
+		if (!weighted.IsValid()) { return false; }
 	}
 	return true;
 }
@@ -591,49 +470,32 @@ CTemplateResponse::CFork::CFork(const CRPCType& null)
 	: strRedeem(null), strFork(null)
 {
 }
-json_spirit::Value CTemplateResponse::CFork::ToJSON() const
+Value CTemplateResponse::CFork::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!strRedeem.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strRedeem] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("redeem", std::string(strRedeem)));
-	if (!strFork.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strFork] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("fork", std::string(strFork)));
+	Object ret;
+	CheckIsValid(strRedeem, "strRedeem");
+	ret.push_back(Pair("redeem", std::string(strRedeem)));
+	CheckIsValid(strFork, "strFork");
+	ret.push_back(Pair("fork", std::string(strFork)));
 
 	return ret;
 }
-CTemplateResponse::CFork& CTemplateResponse::CFork::FromJSON(const json_spirit::Value& v)
+CTemplateResponse::CFork& CTemplateResponse::CFork::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "CTemplateResponse::CFork");
 	auto obj = v.get_obj();
 	auto valRedeem = find_value(obj, "redeem");
-	if (valRedeem.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[redeem] type is not string");
-	}
+	CheckJSONType(valRedeem, "string", "redeem");
 	strRedeem = valRedeem.get_str();
 	auto valFork = find_value(obj, "fork");
-	if (valFork.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[fork] type is not string");
-	}
+	CheckJSONType(valFork, "string", "fork");
 	strFork = valFork.get_str();
 	return *this;
 }
 bool CTemplateResponse::CFork::IsValid() const
 {
-	if (!strRedeem.IsValid())
-	{
-		return false;
-	}
-	if (!strFork.IsValid())
-	{
-		return false;
-	}
+	if (!strRedeem.IsValid()) { return false; }
+	if (!strFork.IsValid()) { return false; }
 	return true;
 }
 
@@ -647,41 +509,30 @@ CTemplateResponse::CWeighted::CWeighted(const CRPCType& null)
 	: nSigsrequired(null), vecAddresses(null)
 {
 }
-json_spirit::Value CTemplateResponse::CWeighted::ToJSON() const
+Value CTemplateResponse::CWeighted::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!nSigsrequired.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [nSigsrequired] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("sigsrequired", int64(nSigsrequired)));
-	if (!vecAddresses.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [vecAddresses] is not valid");
-	}
-	json_spirit::Array vecAddressesArray;
+	Object ret;
+	CheckIsValid(nSigsrequired, "nSigsrequired");
+	ret.push_back(Pair("sigsrequired", int64(nSigsrequired)));
+	CheckIsValid(vecAddresses, "vecAddresses");
+	Array vecAddressesArray;
 	for (auto& v : vecAddresses)
 	{
 		vecAddressesArray.push_back(v.ToJSON());
 	}
-	ret.push_back(json_spirit::Pair("addresses", vecAddressesArray));
+	ret.push_back(Pair("addresses", vecAddressesArray));
 
 	return ret;
 }
-CTemplateResponse::CWeighted& CTemplateResponse::CWeighted::FromJSON(const json_spirit::Value& v)
+CTemplateResponse::CWeighted& CTemplateResponse::CWeighted::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "CTemplateResponse::CWeighted");
 	auto obj = v.get_obj();
 	auto valSigsrequired = find_value(obj, "sigsrequired");
-	if (valSigsrequired.type() != json_spirit::int_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[sigsrequired] type is not int");
-	}
+	CheckJSONType(valSigsrequired, "int", "sigsrequired");
 	nSigsrequired = valSigsrequired.get_int64();
 	auto valAddresses = find_value(obj, "addresses");
-	if (valAddresses.type() != json_spirit::array_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[addresses] type is not array");
-	}
+	CheckJSONType(valAddresses, "array", "addresses");
 	auto vecAddressesArray = valAddresses.get_array();
 	for (auto& v : vecAddressesArray)
 	{
@@ -691,14 +542,8 @@ CTemplateResponse::CWeighted& CTemplateResponse::CWeighted::FromJSON(const json_
 }
 bool CTemplateResponse::CWeighted::IsValid() const
 {
-	if (!nSigsrequired.IsValid())
-	{
-		return false;
-	}
-	if (!vecAddresses.IsValid())
-	{
-		return false;
-	}
+	if (!nSigsrequired.IsValid()) { return false; }
+	if (!vecAddresses.IsValid()) { return false; }
 	return true;
 }
 
@@ -712,49 +557,32 @@ CTemplateResponse::CDelegate::CDelegate(const CRPCType& null)
 	: strDelegate(null), strOwner(null)
 {
 }
-json_spirit::Value CTemplateResponse::CDelegate::ToJSON() const
+Value CTemplateResponse::CDelegate::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!strDelegate.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strDelegate] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("delegate", std::string(strDelegate)));
-	if (!strOwner.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strOwner] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("owner", std::string(strOwner)));
+	Object ret;
+	CheckIsValid(strDelegate, "strDelegate");
+	ret.push_back(Pair("delegate", std::string(strDelegate)));
+	CheckIsValid(strOwner, "strOwner");
+	ret.push_back(Pair("owner", std::string(strOwner)));
 
 	return ret;
 }
-CTemplateResponse::CDelegate& CTemplateResponse::CDelegate::FromJSON(const json_spirit::Value& v)
+CTemplateResponse::CDelegate& CTemplateResponse::CDelegate::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "CTemplateResponse::CDelegate");
 	auto obj = v.get_obj();
 	auto valDelegate = find_value(obj, "delegate");
-	if (valDelegate.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[delegate] type is not string");
-	}
+	CheckJSONType(valDelegate, "string", "delegate");
 	strDelegate = valDelegate.get_str();
 	auto valOwner = find_value(obj, "owner");
-	if (valOwner.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[owner] type is not string");
-	}
+	CheckJSONType(valOwner, "string", "owner");
 	strOwner = valOwner.get_str();
 	return *this;
 }
 bool CTemplateResponse::CDelegate::IsValid() const
 {
-	if (!strDelegate.IsValid())
-	{
-		return false;
-	}
-	if (!strOwner.IsValid())
-	{
-		return false;
-	}
+	if (!strDelegate.IsValid()) { return false; }
+	if (!strOwner.IsValid()) { return false; }
 	return true;
 }
 
@@ -768,49 +596,32 @@ CTemplateResponse::CMint::CMint(const CRPCType& null)
 	: strMint(null), strSpent(null)
 {
 }
-json_spirit::Value CTemplateResponse::CMint::ToJSON() const
+Value CTemplateResponse::CMint::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!strMint.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strMint] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("mint", std::string(strMint)));
-	if (!strSpent.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strSpent] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("spent", std::string(strSpent)));
+	Object ret;
+	CheckIsValid(strMint, "strMint");
+	ret.push_back(Pair("mint", std::string(strMint)));
+	CheckIsValid(strSpent, "strSpent");
+	ret.push_back(Pair("spent", std::string(strSpent)));
 
 	return ret;
 }
-CTemplateResponse::CMint& CTemplateResponse::CMint::FromJSON(const json_spirit::Value& v)
+CTemplateResponse::CMint& CTemplateResponse::CMint::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "CTemplateResponse::CMint");
 	auto obj = v.get_obj();
 	auto valMint = find_value(obj, "mint");
-	if (valMint.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[mint] type is not string");
-	}
+	CheckJSONType(valMint, "string", "mint");
 	strMint = valMint.get_str();
 	auto valSpent = find_value(obj, "spent");
-	if (valSpent.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[spent] type is not string");
-	}
+	CheckJSONType(valSpent, "string", "spent");
 	strSpent = valSpent.get_str();
 	return *this;
 }
 bool CTemplateResponse::CMint::IsValid() const
 {
-	if (!strMint.IsValid())
-	{
-		return false;
-	}
-	if (!strSpent.IsValid())
-	{
-		return false;
-	}
+	if (!strMint.IsValid()) { return false; }
+	if (!strSpent.IsValid()) { return false; }
 	return true;
 }
 
@@ -824,41 +635,30 @@ CTemplateResponse::CMultisig::CMultisig(const CRPCType& null)
 	: nSigsrequired(null), vecAddresses(null)
 {
 }
-json_spirit::Value CTemplateResponse::CMultisig::ToJSON() const
+Value CTemplateResponse::CMultisig::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!nSigsrequired.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [nSigsrequired] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("sigsrequired", int64(nSigsrequired)));
-	if (!vecAddresses.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [vecAddresses] is not valid");
-	}
-	json_spirit::Array vecAddressesArray;
+	Object ret;
+	CheckIsValid(nSigsrequired, "nSigsrequired");
+	ret.push_back(Pair("sigsrequired", int64(nSigsrequired)));
+	CheckIsValid(vecAddresses, "vecAddresses");
+	Array vecAddressesArray;
 	for (auto& v : vecAddresses)
 	{
 		vecAddressesArray.push_back(std::string(v));
 	}
-	ret.push_back(json_spirit::Pair("addresses", vecAddressesArray));
+	ret.push_back(Pair("addresses", vecAddressesArray));
 
 	return ret;
 }
-CTemplateResponse::CMultisig& CTemplateResponse::CMultisig::FromJSON(const json_spirit::Value& v)
+CTemplateResponse::CMultisig& CTemplateResponse::CMultisig::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "CTemplateResponse::CMultisig");
 	auto obj = v.get_obj();
 	auto valSigsrequired = find_value(obj, "sigsrequired");
-	if (valSigsrequired.type() != json_spirit::int_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[sigsrequired] type is not int");
-	}
+	CheckJSONType(valSigsrequired, "int", "sigsrequired");
 	nSigsrequired = valSigsrequired.get_int64();
 	auto valAddresses = find_value(obj, "addresses");
-	if (valAddresses.type() != json_spirit::array_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[addresses] type is not array");
-	}
+	CheckJSONType(valAddresses, "array", "addresses");
 	auto vecAddressesArray = valAddresses.get_array();
 	for (auto& v : vecAddressesArray)
 	{
@@ -868,14 +668,8 @@ CTemplateResponse::CMultisig& CTemplateResponse::CMultisig::FromJSON(const json_
 }
 bool CTemplateResponse::CMultisig::IsValid() const
 {
-	if (!nSigsrequired.IsValid())
-	{
-		return false;
-	}
-	if (!vecAddresses.IsValid())
-	{
-		return false;
-	}
+	if (!nSigsrequired.IsValid()) { return false; }
+	if (!vecAddresses.IsValid()) { return false; }
 	return true;
 }
 
@@ -889,168 +683,106 @@ CTemplateResponse::CTemplateResponse(const CRPCType& null)
 	: strType(null), strHex(null), delegate(null), fork(null), mint(null), multisig(null), weighted(null)
 {
 }
-json_spirit::Value CTemplateResponse::ToJSON() const
+Value CTemplateResponse::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!strType.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strType] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("type", std::string(strType)));
-	if (!strHex.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strHex] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("hex", std::string(strHex)));
+	Object ret;
+	CheckIsValid(strType, "strType");
+	ret.push_back(Pair("type", std::string(strType)));
+	CheckIsValid(strHex, "strHex");
+	ret.push_back(Pair("hex", std::string(strHex)));
 	if (strType == "delegate")
 	{
-		if (!delegate.IsValid())
-		{
-			throw CRPCException(RPC_INVALID_PARAMS, "required param [delegate] is not valid");
-		}
-		ret.push_back(json_spirit::Pair("delegate", delegate.ToJSON()));
+		CheckIsValid(delegate, "delegate");
+		ret.push_back(Pair("delegate", delegate.ToJSON()));
 	}
 	if (strType == "fork")
 	{
-		if (!fork.IsValid())
-		{
-			throw CRPCException(RPC_INVALID_PARAMS, "required param [fork] is not valid");
-		}
-		ret.push_back(json_spirit::Pair("fork", fork.ToJSON()));
+		CheckIsValid(fork, "fork");
+		ret.push_back(Pair("fork", fork.ToJSON()));
 	}
 	if (strType == "mint")
 	{
-		if (!mint.IsValid())
-		{
-			throw CRPCException(RPC_INVALID_PARAMS, "required param [mint] is not valid");
-		}
-		ret.push_back(json_spirit::Pair("mint", mint.ToJSON()));
+		CheckIsValid(mint, "mint");
+		ret.push_back(Pair("mint", mint.ToJSON()));
 	}
 	if (strType == "multisig")
 	{
-		if (!multisig.IsValid())
-		{
-			throw CRPCException(RPC_INVALID_PARAMS, "required param [multisig] is not valid");
-		}
-		ret.push_back(json_spirit::Pair("multisig", multisig.ToJSON()));
+		CheckIsValid(multisig, "multisig");
+		ret.push_back(Pair("multisig", multisig.ToJSON()));
 	}
 	if (strType == "weighted")
 	{
-		if (!weighted.IsValid())
-		{
-			throw CRPCException(RPC_INVALID_PARAMS, "required param [weighted] is not valid");
-		}
-		ret.push_back(json_spirit::Pair("weighted", weighted.ToJSON()));
+		CheckIsValid(weighted, "weighted");
+		ret.push_back(Pair("weighted", weighted.ToJSON()));
 	}
 
 	return ret;
 }
-CTemplateResponse& CTemplateResponse::FromJSON(const json_spirit::Value& v)
+CTemplateResponse& CTemplateResponse::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "CTemplateResponse");
 	auto obj = v.get_obj();
 	auto valType = find_value(obj, "type");
-	if (valType.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[type] type is not string");
-	}
+	CheckJSONType(valType, "string", "type");
 	strType = valType.get_str();
 	auto valHex = find_value(obj, "hex");
-	if (valHex.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[hex] type is not string");
-	}
+	CheckJSONType(valHex, "string", "hex");
 	strHex = valHex.get_str();
 	if (strType == "delegate")
 	{
 		auto valDelegate = find_value(obj, "delegate");
-		if (valDelegate.type() != json_spirit::obj_type)
-		{
-			throw CRPCException(RPC_INVALID_REQUEST, "[delegate] type is not object");
-		}
-		delegate.FromJSON(valDelegate);
+		CheckJSONType(valDelegate, "object", "delegate");
+		delegate.FromJSON(valDelegate.get_obj());
 	}
 	if (strType == "fork")
 	{
 		auto valFork = find_value(obj, "fork");
-		if (valFork.type() != json_spirit::obj_type)
-		{
-			throw CRPCException(RPC_INVALID_REQUEST, "[fork] type is not object");
-		}
-		fork.FromJSON(valFork);
+		CheckJSONType(valFork, "object", "fork");
+		fork.FromJSON(valFork.get_obj());
 	}
 	if (strType == "mint")
 	{
 		auto valMint = find_value(obj, "mint");
-		if (valMint.type() != json_spirit::obj_type)
-		{
-			throw CRPCException(RPC_INVALID_REQUEST, "[mint] type is not object");
-		}
-		mint.FromJSON(valMint);
+		CheckJSONType(valMint, "object", "mint");
+		mint.FromJSON(valMint.get_obj());
 	}
 	if (strType == "multisig")
 	{
 		auto valMultisig = find_value(obj, "multisig");
-		if (valMultisig.type() != json_spirit::obj_type)
-		{
-			throw CRPCException(RPC_INVALID_REQUEST, "[multisig] type is not object");
-		}
-		multisig.FromJSON(valMultisig);
+		CheckJSONType(valMultisig, "object", "multisig");
+		multisig.FromJSON(valMultisig.get_obj());
 	}
 	if (strType == "weighted")
 	{
 		auto valWeighted = find_value(obj, "weighted");
-		if (valWeighted.type() != json_spirit::obj_type)
-		{
-			throw CRPCException(RPC_INVALID_REQUEST, "[weighted] type is not object");
-		}
-		weighted.FromJSON(valWeighted);
+		CheckJSONType(valWeighted, "object", "weighted");
+		weighted.FromJSON(valWeighted.get_obj());
 	}
 	return *this;
 }
 bool CTemplateResponse::IsValid() const
 {
-	if (!strType.IsValid())
-	{
-		return false;
-	}
-	if (!strHex.IsValid())
-	{
-		return false;
-	}
+	if (!strType.IsValid()) { return false; }
+	if (!strHex.IsValid()) { return false; }
 	if (strType == "delegate")
 	{
-		if (!delegate.IsValid())
-		{
-			return false;
-		}
+		if (!delegate.IsValid()) { return false; }
 	}
 	if (strType == "fork")
 	{
-		if (!fork.IsValid())
-		{
-			return false;
-		}
+		if (!fork.IsValid()) { return false; }
 	}
 	if (strType == "mint")
 	{
-		if (!mint.IsValid())
-		{
-			return false;
-		}
+		if (!mint.IsValid()) { return false; }
 	}
 	if (strType == "multisig")
 	{
-		if (!multisig.IsValid())
-		{
-			return false;
-		}
+		if (!multisig.IsValid()) { return false; }
 	}
 	if (strType == "weighted")
 	{
-		if (!weighted.IsValid())
-		{
-			return false;
-		}
+		if (!weighted.IsValid()) { return false; }
 	}
 	return true;
 }
@@ -1065,49 +797,32 @@ CTransactionData::CVin::CVin(const CRPCType& null)
 	: strTxid(null), nVout(null)
 {
 }
-json_spirit::Value CTransactionData::CVin::ToJSON() const
+Value CTransactionData::CVin::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!strTxid.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strTxid] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("txid", std::string(strTxid)));
-	if (!nVout.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [nVout] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("vout", uint64(nVout)));
+	Object ret;
+	CheckIsValid(strTxid, "strTxid");
+	ret.push_back(Pair("txid", std::string(strTxid)));
+	CheckIsValid(nVout, "nVout");
+	ret.push_back(Pair("vout", uint64(nVout)));
 
 	return ret;
 }
-CTransactionData::CVin& CTransactionData::CVin::FromJSON(const json_spirit::Value& v)
+CTransactionData::CVin& CTransactionData::CVin::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "CTransactionData::CVin");
 	auto obj = v.get_obj();
 	auto valTxid = find_value(obj, "txid");
-	if (valTxid.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[txid] type is not string");
-	}
+	CheckJSONType(valTxid, "string", "txid");
 	strTxid = valTxid.get_str();
 	auto valVout = find_value(obj, "vout");
-	if (valVout.type() != json_spirit::int_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[vout] type is not uint");
-	}
+	CheckJSONType(valVout, "uint", "vout");
 	nVout = valVout.get_uint64();
 	return *this;
 }
 bool CTransactionData::CVin::IsValid() const
 {
-	if (!strTxid.IsValid())
-	{
-		return false;
-	}
-	if (!nVout.IsValid())
-	{
-		return false;
-	}
+	if (!strTxid.IsValid()) { return false; }
+	if (!nVout.IsValid()) { return false; }
 	return true;
 }
 
@@ -1121,217 +836,108 @@ CTransactionData::CTransactionData(const CRPCType& null)
 	: strTxid(null), nVersion(null), strType(null), nLockuntil(null), strAnchor(null), vecVin(null), strSendto(null), fAmount(null), fTxfee(null), strData(null), strSig(null), strFork(null), nConfirmations(null)
 {
 }
-json_spirit::Value CTransactionData::ToJSON() const
+Value CTransactionData::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!strTxid.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strTxid] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("txid", std::string(strTxid)));
-	if (!nVersion.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [nVersion] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("version", uint64(nVersion)));
-	if (!strType.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strType] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("type", std::string(strType)));
-	if (!nLockuntil.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [nLockuntil] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("lockuntil", uint64(nLockuntil)));
-	if (!strAnchor.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strAnchor] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("anchor", std::string(strAnchor)));
-	if (!vecVin.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [vecVin] is not valid");
-	}
-	json_spirit::Array vecVinArray;
+	Object ret;
+	CheckIsValid(strTxid, "strTxid");
+	ret.push_back(Pair("txid", std::string(strTxid)));
+	CheckIsValid(nVersion, "nVersion");
+	ret.push_back(Pair("version", uint64(nVersion)));
+	CheckIsValid(strType, "strType");
+	ret.push_back(Pair("type", std::string(strType)));
+	CheckIsValid(nLockuntil, "nLockuntil");
+	ret.push_back(Pair("lockuntil", uint64(nLockuntil)));
+	CheckIsValid(strAnchor, "strAnchor");
+	ret.push_back(Pair("anchor", std::string(strAnchor)));
+	CheckIsValid(vecVin, "vecVin");
+	Array vecVinArray;
 	for (auto& v : vecVin)
 	{
 		vecVinArray.push_back(v.ToJSON());
 	}
-	ret.push_back(json_spirit::Pair("vin", vecVinArray));
-	if (!strSendto.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strSendto] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("sendto", std::string(strSendto)));
-	if (!fAmount.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [fAmount] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("amount", double(fAmount)));
-	if (!fTxfee.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [fTxfee] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("txfee", double(fTxfee)));
-	if (!strData.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strData] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("data", std::string(strData)));
-	if (!strSig.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strSig] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("sig", std::string(strSig)));
-	if (!strFork.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strFork] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("fork", std::string(strFork)));
+	ret.push_back(Pair("vin", vecVinArray));
+	CheckIsValid(strSendto, "strSendto");
+	ret.push_back(Pair("sendto", std::string(strSendto)));
+	CheckIsValid(fAmount, "fAmount");
+	ret.push_back(Pair("amount", double(fAmount)));
+	CheckIsValid(fTxfee, "fTxfee");
+	ret.push_back(Pair("txfee", double(fTxfee)));
+	CheckIsValid(strData, "strData");
+	ret.push_back(Pair("data", std::string(strData)));
+	CheckIsValid(strSig, "strSig");
+	ret.push_back(Pair("sig", std::string(strSig)));
+	CheckIsValid(strFork, "strFork");
+	ret.push_back(Pair("fork", std::string(strFork)));
 	if (nConfirmations.IsValid())
 	{
-		ret.push_back(json_spirit::Pair("confirmations", int64(nConfirmations)));
+		ret.push_back(Pair("confirmations", int64(nConfirmations)));
 	}
 
 	return ret;
 }
-CTransactionData& CTransactionData::FromJSON(const json_spirit::Value& v)
+CTransactionData& CTransactionData::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "CTransactionData");
 	auto obj = v.get_obj();
 	auto valTxid = find_value(obj, "txid");
-	if (valTxid.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[txid] type is not string");
-	}
+	CheckJSONType(valTxid, "string", "txid");
 	strTxid = valTxid.get_str();
 	auto valVersion = find_value(obj, "version");
-	if (valVersion.type() != json_spirit::int_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[version] type is not uint");
-	}
+	CheckJSONType(valVersion, "uint", "version");
 	nVersion = valVersion.get_uint64();
 	auto valType = find_value(obj, "type");
-	if (valType.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[type] type is not string");
-	}
+	CheckJSONType(valType, "string", "type");
 	strType = valType.get_str();
 	auto valLockuntil = find_value(obj, "lockuntil");
-	if (valLockuntil.type() != json_spirit::int_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[lockuntil] type is not uint");
-	}
+	CheckJSONType(valLockuntil, "uint", "lockuntil");
 	nLockuntil = valLockuntil.get_uint64();
 	auto valAnchor = find_value(obj, "anchor");
-	if (valAnchor.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[anchor] type is not string");
-	}
+	CheckJSONType(valAnchor, "string", "anchor");
 	strAnchor = valAnchor.get_str();
 	auto valVin = find_value(obj, "vin");
-	if (valVin.type() != json_spirit::array_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[vin] type is not array");
-	}
+	CheckJSONType(valVin, "array", "vin");
 	auto vecVinArray = valVin.get_array();
 	for (auto& v : vecVinArray)
 	{
 		vecVin.push_back(CRPCVector<CVin>::value_type().FromJSON(v));
 	}
 	auto valSendto = find_value(obj, "sendto");
-	if (valSendto.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[sendto] type is not string");
-	}
+	CheckJSONType(valSendto, "string", "sendto");
 	strSendto = valSendto.get_str();
 	auto valAmount = find_value(obj, "amount");
-	if (valAmount.type() != json_spirit::real_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[amount] type is not double");
-	}
+	CheckJSONType(valAmount, "double", "amount");
 	fAmount = valAmount.get_real();
 	auto valTxfee = find_value(obj, "txfee");
-	if (valTxfee.type() != json_spirit::real_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[txfee] type is not double");
-	}
+	CheckJSONType(valTxfee, "double", "txfee");
 	fTxfee = valTxfee.get_real();
 	auto valData = find_value(obj, "data");
-	if (valData.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[data] type is not string");
-	}
+	CheckJSONType(valData, "string", "data");
 	strData = valData.get_str();
 	auto valSig = find_value(obj, "sig");
-	if (valSig.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[sig] type is not string");
-	}
+	CheckJSONType(valSig, "string", "sig");
 	strSig = valSig.get_str();
 	auto valFork = find_value(obj, "fork");
-	if (valFork.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[fork] type is not string");
-	}
+	CheckJSONType(valFork, "string", "fork");
 	strFork = valFork.get_str();
 	auto valConfirmations = find_value(obj, "confirmations");
-	if (!valConfirmations.is_null())
-	{
-		nConfirmations = valConfirmations.get_int64();
-	}
+	CheckJSONType(valConfirmations, "int", "confirmations");
+	nConfirmations = valConfirmations.get_int64();
 	return *this;
 }
 bool CTransactionData::IsValid() const
 {
-	if (!strTxid.IsValid())
-	{
-		return false;
-	}
-	if (!nVersion.IsValid())
-	{
-		return false;
-	}
-	if (!strType.IsValid())
-	{
-		return false;
-	}
-	if (!nLockuntil.IsValid())
-	{
-		return false;
-	}
-	if (!strAnchor.IsValid())
-	{
-		return false;
-	}
-	if (!vecVin.IsValid())
-	{
-		return false;
-	}
-	if (!strSendto.IsValid())
-	{
-		return false;
-	}
-	if (!fAmount.IsValid())
-	{
-		return false;
-	}
-	if (!fTxfee.IsValid())
-	{
-		return false;
-	}
-	if (!strData.IsValid())
-	{
-		return false;
-	}
-	if (!strSig.IsValid())
-	{
-		return false;
-	}
-	if (!strFork.IsValid())
-	{
-		return false;
-	}
+	if (!strTxid.IsValid()) { return false; }
+	if (!nVersion.IsValid()) { return false; }
+	if (!strType.IsValid()) { return false; }
+	if (!nLockuntil.IsValid()) { return false; }
+	if (!strAnchor.IsValid()) { return false; }
+	if (!vecVin.IsValid()) { return false; }
+	if (!strSendto.IsValid()) { return false; }
+	if (!fAmount.IsValid()) { return false; }
+	if (!fTxfee.IsValid()) { return false; }
+	if (!strData.IsValid()) { return false; }
+	if (!strSig.IsValid()) { return false; }
+	if (!strFork.IsValid()) { return false; }
 	return true;
 }
 
@@ -1345,157 +951,82 @@ CWalletTxData::CWalletTxData(const CRPCType& null)
 	: strTxid(null), strFork(null), strType(null), fSend(null), strTo(null), fAmount(null), fFee(null), nLockuntil(null), nBlockheight(null), strFrom(null)
 {
 }
-json_spirit::Value CWalletTxData::ToJSON() const
+Value CWalletTxData::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!strTxid.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strTxid] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("txid", std::string(strTxid)));
-	if (!strFork.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strFork] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("fork", std::string(strFork)));
-	if (!strType.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strType] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("type", std::string(strType)));
-	if (!fSend.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [fSend] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("send", bool(fSend)));
-	if (!strTo.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strTo] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("to", std::string(strTo)));
-	if (!fAmount.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [fAmount] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("amount", double(fAmount)));
-	if (!fFee.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [fFee] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("fee", double(fFee)));
-	if (!nLockuntil.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [nLockuntil] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("lockuntil", uint64(nLockuntil)));
+	Object ret;
+	CheckIsValid(strTxid, "strTxid");
+	ret.push_back(Pair("txid", std::string(strTxid)));
+	CheckIsValid(strFork, "strFork");
+	ret.push_back(Pair("fork", std::string(strFork)));
+	CheckIsValid(strType, "strType");
+	ret.push_back(Pair("type", std::string(strType)));
+	CheckIsValid(fSend, "fSend");
+	ret.push_back(Pair("send", bool(fSend)));
+	CheckIsValid(strTo, "strTo");
+	ret.push_back(Pair("to", std::string(strTo)));
+	CheckIsValid(fAmount, "fAmount");
+	ret.push_back(Pair("amount", double(fAmount)));
+	CheckIsValid(fFee, "fFee");
+	ret.push_back(Pair("fee", double(fFee)));
+	CheckIsValid(nLockuntil, "nLockuntil");
+	ret.push_back(Pair("lockuntil", uint64(nLockuntil)));
 	if (nBlockheight.IsValid())
 	{
-		ret.push_back(json_spirit::Pair("blockheight", int64(nBlockheight)));
+		ret.push_back(Pair("blockheight", int64(nBlockheight)));
 	}
 	if (strFrom.IsValid())
 	{
-		ret.push_back(json_spirit::Pair("from", std::string(strFrom)));
+		ret.push_back(Pair("from", std::string(strFrom)));
 	}
 
 	return ret;
 }
-CWalletTxData& CWalletTxData::FromJSON(const json_spirit::Value& v)
+CWalletTxData& CWalletTxData::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "CWalletTxData");
 	auto obj = v.get_obj();
 	auto valTxid = find_value(obj, "txid");
-	if (valTxid.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[txid] type is not string");
-	}
+	CheckJSONType(valTxid, "string", "txid");
 	strTxid = valTxid.get_str();
 	auto valFork = find_value(obj, "fork");
-	if (valFork.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[fork] type is not string");
-	}
+	CheckJSONType(valFork, "string", "fork");
 	strFork = valFork.get_str();
 	auto valType = find_value(obj, "type");
-	if (valType.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[type] type is not string");
-	}
+	CheckJSONType(valType, "string", "type");
 	strType = valType.get_str();
 	auto valSend = find_value(obj, "send");
-	if (valSend.type() != json_spirit::bool_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[send] type is not bool");
-	}
+	CheckJSONType(valSend, "bool", "send");
 	fSend = valSend.get_bool();
 	auto valTo = find_value(obj, "to");
-	if (valTo.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[to] type is not string");
-	}
+	CheckJSONType(valTo, "string", "to");
 	strTo = valTo.get_str();
 	auto valAmount = find_value(obj, "amount");
-	if (valAmount.type() != json_spirit::real_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[amount] type is not double");
-	}
+	CheckJSONType(valAmount, "double", "amount");
 	fAmount = valAmount.get_real();
 	auto valFee = find_value(obj, "fee");
-	if (valFee.type() != json_spirit::real_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[fee] type is not double");
-	}
+	CheckJSONType(valFee, "double", "fee");
 	fFee = valFee.get_real();
 	auto valLockuntil = find_value(obj, "lockuntil");
-	if (valLockuntil.type() != json_spirit::int_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[lockuntil] type is not uint");
-	}
+	CheckJSONType(valLockuntil, "uint", "lockuntil");
 	nLockuntil = valLockuntil.get_uint64();
 	auto valBlockheight = find_value(obj, "blockheight");
-	if (!valBlockheight.is_null())
-	{
-		nBlockheight = valBlockheight.get_int64();
-	}
+	CheckJSONType(valBlockheight, "int", "blockheight");
+	nBlockheight = valBlockheight.get_int64();
 	auto valFrom = find_value(obj, "from");
-	if (!valFrom.is_null())
-	{
-		strFrom = valFrom.get_str();
-	}
+	CheckJSONType(valFrom, "string", "from");
+	strFrom = valFrom.get_str();
 	return *this;
 }
 bool CWalletTxData::IsValid() const
 {
-	if (!strTxid.IsValid())
-	{
-		return false;
-	}
-	if (!strFork.IsValid())
-	{
-		return false;
-	}
-	if (!strType.IsValid())
-	{
-		return false;
-	}
-	if (!fSend.IsValid())
-	{
-		return false;
-	}
-	if (!strTo.IsValid())
-	{
-		return false;
-	}
-	if (!fAmount.IsValid())
-	{
-		return false;
-	}
-	if (!fFee.IsValid())
-	{
-		return false;
-	}
-	if (!nLockuntil.IsValid())
-	{
-		return false;
-	}
+	if (!strTxid.IsValid()) { return false; }
+	if (!strFork.IsValid()) { return false; }
+	if (!strType.IsValid()) { return false; }
+	if (!fSend.IsValid()) { return false; }
+	if (!strTo.IsValid()) { return false; }
+	if (!fAmount.IsValid()) { return false; }
+	if (!fFee.IsValid()) { return false; }
+	if (!nLockuntil.IsValid()) { return false; }
 	return true;
 }
 
@@ -1509,157 +1040,84 @@ CBlockData::CBlockData(const CRPCType& null)
 	: strHash(null), nVersion(null), strType(null), nTime(null), strFork(null), nHeight(null), strTxmint(null), vecTx(null), strPrev(null)
 {
 }
-json_spirit::Value CBlockData::ToJSON() const
+Value CBlockData::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!strHash.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strHash] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("hash", std::string(strHash)));
-	if (!nVersion.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [nVersion] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("version", uint64(nVersion)));
-	if (!strType.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strType] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("type", std::string(strType)));
-	if (!nTime.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [nTime] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("time", uint64(nTime)));
-	if (!strFork.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strFork] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("fork", std::string(strFork)));
-	if (!nHeight.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [nHeight] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("height", uint64(nHeight)));
-	if (!strTxmint.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strTxmint] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("txmint", std::string(strTxmint)));
-	if (!vecTx.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [vecTx] is not valid");
-	}
-	json_spirit::Array vecTxArray;
+	Object ret;
+	CheckIsValid(strHash, "strHash");
+	ret.push_back(Pair("hash", std::string(strHash)));
+	CheckIsValid(nVersion, "nVersion");
+	ret.push_back(Pair("version", uint64(nVersion)));
+	CheckIsValid(strType, "strType");
+	ret.push_back(Pair("type", std::string(strType)));
+	CheckIsValid(nTime, "nTime");
+	ret.push_back(Pair("time", uint64(nTime)));
+	CheckIsValid(strFork, "strFork");
+	ret.push_back(Pair("fork", std::string(strFork)));
+	CheckIsValid(nHeight, "nHeight");
+	ret.push_back(Pair("height", uint64(nHeight)));
+	CheckIsValid(strTxmint, "strTxmint");
+	ret.push_back(Pair("txmint", std::string(strTxmint)));
+	CheckIsValid(vecTx, "vecTx");
+	Array vecTxArray;
 	for (auto& v : vecTx)
 	{
 		vecTxArray.push_back(std::string(v));
 	}
-	ret.push_back(json_spirit::Pair("tx", vecTxArray));
+	ret.push_back(Pair("tx", vecTxArray));
 	if (strPrev.IsValid())
 	{
-		ret.push_back(json_spirit::Pair("prev", std::string(strPrev)));
+		ret.push_back(Pair("prev", std::string(strPrev)));
 	}
 
 	return ret;
 }
-CBlockData& CBlockData::FromJSON(const json_spirit::Value& v)
+CBlockData& CBlockData::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "CBlockData");
 	auto obj = v.get_obj();
 	auto valHash = find_value(obj, "hash");
-	if (valHash.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[hash] type is not string");
-	}
+	CheckJSONType(valHash, "string", "hash");
 	strHash = valHash.get_str();
 	auto valVersion = find_value(obj, "version");
-	if (valVersion.type() != json_spirit::int_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[version] type is not uint");
-	}
+	CheckJSONType(valVersion, "uint", "version");
 	nVersion = valVersion.get_uint64();
 	auto valType = find_value(obj, "type");
-	if (valType.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[type] type is not string");
-	}
+	CheckJSONType(valType, "string", "type");
 	strType = valType.get_str();
 	auto valTime = find_value(obj, "time");
-	if (valTime.type() != json_spirit::int_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[time] type is not uint");
-	}
+	CheckJSONType(valTime, "uint", "time");
 	nTime = valTime.get_uint64();
 	auto valFork = find_value(obj, "fork");
-	if (valFork.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[fork] type is not string");
-	}
+	CheckJSONType(valFork, "string", "fork");
 	strFork = valFork.get_str();
 	auto valHeight = find_value(obj, "height");
-	if (valHeight.type() != json_spirit::int_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[height] type is not uint");
-	}
+	CheckJSONType(valHeight, "uint", "height");
 	nHeight = valHeight.get_uint64();
 	auto valTxmint = find_value(obj, "txmint");
-	if (valTxmint.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[txmint] type is not string");
-	}
+	CheckJSONType(valTxmint, "string", "txmint");
 	strTxmint = valTxmint.get_str();
 	auto valTx = find_value(obj, "tx");
-	if (valTx.type() != json_spirit::array_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[tx] type is not array");
-	}
+	CheckJSONType(valTx, "array", "tx");
 	auto vecTxArray = valTx.get_array();
 	for (auto& v : vecTxArray)
 	{
 		vecTx.push_back(v.get_str());
 	}
 	auto valPrev = find_value(obj, "prev");
-	if (!valPrev.is_null())
-	{
-		strPrev = valPrev.get_str();
-	}
+	CheckJSONType(valPrev, "string", "prev");
+	strPrev = valPrev.get_str();
 	return *this;
 }
 bool CBlockData::IsValid() const
 {
-	if (!strHash.IsValid())
-	{
-		return false;
-	}
-	if (!nVersion.IsValid())
-	{
-		return false;
-	}
-	if (!strType.IsValid())
-	{
-		return false;
-	}
-	if (!nTime.IsValid())
-	{
-		return false;
-	}
-	if (!strFork.IsValid())
-	{
-		return false;
-	}
-	if (!nHeight.IsValid())
-	{
-		return false;
-	}
-	if (!strTxmint.IsValid())
-	{
-		return false;
-	}
-	if (!vecTx.IsValid())
-	{
-		return false;
-	}
+	if (!strHash.IsValid()) { return false; }
+	if (!nVersion.IsValid()) { return false; }
+	if (!strType.IsValid()) { return false; }
+	if (!nTime.IsValid()) { return false; }
+	if (!strFork.IsValid()) { return false; }
+	if (!nHeight.IsValid()) { return false; }
+	if (!strTxmint.IsValid()) { return false; }
+	if (!vecTx.IsValid()) { return false; }
 	return true;
 }
 
@@ -1672,24 +1130,23 @@ CHelpParam::CHelpParam(const CRPCString& strCommand)
 	: strCommand(strCommand)
 {
 }
-json_spirit::Value CHelpParam::ToJSON() const
+Value CHelpParam::ToJSON() const
 {
-	json_spirit::Object ret;
+	Object ret;
 	if (strCommand.IsValid())
 	{
-		ret.push_back(json_spirit::Pair("command", std::string(strCommand)));
+		ret.push_back(Pair("command", std::string(strCommand)));
 	}
 
 	return ret;
 }
-CHelpParam& CHelpParam::FromJSON(const json_spirit::Value& v)
+CHelpParam& CHelpParam::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "help");
 	auto obj = v.get_obj();
 	auto valCommand = find_value(obj, "command");
-	if (!valCommand.is_null())
-	{
-		strCommand = valCommand.get_str();
-	}
+	CheckJSONType(valCommand, "string", "command");
+	strCommand = valCommand.get_str();
 	return *this;
 }
 string CHelpParam::Method() const
@@ -1703,18 +1160,16 @@ CHelpResult::CHelpResult(const CRPCString& strHelp)
 	: strHelp(strHelp)
 {
 }
-json_spirit::Value CHelpResult::ToJSON() const
+Value CHelpResult::ToJSON() const
 {
-	if (!strHelp.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strHelp] is not valid");
-	}
-	json_spirit::Value val;
-	val = json_spirit::Value(strHelp);
+	CheckIsValid(strHelp, "strHelp");
+	Value val;
+	val = Value(strHelp);
 	return val;
 }
-CHelpResult& CHelpResult::FromJSON(const json_spirit::Value& v)
+CHelpResult& CHelpResult::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "string", "help");
 	strHelp = v.get_str();
 	return *this;
 }
@@ -1739,9 +1194,9 @@ bool CHelpConfig::PostLoad()
 		throw CRPCException(RPC_PARSE_ERROR, string("too arguments given."));
 	}
 	auto it = vecCommand.begin();
-	if (std::next(it, 1) != vecCommand.end())
+	if (next(it, 1) != vecCommand.end())
 	{
-		std::istringstream iss(*++it);
+		istringstream iss(*++it);
 		iss >> strCommand;
 		if (!iss.eof())
 		{
@@ -1763,16 +1218,16 @@ string CHelpConfig::Help() const
 	oss << "List commands, or get help for a command.\n";
 	oss << "\n";
 	oss << "Arguments:\n";
-	oss << " \"command\"                              (string, optional) command name\n";
+	oss << " \"command\"                      (string, optional) command name\n";
 	oss << "\n";
 	oss << "Request:\n";
 	oss << " \"param\" :\n";
 	oss << " {\n";
-	oss << "   \"command\": \"\"                        (string, optional) command name\n";
+	oss << "   \"command\": \"\"                (string, optional) command name\n";
 	oss << " }\n";
 	oss << "\n";
 	oss << "Response:\n";
-	oss << " \"result\": \"help\"                       (string, required) help info\n";
+	oss << " \"result\": \"help\"               (string, required) help info\n";
 	oss << "\n";
 	oss << "Examples:\n";
 	oss << "\tnone\n\n";
@@ -1786,14 +1241,15 @@ string CHelpConfig::Help() const
 
 // CStopParam
 CStopParam::CStopParam() {}
-json_spirit::Value CStopParam::ToJSON() const
+Value CStopParam::ToJSON() const
 {
-	json_spirit::Object ret;
+	Object ret;
 
 	return ret;
 }
-CStopParam& CStopParam::FromJSON(const json_spirit::Value& v)
+CStopParam& CStopParam::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "stop");
 	auto obj = v.get_obj();
 	return *this;
 }
@@ -1808,18 +1264,16 @@ CStopResult::CStopResult(const CRPCString& strResult)
 	: strResult(strResult)
 {
 }
-json_spirit::Value CStopResult::ToJSON() const
+Value CStopResult::ToJSON() const
 {
-	if (!strResult.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strResult] is not valid");
-	}
-	json_spirit::Value val;
-	val = json_spirit::Value(strResult);
+	CheckIsValid(strResult, "strResult");
+	Value val;
+	val = Value(strResult);
 	return val;
 }
-CStopResult& CStopResult::FromJSON(const json_spirit::Value& v)
+CStopResult& CStopResult::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "string", "result");
 	strResult = v.get_str();
 	return *this;
 }
@@ -1864,7 +1318,7 @@ string CStopConfig::Help() const
 	oss << " \"param\" : {}\n";
 	oss << "\n";
 	oss << "Response:\n";
-	oss << " \"result\": \"result\"                     (string, required) stop result\n";
+	oss << " \"result\": \"result\"             (string, required) stop result\n";
 	oss << "\n";
 	oss << "Examples:\n";
 	oss << ">> multiverse-cli stop\n";
@@ -1882,14 +1336,15 @@ string CStopConfig::Help() const
 
 // CGetPeerCountParam
 CGetPeerCountParam::CGetPeerCountParam() {}
-json_spirit::Value CGetPeerCountParam::ToJSON() const
+Value CGetPeerCountParam::ToJSON() const
 {
-	json_spirit::Object ret;
+	Object ret;
 
 	return ret;
 }
-CGetPeerCountParam& CGetPeerCountParam::FromJSON(const json_spirit::Value& v)
+CGetPeerCountParam& CGetPeerCountParam::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "getpeercount");
 	auto obj = v.get_obj();
 	return *this;
 }
@@ -1904,18 +1359,16 @@ CGetPeerCountResult::CGetPeerCountResult(const CRPCInt64& nCount)
 	: nCount(nCount)
 {
 }
-json_spirit::Value CGetPeerCountResult::ToJSON() const
+Value CGetPeerCountResult::ToJSON() const
 {
-	if (!nCount.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [nCount] is not valid");
-	}
-	json_spirit::Value val;
-	val = json_spirit::Value(nCount);
+	CheckIsValid(nCount, "nCount");
+	Value val;
+	val = Value(nCount);
 	return val;
 }
-CGetPeerCountResult& CGetPeerCountResult::FromJSON(const json_spirit::Value& v)
+CGetPeerCountResult& CGetPeerCountResult::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "int", "count");
 	nCount = v.get_int64();
 	return *this;
 }
@@ -1960,7 +1413,7 @@ string CGetPeerCountConfig::Help() const
 	oss << " \"param\" : {}\n";
 	oss << "\n";
 	oss << "Response:\n";
-	oss << " \"result\": count                        (int, required) peer count\n";
+	oss << " \"result\": count                (int, required) peer count\n";
 	oss << "\n";
 	oss << "Examples:\n";
 	oss << ">> multiverse-cli getpeercount\n";
@@ -1978,14 +1431,15 @@ string CGetPeerCountConfig::Help() const
 
 // CListPeerParam
 CListPeerParam::CListPeerParam() {}
-json_spirit::Value CListPeerParam::ToJSON() const
+Value CListPeerParam::ToJSON() const
 {
-	json_spirit::Object ret;
+	Object ret;
 
 	return ret;
 }
-CListPeerParam& CListPeerParam::FromJSON(const json_spirit::Value& v)
+CListPeerParam& CListPeerParam::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "listpeer");
 	auto obj = v.get_obj();
 	return *this;
 }
@@ -2004,169 +1458,80 @@ CListPeerResult::CPeer::CPeer(const CRPCType& null)
 	: strAddress(null), strServices(null), nLastsend(null), nLastrecv(null), nConntime(null), strVersion(null), strSubver(null), fInbound(null), nHeight(null), fBanscore(null)
 {
 }
-json_spirit::Value CListPeerResult::CPeer::ToJSON() const
+Value CListPeerResult::CPeer::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!strAddress.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strAddress] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("address", std::string(strAddress)));
-	if (!strServices.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strServices] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("services", std::string(strServices)));
-	if (!nLastsend.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [nLastsend] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("lastsend", int64(nLastsend)));
-	if (!nLastrecv.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [nLastrecv] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("lastrecv", int64(nLastrecv)));
-	if (!nConntime.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [nConntime] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("conntime", int64(nConntime)));
-	if (!strVersion.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strVersion] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("version", std::string(strVersion)));
-	if (!strSubver.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strSubver] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("subver", std::string(strSubver)));
-	if (!fInbound.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [fInbound] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("inbound", bool(fInbound)));
-	if (!nHeight.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [nHeight] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("height", int64(nHeight)));
-	if (!fBanscore.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [fBanscore] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("banscore", bool(fBanscore)));
+	Object ret;
+	CheckIsValid(strAddress, "strAddress");
+	ret.push_back(Pair("address", std::string(strAddress)));
+	CheckIsValid(strServices, "strServices");
+	ret.push_back(Pair("services", std::string(strServices)));
+	CheckIsValid(nLastsend, "nLastsend");
+	ret.push_back(Pair("lastsend", int64(nLastsend)));
+	CheckIsValid(nLastrecv, "nLastrecv");
+	ret.push_back(Pair("lastrecv", int64(nLastrecv)));
+	CheckIsValid(nConntime, "nConntime");
+	ret.push_back(Pair("conntime", int64(nConntime)));
+	CheckIsValid(strVersion, "strVersion");
+	ret.push_back(Pair("version", std::string(strVersion)));
+	CheckIsValid(strSubver, "strSubver");
+	ret.push_back(Pair("subver", std::string(strSubver)));
+	CheckIsValid(fInbound, "fInbound");
+	ret.push_back(Pair("inbound", bool(fInbound)));
+	CheckIsValid(nHeight, "nHeight");
+	ret.push_back(Pair("height", int64(nHeight)));
+	CheckIsValid(fBanscore, "fBanscore");
+	ret.push_back(Pair("banscore", bool(fBanscore)));
 
 	return ret;
 }
-CListPeerResult::CPeer& CListPeerResult::CPeer::FromJSON(const json_spirit::Value& v)
+CListPeerResult::CPeer& CListPeerResult::CPeer::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "CListPeerResult::CPeer");
 	auto obj = v.get_obj();
 	auto valAddress = find_value(obj, "address");
-	if (valAddress.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[address] type is not string");
-	}
+	CheckJSONType(valAddress, "string", "address");
 	strAddress = valAddress.get_str();
 	auto valServices = find_value(obj, "services");
-	if (valServices.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[services] type is not string");
-	}
+	CheckJSONType(valServices, "string", "services");
 	strServices = valServices.get_str();
 	auto valLastsend = find_value(obj, "lastsend");
-	if (valLastsend.type() != json_spirit::int_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[lastsend] type is not int");
-	}
+	CheckJSONType(valLastsend, "int", "lastsend");
 	nLastsend = valLastsend.get_int64();
 	auto valLastrecv = find_value(obj, "lastrecv");
-	if (valLastrecv.type() != json_spirit::int_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[lastrecv] type is not int");
-	}
+	CheckJSONType(valLastrecv, "int", "lastrecv");
 	nLastrecv = valLastrecv.get_int64();
 	auto valConntime = find_value(obj, "conntime");
-	if (valConntime.type() != json_spirit::int_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[conntime] type is not int");
-	}
+	CheckJSONType(valConntime, "int", "conntime");
 	nConntime = valConntime.get_int64();
 	auto valVersion = find_value(obj, "version");
-	if (valVersion.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[version] type is not string");
-	}
+	CheckJSONType(valVersion, "string", "version");
 	strVersion = valVersion.get_str();
 	auto valSubver = find_value(obj, "subver");
-	if (valSubver.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[subver] type is not string");
-	}
+	CheckJSONType(valSubver, "string", "subver");
 	strSubver = valSubver.get_str();
 	auto valInbound = find_value(obj, "inbound");
-	if (valInbound.type() != json_spirit::bool_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[inbound] type is not bool");
-	}
+	CheckJSONType(valInbound, "bool", "inbound");
 	fInbound = valInbound.get_bool();
 	auto valHeight = find_value(obj, "height");
-	if (valHeight.type() != json_spirit::int_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[height] type is not int");
-	}
+	CheckJSONType(valHeight, "int", "height");
 	nHeight = valHeight.get_int64();
 	auto valBanscore = find_value(obj, "banscore");
-	if (valBanscore.type() != json_spirit::bool_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[banscore] type is not bool");
-	}
+	CheckJSONType(valBanscore, "bool", "banscore");
 	fBanscore = valBanscore.get_bool();
 	return *this;
 }
 bool CListPeerResult::CPeer::IsValid() const
 {
-	if (!strAddress.IsValid())
-	{
-		return false;
-	}
-	if (!strServices.IsValid())
-	{
-		return false;
-	}
-	if (!nLastsend.IsValid())
-	{
-		return false;
-	}
-	if (!nLastrecv.IsValid())
-	{
-		return false;
-	}
-	if (!nConntime.IsValid())
-	{
-		return false;
-	}
-	if (!strVersion.IsValid())
-	{
-		return false;
-	}
-	if (!strSubver.IsValid())
-	{
-		return false;
-	}
-	if (!fInbound.IsValid())
-	{
-		return false;
-	}
-	if (!nHeight.IsValid())
-	{
-		return false;
-	}
-	if (!fBanscore.IsValid())
-	{
-		return false;
-	}
+	if (!strAddress.IsValid()) { return false; }
+	if (!strServices.IsValid()) { return false; }
+	if (!nLastsend.IsValid()) { return false; }
+	if (!nLastrecv.IsValid()) { return false; }
+	if (!nConntime.IsValid()) { return false; }
+	if (!strVersion.IsValid()) { return false; }
+	if (!strSubver.IsValid()) { return false; }
+	if (!fInbound.IsValid()) { return false; }
+	if (!nHeight.IsValid()) { return false; }
+	if (!fBanscore.IsValid()) { return false; }
 	return true;
 }
 
@@ -2176,17 +1541,18 @@ CListPeerResult::CListPeerResult(const CRPCVector<CPeer>& vecPeer)
 	: vecPeer(vecPeer)
 {
 }
-json_spirit::Value CListPeerResult::ToJSON() const
+Value CListPeerResult::ToJSON() const
 {
-	json_spirit::Array ret;
+	Array ret;
 	for (auto& v : vecPeer)
 	{
 		ret.push_back(v.ToJSON());
 	}
 	return ret;
 }
-CListPeerResult& CListPeerResult::FromJSON(const json_spirit::Value& v)
+CListPeerResult& CListPeerResult::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "array", "peer");
 	auto vecPeerArray = v.get_array();
 	for (auto& v : vecPeerArray)
 	{
@@ -2237,18 +1603,18 @@ string CListPeerConfig::Help() const
 	oss << "Response:\n";
 	oss << " \"result\" :\n";
 	oss << "   [\n";
-	oss << "     \"peer\":                            (object, required) \n";
+	oss << "     \"peer\":                    (object, required) \n";
 	oss << "     {\n";
-	oss << "       \"address\": \"\",                   (string, required) peer address\n";
-	oss << "       \"services\": \"\",                  (string, required) service\n";
-	oss << "       \"lastsend\": 0,                   (int, required) last send time\n";
-	oss << "       \"lastrecv\": 0,                   (int, required) last receive time\n";
-	oss << "       \"conntime\": 0,                   (int, required) active time\n";
-	oss << "       \"version\": \"\",                   (string, required) version\n";
-	oss << "       \"subver\": \"\",                    (string, required) sub version\n";
-	oss << "       \"inbound\": true|false,           (bool, required) accept multiple connection or not\n";
-	oss << "       \"height\": 0,                     (int, required) starting height\n";
-	oss << "       \"banscore\": true|false           (bool, required) ban score\n";
+	oss << "       \"address\": \"\",           (string, required) peer address\n";
+	oss << "       \"services\": \"\",          (string, required) service\n";
+	oss << "       \"lastsend\": 0,           (int, required) last send time\n";
+	oss << "       \"lastrecv\": 0,           (int, required) last receive time\n";
+	oss << "       \"conntime\": 0,           (int, required) active time\n";
+	oss << "       \"version\": \"\",           (string, required) version\n";
+	oss << "       \"subver\": \"\",            (string, required) sub version\n";
+	oss << "       \"inbound\": true|false,   (bool, required) accept multiple connection or not\n";
+	oss << "       \"height\": 0,             (int, required) starting height\n";
+	oss << "       \"banscore\": true|false   (bool, required) ban score\n";
 	oss << "     }\n";
 	oss << "   ]\n";
 	oss << "\n";
@@ -2272,25 +1638,20 @@ CAddNodeParam::CAddNodeParam(const CRPCString& strNode)
 	: strNode(strNode)
 {
 }
-json_spirit::Value CAddNodeParam::ToJSON() const
+Value CAddNodeParam::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!strNode.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strNode] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("node", std::string(strNode)));
+	Object ret;
+	CheckIsValid(strNode, "strNode");
+	ret.push_back(Pair("node", std::string(strNode)));
 
 	return ret;
 }
-CAddNodeParam& CAddNodeParam::FromJSON(const json_spirit::Value& v)
+CAddNodeParam& CAddNodeParam::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "addnode");
 	auto obj = v.get_obj();
 	auto valNode = find_value(obj, "node");
-	if (valNode.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[node] type is not string");
-	}
+	CheckJSONType(valNode, "string", "node");
 	strNode = valNode.get_str();
 	return *this;
 }
@@ -2305,18 +1666,16 @@ CAddNodeResult::CAddNodeResult(const CRPCString& strResult)
 	: strResult(strResult)
 {
 }
-json_spirit::Value CAddNodeResult::ToJSON() const
+Value CAddNodeResult::ToJSON() const
 {
-	if (!strResult.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strResult] is not valid");
-	}
-	json_spirit::Value val;
-	val = json_spirit::Value(strResult);
+	CheckIsValid(strResult, "strResult");
+	Value val;
+	val = Value(strResult);
 	return val;
 }
-CAddNodeResult& CAddNodeResult::FromJSON(const json_spirit::Value& v)
+CAddNodeResult& CAddNodeResult::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "string", "result");
 	strResult = v.get_str();
 	return *this;
 }
@@ -2341,9 +1700,9 @@ bool CAddNodeConfig::PostLoad()
 		throw CRPCException(RPC_PARSE_ERROR, string("too arguments given."));
 	}
 	auto it = vecCommand.begin();
-	if (std::next(it, 1) != vecCommand.end())
+	if (next(it, 1) != vecCommand.end())
 	{
-		std::istringstream iss(*++it);
+		istringstream iss(*++it);
 		iss >> strNode;
 		if (!iss.eof())
 		{
@@ -2369,16 +1728,16 @@ string CAddNodeConfig::Help() const
 	oss << "Attempts add a node into the addnode list.\n";
 	oss << "\n";
 	oss << "Arguments:\n";
-	oss << " \"node\"                                 (string, required) node host:port\n";
+	oss << " \"node\"                         (string, required) node host:port\n";
 	oss << "\n";
 	oss << "Request:\n";
 	oss << " \"param\" :\n";
 	oss << " {\n";
-	oss << "   \"node\": \"\"                           (string, required) node host:port\n";
+	oss << "   \"node\": \"\"                   (string, required) node host:port\n";
 	oss << " }\n";
 	oss << "\n";
 	oss << "Response:\n";
-	oss << " \"result\": \"result\"                     (string, required) add node result\n";
+	oss << " \"result\": \"result\"             (string, required) add node result\n";
 	oss << "\n";
 	oss << "Examples:\n";
 	oss << ">> multiverse-cli addnode 113.105.146.22\n";
@@ -2401,25 +1760,20 @@ CRemoveNodeParam::CRemoveNodeParam(const CRPCString& strNode)
 	: strNode(strNode)
 {
 }
-json_spirit::Value CRemoveNodeParam::ToJSON() const
+Value CRemoveNodeParam::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!strNode.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strNode] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("node", std::string(strNode)));
+	Object ret;
+	CheckIsValid(strNode, "strNode");
+	ret.push_back(Pair("node", std::string(strNode)));
 
 	return ret;
 }
-CRemoveNodeParam& CRemoveNodeParam::FromJSON(const json_spirit::Value& v)
+CRemoveNodeParam& CRemoveNodeParam::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "removenode");
 	auto obj = v.get_obj();
 	auto valNode = find_value(obj, "node");
-	if (valNode.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[node] type is not string");
-	}
+	CheckJSONType(valNode, "string", "node");
 	strNode = valNode.get_str();
 	return *this;
 }
@@ -2434,18 +1788,16 @@ CRemoveNodeResult::CRemoveNodeResult(const CRPCString& strResult)
 	: strResult(strResult)
 {
 }
-json_spirit::Value CRemoveNodeResult::ToJSON() const
+Value CRemoveNodeResult::ToJSON() const
 {
-	if (!strResult.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strResult] is not valid");
-	}
-	json_spirit::Value val;
-	val = json_spirit::Value(strResult);
+	CheckIsValid(strResult, "strResult");
+	Value val;
+	val = Value(strResult);
 	return val;
 }
-CRemoveNodeResult& CRemoveNodeResult::FromJSON(const json_spirit::Value& v)
+CRemoveNodeResult& CRemoveNodeResult::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "string", "result");
 	strResult = v.get_str();
 	return *this;
 }
@@ -2470,9 +1822,9 @@ bool CRemoveNodeConfig::PostLoad()
 		throw CRPCException(RPC_PARSE_ERROR, string("too arguments given."));
 	}
 	auto it = vecCommand.begin();
-	if (std::next(it, 1) != vecCommand.end())
+	if (next(it, 1) != vecCommand.end())
 	{
-		std::istringstream iss(*++it);
+		istringstream iss(*++it);
 		iss >> strNode;
 		if (!iss.eof())
 		{
@@ -2498,16 +1850,16 @@ string CRemoveNodeConfig::Help() const
 	oss << "Attempts remove a node from the addnode list.\n";
 	oss << "\n";
 	oss << "Arguments:\n";
-	oss << " \"node\"                                 (string, required) node host:port\n";
+	oss << " \"node\"                         (string, required) node host:port\n";
 	oss << "\n";
 	oss << "Request:\n";
 	oss << " \"param\" :\n";
 	oss << " {\n";
-	oss << "   \"node\": \"\"                           (string, required) node host:port\n";
+	oss << "   \"node\": \"\"                   (string, required) node host:port\n";
 	oss << " }\n";
 	oss << "\n";
 	oss << "Response:\n";
-	oss << " \"result\": \"result\"                     (string, required) remove node result\n";
+	oss << " \"result\": \"result\"             (string, required) remove node result\n";
 	oss << "\n";
 	oss << "Examples:\n";
 	oss << ">> multiverse-cli removenode 113.105.146.22\n";
@@ -2526,14 +1878,15 @@ string CRemoveNodeConfig::Help() const
 
 // CGetForkCountParam
 CGetForkCountParam::CGetForkCountParam() {}
-json_spirit::Value CGetForkCountParam::ToJSON() const
+Value CGetForkCountParam::ToJSON() const
 {
-	json_spirit::Object ret;
+	Object ret;
 
 	return ret;
 }
-CGetForkCountParam& CGetForkCountParam::FromJSON(const json_spirit::Value& v)
+CGetForkCountParam& CGetForkCountParam::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "getforkcount");
 	auto obj = v.get_obj();
 	return *this;
 }
@@ -2548,18 +1901,16 @@ CGetForkCountResult::CGetForkCountResult(const CRPCInt64& nCount)
 	: nCount(nCount)
 {
 }
-json_spirit::Value CGetForkCountResult::ToJSON() const
+Value CGetForkCountResult::ToJSON() const
 {
-	if (!nCount.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [nCount] is not valid");
-	}
-	json_spirit::Value val;
-	val = json_spirit::Value(nCount);
+	CheckIsValid(nCount, "nCount");
+	Value val;
+	val = Value(nCount);
 	return val;
 }
-CGetForkCountResult& CGetForkCountResult::FromJSON(const json_spirit::Value& v)
+CGetForkCountResult& CGetForkCountResult::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "int", "count");
 	nCount = v.get_int64();
 	return *this;
 }
@@ -2604,7 +1955,7 @@ string CGetForkCountConfig::Help() const
 	oss << " \"param\" : {}\n";
 	oss << "\n";
 	oss << "Response:\n";
-	oss << " \"result\": count                        (int, required) fork count\n";
+	oss << " \"result\": count                (int, required) fork count\n";
 	oss << "\n";
 	oss << "Examples:\n";
 	oss << ">> multiverse-cli getforkcount\n";
@@ -2626,24 +1977,23 @@ CGetGenealogyParam::CGetGenealogyParam(const CRPCString& strFork)
 	: strFork(strFork)
 {
 }
-json_spirit::Value CGetGenealogyParam::ToJSON() const
+Value CGetGenealogyParam::ToJSON() const
 {
-	json_spirit::Object ret;
+	Object ret;
 	if (strFork.IsValid())
 	{
-		ret.push_back(json_spirit::Pair("fork", std::string(strFork)));
+		ret.push_back(Pair("fork", std::string(strFork)));
 	}
 
 	return ret;
 }
-CGetGenealogyParam& CGetGenealogyParam::FromJSON(const json_spirit::Value& v)
+CGetGenealogyParam& CGetGenealogyParam::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "getgenealogy");
 	auto obj = v.get_obj();
 	auto valFork = find_value(obj, "fork");
-	if (!valFork.is_null())
-	{
-		strFork = valFork.get_str();
-	}
+	CheckJSONType(valFork, "string", "fork");
+	strFork = valFork.get_str();
 	return *this;
 }
 string CGetGenealogyParam::Method() const
@@ -2661,49 +2011,32 @@ CGetGenealogyResult::CAncestry::CAncestry(const CRPCType& null)
 	: strParent(null), nHeight(null)
 {
 }
-json_spirit::Value CGetGenealogyResult::CAncestry::ToJSON() const
+Value CGetGenealogyResult::CAncestry::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!strParent.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strParent] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("parent", std::string(strParent)));
-	if (!nHeight.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [nHeight] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("height", int64(nHeight)));
+	Object ret;
+	CheckIsValid(strParent, "strParent");
+	ret.push_back(Pair("parent", std::string(strParent)));
+	CheckIsValid(nHeight, "nHeight");
+	ret.push_back(Pair("height", int64(nHeight)));
 
 	return ret;
 }
-CGetGenealogyResult::CAncestry& CGetGenealogyResult::CAncestry::FromJSON(const json_spirit::Value& v)
+CGetGenealogyResult::CAncestry& CGetGenealogyResult::CAncestry::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "CGetGenealogyResult::CAncestry");
 	auto obj = v.get_obj();
 	auto valParent = find_value(obj, "parent");
-	if (valParent.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[parent] type is not string");
-	}
+	CheckJSONType(valParent, "string", "parent");
 	strParent = valParent.get_str();
 	auto valHeight = find_value(obj, "height");
-	if (valHeight.type() != json_spirit::int_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[height] type is not int");
-	}
+	CheckJSONType(valHeight, "int", "height");
 	nHeight = valHeight.get_int64();
 	return *this;
 }
 bool CGetGenealogyResult::CAncestry::IsValid() const
 {
-	if (!strParent.IsValid())
-	{
-		return false;
-	}
-	if (!nHeight.IsValid())
-	{
-		return false;
-	}
+	if (!strParent.IsValid()) { return false; }
+	if (!nHeight.IsValid()) { return false; }
 	return true;
 }
 
@@ -2717,49 +2050,32 @@ CGetGenealogyResult::CSubline::CSubline(const CRPCType& null)
 	: strSub(null), nHeight(null)
 {
 }
-json_spirit::Value CGetGenealogyResult::CSubline::ToJSON() const
+Value CGetGenealogyResult::CSubline::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!strSub.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strSub] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("sub", std::string(strSub)));
-	if (!nHeight.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [nHeight] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("height", int64(nHeight)));
+	Object ret;
+	CheckIsValid(strSub, "strSub");
+	ret.push_back(Pair("sub", std::string(strSub)));
+	CheckIsValid(nHeight, "nHeight");
+	ret.push_back(Pair("height", int64(nHeight)));
 
 	return ret;
 }
-CGetGenealogyResult::CSubline& CGetGenealogyResult::CSubline::FromJSON(const json_spirit::Value& v)
+CGetGenealogyResult::CSubline& CGetGenealogyResult::CSubline::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "CGetGenealogyResult::CSubline");
 	auto obj = v.get_obj();
 	auto valSub = find_value(obj, "sub");
-	if (valSub.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[sub] type is not string");
-	}
+	CheckJSONType(valSub, "string", "sub");
 	strSub = valSub.get_str();
 	auto valHeight = find_value(obj, "height");
-	if (valHeight.type() != json_spirit::int_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[height] type is not int");
-	}
+	CheckJSONType(valHeight, "int", "height");
 	nHeight = valHeight.get_int64();
 	return *this;
 }
 bool CGetGenealogyResult::CSubline::IsValid() const
 {
-	if (!strSub.IsValid())
-	{
-		return false;
-	}
-	if (!nHeight.IsValid())
-	{
-		return false;
-	}
+	if (!strSub.IsValid()) { return false; }
+	if (!nHeight.IsValid()) { return false; }
 	return true;
 }
 
@@ -2769,50 +2085,39 @@ CGetGenealogyResult::CGetGenealogyResult(const CRPCVector<CAncestry>& vecAncestr
 	: vecAncestry(vecAncestry), vecSubline(vecSubline)
 {
 }
-json_spirit::Value CGetGenealogyResult::ToJSON() const
+Value CGetGenealogyResult::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!vecAncestry.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [vecAncestry] is not valid");
-	}
-	json_spirit::Array vecAncestryArray;
+	Object ret;
+	CheckIsValid(vecAncestry, "vecAncestry");
+	Array vecAncestryArray;
 	for (auto& v : vecAncestry)
 	{
 		vecAncestryArray.push_back(v.ToJSON());
 	}
-	ret.push_back(json_spirit::Pair("ancestry", vecAncestryArray));
-	if (!vecSubline.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [vecSubline] is not valid");
-	}
-	json_spirit::Array vecSublineArray;
+	ret.push_back(Pair("ancestry", vecAncestryArray));
+	CheckIsValid(vecSubline, "vecSubline");
+	Array vecSublineArray;
 	for (auto& v : vecSubline)
 	{
 		vecSublineArray.push_back(v.ToJSON());
 	}
-	ret.push_back(json_spirit::Pair("subline", vecSublineArray));
+	ret.push_back(Pair("subline", vecSublineArray));
 
 	return ret;
 }
-CGetGenealogyResult& CGetGenealogyResult::FromJSON(const json_spirit::Value& v)
+CGetGenealogyResult& CGetGenealogyResult::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "getgenealogy");
 	auto obj = v.get_obj();
 	auto valAncestry = find_value(obj, "ancestry");
-	if (valAncestry.type() != json_spirit::array_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[ancestry] type is not array");
-	}
+	CheckJSONType(valAncestry, "array", "ancestry");
 	auto vecAncestryArray = valAncestry.get_array();
 	for (auto& v : vecAncestryArray)
 	{
 		vecAncestry.push_back(CRPCVector<CAncestry>::value_type().FromJSON(v));
 	}
 	auto valSubline = find_value(obj, "subline");
-	if (valSubline.type() != json_spirit::array_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[subline] type is not array");
-	}
+	CheckJSONType(valSubline, "array", "subline");
 	auto vecSublineArray = valSubline.get_array();
 	for (auto& v : vecSublineArray)
 	{
@@ -2853,9 +2158,9 @@ bool CGetGenealogyConfig::PostLoad()
 	}
 	else
 	{
-		if (std::next(it, 1) != vecCommand.end())
+		if (next(it, 1) != vecCommand.end())
 		{
-			std::istringstream iss(*++it);
+			istringstream iss(*++it);
 			iss >> strFork;
 			if (!iss.eof())
 			{
@@ -2878,29 +2183,29 @@ string CGetGenealogyConfig::Help() const
 	oss << "Returns the list of ancestry and subline.\n";
 	oss << "\n";
 	oss << "Arguments:\n";
-	oss << " -f=\"fork\"                              (string, optional) fork hash\n";
+	oss << " -f=\"fork\"                      (string, optional) fork hash\n";
 	oss << "\n";
 	oss << "Request:\n";
 	oss << " \"param\" :\n";
 	oss << " {\n";
-	oss << "   \"fork\": \"\"                           (string, optional) fork hash\n";
+	oss << "   \"fork\": \"\"                   (string, optional) fork hash\n";
 	oss << " }\n";
 	oss << "\n";
 	oss << "Response:\n";
 	oss << " \"result\" :\n";
 	oss << " {\n";
 	oss << "   [\n";
-	oss << "     \"ancestry\":                        (object, required) ancestry\n";
+	oss << "     \"ancestry\":                (object, required) ancestry\n";
 	oss << "     {\n";
-	oss << "       \"parent\": \"\",                    (string, required) parent fork hash\n";
-	oss << "       \"height\": 0                      (int, required) parent origin height\n";
+	oss << "       \"parent\": \"\",            (string, required) parent fork hash\n";
+	oss << "       \"height\": 0              (int, required) parent origin height\n";
 	oss << "     }\n";
 	oss << "   ]\n";
 	oss << "   [\n";
-	oss << "     \"subline\":                         (object, required) subline\n";
+	oss << "     \"subline\":                 (object, required) subline\n";
 	oss << "     {\n";
-	oss << "       \"sub\": \"\",                       (string, required) sub fork hash\n";
-	oss << "       \"height\": 0                      (int, required) sub origin height\n";
+	oss << "       \"sub\": \"\",               (string, required) sub fork hash\n";
+	oss << "       \"height\": 0              (int, required) sub origin height\n";
 	oss << "     }\n";
 	oss << "   ]\n";
 	oss << " }\n";
@@ -2930,25 +2235,20 @@ CGetBlockLocationParam::CGetBlockLocationParam(const CRPCString& strBlock)
 	: strBlock(strBlock)
 {
 }
-json_spirit::Value CGetBlockLocationParam::ToJSON() const
+Value CGetBlockLocationParam::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!strBlock.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strBlock] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("block", std::string(strBlock)));
+	Object ret;
+	CheckIsValid(strBlock, "strBlock");
+	ret.push_back(Pair("block", std::string(strBlock)));
 
 	return ret;
 }
-CGetBlockLocationParam& CGetBlockLocationParam::FromJSON(const json_spirit::Value& v)
+CGetBlockLocationParam& CGetBlockLocationParam::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "getblocklocation");
 	auto obj = v.get_obj();
 	auto valBlock = find_value(obj, "block");
-	if (valBlock.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[block] type is not string");
-	}
+	CheckJSONType(valBlock, "string", "block");
 	strBlock = valBlock.get_str();
 	return *this;
 }
@@ -2963,36 +2263,25 @@ CGetBlockLocationResult::CGetBlockLocationResult(const CRPCString& strFork, cons
 	: strFork(strFork), nHeight(nHeight)
 {
 }
-json_spirit::Value CGetBlockLocationResult::ToJSON() const
+Value CGetBlockLocationResult::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!strFork.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strFork] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("fork", std::string(strFork)));
-	if (!nHeight.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [nHeight] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("height", int64(nHeight)));
+	Object ret;
+	CheckIsValid(strFork, "strFork");
+	ret.push_back(Pair("fork", std::string(strFork)));
+	CheckIsValid(nHeight, "nHeight");
+	ret.push_back(Pair("height", int64(nHeight)));
 
 	return ret;
 }
-CGetBlockLocationResult& CGetBlockLocationResult::FromJSON(const json_spirit::Value& v)
+CGetBlockLocationResult& CGetBlockLocationResult::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "getblocklocation");
 	auto obj = v.get_obj();
 	auto valFork = find_value(obj, "fork");
-	if (valFork.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[fork] type is not string");
-	}
+	CheckJSONType(valFork, "string", "fork");
 	strFork = valFork.get_str();
 	auto valHeight = find_value(obj, "height");
-	if (valHeight.type() != json_spirit::int_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[height] type is not int");
-	}
+	CheckJSONType(valHeight, "int", "height");
 	nHeight = valHeight.get_int64();
 	return *this;
 }
@@ -3017,9 +2306,9 @@ bool CGetBlockLocationConfig::PostLoad()
 		throw CRPCException(RPC_PARSE_ERROR, string("too arguments given."));
 	}
 	auto it = vecCommand.begin();
-	if (std::next(it, 1) != vecCommand.end())
+	if (next(it, 1) != vecCommand.end())
 	{
-		std::istringstream iss(*++it);
+		istringstream iss(*++it);
 		iss >> strBlock;
 		if (!iss.eof())
 		{
@@ -3045,19 +2334,19 @@ string CGetBlockLocationConfig::Help() const
 	oss << "Returns the location with given block.\n";
 	oss << "\n";
 	oss << "Arguments:\n";
-	oss << " \"block\"                                (string, required) block hash\n";
+	oss << " \"block\"                        (string, required) block hash\n";
 	oss << "\n";
 	oss << "Request:\n";
 	oss << " \"param\" :\n";
 	oss << " {\n";
-	oss << "   \"block\": \"\"                          (string, required) block hash\n";
+	oss << "   \"block\": \"\"                  (string, required) block hash\n";
 	oss << " }\n";
 	oss << "\n";
 	oss << "Response:\n";
 	oss << " \"result\" :\n";
 	oss << " {\n";
-	oss << "   \"fork\": \"\",                          (string, required) fork hash\n";
-	oss << "   \"height\": 0                          (int, required) block height\n";
+	oss << "   \"fork\": \"\",                  (string, required) fork hash\n";
+	oss << "   \"height\": 0                  (int, required) block height\n";
 	oss << " }\n";
 	oss << "\n";
 	oss << "Examples:\n";
@@ -3081,24 +2370,23 @@ CGetBlockCountParam::CGetBlockCountParam(const CRPCString& strFork)
 	: strFork(strFork)
 {
 }
-json_spirit::Value CGetBlockCountParam::ToJSON() const
+Value CGetBlockCountParam::ToJSON() const
 {
-	json_spirit::Object ret;
+	Object ret;
 	if (strFork.IsValid())
 	{
-		ret.push_back(json_spirit::Pair("fork", std::string(strFork)));
+		ret.push_back(Pair("fork", std::string(strFork)));
 	}
 
 	return ret;
 }
-CGetBlockCountParam& CGetBlockCountParam::FromJSON(const json_spirit::Value& v)
+CGetBlockCountParam& CGetBlockCountParam::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "getblockcount");
 	auto obj = v.get_obj();
 	auto valFork = find_value(obj, "fork");
-	if (!valFork.is_null())
-	{
-		strFork = valFork.get_str();
-	}
+	CheckJSONType(valFork, "string", "fork");
+	strFork = valFork.get_str();
 	return *this;
 }
 string CGetBlockCountParam::Method() const
@@ -3112,18 +2400,16 @@ CGetBlockCountResult::CGetBlockCountResult(const CRPCInt64& nCount)
 	: nCount(nCount)
 {
 }
-json_spirit::Value CGetBlockCountResult::ToJSON() const
+Value CGetBlockCountResult::ToJSON() const
 {
-	if (!nCount.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [nCount] is not valid");
-	}
-	json_spirit::Value val;
-	val = json_spirit::Value(nCount);
+	CheckIsValid(nCount, "nCount");
+	Value val;
+	val = Value(nCount);
 	return val;
 }
-CGetBlockCountResult& CGetBlockCountResult::FromJSON(const json_spirit::Value& v)
+CGetBlockCountResult& CGetBlockCountResult::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "int", "count");
 	nCount = v.get_int64();
 	return *this;
 }
@@ -3160,9 +2446,9 @@ bool CGetBlockCountConfig::PostLoad()
 	}
 	else
 	{
-		if (std::next(it, 1) != vecCommand.end())
+		if (next(it, 1) != vecCommand.end())
 		{
-			std::istringstream iss(*++it);
+			istringstream iss(*++it);
 			iss >> strFork;
 			if (!iss.eof())
 			{
@@ -3185,16 +2471,16 @@ string CGetBlockCountConfig::Help() const
 	oss << "Returns the number of blocks in the given fork.\n";
 	oss << "\n";
 	oss << "Arguments:\n";
-	oss << " -f=\"fork\"                              (string, optional) fork hash\n";
+	oss << " -f=\"fork\"                      (string, optional) fork hash\n";
 	oss << "\n";
 	oss << "Request:\n";
 	oss << " \"param\" :\n";
 	oss << " {\n";
-	oss << "   \"fork\": \"\"                           (string, optional) fork hash\n";
+	oss << "   \"fork\": \"\"                   (string, optional) fork hash\n";
 	oss << " }\n";
 	oss << "\n";
 	oss << "Response:\n";
-	oss << " \"result\": count                        (int, required) block count\n";
+	oss << " \"result\": count                (int, required) block count\n";
 	oss << "\n";
 	oss << "Examples:\n";
 	oss << ">> multiverse-cli getblockcount\n";
@@ -3220,35 +2506,28 @@ CGetBlockHashParam::CGetBlockHashParam(const CRPCInt64& nHeight, const CRPCStrin
 	: nHeight(nHeight), strFork(strFork)
 {
 }
-json_spirit::Value CGetBlockHashParam::ToJSON() const
+Value CGetBlockHashParam::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!nHeight.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [nHeight] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("height", int64(nHeight)));
+	Object ret;
+	CheckIsValid(nHeight, "nHeight");
+	ret.push_back(Pair("height", int64(nHeight)));
 	if (strFork.IsValid())
 	{
-		ret.push_back(json_spirit::Pair("fork", std::string(strFork)));
+		ret.push_back(Pair("fork", std::string(strFork)));
 	}
 
 	return ret;
 }
-CGetBlockHashParam& CGetBlockHashParam::FromJSON(const json_spirit::Value& v)
+CGetBlockHashParam& CGetBlockHashParam::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "getblockhash");
 	auto obj = v.get_obj();
 	auto valHeight = find_value(obj, "height");
-	if (valHeight.type() != json_spirit::int_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[height] type is not int");
-	}
+	CheckJSONType(valHeight, "int", "height");
 	nHeight = valHeight.get_int64();
 	auto valFork = find_value(obj, "fork");
-	if (!valFork.is_null())
-	{
-		strFork = valFork.get_str();
-	}
+	CheckJSONType(valFork, "string", "fork");
+	strFork = valFork.get_str();
 	return *this;
 }
 string CGetBlockHashParam::Method() const
@@ -3262,18 +2541,16 @@ CGetBlockHashResult::CGetBlockHashResult(const CRPCString& strHash)
 	: strHash(strHash)
 {
 }
-json_spirit::Value CGetBlockHashResult::ToJSON() const
+Value CGetBlockHashResult::ToJSON() const
 {
-	if (!strHash.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strHash] is not valid");
-	}
-	json_spirit::Value val;
-	val = json_spirit::Value(strHash);
+	CheckIsValid(strHash, "strHash");
+	Value val;
+	val = Value(strHash);
 	return val;
 }
-CGetBlockHashResult& CGetBlockHashResult::FromJSON(const json_spirit::Value& v)
+CGetBlockHashResult& CGetBlockHashResult::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "string", "hash");
 	strHash = v.get_str();
 	return *this;
 }
@@ -3303,9 +2580,9 @@ bool CGetBlockHashConfig::PostLoad()
 		throw CRPCException(RPC_PARSE_ERROR, string("too arguments given."));
 	}
 	auto it = vecCommand.begin();
-	if (std::next(it, 1) != vecCommand.end())
+	if (next(it, 1) != vecCommand.end())
 	{
-		std::istringstream iss(*++it);
+		istringstream iss(*++it);
 		iss >> nHeight;
 		if (!iss.eof())
 		{
@@ -3323,9 +2600,9 @@ bool CGetBlockHashConfig::PostLoad()
 	}
 	else
 	{
-		if (std::next(it, 1) != vecCommand.end())
+		if (next(it, 1) != vecCommand.end())
 		{
-			std::istringstream iss(*++it);
+			istringstream iss(*++it);
 			iss >> strFork;
 			if (!iss.eof())
 			{
@@ -3348,18 +2625,18 @@ string CGetBlockHashConfig::Help() const
 	oss << "Returns hash of block in fork at <index>.\n";
 	oss << "\n";
 	oss << "Arguments:\n";
-	oss << " height                                 (int, required) block height\n";
-	oss << " -f=\"fork\"                              (string, optional) fork hash\n";
+	oss << " height                         (int, required) block height\n";
+	oss << " -f=\"fork\"                      (string, optional) fork hash\n";
 	oss << "\n";
 	oss << "Request:\n";
 	oss << " \"param\" :\n";
 	oss << " {\n";
-	oss << "   \"height\": 0,                         (int, required) block height\n";
-	oss << "   \"fork\": \"\"                           (string, optional) fork hash\n";
+	oss << "   \"height\": 0,                 (int, required) block height\n";
+	oss << "   \"fork\": \"\"                   (string, optional) fork hash\n";
 	oss << " }\n";
 	oss << "\n";
 	oss << "Response:\n";
-	oss << " \"result\": \"hash\"                       (string, required) block hash\n";
+	oss << " \"result\": \"hash\"               (string, required) block hash\n";
 	oss << "\n";
 	oss << "Examples:\n";
 	oss << ">> multiverse-cli getblockhash 1\n";
@@ -3388,25 +2665,20 @@ CGetBlockParam::CGetBlockParam(const CRPCString& strBlock)
 	: strBlock(strBlock)
 {
 }
-json_spirit::Value CGetBlockParam::ToJSON() const
+Value CGetBlockParam::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!strBlock.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strBlock] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("block", std::string(strBlock)));
+	Object ret;
+	CheckIsValid(strBlock, "strBlock");
+	ret.push_back(Pair("block", std::string(strBlock)));
 
 	return ret;
 }
-CGetBlockParam& CGetBlockParam::FromJSON(const json_spirit::Value& v)
+CGetBlockParam& CGetBlockParam::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "getblock");
 	auto obj = v.get_obj();
 	auto valBlock = find_value(obj, "block");
-	if (valBlock.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[block] type is not string");
-	}
+	CheckJSONType(valBlock, "string", "block");
 	strBlock = valBlock.get_str();
 	return *this;
 }
@@ -3421,17 +2693,15 @@ CGetBlockResult::CGetBlockResult(const CBlockData& block)
 	: block(block)
 {
 }
-json_spirit::Value CGetBlockResult::ToJSON() const
+Value CGetBlockResult::ToJSON() const
 {
-	if (!block.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [block] is not valid");
-	}
+	CheckIsValid(block, "block");
 	return block.ToJSON();
 }
-CGetBlockResult& CGetBlockResult::FromJSON(const json_spirit::Value& v)
+CGetBlockResult& CGetBlockResult::FromJSON(const Value& v)
 {
-	block.FromJSON(v);
+	CheckJSONType(v, "object", "block");
+	block.FromJSON(v.get_obj());
 	return *this;
 }
 string CGetBlockResult::Method() const
@@ -3455,9 +2725,9 @@ bool CGetBlockConfig::PostLoad()
 		throw CRPCException(RPC_PARSE_ERROR, string("too arguments given."));
 	}
 	auto it = vecCommand.begin();
-	if (std::next(it, 1) != vecCommand.end())
+	if (next(it, 1) != vecCommand.end())
 	{
-		std::istringstream iss(*++it);
+		istringstream iss(*++it);
 		iss >> strBlock;
 		if (!iss.eof())
 		{
@@ -3483,28 +2753,28 @@ string CGetBlockConfig::Help() const
 	oss << "Returns details of a block with given block-hash.\n";
 	oss << "\n";
 	oss << "Arguments:\n";
-	oss << " \"block\"                                (string, required) block hash\n";
+	oss << " \"block\"                        (string, required) block hash\n";
 	oss << "\n";
 	oss << "Request:\n";
 	oss << " \"param\" :\n";
 	oss << " {\n";
-	oss << "   \"block\": \"\"                          (string, required) block hash\n";
+	oss << "   \"block\": \"\"                  (string, required) block hash\n";
 	oss << " }\n";
 	oss << "\n";
 	oss << "Response:\n";
 	oss << " \"result\" :\n";
 	oss << " {\n";
-	oss << "   \"hash\": \"\",                          (string, required) block hash\n";
-	oss << "   \"version\": 0,                        (uint, required) version\n";
-	oss << "   \"type\": \"\",                          (string, required) block type\n";
-	oss << "   \"time\": 0,                           (uint, required) block time\n";
-	oss << "   \"fork\": \"\",                          (string, required) fork hash\n";
-	oss << "   \"height\": 0,                         (uint, required) block height\n";
-	oss << "   \"txmint\": \"\",                        (string, required) transaction mint hash\n";
+	oss << "   \"hash\": \"\",                  (string, required) block hash\n";
+	oss << "   \"version\": 0,                (uint, required) version\n";
+	oss << "   \"type\": \"\",                  (string, required) block type\n";
+	oss << "   \"time\": 0,                   (uint, required) block time\n";
+	oss << "   \"fork\": \"\",                  (string, required) fork hash\n";
+	oss << "   \"height\": 0,                 (uint, required) block height\n";
+	oss << "   \"txmint\": \"\",                (string, required) transaction mint hash\n";
 	oss << "   [\n";
-	oss << "     \"tx\": \"\"                           (string, required) transaction hash\n";
+	oss << "     \"tx\": \"\"                   (string, required) transaction hash\n";
 	oss << "   ]\n";
-	oss << "   \"prev\": \"\"                           (string, optional) previous block hash\n";
+	oss << "   \"prev\": \"\"                   (string, optional) previous block hash\n";
 	oss << " }\n";
 	oss << "\n";
 	oss << "Examples:\n";
@@ -3528,33 +2798,30 @@ CGetTxPoolParam::CGetTxPoolParam(const CRPCString& strFork, const CRPCBool& fDet
 	: strFork(strFork), fDetail(fDetail)
 {
 }
-json_spirit::Value CGetTxPoolParam::ToJSON() const
+Value CGetTxPoolParam::ToJSON() const
 {
-	json_spirit::Object ret;
+	Object ret;
 	if (strFork.IsValid())
 	{
-		ret.push_back(json_spirit::Pair("fork", std::string(strFork)));
+		ret.push_back(Pair("fork", std::string(strFork)));
 	}
 	if (fDetail.IsValid())
 	{
-		ret.push_back(json_spirit::Pair("detail", bool(fDetail)));
+		ret.push_back(Pair("detail", bool(fDetail)));
 	}
 
 	return ret;
 }
-CGetTxPoolParam& CGetTxPoolParam::FromJSON(const json_spirit::Value& v)
+CGetTxPoolParam& CGetTxPoolParam::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "gettxpool");
 	auto obj = v.get_obj();
 	auto valFork = find_value(obj, "fork");
-	if (!valFork.is_null())
-	{
-		strFork = valFork.get_str();
-	}
+	CheckJSONType(valFork, "string", "fork");
+	strFork = valFork.get_str();
 	auto valDetail = find_value(obj, "detail");
-	if (!valDetail.is_null())
-	{
-		fDetail = valDetail.get_bool();
-	}
+	CheckJSONType(valDetail, "bool", "detail");
+	fDetail = valDetail.get_bool();
 	return *this;
 }
 string CGetTxPoolParam::Method() const
@@ -3572,49 +2839,32 @@ CGetTxPoolResult::CList::CList(const CRPCType& null)
 	: strHex(null), nSize(null)
 {
 }
-json_spirit::Value CGetTxPoolResult::CList::ToJSON() const
+Value CGetTxPoolResult::CList::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!strHex.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strHex] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("hex", std::string(strHex)));
-	if (!nSize.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [nSize] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("size", uint64(nSize)));
+	Object ret;
+	CheckIsValid(strHex, "strHex");
+	ret.push_back(Pair("hex", std::string(strHex)));
+	CheckIsValid(nSize, "nSize");
+	ret.push_back(Pair("size", uint64(nSize)));
 
 	return ret;
 }
-CGetTxPoolResult::CList& CGetTxPoolResult::CList::FromJSON(const json_spirit::Value& v)
+CGetTxPoolResult::CList& CGetTxPoolResult::CList::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "CGetTxPoolResult::CList");
 	auto obj = v.get_obj();
 	auto valHex = find_value(obj, "hex");
-	if (valHex.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[hex] type is not string");
-	}
+	CheckJSONType(valHex, "string", "hex");
 	strHex = valHex.get_str();
 	auto valSize = find_value(obj, "size");
-	if (valSize.type() != json_spirit::int_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[size] type is not uint");
-	}
+	CheckJSONType(valSize, "uint", "size");
 	nSize = valSize.get_uint64();
 	return *this;
 }
 bool CGetTxPoolResult::CList::IsValid() const
 {
-	if (!strHex.IsValid())
-	{
-		return false;
-	}
-	if (!nSize.IsValid())
-	{
-		return false;
-	}
+	if (!strHex.IsValid()) { return false; }
+	if (!nSize.IsValid()) { return false; }
 	return true;
 }
 
@@ -3624,50 +2874,45 @@ CGetTxPoolResult::CGetTxPoolResult(const CRPCUint64& nCount, const CRPCUint64& n
 	: nCount(nCount), nSize(nSize), vecList(vecList)
 {
 }
-json_spirit::Value CGetTxPoolResult::ToJSON() const
+Value CGetTxPoolResult::ToJSON() const
 {
-	json_spirit::Object ret;
+	Object ret;
 	if (nCount.IsValid())
 	{
-		ret.push_back(json_spirit::Pair("count", uint64(nCount)));
+		ret.push_back(Pair("count", uint64(nCount)));
 	}
 	if (nSize.IsValid())
 	{
-		ret.push_back(json_spirit::Pair("size", uint64(nSize)));
+		ret.push_back(Pair("size", uint64(nSize)));
 	}
 	if (vecList.IsValid())
 	{
-		json_spirit::Array vecListArray;
+		Array vecListArray;
 		for (auto& v : vecList)
 		{
 			vecListArray.push_back(v.ToJSON());
 		}
-		ret.push_back(json_spirit::Pair("list", vecListArray));
+		ret.push_back(Pair("list", vecListArray));
 	}
 
 	return ret;
 }
-CGetTxPoolResult& CGetTxPoolResult::FromJSON(const json_spirit::Value& v)
+CGetTxPoolResult& CGetTxPoolResult::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "gettxpool");
 	auto obj = v.get_obj();
 	auto valCount = find_value(obj, "count");
-	if (!valCount.is_null())
-	{
-		nCount = valCount.get_uint64();
-	}
+	CheckJSONType(valCount, "uint", "count");
+	nCount = valCount.get_uint64();
 	auto valSize = find_value(obj, "size");
-	if (!valSize.is_null())
-	{
-		nSize = valSize.get_uint64();
-	}
+	CheckJSONType(valSize, "uint", "size");
+	nSize = valSize.get_uint64();
 	auto valList = find_value(obj, "list");
-	if (!valList.is_null())
+	CheckJSONType(valList, "array", "list");
+	auto vecListArray = valList.get_array();
+	for (auto& v : vecListArray)
 	{
-		auto vecListArray = valList.get_array();
-		for (auto& v : vecListArray)
-		{
-			vecList.push_back(CRPCVector<CList>::value_type().FromJSON(v));
-		}
+		vecList.push_back(CRPCVector<CList>::value_type().FromJSON(v));
 	}
 	return *this;
 }
@@ -3705,9 +2950,9 @@ bool CGetTxPoolConfig::PostLoad()
 	}
 	else
 	{
-		if (std::next(it, 1) != vecCommand.end())
+		if (next(it, 1) != vecCommand.end())
 		{
-			std::istringstream iss(*++it);
+			istringstream iss(*++it);
 			iss >> strFork;
 			if (!iss.eof())
 			{
@@ -3722,10 +2967,10 @@ bool CGetTxPoolConfig::PostLoad()
 	}
 	else
 	{
-		if (std::next(it, 1) != vecCommand.end())
+		if (next(it, 1) != vecCommand.end())
 		{
-			std::istringstream iss(*++it);
-			iss >> std::boolalpha >> fDetail;
+			istringstream iss(*++it);
+			iss >> boolalpha >> fDetail;
 			if (!iss.eof())
 			{
 				throw CRPCException(RPC_PARSE_ERROR, "[detail] type error, needs bool");
@@ -3752,29 +2997,29 @@ string CGetTxPoolConfig::Help() const
 	       "Otherwise,returns all transaction ids and sizes in memory pool for given fork.\n";
 	oss << "\n";
 	oss << "Arguments:\n";
-	oss << " -f=\"fork\"                              (string, optional) fork hash\n";
-	oss << " -d|-nod*detail*                        (bool, optional, default=false) get detail or not\n";
+	oss << " -f=\"fork\"                      (string, optional) fork hash\n";
+	oss << " -d|-nod*detail*                (bool, optional, default=false) get detail or not\n";
 	oss << "\n";
 	oss << "Request:\n";
 	oss << " \"param\" :\n";
 	oss << " {\n";
-	oss << "   \"fork\": \"\",                          (string, optional) fork hash\n";
-	oss << "   \"detail\": true|false                 (bool, optional, default=false) get detail or not\n";
+	oss << "   \"fork\": \"\",                  (string, optional) fork hash\n";
+	oss << "   \"detail\": true|false         (bool, optional, default=false) get detail or not\n";
 	oss << " }\n";
 	oss << "\n";
 	oss << "Response:\n";
 	oss << " \"result\" :\n";
 	oss << " {\n";
 	oss << "   (if \"detail\" is false)\n";
-	oss << "   \"count\": 0,                          (uint, optional) transaction pool count\n";
+	oss << "   \"count\": 0,                  (uint, optional) transaction pool count\n";
 	oss << "   (if \"detail\" is false)\n";
-	oss << "   \"size\": 0,                           (uint, optional) transaction total size\n";
+	oss << "   \"size\": 0,                   (uint, optional) transaction total size\n";
 	oss << "   (if \"detail\" is true)\n";
 	oss << "   [\n";
-	oss << "     \"pool\":                            (object, required) pool struct\n";
+	oss << "     \"pool\":                    (object, required) pool struct\n";
 	oss << "     {\n";
-	oss << "       \"hex\": \"\",                       (string, required) tx pool hex\n";
-	oss << "       \"size\": 0                        (uint, required) tx pool size\n";
+	oss << "       \"hex\": \"\",               (string, required) tx pool hex\n";
+	oss << "       \"size\": 0                (uint, required) tx pool size\n";
 	oss << "     }\n";
 	oss << "   ]\n";
 	oss << " }\n";
@@ -3799,25 +3044,20 @@ CRemovePendingTxParam::CRemovePendingTxParam(const CRPCString& strTxid)
 	: strTxid(strTxid)
 {
 }
-json_spirit::Value CRemovePendingTxParam::ToJSON() const
+Value CRemovePendingTxParam::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!strTxid.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strTxid] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("txid", std::string(strTxid)));
+	Object ret;
+	CheckIsValid(strTxid, "strTxid");
+	ret.push_back(Pair("txid", std::string(strTxid)));
 
 	return ret;
 }
-CRemovePendingTxParam& CRemovePendingTxParam::FromJSON(const json_spirit::Value& v)
+CRemovePendingTxParam& CRemovePendingTxParam::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "removependingtx");
 	auto obj = v.get_obj();
 	auto valTxid = find_value(obj, "txid");
-	if (valTxid.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[txid] type is not string");
-	}
+	CheckJSONType(valTxid, "string", "txid");
 	strTxid = valTxid.get_str();
 	return *this;
 }
@@ -3832,18 +3072,16 @@ CRemovePendingTxResult::CRemovePendingTxResult(const CRPCString& strResult)
 	: strResult(strResult)
 {
 }
-json_spirit::Value CRemovePendingTxResult::ToJSON() const
+Value CRemovePendingTxResult::ToJSON() const
 {
-	if (!strResult.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strResult] is not valid");
-	}
-	json_spirit::Value val;
-	val = json_spirit::Value(strResult);
+	CheckIsValid(strResult, "strResult");
+	Value val;
+	val = Value(strResult);
 	return val;
 }
-CRemovePendingTxResult& CRemovePendingTxResult::FromJSON(const json_spirit::Value& v)
+CRemovePendingTxResult& CRemovePendingTxResult::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "string", "result");
 	strResult = v.get_str();
 	return *this;
 }
@@ -3868,9 +3106,9 @@ bool CRemovePendingTxConfig::PostLoad()
 		throw CRPCException(RPC_PARSE_ERROR, string("too arguments given."));
 	}
 	auto it = vecCommand.begin();
-	if (std::next(it, 1) != vecCommand.end())
+	if (next(it, 1) != vecCommand.end())
 	{
-		std::istringstream iss(*++it);
+		istringstream iss(*++it);
 		iss >> strTxid;
 		if (!iss.eof())
 		{
@@ -3896,16 +3134,16 @@ string CRemovePendingTxConfig::Help() const
 	oss << "Removes tx whose id is <txid> from txpool.\n";
 	oss << "\n";
 	oss << "Arguments:\n";
-	oss << " \"txid\"                                 (string, required) transaction hash\n";
+	oss << " \"txid\"                         (string, required) transaction hash\n";
 	oss << "\n";
 	oss << "Request:\n";
 	oss << " \"param\" :\n";
 	oss << " {\n";
-	oss << "   \"txid\": \"\"                           (string, required) transaction hash\n";
+	oss << "   \"txid\": \"\"                   (string, required) transaction hash\n";
 	oss << " }\n";
 	oss << "\n";
 	oss << "Response:\n";
-	oss << " \"result\": \"result\"                     (string, required) remove tx result\n";
+	oss << " \"result\": \"result\"             (string, required) remove tx result\n";
 	oss << "\n";
 	oss << "Examples:\n";
 	oss << ">> multiverse-cli removependingtx 01a9f3bb967f24396293903c856e99896a514756a220266afa347a8b8c7f0038\n";
@@ -3928,35 +3166,28 @@ CGetTransactionParam::CGetTransactionParam(const CRPCString& strTxid, const CRPC
 	: strTxid(strTxid), fSerialized(fSerialized)
 {
 }
-json_spirit::Value CGetTransactionParam::ToJSON() const
+Value CGetTransactionParam::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!strTxid.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strTxid] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("txid", std::string(strTxid)));
+	Object ret;
+	CheckIsValid(strTxid, "strTxid");
+	ret.push_back(Pair("txid", std::string(strTxid)));
 	if (fSerialized.IsValid())
 	{
-		ret.push_back(json_spirit::Pair("serialized", bool(fSerialized)));
+		ret.push_back(Pair("serialized", bool(fSerialized)));
 	}
 
 	return ret;
 }
-CGetTransactionParam& CGetTransactionParam::FromJSON(const json_spirit::Value& v)
+CGetTransactionParam& CGetTransactionParam::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "gettransaction");
 	auto obj = v.get_obj();
 	auto valTxid = find_value(obj, "txid");
-	if (valTxid.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[txid] type is not string");
-	}
+	CheckJSONType(valTxid, "string", "txid");
 	strTxid = valTxid.get_str();
 	auto valSerialized = find_value(obj, "serialized");
-	if (!valSerialized.is_null())
-	{
-		fSerialized = valSerialized.get_bool();
-	}
+	CheckJSONType(valSerialized, "bool", "serialized");
+	fSerialized = valSerialized.get_bool();
 	return *this;
 }
 string CGetTransactionParam::Method() const
@@ -3970,33 +3201,30 @@ CGetTransactionResult::CGetTransactionResult(const CRPCString& strSerialization,
 	: strSerialization(strSerialization), transaction(transaction)
 {
 }
-json_spirit::Value CGetTransactionResult::ToJSON() const
+Value CGetTransactionResult::ToJSON() const
 {
-	json_spirit::Object ret;
+	Object ret;
 	if (strSerialization.IsValid())
 	{
-		ret.push_back(json_spirit::Pair("serialization", std::string(strSerialization)));
+		ret.push_back(Pair("serialization", std::string(strSerialization)));
 	}
 	if (transaction.IsValid())
 	{
-		ret.push_back(json_spirit::Pair("transaction", transaction.ToJSON()));
+		ret.push_back(Pair("transaction", transaction.ToJSON()));
 	}
 
 	return ret;
 }
-CGetTransactionResult& CGetTransactionResult::FromJSON(const json_spirit::Value& v)
+CGetTransactionResult& CGetTransactionResult::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "gettransaction");
 	auto obj = v.get_obj();
 	auto valSerialization = find_value(obj, "serialization");
-	if (!valSerialization.is_null())
-	{
-		strSerialization = valSerialization.get_str();
-	}
+	CheckJSONType(valSerialization, "string", "serialization");
+	strSerialization = valSerialization.get_str();
 	auto valTransaction = find_value(obj, "transaction");
-	if (!valTransaction.is_null())
-	{
-		transaction.FromJSON(valTransaction);
-	}
+	CheckJSONType(valTransaction, "object", "transaction");
+	transaction.FromJSON(valTransaction.get_obj());
 	return *this;
 }
 string CGetTransactionResult::Method() const
@@ -4025,9 +3253,9 @@ bool CGetTransactionConfig::PostLoad()
 		throw CRPCException(RPC_PARSE_ERROR, string("too arguments given."));
 	}
 	auto it = vecCommand.begin();
-	if (std::next(it, 1) != vecCommand.end())
+	if (next(it, 1) != vecCommand.end())
 	{
-		std::istringstream iss(*++it);
+		istringstream iss(*++it);
 		iss >> strTxid;
 		if (!iss.eof())
 		{
@@ -4045,10 +3273,10 @@ bool CGetTransactionConfig::PostLoad()
 	}
 	else
 	{
-		if (std::next(it, 1) != vecCommand.end())
+		if (next(it, 1) != vecCommand.end())
 		{
-			std::istringstream iss(*++it);
-			iss >> std::boolalpha >> fSerialized;
+			istringstream iss(*++it);
+			iss >> boolalpha >> fSerialized;
 			if (!iss.eof())
 			{
 				throw CRPCException(RPC_PARSE_ERROR, "[serialized] type error, needs bool");
@@ -4074,49 +3302,49 @@ string CGetTransactionConfig::Help() const
 	oss << "get transaction info\n";
 	oss << "\n";
 	oss << "Arguments:\n";
-	oss << " \"txid\"                                 (string, required) transaction hash\n";
-	oss << " -s|-nos*serialized*                    (bool, optional, default=false) If serialized=0, returns an \n"
-	       "                                        Object with information about <txid>.\n"
-	       "                                        If serialized is non-zero, returns a string that is\n"
-	       "                                        serialized, hex-encoded data for <txid>.\n";
+	oss << " \"txid\"                         (string, required) transaction hash\n";
+	oss << " -s|-nos*serialized*            (bool, optional, default=false) If serialized=0,\n"
+	       "                                 returns an Object with information about <txid>.\nIf \n"
+	       "                                serialized is non-zero, returns a string that is\nserialized,\n"
+	       "                                 hex-encoded data for <txid>.\n";
 	oss << "\n";
 	oss << "Request:\n";
 	oss << " \"param\" :\n";
 	oss << " {\n";
-	oss << "   \"txid\": \"\",                          (string, required) transaction hash\n";
-	oss << "   \"serialized\": true|false             (bool, optional, default=false) If serialized=0, returns an \n"
-	       "                                        Object with information about <txid>.\n"
-	       "                                        If serialized is non-zero, returns a string that is\n"
-	       "                                        serialized, hex-encoded data for <txid>.\n";
+	oss << "   \"txid\": \"\",                  (string, required) transaction hash\n";
+	oss << "   \"serialized\": true|false     (bool, optional, default=false) If serialized=0,\n"
+	       "                                 returns an Object with information about <txid>.\nIf \n"
+	       "                                serialized is non-zero, returns a string that is\nserialized,\n"
+	       "                                 hex-encoded data for <txid>.\n";
 	oss << " }\n";
 	oss << "\n";
 	oss << "Response:\n";
 	oss << " \"result\" :\n";
 	oss << " {\n";
 	oss << "   (if \"serialized\" is true)\n";
-	oss << "   \"serialization\": \"\",                 (string, optional) transaction hex data\n";
+	oss << "   \"serialization\": \"\",         (string, optional) transaction hex data\n";
 	oss << "   (if \"serialized\" is false)\n";
-	oss << "   \"transaction\":                       (object, optional) transaction data\n";
+	oss << "   \"transaction\":               (object, optional) transaction data\n";
 	oss << "   {\n";
-	oss << "     \"txid\": \"\",                        (string, required) transaction hash\n";
-	oss << "     \"version\": 0,                      (uint, required) version\n";
-	oss << "     \"type\": \"\",                        (string, required) transaction type\n";
-	oss << "     \"lockuntil\": 0,                    (uint, required) unlock time\n";
-	oss << "     \"anchor\": \"\",                      (string, required) anchor hash\n";
+	oss << "     \"txid\": \"\",                (string, required) transaction hash\n";
+	oss << "     \"version\": 0,              (uint, required) version\n";
+	oss << "     \"type\": \"\",                (string, required) transaction type\n";
+	oss << "     \"lockuntil\": 0,            (uint, required) unlock time\n";
+	oss << "     \"anchor\": \"\",              (string, required) anchor hash\n";
 	oss << "     [\n";
-	oss << "       \"vin\":                           (object, required) vin struct\n";
+	oss << "       \"vin\":                   (object, required) vin struct\n";
 	oss << "       {\n";
-	oss << "         \"txid\": \"\",                    (string, required) pre-vout transaction hash\n";
-	oss << "         \"vout\": 0                      (uint, required) pre-vout number\n";
+	oss << "         \"txid\": \"\",            (string, required) pre-vout transaction hash\n";
+	oss << "         \"vout\": 0              (uint, required) pre-vout number\n";
 	oss << "       }\n";
 	oss << "     ]\n";
-	oss << "     \"sendto\": \"\",                      (string, required) send to address\n";
-	oss << "     \"amount\": 0.0,                     (double, required) amount\n";
-	oss << "     \"txfee\": 0.0,                      (double, required) transaction fee\n";
-	oss << "     \"data\": \"\",                        (string, required) data\n";
-	oss << "     \"sig\": \"\",                         (string, required) sign\n";
-	oss << "     \"fork\": \"\",                        (string, required) fork hash\n";
-	oss << "     \"confirmations\": 0                 (int, optional) confirmations\n";
+	oss << "     \"sendto\": \"\",              (string, required) send to address\n";
+	oss << "     \"amount\": 0.0,             (double, required) amount\n";
+	oss << "     \"txfee\": 0.0,              (double, required) transaction fee\n";
+	oss << "     \"data\": \"\",                (string, required) data\n";
+	oss << "     \"sig\": \"\",                 (string, required) sign\n";
+	oss << "     \"fork\": \"\",                (string, required) fork hash\n";
+	oss << "     \"confirmations\": 0         (int, optional) confirmations\n";
 	oss << "   }\n";
 	oss << " }\n";
 	oss << "\n";
@@ -4145,25 +3373,20 @@ CSendTransactionParam::CSendTransactionParam(const CRPCString& strTxdata)
 	: strTxdata(strTxdata)
 {
 }
-json_spirit::Value CSendTransactionParam::ToJSON() const
+Value CSendTransactionParam::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!strTxdata.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strTxdata] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("txdata", std::string(strTxdata)));
+	Object ret;
+	CheckIsValid(strTxdata, "strTxdata");
+	ret.push_back(Pair("txdata", std::string(strTxdata)));
 
 	return ret;
 }
-CSendTransactionParam& CSendTransactionParam::FromJSON(const json_spirit::Value& v)
+CSendTransactionParam& CSendTransactionParam::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "sendtransaction");
 	auto obj = v.get_obj();
 	auto valTxdata = find_value(obj, "txdata");
-	if (valTxdata.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[txdata] type is not string");
-	}
+	CheckJSONType(valTxdata, "string", "txdata");
 	strTxdata = valTxdata.get_str();
 	return *this;
 }
@@ -4178,18 +3401,16 @@ CSendTransactionResult::CSendTransactionResult(const CRPCString& strData)
 	: strData(strData)
 {
 }
-json_spirit::Value CSendTransactionResult::ToJSON() const
+Value CSendTransactionResult::ToJSON() const
 {
-	if (!strData.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strData] is not valid");
-	}
-	json_spirit::Value val;
-	val = json_spirit::Value(strData);
+	CheckIsValid(strData, "strData");
+	Value val;
+	val = Value(strData);
 	return val;
 }
-CSendTransactionResult& CSendTransactionResult::FromJSON(const json_spirit::Value& v)
+CSendTransactionResult& CSendTransactionResult::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "string", "data");
 	strData = v.get_str();
 	return *this;
 }
@@ -4214,9 +3435,9 @@ bool CSendTransactionConfig::PostLoad()
 		throw CRPCException(RPC_PARSE_ERROR, string("too arguments given."));
 	}
 	auto it = vecCommand.begin();
-	if (std::next(it, 1) != vecCommand.end())
+	if (next(it, 1) != vecCommand.end())
 	{
-		std::istringstream iss(*++it);
+		istringstream iss(*++it);
 		iss >> strTxdata;
 		if (!iss.eof())
 		{
@@ -4242,16 +3463,16 @@ string CSendTransactionConfig::Help() const
 	oss << "Submits raw transaction (serialized, hex-encoded) to local node and network.\n";
 	oss << "\n";
 	oss << "Arguments:\n";
-	oss << " \"txdata\"                               (string, required) transaction binary data\n";
+	oss << " \"txdata\"                       (string, required) transaction binary data\n";
 	oss << "\n";
 	oss << "Request:\n";
 	oss << " \"param\" :\n";
 	oss << " {\n";
-	oss << "   \"txdata\": \"\"                         (string, required) transaction binary data\n";
+	oss << "   \"txdata\": \"\"                 (string, required) transaction binary data\n";
 	oss << " }\n";
 	oss << "\n";
 	oss << "Response:\n";
-	oss << " \"result\": \"data\"                       (string, required) transaction raw data\n";
+	oss << " \"result\": \"data\"               (string, required) transaction raw data\n";
 	oss << "\n";
 	oss << "Examples:\n";
 	oss << ">> multiverse-cli sendtransaction 01000000000000002b747e24738befccff4a05c21dba749632cb8eb410233fa110e3f58a779b4325010ef45be50157453a57519929052d0818c269dee60be98958d5ab65bc7e0919810001b9c3b7aa16c6cb1bf193faf717580d03347148b2145ca98b30b1376d634c12f440420f0000000000a0860100000000000212348182e8a36441d116ce7a97f9a216d43a3dfc4280295874007b8ff5fd45eec9052e0182e8a36441d116ce7a97f9a216d43a3dfc4280295874007b8ff5fd45eec9052ed494d90cd96c252446b4a10459fea8c06186154b2bee2ce2182556e9ba40e7e69ddae2501862e4251bba2abf11c90d6f1fd0dec48a1419e81bb8c7d922cf3e03\n";
@@ -4261,7 +3482,7 @@ string CSendTransactionConfig::Help() const
 	oss << "\n";
 	oss << "Errors:\n";
 	oss << "* {\"code\":-8,\"message\":\"TX decode failed\"}\n"
-	       "* {\"code\":-10,\"message\":\"Tx rejected : xxx\"}\n";
+	       "  {\"code\":-10,\"message\":\"Tx rejected : xxx\"}\n";
 	oss << "\n";
 	return oss.str();
 }
@@ -4271,14 +3492,15 @@ string CSendTransactionConfig::Help() const
 
 // CListKeyParam
 CListKeyParam::CListKeyParam() {}
-json_spirit::Value CListKeyParam::ToJSON() const
+Value CListKeyParam::ToJSON() const
 {
-	json_spirit::Object ret;
+	Object ret;
 
 	return ret;
 }
-CListKeyParam& CListKeyParam::FromJSON(const json_spirit::Value& v)
+CListKeyParam& CListKeyParam::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "listkey");
 	auto obj = v.get_obj();
 	return *this;
 }
@@ -4297,49 +3519,32 @@ CListKeyResult::CPubkey::CPubkey(const CRPCType& null)
 	: strKey(null), strInfo(null)
 {
 }
-json_spirit::Value CListKeyResult::CPubkey::ToJSON() const
+Value CListKeyResult::CPubkey::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!strKey.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strKey] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("key", std::string(strKey)));
-	if (!strInfo.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strInfo] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("info", std::string(strInfo)));
+	Object ret;
+	CheckIsValid(strKey, "strKey");
+	ret.push_back(Pair("key", std::string(strKey)));
+	CheckIsValid(strInfo, "strInfo");
+	ret.push_back(Pair("info", std::string(strInfo)));
 
 	return ret;
 }
-CListKeyResult::CPubkey& CListKeyResult::CPubkey::FromJSON(const json_spirit::Value& v)
+CListKeyResult::CPubkey& CListKeyResult::CPubkey::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "CListKeyResult::CPubkey");
 	auto obj = v.get_obj();
 	auto valKey = find_value(obj, "key");
-	if (valKey.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[key] type is not string");
-	}
+	CheckJSONType(valKey, "string", "key");
 	strKey = valKey.get_str();
 	auto valInfo = find_value(obj, "info");
-	if (valInfo.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[info] type is not string");
-	}
+	CheckJSONType(valInfo, "string", "info");
 	strInfo = valInfo.get_str();
 	return *this;
 }
 bool CListKeyResult::CPubkey::IsValid() const
 {
-	if (!strKey.IsValid())
-	{
-		return false;
-	}
-	if (!strInfo.IsValid())
-	{
-		return false;
-	}
+	if (!strKey.IsValid()) { return false; }
+	if (!strInfo.IsValid()) { return false; }
 	return true;
 }
 
@@ -4349,17 +3554,18 @@ CListKeyResult::CListKeyResult(const CRPCVector<CPubkey>& vecPubkey)
 	: vecPubkey(vecPubkey)
 {
 }
-json_spirit::Value CListKeyResult::ToJSON() const
+Value CListKeyResult::ToJSON() const
 {
-	json_spirit::Array ret;
+	Array ret;
 	for (auto& v : vecPubkey)
 	{
 		ret.push_back(v.ToJSON());
 	}
 	return ret;
 }
-CListKeyResult& CListKeyResult::FromJSON(const json_spirit::Value& v)
+CListKeyResult& CListKeyResult::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "array", "pubkey");
 	auto vecPubkeyArray = v.get_array();
 	for (auto& v : vecPubkeyArray)
 	{
@@ -4410,10 +3616,10 @@ string CListKeyConfig::Help() const
 	oss << "Response:\n";
 	oss << " \"result\" :\n";
 	oss << "   [\n";
-	oss << "     \"pubkey\":                          (object, required) public key info\n";
+	oss << "     \"pubkey\":                  (object, required) public key info\n";
 	oss << "     {\n";
-	oss << "       \"key\": \"\",                       (string, required) public key with hex system\n";
-	oss << "       \"info\": \"\"                       (string, required) key other info\n";
+	oss << "       \"key\": \"\",               (string, required) public key with hex system\n";
+	oss << "       \"info\": \"\"               (string, required) key other info\n";
 	oss << "     }\n";
 	oss << "   ]\n";
 	oss << "\n";
@@ -4437,24 +3643,23 @@ CGetNewKeyParam::CGetNewKeyParam(const CRPCString& strPassphrase)
 	: strPassphrase(strPassphrase)
 {
 }
-json_spirit::Value CGetNewKeyParam::ToJSON() const
+Value CGetNewKeyParam::ToJSON() const
 {
-	json_spirit::Object ret;
+	Object ret;
 	if (strPassphrase.IsValid())
 	{
-		ret.push_back(json_spirit::Pair("passphrase", std::string(strPassphrase)));
+		ret.push_back(Pair("passphrase", std::string(strPassphrase)));
 	}
 
 	return ret;
 }
-CGetNewKeyParam& CGetNewKeyParam::FromJSON(const json_spirit::Value& v)
+CGetNewKeyParam& CGetNewKeyParam::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "getnewkey");
 	auto obj = v.get_obj();
 	auto valPassphrase = find_value(obj, "passphrase");
-	if (!valPassphrase.is_null())
-	{
-		strPassphrase = valPassphrase.get_str();
-	}
+	CheckJSONType(valPassphrase, "string", "passphrase");
+	strPassphrase = valPassphrase.get_str();
 	return *this;
 }
 string CGetNewKeyParam::Method() const
@@ -4468,18 +3673,16 @@ CGetNewKeyResult::CGetNewKeyResult(const CRPCString& strPubkey)
 	: strPubkey(strPubkey)
 {
 }
-json_spirit::Value CGetNewKeyResult::ToJSON() const
+Value CGetNewKeyResult::ToJSON() const
 {
-	if (!strPubkey.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strPubkey] is not valid");
-	}
-	json_spirit::Value val;
-	val = json_spirit::Value(strPubkey);
+	CheckIsValid(strPubkey, "strPubkey");
+	Value val;
+	val = Value(strPubkey);
 	return val;
 }
-CGetNewKeyResult& CGetNewKeyResult::FromJSON(const json_spirit::Value& v)
+CGetNewKeyResult& CGetNewKeyResult::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "string", "pubkey");
 	strPubkey = v.get_str();
 	return *this;
 }
@@ -4504,9 +3707,9 @@ bool CGetNewKeyConfig::PostLoad()
 		throw CRPCException(RPC_PARSE_ERROR, string("too arguments given."));
 	}
 	auto it = vecCommand.begin();
-	if (std::next(it, 1) != vecCommand.end())
+	if (next(it, 1) != vecCommand.end())
 	{
-		std::istringstream iss(*++it);
+		istringstream iss(*++it);
 		iss >> strPassphrase;
 		if (!iss.eof())
 		{
@@ -4529,16 +3732,16 @@ string CGetNewKeyConfig::Help() const
 	       "If (passphrase) is specified, the key will be encrypted with (passphrase).\n";
 	oss << "\n";
 	oss << "Arguments:\n";
-	oss << " \"passphrase\"                           (string, optional) passphrase\n";
+	oss << " \"passphrase\"                   (string, optional) passphrase\n";
 	oss << "\n";
 	oss << "Request:\n";
 	oss << " \"param\" :\n";
 	oss << " {\n";
-	oss << "   \"passphrase\": \"\"                     (string, optional) passphrase\n";
+	oss << "   \"passphrase\": \"\"             (string, optional) passphrase\n";
 	oss << " }\n";
 	oss << "\n";
 	oss << "Response:\n";
-	oss << " \"result\": \"pubkey\"                     (string, required) public key\n";
+	oss << " \"result\": \"pubkey\"             (string, required) public key\n";
 	oss << "\n";
 	oss << "Examples:\n";
 	oss << ">> multiverse-cli getnewkey 123\n";
@@ -4561,46 +3764,33 @@ CEncryptKeyParam::CEncryptKeyParam(const CRPCString& strPubkey, const CRPCString
 	: strPubkey(strPubkey), strPassphrase(strPassphrase), strOldpassphrase(strOldpassphrase)
 {
 }
-json_spirit::Value CEncryptKeyParam::ToJSON() const
+Value CEncryptKeyParam::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!strPubkey.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strPubkey] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("pubkey", std::string(strPubkey)));
-	if (!strPassphrase.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strPassphrase] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("passphrase", std::string(strPassphrase)));
+	Object ret;
+	CheckIsValid(strPubkey, "strPubkey");
+	ret.push_back(Pair("pubkey", std::string(strPubkey)));
+	CheckIsValid(strPassphrase, "strPassphrase");
+	ret.push_back(Pair("passphrase", std::string(strPassphrase)));
 	if (strOldpassphrase.IsValid())
 	{
-		ret.push_back(json_spirit::Pair("oldpassphrase", std::string(strOldpassphrase)));
+		ret.push_back(Pair("oldpassphrase", std::string(strOldpassphrase)));
 	}
 
 	return ret;
 }
-CEncryptKeyParam& CEncryptKeyParam::FromJSON(const json_spirit::Value& v)
+CEncryptKeyParam& CEncryptKeyParam::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "encryptkey");
 	auto obj = v.get_obj();
 	auto valPubkey = find_value(obj, "pubkey");
-	if (valPubkey.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[pubkey] type is not string");
-	}
+	CheckJSONType(valPubkey, "string", "pubkey");
 	strPubkey = valPubkey.get_str();
 	auto valPassphrase = find_value(obj, "passphrase");
-	if (valPassphrase.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[passphrase] type is not string");
-	}
+	CheckJSONType(valPassphrase, "string", "passphrase");
 	strPassphrase = valPassphrase.get_str();
 	auto valOldpassphrase = find_value(obj, "oldpassphrase");
-	if (!valOldpassphrase.is_null())
-	{
-		strOldpassphrase = valOldpassphrase.get_str();
-	}
+	CheckJSONType(valOldpassphrase, "string", "oldpassphrase");
+	strOldpassphrase = valOldpassphrase.get_str();
 	return *this;
 }
 string CEncryptKeyParam::Method() const
@@ -4614,18 +3804,16 @@ CEncryptKeyResult::CEncryptKeyResult(const CRPCString& strResult)
 	: strResult(strResult)
 {
 }
-json_spirit::Value CEncryptKeyResult::ToJSON() const
+Value CEncryptKeyResult::ToJSON() const
 {
-	if (!strResult.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strResult] is not valid");
-	}
-	json_spirit::Value val;
-	val = json_spirit::Value(strResult);
+	CheckIsValid(strResult, "strResult");
+	Value val;
+	val = Value(strResult);
 	return val;
 }
-CEncryptKeyResult& CEncryptKeyResult::FromJSON(const json_spirit::Value& v)
+CEncryptKeyResult& CEncryptKeyResult::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "string", "result");
 	strResult = v.get_str();
 	return *this;
 }
@@ -4650,9 +3838,9 @@ bool CEncryptKeyConfig::PostLoad()
 		throw CRPCException(RPC_PARSE_ERROR, string("too arguments given."));
 	}
 	auto it = vecCommand.begin();
-	if (std::next(it, 1) != vecCommand.end())
+	if (next(it, 1) != vecCommand.end())
 	{
-		std::istringstream iss(*++it);
+		istringstream iss(*++it);
 		iss >> strPubkey;
 		if (!iss.eof())
 		{
@@ -4663,9 +3851,9 @@ bool CEncryptKeyConfig::PostLoad()
 	{
 		throw CRPCException(RPC_PARSE_ERROR, "[pubkey] is required");
 	}
-	if (std::next(it, 1) != vecCommand.end())
+	if (next(it, 1) != vecCommand.end())
 	{
-		std::istringstream iss(*++it);
+		istringstream iss(*++it);
 		iss >> strPassphrase;
 		if (!iss.eof())
 		{
@@ -4676,9 +3864,9 @@ bool CEncryptKeyConfig::PostLoad()
 	{
 		throw CRPCException(RPC_PARSE_ERROR, "[passphrase] is required");
 	}
-	if (std::next(it, 1) != vecCommand.end())
+	if (next(it, 1) != vecCommand.end())
 	{
-		std::istringstream iss(*++it);
+		istringstream iss(*++it);
 		iss >> strOldpassphrase;
 		if (!iss.eof())
 		{
@@ -4701,20 +3889,20 @@ string CEncryptKeyConfig::Help() const
 	       "For encrypted key, changes the passphrase for (oldpassphrase) to <passphrase>\n";
 	oss << "\n";
 	oss << "Arguments:\n";
-	oss << " \"pubkey\"                               (string, required) public key\n";
-	oss << " \"passphrase\"                           (string, required) passphrase of key\n";
-	oss << " \"oldpassphrase\"                        (string, optional) old passphrase of key\n";
+	oss << " \"pubkey\"                       (string, required) public key\n";
+	oss << " \"passphrase\"                   (string, required) passphrase of key\n";
+	oss << " \"oldpassphrase\"                (string, optional) old passphrase of key\n";
 	oss << "\n";
 	oss << "Request:\n";
 	oss << " \"param\" :\n";
 	oss << " {\n";
-	oss << "   \"pubkey\": \"\",                        (string, required) public key\n";
-	oss << "   \"passphrase\": \"\",                    (string, required) passphrase of key\n";
-	oss << "   \"oldpassphrase\": \"\"                  (string, optional) old passphrase of key\n";
+	oss << "   \"pubkey\": \"\",                (string, required) public key\n";
+	oss << "   \"passphrase\": \"\",            (string, required) passphrase of key\n";
+	oss << "   \"oldpassphrase\": \"\"          (string, optional) old passphrase of key\n";
 	oss << " }\n";
 	oss << "\n";
 	oss << "Response:\n";
-	oss << " \"result\": \"result\"                     (string, required) encrypt key result\n";
+	oss << " \"result\": \"result\"             (string, required) encrypt key result\n";
 	oss << "\n";
 	oss << "Examples:\n";
 	oss << ">> multiverse-cli encryptkey 2e05c9ee45fdf58f7b007458298042fc3d3ad416a2f9977ace16d14164a3e882 123\n";
@@ -4724,7 +3912,7 @@ string CEncryptKeyConfig::Help() const
 	oss << "\n";
 	oss << "Errors:\n";
 	oss << "* {\"code\":-4,\"message\":\"Unknown key\"}\n"
-	       "* {\"code\":-406,\"message\":\"The passphrase entered was incorrect.\"}\n";
+	       "  {\"code\":-406,\"message\":\"The passphrase entered was incorrect.\"}\n";
 	oss << "\n";
 	return oss.str();
 }
@@ -4738,25 +3926,20 @@ CLockKeyParam::CLockKeyParam(const CRPCString& strPubkey)
 	: strPubkey(strPubkey)
 {
 }
-json_spirit::Value CLockKeyParam::ToJSON() const
+Value CLockKeyParam::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!strPubkey.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strPubkey] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("pubkey", std::string(strPubkey)));
+	Object ret;
+	CheckIsValid(strPubkey, "strPubkey");
+	ret.push_back(Pair("pubkey", std::string(strPubkey)));
 
 	return ret;
 }
-CLockKeyParam& CLockKeyParam::FromJSON(const json_spirit::Value& v)
+CLockKeyParam& CLockKeyParam::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "lockkey");
 	auto obj = v.get_obj();
 	auto valPubkey = find_value(obj, "pubkey");
-	if (valPubkey.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[pubkey] type is not string");
-	}
+	CheckJSONType(valPubkey, "string", "pubkey");
 	strPubkey = valPubkey.get_str();
 	return *this;
 }
@@ -4771,18 +3954,16 @@ CLockKeyResult::CLockKeyResult(const CRPCString& strResult)
 	: strResult(strResult)
 {
 }
-json_spirit::Value CLockKeyResult::ToJSON() const
+Value CLockKeyResult::ToJSON() const
 {
-	if (!strResult.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strResult] is not valid");
-	}
-	json_spirit::Value val;
-	val = json_spirit::Value(strResult);
+	CheckIsValid(strResult, "strResult");
+	Value val;
+	val = Value(strResult);
 	return val;
 }
-CLockKeyResult& CLockKeyResult::FromJSON(const json_spirit::Value& v)
+CLockKeyResult& CLockKeyResult::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "string", "result");
 	strResult = v.get_str();
 	return *this;
 }
@@ -4807,9 +3988,9 @@ bool CLockKeyConfig::PostLoad()
 		throw CRPCException(RPC_PARSE_ERROR, string("too arguments given."));
 	}
 	auto it = vecCommand.begin();
-	if (std::next(it, 1) != vecCommand.end())
+	if (next(it, 1) != vecCommand.end())
 	{
-		std::istringstream iss(*++it);
+		istringstream iss(*++it);
 		iss >> strPubkey;
 		if (!iss.eof())
 		{
@@ -4837,16 +4018,16 @@ string CLockKeyConfig::Help() const
 	       "before being able to call any methods which require the key to be unlocked.\n";
 	oss << "\n";
 	oss << "Arguments:\n";
-	oss << " \"pubkey\"                               (string, required) pubkey or pubkey address\n";
+	oss << " \"pubkey\"                       (string, required) pubkey or pubkey address\n";
 	oss << "\n";
 	oss << "Request:\n";
 	oss << " \"param\" :\n";
 	oss << " {\n";
-	oss << "   \"pubkey\": \"\"                         (string, required) pubkey or pubkey address\n";
+	oss << "   \"pubkey\": \"\"                 (string, required) pubkey or pubkey address\n";
 	oss << " }\n";
 	oss << "\n";
 	oss << "Response:\n";
-	oss << " \"result\": \"result\"                     (string, required) lock key result\n";
+	oss << " \"result\": \"result\"             (string, required) lock key result\n";
 	oss << "\n";
 	oss << "Examples:\n";
 	oss << ">> multiverse-cli lockkey 2e05c9ee45fdf58f7b007458298042fc3d3ad416a2f9977ace16d14164a3e882\n";
@@ -4856,7 +4037,7 @@ string CLockKeyConfig::Help() const
 	oss << "\n";
 	oss << "Errors:\n";
 	oss << "* {\"code\":-4,\"message\":\"Unknown key\"}\n"
-	       "* {\"code\":-401,\"message\":\"Failed to lock key\"}\n";
+	       "  {\"code\":-401,\"message\":\"Failed to lock key\"}\n";
 	oss << "\n";
 	return oss.str();
 }
@@ -4870,46 +4051,33 @@ CUnlockKeyParam::CUnlockKeyParam(const CRPCString& strPubkey, const CRPCString& 
 	: strPubkey(strPubkey), strPassphrase(strPassphrase), nTimeout(nTimeout)
 {
 }
-json_spirit::Value CUnlockKeyParam::ToJSON() const
+Value CUnlockKeyParam::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!strPubkey.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strPubkey] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("pubkey", std::string(strPubkey)));
-	if (!strPassphrase.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strPassphrase] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("passphrase", std::string(strPassphrase)));
+	Object ret;
+	CheckIsValid(strPubkey, "strPubkey");
+	ret.push_back(Pair("pubkey", std::string(strPubkey)));
+	CheckIsValid(strPassphrase, "strPassphrase");
+	ret.push_back(Pair("passphrase", std::string(strPassphrase)));
 	if (nTimeout.IsValid())
 	{
-		ret.push_back(json_spirit::Pair("timeout", int64(nTimeout)));
+		ret.push_back(Pair("timeout", int64(nTimeout)));
 	}
 
 	return ret;
 }
-CUnlockKeyParam& CUnlockKeyParam::FromJSON(const json_spirit::Value& v)
+CUnlockKeyParam& CUnlockKeyParam::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "unlockkey");
 	auto obj = v.get_obj();
 	auto valPubkey = find_value(obj, "pubkey");
-	if (valPubkey.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[pubkey] type is not string");
-	}
+	CheckJSONType(valPubkey, "string", "pubkey");
 	strPubkey = valPubkey.get_str();
 	auto valPassphrase = find_value(obj, "passphrase");
-	if (valPassphrase.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[passphrase] type is not string");
-	}
+	CheckJSONType(valPassphrase, "string", "passphrase");
 	strPassphrase = valPassphrase.get_str();
 	auto valTimeout = find_value(obj, "timeout");
-	if (!valTimeout.is_null())
-	{
-		nTimeout = valTimeout.get_int64();
-	}
+	CheckJSONType(valTimeout, "int", "timeout");
+	nTimeout = valTimeout.get_int64();
 	return *this;
 }
 string CUnlockKeyParam::Method() const
@@ -4923,18 +4091,16 @@ CUnlockKeyResult::CUnlockKeyResult(const CRPCString& strResult)
 	: strResult(strResult)
 {
 }
-json_spirit::Value CUnlockKeyResult::ToJSON() const
+Value CUnlockKeyResult::ToJSON() const
 {
-	if (!strResult.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strResult] is not valid");
-	}
-	json_spirit::Value val;
-	val = json_spirit::Value(strResult);
+	CheckIsValid(strResult, "strResult");
+	Value val;
+	val = Value(strResult);
 	return val;
 }
-CUnlockKeyResult& CUnlockKeyResult::FromJSON(const json_spirit::Value& v)
+CUnlockKeyResult& CUnlockKeyResult::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "string", "result");
 	strResult = v.get_str();
 	return *this;
 }
@@ -4964,9 +4130,9 @@ bool CUnlockKeyConfig::PostLoad()
 		throw CRPCException(RPC_PARSE_ERROR, string("too arguments given."));
 	}
 	auto it = vecCommand.begin();
-	if (std::next(it, 1) != vecCommand.end())
+	if (next(it, 1) != vecCommand.end())
 	{
-		std::istringstream iss(*++it);
+		istringstream iss(*++it);
 		iss >> strPubkey;
 		if (!iss.eof())
 		{
@@ -4977,9 +4143,9 @@ bool CUnlockKeyConfig::PostLoad()
 	{
 		throw CRPCException(RPC_PARSE_ERROR, "[pubkey] is required");
 	}
-	if (std::next(it, 1) != vecCommand.end())
+	if (next(it, 1) != vecCommand.end())
 	{
-		std::istringstream iss(*++it);
+		istringstream iss(*++it);
 		iss >> strPassphrase;
 		if (!iss.eof())
 		{
@@ -4997,9 +4163,9 @@ bool CUnlockKeyConfig::PostLoad()
 	}
 	else
 	{
-		if (std::next(it, 1) != vecCommand.end())
+		if (next(it, 1) != vecCommand.end())
 		{
-			std::istringstream iss(*++it);
+			istringstream iss(*++it);
 			iss >> nTimeout;
 			if (!iss.eof())
 			{
@@ -5019,24 +4185,24 @@ string CUnlockKeyConfig::Help() const
 	oss << "\nUsage:\n";
 	oss << "        unlockkey <\"pubkey\"> <\"passphrase\"> (-t=timeout)\n";
 	oss << "\n";
-	oss << "If (timeout) > 0,stores the wallet decryption key in memory for (timeout) seconds.\n"
-	       "before being able to call any methods which require the key to be locked.\n";
+	oss << "If (timeout) > 0,stores the wallet decryption key in memory for (timeout) seconds.\nbefore \n"
+	       "being able to call any methods which require the key to be locked.\n";
 	oss << "\n";
 	oss << "Arguments:\n";
-	oss << " \"pubkey\"                               (string, required) pubkey or pubkey address\n";
-	oss << " \"passphrase\"                           (string, required) passphrase\n";
-	oss << " -t=timeout                             (int, optional) auto unlock timeout\n";
+	oss << " \"pubkey\"                       (string, required) pubkey or pubkey address\n";
+	oss << " \"passphrase\"                   (string, required) passphrase\n";
+	oss << " -t=timeout                     (int, optional) auto unlock timeout\n";
 	oss << "\n";
 	oss << "Request:\n";
 	oss << " \"param\" :\n";
 	oss << " {\n";
-	oss << "   \"pubkey\": \"\",                        (string, required) pubkey or pubkey address\n";
-	oss << "   \"passphrase\": \"\",                    (string, required) passphrase\n";
-	oss << "   \"timeout\": 0                         (int, optional) auto unlock timeout\n";
+	oss << "   \"pubkey\": \"\",                (string, required) pubkey or pubkey address\n";
+	oss << "   \"passphrase\": \"\",            (string, required) passphrase\n";
+	oss << "   \"timeout\": 0                 (int, optional) auto unlock timeout\n";
 	oss << " }\n";
 	oss << "\n";
 	oss << "Response:\n";
-	oss << " \"result\": \"result\"                     (string, required) unlock key result\n";
+	oss << " \"result\": \"result\"             (string, required) unlock key result\n";
 	oss << "\n";
 	oss << "Examples:\n";
 	oss << ">> multiverse-cli unlockkey d716e72ce58e649a57d54751a7707e325b522497da3a69ae8301a2cbec391c07 1234\n";
@@ -5050,8 +4216,8 @@ string CUnlockKeyConfig::Help() const
 	oss << "\n";
 	oss << "Errors:\n";
 	oss << "* {\"code\":-4,\"message\":\"Unknown key\"}\n"
-	       "* {\"code\":-409,\"message\":\"Key is already unlocked\"}\n"
-	       "* {\"code\":-406,\"message\":\"The passphrase entered was incorrect.\"}\n";
+	       "  {\"code\":-409,\"message\":\"Key is already unlocked\"}\n"
+	       "  {\"code\":-406,\"message\":\"The passphrase entered was incorrect.\"}\n";
 	oss << "\n";
 	return oss.str();
 }
@@ -5065,35 +4231,28 @@ CImportPrivKeyParam::CImportPrivKeyParam(const CRPCString& strPrivkey, const CRP
 	: strPrivkey(strPrivkey), strPassphrase(strPassphrase)
 {
 }
-json_spirit::Value CImportPrivKeyParam::ToJSON() const
+Value CImportPrivKeyParam::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!strPrivkey.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strPrivkey] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("privkey", std::string(strPrivkey)));
+	Object ret;
+	CheckIsValid(strPrivkey, "strPrivkey");
+	ret.push_back(Pair("privkey", std::string(strPrivkey)));
 	if (strPassphrase.IsValid())
 	{
-		ret.push_back(json_spirit::Pair("passphrase", std::string(strPassphrase)));
+		ret.push_back(Pair("passphrase", std::string(strPassphrase)));
 	}
 
 	return ret;
 }
-CImportPrivKeyParam& CImportPrivKeyParam::FromJSON(const json_spirit::Value& v)
+CImportPrivKeyParam& CImportPrivKeyParam::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "importprivkey");
 	auto obj = v.get_obj();
 	auto valPrivkey = find_value(obj, "privkey");
-	if (valPrivkey.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[privkey] type is not string");
-	}
+	CheckJSONType(valPrivkey, "string", "privkey");
 	strPrivkey = valPrivkey.get_str();
 	auto valPassphrase = find_value(obj, "passphrase");
-	if (!valPassphrase.is_null())
-	{
-		strPassphrase = valPassphrase.get_str();
-	}
+	CheckJSONType(valPassphrase, "string", "passphrase");
+	strPassphrase = valPassphrase.get_str();
 	return *this;
 }
 string CImportPrivKeyParam::Method() const
@@ -5107,18 +4266,16 @@ CImportPrivKeyResult::CImportPrivKeyResult(const CRPCString& strPubkey)
 	: strPubkey(strPubkey)
 {
 }
-json_spirit::Value CImportPrivKeyResult::ToJSON() const
+Value CImportPrivKeyResult::ToJSON() const
 {
-	if (!strPubkey.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strPubkey] is not valid");
-	}
-	json_spirit::Value val;
-	val = json_spirit::Value(strPubkey);
+	CheckIsValid(strPubkey, "strPubkey");
+	Value val;
+	val = Value(strPubkey);
 	return val;
 }
-CImportPrivKeyResult& CImportPrivKeyResult::FromJSON(const json_spirit::Value& v)
+CImportPrivKeyResult& CImportPrivKeyResult::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "string", "pubkey");
 	strPubkey = v.get_str();
 	return *this;
 }
@@ -5148,9 +4305,9 @@ bool CImportPrivKeyConfig::PostLoad()
 		throw CRPCException(RPC_PARSE_ERROR, string("too arguments given."));
 	}
 	auto it = vecCommand.begin();
-	if (std::next(it, 1) != vecCommand.end())
+	if (next(it, 1) != vecCommand.end())
 	{
-		std::istringstream iss(*++it);
+		istringstream iss(*++it);
 		iss >> strPrivkey;
 		if (!iss.eof())
 		{
@@ -5168,9 +4325,9 @@ bool CImportPrivKeyConfig::PostLoad()
 	}
 	else
 	{
-		if (std::next(it, 1) != vecCommand.end())
+		if (next(it, 1) != vecCommand.end())
 		{
-			std::istringstream iss(*++it);
+			istringstream iss(*++it);
 			iss >> strPassphrase;
 			if (!iss.eof())
 			{
@@ -5194,18 +4351,18 @@ string CImportPrivKeyConfig::Help() const
 	       "If (passphrase) is specified, the key will be encrypted with (passphrase).\n";
 	oss << "\n";
 	oss << "Arguments:\n";
-	oss << " \"privkey\"                              (string, required) private key\n";
-	oss << " -p=\"passphrase\"                        (string, optional) passphrase\n";
+	oss << " \"privkey\"                      (string, required) private key\n";
+	oss << " -p=\"passphrase\"                (string, optional) passphrase\n";
 	oss << "\n";
 	oss << "Request:\n";
 	oss << " \"param\" :\n";
 	oss << " {\n";
-	oss << "   \"privkey\": \"\",                       (string, required) private key\n";
-	oss << "   \"passphrase\": \"\"                     (string, optional) passphrase\n";
+	oss << "   \"privkey\": \"\",               (string, required) private key\n";
+	oss << "   \"passphrase\": \"\"             (string, optional) passphrase\n";
 	oss << " }\n";
 	oss << "\n";
 	oss << "Response:\n";
-	oss << " \"result\": \"pubkey\"                     (string, required) public key with hex number system\n";
+	oss << " \"result\": \"pubkey\"             (string, required) public key with hex number system\n";
 	oss << "\n";
 	oss << "Examples:\n";
 	oss << ">> multiverse-cli importprivkey feb51e048380c0ade1cdb60b25e9f3e05cd4507553a97faadc8a94771fcb1a5b\n";
@@ -5215,9 +4372,9 @@ string CImportPrivKeyConfig::Help() const
 	oss << "\n";
 	oss << "Errors:\n";
 	oss << "* {\"code\":-4,\"message\":\"Invalid private key\"}\n"
-	       "* {\"code\":-401,\"message\":\"Already have key\"}\n"
-	       "* {\"code\":-401,\"message\":\"Failed to add key\"}\n"
-	       "* {\"code\":-401,\"message\":\"Failed to sync wallet tx\"}\n";
+	       "  {\"code\":-401,\"message\":\"Already have key\"}\n"
+	       "  {\"code\":-401,\"message\":\"Failed to add key\"}\n"
+	       "  {\"code\":-401,\"message\":\"Failed to sync wallet tx\"}\n";
 	oss << "\n";
 	return oss.str();
 }
@@ -5231,25 +4388,20 @@ CImportKeyParam::CImportKeyParam(const CRPCString& strPubkey)
 	: strPubkey(strPubkey)
 {
 }
-json_spirit::Value CImportKeyParam::ToJSON() const
+Value CImportKeyParam::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!strPubkey.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strPubkey] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("pubkey", std::string(strPubkey)));
+	Object ret;
+	CheckIsValid(strPubkey, "strPubkey");
+	ret.push_back(Pair("pubkey", std::string(strPubkey)));
 
 	return ret;
 }
-CImportKeyParam& CImportKeyParam::FromJSON(const json_spirit::Value& v)
+CImportKeyParam& CImportKeyParam::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "importkey");
 	auto obj = v.get_obj();
 	auto valPubkey = find_value(obj, "pubkey");
-	if (valPubkey.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[pubkey] type is not string");
-	}
+	CheckJSONType(valPubkey, "string", "pubkey");
 	strPubkey = valPubkey.get_str();
 	return *this;
 }
@@ -5264,18 +4416,16 @@ CImportKeyResult::CImportKeyResult(const CRPCString& strPubkey)
 	: strPubkey(strPubkey)
 {
 }
-json_spirit::Value CImportKeyResult::ToJSON() const
+Value CImportKeyResult::ToJSON() const
 {
-	if (!strPubkey.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strPubkey] is not valid");
-	}
-	json_spirit::Value val;
-	val = json_spirit::Value(strPubkey);
+	CheckIsValid(strPubkey, "strPubkey");
+	Value val;
+	val = Value(strPubkey);
 	return val;
 }
-CImportKeyResult& CImportKeyResult::FromJSON(const json_spirit::Value& v)
+CImportKeyResult& CImportKeyResult::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "string", "pubkey");
 	strPubkey = v.get_str();
 	return *this;
 }
@@ -5300,9 +4450,9 @@ bool CImportKeyConfig::PostLoad()
 		throw CRPCException(RPC_PARSE_ERROR, string("too arguments given."));
 	}
 	auto it = vecCommand.begin();
-	if (std::next(it, 1) != vecCommand.end())
+	if (next(it, 1) != vecCommand.end())
 	{
-		std::istringstream iss(*++it);
+		istringstream iss(*++it);
 		iss >> strPubkey;
 		if (!iss.eof())
 		{
@@ -5328,16 +4478,16 @@ string CImportKeyConfig::Help() const
 	oss << "Reveals the serialized key corresponding to <pubkey>.\n";
 	oss << "\n";
 	oss << "Arguments:\n";
-	oss << " \"pubkey\"                               (string, required) public key data\n";
+	oss << " \"pubkey\"                       (string, required) public key data\n";
 	oss << "\n";
 	oss << "Request:\n";
 	oss << " \"param\" :\n";
 	oss << " {\n";
-	oss << "   \"pubkey\": \"\"                         (string, required) public key data\n";
+	oss << "   \"pubkey\": \"\"                 (string, required) public key data\n";
 	oss << " }\n";
 	oss << "\n";
 	oss << "Response:\n";
-	oss << " \"result\": \"pubkey\"                     (string, required) public key with hex number system\n";
+	oss << " \"result\": \"pubkey\"             (string, required) public key with hex number system\n";
 	oss << "\n";
 	oss << "Examples:\n";
 	oss << ">> multiverse-cli importkey 071c39eccba20183ae693ada9724525b327e70a75147d5579a648ee52ce716d700000000346783653e9035de91d5ac79545e17911e5825b50d60a2e04ac8451aa83c4ae4f0ea063a5917b68256a3bd391966b30f5660e7d5d1777ae996a49f4f\n";
@@ -5347,9 +4497,9 @@ string CImportKeyConfig::Help() const
 	oss << "\n";
 	oss << "Errors:\n";
 	oss << "* {\"code\":-32602,\"message\":\"Failed to verify serialized key\"}\n"
-	       "* {\"code\":-401,\"message\":\"Already have key\"}\n"
-	       "* {\"code\":-401,\"message\":\"Failed to add key\"}\n"
-	       "* {\"code\":-401,\"message\":\"Failed to sync wallet tx\"}\n";
+	       "  {\"code\":-401,\"message\":\"Already have key\"}\n"
+	       "  {\"code\":-401,\"message\":\"Failed to add key\"}\n"
+	       "  {\"code\":-401,\"message\":\"Failed to sync wallet tx\"}\n";
 	oss << "\n";
 	return oss.str();
 }
@@ -5363,25 +4513,20 @@ CExportKeyParam::CExportKeyParam(const CRPCString& strPubkey)
 	: strPubkey(strPubkey)
 {
 }
-json_spirit::Value CExportKeyParam::ToJSON() const
+Value CExportKeyParam::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!strPubkey.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strPubkey] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("pubkey", std::string(strPubkey)));
+	Object ret;
+	CheckIsValid(strPubkey, "strPubkey");
+	ret.push_back(Pair("pubkey", std::string(strPubkey)));
 
 	return ret;
 }
-CExportKeyParam& CExportKeyParam::FromJSON(const json_spirit::Value& v)
+CExportKeyParam& CExportKeyParam::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "exportkey");
 	auto obj = v.get_obj();
 	auto valPubkey = find_value(obj, "pubkey");
-	if (valPubkey.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[pubkey] type is not string");
-	}
+	CheckJSONType(valPubkey, "string", "pubkey");
 	strPubkey = valPubkey.get_str();
 	return *this;
 }
@@ -5396,18 +4541,16 @@ CExportKeyResult::CExportKeyResult(const CRPCString& strPubkey)
 	: strPubkey(strPubkey)
 {
 }
-json_spirit::Value CExportKeyResult::ToJSON() const
+Value CExportKeyResult::ToJSON() const
 {
-	if (!strPubkey.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strPubkey] is not valid");
-	}
-	json_spirit::Value val;
-	val = json_spirit::Value(strPubkey);
+	CheckIsValid(strPubkey, "strPubkey");
+	Value val;
+	val = Value(strPubkey);
 	return val;
 }
-CExportKeyResult& CExportKeyResult::FromJSON(const json_spirit::Value& v)
+CExportKeyResult& CExportKeyResult::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "string", "pubkey");
 	strPubkey = v.get_str();
 	return *this;
 }
@@ -5432,9 +4575,9 @@ bool CExportKeyConfig::PostLoad()
 		throw CRPCException(RPC_PARSE_ERROR, string("too arguments given."));
 	}
 	auto it = vecCommand.begin();
-	if (std::next(it, 1) != vecCommand.end())
+	if (next(it, 1) != vecCommand.end())
 	{
-		std::istringstream iss(*++it);
+		istringstream iss(*++it);
 		iss >> strPubkey;
 		if (!iss.eof())
 		{
@@ -5460,16 +4603,16 @@ string CExportKeyConfig::Help() const
 	oss << "Reveals the serialized key corresponding to <pubkey>.\n";
 	oss << "\n";
 	oss << "Arguments:\n";
-	oss << " \"pubkey\"                               (string, required) public key\n";
+	oss << " \"pubkey\"                       (string, required) public key\n";
 	oss << "\n";
 	oss << "Request:\n";
 	oss << " \"param\" :\n";
 	oss << " {\n";
-	oss << "   \"pubkey\": \"\"                         (string, required) public key\n";
+	oss << "   \"pubkey\": \"\"                 (string, required) public key\n";
 	oss << " }\n";
 	oss << "\n";
 	oss << "Response:\n";
-	oss << " \"result\": \"pubkey\"                     (string, required) public key with binary system\n";
+	oss << " \"result\": \"pubkey\"             (string, required) public key with binary system\n";
 	oss << "\n";
 	oss << "Examples:\n";
 	oss << ">> multiverse-cli exportkey d716e72ce58e649a57d54751a7707e325b522497da3a69ae8301a2cbec391c07\n";
@@ -5479,7 +4622,7 @@ string CExportKeyConfig::Help() const
 	oss << "\n";
 	oss << "Errors:\n";
 	oss << "* {\"code\":-4,\"message\":\"Unknown key\"}\n"
-	       "* {\"code\":-401,\"message\":\"Failed to export key\"}\n";
+	       "  {\"code\":-401,\"message\":\"Failed to export key\"}\n";
 	oss << "\n";
 	return oss.str();
 }
@@ -5493,17 +4636,15 @@ CAddNewTemplateParam::CAddNewTemplateParam(const CTemplateRequest& data)
 	: data(data)
 {
 }
-json_spirit::Value CAddNewTemplateParam::ToJSON() const
+Value CAddNewTemplateParam::ToJSON() const
 {
-	if (!data.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [data] is not valid");
-	}
+	CheckIsValid(data, "data");
 	return data.ToJSON();
 }
-CAddNewTemplateParam& CAddNewTemplateParam::FromJSON(const json_spirit::Value& v)
+CAddNewTemplateParam& CAddNewTemplateParam::FromJSON(const Value& v)
 {
-	data.FromJSON(v);
+	CheckJSONType(v, "object", "data");
+	data.FromJSON(v.get_obj());
 	return *this;
 }
 string CAddNewTemplateParam::Method() const
@@ -5517,18 +4658,16 @@ CAddNewTemplateResult::CAddNewTemplateResult(const CRPCString& strAddress)
 	: strAddress(strAddress)
 {
 }
-json_spirit::Value CAddNewTemplateResult::ToJSON() const
+Value CAddNewTemplateResult::ToJSON() const
 {
-	if (!strAddress.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strAddress] is not valid");
-	}
-	json_spirit::Value val;
-	val = json_spirit::Value(strAddress);
+	CheckIsValid(strAddress, "strAddress");
+	Value val;
+	val = Value(strAddress);
 	return val;
 }
-CAddNewTemplateResult& CAddNewTemplateResult::FromJSON(const json_spirit::Value& v)
+CAddNewTemplateResult& CAddNewTemplateResult::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "string", "address");
 	strAddress = v.get_str();
 	return *this;
 }
@@ -5553,9 +4692,9 @@ bool CAddNewTemplateConfig::PostLoad()
 		throw CRPCException(RPC_PARSE_ERROR, string("too arguments given."));
 	}
 	auto it = vecCommand.begin();
-	if (std::next(it, 1) != vecCommand.end())
+	if (next(it, 1) != vecCommand.end())
 	{
-		std::istringstream iss(*++it);
+		istringstream iss(*++it);
 		iss >> data.strType;
 		if (!iss.eof())
 		{
@@ -5569,7 +4708,7 @@ bool CAddNewTemplateConfig::PostLoad()
 	if (data.strType == "delegate")
 	{
 		string strOriginDelegate;
-		if (std::next(it, 1) != vecCommand.end())
+		if (next(it, 1) != vecCommand.end())
 		{
 			strOriginDelegate = *++it;
 		}
@@ -5577,8 +4716,8 @@ bool CAddNewTemplateConfig::PostLoad()
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[delegate] is required");
 		}
-		json_spirit::Value valOriginDelegate;
-		if (!json_spirit::read_string(strOriginDelegate, valOriginDelegate))
+		Value valOriginDelegate;
+		if (!read_string(strOriginDelegate, valOriginDelegate))
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "parse json error");
 		}
@@ -5587,7 +4726,7 @@ bool CAddNewTemplateConfig::PostLoad()
 	if (data.strType == "fork")
 	{
 		string strOriginFork;
-		if (std::next(it, 1) != vecCommand.end())
+		if (next(it, 1) != vecCommand.end())
 		{
 			strOriginFork = *++it;
 		}
@@ -5595,8 +4734,8 @@ bool CAddNewTemplateConfig::PostLoad()
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[fork] is required");
 		}
-		json_spirit::Value valOriginFork;
-		if (!json_spirit::read_string(strOriginFork, valOriginFork))
+		Value valOriginFork;
+		if (!read_string(strOriginFork, valOriginFork))
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "parse json error");
 		}
@@ -5605,7 +4744,7 @@ bool CAddNewTemplateConfig::PostLoad()
 	if (data.strType == "mint")
 	{
 		string strOriginMint;
-		if (std::next(it, 1) != vecCommand.end())
+		if (next(it, 1) != vecCommand.end())
 		{
 			strOriginMint = *++it;
 		}
@@ -5613,8 +4752,8 @@ bool CAddNewTemplateConfig::PostLoad()
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[mint] is required");
 		}
-		json_spirit::Value valOriginMint;
-		if (!json_spirit::read_string(strOriginMint, valOriginMint))
+		Value valOriginMint;
+		if (!read_string(strOriginMint, valOriginMint))
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "parse json error");
 		}
@@ -5623,7 +4762,7 @@ bool CAddNewTemplateConfig::PostLoad()
 	if (data.strType == "multisig")
 	{
 		string strOriginMultisig;
-		if (std::next(it, 1) != vecCommand.end())
+		if (next(it, 1) != vecCommand.end())
 		{
 			strOriginMultisig = *++it;
 		}
@@ -5631,8 +4770,8 @@ bool CAddNewTemplateConfig::PostLoad()
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[multisig] is required");
 		}
-		json_spirit::Value valOriginMultisig;
-		if (!json_spirit::read_string(strOriginMultisig, valOriginMultisig))
+		Value valOriginMultisig;
+		if (!read_string(strOriginMultisig, valOriginMultisig))
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "parse json error");
 		}
@@ -5641,7 +4780,7 @@ bool CAddNewTemplateConfig::PostLoad()
 	if (data.strType == "weighted")
 	{
 		string strOriginWeighted;
-		if (std::next(it, 1) != vecCommand.end())
+		if (next(it, 1) != vecCommand.end())
 		{
 			strOriginWeighted = *++it;
 		}
@@ -5649,8 +4788,8 @@ bool CAddNewTemplateConfig::PostLoad()
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[weighted] is required");
 		}
-		json_spirit::Value valOriginWeighted;
-		if (!json_spirit::read_string(strOriginWeighted, valOriginWeighted))
+		Value valOriginWeighted;
+		if (!read_string(strOriginWeighted, valOriginWeighted))
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "parse json error");
 		}
@@ -5671,80 +4810,79 @@ string CAddNewTemplateConfig::Help() const
 	oss << "Returns encoded address for the given template id.\n";
 	oss << "\n";
 	oss << "Arguments:\n";
-	oss << " \"type\"                                 (string, required) template type\n";
+	oss << " \"type\"                         (string, required) template type\n";
 	oss << "  (if type is \"delegate\")\n";
-	oss << " {delegate}                             (object, required) delegate template struct\n";
+	oss << " {delegate}                     (object, required) delegate template struct\n";
 	oss << "  (if type is \"fork\")\n";
-	oss << " {fork}                                 (object, required) fork template struct\n";
+	oss << " {fork}                         (object, required) fork template struct\n";
 	oss << "  (if type is \"mint\")\n";
-	oss << " {mint}                                 (object, required) mint template struct\n";
+	oss << " {mint}                         (object, required) mint template struct\n";
 	oss << "  (if type is \"multisig\")\n";
-	oss << " {multisig}                             (object, required) multisig template struct\n";
+	oss << " {multisig}                     (object, required) multisig template struct\n";
 	oss << "  (if type is \"weighted\")\n";
-	oss << " {weighted}                             (object, required) weighted template struct\n";
+	oss << " {weighted}                     (object, required) weighted template struct\n";
 	oss << "\n";
 	oss << "Request:\n";
 	oss << " \"param\" :\n";
 	oss << " {\n";
-	oss << "   \"type\": \"\",                          (string, required) template type\n";
+	oss << "   \"type\": \"\",                  (string, required) template type\n";
 	oss << "   (if \"type\" is \"delegate\")\n";
-	oss << "   \"delegate\":                          (object, required) delegate template struct\n";
+	oss << "   \"delegate\":                  (object, required) delegate template struct\n";
 	oss << "   {\n";
-	oss << "     \"delegate\": \"\",                    (string, required) delegate public key\n";
-	oss << "     \"owner\": \"\"                        (string, required) owner address\n";
+	oss << "     \"delegate\": \"\",            (string, required) delegate public key\n";
+	oss << "     \"owner\": \"\"                (string, required) owner address\n";
 	oss << "   }\n";
 	oss << "   (if \"type\" is \"fork\")\n";
-	oss << "   \"fork\":                              (object, required) fork template struct\n";
+	oss << "   \"fork\":                      (object, required) fork template struct\n";
 	oss << "   {\n";
-	oss << "     \"redeem\": \"\",                      (string, required) redeem address\n";
-	oss << "     \"fork\": \"\"                         (string, required) fork hash\n";
+	oss << "     \"redeem\": \"\",              (string, required) redeem address\n";
+	oss << "     \"fork\": \"\"                 (string, required) fork hash\n";
 	oss << "   }\n";
 	oss << "   (if \"type\" is \"mint\")\n";
-	oss << "   \"mint\":                              (object, required) mint template struct\n";
+	oss << "   \"mint\":                      (object, required) mint template struct\n";
 	oss << "   {\n";
-	oss << "     \"mint\": \"\",                        (string, required) mint public key\n";
-	oss << "     \"spent\": \"\"                        (string, required) spent address\n";
+	oss << "     \"mint\": \"\",                (string, required) mint public key\n";
+	oss << "     \"spent\": \"\"                (string, required) spent address\n";
 	oss << "   }\n";
 	oss << "   (if \"type\" is \"multisig\")\n";
-	oss << "   \"multisig\":                          (object, required) multisig template struct\n";
+	oss << "   \"multisig\":                  (object, required) multisig template struct\n";
 	oss << "   {\n";
-	oss << "     \"required\": 0,                     (int, required) required weight > 0\n";
+	oss << "     \"required\": 0,             (int, required) required weight > 0\n";
 	oss << "     [\n";
-	oss << "       \"key\": \"\"                        (string, required) public key\n";
+	oss << "       \"key\": \"\"                (string, required) public key\n";
 	oss << "     ]\n";
 	oss << "   }\n";
 	oss << "   (if \"type\" is \"weighted\")\n";
-	oss << "   \"weighted\":                          (object, required) weighted template struct\n";
+	oss << "   \"weighted\":                  (object, required) weighted template struct\n";
 	oss << "   {\n";
-	oss << "     \"required\": 0,                     (int, required) required weight\n";
+	oss << "     \"required\": 0,             (int, required) required weight\n";
 	oss << "     [\n";
-	oss << "       \"pubkey\":                        (object, required) public key\n";
+	oss << "       \"pubkey\":                (object, required) public key\n";
 	oss << "       {\n";
-	oss << "         \"key\": \"\",                     (string, required) public key\n";
-	oss << "         \"weight\": 0                    (int, required) weight\n";
+	oss << "         \"key\": \"\",             (string, required) public key\n";
+	oss << "         \"weight\": 0            (int, required) weight\n";
 	oss << "       }\n";
 	oss << "     ]\n";
 	oss << "   }\n";
 	oss << " }\n";
 	oss << "\n";
 	oss << "Response:\n";
-	oss << " \"result\": \"address\"                    (string, required) address of template\n";
+	oss << " \"result\": \"address\"            (string, required) address of template\n";
 	oss << "\n";
 	oss << "Examples:\n";
-	oss << ">> multiverse-cli addnewtemplate mint '{\"mint\": \"e8e3770e774d5ad84a8ea65ed08cc7c5c30b42e045623604d5c5c6be95afb4f9\", \n"
-	       ">> \"spent\": \"1z6taz5dyrv2xa11pc92y0ggbrf2wf36gbtk8wjprb96qe3kqwfm3ayc1\"}'\n";
+	oss << ">> multiverse-cli addnewtemplate mint '{\"mint\": \"e8e3770e774d5ad84a8ea65ed08cc7c5c30b42e045623604d5c5c6be95afb4f9\", \"spent\": \"1z6taz5dyrv2xa11pc92y0ggbrf2wf36gbtk8wjprb96qe3kqwfm3ayc1\"}'\n";
 	oss << "<< 20g0b87qxcd52ceh9zmpzx0hy46pjfzdnqbkh8f4tqs4y0r6sxyzyny25\n";
 	oss << "\n>> {\"id\":1,\"method\":\"addnewtemplate\",\"jsonrpc\":\"2.0\",\"params\":{\"type\":\"mint\",\"mint\":{\"mint\":\"e8e3770e774d5ad84a8ea65ed08cc7c5c30b42e045623604d5c5c6be95afb4f9\",\"spent\":\"1z6taz5dyrv2xa11pc92y0ggbrf2wf36gbtk8wjprb96qe3kqwfm3ayc1\"}}}\n";
 	oss << "<< {\"id\":1,\"jsonrpc\":\"2.0\",\"result\":\"20g0b87qxcd52ceh9zmpzx0hy46pjfzdnqbkh8f4tqs4y0r6sxyzyny25\"}\n";
 	oss << "\n";
 	oss << "Errors:\n";
 	oss << "* {\"code\":-6,\"message\":\"Invalid parameters,failed to make template\"}\n"
-	       "* {\"code\":-401,\"message\":\"Failed to add template\"}\n"
-	       "* {\"code\":-6,\"message\":\"Invalid parameter, missing weight\"}\n"
-	       "* {\"code\":-6,\"message\":\"Invalid parameter, missing redeem address\"}\n"
-	       "* {\"code\":-6,\"message\":\"Invalid parameter, missing spent address\"}\n"
-	       "* {\"code\":-6,\"message\":\"Invalid parameter, missing owner address\"}\n"
-	       "* {\"code\":-6,\"message\":\"template type error. type: xxx\"}\n";
+	       "  {\"code\":-401,\"message\":\"Failed to add template\"}\n"
+	       "  {\"code\":-6,\"message\":\"Invalid parameter, missing weight\"}\n"
+	       "  {\"code\":-6,\"message\":\"Invalid parameter, missing redeem address\"}\n"
+	       "  {\"code\":-6,\"message\":\"Invalid parameter, missing spent address\"}\n"
+	       "  {\"code\":-6,\"message\":\"Invalid parameter, missing owner address\"}\n"
+	       "  {\"code\":-6,\"message\":\"template type error. type: xxx\"}\n";
 	oss << "\n";
 	return oss.str();
 }
@@ -5758,25 +4896,20 @@ CImportTemplateParam::CImportTemplateParam(const CRPCString& strData)
 	: strData(strData)
 {
 }
-json_spirit::Value CImportTemplateParam::ToJSON() const
+Value CImportTemplateParam::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!strData.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strData] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("data", std::string(strData)));
+	Object ret;
+	CheckIsValid(strData, "strData");
+	ret.push_back(Pair("data", std::string(strData)));
 
 	return ret;
 }
-CImportTemplateParam& CImportTemplateParam::FromJSON(const json_spirit::Value& v)
+CImportTemplateParam& CImportTemplateParam::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "importtemplate");
 	auto obj = v.get_obj();
 	auto valData = find_value(obj, "data");
-	if (valData.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[data] type is not string");
-	}
+	CheckJSONType(valData, "string", "data");
 	strData = valData.get_str();
 	return *this;
 }
@@ -5791,18 +4924,16 @@ CImportTemplateResult::CImportTemplateResult(const CRPCString& strAddress)
 	: strAddress(strAddress)
 {
 }
-json_spirit::Value CImportTemplateResult::ToJSON() const
+Value CImportTemplateResult::ToJSON() const
 {
-	if (!strAddress.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strAddress] is not valid");
-	}
-	json_spirit::Value val;
-	val = json_spirit::Value(strAddress);
+	CheckIsValid(strAddress, "strAddress");
+	Value val;
+	val = Value(strAddress);
 	return val;
 }
-CImportTemplateResult& CImportTemplateResult::FromJSON(const json_spirit::Value& v)
+CImportTemplateResult& CImportTemplateResult::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "string", "address");
 	strAddress = v.get_str();
 	return *this;
 }
@@ -5827,9 +4958,9 @@ bool CImportTemplateConfig::PostLoad()
 		throw CRPCException(RPC_PARSE_ERROR, string("too arguments given."));
 	}
 	auto it = vecCommand.begin();
-	if (std::next(it, 1) != vecCommand.end())
+	if (next(it, 1) != vecCommand.end())
 	{
-		std::istringstream iss(*++it);
+		istringstream iss(*++it);
 		iss >> strData;
 		if (!iss.eof())
 		{
@@ -5855,16 +4986,16 @@ string CImportTemplateConfig::Help() const
 	oss << "Returns encoded address for the given template.\n";
 	oss << "\n";
 	oss << "Arguments:\n";
-	oss << " \"data\"                                 (string, required) template data\n";
+	oss << " \"data\"                         (string, required) template data\n";
 	oss << "\n";
 	oss << "Request:\n";
 	oss << " \"param\" :\n";
 	oss << " {\n";
-	oss << "   \"data\": \"\"                           (string, required) template data\n";
+	oss << "   \"data\": \"\"                   (string, required) template data\n";
 	oss << " }\n";
 	oss << "\n";
 	oss << "Response:\n";
-	oss << " \"result\": \"address\"                    (string, required) address of template\n";
+	oss << " \"result\": \"address\"            (string, required) address of template\n";
 	oss << "\n";
 	oss << "Examples:\n";
 	oss << ">> multiverse-cli importtemplate 0100010282e8a36441d116ce7a97f9a216d43a3dfc4280295874007b8ff5fd45eec9052e01b9c3b7aa16c6cb1bf193faf717580d03347148b2145ca98b30b1376d634c12f402\n";
@@ -5874,8 +5005,8 @@ string CImportTemplateConfig::Help() const
 	oss << "\n";
 	oss << "Errors:\n";
 	oss << "* {\"code\":-6,\"message\":\"Invalid parameters,failed to make template\"}\n"
-	       "* {\"code\":-401,\"message\":\"Failed to add template\"}\n"
-	       "* {\"code\":-401,\"message\":\"Failed to sync wallet tx\"}\n";
+	       "  {\"code\":-401,\"message\":\"Failed to add template\"}\n"
+	       "  {\"code\":-401,\"message\":\"Failed to sync wallet tx\"}\n";
 	oss << "\n";
 	return oss.str();
 }
@@ -5889,25 +5020,20 @@ CExportTemplateParam::CExportTemplateParam(const CRPCString& strAddress)
 	: strAddress(strAddress)
 {
 }
-json_spirit::Value CExportTemplateParam::ToJSON() const
+Value CExportTemplateParam::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!strAddress.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strAddress] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("address", std::string(strAddress)));
+	Object ret;
+	CheckIsValid(strAddress, "strAddress");
+	ret.push_back(Pair("address", std::string(strAddress)));
 
 	return ret;
 }
-CExportTemplateParam& CExportTemplateParam::FromJSON(const json_spirit::Value& v)
+CExportTemplateParam& CExportTemplateParam::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "exporttemplate");
 	auto obj = v.get_obj();
 	auto valAddress = find_value(obj, "address");
-	if (valAddress.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[address] type is not string");
-	}
+	CheckJSONType(valAddress, "string", "address");
 	strAddress = valAddress.get_str();
 	return *this;
 }
@@ -5922,18 +5048,16 @@ CExportTemplateResult::CExportTemplateResult(const CRPCString& strData)
 	: strData(strData)
 {
 }
-json_spirit::Value CExportTemplateResult::ToJSON() const
+Value CExportTemplateResult::ToJSON() const
 {
-	if (!strData.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strData] is not valid");
-	}
-	json_spirit::Value val;
-	val = json_spirit::Value(strData);
+	CheckIsValid(strData, "strData");
+	Value val;
+	val = Value(strData);
 	return val;
 }
-CExportTemplateResult& CExportTemplateResult::FromJSON(const json_spirit::Value& v)
+CExportTemplateResult& CExportTemplateResult::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "string", "data");
 	strData = v.get_str();
 	return *this;
 }
@@ -5958,9 +5082,9 @@ bool CExportTemplateConfig::PostLoad()
 		throw CRPCException(RPC_PARSE_ERROR, string("too arguments given."));
 	}
 	auto it = vecCommand.begin();
-	if (std::next(it, 1) != vecCommand.end())
+	if (next(it, 1) != vecCommand.end())
 	{
-		std::istringstream iss(*++it);
+		istringstream iss(*++it);
 		iss >> strAddress;
 		if (!iss.eof())
 		{
@@ -5986,16 +5110,16 @@ string CExportTemplateConfig::Help() const
 	oss << "Returns encoded address for the given template.\n";
 	oss << "\n";
 	oss << "Arguments:\n";
-	oss << " \"address\"                              (string, required) template address\n";
+	oss << " \"address\"                      (string, required) template address\n";
 	oss << "\n";
 	oss << "Request:\n";
 	oss << " \"param\" :\n";
 	oss << " {\n";
-	oss << "   \"address\": \"\"                        (string, required) template address\n";
+	oss << "   \"address\": \"\"                (string, required) template address\n";
 	oss << " }\n";
 	oss << "\n";
 	oss << "Response:\n";
-	oss << " \"result\": \"data\"                       (string, required) data of template\n";
+	oss << " \"result\": \"data\"               (string, required) data of template\n";
 	oss << "\n";
 	oss << "Examples:\n";
 	oss << ">> multiverse-cli exporttemplate 2040fpytdr4k5h8tk0nferr7zb51tkccrkgqf341s6tg05q9xe6hth1m\n";
@@ -6005,7 +5129,7 @@ string CExportTemplateConfig::Help() const
 	oss << "\n";
 	oss << "Errors:\n";
 	oss << "* {\"code\":-6,\"message\":\"Invalid address, should be template address\"}\n"
-	       "* {\"code\":-401,\"message\":\"Unkown template\"}\n";
+	       "  {\"code\":-401,\"message\":\"Unkown template\"}\n";
 	oss << "\n";
 	return oss.str();
 }
@@ -6019,25 +5143,20 @@ CValidateAddressParam::CValidateAddressParam(const CRPCString& strAddress)
 	: strAddress(strAddress)
 {
 }
-json_spirit::Value CValidateAddressParam::ToJSON() const
+Value CValidateAddressParam::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!strAddress.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strAddress] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("address", std::string(strAddress)));
+	Object ret;
+	CheckIsValid(strAddress, "strAddress");
+	ret.push_back(Pair("address", std::string(strAddress)));
 
 	return ret;
 }
-CValidateAddressParam& CValidateAddressParam::FromJSON(const json_spirit::Value& v)
+CValidateAddressParam& CValidateAddressParam::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "validateaddress");
 	auto obj = v.get_obj();
 	auto valAddress = find_value(obj, "address");
-	if (valAddress.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[address] type is not string");
-	}
+	CheckJSONType(valAddress, "string", "address");
 	strAddress = valAddress.get_str();
 	return *this;
 }
@@ -6056,126 +5175,80 @@ CValidateAddressResult::CAddressdata::CAddressdata(const CRPCType& null)
 	: strAddress(null), fIsmine(null), strType(null), strPubkey(null), strTemplate(null), templatedata(null)
 {
 }
-json_spirit::Value CValidateAddressResult::CAddressdata::ToJSON() const
+Value CValidateAddressResult::CAddressdata::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!strAddress.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strAddress] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("address", std::string(strAddress)));
-	if (!fIsmine.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [fIsmine] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("ismine", bool(fIsmine)));
-	if (!strType.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strType] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("type", std::string(strType)));
+	Object ret;
+	CheckIsValid(strAddress, "strAddress");
+	ret.push_back(Pair("address", std::string(strAddress)));
+	CheckIsValid(fIsmine, "fIsmine");
+	ret.push_back(Pair("ismine", bool(fIsmine)));
+	CheckIsValid(strType, "strType");
+	ret.push_back(Pair("type", std::string(strType)));
 	if (strType == "pubkey")
 	{
-		if (!strPubkey.IsValid())
-		{
-			throw CRPCException(RPC_INVALID_PARAMS, "required param [strPubkey] is not valid");
-		}
-		ret.push_back(json_spirit::Pair("pubkey", std::string(strPubkey)));
+		CheckIsValid(strPubkey, "strPubkey");
+		ret.push_back(Pair("pubkey", std::string(strPubkey)));
 	}
 	if (strType == "template")
 	{
-		if (!strTemplate.IsValid())
-		{
-			throw CRPCException(RPC_INVALID_PARAMS, "required param [strTemplate] is not valid");
-		}
-		ret.push_back(json_spirit::Pair("template", std::string(strTemplate)));
+		CheckIsValid(strTemplate, "strTemplate");
+		ret.push_back(Pair("template", std::string(strTemplate)));
 	}
 	if (fIsmine == true)
 	{
 		if (templatedata.IsValid())
 		{
-			ret.push_back(json_spirit::Pair("templatedata", templatedata.ToJSON()));
+			ret.push_back(Pair("templatedata", templatedata.ToJSON()));
 		}
 	}
 
 	return ret;
 }
-CValidateAddressResult::CAddressdata& CValidateAddressResult::CAddressdata::FromJSON(const json_spirit::Value& v)
+CValidateAddressResult::CAddressdata& CValidateAddressResult::CAddressdata::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "CValidateAddressResult::CAddressdata");
 	auto obj = v.get_obj();
 	auto valAddress = find_value(obj, "address");
-	if (valAddress.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[address] type is not string");
-	}
+	CheckJSONType(valAddress, "string", "address");
 	strAddress = valAddress.get_str();
 	auto valIsmine = find_value(obj, "ismine");
-	if (valIsmine.type() != json_spirit::bool_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[ismine] type is not bool");
-	}
+	CheckJSONType(valIsmine, "bool", "ismine");
 	fIsmine = valIsmine.get_bool();
 	auto valType = find_value(obj, "type");
-	if (valType.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[type] type is not string");
-	}
+	CheckJSONType(valType, "string", "type");
 	strType = valType.get_str();
 	if (strType == "pubkey")
 	{
 		auto valPubkey = find_value(obj, "pubkey");
-		if (valPubkey.type() != json_spirit::str_type)
-		{
-			throw CRPCException(RPC_INVALID_REQUEST, "[pubkey] type is not string");
-		}
+		CheckJSONType(valPubkey, "string", "pubkey");
 		strPubkey = valPubkey.get_str();
 	}
 	if (strType == "template")
 	{
 		auto valTemplate = find_value(obj, "template");
-		if (valTemplate.type() != json_spirit::str_type)
-		{
-			throw CRPCException(RPC_INVALID_REQUEST, "[template] type is not string");
-		}
+		CheckJSONType(valTemplate, "string", "template");
 		strTemplate = valTemplate.get_str();
 	}
 	if (fIsmine == true)
 	{
 		auto valTemplatedata = find_value(obj, "templatedata");
-		if (!valTemplatedata.is_null())
-		{
-			templatedata.FromJSON(valTemplatedata);
-		}
+		CheckJSONType(valTemplatedata, "object", "templatedata");
+		templatedata.FromJSON(valTemplatedata.get_obj());
 	}
 	return *this;
 }
 bool CValidateAddressResult::CAddressdata::IsValid() const
 {
-	if (!strAddress.IsValid())
-	{
-		return false;
-	}
-	if (!fIsmine.IsValid())
-	{
-		return false;
-	}
-	if (!strType.IsValid())
-	{
-		return false;
-	}
+	if (!strAddress.IsValid()) { return false; }
+	if (!fIsmine.IsValid()) { return false; }
+	if (!strType.IsValid()) { return false; }
 	if (strType == "pubkey")
 	{
-		if (!strPubkey.IsValid())
-		{
-			return false;
-		}
+		if (!strPubkey.IsValid()) { return false; }
 	}
 	if (strType == "template")
 	{
-		if (!strTemplate.IsValid())
-		{
-			return false;
-		}
+		if (!strTemplate.IsValid()) { return false; }
 	}
 	return true;
 }
@@ -6186,42 +5259,31 @@ CValidateAddressResult::CValidateAddressResult(const CRPCBool& fIsvalid, const C
 	: fIsvalid(fIsvalid), addressdata(addressdata)
 {
 }
-json_spirit::Value CValidateAddressResult::ToJSON() const
+Value CValidateAddressResult::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!fIsvalid.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [fIsvalid] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("isvalid", bool(fIsvalid)));
+	Object ret;
+	CheckIsValid(fIsvalid, "fIsvalid");
+	ret.push_back(Pair("isvalid", bool(fIsvalid)));
 	if (fIsvalid == true)
 	{
-		if (!addressdata.IsValid())
-		{
-			throw CRPCException(RPC_INVALID_PARAMS, "required param [addressdata] is not valid");
-		}
-		ret.push_back(json_spirit::Pair("addressdata", addressdata.ToJSON()));
+		CheckIsValid(addressdata, "addressdata");
+		ret.push_back(Pair("addressdata", addressdata.ToJSON()));
 	}
 
 	return ret;
 }
-CValidateAddressResult& CValidateAddressResult::FromJSON(const json_spirit::Value& v)
+CValidateAddressResult& CValidateAddressResult::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "validateaddress");
 	auto obj = v.get_obj();
 	auto valIsvalid = find_value(obj, "isvalid");
-	if (valIsvalid.type() != json_spirit::bool_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[isvalid] type is not bool");
-	}
+	CheckJSONType(valIsvalid, "bool", "isvalid");
 	fIsvalid = valIsvalid.get_bool();
 	if (fIsvalid == true)
 	{
 		auto valAddressdata = find_value(obj, "addressdata");
-		if (valAddressdata.type() != json_spirit::obj_type)
-		{
-			throw CRPCException(RPC_INVALID_REQUEST, "[addressdata] type is not object");
-		}
-		addressdata.FromJSON(valAddressdata);
+		CheckJSONType(valAddressdata, "object", "addressdata");
+		addressdata.FromJSON(valAddressdata.get_obj());
 	}
 	return *this;
 }
@@ -6246,9 +5308,9 @@ bool CValidateAddressConfig::PostLoad()
 		throw CRPCException(RPC_PARSE_ERROR, string("too arguments given."));
 	}
 	auto it = vecCommand.begin();
-	if (std::next(it, 1) != vecCommand.end())
+	if (next(it, 1) != vecCommand.end())
 	{
-		std::istringstream iss(*++it);
+		istringstream iss(*++it);
 		iss >> strAddress;
 		if (!iss.eof())
 		{
@@ -6274,68 +5336,68 @@ string CValidateAddressConfig::Help() const
 	oss << "Return information about <address>.\n";
 	oss << "\n";
 	oss << "Arguments:\n";
-	oss << " \"address\"                              (string, required) wallet address\n";
+	oss << " \"address\"                      (string, required) wallet address\n";
 	oss << "\n";
 	oss << "Request:\n";
 	oss << " \"param\" :\n";
 	oss << " {\n";
-	oss << "   \"address\": \"\"                        (string, required) wallet address\n";
+	oss << "   \"address\": \"\"                (string, required) wallet address\n";
 	oss << " }\n";
 	oss << "\n";
 	oss << "Response:\n";
 	oss << " \"result\" :\n";
 	oss << " {\n";
-	oss << "   \"isvalid\": true|false,               (bool, required) is valid\n";
+	oss << "   \"isvalid\": true|false,       (bool, required) is valid\n";
 	oss << "   (if \"isvalid\" is true)\n";
-	oss << "   \"addressdata\":                       (object, required) address data\n";
+	oss << "   \"addressdata\":               (object, required) address data\n";
 	oss << "   {\n";
-	oss << "     \"address\": \"\",                     (string, required) wallet address\n";
-	oss << "     \"ismine\": true|false,              (bool, required) is mine\n";
-	oss << "     \"type\": \"\",                        (string, required) type, pubkey or template\n";
+	oss << "     \"address\": \"\",             (string, required) wallet address\n";
+	oss << "     \"ismine\": true|false,      (bool, required) is mine\n";
+	oss << "     \"type\": \"\",                (string, required) type, pubkey or template\n";
 	oss << "     (if \"type\" is \"pubkey\")\n";
-	oss << "     \"pubkey\": \"\",                      (string, required) public key\n";
+	oss << "     \"pubkey\": \"\",              (string, required) public key\n";
 	oss << "     (if \"type\" is \"template\")\n";
-	oss << "     \"template\": \"\",                    (string, required) template type name\n";
+	oss << "     \"template\": \"\",            (string, required) template type name\n";
 	oss << "     (if \"ismine\" is true)\n";
-	oss << "     \"templatedata\":                    (object, optional) template data\n";
+	oss << "     \"templatedata\":            (object, optional) template data\n";
 	oss << "     {\n";
-	oss << "       \"type\": \"\",                      (string, required) template type\n";
-	oss << "       \"hex\": \"\",                       (string, required) temtplate data\n";
+	oss << "       \"type\": \"\",              (string, required) template type\n";
+	oss << "       \"hex\": \"\",               (string, required) temtplate data\n";
 	oss << "       (if \"type\" is \"delegate\")\n";
-	oss << "       \"delegate\":                      (object, required) delegate template struct\n";
+	oss << "       \"delegate\":              (object, required) delegate template struct\n";
 	oss << "       {\n";
-	oss << "         \"delegate\": \"\",                (string, required) delegate public key\n";
-	oss << "         \"owner\": \"\"                    (string, required) owner address\n";
+	oss << "         \"delegate\": \"\",        (string, required) delegate public key\n";
+	oss << "         \"owner\": \"\"            (string, required) owner address\n";
 	oss << "       }\n";
 	oss << "       (if \"type\" is \"fork\")\n";
-	oss << "       \"fork\":                          (object, required) fork template struct\n";
+	oss << "       \"fork\":                  (object, required) fork template struct\n";
 	oss << "       {\n";
-	oss << "         \"redeem\": \"\",                  (string, required) redeem address\n";
-	oss << "         \"fork\": \"\"                     (string, required) fork hash\n";
+	oss << "         \"redeem\": \"\",          (string, required) redeem address\n";
+	oss << "         \"fork\": \"\"             (string, required) fork hash\n";
 	oss << "       }\n";
 	oss << "       (if \"type\" is \"mint\")\n";
-	oss << "       \"mint\":                          (object, required) mint template struct\n";
+	oss << "       \"mint\":                  (object, required) mint template struct\n";
 	oss << "       {\n";
-	oss << "         \"mint\": \"\",                    (string, required) mint public key\n";
-	oss << "         \"spent\": \"\"                    (string, required) spent address\n";
+	oss << "         \"mint\": \"\",            (string, required) mint public key\n";
+	oss << "         \"spent\": \"\"            (string, required) spent address\n";
 	oss << "       }\n";
 	oss << "       (if \"type\" is \"multisig\")\n";
-	oss << "       \"multisig\":                      (object, required) multisig template struct\n";
+	oss << "       \"multisig\":              (object, required) multisig template struct\n";
 	oss << "       {\n";
-	oss << "         \"sigsrequired\": 0,             (int, required) required weight\n";
+	oss << "         \"sigsrequired\": 0,     (int, required) required weight\n";
 	oss << "         [\n";
-	oss << "           \"key\": \"\"                    (string, required) public key\n";
+	oss << "           \"key\": \"\"            (string, required) public key\n";
 	oss << "         ]\n";
 	oss << "       }\n";
 	oss << "       (if \"type\" is \"weighted\")\n";
-	oss << "       \"weighted\":                      (object, required) weighted template struct\n";
+	oss << "       \"weighted\":              (object, required) weighted template struct\n";
 	oss << "       {\n";
-	oss << "         \"sigsrequired\": 0,             (int, required) required weight\n";
+	oss << "         \"sigsrequired\": 0,     (int, required) required weight\n";
 	oss << "         [\n";
-	oss << "           \"pubkey\":                    (object, required) public key\n";
+	oss << "           \"pubkey\":            (object, required) public key\n";
 	oss << "           {\n";
-	oss << "             \"key\": \"\",                 (string, required) public key\n";
-	oss << "             \"weight\": 0                (int, required) weight\n";
+	oss << "             \"key\": \"\",         (string, required) public key\n";
+	oss << "             \"weight\": 0        (int, required) weight\n";
 	oss << "           }\n";
 	oss << "         ]\n";
 	oss << "       }\n";
@@ -6367,24 +5429,23 @@ CResyncWalletParam::CResyncWalletParam(const CRPCString& strAddress)
 	: strAddress(strAddress)
 {
 }
-json_spirit::Value CResyncWalletParam::ToJSON() const
+Value CResyncWalletParam::ToJSON() const
 {
-	json_spirit::Object ret;
+	Object ret;
 	if (strAddress.IsValid())
 	{
-		ret.push_back(json_spirit::Pair("address", std::string(strAddress)));
+		ret.push_back(Pair("address", std::string(strAddress)));
 	}
 
 	return ret;
 }
-CResyncWalletParam& CResyncWalletParam::FromJSON(const json_spirit::Value& v)
+CResyncWalletParam& CResyncWalletParam::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "resyncwallet");
 	auto obj = v.get_obj();
 	auto valAddress = find_value(obj, "address");
-	if (!valAddress.is_null())
-	{
-		strAddress = valAddress.get_str();
-	}
+	CheckJSONType(valAddress, "string", "address");
+	strAddress = valAddress.get_str();
 	return *this;
 }
 string CResyncWalletParam::Method() const
@@ -6398,18 +5459,16 @@ CResyncWalletResult::CResyncWalletResult(const CRPCString& strResult)
 	: strResult(strResult)
 {
 }
-json_spirit::Value CResyncWalletResult::ToJSON() const
+Value CResyncWalletResult::ToJSON() const
 {
-	if (!strResult.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strResult] is not valid");
-	}
-	json_spirit::Value val;
-	val = json_spirit::Value(strResult);
+	CheckIsValid(strResult, "strResult");
+	Value val;
+	val = Value(strResult);
 	return val;
 }
-CResyncWalletResult& CResyncWalletResult::FromJSON(const json_spirit::Value& v)
+CResyncWalletResult& CResyncWalletResult::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "string", "result");
 	strResult = v.get_str();
 	return *this;
 }
@@ -6434,9 +5493,9 @@ bool CResyncWalletConfig::PostLoad()
 		throw CRPCException(RPC_PARSE_ERROR, string("too arguments given."));
 	}
 	auto it = vecCommand.begin();
-	if (std::next(it, 1) != vecCommand.end())
+	if (next(it, 1) != vecCommand.end())
 	{
-		std::istringstream iss(*++it);
+		istringstream iss(*++it);
 		iss >> strAddress;
 		if (!iss.eof())
 		{
@@ -6459,16 +5518,16 @@ string CResyncWalletConfig::Help() const
 	       "If (address) is specified, resync wallet's tx for the address.\n";
 	oss << "\n";
 	oss << "Arguments:\n";
-	oss << " \"address\"                              (string, optional) tx address\n";
+	oss << " \"address\"                      (string, optional) tx address\n";
 	oss << "\n";
 	oss << "Request:\n";
 	oss << " \"param\" :\n";
 	oss << " {\n";
-	oss << "   \"address\": \"\"                        (string, optional) tx address\n";
+	oss << "   \"address\": \"\"                (string, optional) tx address\n";
 	oss << " }\n";
 	oss << "\n";
 	oss << "Response:\n";
-	oss << " \"result\": \"result\"                     (string, required) resync wallet result\n";
+	oss << " \"result\": \"result\"             (string, required) resync wallet result\n";
 	oss << "\n";
 	oss << "Examples:\n";
 	oss << ">> multiverse-cli resyncwallet\n";
@@ -6479,7 +5538,7 @@ string CResyncWalletConfig::Help() const
 	oss << "\n";
 	oss << "Errors:\n";
 	oss << "* {\"code\":-6,\"message\":\"Invalid address\"}\n"
-	       "* {\"code\":-401,\"message\":\"Failed to resync wallet tx\"}\n";
+	       "  {\"code\":-401,\"message\":\"Failed to resync wallet tx\"}\n";
 	oss << "\n";
 	return oss.str();
 }
@@ -6493,33 +5552,30 @@ CGetBalanceParam::CGetBalanceParam(const CRPCString& strFork, const CRPCString& 
 	: strFork(strFork), strAddress(strAddress)
 {
 }
-json_spirit::Value CGetBalanceParam::ToJSON() const
+Value CGetBalanceParam::ToJSON() const
 {
-	json_spirit::Object ret;
+	Object ret;
 	if (strFork.IsValid())
 	{
-		ret.push_back(json_spirit::Pair("fork", std::string(strFork)));
+		ret.push_back(Pair("fork", std::string(strFork)));
 	}
 	if (strAddress.IsValid())
 	{
-		ret.push_back(json_spirit::Pair("address", std::string(strAddress)));
+		ret.push_back(Pair("address", std::string(strAddress)));
 	}
 
 	return ret;
 }
-CGetBalanceParam& CGetBalanceParam::FromJSON(const json_spirit::Value& v)
+CGetBalanceParam& CGetBalanceParam::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "getbalance");
 	auto obj = v.get_obj();
 	auto valFork = find_value(obj, "fork");
-	if (!valFork.is_null())
-	{
-		strFork = valFork.get_str();
-	}
+	CheckJSONType(valFork, "string", "fork");
+	strFork = valFork.get_str();
 	auto valAddress = find_value(obj, "address");
-	if (!valAddress.is_null())
-	{
-		strAddress = valAddress.get_str();
-	}
+	CheckJSONType(valAddress, "string", "address");
+	strAddress = valAddress.get_str();
 	return *this;
 }
 string CGetBalanceParam::Method() const
@@ -6537,79 +5593,44 @@ CGetBalanceResult::CBalance::CBalance(const CRPCType& null)
 	: strAddress(null), fAvail(null), fLocked(null), fUnconfirmed(null)
 {
 }
-json_spirit::Value CGetBalanceResult::CBalance::ToJSON() const
+Value CGetBalanceResult::CBalance::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!strAddress.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strAddress] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("address", std::string(strAddress)));
-	if (!fAvail.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [fAvail] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("avail", double(fAvail)));
-	if (!fLocked.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [fLocked] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("locked", double(fLocked)));
-	if (!fUnconfirmed.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [fUnconfirmed] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("unconfirmed", double(fUnconfirmed)));
+	Object ret;
+	CheckIsValid(strAddress, "strAddress");
+	ret.push_back(Pair("address", std::string(strAddress)));
+	CheckIsValid(fAvail, "fAvail");
+	ret.push_back(Pair("avail", double(fAvail)));
+	CheckIsValid(fLocked, "fLocked");
+	ret.push_back(Pair("locked", double(fLocked)));
+	CheckIsValid(fUnconfirmed, "fUnconfirmed");
+	ret.push_back(Pair("unconfirmed", double(fUnconfirmed)));
 
 	return ret;
 }
-CGetBalanceResult::CBalance& CGetBalanceResult::CBalance::FromJSON(const json_spirit::Value& v)
+CGetBalanceResult::CBalance& CGetBalanceResult::CBalance::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "CGetBalanceResult::CBalance");
 	auto obj = v.get_obj();
 	auto valAddress = find_value(obj, "address");
-	if (valAddress.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[address] type is not string");
-	}
+	CheckJSONType(valAddress, "string", "address");
 	strAddress = valAddress.get_str();
 	auto valAvail = find_value(obj, "avail");
-	if (valAvail.type() != json_spirit::real_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[avail] type is not double");
-	}
+	CheckJSONType(valAvail, "double", "avail");
 	fAvail = valAvail.get_real();
 	auto valLocked = find_value(obj, "locked");
-	if (valLocked.type() != json_spirit::real_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[locked] type is not double");
-	}
+	CheckJSONType(valLocked, "double", "locked");
 	fLocked = valLocked.get_real();
 	auto valUnconfirmed = find_value(obj, "unconfirmed");
-	if (valUnconfirmed.type() != json_spirit::real_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[unconfirmed] type is not double");
-	}
+	CheckJSONType(valUnconfirmed, "double", "unconfirmed");
 	fUnconfirmed = valUnconfirmed.get_real();
 	return *this;
 }
 bool CGetBalanceResult::CBalance::IsValid() const
 {
-	if (!strAddress.IsValid())
-	{
-		return false;
-	}
-	if (!fAvail.IsValid())
-	{
-		return false;
-	}
-	if (!fLocked.IsValid())
-	{
-		return false;
-	}
-	if (!fUnconfirmed.IsValid())
-	{
-		return false;
-	}
+	if (!strAddress.IsValid()) { return false; }
+	if (!fAvail.IsValid()) { return false; }
+	if (!fLocked.IsValid()) { return false; }
+	if (!fUnconfirmed.IsValid()) { return false; }
 	return true;
 }
 
@@ -6619,17 +5640,18 @@ CGetBalanceResult::CGetBalanceResult(const CRPCVector<CBalance>& vecBalance)
 	: vecBalance(vecBalance)
 {
 }
-json_spirit::Value CGetBalanceResult::ToJSON() const
+Value CGetBalanceResult::ToJSON() const
 {
-	json_spirit::Array ret;
+	Array ret;
 	for (auto& v : vecBalance)
 	{
 		ret.push_back(v.ToJSON());
 	}
 	return ret;
 }
-CGetBalanceResult& CGetBalanceResult::FromJSON(const json_spirit::Value& v)
+CGetBalanceResult& CGetBalanceResult::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "array", "balance");
 	auto vecBalanceArray = v.get_array();
 	for (auto& v : vecBalanceArray)
 	{
@@ -6671,9 +5693,9 @@ bool CGetBalanceConfig::PostLoad()
 	}
 	else
 	{
-		if (std::next(it, 1) != vecCommand.end())
+		if (next(it, 1) != vecCommand.end())
 		{
-			std::istringstream iss(*++it);
+			istringstream iss(*++it);
 			iss >> strFork;
 			if (!iss.eof())
 			{
@@ -6688,9 +5710,9 @@ bool CGetBalanceConfig::PostLoad()
 	}
 	else
 	{
-		if (std::next(it, 1) != vecCommand.end())
+		if (next(it, 1) != vecCommand.end())
 		{
-			std::istringstream iss(*++it);
+			istringstream iss(*++it);
 			iss >> strAddress;
 			if (!iss.eof())
 			{
@@ -6715,25 +5737,25 @@ string CGetBalanceConfig::Help() const
 	       "If (address) is specified, returns the balance in the address.\n";
 	oss << "\n";
 	oss << "Arguments:\n";
-	oss << " -f=\"fork\"                              (string, optional) fork hash\n";
-	oss << " -a=\"address\"                           (string, optional) wallet address\n";
+	oss << " -f=\"fork\"                      (string, optional) fork hash\n";
+	oss << " -a=\"address\"                   (string, optional) wallet address\n";
 	oss << "\n";
 	oss << "Request:\n";
 	oss << " \"param\" :\n";
 	oss << " {\n";
-	oss << "   \"fork\": \"\",                          (string, optional) fork hash\n";
-	oss << "   \"address\": \"\"                        (string, optional) wallet address\n";
+	oss << "   \"fork\": \"\",                  (string, optional) fork hash\n";
+	oss << "   \"address\": \"\"                (string, optional) wallet address\n";
 	oss << " }\n";
 	oss << "\n";
 	oss << "Response:\n";
 	oss << " \"result\" :\n";
 	oss << "   [\n";
-	oss << "     \"balance\":                         (object, required) balance info\n";
+	oss << "     \"balance\":                 (object, required) balance info\n";
 	oss << "     {\n";
-	oss << "       \"address\": \"\",                   (string, required) wallet address\n";
-	oss << "       \"avail\": 0.0,                    (double, required) balance available amount\n";
-	oss << "       \"locked\": 0.0,                   (double, required) locked amount\n";
-	oss << "       \"unconfirmed\": 0.0               (double, required) unconfirmed amount\n";
+	oss << "       \"address\": \"\",           (string, required) wallet address\n";
+	oss << "       \"avail\": 0.0,            (double, required) balance available amount\n";
+	oss << "       \"locked\": 0.0,           (double, required) locked amount\n";
+	oss << "       \"unconfirmed\": 0.0       (double, required) unconfirmed amount\n";
 	oss << "     }\n";
 	oss << "   ]\n";
 	oss << "\n";
@@ -6761,33 +5783,30 @@ CListTransactionParam::CListTransactionParam(const CRPCUint64& nCount, const CRP
 	: nCount(nCount), nOffset(nOffset)
 {
 }
-json_spirit::Value CListTransactionParam::ToJSON() const
+Value CListTransactionParam::ToJSON() const
 {
-	json_spirit::Object ret;
+	Object ret;
 	if (nCount.IsValid())
 	{
-		ret.push_back(json_spirit::Pair("count", uint64(nCount)));
+		ret.push_back(Pair("count", uint64(nCount)));
 	}
 	if (nOffset.IsValid())
 	{
-		ret.push_back(json_spirit::Pair("offset", int64(nOffset)));
+		ret.push_back(Pair("offset", int64(nOffset)));
 	}
 
 	return ret;
 }
-CListTransactionParam& CListTransactionParam::FromJSON(const json_spirit::Value& v)
+CListTransactionParam& CListTransactionParam::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "listtransaction");
 	auto obj = v.get_obj();
 	auto valCount = find_value(obj, "count");
-	if (!valCount.is_null())
-	{
-		nCount = valCount.get_uint64();
-	}
+	CheckJSONType(valCount, "uint", "count");
+	nCount = valCount.get_uint64();
 	auto valOffset = find_value(obj, "offset");
-	if (!valOffset.is_null())
-	{
-		nOffset = valOffset.get_int64();
-	}
+	CheckJSONType(valOffset, "int", "offset");
+	nOffset = valOffset.get_int64();
 	return *this;
 }
 string CListTransactionParam::Method() const
@@ -6801,17 +5820,18 @@ CListTransactionResult::CListTransactionResult(const CRPCVector<CWalletTxData>& 
 	: vecTransaction(vecTransaction)
 {
 }
-json_spirit::Value CListTransactionResult::ToJSON() const
+Value CListTransactionResult::ToJSON() const
 {
-	json_spirit::Array ret;
+	Array ret;
 	for (auto& v : vecTransaction)
 	{
 		ret.push_back(v.ToJSON());
 	}
 	return ret;
 }
-CListTransactionResult& CListTransactionResult::FromJSON(const json_spirit::Value& v)
+CListTransactionResult& CListTransactionResult::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "array", "transaction");
 	auto vecTransactionArray = v.get_array();
 	for (auto& v : vecTransactionArray)
 	{
@@ -6853,9 +5873,9 @@ bool CListTransactionConfig::PostLoad()
 	}
 	else
 	{
-		if (std::next(it, 1) != vecCommand.end())
+		if (next(it, 1) != vecCommand.end())
 		{
-			std::istringstream iss(*++it);
+			istringstream iss(*++it);
 			iss >> nCount;
 			if (!iss.eof())
 			{
@@ -6870,9 +5890,9 @@ bool CListTransactionConfig::PostLoad()
 	}
 	else
 	{
-		if (std::next(it, 1) != vecCommand.end())
+		if (next(it, 1) != vecCommand.end())
 		{
-			std::istringstream iss(*++it);
+			istringstream iss(*++it);
 			iss >> nOffset;
 			if (!iss.eof())
 			{
@@ -6893,34 +5913,37 @@ string CListTransactionConfig::Help() const
 	oss << "        listtransaction (-n=count) (-o=offset)\n";
 	oss << "\n";
 	oss << "If (offset) < 0,returns last (count) transactions,\n"
-	       "If (offset) >= 0,returns up to (count) most recent transactions skipping the first (offset) transactions.\n";
+	       "If (offset) >= 0,returns up to (count) most recent transactions skipping the first \n"
+	       "(offset) transactions.\n";
 	oss << "\n";
 	oss << "Arguments:\n";
-	oss << " -n=count                               (uint, optional) transaction count. If not set, return 10 tx\n";
-	oss << " -o=offset                              (int, optional) query offset. If not set, from 0\n";
+	oss << " -n=count                       (uint, optional) transaction count. If not set, \n"
+	       "                                return 10 tx\n";
+	oss << " -o=offset                      (int, optional) query offset. If not set, from 0\n";
 	oss << "\n";
 	oss << "Request:\n";
 	oss << " \"param\" :\n";
 	oss << " {\n";
-	oss << "   \"count\": 0,                          (uint, optional) transaction count. If not set, return 10 tx\n";
-	oss << "   \"offset\": 0                          (int, optional) query offset. If not set, from 0\n";
+	oss << "   \"count\": 0,                  (uint, optional) transaction count. If not set, \n"
+	       "                                return 10 tx\n";
+	oss << "   \"offset\": 0                  (int, optional) query offset. If not set, from 0\n";
 	oss << " }\n";
 	oss << "\n";
 	oss << "Response:\n";
 	oss << " \"result\" :\n";
 	oss << "   [\n";
-	oss << "     \"transaction\":                     (object, required) wallet transaction data\n";
+	oss << "     \"transaction\":             (object, required) wallet transaction data\n";
 	oss << "     {\n";
-	oss << "       \"txid\": \"\",                      (string, required) transaction hash\n";
-	oss << "       \"fork\": \"\",                      (string, required) fork hash\n";
-	oss << "       \"type\": \"\",                      (string, required) transaction type\n";
-	oss << "       \"send\": true|false,              (bool, required) is from me\n";
-	oss << "       \"to\": \"\",                        (string, required) to address\n";
-	oss << "       \"amount\": 0.0,                   (double, required) transaction amount\n";
-	oss << "       \"fee\": 0.0,                      (double, required) transaction fee\n";
-	oss << "       \"lockuntil\": 0,                  (uint, required) lockuntil\n";
-	oss << "       \"blockheight\": 0,                (int, optional) block height\n";
-	oss << "       \"from\": \"\"                       (string, optional) from address\n";
+	oss << "       \"txid\": \"\",              (string, required) transaction hash\n";
+	oss << "       \"fork\": \"\",              (string, required) fork hash\n";
+	oss << "       \"type\": \"\",              (string, required) transaction type\n";
+	oss << "       \"send\": true|false,      (bool, required) is from me\n";
+	oss << "       \"to\": \"\",                (string, required) to address\n";
+	oss << "       \"amount\": 0.0,           (double, required) transaction amount\n";
+	oss << "       \"fee\": 0.0,              (double, required) transaction fee\n";
+	oss << "       \"lockuntil\": 0,          (uint, required) lockuntil\n";
+	oss << "       \"blockheight\": 0,        (int, optional) block height\n";
+	oss << "       \"from\": \"\"               (string, optional) from address\n";
 	oss << "     }\n";
 	oss << "   ]\n";
 	oss << "\n";
@@ -6937,7 +5960,7 @@ string CListTransactionConfig::Help() const
 	oss << "\n";
 	oss << "Errors:\n";
 	oss << "* {\"code\":-6,\"message\":\"Negative, zero or out of range count\"}\n"
-	       "* {\"code\":-401,\"message\":\"Failed to list transactions\"}\n";
+	       "  {\"code\":-401,\"message\":\"Failed to list transactions\"}\n";
 	oss << "\n";
 	return oss.str();
 }
@@ -6951,66 +5974,45 @@ CSendFromParam::CSendFromParam(const CRPCString& strFrom, const CRPCString& strT
 	: strFrom(strFrom), strTo(strTo), fAmount(fAmount), fTxfee(fTxfee), strFork(strFork)
 {
 }
-json_spirit::Value CSendFromParam::ToJSON() const
+Value CSendFromParam::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!strFrom.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strFrom] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("from", std::string(strFrom)));
-	if (!strTo.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strTo] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("to", std::string(strTo)));
-	if (!fAmount.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [fAmount] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("amount", double(fAmount)));
+	Object ret;
+	CheckIsValid(strFrom, "strFrom");
+	ret.push_back(Pair("from", std::string(strFrom)));
+	CheckIsValid(strTo, "strTo");
+	ret.push_back(Pair("to", std::string(strTo)));
+	CheckIsValid(fAmount, "fAmount");
+	ret.push_back(Pair("amount", double(fAmount)));
 	if (fTxfee.IsValid())
 	{
-		ret.push_back(json_spirit::Pair("txfee", double(fTxfee)));
+		ret.push_back(Pair("txfee", double(fTxfee)));
 	}
 	if (strFork.IsValid())
 	{
-		ret.push_back(json_spirit::Pair("fork", std::string(strFork)));
+		ret.push_back(Pair("fork", std::string(strFork)));
 	}
 
 	return ret;
 }
-CSendFromParam& CSendFromParam::FromJSON(const json_spirit::Value& v)
+CSendFromParam& CSendFromParam::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "sendfrom");
 	auto obj = v.get_obj();
 	auto valFrom = find_value(obj, "from");
-	if (valFrom.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[from] type is not string");
-	}
+	CheckJSONType(valFrom, "string", "from");
 	strFrom = valFrom.get_str();
 	auto valTo = find_value(obj, "to");
-	if (valTo.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[to] type is not string");
-	}
+	CheckJSONType(valTo, "string", "to");
 	strTo = valTo.get_str();
 	auto valAmount = find_value(obj, "amount");
-	if (valAmount.type() != json_spirit::real_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[amount] type is not double");
-	}
+	CheckJSONType(valAmount, "double", "amount");
 	fAmount = valAmount.get_real();
 	auto valTxfee = find_value(obj, "txfee");
-	if (!valTxfee.is_null())
-	{
-		fTxfee = valTxfee.get_real();
-	}
+	CheckJSONType(valTxfee, "double", "txfee");
+	fTxfee = valTxfee.get_real();
 	auto valFork = find_value(obj, "fork");
-	if (!valFork.is_null())
-	{
-		strFork = valFork.get_str();
-	}
+	CheckJSONType(valFork, "string", "fork");
+	strFork = valFork.get_str();
 	return *this;
 }
 string CSendFromParam::Method() const
@@ -7024,18 +6026,16 @@ CSendFromResult::CSendFromResult(const CRPCString& strTransaction)
 	: strTransaction(strTransaction)
 {
 }
-json_spirit::Value CSendFromResult::ToJSON() const
+Value CSendFromResult::ToJSON() const
 {
-	if (!strTransaction.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strTransaction] is not valid");
-	}
-	json_spirit::Value val;
-	val = json_spirit::Value(strTransaction);
+	CheckIsValid(strTransaction, "strTransaction");
+	Value val;
+	val = Value(strTransaction);
 	return val;
 }
-CSendFromResult& CSendFromResult::FromJSON(const json_spirit::Value& v)
+CSendFromResult& CSendFromResult::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "string", "transaction");
 	strTransaction = v.get_str();
 	return *this;
 }
@@ -7065,9 +6065,9 @@ bool CSendFromConfig::PostLoad()
 		throw CRPCException(RPC_PARSE_ERROR, string("too arguments given."));
 	}
 	auto it = vecCommand.begin();
-	if (std::next(it, 1) != vecCommand.end())
+	if (next(it, 1) != vecCommand.end())
 	{
-		std::istringstream iss(*++it);
+		istringstream iss(*++it);
 		iss >> strFrom;
 		if (!iss.eof())
 		{
@@ -7078,9 +6078,9 @@ bool CSendFromConfig::PostLoad()
 	{
 		throw CRPCException(RPC_PARSE_ERROR, "[from] is required");
 	}
-	if (std::next(it, 1) != vecCommand.end())
+	if (next(it, 1) != vecCommand.end())
 	{
-		std::istringstream iss(*++it);
+		istringstream iss(*++it);
 		iss >> strTo;
 		if (!iss.eof())
 		{
@@ -7091,9 +6091,9 @@ bool CSendFromConfig::PostLoad()
 	{
 		throw CRPCException(RPC_PARSE_ERROR, "[to] is required");
 	}
-	if (std::next(it, 1) != vecCommand.end())
+	if (next(it, 1) != vecCommand.end())
 	{
-		std::istringstream iss(*++it);
+		istringstream iss(*++it);
 		iss >> fAmount;
 		if (!iss.eof())
 		{
@@ -7104,9 +6104,9 @@ bool CSendFromConfig::PostLoad()
 	{
 		throw CRPCException(RPC_PARSE_ERROR, "[amount] is required");
 	}
-	if (std::next(it, 1) != vecCommand.end())
+	if (next(it, 1) != vecCommand.end())
 	{
-		std::istringstream iss(*++it);
+		istringstream iss(*++it);
 		iss >> fTxfee;
 		if (!iss.eof())
 		{
@@ -7120,9 +6120,9 @@ bool CSendFromConfig::PostLoad()
 	}
 	else
 	{
-		if (std::next(it, 1) != vecCommand.end())
+		if (next(it, 1) != vecCommand.end())
 		{
-			std::istringstream iss(*++it);
+			istringstream iss(*++it);
 			iss >> strFork;
 			if (!iss.eof())
 			{
@@ -7146,43 +6146,41 @@ string CSendFromConfig::Help() const
 	       "Returns transaction id\n";
 	oss << "\n";
 	oss << "Arguments:\n";
-	oss << " \"from\"                                 (string, required) from address\n";
-	oss << " \"to\"                                   (string, required) to address\n";
-	oss << " $amount$                               (double, required) amount\n";
-	oss << " $txfee$                                (double, optional) transaction fee\n";
-	oss << " -f=\"fork\"                              (string, optional) fork hash\n";
+	oss << " \"from\"                         (string, required) from address\n";
+	oss << " \"to\"                           (string, required) to address\n";
+	oss << " $amount$                       (double, required) amount\n";
+	oss << " $txfee$                        (double, optional) transaction fee\n";
+	oss << " -f=\"fork\"                      (string, optional) fork hash\n";
 	oss << "\n";
 	oss << "Request:\n";
 	oss << " \"param\" :\n";
 	oss << " {\n";
-	oss << "   \"from\": \"\",                          (string, required) from address\n";
-	oss << "   \"to\": \"\",                            (string, required) to address\n";
-	oss << "   \"amount\": 0.0,                       (double, required) amount\n";
-	oss << "   \"txfee\": 0.0,                        (double, optional) transaction fee\n";
-	oss << "   \"fork\": \"\"                           (string, optional) fork hash\n";
+	oss << "   \"from\": \"\",                  (string, required) from address\n";
+	oss << "   \"to\": \"\",                    (string, required) to address\n";
+	oss << "   \"amount\": 0.0,               (double, required) amount\n";
+	oss << "   \"txfee\": 0.0,                (double, optional) transaction fee\n";
+	oss << "   \"fork\": \"\"                   (string, optional) fork hash\n";
 	oss << " }\n";
 	oss << "\n";
 	oss << "Response:\n";
-	oss << " \"result\": \"transaction\"                (string, required) transaction hash\n";
+	oss << " \"result\": \"transaction\"        (string, required) transaction hash\n";
 	oss << "\n";
 	oss << "Examples:\n";
-	oss << ">> multiverse-cli sendfrom 20g0944xkyk8ybcmzhpv86vb5777jn1sfrdf3svzqn9phxftqth8116bm 1q71vfagprv5hqwckzbvhep0d0ct72j5j2heak2sgp4vptrtc2btdje3q \n"
-	       ">> 1\n";
+	oss << ">> multiverse-cli sendfrom 20g0944xkyk8ybcmzhpv86vb5777jn1sfrdf3svzqn9phxftqth8116bm 1q71vfagprv5hqwckzbvhep0d0ct72j5j2heak2sgp4vptrtc2btdje3q 1\n";
 	oss << "<< 01a9f3bb967f24396293903c856e99896a514756a220266afa347a8b8c7f0038\n";
 	oss << "\n>> {\"id\":18,\"method\":\"sendfrom\",\"jsonrpc\":\"2.0\",\"params\":{\"from\":\"20g0944xkyk8ybcmzhpv86vb5777jn1sfrdf3svzqn9phxftqth8116bm\",\"to\":\"1q71vfagprv5hqwckzbvhep0d0ct72j5j2heak2sgp4vptrtc2btdje3q\",\"amount\":1.00000000}}\n";
 	oss << "<< {\"id\":18,\"jsonrpc\":\"2.0\",\"result\":\"01a9f3bb967f24396293903c856e99896a514756a220266afa347a8b8c7f0038\"}\n";
-	oss << "\n>> multiverse-cli sendfrom 20g0753dp5b817d7v0hbag6a4neetzfdgbcyt2pkx93hrzn97epzbyn26 1q71vfagprv5hqwckzbvhep0d0ct72j5j2heak2sgp4vptrtc2btdje3q \n"
-	       "\n>> 1 0.1 -f=a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\n";
+	oss << "\n>> multiverse-cli sendfrom 20g0753dp5b817d7v0hbag6a4neetzfdgbcyt2pkx93hrzn97epzbyn26 1q71vfagprv5hqwckzbvhep0d0ct72j5j2heak2sgp4vptrtc2btdje3q 1 0.1 -f=a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\n";
 	oss << "<< 8f92969642024234481e104481f36145736b465ead2d52a6657cf38bd52bdf59\n";
 	oss << "\n>> {\"id\":53,\"method\":\"sendfrom\",\"jsonrpc\":\"2.0\",\"params\":{\"from\":\"20g0753dp5b817d7v0hbag6a4neetzfdgbcyt2pkx93hrzn97epzbyn26\",\"to\":\"1q71vfagprv5hqwckzbvhep0d0ct72j5j2heak2sgp4vptrtc2btdje3q\",\"amount\":1.00000000,\"txfee\":0.10000000,\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\"}}\n";
 	oss << "<< {\"id\":53,\"jsonrpc\":\"2.0\",\"result\":\"8f92969642024234481e104481f36145736b465ead2d52a6657cf38bd52bdf59\"}\n";
 	oss << "\n";
 	oss << "Errors:\n";
 	oss << "* {\"code\":-6,\"message\":\"Invalid address\"}\n"
-	       "* {\"code\":-401,\"message\":\"Failed to create transaction\"}\n"
-	       "* {\"code\":-401,\"message\":\"Failed to sign transaction\"}\n"
-	       "* {\"code\":-401,\"message\":\"The signature is not completed\"}\n"
-	       "* {\"code\":-10,\"message\":\"Tx rejected : xxx\"}\n";
+	       "  {\"code\":-401,\"message\":\"Failed to create transaction\"}\n"
+	       "  {\"code\":-401,\"message\":\"Failed to sign transaction\"}\n"
+	       "  {\"code\":-401,\"message\":\"The signature is not completed\"}\n"
+	       "  {\"code\":-10,\"message\":\"Tx rejected : xxx\"}\n";
 	oss << "\n";
 	return oss.str();
 }
@@ -7196,75 +6194,52 @@ CCreateTransactionParam::CCreateTransactionParam(const CRPCString& strFrom, cons
 	: strFrom(strFrom), strTo(strTo), fAmount(fAmount), fTxfee(fTxfee), strFork(strFork), strData(strData)
 {
 }
-json_spirit::Value CCreateTransactionParam::ToJSON() const
+Value CCreateTransactionParam::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!strFrom.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strFrom] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("from", std::string(strFrom)));
-	if (!strTo.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strTo] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("to", std::string(strTo)));
-	if (!fAmount.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [fAmount] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("amount", double(fAmount)));
+	Object ret;
+	CheckIsValid(strFrom, "strFrom");
+	ret.push_back(Pair("from", std::string(strFrom)));
+	CheckIsValid(strTo, "strTo");
+	ret.push_back(Pair("to", std::string(strTo)));
+	CheckIsValid(fAmount, "fAmount");
+	ret.push_back(Pair("amount", double(fAmount)));
 	if (fTxfee.IsValid())
 	{
-		ret.push_back(json_spirit::Pair("txfee", double(fTxfee)));
+		ret.push_back(Pair("txfee", double(fTxfee)));
 	}
 	if (strFork.IsValid())
 	{
-		ret.push_back(json_spirit::Pair("fork", std::string(strFork)));
+		ret.push_back(Pair("fork", std::string(strFork)));
 	}
 	if (strData.IsValid())
 	{
-		ret.push_back(json_spirit::Pair("data", std::string(strData)));
+		ret.push_back(Pair("data", std::string(strData)));
 	}
 
 	return ret;
 }
-CCreateTransactionParam& CCreateTransactionParam::FromJSON(const json_spirit::Value& v)
+CCreateTransactionParam& CCreateTransactionParam::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "createtransaction");
 	auto obj = v.get_obj();
 	auto valFrom = find_value(obj, "from");
-	if (valFrom.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[from] type is not string");
-	}
+	CheckJSONType(valFrom, "string", "from");
 	strFrom = valFrom.get_str();
 	auto valTo = find_value(obj, "to");
-	if (valTo.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[to] type is not string");
-	}
+	CheckJSONType(valTo, "string", "to");
 	strTo = valTo.get_str();
 	auto valAmount = find_value(obj, "amount");
-	if (valAmount.type() != json_spirit::real_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[amount] type is not double");
-	}
+	CheckJSONType(valAmount, "double", "amount");
 	fAmount = valAmount.get_real();
 	auto valTxfee = find_value(obj, "txfee");
-	if (!valTxfee.is_null())
-	{
-		fTxfee = valTxfee.get_real();
-	}
+	CheckJSONType(valTxfee, "double", "txfee");
+	fTxfee = valTxfee.get_real();
 	auto valFork = find_value(obj, "fork");
-	if (!valFork.is_null())
-	{
-		strFork = valFork.get_str();
-	}
+	CheckJSONType(valFork, "string", "fork");
+	strFork = valFork.get_str();
 	auto valData = find_value(obj, "data");
-	if (!valData.is_null())
-	{
-		strData = valData.get_str();
-	}
+	CheckJSONType(valData, "string", "data");
+	strData = valData.get_str();
 	return *this;
 }
 string CCreateTransactionParam::Method() const
@@ -7278,18 +6253,16 @@ CCreateTransactionResult::CCreateTransactionResult(const CRPCString& strTransact
 	: strTransaction(strTransaction)
 {
 }
-json_spirit::Value CCreateTransactionResult::ToJSON() const
+Value CCreateTransactionResult::ToJSON() const
 {
-	if (!strTransaction.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strTransaction] is not valid");
-	}
-	json_spirit::Value val;
-	val = json_spirit::Value(strTransaction);
+	CheckIsValid(strTransaction, "strTransaction");
+	Value val;
+	val = Value(strTransaction);
 	return val;
 }
-CCreateTransactionResult& CCreateTransactionResult::FromJSON(const json_spirit::Value& v)
+CCreateTransactionResult& CCreateTransactionResult::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "string", "transaction");
 	strTransaction = v.get_str();
 	return *this;
 }
@@ -7320,9 +6293,9 @@ bool CCreateTransactionConfig::PostLoad()
 		throw CRPCException(RPC_PARSE_ERROR, string("too arguments given."));
 	}
 	auto it = vecCommand.begin();
-	if (std::next(it, 1) != vecCommand.end())
+	if (next(it, 1) != vecCommand.end())
 	{
-		std::istringstream iss(*++it);
+		istringstream iss(*++it);
 		iss >> strFrom;
 		if (!iss.eof())
 		{
@@ -7333,9 +6306,9 @@ bool CCreateTransactionConfig::PostLoad()
 	{
 		throw CRPCException(RPC_PARSE_ERROR, "[from] is required");
 	}
-	if (std::next(it, 1) != vecCommand.end())
+	if (next(it, 1) != vecCommand.end())
 	{
-		std::istringstream iss(*++it);
+		istringstream iss(*++it);
 		iss >> strTo;
 		if (!iss.eof())
 		{
@@ -7346,9 +6319,9 @@ bool CCreateTransactionConfig::PostLoad()
 	{
 		throw CRPCException(RPC_PARSE_ERROR, "[to] is required");
 	}
-	if (std::next(it, 1) != vecCommand.end())
+	if (next(it, 1) != vecCommand.end())
 	{
-		std::istringstream iss(*++it);
+		istringstream iss(*++it);
 		iss >> fAmount;
 		if (!iss.eof())
 		{
@@ -7359,9 +6332,9 @@ bool CCreateTransactionConfig::PostLoad()
 	{
 		throw CRPCException(RPC_PARSE_ERROR, "[amount] is required");
 	}
-	if (std::next(it, 1) != vecCommand.end())
+	if (next(it, 1) != vecCommand.end())
 	{
-		std::istringstream iss(*++it);
+		istringstream iss(*++it);
 		iss >> fTxfee;
 		if (!iss.eof())
 		{
@@ -7375,9 +6348,9 @@ bool CCreateTransactionConfig::PostLoad()
 	}
 	else
 	{
-		if (std::next(it, 1) != vecCommand.end())
+		if (next(it, 1) != vecCommand.end())
 		{
-			std::istringstream iss(*++it);
+			istringstream iss(*++it);
 			iss >> strFork;
 			if (!iss.eof())
 			{
@@ -7392,9 +6365,9 @@ bool CCreateTransactionConfig::PostLoad()
 	}
 	else
 	{
-		if (std::next(it, 1) != vecCommand.end())
+		if (next(it, 1) != vecCommand.end())
 		{
-			std::istringstream iss(*++it);
+			istringstream iss(*++it);
 			iss >> strData;
 			if (!iss.eof())
 			{
@@ -7418,37 +6391,36 @@ string CCreateTransactionConfig::Help() const
 	       "Returns serialized tx.\n";
 	oss << "\n";
 	oss << "Arguments:\n";
-	oss << " \"from\"                                 (string, required) from address\n";
-	oss << " \"to\"                                   (string, required) to address\n";
-	oss << " $amount$                               (double, required) amount\n";
-	oss << " $txfee$                                (double, optional) transaction fee\n";
-	oss << " -f=\"fork\"                              (string, optional) fork hash\n";
-	oss << " -d=\"data\"                              (string, optional) output data\n";
+	oss << " \"from\"                         (string, required) from address\n";
+	oss << " \"to\"                           (string, required) to address\n";
+	oss << " $amount$                       (double, required) amount\n";
+	oss << " $txfee$                        (double, optional) transaction fee\n";
+	oss << " -f=\"fork\"                      (string, optional) fork hash\n";
+	oss << " -d=\"data\"                      (string, optional) output data\n";
 	oss << "\n";
 	oss << "Request:\n";
 	oss << " \"param\" :\n";
 	oss << " {\n";
-	oss << "   \"from\": \"\",                          (string, required) from address\n";
-	oss << "   \"to\": \"\",                            (string, required) to address\n";
-	oss << "   \"amount\": 0.0,                       (double, required) amount\n";
-	oss << "   \"txfee\": 0.0,                        (double, optional) transaction fee\n";
-	oss << "   \"fork\": \"\",                          (string, optional) fork hash\n";
-	oss << "   \"data\": \"\"                           (string, optional) output data\n";
+	oss << "   \"from\": \"\",                  (string, required) from address\n";
+	oss << "   \"to\": \"\",                    (string, required) to address\n";
+	oss << "   \"amount\": 0.0,               (double, required) amount\n";
+	oss << "   \"txfee\": 0.0,                (double, optional) transaction fee\n";
+	oss << "   \"fork\": \"\",                  (string, optional) fork hash\n";
+	oss << "   \"data\": \"\"                   (string, optional) output data\n";
 	oss << " }\n";
 	oss << "\n";
 	oss << "Response:\n";
-	oss << " \"result\": \"transaction\"                (string, required) transaction data\n";
+	oss << " \"result\": \"transaction\"        (string, required) transaction data\n";
 	oss << "\n";
 	oss << "Examples:\n";
-	oss << ">> multiverse-cli createtransaction 20g0753dp5b817d7v0hbag6a4neetzfdgbcyt2pkx93hrzn97epzbyn26 1q71vfagprv5hqwckzbvhep0d0ct72j5j2heak2sgp4vptrtc2btdje3q \n"
-	       ">> 1 0.1 -f=a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0 -d=12345\n";
+	oss << ">> multiverse-cli createtransaction 20g0753dp5b817d7v0hbag6a4neetzfdgbcyt2pkx93hrzn97epzbyn26 1q71vfagprv5hqwckzbvhep0d0ct72j5j2heak2sgp4vptrtc2btdje3q 1 0.1 -f=a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0 -d=12345\n";
 	oss << "<< 01000000000000002b747e24738befccff4a05c21dba749632cb8eb410233fa110e3f58a779b4325010ef45be50157453a57519929052d0818c269dee60be98958d5ab65bc7e0919810001b9c3b7aa16c6cb1bf193faf717580d03347148b2145ca98b30b1376d634c12f440420f0000000000a08601000000000002123400\n";
 	oss << "\n>> {\"id\":59,\"method\":\"createtransaction\",\"jsonrpc\":\"2.0\",\"params\":{\"from\":\"20g0753dp5b817d7v0hbag6a4neetzfdgbcyt2pkx93hrzn97epzbyn26\",\"to\":\"1q71vfagprv5hqwckzbvhep0d0ct72j5j2heak2sgp4vptrtc2btdje3q\",\"amount\":1.00000000,\"txfee\":0.10000000,\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\",\"data\":\"12345\"}}\n";
 	oss << "<< {\"id\":59,\"jsonrpc\":\"2.0\",\"result\":\"01000000000000002b747e24738befccff4a05c21dba749632cb8eb410233fa110e3f58a779b4325010ef45be50157453a57519929052d0818c269dee60be98958d5ab65bc7e0919810001b9c3b7aa16c6cb1bf193faf717580d03347148b2145ca98b30b1376d634c12f440420f0000000000a08601000000000002123400\"}\n";
 	oss << "\n";
 	oss << "Errors:\n";
 	oss << "* {\"code\":-6,\"message\":\"Invalid address\"}\n"
-	       "* {\"code\":-401,\"message\":\"Failed to create transaction\"}\n";
+	       "  {\"code\":-401,\"message\":\"Failed to create transaction\"}\n";
 	oss << "\n";
 	return oss.str();
 }
@@ -7462,25 +6434,20 @@ CSignTransactionParam::CSignTransactionParam(const CRPCString& strTxdata)
 	: strTxdata(strTxdata)
 {
 }
-json_spirit::Value CSignTransactionParam::ToJSON() const
+Value CSignTransactionParam::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!strTxdata.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strTxdata] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("txdata", std::string(strTxdata)));
+	Object ret;
+	CheckIsValid(strTxdata, "strTxdata");
+	ret.push_back(Pair("txdata", std::string(strTxdata)));
 
 	return ret;
 }
-CSignTransactionParam& CSignTransactionParam::FromJSON(const json_spirit::Value& v)
+CSignTransactionParam& CSignTransactionParam::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "signtransaction");
 	auto obj = v.get_obj();
 	auto valTxdata = find_value(obj, "txdata");
-	if (valTxdata.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[txdata] type is not string");
-	}
+	CheckJSONType(valTxdata, "string", "txdata");
 	strTxdata = valTxdata.get_str();
 	return *this;
 }
@@ -7495,36 +6462,25 @@ CSignTransactionResult::CSignTransactionResult(const CRPCString& strHex, const C
 	: strHex(strHex), fComplete(fComplete)
 {
 }
-json_spirit::Value CSignTransactionResult::ToJSON() const
+Value CSignTransactionResult::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!strHex.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strHex] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("hex", std::string(strHex)));
-	if (!fComplete.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [fComplete] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("complete", bool(fComplete)));
+	Object ret;
+	CheckIsValid(strHex, "strHex");
+	ret.push_back(Pair("hex", std::string(strHex)));
+	CheckIsValid(fComplete, "fComplete");
+	ret.push_back(Pair("complete", bool(fComplete)));
 
 	return ret;
 }
-CSignTransactionResult& CSignTransactionResult::FromJSON(const json_spirit::Value& v)
+CSignTransactionResult& CSignTransactionResult::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "signtransaction");
 	auto obj = v.get_obj();
 	auto valHex = find_value(obj, "hex");
-	if (valHex.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[hex] type is not string");
-	}
+	CheckJSONType(valHex, "string", "hex");
 	strHex = valHex.get_str();
 	auto valComplete = find_value(obj, "complete");
-	if (valComplete.type() != json_spirit::bool_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[complete] type is not bool");
-	}
+	CheckJSONType(valComplete, "bool", "complete");
 	fComplete = valComplete.get_bool();
 	return *this;
 }
@@ -7549,9 +6505,9 @@ bool CSignTransactionConfig::PostLoad()
 		throw CRPCException(RPC_PARSE_ERROR, string("too arguments given."));
 	}
 	auto it = vecCommand.begin();
-	if (std::next(it, 1) != vecCommand.end())
+	if (next(it, 1) != vecCommand.end())
 	{
-		std::istringstream iss(*++it);
+		istringstream iss(*++it);
 		iss >> strTxdata;
 		if (!iss.eof())
 		{
@@ -7579,19 +6535,19 @@ string CSignTransactionConfig::Help() const
 	       "  complete : true if transaction has a complete set of signature (false if not)\n";
 	oss << "\n";
 	oss << "Arguments:\n";
-	oss << " \"txdata\"                               (string, required) transaction data(hex string)\n";
+	oss << " \"txdata\"                       (string, required) transaction data(hex string)\n";
 	oss << "\n";
 	oss << "Request:\n";
 	oss << " \"param\" :\n";
 	oss << " {\n";
-	oss << "   \"txdata\": \"\"                         (string, required) transaction data(hex string)\n";
+	oss << "   \"txdata\": \"\"                 (string, required) transaction data(hex string)\n";
 	oss << " }\n";
 	oss << "\n";
 	oss << "Response:\n";
 	oss << " \"result\" :\n";
 	oss << " {\n";
-	oss << "   \"hex\": \"\",                           (string, required) hex of transaction data\n";
-	oss << "   \"complete\": true|false               (bool, required) transaction completed or not\n";
+	oss << "   \"hex\": \"\",                   (string, required) hex of transaction data\n";
+	oss << "   \"complete\": true|false       (bool, required) transaction completed or not\n";
 	oss << " }\n";
 	oss << "\n";
 	oss << "Examples:\n";
@@ -7602,7 +6558,7 @@ string CSignTransactionConfig::Help() const
 	oss << "\n";
 	oss << "Errors:\n";
 	oss << "* {\"code\":-8,\"message\":\"TX decode failed\"}\n"
-	       "* {\"code\":-401,\"message\":\"Failed to sign transaction\"}\n";
+	       "  {\"code\":-401,\"message\":\"Failed to sign transaction\"}\n";
 	oss << "\n";
 	return oss.str();
 }
@@ -7616,36 +6572,25 @@ CSignMessageParam::CSignMessageParam(const CRPCString& strPubkey, const CRPCStri
 	: strPubkey(strPubkey), strMessage(strMessage)
 {
 }
-json_spirit::Value CSignMessageParam::ToJSON() const
+Value CSignMessageParam::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!strPubkey.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strPubkey] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("pubkey", std::string(strPubkey)));
-	if (!strMessage.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strMessage] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("message", std::string(strMessage)));
+	Object ret;
+	CheckIsValid(strPubkey, "strPubkey");
+	ret.push_back(Pair("pubkey", std::string(strPubkey)));
+	CheckIsValid(strMessage, "strMessage");
+	ret.push_back(Pair("message", std::string(strMessage)));
 
 	return ret;
 }
-CSignMessageParam& CSignMessageParam::FromJSON(const json_spirit::Value& v)
+CSignMessageParam& CSignMessageParam::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "signmessage");
 	auto obj = v.get_obj();
 	auto valPubkey = find_value(obj, "pubkey");
-	if (valPubkey.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[pubkey] type is not string");
-	}
+	CheckJSONType(valPubkey, "string", "pubkey");
 	strPubkey = valPubkey.get_str();
 	auto valMessage = find_value(obj, "message");
-	if (valMessage.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[message] type is not string");
-	}
+	CheckJSONType(valMessage, "string", "message");
 	strMessage = valMessage.get_str();
 	return *this;
 }
@@ -7660,18 +6605,16 @@ CSignMessageResult::CSignMessageResult(const CRPCString& strSignature)
 	: strSignature(strSignature)
 {
 }
-json_spirit::Value CSignMessageResult::ToJSON() const
+Value CSignMessageResult::ToJSON() const
 {
-	if (!strSignature.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strSignature] is not valid");
-	}
-	json_spirit::Value val;
-	val = json_spirit::Value(strSignature);
+	CheckIsValid(strSignature, "strSignature");
+	Value val;
+	val = Value(strSignature);
 	return val;
 }
-CSignMessageResult& CSignMessageResult::FromJSON(const json_spirit::Value& v)
+CSignMessageResult& CSignMessageResult::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "string", "signature");
 	strSignature = v.get_str();
 	return *this;
 }
@@ -7696,9 +6639,9 @@ bool CSignMessageConfig::PostLoad()
 		throw CRPCException(RPC_PARSE_ERROR, string("too arguments given."));
 	}
 	auto it = vecCommand.begin();
-	if (std::next(it, 1) != vecCommand.end())
+	if (next(it, 1) != vecCommand.end())
 	{
-		std::istringstream iss(*++it);
+		istringstream iss(*++it);
 		iss >> strPubkey;
 		if (!iss.eof())
 		{
@@ -7709,9 +6652,9 @@ bool CSignMessageConfig::PostLoad()
 	{
 		throw CRPCException(RPC_PARSE_ERROR, "[pubkey] is required");
 	}
-	if (std::next(it, 1) != vecCommand.end())
+	if (next(it, 1) != vecCommand.end())
 	{
-		std::istringstream iss(*++it);
+		istringstream iss(*++it);
 		iss >> strMessage;
 		if (!iss.eof())
 		{
@@ -7737,18 +6680,18 @@ string CSignMessageConfig::Help() const
 	oss << "Sign a message with the private key of an pubkey\n";
 	oss << "\n";
 	oss << "Arguments:\n";
-	oss << " \"pubkey\"                               (string, required) public key\n";
-	oss << " \"message\"                              (string, required) message to be signed\n";
+	oss << " \"pubkey\"                       (string, required) public key\n";
+	oss << " \"message\"                      (string, required) message to be signed\n";
 	oss << "\n";
 	oss << "Request:\n";
 	oss << " \"param\" :\n";
 	oss << " {\n";
-	oss << "   \"pubkey\": \"\",                        (string, required) public key\n";
-	oss << "   \"message\": \"\"                        (string, required) message to be signed\n";
+	oss << "   \"pubkey\": \"\",                (string, required) public key\n";
+	oss << "   \"message\": \"\"                (string, required) message to be signed\n";
 	oss << " }\n";
 	oss << "\n";
 	oss << "Response:\n";
-	oss << " \"result\": \"signature\"                  (string, required) signature of message\n";
+	oss << " \"result\": \"signature\"          (string, required) signature of message\n";
 	oss << "\n";
 	oss << "Examples:\n";
 	oss << ">> multiverse-cli signmessage 2e05c9ee45fdf58f7b007458298042fc3d3ad416a2f9977ace16d14164a3e882 123456\n";
@@ -7758,8 +6701,8 @@ string CSignMessageConfig::Help() const
 	oss << "\n";
 	oss << "Errors:\n";
 	oss << "* {\"code\":-4,\"message\":\"Unknown key\"}\n"
-	       "* {\"code\":-405,\"message\":\"Key is locked\"}\n"
-	       "* {\"code\":-401,\"message\":\"Failed to sign message\"}\n";
+	       "  {\"code\":-405,\"message\":\"Key is locked\"}\n"
+	       "  {\"code\":-401,\"message\":\"Failed to sign message\"}\n";
 	oss << "\n";
 	return oss.str();
 }
@@ -7769,14 +6712,15 @@ string CSignMessageConfig::Help() const
 
 // CListAddressParam
 CListAddressParam::CListAddressParam() {}
-json_spirit::Value CListAddressParam::ToJSON() const
+Value CListAddressParam::ToJSON() const
 {
-	json_spirit::Object ret;
+	Object ret;
 
 	return ret;
 }
-CListAddressParam& CListAddressParam::FromJSON(const json_spirit::Value& v)
+CListAddressParam& CListAddressParam::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "listaddress");
 	auto obj = v.get_obj();
 	return *this;
 }
@@ -7795,96 +6739,68 @@ CListAddressResult::CAddressdata::CAddressdata(const CRPCType& null)
 	: strType(null), pubkey(null), strTemplate(null), templatedata(null)
 {
 }
-json_spirit::Value CListAddressResult::CAddressdata::ToJSON() const
+Value CListAddressResult::CAddressdata::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!strType.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strType] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("type", std::string(strType)));
+	Object ret;
+	CheckIsValid(strType, "strType");
+	ret.push_back(Pair("type", std::string(strType)));
 	if (strType == "pubkey")
 	{
-		if (!pubkey.IsValid())
-		{
-			throw CRPCException(RPC_INVALID_PARAMS, "required param [pubkey] is not valid");
-		}
-		ret.push_back(json_spirit::Pair("pubkey", pubkey.ToJSON()));
+		CheckIsValid(pubkey, "pubkey");
+		ret.push_back(Pair("pubkey", pubkey.ToJSON()));
 	}
 	if (strType == "template")
 	{
-		if (!strTemplate.IsValid())
-		{
-			throw CRPCException(RPC_INVALID_PARAMS, "required param [strTemplate] is not valid");
-		}
-		ret.push_back(json_spirit::Pair("template", std::string(strTemplate)));
+		CheckIsValid(strTemplate, "strTemplate");
+		ret.push_back(Pair("template", std::string(strTemplate)));
 	}
 	if (strType == "template")
 	{
 		if (templatedata.IsValid())
 		{
-			ret.push_back(json_spirit::Pair("templatedata", templatedata.ToJSON()));
+			ret.push_back(Pair("templatedata", templatedata.ToJSON()));
 		}
 	}
 
 	return ret;
 }
-CListAddressResult::CAddressdata& CListAddressResult::CAddressdata::FromJSON(const json_spirit::Value& v)
+CListAddressResult::CAddressdata& CListAddressResult::CAddressdata::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "CListAddressResult::CAddressdata");
 	auto obj = v.get_obj();
 	auto valType = find_value(obj, "type");
-	if (valType.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[type] type is not string");
-	}
+	CheckJSONType(valType, "string", "type");
 	strType = valType.get_str();
 	if (strType == "pubkey")
 	{
 		auto valPubkey = find_value(obj, "pubkey");
-		if (valPubkey.type() != json_spirit::obj_type)
-		{
-			throw CRPCException(RPC_INVALID_REQUEST, "[pubkey] type is not object");
-		}
-		pubkey.FromJSON(valPubkey);
+		CheckJSONType(valPubkey, "object", "pubkey");
+		pubkey.FromJSON(valPubkey.get_obj());
 	}
 	if (strType == "template")
 	{
 		auto valTemplate = find_value(obj, "template");
-		if (valTemplate.type() != json_spirit::str_type)
-		{
-			throw CRPCException(RPC_INVALID_REQUEST, "[template] type is not string");
-		}
+		CheckJSONType(valTemplate, "string", "template");
 		strTemplate = valTemplate.get_str();
 	}
 	if (strType == "template")
 	{
 		auto valTemplatedata = find_value(obj, "templatedata");
-		if (!valTemplatedata.is_null())
-		{
-			templatedata.FromJSON(valTemplatedata);
-		}
+		CheckJSONType(valTemplatedata, "object", "templatedata");
+		templatedata.FromJSON(valTemplatedata.get_obj());
 	}
 	return *this;
 }
 bool CListAddressResult::CAddressdata::IsValid() const
 {
-	if (!strType.IsValid())
-	{
-		return false;
-	}
+	if (!strType.IsValid()) { return false; }
 	if (strType == "pubkey")
 	{
-		if (!pubkey.IsValid())
-		{
-			return false;
-		}
+		if (!pubkey.IsValid()) { return false; }
 	}
 	if (strType == "template")
 	{
-		if (!strTemplate.IsValid())
-		{
-			return false;
-		}
+		if (!strTemplate.IsValid()) { return false; }
 	}
 	return true;
 }
@@ -7895,17 +6811,18 @@ CListAddressResult::CListAddressResult(const CRPCVector<CAddressdata>& vecAddres
 	: vecAddressdata(vecAddressdata)
 {
 }
-json_spirit::Value CListAddressResult::ToJSON() const
+Value CListAddressResult::ToJSON() const
 {
-	json_spirit::Array ret;
+	Array ret;
 	for (auto& v : vecAddressdata)
 	{
 		ret.push_back(v.ToJSON());
 	}
 	return ret;
 }
-CListAddressResult& CListAddressResult::FromJSON(const json_spirit::Value& v)
+CListAddressResult& CListAddressResult::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "array", "addressdata");
 	auto vecAddressdataArray = v.get_array();
 	for (auto& v : vecAddressdataArray)
 	{
@@ -7956,57 +6873,57 @@ string CListAddressConfig::Help() const
 	oss << "Response:\n";
 	oss << " \"result\" :\n";
 	oss << "   [\n";
-	oss << "     \"addressdata\":                     (object, required) address data\n";
+	oss << "     \"addressdata\":             (object, required) address data\n";
 	oss << "     {\n";
-	oss << "       \"type\": \"\",                      (string, required) type, pubkey or template\n";
+	oss << "       \"type\": \"\",              (string, required) type, pubkey or template\n";
 	oss << "       (if \"type\" is \"pubkey\")\n";
-	oss << "       \"pubkey\":                        (object, required) public key\n";
+	oss << "       \"pubkey\":                (object, required) public key\n";
 	oss << "       {\n";
-	oss << "         \"key\": \"\",                     (string, required) public key\n";
-	oss << "         \"address\": \"\"                  (string, required) public key address\n";
+	oss << "         \"key\": \"\",             (string, required) public key\n";
+	oss << "         \"address\": \"\"          (string, required) public key address\n";
 	oss << "       }\n";
 	oss << "       (if \"type\" is \"template\")\n";
-	oss << "       \"template\": \"\",                  (string, required) template type name\n";
+	oss << "       \"template\": \"\",          (string, required) template type name\n";
 	oss << "       (if \"type\" is \"template\")\n";
-	oss << "       \"templatedata\":                  (object, optional) template data\n";
+	oss << "       \"templatedata\":          (object, optional) template data\n";
 	oss << "       {\n";
-	oss << "         \"type\": \"\",                    (string, required) template type\n";
-	oss << "         \"hex\": \"\",                     (string, required) temtplate data\n";
+	oss << "         \"type\": \"\",            (string, required) template type\n";
+	oss << "         \"hex\": \"\",             (string, required) temtplate data\n";
 	oss << "         (if \"type\" is \"delegate\")\n";
-	oss << "         \"delegate\":                    (object, required) delegate template struct\n";
+	oss << "         \"delegate\":            (object, required) delegate template struct\n";
 	oss << "         {\n";
-	oss << "           \"delegate\": \"\",              (string, required) delegate public key\n";
-	oss << "           \"owner\": \"\"                  (string, required) owner address\n";
+	oss << "           \"delegate\": \"\",      (string, required) delegate public key\n";
+	oss << "           \"owner\": \"\"          (string, required) owner address\n";
 	oss << "         }\n";
 	oss << "         (if \"type\" is \"fork\")\n";
-	oss << "         \"fork\":                        (object, required) fork template struct\n";
+	oss << "         \"fork\":                (object, required) fork template struct\n";
 	oss << "         {\n";
-	oss << "           \"redeem\": \"\",                (string, required) redeem address\n";
-	oss << "           \"fork\": \"\"                   (string, required) fork hash\n";
+	oss << "           \"redeem\": \"\",        (string, required) redeem address\n";
+	oss << "           \"fork\": \"\"           (string, required) fork hash\n";
 	oss << "         }\n";
 	oss << "         (if \"type\" is \"mint\")\n";
-	oss << "         \"mint\":                        (object, required) mint template struct\n";
+	oss << "         \"mint\":                (object, required) mint template struct\n";
 	oss << "         {\n";
-	oss << "           \"mint\": \"\",                  (string, required) mint public key\n";
-	oss << "           \"spent\": \"\"                  (string, required) spent address\n";
+	oss << "           \"mint\": \"\",          (string, required) mint public key\n";
+	oss << "           \"spent\": \"\"          (string, required) spent address\n";
 	oss << "         }\n";
 	oss << "         (if \"type\" is \"multisig\")\n";
-	oss << "         \"multisig\":                    (object, required) multisig template struct\n";
+	oss << "         \"multisig\":            (object, required) multisig template struct\n";
 	oss << "         {\n";
-	oss << "           \"sigsrequired\": 0,           (int, required) required weight\n";
+	oss << "           \"sigsrequired\": 0,   (int, required) required weight\n";
 	oss << "           [\n";
-	oss << "             \"key\": \"\"                  (string, required) public key\n";
+	oss << "             \"key\": \"\"          (string, required) public key\n";
 	oss << "           ]\n";
 	oss << "         }\n";
 	oss << "         (if \"type\" is \"weighted\")\n";
-	oss << "         \"weighted\":                    (object, required) weighted template struct\n";
+	oss << "         \"weighted\":            (object, required) weighted template struct\n";
 	oss << "         {\n";
-	oss << "           \"sigsrequired\": 0,           (int, required) required weight\n";
+	oss << "           \"sigsrequired\": 0,   (int, required) required weight\n";
 	oss << "           [\n";
-	oss << "             \"pubkey\":                  (object, required) public key\n";
+	oss << "             \"pubkey\":          (object, required) public key\n";
 	oss << "             {\n";
-	oss << "               \"key\": \"\",               (string, required) public key\n";
-	oss << "               \"weight\": 0              (int, required) weight\n";
+	oss << "               \"key\": \"\",       (string, required) public key\n";
+	oss << "               \"weight\": 0      (int, required) weight\n";
 	oss << "             }\n";
 	oss << "           ]\n";
 	oss << "         }\n";
@@ -8034,25 +6951,20 @@ CExportWalletParam::CExportWalletParam(const CRPCString& strPath)
 	: strPath(strPath)
 {
 }
-json_spirit::Value CExportWalletParam::ToJSON() const
+Value CExportWalletParam::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!strPath.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strPath] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("path", std::string(strPath)));
+	Object ret;
+	CheckIsValid(strPath, "strPath");
+	ret.push_back(Pair("path", std::string(strPath)));
 
 	return ret;
 }
-CExportWalletParam& CExportWalletParam::FromJSON(const json_spirit::Value& v)
+CExportWalletParam& CExportWalletParam::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "exportwallet");
 	auto obj = v.get_obj();
 	auto valPath = find_value(obj, "path");
-	if (valPath.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[path] type is not string");
-	}
+	CheckJSONType(valPath, "string", "path");
 	strPath = valPath.get_str();
 	return *this;
 }
@@ -8067,18 +6979,16 @@ CExportWalletResult::CExportWalletResult(const CRPCString& strResult)
 	: strResult(strResult)
 {
 }
-json_spirit::Value CExportWalletResult::ToJSON() const
+Value CExportWalletResult::ToJSON() const
 {
-	if (!strResult.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strResult] is not valid");
-	}
-	json_spirit::Value val;
-	val = json_spirit::Value(strResult);
+	CheckIsValid(strResult, "strResult");
+	Value val;
+	val = Value(strResult);
 	return val;
 }
-CExportWalletResult& CExportWalletResult::FromJSON(const json_spirit::Value& v)
+CExportWalletResult& CExportWalletResult::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "string", "result");
 	strResult = v.get_str();
 	return *this;
 }
@@ -8103,9 +7013,9 @@ bool CExportWalletConfig::PostLoad()
 		throw CRPCException(RPC_PARSE_ERROR, string("too arguments given."));
 	}
 	auto it = vecCommand.begin();
-	if (std::next(it, 1) != vecCommand.end())
+	if (next(it, 1) != vecCommand.end())
 	{
-		std::istringstream iss(*++it);
+		istringstream iss(*++it);
 		iss >> strPath;
 		if (!iss.eof())
 		{
@@ -8131,16 +7041,16 @@ string CExportWalletConfig::Help() const
 	oss << "Export all of keys and templates from wallet to a specified file in json format.\n";
 	oss << "\n";
 	oss << "Arguments:\n";
-	oss << " \"path\"                                 (string, required) save file path\n";
+	oss << " \"path\"                         (string, required) save file path\n";
 	oss << "\n";
 	oss << "Request:\n";
 	oss << " \"param\" :\n";
 	oss << " {\n";
-	oss << "   \"path\": \"\"                           (string, required) save file path\n";
+	oss << "   \"path\": \"\"                   (string, required) save file path\n";
 	oss << " }\n";
 	oss << "\n";
 	oss << "Response:\n";
-	oss << " \"result\": \"result\"                     (string, required) export result\n";
+	oss << " \"result\": \"result\"             (string, required) export result\n";
 	oss << "\n";
 	oss << "Examples:\n";
 	oss << ">> multiverse-cli exportwallet /Users/Loading/a.txt\n";
@@ -8150,10 +7060,10 @@ string CExportWalletConfig::Help() const
 	oss << "\n";
 	oss << "Errors:\n";
 	oss << "* {\"code\":-401,\"message\":\"Must be an absolute path.\"}\n"
-	       "* {\"code\":-401,\"message\":\"Cannot export to a folder.\"}\n"
-	       "* {\"code\":-401,\"message\":\"File has been existed.\"}\n"
-	       "* {\"code\":-401,\"message\":\"Failed to create directories.\"}\n"
-	       "* {\"code\":-401,\"message\":\"filesystem_error\"}\n";
+	       "  {\"code\":-401,\"message\":\"Cannot export to a folder.\"}\n"
+	       "  {\"code\":-401,\"message\":\"File has been existed.\"}\n"
+	       "  {\"code\":-401,\"message\":\"Failed to create directories.\"}\n"
+	       "  {\"code\":-401,\"message\":\"filesystem_error\"}\n";
 	oss << "\n";
 	return oss.str();
 }
@@ -8167,25 +7077,20 @@ CImportWalletParam::CImportWalletParam(const CRPCString& strPath)
 	: strPath(strPath)
 {
 }
-json_spirit::Value CImportWalletParam::ToJSON() const
+Value CImportWalletParam::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!strPath.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strPath] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("path", std::string(strPath)));
+	Object ret;
+	CheckIsValid(strPath, "strPath");
+	ret.push_back(Pair("path", std::string(strPath)));
 
 	return ret;
 }
-CImportWalletParam& CImportWalletParam::FromJSON(const json_spirit::Value& v)
+CImportWalletParam& CImportWalletParam::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "importwallet");
 	auto obj = v.get_obj();
 	auto valPath = find_value(obj, "path");
-	if (valPath.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[path] type is not string");
-	}
+	CheckJSONType(valPath, "string", "path");
 	strPath = valPath.get_str();
 	return *this;
 }
@@ -8200,18 +7105,16 @@ CImportWalletResult::CImportWalletResult(const CRPCString& strResult)
 	: strResult(strResult)
 {
 }
-json_spirit::Value CImportWalletResult::ToJSON() const
+Value CImportWalletResult::ToJSON() const
 {
-	if (!strResult.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strResult] is not valid");
-	}
-	json_spirit::Value val;
-	val = json_spirit::Value(strResult);
+	CheckIsValid(strResult, "strResult");
+	Value val;
+	val = Value(strResult);
 	return val;
 }
-CImportWalletResult& CImportWalletResult::FromJSON(const json_spirit::Value& v)
+CImportWalletResult& CImportWalletResult::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "string", "result");
 	strResult = v.get_str();
 	return *this;
 }
@@ -8236,9 +7139,9 @@ bool CImportWalletConfig::PostLoad()
 		throw CRPCException(RPC_PARSE_ERROR, string("too arguments given."));
 	}
 	auto it = vecCommand.begin();
-	if (std::next(it, 1) != vecCommand.end())
+	if (next(it, 1) != vecCommand.end())
 	{
-		std::istringstream iss(*++it);
+		istringstream iss(*++it);
 		iss >> strPath;
 		if (!iss.eof())
 		{
@@ -8264,16 +7167,16 @@ string CImportWalletConfig::Help() const
 	oss << "Import keys and templates from archived file in json format to wallet.\n";
 	oss << "\n";
 	oss << "Arguments:\n";
-	oss << " \"path\"                                 (string, required) save file path\n";
+	oss << " \"path\"                         (string, required) save file path\n";
 	oss << "\n";
 	oss << "Request:\n";
 	oss << " \"param\" :\n";
 	oss << " {\n";
-	oss << "   \"path\": \"\"                           (string, required) save file path\n";
+	oss << "   \"path\": \"\"                   (string, required) save file path\n";
 	oss << " }\n";
 	oss << "\n";
 	oss << "Response:\n";
-	oss << " \"result\": \"result\"                     (string, required) export result\n";
+	oss << " \"result\": \"result\"             (string, required) export result\n";
 	oss << "\n";
 	oss << "Examples:\n";
 	oss << ">> multiverse-cli importwallet /Users/Loading/a.txt\n";
@@ -8283,14 +7186,14 @@ string CImportWalletConfig::Help() const
 	oss << "\n";
 	oss << "Errors:\n";
 	oss << "* {\"code\":-401,\"message\":\"Must be an absolute path.\"}\n"
-	       "* {\"code\":-401,\"message\":\"File name is invalid.\"}\n"
-	       "* {\"code\":-401,\"message\":\"Filesystem_error - failed to read.\"}\n"
-	       "* {\"code\":-401,\"message\":\"Data format is not correct, check it and try again.\"}\n"
-	       "* {\"code\":-401,\"message\":\"Failed to verify serialized key\"}\n"
-	       "* {\"code\":-401,\"message\":\"Failed to add key\"}\n"
-	       "* {\"code\":-401,\"message\":\"Failed to sync wallet tx\"}\n"
-	       "* {\"code\":-401,\"message\":\"Invalid parameters,failed to make template\"}\n"
-	       "* {\"code\":-401,\"message\":\"Failed to add template\"}\n";
+	       "  {\"code\":-401,\"message\":\"File name is invalid.\"}\n"
+	       "  {\"code\":-401,\"message\":\"Filesystem_error - failed to read.\"}\n"
+	       "  {\"code\":-401,\"message\":\"Data format is not correct, check it and try again.\"}\n"
+	       "  {\"code\":-401,\"message\":\"Failed to verify serialized key\"}\n"
+	       "  {\"code\":-401,\"message\":\"Failed to add key\"}\n"
+	       "  {\"code\":-401,\"message\":\"Failed to sync wallet tx\"}\n"
+	       "  {\"code\":-401,\"message\":\"Invalid parameters,failed to make template\"}\n"
+	       "  {\"code\":-401,\"message\":\"Failed to add template\"}\n";
 	oss << "\n";
 	return oss.str();
 }
@@ -8304,47 +7207,30 @@ CVerifyMessageParam::CVerifyMessageParam(const CRPCString& strPubkey, const CRPC
 	: strPubkey(strPubkey), strMessage(strMessage), strSig(strSig)
 {
 }
-json_spirit::Value CVerifyMessageParam::ToJSON() const
+Value CVerifyMessageParam::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!strPubkey.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strPubkey] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("pubkey", std::string(strPubkey)));
-	if (!strMessage.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strMessage] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("message", std::string(strMessage)));
-	if (!strSig.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strSig] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("sig", std::string(strSig)));
+	Object ret;
+	CheckIsValid(strPubkey, "strPubkey");
+	ret.push_back(Pair("pubkey", std::string(strPubkey)));
+	CheckIsValid(strMessage, "strMessage");
+	ret.push_back(Pair("message", std::string(strMessage)));
+	CheckIsValid(strSig, "strSig");
+	ret.push_back(Pair("sig", std::string(strSig)));
 
 	return ret;
 }
-CVerifyMessageParam& CVerifyMessageParam::FromJSON(const json_spirit::Value& v)
+CVerifyMessageParam& CVerifyMessageParam::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "verifymessage");
 	auto obj = v.get_obj();
 	auto valPubkey = find_value(obj, "pubkey");
-	if (valPubkey.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[pubkey] type is not string");
-	}
+	CheckJSONType(valPubkey, "string", "pubkey");
 	strPubkey = valPubkey.get_str();
 	auto valMessage = find_value(obj, "message");
-	if (valMessage.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[message] type is not string");
-	}
+	CheckJSONType(valMessage, "string", "message");
 	strMessage = valMessage.get_str();
 	auto valSig = find_value(obj, "sig");
-	if (valSig.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[sig] type is not string");
-	}
+	CheckJSONType(valSig, "string", "sig");
 	strSig = valSig.get_str();
 	return *this;
 }
@@ -8359,18 +7245,16 @@ CVerifyMessageResult::CVerifyMessageResult(const CRPCBool& fResult)
 	: fResult(fResult)
 {
 }
-json_spirit::Value CVerifyMessageResult::ToJSON() const
+Value CVerifyMessageResult::ToJSON() const
 {
-	if (!fResult.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [fResult] is not valid");
-	}
-	json_spirit::Value val;
-	val = json_spirit::Value(fResult);
+	CheckIsValid(fResult, "fResult");
+	Value val;
+	val = Value(fResult);
 	return val;
 }
-CVerifyMessageResult& CVerifyMessageResult::FromJSON(const json_spirit::Value& v)
+CVerifyMessageResult& CVerifyMessageResult::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "bool", "result");
 	fResult = v.get_bool();
 	return *this;
 }
@@ -8395,9 +7279,9 @@ bool CVerifyMessageConfig::PostLoad()
 		throw CRPCException(RPC_PARSE_ERROR, string("too arguments given."));
 	}
 	auto it = vecCommand.begin();
-	if (std::next(it, 1) != vecCommand.end())
+	if (next(it, 1) != vecCommand.end())
 	{
-		std::istringstream iss(*++it);
+		istringstream iss(*++it);
 		iss >> strPubkey;
 		if (!iss.eof())
 		{
@@ -8408,9 +7292,9 @@ bool CVerifyMessageConfig::PostLoad()
 	{
 		throw CRPCException(RPC_PARSE_ERROR, "[pubkey] is required");
 	}
-	if (std::next(it, 1) != vecCommand.end())
+	if (next(it, 1) != vecCommand.end())
 	{
-		std::istringstream iss(*++it);
+		istringstream iss(*++it);
 		iss >> strMessage;
 		if (!iss.eof())
 		{
@@ -8421,9 +7305,9 @@ bool CVerifyMessageConfig::PostLoad()
 	{
 		throw CRPCException(RPC_PARSE_ERROR, "[message] is required");
 	}
-	if (std::next(it, 1) != vecCommand.end())
+	if (next(it, 1) != vecCommand.end())
 	{
-		std::istringstream iss(*++it);
+		istringstream iss(*++it);
 		iss >> strSig;
 		if (!iss.eof())
 		{
@@ -8449,29 +7333,27 @@ string CVerifyMessageConfig::Help() const
 	oss << "Verify a signed message\n";
 	oss << "\n";
 	oss << "Arguments:\n";
-	oss << " \"pubkey\"                               (string, required) public key\n";
-	oss << " \"message\"                              (string, required) message to be verified\n";
-	oss << " \"sig\"                                  (string, required) sign\n";
+	oss << " \"pubkey\"                       (string, required) public key\n";
+	oss << " \"message\"                      (string, required) message to be verified\n";
+	oss << " \"sig\"                          (string, required) sign\n";
 	oss << "\n";
 	oss << "Request:\n";
 	oss << " \"param\" :\n";
 	oss << " {\n";
-	oss << "   \"pubkey\": \"\",                        (string, required) public key\n";
-	oss << "   \"message\": \"\",                       (string, required) message to be verified\n";
-	oss << "   \"sig\": \"\"                            (string, required) sign\n";
+	oss << "   \"pubkey\": \"\",                (string, required) public key\n";
+	oss << "   \"message\": \"\",               (string, required) message to be verified\n";
+	oss << "   \"sig\": \"\"                    (string, required) sign\n";
 	oss << " }\n";
 	oss << "\n";
 	oss << "Response:\n";
-	oss << " \"result\": result                       (bool, required) message verified result.\n";
+	oss << " \"result\": result               (bool, required) message verified result.\n";
 	oss << "\n";
 	oss << "Examples:\n";
-	oss << ">> multiverse-cli verifymessage 2e05c9ee45fdf58f7b007458298042fc3d3ad416a2f9977ace16d14164a3e882 123456 \n"
-	       ">> 045977f8c07e6d846d6055357f36a70c16c071cb85115e3ffb498e171a9ac3f4aed1292203a0c8e42c4becafad3ced0d9874abd2a8b788fda9f07099a1e71707\n";
+	oss << ">> multiverse-cli verifymessage 2e05c9ee45fdf58f7b007458298042fc3d3ad416a2f9977ace16d14164a3e882 123456 045977f8c07e6d846d6055357f36a70c16c071cb85115e3ffb498e171a9ac3f4aed1292203a0c8e42c4becafad3ced0d9874abd2a8b788fda9f07099a1e71707\n";
 	oss << "<< true\n";
 	oss << "\n>> {\"id\":5,\"method\":\"verifymessage\",\"jsonrpc\":\"2.0\",\"params\":{\"pubkey\":\"2e05c9ee45fdf58f7b007458298042fc3d3ad416a2f9977ace16d14164a3e882\",\"message\":\"123456\",\"sig\":\"045977f8c07e6d846d6055357f36a70c16c071cb85115e3ffb498e171a9ac3f4aed1292203a0c8e42c4becafad3ced0d9874abd2a8b788fda9f07099a1e71707\"}}\n";
 	oss << "<< {\"id\":5,\"jsonrpc\":\"2.0\",\"result\":true}\n";
-	oss << "\n>> multiverse-cli verifymessage 2e05c9ee45fdf58f7b007458298042fc3d3ad416a2f9977ace16d14164a3e882 12345 \n"
-	       "\n>> 045977f8c07e6d846d6055357f36a70c16c071cb85115e3ffb498e171a9ac3f4aed1292203a0c8e42c4becafad3ced0d9874abd2a8b788fda9f07099a1e71707\n";
+	oss << "\n>> multiverse-cli verifymessage 2e05c9ee45fdf58f7b007458298042fc3d3ad416a2f9977ace16d14164a3e882 12345 045977f8c07e6d846d6055357f36a70c16c071cb85115e3ffb498e171a9ac3f4aed1292203a0c8e42c4becafad3ced0d9874abd2a8b788fda9f07099a1e71707\n";
 	oss << "<< false\n";
 	oss << "\n>> {\"id\":6,\"method\":\"verifymessage\",\"jsonrpc\":\"2.0\",\"params\":{\"pubkey\":\"2e05c9ee45fdf58f7b007458298042fc3d3ad416a2f9977ace16d14164a3e882\",\"message\":\"12345\",\"sig\":\"045977f8c07e6d846d6055357f36a70c16c071cb85115e3ffb498e171a9ac3f4aed1292203a0c8e42c4becafad3ced0d9874abd2a8b788fda9f07099a1e71707\"}}\n";
 	oss << "<< {\"id\":6,\"jsonrpc\":\"2.0\",\"result\":false}\n";
@@ -8486,14 +7368,15 @@ string CVerifyMessageConfig::Help() const
 
 // CMakeKeyPairParam
 CMakeKeyPairParam::CMakeKeyPairParam() {}
-json_spirit::Value CMakeKeyPairParam::ToJSON() const
+Value CMakeKeyPairParam::ToJSON() const
 {
-	json_spirit::Object ret;
+	Object ret;
 
 	return ret;
 }
-CMakeKeyPairParam& CMakeKeyPairParam::FromJSON(const json_spirit::Value& v)
+CMakeKeyPairParam& CMakeKeyPairParam::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "makekeypair");
 	auto obj = v.get_obj();
 	return *this;
 }
@@ -8508,36 +7391,25 @@ CMakeKeyPairResult::CMakeKeyPairResult(const CRPCString& strPrivkey, const CRPCS
 	: strPrivkey(strPrivkey), strPubkey(strPubkey)
 {
 }
-json_spirit::Value CMakeKeyPairResult::ToJSON() const
+Value CMakeKeyPairResult::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!strPrivkey.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strPrivkey] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("privkey", std::string(strPrivkey)));
-	if (!strPubkey.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strPubkey] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("pubkey", std::string(strPubkey)));
+	Object ret;
+	CheckIsValid(strPrivkey, "strPrivkey");
+	ret.push_back(Pair("privkey", std::string(strPrivkey)));
+	CheckIsValid(strPubkey, "strPubkey");
+	ret.push_back(Pair("pubkey", std::string(strPubkey)));
 
 	return ret;
 }
-CMakeKeyPairResult& CMakeKeyPairResult::FromJSON(const json_spirit::Value& v)
+CMakeKeyPairResult& CMakeKeyPairResult::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "makekeypair");
 	auto obj = v.get_obj();
 	auto valPrivkey = find_value(obj, "privkey");
-	if (valPrivkey.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[privkey] type is not string");
-	}
+	CheckJSONType(valPrivkey, "string", "privkey");
 	strPrivkey = valPrivkey.get_str();
 	auto valPubkey = find_value(obj, "pubkey");
-	if (valPubkey.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[pubkey] type is not string");
-	}
+	CheckJSONType(valPubkey, "string", "pubkey");
 	strPubkey = valPubkey.get_str();
 	return *this;
 }
@@ -8584,8 +7456,8 @@ string CMakeKeyPairConfig::Help() const
 	oss << "Response:\n";
 	oss << " \"result\" :\n";
 	oss << " {\n";
-	oss << "   \"privkey\": \"\",                       (string, required) private key\n";
-	oss << "   \"pubkey\": \"\"                         (string, required) public key\n";
+	oss << "   \"privkey\": \"\",               (string, required) private key\n";
+	oss << "   \"pubkey\": \"\"                 (string, required) public key\n";
 	oss << " }\n";
 	oss << "\n";
 	oss << "Examples:\n";
@@ -8608,25 +7480,20 @@ CGetPubkeyAddressParam::CGetPubkeyAddressParam(const CRPCString& strPubkey)
 	: strPubkey(strPubkey)
 {
 }
-json_spirit::Value CGetPubkeyAddressParam::ToJSON() const
+Value CGetPubkeyAddressParam::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!strPubkey.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strPubkey] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("pubkey", std::string(strPubkey)));
+	Object ret;
+	CheckIsValid(strPubkey, "strPubkey");
+	ret.push_back(Pair("pubkey", std::string(strPubkey)));
 
 	return ret;
 }
-CGetPubkeyAddressParam& CGetPubkeyAddressParam::FromJSON(const json_spirit::Value& v)
+CGetPubkeyAddressParam& CGetPubkeyAddressParam::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "getpubkeyaddress");
 	auto obj = v.get_obj();
 	auto valPubkey = find_value(obj, "pubkey");
-	if (valPubkey.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[pubkey] type is not string");
-	}
+	CheckJSONType(valPubkey, "string", "pubkey");
 	strPubkey = valPubkey.get_str();
 	return *this;
 }
@@ -8641,18 +7508,16 @@ CGetPubkeyAddressResult::CGetPubkeyAddressResult(const CRPCString& strAddress)
 	: strAddress(strAddress)
 {
 }
-json_spirit::Value CGetPubkeyAddressResult::ToJSON() const
+Value CGetPubkeyAddressResult::ToJSON() const
 {
-	if (!strAddress.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strAddress] is not valid");
-	}
-	json_spirit::Value val;
-	val = json_spirit::Value(strAddress);
+	CheckIsValid(strAddress, "strAddress");
+	Value val;
+	val = Value(strAddress);
 	return val;
 }
-CGetPubkeyAddressResult& CGetPubkeyAddressResult::FromJSON(const json_spirit::Value& v)
+CGetPubkeyAddressResult& CGetPubkeyAddressResult::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "string", "address");
 	strAddress = v.get_str();
 	return *this;
 }
@@ -8677,9 +7542,9 @@ bool CGetPubkeyAddressConfig::PostLoad()
 		throw CRPCException(RPC_PARSE_ERROR, string("too arguments given."));
 	}
 	auto it = vecCommand.begin();
-	if (std::next(it, 1) != vecCommand.end())
+	if (next(it, 1) != vecCommand.end())
 	{
-		std::istringstream iss(*++it);
+		istringstream iss(*++it);
 		iss >> strPubkey;
 		if (!iss.eof())
 		{
@@ -8705,16 +7570,16 @@ string CGetPubkeyAddressConfig::Help() const
 	oss << "Returns encoded address for the given pubkey.\n";
 	oss << "\n";
 	oss << "Arguments:\n";
-	oss << " \"pubkey\"                               (string, required) public key\n";
+	oss << " \"pubkey\"                       (string, required) public key\n";
 	oss << "\n";
 	oss << "Request:\n";
 	oss << " \"param\" :\n";
 	oss << " {\n";
-	oss << "   \"pubkey\": \"\"                         (string, required) public key\n";
+	oss << "   \"pubkey\": \"\"                 (string, required) public key\n";
 	oss << " }\n";
 	oss << "\n";
 	oss << "Response:\n";
-	oss << " \"result\": \"address\"                    (string, required) address of public key\n";
+	oss << " \"result\": \"address\"            (string, required) address of public key\n";
 	oss << "\n";
 	oss << "Examples:\n";
 	oss << ">> multiverse-cli getpubkeyaddress e8e3770e774d5ad84a8ea65ed08cc7c5c30b42e045623604d5c5c6be95afb4f9\n";
@@ -8736,25 +7601,20 @@ CGetTemplateAddressParam::CGetTemplateAddressParam(const CRPCString& strTid)
 	: strTid(strTid)
 {
 }
-json_spirit::Value CGetTemplateAddressParam::ToJSON() const
+Value CGetTemplateAddressParam::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!strTid.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strTid] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("tid", std::string(strTid)));
+	Object ret;
+	CheckIsValid(strTid, "strTid");
+	ret.push_back(Pair("tid", std::string(strTid)));
 
 	return ret;
 }
-CGetTemplateAddressParam& CGetTemplateAddressParam::FromJSON(const json_spirit::Value& v)
+CGetTemplateAddressParam& CGetTemplateAddressParam::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "gettemplateaddress");
 	auto obj = v.get_obj();
 	auto valTid = find_value(obj, "tid");
-	if (valTid.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[tid] type is not string");
-	}
+	CheckJSONType(valTid, "string", "tid");
 	strTid = valTid.get_str();
 	return *this;
 }
@@ -8769,18 +7629,16 @@ CGetTemplateAddressResult::CGetTemplateAddressResult(const CRPCString& strAddres
 	: strAddress(strAddress)
 {
 }
-json_spirit::Value CGetTemplateAddressResult::ToJSON() const
+Value CGetTemplateAddressResult::ToJSON() const
 {
-	if (!strAddress.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strAddress] is not valid");
-	}
-	json_spirit::Value val;
-	val = json_spirit::Value(strAddress);
+	CheckIsValid(strAddress, "strAddress");
+	Value val;
+	val = Value(strAddress);
 	return val;
 }
-CGetTemplateAddressResult& CGetTemplateAddressResult::FromJSON(const json_spirit::Value& v)
+CGetTemplateAddressResult& CGetTemplateAddressResult::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "string", "address");
 	strAddress = v.get_str();
 	return *this;
 }
@@ -8805,9 +7663,9 @@ bool CGetTemplateAddressConfig::PostLoad()
 		throw CRPCException(RPC_PARSE_ERROR, string("too arguments given."));
 	}
 	auto it = vecCommand.begin();
-	if (std::next(it, 1) != vecCommand.end())
+	if (next(it, 1) != vecCommand.end())
 	{
-		std::istringstream iss(*++it);
+		istringstream iss(*++it);
 		iss >> strTid;
 		if (!iss.eof())
 		{
@@ -8833,16 +7691,16 @@ string CGetTemplateAddressConfig::Help() const
 	oss << "Returns encoded address for the given template id.\n";
 	oss << "\n";
 	oss << "Arguments:\n";
-	oss << " \"tid\"                                  (string, required) template id\n";
+	oss << " \"tid\"                          (string, required) template id\n";
 	oss << "\n";
 	oss << "Request:\n";
 	oss << " \"param\" :\n";
 	oss << " {\n";
-	oss << "   \"tid\": \"\"                            (string, required) template id\n";
+	oss << "   \"tid\": \"\"                    (string, required) template id\n";
 	oss << " }\n";
 	oss << "\n";
 	oss << "Response:\n";
-	oss << " \"result\": \"address\"                    (string, required) address of template\n";
+	oss << " \"result\": \"address\"            (string, required) address of template\n";
 	oss << "\n";
 	oss << "Examples:\n";
 	oss << ">> multiverse-cli gettemplateaddress 2040fpytdr4k5h8tk0nferr7zb51tkccrkgqf341s6tg05q9xe6hth1m4\n";
@@ -8864,17 +7722,15 @@ CMakeTemplateParam::CMakeTemplateParam(const CTemplateRequest& data)
 	: data(data)
 {
 }
-json_spirit::Value CMakeTemplateParam::ToJSON() const
+Value CMakeTemplateParam::ToJSON() const
 {
-	if (!data.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [data] is not valid");
-	}
+	CheckIsValid(data, "data");
 	return data.ToJSON();
 }
-CMakeTemplateParam& CMakeTemplateParam::FromJSON(const json_spirit::Value& v)
+CMakeTemplateParam& CMakeTemplateParam::FromJSON(const Value& v)
 {
-	data.FromJSON(v);
+	CheckJSONType(v, "object", "data");
+	data.FromJSON(v.get_obj());
 	return *this;
 }
 string CMakeTemplateParam::Method() const
@@ -8888,36 +7744,25 @@ CMakeTemplateResult::CMakeTemplateResult(const CRPCString& strAddress, const CRP
 	: strAddress(strAddress), strHex(strHex)
 {
 }
-json_spirit::Value CMakeTemplateResult::ToJSON() const
+Value CMakeTemplateResult::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!strAddress.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strAddress] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("address", std::string(strAddress)));
-	if (!strHex.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strHex] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("hex", std::string(strHex)));
+	Object ret;
+	CheckIsValid(strAddress, "strAddress");
+	ret.push_back(Pair("address", std::string(strAddress)));
+	CheckIsValid(strHex, "strHex");
+	ret.push_back(Pair("hex", std::string(strHex)));
 
 	return ret;
 }
-CMakeTemplateResult& CMakeTemplateResult::FromJSON(const json_spirit::Value& v)
+CMakeTemplateResult& CMakeTemplateResult::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "maketemplate");
 	auto obj = v.get_obj();
 	auto valAddress = find_value(obj, "address");
-	if (valAddress.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[address] type is not string");
-	}
+	CheckJSONType(valAddress, "string", "address");
 	strAddress = valAddress.get_str();
 	auto valHex = find_value(obj, "hex");
-	if (valHex.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[hex] type is not string");
-	}
+	CheckJSONType(valHex, "string", "hex");
 	strHex = valHex.get_str();
 	return *this;
 }
@@ -8942,9 +7787,9 @@ bool CMakeTemplateConfig::PostLoad()
 		throw CRPCException(RPC_PARSE_ERROR, string("too arguments given."));
 	}
 	auto it = vecCommand.begin();
-	if (std::next(it, 1) != vecCommand.end())
+	if (next(it, 1) != vecCommand.end())
 	{
-		std::istringstream iss(*++it);
+		istringstream iss(*++it);
 		iss >> data.strType;
 		if (!iss.eof())
 		{
@@ -8958,7 +7803,7 @@ bool CMakeTemplateConfig::PostLoad()
 	if (data.strType == "delegate")
 	{
 		string strOriginDelegate;
-		if (std::next(it, 1) != vecCommand.end())
+		if (next(it, 1) != vecCommand.end())
 		{
 			strOriginDelegate = *++it;
 		}
@@ -8966,8 +7811,8 @@ bool CMakeTemplateConfig::PostLoad()
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[delegate] is required");
 		}
-		json_spirit::Value valOriginDelegate;
-		if (!json_spirit::read_string(strOriginDelegate, valOriginDelegate))
+		Value valOriginDelegate;
+		if (!read_string(strOriginDelegate, valOriginDelegate))
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "parse json error");
 		}
@@ -8976,7 +7821,7 @@ bool CMakeTemplateConfig::PostLoad()
 	if (data.strType == "fork")
 	{
 		string strOriginFork;
-		if (std::next(it, 1) != vecCommand.end())
+		if (next(it, 1) != vecCommand.end())
 		{
 			strOriginFork = *++it;
 		}
@@ -8984,8 +7829,8 @@ bool CMakeTemplateConfig::PostLoad()
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[fork] is required");
 		}
-		json_spirit::Value valOriginFork;
-		if (!json_spirit::read_string(strOriginFork, valOriginFork))
+		Value valOriginFork;
+		if (!read_string(strOriginFork, valOriginFork))
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "parse json error");
 		}
@@ -8994,7 +7839,7 @@ bool CMakeTemplateConfig::PostLoad()
 	if (data.strType == "mint")
 	{
 		string strOriginMint;
-		if (std::next(it, 1) != vecCommand.end())
+		if (next(it, 1) != vecCommand.end())
 		{
 			strOriginMint = *++it;
 		}
@@ -9002,8 +7847,8 @@ bool CMakeTemplateConfig::PostLoad()
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[mint] is required");
 		}
-		json_spirit::Value valOriginMint;
-		if (!json_spirit::read_string(strOriginMint, valOriginMint))
+		Value valOriginMint;
+		if (!read_string(strOriginMint, valOriginMint))
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "parse json error");
 		}
@@ -9012,7 +7857,7 @@ bool CMakeTemplateConfig::PostLoad()
 	if (data.strType == "multisig")
 	{
 		string strOriginMultisig;
-		if (std::next(it, 1) != vecCommand.end())
+		if (next(it, 1) != vecCommand.end())
 		{
 			strOriginMultisig = *++it;
 		}
@@ -9020,8 +7865,8 @@ bool CMakeTemplateConfig::PostLoad()
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[multisig] is required");
 		}
-		json_spirit::Value valOriginMultisig;
-		if (!json_spirit::read_string(strOriginMultisig, valOriginMultisig))
+		Value valOriginMultisig;
+		if (!read_string(strOriginMultisig, valOriginMultisig))
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "parse json error");
 		}
@@ -9030,7 +7875,7 @@ bool CMakeTemplateConfig::PostLoad()
 	if (data.strType == "weighted")
 	{
 		string strOriginWeighted;
-		if (std::next(it, 1) != vecCommand.end())
+		if (next(it, 1) != vecCommand.end())
 		{
 			strOriginWeighted = *++it;
 		}
@@ -9038,8 +7883,8 @@ bool CMakeTemplateConfig::PostLoad()
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[weighted] is required");
 		}
-		json_spirit::Value valOriginWeighted;
-		if (!json_spirit::read_string(strOriginWeighted, valOriginWeighted))
+		Value valOriginWeighted;
+		if (!read_string(strOriginWeighted, valOriginWeighted))
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "parse json error");
 		}
@@ -9060,57 +7905,57 @@ string CMakeTemplateConfig::Help() const
 	oss << "Returns encoded address for the given template id.\n";
 	oss << "\n";
 	oss << "Arguments:\n";
-	oss << " \"type\"                                 (string, required) template type\n";
+	oss << " \"type\"                         (string, required) template type\n";
 	oss << "  (if type is \"delegate\")\n";
-	oss << " {delegate}                             (object, required) delegate template struct\n";
+	oss << " {delegate}                     (object, required) delegate template struct\n";
 	oss << "  (if type is \"fork\")\n";
-	oss << " {fork}                                 (object, required) fork template struct\n";
+	oss << " {fork}                         (object, required) fork template struct\n";
 	oss << "  (if type is \"mint\")\n";
-	oss << " {mint}                                 (object, required) mint template struct\n";
+	oss << " {mint}                         (object, required) mint template struct\n";
 	oss << "  (if type is \"multisig\")\n";
-	oss << " {multisig}                             (object, required) multisig template struct\n";
+	oss << " {multisig}                     (object, required) multisig template struct\n";
 	oss << "  (if type is \"weighted\")\n";
-	oss << " {weighted}                             (object, required) weighted template struct\n";
+	oss << " {weighted}                     (object, required) weighted template struct\n";
 	oss << "\n";
 	oss << "Request:\n";
 	oss << " \"param\" :\n";
 	oss << " {\n";
-	oss << "   \"type\": \"\",                          (string, required) template type\n";
+	oss << "   \"type\": \"\",                  (string, required) template type\n";
 	oss << "   (if \"type\" is \"delegate\")\n";
-	oss << "   \"delegate\":                          (object, required) delegate template struct\n";
+	oss << "   \"delegate\":                  (object, required) delegate template struct\n";
 	oss << "   {\n";
-	oss << "     \"delegate\": \"\",                    (string, required) delegate public key\n";
-	oss << "     \"owner\": \"\"                        (string, required) owner address\n";
+	oss << "     \"delegate\": \"\",            (string, required) delegate public key\n";
+	oss << "     \"owner\": \"\"                (string, required) owner address\n";
 	oss << "   }\n";
 	oss << "   (if \"type\" is \"fork\")\n";
-	oss << "   \"fork\":                              (object, required) fork template struct\n";
+	oss << "   \"fork\":                      (object, required) fork template struct\n";
 	oss << "   {\n";
-	oss << "     \"redeem\": \"\",                      (string, required) redeem address\n";
-	oss << "     \"fork\": \"\"                         (string, required) fork hash\n";
+	oss << "     \"redeem\": \"\",              (string, required) redeem address\n";
+	oss << "     \"fork\": \"\"                 (string, required) fork hash\n";
 	oss << "   }\n";
 	oss << "   (if \"type\" is \"mint\")\n";
-	oss << "   \"mint\":                              (object, required) mint template struct\n";
+	oss << "   \"mint\":                      (object, required) mint template struct\n";
 	oss << "   {\n";
-	oss << "     \"mint\": \"\",                        (string, required) mint public key\n";
-	oss << "     \"spent\": \"\"                        (string, required) spent address\n";
+	oss << "     \"mint\": \"\",                (string, required) mint public key\n";
+	oss << "     \"spent\": \"\"                (string, required) spent address\n";
 	oss << "   }\n";
 	oss << "   (if \"type\" is \"multisig\")\n";
-	oss << "   \"multisig\":                          (object, required) multisig template struct\n";
+	oss << "   \"multisig\":                  (object, required) multisig template struct\n";
 	oss << "   {\n";
-	oss << "     \"required\": 0,                     (int, required) required weight > 0\n";
+	oss << "     \"required\": 0,             (int, required) required weight > 0\n";
 	oss << "     [\n";
-	oss << "       \"key\": \"\"                        (string, required) public key\n";
+	oss << "       \"key\": \"\"                (string, required) public key\n";
 	oss << "     ]\n";
 	oss << "   }\n";
 	oss << "   (if \"type\" is \"weighted\")\n";
-	oss << "   \"weighted\":                          (object, required) weighted template struct\n";
+	oss << "   \"weighted\":                  (object, required) weighted template struct\n";
 	oss << "   {\n";
-	oss << "     \"required\": 0,                     (int, required) required weight\n";
+	oss << "     \"required\": 0,             (int, required) required weight\n";
 	oss << "     [\n";
-	oss << "       \"pubkey\":                        (object, required) public key\n";
+	oss << "       \"pubkey\":                (object, required) public key\n";
 	oss << "       {\n";
-	oss << "         \"key\": \"\",                     (string, required) public key\n";
-	oss << "         \"weight\": 0                    (int, required) weight\n";
+	oss << "         \"key\": \"\",             (string, required) public key\n";
+	oss << "         \"weight\": 0            (int, required) weight\n";
 	oss << "       }\n";
 	oss << "     ]\n";
 	oss << "   }\n";
@@ -9119,24 +7964,23 @@ string CMakeTemplateConfig::Help() const
 	oss << "Response:\n";
 	oss << " \"result\" :\n";
 	oss << " {\n";
-	oss << "   \"address\": \"\",                       (string, required) address of template\n";
-	oss << "   \"hex\": \"\"                            (string, required) template data hex string\n";
+	oss << "   \"address\": \"\",               (string, required) address of template\n";
+	oss << "   \"hex\": \"\"                    (string, required) template data hex string\n";
 	oss << " }\n";
 	oss << "\n";
 	oss << "Examples:\n";
-	oss << ">> multiverse-cli maketemplate multisig '{\"required\": 1, \"pubkeys\": [\"2e05c9ee45fdf58f7b007458298042fc3d3ad416a2f9977ace16d14164a3e882\", \n"
-	       ">> \"f4124c636d37b1308ba95c14b2487134030d5817f7fa93f11bcbc616aab7c3b9\"]}'\n";
+	oss << ">> multiverse-cli maketemplate multisig '{\"required\": 1, \"pubkeys\": [\"2e05c9ee45fdf58f7b007458298042fc3d3ad416a2f9977ace16d14164a3e882\", \"f4124c636d37b1308ba95c14b2487134030d5817f7fa93f11bcbc616aab7c3b9\"]}'\n";
 	oss << "<< {\"address\":\"208043ht3c51qztrdfa0f3349pe2m8ajjw1mdb2py68fbckaa2s24tq55\",\"hex\":\"0200010282e8a36441d116ce7a97f9a216d43a3dfc4280295874007b8ff5fd45eec9052eb9c3b7aa16c6cb1bf193faf717580d03347148b2145ca98b30b1376d634c12f4\"}\n";
 	oss << "\n>> {\"id\":54,\"method\":\"maketemplate\",\"jsonrpc\":\"2.0\",\"params\":{\"type\":\"multisig\",\"multisig\":{\"required\":1,\"pubkeys\":[\"2e05c9ee45fdf58f7b007458298042fc3d3ad416a2f9977ace16d14164a3e882\",\"f4124c636d37b1308ba95c14b2487134030d5817f7fa93f11bcbc616aab7c3b9\"]}}}\n";
 	oss << "<< {\"id\":54,\"jsonrpc\":\"2.0\",\"result\":{\"address\":\"208043ht3c51qztrdfa0f3349pe2m8ajjw1mdb2py68fbckaa2s24tq55\",\"hex\":\"0200010282e8a36441d116ce7a97f9a216d43a3dfc4280295874007b8ff5fd45eec9052eb9c3b7aa16c6cb1bf193faf717580d03347148b2145ca98b30b1376d634c12f4\"}}\n";
 	oss << "\n";
 	oss << "Errors:\n";
 	oss << "* {\"code\":-6,\"message\":\"Invalid parameters,failed to make template\"}\n"
-	       "* {\"code\":-6,\"message\":\"Invalid parameter, missing weight\"}\n"
-	       "* {\"code\":-6,\"message\":\"Invalid parameter, missing redeem address\"}\n"
-	       "* {\"code\":-6,\"message\":\"Invalid parameter, missing spent address\"}\n"
-	       "* {\"code\":-6,\"message\":\"Invalid parameter, missing owner address\"}\n"
-	       "* {\"code\":-6,\"message\":\"template type error. type: xxx\"}\n";
+	       "  {\"code\":-6,\"message\":\"Invalid parameter, missing weight\"}\n"
+	       "  {\"code\":-6,\"message\":\"Invalid parameter, missing redeem address\"}\n"
+	       "  {\"code\":-6,\"message\":\"Invalid parameter, missing spent address\"}\n"
+	       "  {\"code\":-6,\"message\":\"Invalid parameter, missing owner address\"}\n"
+	       "  {\"code\":-6,\"message\":\"template type error. type: xxx\"}\n";
 	oss << "\n";
 	return oss.str();
 }
@@ -9150,25 +7994,20 @@ CDecodeTransactionParam::CDecodeTransactionParam(const CRPCString& strTxdata)
 	: strTxdata(strTxdata)
 {
 }
-json_spirit::Value CDecodeTransactionParam::ToJSON() const
+Value CDecodeTransactionParam::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!strTxdata.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strTxdata] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("txdata", std::string(strTxdata)));
+	Object ret;
+	CheckIsValid(strTxdata, "strTxdata");
+	ret.push_back(Pair("txdata", std::string(strTxdata)));
 
 	return ret;
 }
-CDecodeTransactionParam& CDecodeTransactionParam::FromJSON(const json_spirit::Value& v)
+CDecodeTransactionParam& CDecodeTransactionParam::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "decodetransaction");
 	auto obj = v.get_obj();
 	auto valTxdata = find_value(obj, "txdata");
-	if (valTxdata.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[txdata] type is not string");
-	}
+	CheckJSONType(valTxdata, "string", "txdata");
 	strTxdata = valTxdata.get_str();
 	return *this;
 }
@@ -9183,17 +8022,15 @@ CDecodeTransactionResult::CDecodeTransactionResult(const CTransactionData& trans
 	: transaction(transaction)
 {
 }
-json_spirit::Value CDecodeTransactionResult::ToJSON() const
+Value CDecodeTransactionResult::ToJSON() const
 {
-	if (!transaction.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [transaction] is not valid");
-	}
+	CheckIsValid(transaction, "transaction");
 	return transaction.ToJSON();
 }
-CDecodeTransactionResult& CDecodeTransactionResult::FromJSON(const json_spirit::Value& v)
+CDecodeTransactionResult& CDecodeTransactionResult::FromJSON(const Value& v)
 {
-	transaction.FromJSON(v);
+	CheckJSONType(v, "object", "transaction");
+	transaction.FromJSON(v.get_obj());
 	return *this;
 }
 string CDecodeTransactionResult::Method() const
@@ -9217,9 +8054,9 @@ bool CDecodeTransactionConfig::PostLoad()
 		throw CRPCException(RPC_PARSE_ERROR, string("too arguments given."));
 	}
 	auto it = vecCommand.begin();
-	if (std::next(it, 1) != vecCommand.end())
+	if (next(it, 1) != vecCommand.end())
 	{
-		std::istringstream iss(*++it);
+		istringstream iss(*++it);
 		iss >> strTxdata;
 		if (!iss.eof())
 		{
@@ -9245,36 +8082,36 @@ string CDecodeTransactionConfig::Help() const
 	oss << "Return a JSON object representing the serialized, hex-encoded transaction.\n";
 	oss << "\n";
 	oss << "Arguments:\n";
-	oss << " \"txdata\"                               (string, required) transaction raw data\n";
+	oss << " \"txdata\"                       (string, required) transaction raw data\n";
 	oss << "\n";
 	oss << "Request:\n";
 	oss << " \"param\" :\n";
 	oss << " {\n";
-	oss << "   \"txdata\": \"\"                         (string, required) transaction raw data\n";
+	oss << "   \"txdata\": \"\"                 (string, required) transaction raw data\n";
 	oss << " }\n";
 	oss << "\n";
 	oss << "Response:\n";
 	oss << " \"result\" :\n";
 	oss << " {\n";
-	oss << "   \"txid\": \"\",                          (string, required) transaction hash\n";
-	oss << "   \"version\": 0,                        (uint, required) version\n";
-	oss << "   \"type\": \"\",                          (string, required) transaction type\n";
-	oss << "   \"lockuntil\": 0,                      (uint, required) unlock time\n";
-	oss << "   \"anchor\": \"\",                        (string, required) anchor hash\n";
+	oss << "   \"txid\": \"\",                  (string, required) transaction hash\n";
+	oss << "   \"version\": 0,                (uint, required) version\n";
+	oss << "   \"type\": \"\",                  (string, required) transaction type\n";
+	oss << "   \"lockuntil\": 0,              (uint, required) unlock time\n";
+	oss << "   \"anchor\": \"\",                (string, required) anchor hash\n";
 	oss << "   [\n";
-	oss << "     \"vin\":                             (object, required) vin struct\n";
+	oss << "     \"vin\":                     (object, required) vin struct\n";
 	oss << "     {\n";
-	oss << "       \"txid\": \"\",                      (string, required) pre-vout transaction hash\n";
-	oss << "       \"vout\": 0                        (uint, required) pre-vout number\n";
+	oss << "       \"txid\": \"\",              (string, required) pre-vout transaction hash\n";
+	oss << "       \"vout\": 0                (uint, required) pre-vout number\n";
 	oss << "     }\n";
 	oss << "   ]\n";
-	oss << "   \"sendto\": \"\",                        (string, required) send to address\n";
-	oss << "   \"amount\": 0.0,                       (double, required) amount\n";
-	oss << "   \"txfee\": 0.0,                        (double, required) transaction fee\n";
-	oss << "   \"data\": \"\",                          (string, required) data\n";
-	oss << "   \"sig\": \"\",                           (string, required) sign\n";
-	oss << "   \"fork\": \"\",                          (string, required) fork hash\n";
-	oss << "   \"confirmations\": 0                   (int, optional) confirmations\n";
+	oss << "   \"sendto\": \"\",                (string, required) send to address\n";
+	oss << "   \"amount\": 0.0,               (double, required) amount\n";
+	oss << "   \"txfee\": 0.0,                (double, required) transaction fee\n";
+	oss << "   \"data\": \"\",                  (string, required) data\n";
+	oss << "   \"sig\": \"\",                   (string, required) sign\n";
+	oss << "   \"fork\": \"\",                  (string, required) fork hash\n";
+	oss << "   \"confirmations\": 0           (int, optional) confirmations\n";
 	oss << " }\n";
 	oss << "\n";
 	oss << "Examples:\n";
@@ -9285,7 +8122,7 @@ string CDecodeTransactionConfig::Help() const
 	oss << "\n";
 	oss << "Errors:\n";
 	oss << "* {\"code\":-8,\"message\":\"TX decode failed\"}\n"
-	       "* {\"code\":-6,\"message\":\"Unknown anchor block\"}\n";
+	       "  {\"code\":-6,\"message\":\"Unknown anchor block\"}\n";
 	oss << "\n";
 	return oss.str();
 }
@@ -9299,58 +8136,35 @@ CMakeOriginParam::CMakeOriginParam(const CRPCString& strPrev, const CRPCString& 
 	: strPrev(strPrev), strAddress(strAddress), fAmount(fAmount), strIdent(strIdent)
 {
 }
-json_spirit::Value CMakeOriginParam::ToJSON() const
+Value CMakeOriginParam::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!strPrev.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strPrev] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("prev", std::string(strPrev)));
-	if (!strAddress.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strAddress] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("address", std::string(strAddress)));
-	if (!fAmount.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [fAmount] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("amount", double(fAmount)));
-	if (!strIdent.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strIdent] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("ident", std::string(strIdent)));
+	Object ret;
+	CheckIsValid(strPrev, "strPrev");
+	ret.push_back(Pair("prev", std::string(strPrev)));
+	CheckIsValid(strAddress, "strAddress");
+	ret.push_back(Pair("address", std::string(strAddress)));
+	CheckIsValid(fAmount, "fAmount");
+	ret.push_back(Pair("amount", double(fAmount)));
+	CheckIsValid(strIdent, "strIdent");
+	ret.push_back(Pair("ident", std::string(strIdent)));
 
 	return ret;
 }
-CMakeOriginParam& CMakeOriginParam::FromJSON(const json_spirit::Value& v)
+CMakeOriginParam& CMakeOriginParam::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "makeorigin");
 	auto obj = v.get_obj();
 	auto valPrev = find_value(obj, "prev");
-	if (valPrev.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[prev] type is not string");
-	}
+	CheckJSONType(valPrev, "string", "prev");
 	strPrev = valPrev.get_str();
 	auto valAddress = find_value(obj, "address");
-	if (valAddress.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[address] type is not string");
-	}
+	CheckJSONType(valAddress, "string", "address");
 	strAddress = valAddress.get_str();
 	auto valAmount = find_value(obj, "amount");
-	if (valAmount.type() != json_spirit::real_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[amount] type is not double");
-	}
+	CheckJSONType(valAmount, "double", "amount");
 	fAmount = valAmount.get_real();
 	auto valIdent = find_value(obj, "ident");
-	if (valIdent.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[ident] type is not string");
-	}
+	CheckJSONType(valIdent, "string", "ident");
 	strIdent = valIdent.get_str();
 	return *this;
 }
@@ -9365,36 +8179,25 @@ CMakeOriginResult::CMakeOriginResult(const CRPCString& strHash, const CRPCString
 	: strHash(strHash), strHex(strHex)
 {
 }
-json_spirit::Value CMakeOriginResult::ToJSON() const
+Value CMakeOriginResult::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!strHash.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strHash] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("hash", std::string(strHash)));
-	if (!strHex.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strHex] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("hex", std::string(strHex)));
+	Object ret;
+	CheckIsValid(strHash, "strHash");
+	ret.push_back(Pair("hash", std::string(strHash)));
+	CheckIsValid(strHex, "strHex");
+	ret.push_back(Pair("hex", std::string(strHex)));
 
 	return ret;
 }
-CMakeOriginResult& CMakeOriginResult::FromJSON(const json_spirit::Value& v)
+CMakeOriginResult& CMakeOriginResult::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "makeorigin");
 	auto obj = v.get_obj();
 	auto valHash = find_value(obj, "hash");
-	if (valHash.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[hash] type is not string");
-	}
+	CheckJSONType(valHash, "string", "hash");
 	strHash = valHash.get_str();
 	auto valHex = find_value(obj, "hex");
-	if (valHex.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[hex] type is not string");
-	}
+	CheckJSONType(valHex, "string", "hex");
 	strHex = valHex.get_str();
 	return *this;
 }
@@ -9419,9 +8222,9 @@ bool CMakeOriginConfig::PostLoad()
 		throw CRPCException(RPC_PARSE_ERROR, string("too arguments given."));
 	}
 	auto it = vecCommand.begin();
-	if (std::next(it, 1) != vecCommand.end())
+	if (next(it, 1) != vecCommand.end())
 	{
-		std::istringstream iss(*++it);
+		istringstream iss(*++it);
 		iss >> strPrev;
 		if (!iss.eof())
 		{
@@ -9432,9 +8235,9 @@ bool CMakeOriginConfig::PostLoad()
 	{
 		throw CRPCException(RPC_PARSE_ERROR, "[prev] is required");
 	}
-	if (std::next(it, 1) != vecCommand.end())
+	if (next(it, 1) != vecCommand.end())
 	{
-		std::istringstream iss(*++it);
+		istringstream iss(*++it);
 		iss >> strAddress;
 		if (!iss.eof())
 		{
@@ -9445,9 +8248,9 @@ bool CMakeOriginConfig::PostLoad()
 	{
 		throw CRPCException(RPC_PARSE_ERROR, "[address] is required");
 	}
-	if (std::next(it, 1) != vecCommand.end())
+	if (next(it, 1) != vecCommand.end())
 	{
-		std::istringstream iss(*++it);
+		istringstream iss(*++it);
 		iss >> fAmount;
 		if (!iss.eof())
 		{
@@ -9458,9 +8261,9 @@ bool CMakeOriginConfig::PostLoad()
 	{
 		throw CRPCException(RPC_PARSE_ERROR, "[amount] is required");
 	}
-	if (std::next(it, 1) != vecCommand.end())
+	if (next(it, 1) != vecCommand.end())
 	{
-		std::istringstream iss(*++it);
+		istringstream iss(*++it);
 		iss >> strIdent;
 		if (!iss.eof())
 		{
@@ -9486,32 +8289,32 @@ string CMakeOriginConfig::Help() const
 	oss << "Return hex-encoded block.\n";
 	oss << "\n";
 	oss << "Arguments:\n";
-	oss << " \"prev\"                                 (string, required) prev block hash\n";
-	oss << " \"address\"                              (string, required) address\n";
-	oss << " $amount$                               (double, required) amount\n";
-	oss << " \"ident\"                                (string, required) indent\n";
+	oss << " \"prev\"                         (string, required) prev block hash\n";
+	oss << " \"address\"                      (string, required) address\n";
+	oss << " $amount$                       (double, required) amount\n";
+	oss << " \"ident\"                        (string, required) indent\n";
 	oss << "\n";
 	oss << "Request:\n";
 	oss << " \"param\" :\n";
 	oss << " {\n";
-	oss << "   \"prev\": \"\",                          (string, required) prev block hash\n";
-	oss << "   \"address\": \"\",                       (string, required) address\n";
-	oss << "   \"amount\": 0.0,                       (double, required) amount\n";
-	oss << "   \"ident\": \"\"                          (string, required) indent\n";
+	oss << "   \"prev\": \"\",                  (string, required) prev block hash\n";
+	oss << "   \"address\": \"\",               (string, required) address\n";
+	oss << "   \"amount\": 0.0,               (double, required) amount\n";
+	oss << "   \"ident\": \"\"                  (string, required) indent\n";
 	oss << " }\n";
 	oss << "\n";
 	oss << "Response:\n";
 	oss << " \"result\" :\n";
 	oss << " {\n";
-	oss << "   \"hash\": \"\",                          (string, required) block hash\n";
-	oss << "   \"hex\": \"\"                            (string, required) block data hex\n";
+	oss << "   \"hash\": \"\",                  (string, required) block hash\n";
+	oss << "   \"hex\": \"\"                    (string, required) block data hex\n";
 	oss << " }\n";
 	oss << "\n";
 	oss << "Examples:\n";
 	oss << "\tnone\n\n";
 	oss << "Errors:\n";
 	oss << "* {\"code\":-8,\"message\":\"TX decode failed\"}\n"
-	       "* {\"code\":-6,\"message\":\"Unknown anchor block\"}\n";
+	       "  {\"code\":-6,\"message\":\"Unknown anchor block\"}\n";
 	oss << "\n";
 	return oss.str();
 }
@@ -9525,24 +8328,23 @@ CGetWorkParam::CGetWorkParam(const CRPCString& strPrev)
 	: strPrev(strPrev)
 {
 }
-json_spirit::Value CGetWorkParam::ToJSON() const
+Value CGetWorkParam::ToJSON() const
 {
-	json_spirit::Object ret;
+	Object ret;
 	if (strPrev.IsValid())
 	{
-		ret.push_back(json_spirit::Pair("prev", std::string(strPrev)));
+		ret.push_back(Pair("prev", std::string(strPrev)));
 	}
 
 	return ret;
 }
-CGetWorkParam& CGetWorkParam::FromJSON(const json_spirit::Value& v)
+CGetWorkParam& CGetWorkParam::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "getwork");
 	auto obj = v.get_obj();
 	auto valPrev = find_value(obj, "prev");
-	if (!valPrev.is_null())
-	{
-		strPrev = valPrev.get_str();
-	}
+	CheckJSONType(valPrev, "string", "prev");
+	strPrev = valPrev.get_str();
 	return *this;
 }
 string CGetWorkParam::Method() const
@@ -9560,94 +8362,50 @@ CGetWorkResult::CWork::CWork(const CRPCType& null)
 	: strPrevblockhash(null), nPrevblocktime(null), nAlgo(null), nBits(null), strData(null)
 {
 }
-json_spirit::Value CGetWorkResult::CWork::ToJSON() const
+Value CGetWorkResult::CWork::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!strPrevblockhash.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strPrevblockhash] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("prevblockhash", std::string(strPrevblockhash)));
-	if (!nPrevblocktime.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [nPrevblocktime] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("prevblocktime", uint64(nPrevblocktime)));
-	if (!nAlgo.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [nAlgo] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("algo", int64(nAlgo)));
-	if (!nBits.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [nBits] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("bits", int64(nBits)));
-	if (!strData.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strData] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("data", std::string(strData)));
+	Object ret;
+	CheckIsValid(strPrevblockhash, "strPrevblockhash");
+	ret.push_back(Pair("prevblockhash", std::string(strPrevblockhash)));
+	CheckIsValid(nPrevblocktime, "nPrevblocktime");
+	ret.push_back(Pair("prevblocktime", uint64(nPrevblocktime)));
+	CheckIsValid(nAlgo, "nAlgo");
+	ret.push_back(Pair("algo", int64(nAlgo)));
+	CheckIsValid(nBits, "nBits");
+	ret.push_back(Pair("bits", int64(nBits)));
+	CheckIsValid(strData, "strData");
+	ret.push_back(Pair("data", std::string(strData)));
 
 	return ret;
 }
-CGetWorkResult::CWork& CGetWorkResult::CWork::FromJSON(const json_spirit::Value& v)
+CGetWorkResult::CWork& CGetWorkResult::CWork::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "CGetWorkResult::CWork");
 	auto obj = v.get_obj();
 	auto valPrevblockhash = find_value(obj, "prevblockhash");
-	if (valPrevblockhash.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[prevblockhash] type is not string");
-	}
+	CheckJSONType(valPrevblockhash, "string", "prevblockhash");
 	strPrevblockhash = valPrevblockhash.get_str();
 	auto valPrevblocktime = find_value(obj, "prevblocktime");
-	if (valPrevblocktime.type() != json_spirit::int_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[prevblocktime] type is not uint");
-	}
+	CheckJSONType(valPrevblocktime, "uint", "prevblocktime");
 	nPrevblocktime = valPrevblocktime.get_uint64();
 	auto valAlgo = find_value(obj, "algo");
-	if (valAlgo.type() != json_spirit::int_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[algo] type is not int");
-	}
+	CheckJSONType(valAlgo, "int", "algo");
 	nAlgo = valAlgo.get_int64();
 	auto valBits = find_value(obj, "bits");
-	if (valBits.type() != json_spirit::int_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[bits] type is not int");
-	}
+	CheckJSONType(valBits, "int", "bits");
 	nBits = valBits.get_int64();
 	auto valData = find_value(obj, "data");
-	if (valData.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[data] type is not string");
-	}
+	CheckJSONType(valData, "string", "data");
 	strData = valData.get_str();
 	return *this;
 }
 bool CGetWorkResult::CWork::IsValid() const
 {
-	if (!strPrevblockhash.IsValid())
-	{
-		return false;
-	}
-	if (!nPrevblocktime.IsValid())
-	{
-		return false;
-	}
-	if (!nAlgo.IsValid())
-	{
-		return false;
-	}
-	if (!nBits.IsValid())
-	{
-		return false;
-	}
-	if (!strData.IsValid())
-	{
-		return false;
-	}
+	if (!strPrevblockhash.IsValid()) { return false; }
+	if (!nPrevblocktime.IsValid()) { return false; }
+	if (!nAlgo.IsValid()) { return false; }
+	if (!nBits.IsValid()) { return false; }
+	if (!strData.IsValid()) { return false; }
 	return true;
 }
 
@@ -9657,33 +8415,30 @@ CGetWorkResult::CGetWorkResult(const CRPCBool& fResult, const CWork& work)
 	: fResult(fResult), work(work)
 {
 }
-json_spirit::Value CGetWorkResult::ToJSON() const
+Value CGetWorkResult::ToJSON() const
 {
-	json_spirit::Object ret;
+	Object ret;
 	if (fResult.IsValid())
 	{
-		ret.push_back(json_spirit::Pair("result", bool(fResult)));
+		ret.push_back(Pair("result", bool(fResult)));
 	}
 	if (work.IsValid())
 	{
-		ret.push_back(json_spirit::Pair("work", work.ToJSON()));
+		ret.push_back(Pair("work", work.ToJSON()));
 	}
 
 	return ret;
 }
-CGetWorkResult& CGetWorkResult::FromJSON(const json_spirit::Value& v)
+CGetWorkResult& CGetWorkResult::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "getwork");
 	auto obj = v.get_obj();
 	auto valResult = find_value(obj, "result");
-	if (!valResult.is_null())
-	{
-		fResult = valResult.get_bool();
-	}
+	CheckJSONType(valResult, "bool", "result");
+	fResult = valResult.get_bool();
 	auto valWork = find_value(obj, "work");
-	if (!valWork.is_null())
-	{
-		work.FromJSON(valWork);
-	}
+	CheckJSONType(valWork, "object", "work");
+	work.FromJSON(valWork.get_obj());
 	return *this;
 }
 string CGetWorkResult::Method() const
@@ -9707,9 +8462,9 @@ bool CGetWorkConfig::PostLoad()
 		throw CRPCException(RPC_PARSE_ERROR, string("too arguments given."));
 	}
 	auto it = vecCommand.begin();
-	if (std::next(it, 1) != vecCommand.end())
+	if (next(it, 1) != vecCommand.end())
 	{
-		std::istringstream iss(*++it);
+		istringstream iss(*++it);
 		iss >> strPrev;
 		if (!iss.eof())
 		{
@@ -9738,27 +8493,27 @@ string CGetWorkConfig::Help() const
 	       "  \"data\" : work data\n";
 	oss << "\n";
 	oss << "Arguments:\n";
-	oss << " \"prev\"                                 (string, optional) prev block hash\n";
+	oss << " \"prev\"                         (string, optional) prev block hash\n";
 	oss << "\n";
 	oss << "Request:\n";
 	oss << " \"param\" :\n";
 	oss << " {\n";
-	oss << "   \"prev\": \"\"                           (string, optional) prev block hash\n";
+	oss << "   \"prev\": \"\"                   (string, optional) prev block hash\n";
 	oss << " }\n";
 	oss << "\n";
 	oss << "Response:\n";
 	oss << " \"result\" :\n";
 	oss << " {\n";
 	oss << "   (if \"prev\" is matched or block is not generated by POW)\n";
-	oss << "   \"result\": true|false,                (bool, optional) result\n";
+	oss << "   \"result\": true|false,        (bool, optional) result\n";
 	oss << "   (if \"next block\" is generated by POW)\n";
-	oss << "   \"work\":                              (object, optional) work data\n";
+	oss << "   \"work\":                      (object, optional) work data\n";
 	oss << "   {\n";
-	oss << "     \"prevblockhash\": \"\",               (string, required) prev block hash\n";
-	oss << "     \"prevblocktime\": 0,                (uint, required) prev block time\n";
-	oss << "     \"algo\": 0,                         (int, required) algo\n";
-	oss << "     \"bits\": 0,                         (int, required) bits\n";
-	oss << "     \"data\": \"\"                         (string, required) work data\n";
+	oss << "     \"prevblockhash\": \"\",       (string, required) prev block hash\n";
+	oss << "     \"prevblocktime\": 0,        (uint, required) prev block time\n";
+	oss << "     \"algo\": 0,                 (int, required) algo\n";
+	oss << "     \"bits\": 0,                 (int, required) bits\n";
+	oss << "     \"data\": \"\"                 (string, required) work data\n";
 	oss << "   }\n";
 	oss << " }\n";
 	oss << "\n";
@@ -9782,47 +8537,30 @@ CSubmitWorkParam::CSubmitWorkParam(const CRPCString& strData, const CRPCString& 
 	: strData(strData), strSpent(strSpent), strPrivkey(strPrivkey)
 {
 }
-json_spirit::Value CSubmitWorkParam::ToJSON() const
+Value CSubmitWorkParam::ToJSON() const
 {
-	json_spirit::Object ret;
-	if (!strData.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strData] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("data", std::string(strData)));
-	if (!strSpent.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strSpent] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("spent", std::string(strSpent)));
-	if (!strPrivkey.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strPrivkey] is not valid");
-	}
-	ret.push_back(json_spirit::Pair("privkey", std::string(strPrivkey)));
+	Object ret;
+	CheckIsValid(strData, "strData");
+	ret.push_back(Pair("data", std::string(strData)));
+	CheckIsValid(strSpent, "strSpent");
+	ret.push_back(Pair("spent", std::string(strSpent)));
+	CheckIsValid(strPrivkey, "strPrivkey");
+	ret.push_back(Pair("privkey", std::string(strPrivkey)));
 
 	return ret;
 }
-CSubmitWorkParam& CSubmitWorkParam::FromJSON(const json_spirit::Value& v)
+CSubmitWorkParam& CSubmitWorkParam::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "object", "submitwork");
 	auto obj = v.get_obj();
 	auto valData = find_value(obj, "data");
-	if (valData.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[data] type is not string");
-	}
+	CheckJSONType(valData, "string", "data");
 	strData = valData.get_str();
 	auto valSpent = find_value(obj, "spent");
-	if (valSpent.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[spent] type is not string");
-	}
+	CheckJSONType(valSpent, "string", "spent");
 	strSpent = valSpent.get_str();
 	auto valPrivkey = find_value(obj, "privkey");
-	if (valPrivkey.type() != json_spirit::str_type)
-	{
-		throw CRPCException(RPC_INVALID_REQUEST, "[privkey] type is not string");
-	}
+	CheckJSONType(valPrivkey, "string", "privkey");
 	strPrivkey = valPrivkey.get_str();
 	return *this;
 }
@@ -9837,18 +8575,16 @@ CSubmitWorkResult::CSubmitWorkResult(const CRPCString& strHash)
 	: strHash(strHash)
 {
 }
-json_spirit::Value CSubmitWorkResult::ToJSON() const
+Value CSubmitWorkResult::ToJSON() const
 {
-	if (!strHash.IsValid())
-	{
-		throw CRPCException(RPC_INVALID_PARAMS, "required param [strHash] is not valid");
-	}
-	json_spirit::Value val;
-	val = json_spirit::Value(strHash);
+	CheckIsValid(strHash, "strHash");
+	Value val;
+	val = Value(strHash);
 	return val;
 }
-CSubmitWorkResult& CSubmitWorkResult::FromJSON(const json_spirit::Value& v)
+CSubmitWorkResult& CSubmitWorkResult::FromJSON(const Value& v)
 {
+	CheckJSONType(v, "string", "hash");
 	strHash = v.get_str();
 	return *this;
 }
@@ -9873,9 +8609,9 @@ bool CSubmitWorkConfig::PostLoad()
 		throw CRPCException(RPC_PARSE_ERROR, string("too arguments given."));
 	}
 	auto it = vecCommand.begin();
-	if (std::next(it, 1) != vecCommand.end())
+	if (next(it, 1) != vecCommand.end())
 	{
-		std::istringstream iss(*++it);
+		istringstream iss(*++it);
 		iss >> strData;
 		if (!iss.eof())
 		{
@@ -9886,9 +8622,9 @@ bool CSubmitWorkConfig::PostLoad()
 	{
 		throw CRPCException(RPC_PARSE_ERROR, "[data] is required");
 	}
-	if (std::next(it, 1) != vecCommand.end())
+	if (next(it, 1) != vecCommand.end())
 	{
-		std::istringstream iss(*++it);
+		istringstream iss(*++it);
 		iss >> strSpent;
 		if (!iss.eof())
 		{
@@ -9899,9 +8635,9 @@ bool CSubmitWorkConfig::PostLoad()
 	{
 		throw CRPCException(RPC_PARSE_ERROR, "[spent] is required");
 	}
-	if (std::next(it, 1) != vecCommand.end())
+	if (next(it, 1) != vecCommand.end())
 	{
-		std::istringstream iss(*++it);
+		istringstream iss(*++it);
 		iss >> strPrivkey;
 		if (!iss.eof())
 		{
@@ -9928,26 +8664,25 @@ string CSubmitWorkConfig::Help() const
 	       "Return hash of new block.\n";
 	oss << "\n";
 	oss << "Arguments:\n";
-	oss << " \"data\"                                 (string, required) work data\n";
-	oss << " \"spent\"                                (string, required) spent address\n";
-	oss << " \"privkey\"                              (string, required) private key\n";
+	oss << " \"data\"                         (string, required) work data\n";
+	oss << " \"spent\"                        (string, required) spent address\n";
+	oss << " \"privkey\"                      (string, required) private key\n";
 	oss << "\n";
 	oss << "Request:\n";
 	oss << " \"param\" :\n";
 	oss << " {\n";
-	oss << "   \"data\": \"\",                          (string, required) work data\n";
-	oss << "   \"spent\": \"\",                         (string, required) spent address\n";
-	oss << "   \"privkey\": \"\"                        (string, required) private key\n";
+	oss << "   \"data\": \"\",                  (string, required) work data\n";
+	oss << "   \"spent\": \"\",                 (string, required) spent address\n";
+	oss << "   \"privkey\": \"\"                (string, required) private key\n";
 	oss << " }\n";
 	oss << "\n";
 	oss << "Response:\n";
-	oss << " \"result\": \"hash\"                       (string, required) block hash\n";
+	oss << " \"result\": \"hash\"               (string, required) block hash\n";
 	oss << "\n";
 	oss << "Examples:\n";
 	oss << ">> {\"id\":2,\"method\":\"submitwork\",\"jsonrpc\":\"2.0\",\"params\":{\"data\":\"01000100502fae5b4624cce135b573bfc5d59315b7f779d7baf9c87db7ddb4d176d427a8e948e77e43000000000000000000000000000000000000000000000000000000000000000000011acfff020000000000000000000000000000000000000000000000000000000000\",\"spent\":\"1dj5qcjst7eh4tems36n1m500hhyba3vx436t4a8hgdm7r7jrdbf2yqp9\",\"privkey\":\"41a9f94395ced97d5066e2d099df4f1e2bd96057f9c38e8ea3f8a02eccd0a98e\"}}\n";
 	oss << "<< {\"id\":2,\"jsonrpc\":\"2.0\",\"result\":\"f734bb6bc12ab4058532113cfe6a3412d1036eae25f60a97ee1b17effc6e74de\"}\n";
-	oss << "\n>> submitwork 01000100502fae5b4624cce135b573bfc5d59315b7f779d7baf9c87db7ddb4d176d427a8e948e77e43000000000000000000000000000000000000000000000000000000000000000000011acfff020000000000000000000000000000000000000000000000000000000000 \n"
-	       "\n>> 1dj5qcjst7eh4tems36n1m500hhyba3vx436t4a8hgdm7r7jrdbf2yqp9 41a9f94395ced97d5066e2d099df4f1e2bd96057f9c38e8ea3f8a02eccd0a98e\n";
+	oss << "\n>> submitwork 01000100502fae5b4624cce135b573bfc5d59315b7f779d7baf9c87db7ddb4d176d427a8e948e77e43000000000000000000000000000000000000000000000000000000000000000000011acfff020000000000000000000000000000000000000000000000000000000000 1dj5qcjst7eh4tems36n1m500hhyba3vx436t4a8hgdm7r7jrdbf2yqp9 41a9f94395ced97d5066e2d099df4f1e2bd96057f9c38e8ea3f8a02eccd0a98e\n";
 	oss << "<< f734bb6bc12ab4058532113cfe6a3412d1036eae25f60a97ee1b17effc6e74de\n";
 	oss << "\n";
 	oss << "Errors:\n";

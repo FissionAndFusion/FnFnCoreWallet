@@ -29,6 +29,11 @@ CMvRPCBasicConfig::~CMvRPCBasicConfig() {}
 
 bool CMvRPCBasicConfig::PostLoad()
 {
+    if (fHelp)
+    {
+        return true;
+    }
+
     if (nRPCPortInt <= 0 || nRPCPortInt > 0xFFFF)
     {
         nRPCPort = (fTestNet ? DEFAULT_TESTNET_RPCPORT : DEFAULT_RPCPORT);
@@ -85,6 +90,11 @@ CMvRPCServerConfig::~CMvRPCServerConfig() {}
 
 bool CMvRPCServerConfig::PostLoad()
 {
+    if (fHelp)
+    {
+        return true;
+    }
+
     CMvRPCBasicConfig::PostLoad();
 
     epRPC = tcp::endpoint(!vRPCAllowIP.empty()
@@ -124,6 +134,11 @@ CMvRPCClientConfig::~CMvRPCClientConfig() {}
 
 bool CMvRPCClientConfig::PostLoad()
 {
+    if (fHelp)
+    {
+        return true;
+    }
+
     CMvRPCBasicConfig::PostLoad();
 
     if (nRPCConnectTimeout == 0)

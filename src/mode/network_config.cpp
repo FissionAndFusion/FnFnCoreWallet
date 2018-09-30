@@ -22,6 +22,11 @@ CMvNetworkConfig::~CMvNetworkConfig() {}
 
 bool CMvNetworkConfig::PostLoad()
 {
+    if (fHelp)
+    {
+        return true;
+    }
+
     if (nPortInt <= 0 || nPortInt > 0xFFFF)
     {
         nPort = (fTestNet ? DEFAULT_TESTNET_P2PPORT : DEFAULT_P2PPORT);

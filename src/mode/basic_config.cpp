@@ -23,6 +23,11 @@ CMvBasicConfig::~CMvBasicConfig() {}
 
 bool CMvBasicConfig::PostLoad()
 {
+    if (fHelp)
+    {
+        return true;
+    }
+
     if (fTestNet)
     {
         pathData /= "testnet";

@@ -26,7 +26,7 @@ protected:
 	string HelpImpl() const
 	{
 		ostringstream oss;
-		oss << "  -testnet                              Use the test network\n";
+		oss << "  -testnet                      Use the test network\n";
 		return oss.str();
 	}
 	void AddOptionsImpl(boost::program_options::options_description& desc)
@@ -52,10 +52,10 @@ protected:
 	string HelpImpl() const
 	{
 		ostringstream oss;
-		oss << "  -mpvssaddress=<address>               MPVSS address\n";
-		oss << "  -mpvsskey=<key>                       MPVSS key\n";
-		oss << "  -blake512address=<address>            POW blake512 address\n";
-		oss << "  -blake512key=<key>                    POW blake512 key\n";
+		oss << "  -mpvssaddress=<address>       MPVSS address\n";
+		oss << "  -mpvsskey=<key>               MPVSS key\n";
+		oss << "  -blake512address=<address>    POW blake512 address\n";
+		oss << "  -blake512key=<key>            POW blake512 key\n";
 		return oss.str();
 	}
 	void AddOptionsImpl(boost::program_options::options_description& desc)
@@ -86,9 +86,10 @@ protected:
 	string HelpImpl() const
 	{
 		ostringstream oss;
-		oss << "  -rpchost=<ip>                         Send commands to node running on <ip> (default: 127.0.0.1)\n";
-		oss << "  -rpctimeout=<time>                    Connection timeout <time> seconds (default: 120)\n";
-		oss << "  -rpcwallet=<wallet>                   Set <wallet> name for connect\n";
+		oss << "  -rpchost=<ip>                 Send commands to node running on <ip> (default: \n"
+		       "                                127.0.0.1)\n";
+		oss << "  -rpctimeout=<time>            Connection timeout <time> seconds (default: 120)\n";
+		oss << "  -rpcwallet=<wallet>           Set <wallet> name for connect\n";
 		return oss.str();
 	}
 	void AddOptionsImpl(boost::program_options::options_description& desc)
@@ -116,8 +117,8 @@ protected:
 	string HelpImpl() const
 	{
 		ostringstream oss;
-		oss << "  -rpcmaxconnections=<num>              Set max connections to <num> (default: 5)\n";
-		oss << "  -rpcallowip=<ip>                      Allow JSON-RPC connections from specified <ip> address\n";
+		oss << "  -rpcmaxconnections=<num>      Set max connections to <num> (default: 5)\n";
+		oss << "  -rpcallowip=<ip>              Allow JSON-RPC connections from specified <ip> address\n";
 		return oss.str();
 	}
 	void AddOptionsImpl(boost::program_options::options_description& desc)
@@ -155,16 +156,18 @@ protected:
 	string HelpImpl() const
 	{
 		ostringstream oss;
-		oss << "  -rpcport=port                         Listen for JSON-RPC connections on <port> (default: 6802)\n";
-		oss << "  -rpcuser=<user>                       <user> name for JSON-RPC connections\n";
-		oss << "  -rpcpassword=<password>               <password> for JSON-RPC connections\n";
-		oss << "  -rpcssl                               Use OpenSSL (https) for JSON-RPC connections or not (default \n"
-		       "                                        false)\n";
-		oss << "  -norpcsslverify                       Verify SSL or not (default yes)\n";
-		oss << "  -rpccafile=<file.cert>                SSL CA file name (default ca.crt)\n";
-		oss << "  -rpccertfile=<file.cert>              Server certificate file (default: server.cert)\n";
-		oss << "  -rpcpkfile=<file.pem>                 Server private key (default: server.pem)\n";
-		oss << "  -rpcciphers=<ciphers>                 Acceptable ciphers (default: TLSv1+HIGH:!SSLv2:!aNULL:!eNULL:!AH:!3DES:@STRENGTH)\n";
+		oss << "  -rpcport=port                 Listen for JSON-RPC connections on <port> (default:\n"
+		       "                                 6802)\n";
+		oss << "  -rpcuser=<user>               <user> name for JSON-RPC connections\n";
+		oss << "  -rpcpassword=<password>       <password> for JSON-RPC connections\n";
+		oss << "  -rpcssl                       Use OpenSSL (https) for JSON-RPC connections or \n"
+		       "                                not (default false)\n";
+		oss << "  -norpcsslverify               Verify SSL or not (default yes)\n";
+		oss << "  -rpccafile=<file.cert>        SSL CA file name (default ca.crt)\n";
+		oss << "  -rpccertfile=<file.cert>      Server certificate file (default: server.cert)\n";
+		oss << "  -rpcpkfile=<file.pem>         Server private key (default: server.pem)\n";
+		oss << "  -rpcciphers=<ciphers>         Acceptable ciphers (default: TLSv1+HIGH:!SSLv2:!aNULL:\n"
+		       "                                !eNULL:!AH:!3DES:@STRENGTH)\n";
 		return oss.str();
 	}
 	void AddOptionsImpl(boost::program_options::options_description& desc)
@@ -208,12 +211,12 @@ protected:
 	string HelpImpl() const
 	{
 		ostringstream oss;
-		oss << "  -dbhost=<host>                        Set mysql host (default: localhost)\n";
-		oss << "  -dbname=<name>                        Set mysql database name (default: multiverse)\n";
-		oss << "  -dbuser=<user>                        Set mysql user's name (default: multiverse)\n";
-		oss << "  -dbpass=<pwd>                         Set mysql user's password (default: multiverse)\n";
-		oss << "  -dbport=<n>                           Set mysql port (default: 0)\n";
-		oss << "  -dbconn=<n>                           Set mysql connections count (default: 8)\n";
+		oss << "  -dbhost=<host>                Set mysql host (default: localhost)\n";
+		oss << "  -dbname=<name>                Set mysql database name (default: multiverse)\n";
+		oss << "  -dbuser=<user>                Set mysql user's name (default: multiverse)\n";
+		oss << "  -dbpass=<pwd>                 Set mysql user's password (default: multiverse)\n";
+		oss << "  -dbport=<n>                   Set mysql port (default: 0)\n";
+		oss << "  -dbconn=<n>                   Set mysql connections count (default: 8)\n";
 		return oss.str();
 	}
 	void AddOptionsImpl(boost::program_options::options_description& desc)
@@ -255,18 +258,20 @@ protected:
 	string HelpImpl() const
 	{
 		ostringstream oss;
-		oss << "  -listen                               Accept connections from outside (default: 1)\n";
-		oss << "  -nobloom                              \n";
-		oss << "  -port=<port>                          Listen for connections on <port> (default: 6801 or testnet: \n"
-		       "                                        6803)\n";
-		oss << "  -maxconnections=<n>                   Maintain at most <n> connections to peers (default: 125)\n";
-		oss << "  -timeout=<n>                          Specify connection timeout (in milliseconds)\n";
-		oss << "  -addnode=<ip>                         Add a node to connect to and attempt to keep the connection \n"
-		       "                                        open\n";
-		oss << "  -connect=<ip>                         Connect only to the specified node\n";
-		oss << "  -dnseedport=<port>                    Listen for dnseed connections on <port> (default: 6816)\n";
-		oss << "  -dnseedmaxtimes=<times>               Max <times> dnseed attempt to connect node\n";
-		oss << "  -confidentAddress=<address>           Trust node address\n";
+		oss << "  -listen                       Accept connections from outside (default: 1)\n";
+		oss << "  -nobloom                      \n";
+		oss << "  -port=<port>                  Listen for connections on <port> (default: 6801 \n"
+		       "                                or testnet: 6803)\n";
+		oss << "  -maxconnections=<n>           Maintain at most <n> connections to peers (default:\n"
+		       "                                 125)\n";
+		oss << "  -timeout=<n>                  Specify connection timeout (in milliseconds)\n";
+		oss << "  -addnode=<ip>                 Add a node to connect to and attempt to keep the \n"
+		       "                                connection open\n";
+		oss << "  -connect=<ip>                 Connect only to the specified node\n";
+		oss << "  -dnseedport=<port>            Listen for dnseed connections on <port> (default:\n"
+		       "                                 6816)\n";
+		oss << "  -dnseedmaxtimes=<times>       Max <times> dnseed attempt to connect node\n";
+		oss << "  -confidentAddress=<address>   Trust node address\n";
 		return oss.str();
 	}
 	void AddOptionsImpl(boost::program_options::options_description& desc)
