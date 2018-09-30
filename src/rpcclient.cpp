@@ -456,8 +456,6 @@ Value CRPCDispatch::GetParamValue(const string& strParam)
     return value;
 }
 
-
-
 ///////////////////////////////
 // readline
 

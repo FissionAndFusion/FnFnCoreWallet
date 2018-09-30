@@ -21,6 +21,7 @@ public:
     bool GetBlockLocation(const uint256& hashBlock,uint256& hashFork,int& nHeight);
     bool GetBlockHash(const uint256& hashFork,int nHeight,uint256& hashBlock);
     bool GetLastBlock(const uint256& hashFork,uint256& hashBlock,int& nHeight,int64& nTime);
+    bool GetLastBlockTime(const uint256& hashFork,int nDepth,std::vector<int64>& vTime);
     bool GetBlock(const uint256& hashBlock,CBlock& block);
     bool Exists(const uint256& hashBlock);
     bool GetTransaction(const uint256& txid,CTransaction& tx);
@@ -29,10 +30,13 @@ public:
     bool GetTxUnspent(const uint256& hashFork,const std::vector<CTxIn>& vInput,
                                                     std::vector<CTxOutput>& vOutput);
     bool FilterTx(CTxFilter& filter);
-    MvErr AddNewBlock(CBlock& block,CWorldLineUpdate& update);
+    MvErr AddNewBlock(const CBlock& block,CWorldLineUpdate& update);
     bool GetProofOfWorkTarget(const uint256& hashPrev,int nAlgo,int& nBits,int64& nReward);
+    bool GetDelegatedProofOfStakeReward(const uint256& hashPrev,std::size_t nWeight,int64& nReward);
     bool GetBlockLocator(const uint256& hashFork,CBlockLocator& locator);
     bool GetBlockInv(const uint256& hashFork,const CBlockLocator& locator,std::vector<uint256>& vBlockHash,std::size_t nMaxCount);
+    bool GetBlockDelegateEnrolled(const uint256& hashBlock,std::map<CDestination,std::size_t>& mapWeight,
+                                                           std::map<CDestination,std::vector<unsigned char> >& mapEnrollData);
 protected:
     bool WalleveHandleInitialize();
     void WalleveHandleDeinitialize();

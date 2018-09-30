@@ -7,6 +7,20 @@
                 "type": "string",
                 "desc": "public key"
             },
+            "address": {
+                "type": "string",
+                "desc": "public key address"
+            }
+        }
+    },
+    "templatepubkeyweight": {
+        "type": "class",
+        "name": "TemplatePubKeyWeight",
+        "content": {
+            "key": {
+                "type": "string",
+                "desc": "public key"
+            },
             "weight": {
                 "type": "int",
                 "desc": "weight"
@@ -100,7 +114,7 @@
                         "desc": "public keys",
                         "content": {
                             "pubkey": {
-                                "type": "templatepubkey",
+                                "type": "templatepubkeyweight",
                                 "desc": "public key"
                             }
                         }
@@ -200,7 +214,7 @@
                         "desc": "public keys",
                         "content": {
                             "pubkey": {
-                                "type": "templatepubkey",
+                                "type": "templatepubkeyweight",
                                 "desc": "public key"
                             }
                         }
@@ -1182,7 +1196,7 @@
             "content": {
                 "pubkey": {
                     "type": "string",
-                    "desc": "public key"
+                    "desc": "pubkey or pubkey address"
                 }
             }
         },
@@ -1220,7 +1234,7 @@
             "content": {
                 "pubkey": {
                     "type": "string",
-                    "desc": "public key"
+                    "desc": "pubkey or pubkey address"
                 },
                 "passphrase": {
                     "type": "string",
@@ -1947,6 +1961,135 @@
             "{\"code\":-401,\"message\":\"Failed to sign message\"}"
         ]
     },
+    "listaddress": {
+        "type": "command",
+        "name": "ListAddress",
+        "desc": "list all of addresses from pub keys and template ids",
+        "request": {
+            "type": "object",
+            "content": {}
+        },
+        "response": {
+            "type": "array",
+            "name": "addressdata",
+            "content": {
+                "addressdata": {
+                    "type": "object",
+                    "desc": "address data",
+                    "content": {
+                        "type": {
+                            "type": "string",
+                            "desc": "type, pubkey or template"
+                        },
+                        "pubkey": {
+                            "type": "templatepubkey",
+                            "desc": "public key",
+                            "required": true,
+                            "condition": "type=pubkey"
+                        },
+                        "template": {
+                            "type": "string",
+                            "desc": "template type name",
+                            "required": true,
+                            "condition": "type=template"
+                        },
+                        "templatedata": {
+                            "type": "templateresponse",
+                            "desc": "template data",
+                            "required": false,
+                            "condition": "type=template"
+                        }
+                    }
+                }
+            }
+        },
+        "example": [
+            {
+                "request": "multiverse-cli listaddress",
+                "response": "[{\"type\":\"pubkey\",\"pubkey\":{\"key\":\"182e8a36441d116ce7a97f9a216d43a3dfc4280295874007b8ff5fd45eec9052e\",\"address\":\"1gbma6s21t4bcwymqz6h1dn1t7qy45019b1t00ywfyqymbvp90mqc1wmq\"}},{\"type\":\"pubkey\",\"pubkey\":{\"key\":\"1051ac9b153196c736adf61ad71b51fe9659f8770df643af4d27616ca85c0b365\",\"address\":\"10mdckcak35p76tpzc6pq3d8zx5jsz1vgvxj3nx6jerbcn1e0pdjjfcr6\"}}]"
+            },
+            {
+                "request": "{\"id\":1,\"method\":\"listaddress\",\"jsonrpc\":\"2.0\",\"params\":{}}",
+                "response": "{\"id\":1,\"jsonrpc\":\"2.0\",\"result\":[{\"type\":\"pubkey\",\"pubkey\":{\"key\":\"182e8a36441d116ce7a97f9a216d43a3dfc4280295874007b8ff5fd45eec9052e\",\"address\":\"1gbma6s21t4bcwymqz6h1dn1t7qy45019b1t00ywfyqymbvp90mqc1wmq\"}},{\"type\":\"pubkey\",\"pubkey\":{\"key\":\"1051ac9b153196c736adf61ad71b51fe9659f8770df643af4d27616ca85c0b365\",\"address\":\"10mdckcak35p76tpzc6pq3d8zx5jsz1vgvxj3nx6jerbcn1e0pdjjfcr6\"}}]}"
+            }
+        ]
+    },
+    "exportwallet": {
+        "type": "command",
+        "name": "ExportWallet",
+        "desc": "Export all of keys and templates from wallet to a specified file in json format.",
+        "request": {
+            "type": "object",
+            "content": {
+                "path": {
+                    "type": "string",
+                    "desc": "save file path"
+                }
+            }
+        },
+        "response": {
+            "type": "string",
+            "name": "result",
+            "desc": "export result"
+        },
+        "example": [
+            {
+                "request":"multiverse-cli exportwallet /Users/Loading/a.txt",
+                "response":"Wallet file has been saved at: /Users/Loading/a.txt"
+            },
+            {
+                "request":"{\"id\":4,\"method\":\"exportwallet\",\"jsonrpc\":\"2.0\",\"params\":{\"path\":\"/Users/Loading/a.txt\"}}",
+                "response":"{\"id\":4,\"jsonrpc\":\"2.0\",\"result\":\"Wallet file has been saved at: /Users/Loading/a.txt\"}"
+            }
+        ],
+        "error": [
+            "{\"code\":-401,\"message\":\"Must be an absolute path.\"}",
+            "{\"code\":-401,\"message\":\"Cannot export to a folder.\"}",
+            "{\"code\":-401,\"message\":\"File has been existed.\"}",
+            "{\"code\":-401,\"message\":\"Failed to create directories.\"}",
+            "{\"code\":-401,\"message\":\"filesystem_error\"}"
+        ]
+    },
+    "importwallet": {
+        "type": "command",
+        "name": "ImportWallet",
+        "desc": "Import keys and templates from archived file in json format to wallet.",
+        "request": {
+            "type": "object",
+            "content": {
+                "path": {
+                    "type": "string",
+                    "desc": "save file path"
+                }
+            }
+        },
+        "response": {
+            "type": "string",
+            "name": "result",
+            "desc": "export result"
+        },
+        "example": [
+            {
+                "request":"multiverse-cli importwallet /Users/Loading/a.txt",
+                "response":"Imported 0 keys and 0 templates."
+            },
+            {
+                "request":"{\"id\":5,\"method\":\"importwallet\",\"jsonrpc\":\"2.0\",\"params\":{\"path\":\"/Users/Loading/a.txt\"}}",
+                "response":"{\"id\":5,\"jsonrpc\":\"2.0\",\"result\":\"Imported 0 keys and 0 templates.\"}"
+            }
+        ],
+        "error": [
+            "{\"code\":-401,\"message\":\"Must be an absolute path.\"}",
+            "{\"code\":-401,\"message\":\"File name is invalid.\"}",
+            "{\"code\":-401,\"message\":\"Filesystem_error - failed to read.\"}",
+            "{\"code\":-401,\"message\":\"Data format is not correct, check it and try again.\"}",
+            "{\"code\":-401,\"message\":\"Failed to verify serialized key\"}",
+            "{\"code\":-401,\"message\":\"Failed to add key\"}",
+            "{\"code\":-401,\"message\":\"Failed to sync wallet tx\"}",
+            "{\"code\":-401,\"message\":\"Invalid parameters,failed to make template\"}",
+            "{\"code\":-401,\"message\":\"Failed to add template\"}"
+        ]
+    },
     "verifymessage": {
         "type": "command",
         "name": "VerifyMessage",
@@ -2154,6 +2297,53 @@
                 "request": "{\"id\":1,\"method\":\"decodetransaction\",\"jsonrpc\":\"2.0\",\"params\":{\"txdata\":\"01000000000000002b747e24738befccff4a05c21dba749632cb8eb410233fa110e3f58a779b4325010ef45be50157453a57519929052d0818c269dee60be98958d5ab65bc7e0919810001b9c3b7aa16c6cb1bf193faf717580d03347148b2145ca98b30b1376d634c12f440420f0000000000a08601000000000002123400\"}}",
                 "response": "{\"id\":1,\"jsonrpc\":\"2.0\",\"result\":{\"txid\":\"b492ea1de2d540288f6e45fd21bc4ac2cd2fcfeb63ec43c50acdb69debfad10a\",\"version\":1,\"type\":\"token\",\"lockuntil\":0,\"anchor\":\"25439b778af5e310a13f2310b48ecb329674ba1dc2054affccef8b73247e742b\",\"vin\":[{\"txid\":\"8119097ebc65abd55889e90be6de69c218082d05299951573a455701e55bf40e\",\"vout\":0}],\"sendto\":\"1q71vfagprv5hqwckzbvhep0d0ct72j5j2heak2sgp4vptrtc2btdje3q\",\"amount\":1.00000000,\"txfee\":0.10000000,\"data\":\"1234\",\"sig\":\"\",\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\"}}"
             }
+        ],
+        "error": [
+            "{\"code\":-8,\"message\":\"TX decode failed\"}",
+            "{\"code\":-6,\"message\":\"Unknown anchor block\"}"
+        ]
+    },
+    "makeorigin": {
+        "type": "command",
+        "name": "MakeOrigin",
+        "desc": "Return hex-encoded block.",
+        "request": {
+            "type": "object",
+            "content": {
+                "prev": {
+                    "type": "string",
+                    "desc": "prev block hash"
+                },
+                "address": {
+                    "type": "string",
+                    "desc": "address"
+                },
+                "amount": {
+                    "type": "double",
+                    "desc": "amount"
+                },
+                "ident": {
+                    "type": "string",
+                    "desc": "indent"
+                }
+            }
+        },
+        "response": {
+            "type": "object",
+            "name": "block",
+            "desc": "hex-encoded block",
+            "content":{
+                "hash":{
+                    "type":"string",
+                    "desc":"block hash"
+                },
+                "hex":{
+                    "type":"string",
+                    "desc":"block data hex"
+                }
+            }
+        },
+        "example": [
         ],
         "error": [
             "{\"code\":-8,\"message\":\"TX decode failed\"}",

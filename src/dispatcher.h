@@ -16,19 +16,22 @@ class CDispatcher : public IDispatcher
 public:
     CDispatcher();
     ~CDispatcher();
-    MvErr AddNewBlock(CBlock& block,uint64 nNonce=0);
-    MvErr AddNewTx(CTransaction& tx,uint64 nNonce=0);
+    MvErr AddNewBlock(const CBlock& block,uint64 nNonce=0);
+    MvErr AddNewTx(const CTransaction& tx,uint64 nNonce=0);
 protected:
     bool WalleveHandleInitialize();
     void WalleveHandleDeinitialize();
     bool WalleveHandleInvoke();
     void WalleveHandleHalt();
-//    MvErr PushTxPool(const uint256& txid,CTransaction& tx);
+    void UpdatePrimaryBlock(const CWorldLineUpdate& updateWorldLine,const CTxSetChange& changeTxSet);
+    void ProcessForkTx(const CTransaction& tx,int nPrimaryHeight);
+    void SyncForkHeight(int nPrimaryHeight);
 protected:
     boost::shared_mutex rwAccess;
     ICoreProtocol* pCoreProtocol;
     IWorldLine* pWorldLine;
     ITxPool* pTxPool;
+    IConsensus* pConsensus;
     IWallet* pWallet;
     IService* pService;
     IBlockMaker* pBlockMaker;

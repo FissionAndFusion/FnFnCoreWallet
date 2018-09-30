@@ -40,18 +40,6 @@ bool CWalleveDocker::Initialize(CWalleveConfig* pConfigIn,CWalleveLog* pLogIn)
     {
         return false;
     }
-    
-    boost::filesystem::path& pathData = pConfig->pathData;
-
-    if (!boost::filesystem::exists(pathData))
-    {
-        boost::filesystem::create_directories(pathData);
-    }
-
-    if (!boost::filesystem::is_directory(pathData))
-    {
-        return false;
-    }
 
     mapTimerById.clear();
     mapTimerByExpiry.clear();

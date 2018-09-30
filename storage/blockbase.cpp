@@ -247,12 +247,23 @@ bool CBlockBase::Initialize(const CMvDBConfig& dbConfig,int nMaxDBConn,const pat
 
     Log("B","Initializing... (Path : %s)\n",pathDataLocation.string().c_str());
 
-    if (!dbBlock.Initialize(dbConfig,nMaxDBConn))
+    if (!dbBlock.DBPoolInitialize(dbConfig,nMaxDBConn))
+    {
+        Error("B","Failed MySQL not connect\n");
+        return false;
+    }
+
+    if (!dbBlock.InnoDB()){
+        Error("B","Failed MySQL not Support InnoDB\n");
+        return false;
+    }
+
+    if (!dbBlock.Initialize())
     {
         Error("B","Failed to initialize block db\n");
         return false;
     }
-     
+
     if (!tsBlock.Initialize(pathDataLocation / "block",BLOCKFILE_PREFIX))
     {
         dbBlock.Deinitialize();
@@ -466,7 +477,7 @@ bool CBlockBase::RetrieveTxLocation(const uint256& txid,uint256& hashFork,int& n
     {
         return false;
     }
-    CBlockIndex* pIndex = GetIndex(hashAnchor);
+    CBlockIndex* pIndex = (hashAnchor != 0 ? GetIndex(hashAnchor) : GetOriginIndex(txid));
     if (pIndex == NULL)
     {
         return false;
@@ -691,7 +702,7 @@ bool CBlockBase::LoadTx(CTransaction& tx,uint32 nTxFile,uint32 nTxOffset,uint256
     {
         return false;
     }
-    CBlockIndex* pIndex = GetIndex(tx.hashAnchor);
+    CBlockIndex* pIndex = (tx.hashAnchor != 0 ? GetIndex(tx.hashAnchor) : GetOriginIndex(tx.GetHash()));
     if (pIndex == NULL)
     {
         return false;
@@ -809,6 +820,20 @@ CBlockIndex* CBlockBase::GetBranch(CBlockIndex* pIndexRef,CBlockIndex* pIndex,ve
         pIndexRef = pIndexRef->pPrev;
     }
     return pIndex;
+}
+
+CBlockIndex* CBlockBase::GetOriginIndex(const uint256& txidMint) const
+{
+    CBlockIndex* pIndex = NULL;
+    for (map<uint256,CBlockFork>::const_iterator mi = mapFork.begin();mi != mapFork.end();++mi)
+    {
+        CBlockIndex* pIndex = (*mi).second.GetOrigin();
+        if (pIndex->txidMint == txidMint)
+        {
+            return pIndex;
+        }
+    }
+    return NULL;
 }
 
 CBlockIndex* CBlockBase::AddNewIndex(const uint256& hash,CBlock& block,uint32 nFile,uint32 nOffset)
@@ -1012,14 +1037,7 @@ bool CBlockBase::LoadDB()
 
 bool CBlockBase::SetupLog(const path& pathLocation,bool fDebug)
 {
-    if (!exists(pathLocation))
-    {
-        create_directories(pathLocation);
-    }
-    if (!is_directory(pathLocation))
-    {
-        return false;
-    }
+
     if (!walleveLog.SetLogFilePath((pathLocation / LOGFILE_NAME).string()))
     {
         return false;

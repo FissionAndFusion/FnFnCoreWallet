@@ -101,5 +101,6 @@ bool CTxPoolDB::CreateTable()
                           "txid BINARY(32) NOT NULL UNIQUE KEY,"
                           "fork BINARY(32) NOT NULL,"
                           "tx BLOB NOT NULL)"
+                          "ENGINE=InnoDB"
                        );
 }

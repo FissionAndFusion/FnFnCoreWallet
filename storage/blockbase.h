@@ -183,6 +183,7 @@ protected:
     CBlockIndex* GetIndex(const uint256& hash) const;
     CBlockFork* GetFork(const uint256& hash);
     CBlockIndex* GetBranch(CBlockIndex* pIndexRef,CBlockIndex* pIndex,std::vector<CBlockIndex*>& vPath);
+    CBlockIndex* GetOriginIndex(const uint256& txidMint) const;
     CBlockIndex* AddNewIndex(const uint256& hash,CBlock& block,uint32 nFile,uint32 nOffset);
     CBlockFork* AddNewFork(CBlockIndex* pIndexLast);
     bool UpdateDelegate(const uint256& hash,CBlockEx& block);
@@ -203,7 +204,7 @@ protected:
     {
         va_list ap;
         va_start(ap, pszFormat);
-        walleveLog(pszIdent,"ERROR",pszFormat, ap);
+        walleveLog(pszIdent,"ERROR ",pszFormat, ap);
         va_end(ap);
     }
     void Debug(const char* pszIdent,const char *pszFormat,...)
@@ -212,7 +213,7 @@ protected:
         {
             va_list ap;
             va_start(ap, pszFormat);
-            walleveLog(pszIdent,"DEBUG",pszFormat, ap);
+            walleveLog(pszIdent,"DEBUG ",pszFormat, ap);
             va_end(ap);
         }
     }

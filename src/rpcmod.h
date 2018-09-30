@@ -9,6 +9,7 @@
 
 #include "mvbase.h"
 #include "walleve/walleve.h"
+#include "json/json_spirit.h"
 #include "rpcjson.h"
 #include "rpc/rpc.h"
 
@@ -95,6 +96,9 @@ private:
     CRPCResultPtr RPCCreateTransaction(CRPCParamPtr param);
     CRPCResultPtr RPCSignTransaction(CRPCParamPtr param);
     CRPCResultPtr RPCSignMessage(CRPCParamPtr param);
+    CRPCResultPtr RPCListAddress(CRPCParamPtr param);
+    CRPCResultPtr RPCExportWallet(CRPCParamPtr param);
+    CRPCResultPtr RPCImportWallet(CRPCParamPtr param);
     /* Util */
     CRPCResultPtr RPCVerifyMessage(CRPCParamPtr param);
     CRPCResultPtr RPCMakeKeyPair(CRPCParamPtr param);
@@ -102,6 +106,7 @@ private:
     CRPCResultPtr RPCGetTemplateAddress(CRPCParamPtr param);
     CRPCResultPtr RPCMakeTemplate(CRPCParamPtr param);
     CRPCResultPtr RPCDecodeTransaction(CRPCParamPtr param);
+    CRPCResultPtr RPCMakeOrigin(CRPCParamPtr param);
     /* Mint */
     CRPCResultPtr RPCGetWork(CRPCParamPtr param);
     CRPCResultPtr RPCSubmitWork(CRPCParamPtr param);

@@ -61,10 +61,13 @@ protected:
     void WalleveHandleHalt();
     bool Interrupted() { return (nMakerStatus != MAKER_RUN); }
     bool Wait(long nSeconds);
-    bool CreateNewBlock(CBlock& block,const uint256& hashPrev,int64 nPrevTime);
+    bool CreateNewBlock(CBlock& block,const uint256& hashPrev,int64 nPrevTime,int nPrevHeight,const CBlockMakerAgreement& agreement);
     bool DispatchNewBlock(CBlock& block);
     bool SignBlock(CBlock& block,CBlockMakerProfile& profile);
+    bool CreateDelegatedProofOfStake(CBlock& block,std::size_t nWeight,const CDestination& dest);
     bool CreateProofOfWork(CBlock& block,int nAlgo,const CDestination& dest);
+    void CreatePiggyback(const CBlockMakerAgreement& agreement,const CBlock& refblock,int nPrevHeight); 
+    bool WaitAgreement(CBlockMakerAgreement& agree,int64 nTimeAgree,int nHeight);
 private:
     enum {MAKER_RUN=0,MAKER_RESET=1,MAKER_EXIT=2,MAKER_HOLD=3};
     void BlockMakerThreadFunc();
@@ -76,13 +79,14 @@ protected:
     int nMakerStatus;
     uint256 hashLastBlock;
     int64 nLastBlockTime;
+    int nLastBlockHeight;
     std::map<int,CBlockMakerHashAlgo*> mapHashAlgo;
     std::map<int,CBlockMakerProfile> mapProfile;
     ICoreProtocol* pCoreProtocol;
     IWorldLine* pWorldLine;
     ITxPool* pTxPool;
     IDispatcher* pDispatcher;
-    IWallet* pWallet;
+    IConsensus* pConsensus;
 };
 
 } // namespace multiverse

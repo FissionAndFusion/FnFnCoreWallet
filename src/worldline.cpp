@@ -3,6 +3,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "worldline.h"
+#include "mvdelegatecomm.h"
 
 using namespace std;
 using namespace walleve;
@@ -91,11 +92,12 @@ void CWorldLine::GetForkStatus(map<uint256,CForkStatus>& mapForkStatus)
         uint256 hashFork = pIndex->GetOriginHash();
         uint256 hashParent = pIndex->GetParentHash();
 
-        map<uint256,CForkStatus>::iterator mi = mapForkStatus.insert(make_pair(hashFork,CForkStatus(hashFork,hashParent,nForkHeight))).first;
         if (hashParent != 0)
         {
             mapForkStatus[hashParent].mapSubline.insert(make_pair(nForkHeight,hashFork));
-        }     
+        } 
+
+        map<uint256,CForkStatus>::iterator mi = mapForkStatus.insert(make_pair(hashFork,CForkStatus(hashFork,hashParent,nForkHeight))).first;
         CForkStatus& status = (*mi).second;
         status.hashLastBlock = pIndex->GetBlockHash();
         status.nLastBlockTime = pIndex->GetBlockTime();
@@ -141,6 +143,23 @@ bool CWorldLine::GetLastBlock(const uint256& hashFork,uint256& hashBlock,int& nH
     hashBlock = pIndex->GetBlockHash();
     nHeight = pIndex->GetBlockHeight();
     nTime = pIndex->GetBlockTime();
+    return true;
+}
+
+bool CWorldLine::GetLastBlockTime(const uint256& hashFork,int nDepth,vector<int64>& vTime)
+{
+    CBlockIndex* pIndex = NULL;
+    if (!cntrBlock.RetrieveFork(hashFork,&pIndex))
+    {
+        return false;
+    }
+
+    vTime.clear();
+    while ((nDepth--) > 0 && pIndex != NULL)
+    {
+        vTime.push_back(pIndex->GetBlockTime());
+        pIndex = pIndex->pPrev;
+    }
     return true;
 }
 
@@ -190,7 +209,7 @@ bool CWorldLine::FilterTx(CTxFilter& filter)
     return cntrBlock.FilterTx(filter);
 }
 
-MvErr CWorldLine::AddNewBlock(CBlock& block,CWorldLineUpdate& update)
+MvErr CWorldLine::AddNewBlock(const CBlock& block,CWorldLineUpdate& update)
 {
     uint256 hash = block.GetHash();
     MvErr err = MV_OK;
@@ -228,15 +247,18 @@ MvErr CWorldLine::AddNewBlock(CBlock& block,CWorldLineUpdate& update)
         WalleveLog("AddNewBlock Verify Block Error(%s) : %s \n",MvErrString(err),hash.ToString().c_str());
         return err;
     } 
-    
-    view.AddTx(block.txMint.GetHash(),block.txMint);
+
+    if (!block.IsVacant())
+    {
+        view.AddTx(block.txMint.GetHash(),block.txMint);
+    }
 
     CBlockEx blockex(block);
     vector<CTxContxt>& vTxContxt = blockex.vTxContxt;
 
     vTxContxt.reserve(block.vtx.size());
 
-    BOOST_FOREACH(CTransaction& tx,block.vtx)
+    BOOST_FOREACH(const CTransaction& tx,block.vtx)
     {
         uint256 txid = tx.GetHash();
         CTxContxt txContxt;
@@ -268,7 +290,8 @@ MvErr CWorldLine::AddNewBlock(CBlock& block,CWorldLineUpdate& update)
 
     CBlockIndex* pIndexFork = NULL;
     if (cntrBlock.RetrieveFork(pIndexNew->GetOriginHash(),&pIndexFork)
-        && pIndexFork->nChainTrust >= pIndexNew->nChainTrust )
+        && (pIndexFork->nChainTrust > pIndexNew->nChainTrust
+            || (pIndexFork->nChainTrust == pIndexNew->nChainTrust && !pIndexNew->IsEquivalent(pIndexFork))))
     {
         return MV_OK;
     }
@@ -310,6 +333,24 @@ bool CWorldLine::GetProofOfWorkTarget(const uint256& hashPrev,int nAlgo,int& nBi
     return true;
 }
 
+bool CWorldLine::GetDelegatedProofOfStakeReward(const uint256& hashPrev,size_t nWeight,int64& nReward)
+{
+    CBlockIndex* pIndexPrev;
+    if (!cntrBlock.RetrieveIndex(hashPrev,&pIndexPrev))
+    {
+        WalleveLog("GetDelegatedProofOfStakeReward : Retrieve Prev Index Error: %s \n",hashPrev.ToString().c_str());
+        return false;
+    }
+    if (!pIndexPrev->IsPrimary())
+    {
+        WalleveLog("GetDelegatedProofOfStakeReward : Previous is not primary: %s \n",hashPrev.ToString().c_str());
+        return false;
+    }
+    
+    nReward = pCoreProtocol->GetDelegatedProofOfStakeReward(pIndexPrev,nWeight);
+    return true;
+}
+
 bool CWorldLine::GetBlockLocator(const uint256& hashFork,CBlockLocator& locator)
 {
     return cntrBlock.GetForkBlockLocator(hashFork,locator);
@@ -318,6 +359,57 @@ bool CWorldLine::GetBlockLocator(const uint256& hashFork,CBlockLocator& locator)
 bool CWorldLine::GetBlockInv(const uint256& hashFork,const CBlockLocator& locator,vector<uint256>& vBlockHash,size_t nMaxCount)
 {
     return cntrBlock.GetForkBlockInv(hashFork,locator,vBlockHash,nMaxCount);
+}
+
+bool CWorldLine::GetBlockDelegateEnrolled(const uint256& hashBlock,map<CDestination,size_t>& mapWeight,
+                                                                   map<CDestination,vector<unsigned char> >& mapEnrollData)
+{
+    mapWeight.clear();
+    mapEnrollData.clear();
+
+    CBlockIndex* pIndex;
+    if (!cntrBlock.RetrieveIndex(hashBlock,&pIndex))
+    {
+        WalleveLog("GetBlockDelegateEnrolled : Retrieve block Index Error: %s \n",hashBlock.ToString().c_str());
+        return false;
+    }
+    int64 nDelegateWeightRatio = (pIndex->GetMoneySupply() + DELEGATE_THRESH - 1) / DELEGATE_THRESH;
+
+    if (pIndex->GetBlockHeight() < MV_CONSENSUS_ENROLL_INTERVAL)
+    {
+        return true;
+    }
+    for (int i = 0;i < MV_CONSENSUS_ENROLL_INTERVAL;i++)
+    {
+        pIndex = pIndex->pPrev;
+    }
+    
+    map<CDestination,int64> mapDelegate;
+    if (!cntrBlock.RetrieveDelegate(hashBlock,nDelegateWeightRatio,mapDelegate))
+    {
+        WalleveLog("GetBlockDelegateEnrolled : Retrieve Delegate Error: %s \n",hashBlock.ToString().c_str());
+        return false;
+    }
+
+    map<CDestination,vector<unsigned char> > mapEnrollDataAll;
+    if (!cntrBlock.RetrieveEnroll(pIndex->GetBlockHash(),hashBlock,mapEnrollDataAll))
+    {
+        WalleveLog("GetBlockDelegateEnrolled : Retrieve Enroll Error: %s \n",hashBlock.ToString().c_str());
+        return false;
+    }
+
+    for (map<CDestination,int64>::iterator it = mapDelegate.begin();it != mapDelegate.end();++it)
+    {
+        const CDestination& dest = (*it).first;
+        map<CDestination,vector<unsigned char> >::iterator mi = mapEnrollDataAll.find(dest);
+        if (mi != mapEnrollDataAll.end())
+        {
+            mapWeight.insert(make_pair(dest,size_t((*it).second / nDelegateWeightRatio)));
+            mapEnrollData.insert((*mi));
+        }
+    }
+
+    return true;
 }
 
 bool CWorldLine::CheckContainer()

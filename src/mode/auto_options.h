@@ -247,6 +247,9 @@ public:
 	unsigned int nConnectTimeout;
 	vector<string> vNode;
 	vector<string> vConnectTo;
+	int nDNSeedPort;
+	unsigned int nMaxTimes2ConnectFail;
+	string strTrustAddress;
 protected:
 protected:
 	string HelpImpl() const
@@ -261,6 +264,9 @@ protected:
 		oss << "  -addnode=<ip>                         Add a node to connect to and attempt to keep the connection \n"
 		       "                                        open\n";
 		oss << "  -connect=<ip>                         Connect only to the specified node\n";
+		oss << "  -dnseedport=<port>                    Listen for dnseed connections on <port> (default: 6816)\n";
+		oss << "  -dnseedmaxtimes=<times>               Max <times> dnseed attempt to connect node\n";
+		oss << "  -confidentAddress=<address>           Trust node address\n";
 		return oss.str();
 	}
 	void AddOptionsImpl(boost::program_options::options_description& desc)
@@ -272,6 +278,9 @@ protected:
 		AddOpt(desc, "timeout", nConnectTimeout, (unsigned int)(DEFAULT_CONNECT_TIMEOUT));
 		AddOpt(desc, "addnode", vNode);
 		AddOpt(desc, "connect", vConnectTo);
+		AddOpt(desc, "dnseedport", nDNSeedPort, int(DEFAULT_DNSEED_PORT));
+		AddOpt(desc, "dnseedmaxtimes", nMaxTimes2ConnectFail, (unsigned int)(DNSEED_DEFAULT_MAX_TIMES_CONNECT_FAIL));
+		AddOpt(desc, "confidentAddress", strTrustAddress);
 	}
 	string ListConfigImpl() const
 	{
@@ -293,6 +302,9 @@ protected:
 			oss << s << " ";
 		}
 		oss << "\n";
+		oss << " -dnseedport: " << nDNSeedPort << "\n";
+		oss << " -dnseedmaxtimes: " << nMaxTimes2ConnectFail << "\n";
+		oss << " -confidentAddress: " << strTrustAddress << "\n";
 		return oss.str();
 	}
 };

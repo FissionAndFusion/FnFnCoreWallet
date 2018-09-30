@@ -3,10 +3,14 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "rpcmod.h"
+
+#include <boost/assign/list_of.hpp>
+#include <boost/filesystem.hpp>
+#include <boost/filesystem/fstream.hpp>
+
 #include "address.h"
 #include "template.h"
 #include "version.h"
-#include <boost/assign/list_of.hpp>
 #include "rpc/auto_rpc.h"
 
 using namespace std;
@@ -14,6 +18,7 @@ using namespace multiverse;
 using namespace walleve;
 using namespace json_spirit;
 using namespace multiverse::rpc;
+namespace fs = boost::filesystem;
 
 ///////////////////////////////
 // CRPCMod
@@ -65,6 +70,9 @@ CRPCMod::CRPCMod()
                 ("createtransaction",     &CRPCMod::RPCCreateTransaction)
                 ("signtransaction",       &CRPCMod::RPCSignTransaction)
                 ("signmessage",           &CRPCMod::RPCSignMessage)
+                ("listaddress",           &CRPCMod::RPCListAddress)
+                ("exportwallet",          &CRPCMod::RPCExportWallet)
+                ("importwallet",          &CRPCMod::RPCImportWallet)
                 /* Util */
                 ("verifymessage",         &CRPCMod::RPCVerifyMessage)
                 ("makekeypair",           &CRPCMod::RPCMakeKeyPair)
@@ -72,6 +80,7 @@ CRPCMod::CRPCMod()
                 ("gettemplateaddress",    &CRPCMod::RPCGetTemplateAddress)
                 ("maketemplate",          &CRPCMod::RPCMakeTemplate)
                 ("decodetransaction",     &CRPCMod::RPCDecodeTransaction)
+                ("makeorigin",            &CRPCMod::RPCMakeOrigin)
                 /* Mint */
                 ("getwork",               &CRPCMod::RPCGetWork)
                 ("submitwork",            &CRPCMod::RPCSubmitWork)
@@ -265,7 +274,7 @@ CTemplatePtr CRPCMod::MakeTemplate(const CTemplateRequest& obj)
     if (obj.strType == "weighted")
     {
         const int64& nRequired = obj.weighted.nRequired;
-        const vector<CTemplatePubKey>& vecPubkeys = obj.weighted.vecPubkeys;
+        const vector<CTemplatePubKeyWeight>& vecPubkeys = obj.weighted.vecPubkeys;
         vector<pair<crypto::CPubKey,unsigned char> > vPubKey;
         for (auto& info: vecPubkeys)
         {
@@ -690,9 +699,22 @@ CRPCResultPtr CRPCMod::RPCLockKey(CRPCParamPtr param)
 {
     auto spParam = CastParamPtr<CLockKeyParam>(param);
 
+    CMvAddress address(spParam->strPubkey);
+    if(address.IsTemplate())
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "This method only accepts pubkey or pubkey address as parameter rather than template address you supplied.");
+    }
+
     crypto::CPubKey pubkey;
-    pubkey.SetHex(spParam->strPubkey);
-   
+    if(address.IsPubKey())
+    {
+        address.GetPubKey(pubkey);
+    }
+    else
+    {
+        pubkey.SetHex(spParam->strPubkey);
+    }
+
     int nVersion;
     bool fLocked;
     int64 nAutoLockTime; 
@@ -711,8 +733,22 @@ CRPCResultPtr CRPCMod::RPCUnlockKey(CRPCParamPtr param)
 {
     auto spParam = CastParamPtr<CUnlockKeyParam>(param);
 
+    CMvAddress address(spParam->strPubkey);
+    if(address.IsTemplate())
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "This method only accepts pubkey or pubkey address as parameter rather than template address you supplied.");
+    }
+
     crypto::CPubKey pubkey;
-    pubkey.SetHex(spParam->strPubkey);
+    if(address.IsPubKey())
+    {
+        address.GetPubKey(pubkey);
+    }
+    else
+    {
+        pubkey.SetHex(spParam->strPubkey);
+    }
+
     crypto::CCryptoString strPassphrase;
     strPassphrase = spParam->strPassphrase.c_str();
     int64 nTimeout = 0;
@@ -930,7 +966,7 @@ CRPCResultPtr CRPCMod::RPCValidateAddress(CRPCParamPtr param)
                     for (map<crypto::CPubKey,unsigned char>::iterator it = p->mapPubKeyWeight.begin();
                          it != p->mapPubKeyWeight.end();++it)
                     {
-                        CTemplatePubKey pubkey;
+                        CTemplatePubKeyWeight pubkey;
                         pubkey.strKey = CMvAddress((*it).first).ToString();
                         pubkey.nWeight = (*it).second;
                         templateData.weighted.vecAddresses.push_back(pubkey);
@@ -1209,6 +1245,282 @@ CRPCResultPtr CRPCMod::RPCSignMessage(CRPCParamPtr param)
     return MakeCSignMessageResultPtr(ToHexString(vchSig));
 }
 
+CRPCResultPtr CRPCMod::RPCListAddress(CRPCParamPtr param)
+{
+    auto spResult = MakeCListAddressResultPtr();
+    vector<CDestination> vDes;
+    ListDestination(vDes);
+    for(const auto& des : vDes)
+    {
+        CListAddressResult::CAddressdata addressData;
+        if(des.IsPubKey())
+        {
+            addressData.strType = "pubkey";
+            addressData.pubkey.strKey = des.GetHex();
+            addressData.pubkey.strAddress = CMvAddress(des).ToString();
+        }
+        else if(des.IsTemplate())
+        {
+            addressData.strType = "template";
+
+            CTemplateId tid;
+            des.GetTemplateId(tid);
+            CTemplatePtr ptr;
+            uint16 nType = tid.GetType();
+            pService->GetTemplate(tid,ptr);
+            addressData.strTemplate = CTemplateGeneric::GetTypeName(nType);
+
+            vector<unsigned char> vchTemplate;
+            ptr->Export(vchTemplate);
+
+            auto& templateData = addressData.templatedata;
+            templateData.strHex = ToHexString(vchTemplate);
+            switch(nType)
+            {
+                case TEMPLATE_WEIGHTED:
+                    {
+                        CTemplateWeighted* p = dynamic_cast<CTemplateWeighted*>(ptr.get());
+                        templateData.weighted.nSigsrequired = p->nRequired;
+                        for (const auto& it : p->mapPubKeyWeight)
+                        {
+                            CTemplatePubKeyWeight pubkey;
+                            pubkey.strKey = CMvAddress(it.first).ToString();
+                            pubkey.nWeight = it.second;
+                            templateData.weighted.vecAddresses.push_back(pubkey);
+                        }
+                    }
+                    break;
+                case TEMPLATE_MULTISIG:
+                    {
+                        CTemplateMultiSig* p = dynamic_cast<CTemplateMultiSig*>(ptr.get());
+                        templateData.multisig.nSigsrequired = p->nRequired;
+                        Array addresses;
+                        for (const auto& it : p->mapPubKeyWeight)
+                        {
+                            templateData.multisig.vecAddresses.push_back(CMvAddress(it.first).ToString());
+                        }
+                    }
+                    break;
+                case TEMPLATE_FORK:
+                    {
+                        CTemplateFork* p = dynamic_cast<CTemplateFork*>(ptr.get());
+                        templateData.fork.strFork = p->hashFork.GetHex();
+                        templateData.fork.strRedeem = CMvAddress(p->destRedeem).ToString();
+                    }
+                    break;
+                case TEMPLATE_MINT:
+                    {
+                        CTemplateMint* p = dynamic_cast<CTemplateMint*>(ptr.get());
+                        templateData.mint.strMint = CMvAddress(p->keyMint).ToString();
+                        templateData.mint.strSpent = CMvAddress(p->destSpend).ToString();
+                    }
+                    break;
+                case TEMPLATE_DELEGATE:
+                    {
+                        CTemplateDelegate* p = dynamic_cast<CTemplateDelegate*>(ptr.get());
+                        templateData.delegate.strDelegate = CMvAddress(p->keyDelegate).ToString();
+                        templateData.delegate.strOwner = CMvAddress(p->destOwner).ToString();
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+        else
+        {
+            continue;
+        }
+        spResult->vecAddressdata.push_back(addressData);
+    }
+
+    return spResult;
+}
+
+CRPCResultPtr CRPCMod::RPCExportWallet(CRPCParamPtr param)
+{
+    auto spParam = CastParamPtr<CExportWalletParam>(param);
+
+    fs::path pSave(spParam->strPath);
+    //check if the file name given is available
+    if(!pSave.is_absolute())
+    {
+        throw CRPCException(RPC_WALLET_ERROR, "Must be an absolute path.");
+    }
+    if(is_directory(pSave))
+    {
+        throw CRPCException(RPC_WALLET_ERROR, "Cannot export to a folder.");
+    }
+    if(exists(pSave))
+    {
+        throw CRPCException(RPC_WALLET_ERROR, "File has been existed.");
+    }
+
+    if(!exists(pSave.parent_path()) && !create_directories(pSave.parent_path()))
+    {
+        throw CRPCException(RPC_WALLET_ERROR, "Failed to create directories.");
+    }
+
+    Array aAddr;
+    vector<CDestination> vDes;
+    ListDestination(vDes);
+    for(const auto& des : vDes)
+    {
+        if (des.IsPubKey())
+        {
+            Object oKey;
+            oKey.push_back(Pair("address", CMvAddress(des).ToString()));
+
+            crypto::CPubKey pubkey;
+            des.GetPubKey(pubkey);
+            vector<unsigned char> vchKey;
+            if (!pService->ExportKey(pubkey, vchKey))
+            {
+                throw CRPCException(RPC_WALLET_ERROR, "Failed to export key");
+            }
+            oKey.push_back(Pair("hex", ToHexString(vchKey)));
+            aAddr.push_back(oKey);
+        }
+
+        if (des.IsTemplate())
+        {
+            Object oTemp;
+            CMvAddress address(des);
+
+            oTemp.push_back(Pair("address", address.ToString()));
+
+            CTemplateId tid;
+            if (!address.GetTemplateId(tid))
+            {
+                throw CRPCException(RPC_INVALID_PARAMETER, "Invalid template address");
+            }
+            CTemplatePtr ptr;
+            if (!pService->GetTemplate(tid, ptr))
+            {
+                throw CRPCException(RPC_WALLET_ERROR, "Unkown template");
+            }
+            vector<unsigned char> vchTemplate;
+            ptr->Export(vchTemplate);
+
+            oTemp.push_back(Pair("hex", ToHexString(vchTemplate)));
+
+            aAddr.push_back(oTemp);
+        }
+    }
+    //output them together to file
+    try
+    {
+        std::ofstream ofs(pSave.string(), std::ios::out);
+        write_stream(Value(aAddr), ofs, pretty_print);
+        ofs.close();
+    }
+    catch(const fs::filesystem_error& e)
+    {
+        throw CRPCException(RPC_WALLET_ERROR, "filesystem_error");
+    }
+
+    return MakeCExportWalletResultPtr(string("Wallet file has been saved at: ") + pSave.string());
+}
+
+CRPCResultPtr CRPCMod::RPCImportWallet(CRPCParamPtr param)
+{
+    auto spParam = CastParamPtr<CImportWalletParam>(param);
+
+    fs::path pLoad(spParam->strPath);
+    //check if the file name given is available
+    if(!pLoad.is_absolute())
+    {
+        throw CRPCException(RPC_WALLET_ERROR, "Must be an absolute path.");
+    }
+    if(!exists(pLoad) || is_directory(pLoad))
+    {
+        throw CRPCException(RPC_WALLET_ERROR, "File name is invalid.");
+    }
+
+    Value vWallet;
+    try
+    {
+        fs::ifstream ifs(pLoad);
+        read_stream(ifs, vWallet);
+        ifs.close();
+    }
+    catch(const fs::filesystem_error& e)
+    {
+        throw CRPCException(RPC_WALLET_ERROR, "Filesystem_error - failed to read.");
+    }
+
+    if(array_type != vWallet.type())
+    {
+        throw CRPCException(RPC_WALLET_ERROR, "Wallet file exported is invalid, check it and try again.");
+    }
+
+    Array aAddr;
+    uint32 nKey = 0;
+    uint32 nTemp = 0;
+    for(const auto& oAddr : vWallet.get_array())
+    {
+        if(oAddr.get_obj()[0].name_ != "address" || oAddr.get_obj()[1].name_ != "hex")
+        {
+            throw CRPCException(RPC_WALLET_ERROR, "Data format is not correct, check it and try again.");
+        }
+        string sAddr = oAddr.get_obj()[0].value_.get_str(); //"address" field
+        string sHex = oAddr.get_obj()[1].value_.get_str();  //"hex" field
+
+        CMvAddress addr(sAddr);
+        //import keys
+        if(addr.IsPubKey())
+        {
+            vector<unsigned char> vchKey = ParseHexString(sHex);
+            crypto::CKey key;
+            if (!key.Load(vchKey))
+            {
+                throw CRPCException(RPC_INVALID_PARAMS, "Failed to verify serialized key");
+            }
+            if (pService->HaveKey(key.GetPubKey()))
+            {
+                continue;   //step to next one to continue importing
+            }
+            if (!pService->AddKey(key))
+            {
+                throw CRPCException(RPC_WALLET_ERROR, "Failed to add key");
+            }
+            if (!pService->SynchronizeWalletTx(CDestination(key.GetPubKey())))
+            {
+                throw CRPCException(RPC_WALLET_ERROR, "Failed to sync wallet tx");
+            }
+            aAddr.push_back(key.GetPubKey().GetHex());
+            ++nKey;
+        }
+
+        //import templates
+        if(addr.IsTemplate())
+        {
+            vector<unsigned char> vchTemplate = ParseHexString(sHex);
+            CTemplatePtr ptr = CTemplateGeneric::CreateTemplatePtr(vchTemplate);
+            if (ptr == NULL || ptr->IsNull())
+            {
+                throw CRPCException(RPC_INVALID_PARAMETER,"Invalid parameters,failed to make template");
+            }
+            if (pService->HaveTemplate(addr.GetTemplateId()))
+            {
+                continue;   //step to next one to continue importing
+            }
+            if (!pService->AddTemplate(ptr))
+            {
+                throw CRPCException(RPC_WALLET_ERROR,"Failed to add template");
+            }
+            if (!pService->SynchronizeWalletTx(CDestination(ptr->GetTemplateId())))
+            {
+                throw CRPCException(RPC_WALLET_ERROR,"Failed to sync wallet tx");
+            }
+            aAddr.push_back(CMvAddress(ptr->GetTemplateId()).ToString());
+            ++nTemp;
+        }
+    }
+
+    return MakeCImportWalletResultPtr(string("Imported ") + std::to_string(nKey)
+                + string(" keys and ") + std::to_string(nTemp) + string(" templates."));
+}
+
 /* Util */
 CRPCResultPtr CRPCMod::RPCVerifyMessage(CRPCParamPtr param)
 {
@@ -1302,6 +1614,45 @@ CRPCResultPtr CRPCMod::RPCDecodeTransaction(CRPCParamPtr param)
 
     return MakeCDecodeTransactionResultPtr(TxToJSON(rawTx.GetHash(),rawTx,hashFork,-1));
 }
+
+CRPCResultPtr CRPCMod::RPCMakeOrigin(CRPCParamPtr param)
+{
+    auto spParam = CastParamPtr<CMakeOriginParam>(param);
+    
+    uint256 hashPrev(spParam->strPrev);
+    CMvAddress address(spParam->strAddress);
+    int64 nAmount = AmountFromValue(spParam->fAmount);
+    string strIdent = spParam->strIdent;
+
+    CBlock blockPrev;
+    uint256 fork;
+    int height;
+    if (!pService->GetBlock(hashPrev,blockPrev,fork,height))
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Unknown prev block");
+    }
+
+    CBlock block;
+    block.nVersion   = 1;
+    block.nType      = CBlock::BLOCK_ORIGIN;
+    block.nTimeStamp = blockPrev.nTimeStamp + BLOCK_TARGET_SPACING;
+    block.hashPrev   = hashPrev;
+    block.vchProof = vector<uint8>(strIdent.begin(),strIdent.end());
+
+    CTransaction& tx = block.txMint;
+    tx.nType = CTransaction::TX_GENESIS;
+    tx.sendTo  = static_cast<CDestination>(address);
+    tx.nAmount = nAmount;
+
+    CWalleveBufStream ss;
+    ss << block;
+    
+    auto spResult = MakeCMakeOriginResultPtr();
+    spResult->strHash = block.GetHash().GetHex();
+    spResult->strHex = ToHexString((const unsigned char*)ss.GetData(),ss.GetSize());
+    return spResult;
+}
+
 
 // /* Mint */
 CRPCResultPtr CRPCMod::RPCGetWork(CRPCParamPtr param)

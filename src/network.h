@@ -24,6 +24,10 @@ protected:
     {
         return dynamic_cast<const CMvNetworkConfig *>(walleve::IWalleveBase::WalleveConfig());
     }
+    const CMvStorageConfig * StorageConfig()
+    {
+        return dynamic_cast<const CMvStorageConfig *>(walleve::IWalleveBase::WalleveConfig());
+    }
 };
 
 } // namespace multiverse

@@ -218,6 +218,24 @@ CRPCParamPtr CreateCRPCParam(const std::string& cmd, const json_spirit::Value& v
 		ptr->FromJSON(valParam);
 		return ptr;
 	}
+	else if (cmd == "listaddress")
+	{
+		auto ptr = MakeCListAddressParamPtr();
+		ptr->FromJSON(valParam);
+		return ptr;
+	}
+	else if (cmd == "exportwallet")
+	{
+		auto ptr = MakeCExportWalletParamPtr();
+		ptr->FromJSON(valParam);
+		return ptr;
+	}
+	else if (cmd == "importwallet")
+	{
+		auto ptr = MakeCImportWalletParamPtr();
+		ptr->FromJSON(valParam);
+		return ptr;
+	}
 	else if (cmd == "verifymessage")
 	{
 		auto ptr = MakeCVerifyMessageParamPtr();
@@ -251,6 +269,12 @@ CRPCParamPtr CreateCRPCParam(const std::string& cmd, const json_spirit::Value& v
 	else if (cmd == "decodetransaction")
 	{
 		auto ptr = MakeCDecodeTransactionParamPtr();
+		ptr->FromJSON(valParam);
+		return ptr;
+	}
+	else if (cmd == "makeorigin")
+	{
+		auto ptr = MakeCMakeOriginParamPtr();
 		ptr->FromJSON(valParam);
 		return ptr;
 	}
@@ -484,6 +508,24 @@ CRPCResultPtr CreateCRPCResult(const std::string& cmd, const json_spirit::Value&
 		ptr->FromJSON(valResult);
 		return ptr;
 	}
+	else if (cmd == "listaddress")
+	{
+		auto ptr = MakeCListAddressResultPtr();
+		ptr->FromJSON(valResult);
+		return ptr;
+	}
+	else if (cmd == "exportwallet")
+	{
+		auto ptr = MakeCExportWalletResultPtr();
+		ptr->FromJSON(valResult);
+		return ptr;
+	}
+	else if (cmd == "importwallet")
+	{
+		auto ptr = MakeCImportWalletResultPtr();
+		ptr->FromJSON(valResult);
+		return ptr;
+	}
 	else if (cmd == "verifymessage")
 	{
 		auto ptr = MakeCVerifyMessageResultPtr();
@@ -517,6 +559,12 @@ CRPCResultPtr CreateCRPCResult(const std::string& cmd, const json_spirit::Value&
 	else if (cmd == "decodetransaction")
 	{
 		auto ptr = MakeCDecodeTransactionResultPtr();
+		ptr->FromJSON(valResult);
+		return ptr;
+	}
+	else if (cmd == "makeorigin")
+	{
+		auto ptr = MakeCMakeOriginResultPtr();
 		ptr->FromJSON(valResult);
 		return ptr;
 	}
@@ -605,6 +653,11 @@ std::string Help(EModeType type, const std::string& subCmd, const std::string& o
 			oss << "  createtransaction                     Create a transaction.\n";
 			oss << "  signtransaction                       Sign a transaction.\n";
 			oss << "  signmessage                           Sign a message with the private key of an pubkey\n";
+			oss << "  listaddress                           list all of addresses from pub keys and template ids\n";
+			oss << "  exportwallet                          Export all of keys and templates from wallet to a specified \n"
+			       "                                        file in json format.\n";
+			oss << "  importwallet                          Import keys and templates from archived file in json format \n"
+			       "                                        to wallet.\n";
 			oss << "  verifymessage                         Verify a signed message\n";
 			oss << "  makekeypair                           Make a public/private key pair.\n";
 			oss << "  getpubkeyaddress                      Returns encoded address for the given pubkey.\n";
@@ -612,6 +665,7 @@ std::string Help(EModeType type, const std::string& subCmd, const std::string& o
 			oss << "  maketemplate                          Returns encoded address for the given template id.\n";
 			oss << "  decodetransaction                     Return a JSON object representing the serialized, hex-encoded \n"
 			       "                                        transaction.\n";
+			oss << "  makeorigin                            Return hex-encoded block.\n";
 			oss << "  getwork                               Get mint work\n";
 			oss << "  submitwork                            Submit mint work\n";
 		}
@@ -755,6 +809,18 @@ std::string Help(EModeType type, const std::string& subCmd, const std::string& o
 		{
 			oss << CSignMessageConfig().Help();
 		}
+		if (subCmd == "all" || subCmd == "listaddress")
+		{
+			oss << CListAddressConfig().Help();
+		}
+		if (subCmd == "all" || subCmd == "exportwallet")
+		{
+			oss << CExportWalletConfig().Help();
+		}
+		if (subCmd == "all" || subCmd == "importwallet")
+		{
+			oss << CImportWalletConfig().Help();
+		}
 		if (subCmd == "all" || subCmd == "verifymessage")
 		{
 			oss << CVerifyMessageConfig().Help();
@@ -778,6 +844,10 @@ std::string Help(EModeType type, const std::string& subCmd, const std::string& o
 		if (subCmd == "all" || subCmd == "decodetransaction")
 		{
 			oss << CDecodeTransactionConfig().Help();
+		}
+		if (subCmd == "all" || subCmd == "makeorigin")
+		{
+			oss << CMakeOriginConfig().Help();
 		}
 		if (subCmd == "all" || subCmd == "getwork")
 		{
@@ -852,12 +922,16 @@ const std::vector<std::string>& RPCCmdList()
 		"createtransaction",
 		"signtransaction",
 		"signmessage",
+		"listaddress",
+		"exportwallet",
+		"importwallet",
 		"verifymessage",
 		"makekeypair",
 		"getpubkeyaddress",
 		"gettemplateaddress",
 		"maketemplate",
 		"decodetransaction",
+		"makeorigin",
 		"getwork",
 		"submitwork",
 	};

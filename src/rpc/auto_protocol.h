@@ -36,6 +36,7 @@ namespace rpc
 # define __optional__
 
 class CTemplatePubKey;
+class CTemplatePubKeyWeight;
 class CTemplateRequest;
 class CTemplateResponse;
 class CTransactionData;
@@ -47,13 +48,28 @@ class CTemplatePubKey
 {
 public:
 	__required__ CRPCString strKey;
-	__required__ CRPCInt64 nWeight;
+	__required__ CRPCString strAddress;
 public:
 	CTemplatePubKey();
-	CTemplatePubKey(const CRPCString& strKey, const CRPCInt64& nWeight);
+	CTemplatePubKey(const CRPCString& strKey, const CRPCString& strAddress);
 	CTemplatePubKey(const CRPCType& type);
 	json_spirit::Value ToJSON() const;
 	CTemplatePubKey& FromJSON(const json_spirit::Value& v);
+	bool IsValid() const;
+};
+
+// class CTemplatePubKeyWeight
+class CTemplatePubKeyWeight
+{
+public:
+	__required__ CRPCString strKey;
+	__required__ CRPCInt64 nWeight;
+public:
+	CTemplatePubKeyWeight();
+	CTemplatePubKeyWeight(const CRPCString& strKey, const CRPCInt64& nWeight);
+	CTemplatePubKeyWeight(const CRPCType& type);
+	json_spirit::Value ToJSON() const;
+	CTemplatePubKeyWeight& FromJSON(const json_spirit::Value& v);
 	bool IsValid() const;
 };
 
@@ -122,10 +138,10 @@ public:
 	{
 	public:
 		__required__ CRPCInt64 nRequired;
-		__required__ CRPCVector<CTemplatePubKey> vecPubkeys = RPCValid;
+		__required__ CRPCVector<CTemplatePubKeyWeight> vecPubkeys = RPCValid;
 	public:
 		CWeighted();
-		CWeighted(const CRPCInt64& nRequired, const CRPCVector<CTemplatePubKey>& vecPubkeys);
+		CWeighted(const CRPCInt64& nRequired, const CRPCVector<CTemplatePubKeyWeight>& vecPubkeys);
 		CWeighted(const CRPCType& type);
 		json_spirit::Value ToJSON() const;
 		CWeighted& FromJSON(const json_spirit::Value& v);
@@ -170,10 +186,10 @@ public:
 	{
 	public:
 		__required__ CRPCInt64 nSigsrequired;
-		__required__ CRPCVector<CTemplatePubKey> vecAddresses = RPCValid;
+		__required__ CRPCVector<CTemplatePubKeyWeight> vecAddresses = RPCValid;
 	public:
 		CWeighted();
-		CWeighted(const CRPCInt64& nSigsrequired, const CRPCVector<CTemplatePubKey>& vecAddresses);
+		CWeighted(const CRPCInt64& nSigsrequired, const CRPCVector<CTemplatePubKeyWeight>& vecAddresses);
 		CWeighted(const CRPCType& type);
 		json_spirit::Value ToJSON() const;
 		CWeighted& FromJSON(const json_spirit::Value& v);
@@ -2170,6 +2186,167 @@ public:
 };
 
 /////////////////////////////////////////////////////
+// listaddress
+
+// CListAddressParam
+class CListAddressParam : public CRPCParam
+{
+public:
+	CListAddressParam();
+	virtual json_spirit::Value ToJSON() const;
+	virtual CListAddressParam& FromJSON(const json_spirit::Value& v);
+	virtual std::string Method() const;
+};
+template <typename... Args>
+std::shared_ptr<CListAddressParam> MakeCListAddressParamPtr(Args&&... args)
+{
+	return std::make_shared<CListAddressParam>(std::forward<Args>(args)...);
+}
+
+// CListAddressResult
+class CListAddressResult : public CRPCResult
+{
+public:
+	// class CAddressdata
+	class CAddressdata
+	{
+	public:
+		__required__ CRPCString strType;
+		__required__ CTemplatePubKey pubkey;
+		__required__ CRPCString strTemplate;
+		__optional__ CTemplateResponse templatedata;
+	public:
+		CAddressdata();
+		CAddressdata(const CRPCString& strType, const CTemplatePubKey& pubkey, const CRPCString& strTemplate, const CTemplateResponse& templatedata);
+		CAddressdata(const CRPCType& type);
+		json_spirit::Value ToJSON() const;
+		CAddressdata& FromJSON(const json_spirit::Value& v);
+		bool IsValid() const;
+	};
+public:
+	__required__ CRPCVector<CAddressdata> vecAddressdata = RPCValid;
+public:
+	CListAddressResult();
+	CListAddressResult(const CRPCVector<CAddressdata>& vecAddressdata);
+	virtual json_spirit::Value ToJSON() const;
+	virtual CListAddressResult& FromJSON(const json_spirit::Value& v);
+	virtual std::string Method() const;
+};
+template <typename... Args>
+std::shared_ptr<CListAddressResult> MakeCListAddressResultPtr(Args&&... args)
+{
+	return std::make_shared<CListAddressResult>(std::forward<Args>(args)...);
+}
+
+// CListAddressConfig
+class CListAddressConfig : virtual public CMvBasicConfig, public CListAddressParam
+{
+public:
+	CListAddressConfig();
+	virtual bool PostLoad();
+	virtual std::string ListConfig() const;
+	virtual std::string Help() const;
+};
+
+/////////////////////////////////////////////////////
+// exportwallet
+
+// CExportWalletParam
+class CExportWalletParam : public CRPCParam
+{
+public:
+	__required__ CRPCString strPath;
+public:
+	CExportWalletParam();
+	CExportWalletParam(const CRPCString& strPath);
+	virtual json_spirit::Value ToJSON() const;
+	virtual CExportWalletParam& FromJSON(const json_spirit::Value& v);
+	virtual std::string Method() const;
+};
+template <typename... Args>
+std::shared_ptr<CExportWalletParam> MakeCExportWalletParamPtr(Args&&... args)
+{
+	return std::make_shared<CExportWalletParam>(std::forward<Args>(args)...);
+}
+
+// CExportWalletResult
+class CExportWalletResult : public CRPCResult
+{
+public:
+	__required__ CRPCString strResult;
+public:
+	CExportWalletResult();
+	CExportWalletResult(const CRPCString& strResult);
+	virtual json_spirit::Value ToJSON() const;
+	virtual CExportWalletResult& FromJSON(const json_spirit::Value& v);
+	virtual std::string Method() const;
+};
+template <typename... Args>
+std::shared_ptr<CExportWalletResult> MakeCExportWalletResultPtr(Args&&... args)
+{
+	return std::make_shared<CExportWalletResult>(std::forward<Args>(args)...);
+}
+
+// CExportWalletConfig
+class CExportWalletConfig : virtual public CMvBasicConfig, public CExportWalletParam
+{
+public:
+	CExportWalletConfig();
+	virtual bool PostLoad();
+	virtual std::string ListConfig() const;
+	virtual std::string Help() const;
+};
+
+/////////////////////////////////////////////////////
+// importwallet
+
+// CImportWalletParam
+class CImportWalletParam : public CRPCParam
+{
+public:
+	__required__ CRPCString strPath;
+public:
+	CImportWalletParam();
+	CImportWalletParam(const CRPCString& strPath);
+	virtual json_spirit::Value ToJSON() const;
+	virtual CImportWalletParam& FromJSON(const json_spirit::Value& v);
+	virtual std::string Method() const;
+};
+template <typename... Args>
+std::shared_ptr<CImportWalletParam> MakeCImportWalletParamPtr(Args&&... args)
+{
+	return std::make_shared<CImportWalletParam>(std::forward<Args>(args)...);
+}
+
+// CImportWalletResult
+class CImportWalletResult : public CRPCResult
+{
+public:
+	__required__ CRPCString strResult;
+public:
+	CImportWalletResult();
+	CImportWalletResult(const CRPCString& strResult);
+	virtual json_spirit::Value ToJSON() const;
+	virtual CImportWalletResult& FromJSON(const json_spirit::Value& v);
+	virtual std::string Method() const;
+};
+template <typename... Args>
+std::shared_ptr<CImportWalletResult> MakeCImportWalletResultPtr(Args&&... args)
+{
+	return std::make_shared<CImportWalletResult>(std::forward<Args>(args)...);
+}
+
+// CImportWalletConfig
+class CImportWalletConfig : virtual public CMvBasicConfig, public CImportWalletParam
+{
+public:
+	CImportWalletConfig();
+	virtual bool PostLoad();
+	virtual std::string ListConfig() const;
+	virtual std::string Help() const;
+};
+
+/////////////////////////////////////////////////////
 // verifymessage
 
 // CVerifyMessageParam
@@ -2459,6 +2636,59 @@ class CDecodeTransactionConfig : virtual public CMvBasicConfig, public CDecodeTr
 {
 public:
 	CDecodeTransactionConfig();
+	virtual bool PostLoad();
+	virtual std::string ListConfig() const;
+	virtual std::string Help() const;
+};
+
+/////////////////////////////////////////////////////
+// makeorigin
+
+// CMakeOriginParam
+class CMakeOriginParam : public CRPCParam
+{
+public:
+	__required__ CRPCString strPrev;
+	__required__ CRPCString strAddress;
+	__required__ CRPCDouble fAmount;
+	__required__ CRPCString strIdent;
+public:
+	CMakeOriginParam();
+	CMakeOriginParam(const CRPCString& strPrev, const CRPCString& strAddress, const CRPCDouble& fAmount, const CRPCString& strIdent);
+	virtual json_spirit::Value ToJSON() const;
+	virtual CMakeOriginParam& FromJSON(const json_spirit::Value& v);
+	virtual std::string Method() const;
+};
+template <typename... Args>
+std::shared_ptr<CMakeOriginParam> MakeCMakeOriginParamPtr(Args&&... args)
+{
+	return std::make_shared<CMakeOriginParam>(std::forward<Args>(args)...);
+}
+
+// CMakeOriginResult
+class CMakeOriginResult : public CRPCResult
+{
+public:
+	__required__ CRPCString strHash;
+	__required__ CRPCString strHex;
+public:
+	CMakeOriginResult();
+	CMakeOriginResult(const CRPCString& strHash, const CRPCString& strHex);
+	virtual json_spirit::Value ToJSON() const;
+	virtual CMakeOriginResult& FromJSON(const json_spirit::Value& v);
+	virtual std::string Method() const;
+};
+template <typename... Args>
+std::shared_ptr<CMakeOriginResult> MakeCMakeOriginResultPtr(Args&&... args)
+{
+	return std::make_shared<CMakeOriginResult>(std::forward<Args>(args)...);
+}
+
+// CMakeOriginConfig
+class CMakeOriginConfig : virtual public CMvBasicConfig, public CMakeOriginParam
+{
+public:
+	CMakeOriginConfig();
 	virtual bool PostLoad();
 	virtual std::string ListConfig() const;
 	virtual std::string Help() const;

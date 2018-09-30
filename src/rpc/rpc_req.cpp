@@ -133,7 +133,7 @@ CRPCReqVec DeserializeCRPCReq(const std::string& str, bool& fArray)
         {
             throw CRPCException(RPC_INVALID_REQUEST,
                 std::string("'method' must be a string, but it's ") +
-                    json_spirit::Value_type_name[valMethod.type()], req->valID);
+                    json_spirit::value_type_to_string(valMethod.type()), req->valID);
         }
         req->strMethod = valMethod.get_str();
         // WalleveLog("RPC command : %s\n", strMethod.c_str());

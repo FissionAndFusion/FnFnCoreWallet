@@ -37,19 +37,6 @@ double ValueFromAmount(int64 amount)
     return ((double)amount / (double)COIN);
 }
 
-static string GetBlockTypeStr(uint16 nType,uint16 nMintType)
-{
-    if (nType == CBlock::BLOCK_GENESIS) return std::string("genesis");
-    if (nType == CBlock::BLOCK_ORIGIN) return std::string("origin");
-    if (nType == CBlock::BLOCK_EXTENDED) return std::string("extended");
-    std::string str("undefined-");
-    if (nType == CBlock::BLOCK_PRIMARY) str = "primary-";
-    if (nType == CBlock::BLOCK_SUBSIDIARY) str = "subsidiary-";
-    if (nMintType == CTransaction::TX_WORK) return (str + "pow"); 
-    if (nMintType == CTransaction::TX_STAKE) return (str + "dpos");
-    return str;
-}
-
 CBlockData BlockToJSON(const uint256& hashBlock,const CBlock& block,const uint256& hashFork,int nHeight)
 {
     CBlockData data;

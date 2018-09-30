@@ -177,8 +177,8 @@ CRPCRespVec DeserializeCRPCResp(const CRPCReqMap& req, const std::string& str)
                 RPC_PARSE_ERROR,
                 std::string(
                     "'result' and 'error' must exsit one, but result type: ") +
-                    json_spirit::Value_type_name[valResult.type()] + ", error type: " +
-                    json_spirit::Value_type_name[valError.type()],
+                    json_spirit::value_type_to_string(valResult.type()) + ", error type: " +
+                    json_spirit::value_type_to_string(valError.type()),
                 resp->valID);
         }
 

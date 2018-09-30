@@ -160,7 +160,7 @@ public:
     bool Exists(const uint256& txid);
     void Clear();
     std::size_t Count(const uint256& fork) const;
-    MvErr Push(CTransaction& tx,uint256& hashFork,CDestination& destIn,int64& nValueIn);
+    MvErr Push(const CTransaction& tx,uint256& hashFork,CDestination& destIn,int64& nValueIn);
     void Pop(const uint256& txid);
     bool Get(const uint256& txid,CTransaction& tx) const;
     void ListTx(const uint256& hashFork,std::vector<std::pair<uint256,std::size_t> >& vTxPool);
@@ -176,7 +176,7 @@ protected:
     bool WalleveHandleInvoke();
     void WalleveHandleHalt();
     bool LoadDB();
-    MvErr AddNew(CTxPoolView& txView,const uint256& txid,CTransaction& tx,const uint256& hashFork,int nForkHeight);
+    MvErr AddNew(CTxPoolView& txView,const uint256& txid,const CTransaction& tx,const uint256& hashFork,int nForkHeight);
     std::size_t GetSequenceNumber()
     {
         if (mapTx.empty())

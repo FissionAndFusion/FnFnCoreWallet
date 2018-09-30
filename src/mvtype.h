@@ -113,6 +113,15 @@ public:
     CTransaction txUpdate;
 };
 
+class CDelegateRoutine
+{
+public:
+    std::vector<CTransaction> vEnrollTx;
+    bool fPublishCompleted;
+public:
+    CDelegateRoutine() : fPublishCompleted(false) {}
+};
+
 /* Proof */
 /*
 class CMPSSProof
@@ -129,6 +138,22 @@ class CNil
 protected:
     template <typename O>
     void WalleveSerialize(walleve::CWalleveStream& s,O& opt) {}
+};
+
+class CBlockMakerUpdate
+{
+public:
+    uint256 hashBlock;
+    int64 nBlockTime;
+    int nBlockHeight;
+};
+
+class CBlockMakerAgreement
+{
+public:
+     uint256 nAgreement;
+     std::size_t nWeight;
+     std::vector<CDestination> vBallot;
 };
 
 /* Net Channel */

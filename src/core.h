@@ -18,18 +18,21 @@ public:
     virtual const uint256& GetGenesisBlockHash();
     virtual void GetGenesisBlock(CBlock& block); 
     virtual MvErr ValidateTransaction(const CTransaction& tx);
-    virtual MvErr ValidateBlock(CBlock& block);
-    virtual MvErr VerifyBlock(CBlock& block,CBlockIndex* pIndexPrev);
-    virtual MvErr VerifyBlockTx(CTransaction& tx,CTxContxt& txContxt,CBlockIndex* pIndexPrev);
-    virtual MvErr VerifyTransaction(CTransaction& tx,const std::vector<CTxOutput>& vPrevOutput,int nForkHeight);
+    virtual MvErr ValidateBlock(const CBlock& block);
+    virtual MvErr VerifyBlock(const CBlock& block,CBlockIndex* pIndexPrev);
+    virtual MvErr VerifyBlockTx(const CTransaction& tx,const CTxContxt& txContxt,CBlockIndex* pIndexPrev);
+    virtual MvErr VerifyTransaction(const CTransaction& tx,const std::vector<CTxOutput>& vPrevOutput,int nForkHeight);
     virtual bool GetProofOfWorkTarget(CBlockIndex* pIndexPrev,int nAlgo,int& nBits,int64& nReward);
     virtual int GetProofOfWorkRunTimeBits(int nBits,int64 nTime,int64 nPrevTime);
-    //virtual MvErr 
+    virtual int64 GetDelegatedProofOfStakeReward(CBlockIndex* pIndexPrev,std::size_t nWeight);
+    virtual void GetDelegatedBallot(const uint256& nAgreement,std::size_t nWeight,
+                                    const std::map<CDestination,size_t>& mapBallot,std::vector<CDestination>& vBallot);
 protected:
     bool WalleveHandleInitialize();
     const MvErr Debug(const MvErr& err,const char* pszFunc,const char *pszFormat,...); 
     bool CheckBlockSignature(const CBlock& block);
-   int64 GetProofOfWorkReward(CBlockIndex* pIndexPrev);
+    int64 GetProofOfWorkReward(CBlockIndex* pIndexPrev);
+    MvErr ValidateVacantBlock(const CBlock& block);
 protected:
     uint256 hashGenesisBlock;
     int nProofOfWorkLimit;
