@@ -536,6 +536,7 @@ void CDbpClient::HandleWritenResponse(std::size_t nTransferred, CDbpClient::Send
         {
             pClient->Write(ssSend, boost::bind(&CDbpClient::HandleWritenResponse,
                                                this, _1, type));
+            return;
         }
 
         if (ssSend.GetSize() == 0 && !addedSendQueue.empty())
@@ -555,6 +556,7 @@ void CDbpClient::HandleWritenResponse(std::size_t nTransferred, CDbpClient::Send
             //  SendSaver.append(std::string(ssSend.GetData(), ssSend.GetSize()));
 
             pClient->Write(ssSend, boost::bind(&CDbpClient::HandleWritenResponse, this, _1, ADDED));
+            return;
         }
 
         if (type == OTHER)
