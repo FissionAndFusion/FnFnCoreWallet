@@ -72,11 +72,7 @@ void CDbpClient::SendMessage(dbp::Base *pBaseMsg)
 
     std::string bytesBuf;
     pBaseMsg->SerializeToString(&bytesBuf);
-
-    unsigned char msgLenBuf[MSG_HEADER_LEN];
-    CDbpUtils::WriteLenToMsgHeader(bytesBuf.size(), (char *)msgLenBuf, MSG_HEADER_LEN);
-    ssSend.Write((char *)msgLenBuf, MSG_HEADER_LEN);
-    ssSend.Write((char *)bytesBuf.data(), bytesBuf.size());
+    WriteBytesToSendStream(bytesBuf);
 
     //  SendSaver.append(std::string(ssSend.GetData(), ssSend.GetSize()));
 
@@ -94,11 +90,7 @@ void CDbpClient::SendPingMessage(dbp::Base *pBaseMsg)
 
     std::string bytesBuf;
     pBaseMsg->SerializeToString(&bytesBuf);
-
-    unsigned char msgLenBuf[MSG_HEADER_LEN];
-    CDbpUtils::WriteLenToMsgHeader(bytesBuf.size(), (char *)msgLenBuf, MSG_HEADER_LEN);
-    ssSend.Write((char *)msgLenBuf, MSG_HEADER_LEN);
-    ssSend.Write((char *)bytesBuf.data(), bytesBuf.size());
+    WriteBytesToSendStream(bytesBuf);
 
     // SendSaver.append(std::string(ssSend.GetData(), ssSend.GetSize()));
 
@@ -117,11 +109,7 @@ void CDbpClient::SendAddedMessage(dbp::Base *pBaseMsg)
 
     std::string bytesBuf;
     pBaseMsg->SerializeToString(&bytesBuf);
-
-    unsigned char msgLenBuf[MSG_HEADER_LEN];
-    CDbpUtils::WriteLenToMsgHeader(bytesBuf.size(), (char *)msgLenBuf, MSG_HEADER_LEN);
-    ssSend.Write((char *)msgLenBuf, MSG_HEADER_LEN);
-    ssSend.Write((char *)bytesBuf.data(), bytesBuf.size());
+    WriteBytesToSendStream(bytesBuf);
 
     // SendSaver.append(std::string(ssSend.GetData(), ssSend.GetSize()));
 
@@ -429,6 +417,14 @@ void CDbpClient::StartReadPayload(std::size_t nLength)
                   boost::bind(&CDbpClient::HandleReadPayload, this, _1, nLength));
 }
 
+void CDbpClient::WriteBytesToSendStream(const std::string &bytes)
+{
+    unsigned char msgLenBuf[MSG_HEADER_LEN];
+    CDbpUtils::WriteLenToMsgHeader(bytes.size(), (char *)msgLenBuf, MSG_HEADER_LEN);
+    ssSend.Write((char *)msgLenBuf, MSG_HEADER_LEN);
+    ssSend.Write((char *)bytes.data(), bytes.size());
+}
+
 void CDbpClient::HandleReadHeader(std::size_t nTransferred)
 {
     if (nTransferred == MSG_HEADER_LEN)
@@ -545,13 +541,8 @@ void CDbpClient::HandleWritenResponse(std::size_t nTransferred, CDbpClient::Send
             dbp::Base base;
             base = addedSendQueue.front();
             base.SerializeToString(&bytesBuf);
+            WriteBytesToSendStream(bytesBuf);
             addedSendQueue.pop();
-            std::cout << "Send  Added Message Len is: " << bytesBuf.size() << std::endl;
-
-            unsigned char msgLenBuf[MSG_HEADER_LEN];
-            CDbpUtils::WriteLenToMsgHeader(bytesBuf.size(), (char *)msgLenBuf, MSG_HEADER_LEN);
-            ssSend.Write((char *)msgLenBuf, MSG_HEADER_LEN);
-            ssSend.Write((char *)bytesBuf.data(), bytesBuf.size());
 
             //  SendSaver.append(std::string(ssSend.GetData(), ssSend.GetSize()));
 
