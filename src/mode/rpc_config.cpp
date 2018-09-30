@@ -5,49 +5,29 @@
 #include "mode/rpc_config.h"
 
 #include <boost/algorithm/algorithm.hpp>
+#include "mode/config_macro.h"
 
-namespace po = boost::program_options;
-using tcp = boost::asio::ip::tcp;
-namespace fs = boost::filesystem;
-using namespace multiverse;
-
-#define DEFAULT_RPCPORT 6812
-#define DEFAULT_TESTNET_RPCPORT 6814
-#define DEFAULT_RPC_MAX_CONNECTIONS 5
-#define DEFAULT_RPC_CONNECT_TIMEOUT 120
-
-CMvRPCConfig::CMvRPCConfig()
+namespace multiverse
 {
-    po::options_description desc("LoMoRPC");
+namespace po = boost::program_options;
+namespace fs = boost::filesystem;
+using tcp = boost::asio::ip::tcp;
 
-    AddOpt<std::string>(desc, "rpcconnect", strRPCConnect, "127.0.0.1");
-    AddOpt<int>(desc, "rpcport", nRPCPortInt, 0);
-    AddOpt<unsigned int>(desc, "rpctimeout", nRPCConnectTimeout,
-                         DEFAULT_RPC_CONNECT_TIMEOUT);
-    AddOpt<unsigned int>(desc, "rpcmaxconnections", nRPCMaxConnections,
-                         DEFAULT_RPC_MAX_CONNECTIONS);
-    AddOpt<std::vector<std::string> >(desc, "rpcallowip", vRPCAllowIP);
+/////////////////////////////////////////////////////////////////////
+// CMvRPCBasicConfig
 
-    AddOpt<std::string>(desc, "rpcwallet", strRPCWallet, "");
-    AddOpt<std::string>(desc, "rpcuser", strRPCUser, "");
-    AddOpt<std::string>(desc, "rpcpassword", strRPCPass, "");
+CMvRPCBasicConfig::CMvRPCBasicConfig()
+{
+    po::options_description desc("RPCBasic");
 
-    AddOpt<bool>(desc, "rpcssl", fRPCSSLEnable, false);
-    AddOpt<bool>(desc, "rpcsslverify", fRPCSSLVerify, true);
-    AddOpt<std::string>(desc, "rpcsslcafile", strRPCCAFile, "ca.crt");
-    AddOpt<std::string>(desc, "rpcsslcertificatechainfile", strRPCCertFile,
-                        "server.crt");
-    AddOpt<std::string>(desc, "rpcsslprivatekeyfile", strRPCPKFile,
-                        "server.key");
-    AddOpt<std::string>(desc, "rpcsslciphers", strRPCCiphers,
-                        "TLSv1+HIGH:!SSLv2:!aNULL:!eNULL:!AH:!3DES:@STRENGTH");
+    CMvRPCBasicConfigOption::AddOptionsImpl(desc);
 
     AddOptions(desc);
 }
 
-CMvRPCConfig::~CMvRPCConfig() {}
+CMvRPCBasicConfig::~CMvRPCBasicConfig() {}
 
-bool CMvRPCConfig::PostLoad()
+bool CMvRPCBasicConfig::PostLoad()
 {
     if (nRPCPortInt <= 0 || nRPCPortInt > 0xFFFF)
     {
@@ -57,16 +37,6 @@ bool CMvRPCConfig::PostLoad()
     {
         nRPCPort = (unsigned short)nRPCPortInt;
     }
-
-    if (nRPCConnectTimeout == 0)
-    {
-        nRPCConnectTimeout = 1;
-    }
-
-    epRPC = tcp::endpoint(!vRPCAllowIP.empty()
-                              ? boost::asio::ip::address_v4::any()
-                              : boost::asio::ip::address_v4::loopback(),
-                          nRPCPort);
 
     if (!fs::path(strRPCCAFile).is_complete())
     {
@@ -86,9 +56,95 @@ bool CMvRPCConfig::PostLoad()
     return true;
 }
 
-std::string CMvRPCConfig::ListConfig() const
+std::string CMvRPCBasicConfig::ListConfig() const
 {
     std::ostringstream oss;
-    oss << "rpc config:\n";
+    oss << CMvRPCBasicConfigOption::ListConfigImpl();
+    oss << "RPCPort: " << nRPCPort << "\n";
     return oss.str();
 }
+
+std::string CMvRPCBasicConfig::Help() const
+{
+    return CMvRPCBasicConfigOption::HelpImpl();
+}
+
+/////////////////////////////////////////////////////////////////////
+// CMvRPCServerConfig
+
+CMvRPCServerConfig::CMvRPCServerConfig()
+{
+    po::options_description desc("RPCServer");
+
+    CMvRPCServerConfigOption::AddOptionsImpl(desc);
+
+    AddOptions(desc);
+}
+
+CMvRPCServerConfig::~CMvRPCServerConfig() {}
+
+bool CMvRPCServerConfig::PostLoad()
+{
+    CMvRPCBasicConfig::PostLoad();
+
+    epRPC = tcp::endpoint(!vRPCAllowIP.empty()
+                              ? boost::asio::ip::address_v4::any()
+                              : boost::asio::ip::address_v4::loopback(),
+                          nRPCPort);
+    
+    return true;
+}
+
+std::string CMvRPCServerConfig::ListConfig() const
+{
+    std::ostringstream oss;
+    oss << CMvRPCServerConfigOption::ListConfigImpl();
+    oss << "epRPC: " << epRPC << "\n";
+    return CMvRPCBasicConfig::ListConfig() + oss.str();
+}
+
+std::string CMvRPCServerConfig::Help() const
+{
+    return CMvRPCBasicConfig::Help() + CMvRPCServerConfigOption::HelpImpl();
+}
+
+/////////////////////////////////////////////////////////////////////
+// CMvRPCClientConfig
+
+CMvRPCClientConfig::CMvRPCClientConfig()
+{
+    po::options_description desc("RPCClient");
+
+    CMvRPCClientConfigOption::AddOptionsImpl(desc);
+
+    AddOptions(desc);
+}
+
+CMvRPCClientConfig::~CMvRPCClientConfig() {}
+
+bool CMvRPCClientConfig::PostLoad()
+{
+    CMvRPCBasicConfig::PostLoad();
+
+    if (nRPCConnectTimeout == 0)
+    {
+        nRPCConnectTimeout = 1;
+    }
+
+    return true;
+}
+
+std::string CMvRPCClientConfig::ListConfig() const
+{
+    std::ostringstream oss;
+    oss << CMvRPCClientConfigOption::ListConfigImpl();
+    return CMvRPCBasicConfig::ListConfig() + oss.str();
+}
+
+std::string CMvRPCClientConfig::Help() const
+{
+    return CMvRPCBasicConfig::Help() + CMvRPCClientConfigOption::HelpImpl();
+}
+
+
+}  // namespace multiverse

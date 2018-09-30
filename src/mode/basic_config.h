@@ -2,15 +2,14 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef MULTIVERSE_MODE_BASIC_CONFIG_H
-#define MULTIVERSE_MODE_BASIC_CONFIG_H
+#ifndef MULTIVERSE_BASIC_CONFIG_H
+#define MULTIVERSE_BASIC_CONFIG_H
 
 #include <exception>
 #include <string>
 
-#include <boost/program_options.hpp>
-
 #include "walleve/walleve.h"
+#include "mode/auto_options.h"
 
 namespace multiverse
 {
@@ -38,36 +37,20 @@ CastConfigPtr(walleve::CWalleveConfig* ptr)
 /**
  * basic config on business.
  */
-class CMvBasicConfig : virtual public walleve::CWalleveConfig
+class CMvBasicConfig : virtual public walleve::CWalleveConfig,
+                       virtual public CMvBasicConfigOption
 {
 public:
     CMvBasicConfig();
     virtual ~CMvBasicConfig();
     virtual bool PostLoad();
     virtual std::string ListConfig() const;
+    virtual std::string Help() const;
 
 public:
     unsigned int nMagicNum;
-    bool fTestNet;
-
-protected:
-    template <typename T>
-    inline void AddOpt(boost::program_options::options_description& desc,
-                       const std::string& name, T& var)
-    {
-        desc.add_options()(name.c_str(),
-                           boost::program_options::value<T>(&var));
-    }
-    template <typename T>
-    inline void AddOpt(boost::program_options::options_description& desc,
-                       const std::string& name, T& var, const T& def)
-    {
-        desc.add_options()(
-            name.c_str(),
-            boost::program_options::value<T>(&var)->default_value(def));
-    }
 };
 
 }  // namespace multiverse
 
-#endif  // MULTIVERSE_MODE_BASIC_CONFIG_H
+#endif  // MULTIVERSE_BASIC_CONFIG_H

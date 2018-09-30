@@ -2,8 +2,8 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef MULTIVERSE_MODE_STORAGE_CONFIG_H
-#define MULTIVERSE_MODE_STORAGE_CONFIG_H
+#ifndef MULTIVERSE_STORAGE_CONFIG_H
+#define MULTIVERSE_STORAGE_CONFIG_H
 
 #include <string>
 
@@ -11,23 +11,17 @@
 
 namespace multiverse
 {
-class CMvStorageConfig : virtual public CMvBasicConfig
+class CMvStorageConfig : virtual public CMvBasicConfig,
+                         virtual public CMvStorageConfigOption
 {
 public:
     CMvStorageConfig();
     virtual ~CMvStorageConfig();
     virtual bool PostLoad();
     virtual std::string ListConfig() const;
-
-public:
-    std::string strDBHost;
-    std::string strDBName;
-    std::string strDBUser;
-    std::string strDBPass;
-    int nDBPort;
-    int nDBConn;
+    virtual std::string Help() const;
 };
 
 }  // namespace multiverse
 
-#endif  // MULTIVERSE_MODE_STORAGE_CONFIG_H
+#endif  // MULTIVERSE_STORAGE_CONFIG_H

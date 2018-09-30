@@ -2,8 +2,8 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef MULTIVERSE_MODE_MINT_CONFIG_H
-#define MULTIVERSE_MODE_MINT_CONFIG_H
+#ifndef MULTIVERSE_MINT_CONFIG_H
+#define MULTIVERSE_MINT_CONFIG_H
 
 #include <string>
 
@@ -14,13 +14,15 @@
 
 namespace multiverse
 {
-class CMvMintConfig : virtual public CMvBasicConfig
+class CMvMintConfig : virtual public CMvBasicConfig,
+                      virtual public CMvMintConfigOption
 {
 public:
     CMvMintConfig();
     virtual ~CMvMintConfig();
     virtual bool PostLoad();
     virtual std::string ListConfig() const;
+    virtual std::string Help() const;
 
 protected:
     void ExtractMintParamPair(const std::string& strAddress,
@@ -33,13 +35,8 @@ public:
     CDestination destBlake512;
     uint256 keyBlake512;
 
-protected:
-    std::string strAddressMPVss;
-    std::string strKeyMPVss;
-    std::string strAddressBlake512;
-    std::string strKeyBlake512;
 };
 
 }  // namespace multiverse
 
-#endif  // MULTIVERSE_MODE_MINT_CONFIG_H
+#endif  // MULTIVERSE_MINT_CONFIG_H

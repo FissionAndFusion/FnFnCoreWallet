@@ -46,10 +46,10 @@ protected:
     void WalleveHandleDeinitialize();
     bool WalleveHandleInvoke();
     void WalleveHandleHalt();
-    const CMvRPCConfig * WalleveConfig();
+    const CMvRPCClientConfig * WalleveConfig();
     bool Interrupted() { return (nMinerStatus != MINER_RUN); }
     bool HandleEvent(walleve::CWalleveEventHttpGetRsp& event);
-    bool SendRequest(uint64 nNonce,json_spirit::Object& jsonReq);
+    bool SendRequest(uint64 nNonce, const string& content);
     bool GetWork();
     bool SubmitWork(const std::vector<unsigned char>& vchWorkData);
     void CancelRPC();

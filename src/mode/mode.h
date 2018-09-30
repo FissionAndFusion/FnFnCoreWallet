@@ -3,7 +3,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 //
 //
-// Introduce functions related Mode:
+// Introduction about Mode:
 // 
 // Concept:
 //  - Mode: Program execution mode. e.g. server, console, miner, dnseed...
@@ -52,64 +52,25 @@
 //                      }
 //                  },
 
-#ifndef MULTIVERSE_MODE_MODE_H
-#define MULTIVERSE_MODE_MODE_H
+#ifndef MULTIVERSE_MODE_H
+#define MULTIVERSE_MODE_H
 
-#include <numeric>
 #include <tuple>
-#include <type_traits>
 #include <vector>
 
-#include "mode/config_type.h"
+#include "mode/mode_impl.h"
 #include "mode/mode_type.h"
 #include "mode/module_type.h"
-
 #include "mode/basic_config.h"
 #include "mode/mint_config.h"
 #include "mode/network_config.h"
 #include "mode/rpc_config.h"
 #include "mode/storage_config.h"
 
+#include "rpc/auto_rpc.h"
+
 namespace multiverse
 {
-
-namespace mode_helper
-{
-/**
- * Combination of inheriting all need config class.
- */
-template <typename... U>
-class CCombinConfig
-    : virtual public std::enable_if<std::is_base_of<CMvBasicConfig, U>::value,
-                                    U>::type...
-{
-public:
-    CCombinConfig() {}
-    virtual ~CCombinConfig() {}
-
-    virtual bool PostLoad()
-    {
-        std::vector<bool> v = {walleve::CWalleveConfig::PostLoad(),
-                               CMvBasicConfig::PostLoad(), U::PostLoad()...};
-        return std::find(v.begin(), v.end(), false) == v.end();
-    }
-
-    virtual std::string ListConfig() const
-    {
-        std::vector<std::string> v = {walleve::CWalleveConfig::ListConfig(),
-                                      CMvBasicConfig::ListConfig(),
-                                      U::ListConfig()...};
-        return std::accumulate(v.begin(), v.end(), std::string());
-    }
-};
-
-template <>
-class CCombinConfig<> : virtual public CCombinConfig<CMvBasicConfig>
-{
-};
-
-}
-
 /**
  * CMode class. Container of mode-module mapping and mode-config mapping.
  */
@@ -130,21 +91,30 @@ public:
     }
 
 private:
-    // create entry
     template <EConfigType... t>
-    static CMvBasicConfig* create()
+    static CMvBasicConfig* Create(const std::string& cmd)
     {
-        return new mode_helper::CCombinConfig<
-            typename std::remove_pointer<typename std::tuple_element<
-                static_cast<int>(t),
-                decltype(config_type::___ConfigTypeTemplate)>::type>::type...>;
+        if (mode_impl::CCheckType<t...>().Exist(EConfigType::RPCCLIENT))
+        {
+            return rpc::CreateConfig<
+                typename std::remove_pointer<typename std::tuple_element<
+                    static_cast<int>(t),
+                    decltype(config_type::___ConfigTypeTemplate)>::type>::type...>(cmd);
+        }
+        else
+        {
+            return new mode_impl::CCombinConfig<
+                typename std::remove_pointer<typename std::tuple_element<
+                    static_cast<int>(t),
+                    decltype(config_type::___ConfigTypeTemplate)>::type>::type...>;
+        }
     }
 
 public:
     /**
      * Create a multiple inheritance config class.
      */
-    static CMvBasicConfig* CreateConfig(const EModeType& type) noexcept
+    static CMvBasicConfig* CreateConfig(const EModeType& type, const std::string& cmd) noexcept
     {
         switch (type)
         {
@@ -154,29 +124,29 @@ public:
             }
             case EModeType::SERVER:
             {
-                return create<
+                return Create<
                                 EConfigType::MINT, 
                                 EConfigType::NETWORK,
-                                EConfigType::RPC, 
+                                EConfigType::RPCSERVER, 
                                 EConfigType::STORAGE
-                             >();
+                             >(cmd);
             }
             case EModeType::CONSOLE:
             {
-                return create<
-                                EConfigType::RPC
-                             >();
+                return Create<
+                                EConfigType::RPCCLIENT
+                             >(cmd);
             }
             case EModeType::MINER:
             {
-                return create<
-                                EConfigType::RPC
-                             >();
+                return Create<
+                                EConfigType::RPCCLIENT
+                             >(cmd);
             }
             // Add new mode-module relationship here.
             default:
             {
-                return create<>();
+                return Create<>(cmd);
             }
         }
     }
@@ -199,6 +169,7 @@ public:
                     EModuleType::NETWORK,
                     EModuleType::NETCHANNEL,
                     EModuleType::SERVICE,
+                    EModuleType::DBPSOCKET,
                     EModuleType::HTTPSERVER,
                     EModuleType::RPCMODE,
                     EModuleType::BLOCKMAKER
@@ -225,8 +196,15 @@ public:
         return (it == mapping.end()) ? std::vector<EModuleType>() : it->second;
     }
 
+    /**
+     * Entry of auto_rpc function "Help"
+     */
+    static std::string Help(EModeType type, const std::string& subCmd, const std::string& options = "")
+    {
+        return rpc::Help(type, subCmd, options);
+    }
 };
 
 }  // namespace multiverse
 
-#endif  // MULTIVERSE_MODE_MODE_H
+#endif  // MULTIVERSE_MODE_H
