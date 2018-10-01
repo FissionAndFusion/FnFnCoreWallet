@@ -316,17 +316,17 @@ def check_json_type_fun(w):
     w.write(indent + 'bool b;\n')
 
     w.write(indent)
-    for t in json_type_list:
-        w.write('if (type == ' + quote(t) + ')\n')
+    for type in json_type_list:
+        w.write('if (type == ' + quote(type) + ')\n')
         indent = brace_begin(w, indent)
         if type == 'uint':
-            w.write(indent + 'b = ((value.type() != ' + quote(get_cpp_json_type('uint'))
-                + ') || (!value.is_uint64() && ' + get_cpp_json('value', 'int') + ' < 0));\n')
+            w.write(indent + 'b = ((value.type() == ' + get_cpp_json_type('uint')
+                + ') && (value.is_uint64() || ' + get_cpp_json('value', 'int') + ' >= 0));\n')
         elif type == 'double':
-            w.write(indent + 'b = ((value.type() != ' + quote(get_cpp_json_type('double'))
-                + ') && (value.type() != ' + quote(get_cpp_json_type('int')) + '));\n')
+            w.write(indent + 'b = ((value.type() == ' + get_cpp_json_type('double')
+                + ') || (value.type() == ' + get_cpp_json_type('int') + '));\n')
         else:
-            w.write(indent + 'b = (value.type() == ' +  get_cpp_json_type(int) + ');\n')
+            w.write(indent + 'b = (value.type() == ' +  get_cpp_json_type(type) + ');\n')
         indent = brace_end(w, indent)
         w.write(indent + 'else ')
     
@@ -425,7 +425,14 @@ def FromJSON_cpp(key, name, params, container, w, scope):
             val = 'val' + p.key.title()
             w.write(indent + 'auto ' + val + ' = find_value(obj, "' + p.key + '");\n')
 
+            if not p.required:
+                w.write(indent + 'if (!' + val + '.is_null())\n')
+                indent = brace_begin(w, indent)
+
             one_param(p, val, indent)
+
+            if not p.required:
+                indent = brace_end(w, indent)
 
             if p.cond_cpp_name:
                 indent = brace_end(w, indent)
@@ -444,17 +451,14 @@ def ToJSON_h(virtual, w, indent):
 
 def ToJSON_cpp(name, params, container, w, scope):
 
-    def check_required(p, w, indent):
-        if p.required:
-            call_check_is_valid(p.cpp_name, p.cpp_name, w, indent)
-
     # begin
     w.write('Value ' + scope + 'ToJSON() const\n')
     indent = brace_begin(w)
 
     if is_pod(container):
         p = params[0]
-        check_required(p, w, indent)
+        if p.required:
+            call_check_is_valid(p.cpp_name, p.cpp_name, w, indent)
         w.write(indent + 'Value val;\n')
         pod_to_json(p.cpp_name, 'val', w, indent)
         w.write(indent + 'return val;\n')
@@ -474,7 +478,7 @@ def ToJSON_cpp(name, params, container, w, scope):
                 indent = brace_begin(w, indent)
 
             if p.required:
-                check_required(p, w, indent)
+                call_check_is_valid(p.cpp_name, p.cpp_name, w, indent)
             else:
                 w.write(indent + 'if (' + p.cpp_name + '.IsValid())\n')
                 indent = brace_begin(w, indent)
@@ -491,7 +495,8 @@ def ToJSON_cpp(name, params, container, w, scope):
     # request, response reference
     else:
         p = params[0]
-        check_required(p, w, indent)
+        if p.required:
+            call_check_is_valid(p.cpp_name, p.cpp_name, w, indent)
         w.write(indent + 'return ' + p.cpp_name + '.ToJSON();\n')
 
     brace_end(w, indent)
@@ -654,7 +659,7 @@ def PostLoad_cpp(name, params, sub_params, w, scope):
                 w.write(indent + 'iss >> boolalpha >> ' + param_name + ';\n')
             else:
                 w.write(indent + 'iss >> ' + param_name + ';\n')
-            w.write(indent + 'if (!iss.eof())\n')
+            w.write(indent + 'if (!iss.eof() || iss.fail())\n')
             indent = brace_begin(w, indent)
             w.write(
                 indent + 'throw CRPCException(RPC_PARSE_ERROR, "[' + p.key + '] type error, needs ' + p.type + '");\n')
@@ -897,7 +902,12 @@ def Help_cpp(config, w, scope):
 
     # parse error
     if config.error:
-        one_line(error, config.error, error_indent)
+        if isinstance(config.error, str):
+            one_line(error, config.error, error_indent)
+        elif isinstance(config.error, list):
+            for e in config.error:
+                one_line(error, e, error_indent)
+
 
     # function begin
     w.write('string ' + scope + 'Help() const\n')
@@ -1284,7 +1294,7 @@ def parse():
         elif type == 'command':
             desc = get_desc(cmd, detail)
             example = get_json_value(cmd, detail, 'example', required=False)
-            error = get_multiple_text(cmd, detail, 'error')
+            error = get_json_value(cmd, detail, 'error', required=False)
 
             # request
             request_content = get_json_value(cmd, detail, 'request', dict)

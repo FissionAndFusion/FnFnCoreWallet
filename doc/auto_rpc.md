@@ -97,7 +97,7 @@ CMvBasicConfig* CreateConfig(const std::string& cmd)
   + Two type struct can be defined in top level. `class` and `command`.
   + `class` is a cpp class for help organize cpp code. It's **key** is used reference by `command`
   + `command` is a particular RPC command. It's **key** is JSON-RPC **Method**
-  + fields:
+  + fields
     - **type** in `command` or `class`, required. Value is `class` or `command`.
     ```json
     // this is a class
@@ -172,7 +172,7 @@ CMvBasicConfig* CreateConfig(const std::string& cmd)
         }
     }
   ```
-  + fields:
+  + fields
     - **type**, required. Means [JSON-RPC params](https://www.jsonrpc.org/specification#request_object) type. Optional value is `object` or `array`, or a class key.
     - **content**, required. [see](#content)
 
@@ -201,7 +201,7 @@ CMvBasicConfig* CreateConfig(const std::string& cmd)
       "desc": "fork count"
   },
   ```
-  + fields:
+  + fields
     - **type**, required. Means [JSON-RPC result](https://www.jsonrpc.org/specification#response_object). Optional value [see](#type).
     - **name**, required. Showing on help.
     - **desc**, optional. Showing on help. [See](#desc)
@@ -220,6 +220,10 @@ If type value is other string, it means a reference of class:
         "type": "templaterequest"
     },
 ```
+##### rules
+1. `double` type revecie `double`, `int`, `uint` in it's precision range
+2. Data range is judged by the business level. RPC only is responsible for basic type range.
+
 #### desc
 Support *string* or *string array*, and *string array* will be joined by `\n`.
 ```json
@@ -259,7 +263,7 @@ If [**type**](#type) value is `array` or `object`, needs to set **content** to d
     }
 }
 ```
-##### rules:
+##### rules
 1. [**content**](#content) is a json object. It's element key is [**param**](#param) name, value is [**param**](#param) attributes.
 2. If [**type**](#content) is `array`, [**content**](#content) element number must be 1.
 3. [**content**](#content) could nest [**content**](#content), it depends on param's [**type**](#type).

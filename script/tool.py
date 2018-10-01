@@ -100,8 +100,6 @@ def split(s, indent = None, max_len = None):
             min_end = min(filter(lambda x: x >= 0, [blank, comma, colon]) + [len(s) - 1])
             end = min_end + 1
 
-            if s == '''multiverse-cli maketemplate multisig '{"required": 1, "pubkeys": ["2e05c9ee45fdf58f7b007458298042fc3d3ad416a2f9977ace16d14164a3e882", "f4124c636d37b1308ba95c14b2487134030d5817f7fa93f11bcbc616aab7c3b9"]}\'''':
-                print end, [blank, comma, colon], filter(lambda x: x >= 0, [blank, comma, colon]), min(filter(lambda x: x >= 0, [blank, comma, colon]) + [len(s) - 1])
         line = s[begin:end]
         if begin != 0:
             line = indent + line

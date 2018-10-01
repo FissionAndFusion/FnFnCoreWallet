@@ -17,27 +17,27 @@ static void CheckJSONType(const Value& value, const string& type, const string& 
 	bool b;
 	if (type == "int")
 	{
-		b = (value.type() == obj_type);
+		b = (value.type() == int_type);
 	}
 	else if (type == "uint")
 	{
-		b = (value.type() == obj_type);
+		b = ((value.type() == int_type) && (value.is_uint64() || value.get_int64() >= 0));
 	}
 	else if (type == "double")
 	{
-		b = (value.type() == obj_type);
+		b = ((value.type() == real_type) || (value.type() == int_type));
 	}
 	else if (type == "bool")
 	{
-		b = (value.type() == obj_type);
+		b = (value.type() == bool_type);
 	}
 	else if (type == "string")
 	{
-		b = (value.type() == obj_type);
+		b = (value.type() == str_type);
 	}
 	else if (type == "array")
 	{
-		b = (value.type() == obj_type);
+		b = (value.type() == array_type);
 	}
 	else if (type == "object")
 	{
@@ -920,8 +920,11 @@ CTransactionData& CTransactionData::FromJSON(const Value& v)
 	CheckJSONType(valFork, "string", "fork");
 	strFork = valFork.get_str();
 	auto valConfirmations = find_value(obj, "confirmations");
-	CheckJSONType(valConfirmations, "int", "confirmations");
-	nConfirmations = valConfirmations.get_int64();
+	if (!valConfirmations.is_null())
+	{
+		CheckJSONType(valConfirmations, "int", "confirmations");
+		nConfirmations = valConfirmations.get_int64();
+	}
 	return *this;
 }
 bool CTransactionData::IsValid() const
@@ -1010,11 +1013,17 @@ CWalletTxData& CWalletTxData::FromJSON(const Value& v)
 	CheckJSONType(valLockuntil, "uint", "lockuntil");
 	nLockuntil = valLockuntil.get_uint64();
 	auto valBlockheight = find_value(obj, "blockheight");
-	CheckJSONType(valBlockheight, "int", "blockheight");
-	nBlockheight = valBlockheight.get_int64();
+	if (!valBlockheight.is_null())
+	{
+		CheckJSONType(valBlockheight, "int", "blockheight");
+		nBlockheight = valBlockheight.get_int64();
+	}
 	auto valFrom = find_value(obj, "from");
-	CheckJSONType(valFrom, "string", "from");
-	strFrom = valFrom.get_str();
+	if (!valFrom.is_null())
+	{
+		CheckJSONType(valFrom, "string", "from");
+		strFrom = valFrom.get_str();
+	}
 	return *this;
 }
 bool CWalletTxData::IsValid() const
@@ -1104,8 +1113,11 @@ CBlockData& CBlockData::FromJSON(const Value& v)
 		vecTx.push_back(v.get_str());
 	}
 	auto valPrev = find_value(obj, "prev");
-	CheckJSONType(valPrev, "string", "prev");
-	strPrev = valPrev.get_str();
+	if (!valPrev.is_null())
+	{
+		CheckJSONType(valPrev, "string", "prev");
+		strPrev = valPrev.get_str();
+	}
 	return *this;
 }
 bool CBlockData::IsValid() const
@@ -1145,8 +1157,11 @@ CHelpParam& CHelpParam::FromJSON(const Value& v)
 	CheckJSONType(v, "object", "help");
 	auto obj = v.get_obj();
 	auto valCommand = find_value(obj, "command");
-	CheckJSONType(valCommand, "string", "command");
-	strCommand = valCommand.get_str();
+	if (!valCommand.is_null())
+	{
+		CheckJSONType(valCommand, "string", "command");
+		strCommand = valCommand.get_str();
+	}
 	return *this;
 }
 string CHelpParam::Method() const
@@ -1198,7 +1213,7 @@ bool CHelpConfig::PostLoad()
 	{
 		istringstream iss(*++it);
 		iss >> strCommand;
-		if (!iss.eof())
+		if (!iss.eof() || iss.fail())
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[command] type error, needs string");
 		}
@@ -1704,7 +1719,7 @@ bool CAddNodeConfig::PostLoad()
 	{
 		istringstream iss(*++it);
 		iss >> strNode;
-		if (!iss.eof())
+		if (!iss.eof() || iss.fail())
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[node] type error, needs string");
 		}
@@ -1746,8 +1761,7 @@ string CAddNodeConfig::Help() const
 	oss << "<< {\"id\":3,\"jsonrpc\":\"2.0\",\"result\":\"Add node successfully: 113.105.146.22:6811\"}\n";
 	oss << "\n";
 	oss << "Errors:\n";
-	oss << "* {\"code\":-206,\"message\":\"Failed to add node.\"}\n";
-	oss << "\n";
+	oss << "\tnone\n\n";
 	return oss.str();
 }
 
@@ -1826,7 +1840,7 @@ bool CRemoveNodeConfig::PostLoad()
 	{
 		istringstream iss(*++it);
 		iss >> strNode;
-		if (!iss.eof())
+		if (!iss.eof() || iss.fail())
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[node] type error, needs string");
 		}
@@ -1868,8 +1882,7 @@ string CRemoveNodeConfig::Help() const
 	oss << "<< {\"id\":67,\"jsonrpc\":\"2.0\",\"result\":\"Remove node successfully: 113.105.146.22:6811\"}\n";
 	oss << "\n";
 	oss << "Errors:\n";
-	oss << "* {\"code\":-206,\"message\":\"Failed to remove node.\"}\n";
-	oss << "\n";
+	oss << "\tnone\n\n";
 	return oss.str();
 }
 
@@ -1992,8 +2005,11 @@ CGetGenealogyParam& CGetGenealogyParam::FromJSON(const Value& v)
 	CheckJSONType(v, "object", "getgenealogy");
 	auto obj = v.get_obj();
 	auto valFork = find_value(obj, "fork");
-	CheckJSONType(valFork, "string", "fork");
-	strFork = valFork.get_str();
+	if (!valFork.is_null())
+	{
+		CheckJSONType(valFork, "string", "fork");
+		strFork = valFork.get_str();
+	}
 	return *this;
 }
 string CGetGenealogyParam::Method() const
@@ -2162,7 +2178,7 @@ bool CGetGenealogyConfig::PostLoad()
 		{
 			istringstream iss(*++it);
 			iss >> strFork;
-			if (!iss.eof())
+			if (!iss.eof() || iss.fail())
 			{
 				throw CRPCException(RPC_PARSE_ERROR, "[fork] type error, needs string");
 			}
@@ -2221,8 +2237,7 @@ string CGetGenealogyConfig::Help() const
 	oss << "<< {\"id\":1,\"jsonrpc\":\"2.0\",\"error\":{\"code\":-6,\"message\":\"Unknown fork\"}}\n";
 	oss << "\n";
 	oss << "Errors:\n";
-	oss << "* {\"code\":-6,\"message\":\"Unknown fork.\"}\n";
-	oss << "\n";
+	oss << "\tnone\n\n";
 	return oss.str();
 }
 
@@ -2310,7 +2325,7 @@ bool CGetBlockLocationConfig::PostLoad()
 	{
 		istringstream iss(*++it);
 		iss >> strBlock;
-		if (!iss.eof())
+		if (!iss.eof() || iss.fail())
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[block] type error, needs string");
 		}
@@ -2356,8 +2371,7 @@ string CGetBlockLocationConfig::Help() const
 	oss << "<< {\"id\":6,\"jsonrpc\":\"2.0\",\"result\":{\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\",\"height\":1}}\n";
 	oss << "\n";
 	oss << "Errors:\n";
-	oss << "* {\"code\":-6,\"message\":\"Unknown block.\"}\n";
-	oss << "\n";
+	oss << "\tnone\n\n";
 	return oss.str();
 }
 
@@ -2385,8 +2399,11 @@ CGetBlockCountParam& CGetBlockCountParam::FromJSON(const Value& v)
 	CheckJSONType(v, "object", "getblockcount");
 	auto obj = v.get_obj();
 	auto valFork = find_value(obj, "fork");
-	CheckJSONType(valFork, "string", "fork");
-	strFork = valFork.get_str();
+	if (!valFork.is_null())
+	{
+		CheckJSONType(valFork, "string", "fork");
+		strFork = valFork.get_str();
+	}
 	return *this;
 }
 string CGetBlockCountParam::Method() const
@@ -2450,7 +2467,7 @@ bool CGetBlockCountConfig::PostLoad()
 		{
 			istringstream iss(*++it);
 			iss >> strFork;
-			if (!iss.eof())
+			if (!iss.eof() || iss.fail())
 			{
 				throw CRPCException(RPC_PARSE_ERROR, "[fork] type error, needs string");
 			}
@@ -2526,8 +2543,11 @@ CGetBlockHashParam& CGetBlockHashParam::FromJSON(const Value& v)
 	CheckJSONType(valHeight, "int", "height");
 	nHeight = valHeight.get_int64();
 	auto valFork = find_value(obj, "fork");
-	CheckJSONType(valFork, "string", "fork");
-	strFork = valFork.get_str();
+	if (!valFork.is_null())
+	{
+		CheckJSONType(valFork, "string", "fork");
+		strFork = valFork.get_str();
+	}
 	return *this;
 }
 string CGetBlockHashParam::Method() const
@@ -2584,7 +2604,7 @@ bool CGetBlockHashConfig::PostLoad()
 	{
 		istringstream iss(*++it);
 		iss >> nHeight;
-		if (!iss.eof())
+		if (!iss.eof() || iss.fail())
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[height] type error, needs int");
 		}
@@ -2604,7 +2624,7 @@ bool CGetBlockHashConfig::PostLoad()
 		{
 			istringstream iss(*++it);
 			iss >> strFork;
-			if (!iss.eof())
+			if (!iss.eof() || iss.fail())
 			{
 				throw CRPCException(RPC_PARSE_ERROR, "[fork] type error, needs string");
 			}
@@ -2651,8 +2671,7 @@ string CGetBlockHashConfig::Help() const
 	oss << "<< 609a797ca28042d562b11355038c516d65ba30b91c7033d83c61b81aa8c538e3\n";
 	oss << "\n";
 	oss << "Errors:\n";
-	oss << "* {\"code\":-6,\"message\":\"Block number out of range.\"}\n";
-	oss << "\n";
+	oss << "\tnone\n\n";
 	return oss.str();
 }
 
@@ -2729,7 +2748,7 @@ bool CGetBlockConfig::PostLoad()
 	{
 		istringstream iss(*++it);
 		iss >> strBlock;
-		if (!iss.eof())
+		if (!iss.eof() || iss.fail())
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[block] type error, needs string");
 		}
@@ -2784,8 +2803,7 @@ string CGetBlockConfig::Help() const
 	oss << "<< {\"id\":10,\"jsonrpc\":\"2.0\",\"result\":{\"hash\":\"ca49b8d07ac2849c455a813dd967bb0b306b48406d787259f4ddb8f6a0e0cf4c\",\"version\":1,\"type\":\"primary-pow\",\"time\":1538138566,\"prev\":\"47b86e794e7ce0546def4fe3603d58d9cc9fc87eeee676bd15ae90e45ab51f8a\",\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\",\"height\":31296,\"txmint\":\"3d4ed629c594b924d72480e29a332ca91915be685c85940a8c501f8248269e29\",\"tx\":[]}}\n";
 	oss << "\n";
 	oss << "Errors:\n";
-	oss << "* {\"code\":-6,\"message\":\"Unknown block.\"}\n";
-	oss << "\n";
+	oss << "\tnone\n\n";
 	return oss.str();
 }
 
@@ -2817,11 +2835,17 @@ CGetTxPoolParam& CGetTxPoolParam::FromJSON(const Value& v)
 	CheckJSONType(v, "object", "gettxpool");
 	auto obj = v.get_obj();
 	auto valFork = find_value(obj, "fork");
-	CheckJSONType(valFork, "string", "fork");
-	strFork = valFork.get_str();
+	if (!valFork.is_null())
+	{
+		CheckJSONType(valFork, "string", "fork");
+		strFork = valFork.get_str();
+	}
 	auto valDetail = find_value(obj, "detail");
-	CheckJSONType(valDetail, "bool", "detail");
-	fDetail = valDetail.get_bool();
+	if (!valDetail.is_null())
+	{
+		CheckJSONType(valDetail, "bool", "detail");
+		fDetail = valDetail.get_bool();
+	}
 	return *this;
 }
 string CGetTxPoolParam::Method() const
@@ -2902,17 +2926,26 @@ CGetTxPoolResult& CGetTxPoolResult::FromJSON(const Value& v)
 	CheckJSONType(v, "object", "gettxpool");
 	auto obj = v.get_obj();
 	auto valCount = find_value(obj, "count");
-	CheckJSONType(valCount, "uint", "count");
-	nCount = valCount.get_uint64();
-	auto valSize = find_value(obj, "size");
-	CheckJSONType(valSize, "uint", "size");
-	nSize = valSize.get_uint64();
-	auto valList = find_value(obj, "list");
-	CheckJSONType(valList, "array", "list");
-	auto vecListArray = valList.get_array();
-	for (auto& v : vecListArray)
+	if (!valCount.is_null())
 	{
-		vecList.push_back(CRPCVector<CList>::value_type().FromJSON(v));
+		CheckJSONType(valCount, "uint", "count");
+		nCount = valCount.get_uint64();
+	}
+	auto valSize = find_value(obj, "size");
+	if (!valSize.is_null())
+	{
+		CheckJSONType(valSize, "uint", "size");
+		nSize = valSize.get_uint64();
+	}
+	auto valList = find_value(obj, "list");
+	if (!valList.is_null())
+	{
+		CheckJSONType(valList, "array", "list");
+		auto vecListArray = valList.get_array();
+		for (auto& v : vecListArray)
+		{
+			vecList.push_back(CRPCVector<CList>::value_type().FromJSON(v));
+		}
 	}
 	return *this;
 }
@@ -2954,7 +2987,7 @@ bool CGetTxPoolConfig::PostLoad()
 		{
 			istringstream iss(*++it);
 			iss >> strFork;
-			if (!iss.eof())
+			if (!iss.eof() || iss.fail())
 			{
 				throw CRPCException(RPC_PARSE_ERROR, "[fork] type error, needs string");
 			}
@@ -2971,7 +3004,7 @@ bool CGetTxPoolConfig::PostLoad()
 		{
 			istringstream iss(*++it);
 			iss >> boolalpha >> fDetail;
-			if (!iss.eof())
+			if (!iss.eof() || iss.fail())
 			{
 				throw CRPCException(RPC_PARSE_ERROR, "[detail] type error, needs bool");
 			}
@@ -3110,7 +3143,7 @@ bool CRemovePendingTxConfig::PostLoad()
 	{
 		istringstream iss(*++it);
 		iss >> strTxid;
-		if (!iss.eof())
+		if (!iss.eof() || iss.fail())
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[txid] type error, needs string");
 		}
@@ -3152,8 +3185,7 @@ string CRemovePendingTxConfig::Help() const
 	oss << "<< {\"id\":21,\"jsonrpc\":\"2.0\",\"result\":\"Remove tx successfully: 01a9f3bb967f24396293903c856e99896a514756a220266afa347a8b8c7f0038\"}\n";
 	oss << "\n";
 	oss << "Errors:\n";
-	oss << "* {\"code\":-6,\"message\":\"This transaction is not in tx pool.\"}\n";
-	oss << "\n";
+	oss << "\tnone\n\n";
 	return oss.str();
 }
 
@@ -3186,8 +3218,11 @@ CGetTransactionParam& CGetTransactionParam::FromJSON(const Value& v)
 	CheckJSONType(valTxid, "string", "txid");
 	strTxid = valTxid.get_str();
 	auto valSerialized = find_value(obj, "serialized");
-	CheckJSONType(valSerialized, "bool", "serialized");
-	fSerialized = valSerialized.get_bool();
+	if (!valSerialized.is_null())
+	{
+		CheckJSONType(valSerialized, "bool", "serialized");
+		fSerialized = valSerialized.get_bool();
+	}
 	return *this;
 }
 string CGetTransactionParam::Method() const
@@ -3220,11 +3255,17 @@ CGetTransactionResult& CGetTransactionResult::FromJSON(const Value& v)
 	CheckJSONType(v, "object", "gettransaction");
 	auto obj = v.get_obj();
 	auto valSerialization = find_value(obj, "serialization");
-	CheckJSONType(valSerialization, "string", "serialization");
-	strSerialization = valSerialization.get_str();
+	if (!valSerialization.is_null())
+	{
+		CheckJSONType(valSerialization, "string", "serialization");
+		strSerialization = valSerialization.get_str();
+	}
 	auto valTransaction = find_value(obj, "transaction");
-	CheckJSONType(valTransaction, "object", "transaction");
-	transaction.FromJSON(valTransaction.get_obj());
+	if (!valTransaction.is_null())
+	{
+		CheckJSONType(valTransaction, "object", "transaction");
+		transaction.FromJSON(valTransaction.get_obj());
+	}
 	return *this;
 }
 string CGetTransactionResult::Method() const
@@ -3257,7 +3298,7 @@ bool CGetTransactionConfig::PostLoad()
 	{
 		istringstream iss(*++it);
 		iss >> strTxid;
-		if (!iss.eof())
+		if (!iss.eof() || iss.fail())
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[txid] type error, needs string");
 		}
@@ -3277,7 +3318,7 @@ bool CGetTransactionConfig::PostLoad()
 		{
 			istringstream iss(*++it);
 			iss >> boolalpha >> fSerialized;
-			if (!iss.eof())
+			if (!iss.eof() || iss.fail())
 			{
 				throw CRPCException(RPC_PARSE_ERROR, "[serialized] type error, needs bool");
 			}
@@ -3359,8 +3400,7 @@ string CGetTransactionConfig::Help() const
 	oss << "<< {\"id\":14,\"method\":\"gettransaction\",\"jsonrpc\":\"2.0\",\"params\":{\"txid\":\"3d4ed629c594b924d72480e29a332ca91915be685c85940a8c501f8248269e29\",\"serialized\":true}}\n";
 	oss << "\n";
 	oss << "Errors:\n";
-	oss << "* {\"code\":-6,\"message\":\"No information available about transaction.\"}\n";
-	oss << "\n";
+	oss << "\tnone\n\n";
 	return oss.str();
 }
 
@@ -3439,7 +3479,7 @@ bool CSendTransactionConfig::PostLoad()
 	{
 		istringstream iss(*++it);
 		iss >> strTxdata;
-		if (!iss.eof())
+		if (!iss.eof() || iss.fail())
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[txdata] type error, needs string");
 		}
@@ -3481,8 +3521,8 @@ string CSendTransactionConfig::Help() const
 	oss << "<< {\"id\":9,\"jsonrpc\":\"2.0\",\"result\":\"0a1b944071970589aa524a6f4e40e0b50bab9a64feefc292867692bbf35442a6\"}\n";
 	oss << "\n";
 	oss << "Errors:\n";
-	oss << "* {\"code\":-8,\"message\":\"TX decode failed\"}\n"
-	       "  {\"code\":-10,\"message\":\"Tx rejected : xxx\"}\n";
+	oss << "* {\"code\":-8,\"message\":\"TX decode failed\"}\n";
+	oss << "* {\"code\":-10,\"message\":\"Tx rejected : xxx\"}\n";
 	oss << "\n";
 	return oss.str();
 }
@@ -3658,8 +3698,11 @@ CGetNewKeyParam& CGetNewKeyParam::FromJSON(const Value& v)
 	CheckJSONType(v, "object", "getnewkey");
 	auto obj = v.get_obj();
 	auto valPassphrase = find_value(obj, "passphrase");
-	CheckJSONType(valPassphrase, "string", "passphrase");
-	strPassphrase = valPassphrase.get_str();
+	if (!valPassphrase.is_null())
+	{
+		CheckJSONType(valPassphrase, "string", "passphrase");
+		strPassphrase = valPassphrase.get_str();
+	}
 	return *this;
 }
 string CGetNewKeyParam::Method() const
@@ -3711,7 +3754,7 @@ bool CGetNewKeyConfig::PostLoad()
 	{
 		istringstream iss(*++it);
 		iss >> strPassphrase;
-		if (!iss.eof())
+		if (!iss.eof() || iss.fail())
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[passphrase] type error, needs string");
 		}
@@ -3750,8 +3793,7 @@ string CGetNewKeyConfig::Help() const
 	oss << "<< {\"id\":7,\"jsonrpc\":\"2.0\",\"result\":\"f4124c636d37b1308ba95c14b2487134030d5817f7fa93f11bcbc616aab7c3b9\"}\n";
 	oss << "\n";
 	oss << "Errors:\n";
-	oss << "* {\"code\":-401,\"message\":\"Failed add new key.\"}\n";
-	oss << "\n";
+	oss << "\tnone\n\n";
 	return oss.str();
 }
 
@@ -3789,8 +3831,11 @@ CEncryptKeyParam& CEncryptKeyParam::FromJSON(const Value& v)
 	CheckJSONType(valPassphrase, "string", "passphrase");
 	strPassphrase = valPassphrase.get_str();
 	auto valOldpassphrase = find_value(obj, "oldpassphrase");
-	CheckJSONType(valOldpassphrase, "string", "oldpassphrase");
-	strOldpassphrase = valOldpassphrase.get_str();
+	if (!valOldpassphrase.is_null())
+	{
+		CheckJSONType(valOldpassphrase, "string", "oldpassphrase");
+		strOldpassphrase = valOldpassphrase.get_str();
+	}
 	return *this;
 }
 string CEncryptKeyParam::Method() const
@@ -3842,7 +3887,7 @@ bool CEncryptKeyConfig::PostLoad()
 	{
 		istringstream iss(*++it);
 		iss >> strPubkey;
-		if (!iss.eof())
+		if (!iss.eof() || iss.fail())
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[pubkey] type error, needs string");
 		}
@@ -3855,7 +3900,7 @@ bool CEncryptKeyConfig::PostLoad()
 	{
 		istringstream iss(*++it);
 		iss >> strPassphrase;
-		if (!iss.eof())
+		if (!iss.eof() || iss.fail())
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[passphrase] type error, needs string");
 		}
@@ -3868,7 +3913,7 @@ bool CEncryptKeyConfig::PostLoad()
 	{
 		istringstream iss(*++it);
 		iss >> strOldpassphrase;
-		if (!iss.eof())
+		if (!iss.eof() || iss.fail())
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[oldpassphrase] type error, needs string");
 		}
@@ -3911,8 +3956,8 @@ string CEncryptKeyConfig::Help() const
 	oss << "<< {\"id\":64,\"jsonrpc\":\"2.0\",\"result\":\"Encrypt key successfully: 2e05c9ee45fdf58f7b007458298042fc3d3ad416a2f9977ace16d14164a3e882\"}\n";
 	oss << "\n";
 	oss << "Errors:\n";
-	oss << "* {\"code\":-4,\"message\":\"Unknown key\"}\n"
-	       "  {\"code\":-406,\"message\":\"The passphrase entered was incorrect.\"}\n";
+	oss << "* {\"code\":-4,\"message\":\"Unknown key\"}\n";
+	oss << "* {\"code\":-406,\"message\":\"The passphrase entered was incorrect.\"}\n";
 	oss << "\n";
 	return oss.str();
 }
@@ -3992,7 +4037,7 @@ bool CLockKeyConfig::PostLoad()
 	{
 		istringstream iss(*++it);
 		iss >> strPubkey;
-		if (!iss.eof())
+		if (!iss.eof() || iss.fail())
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[pubkey] type error, needs string");
 		}
@@ -4036,8 +4081,8 @@ string CLockKeyConfig::Help() const
 	oss << "<< {\"id\":1,\"jsonrpc\":\"2.0\",\"result\":\"Lock key successfully: 2e05c9ee45fdf58f7b007458298042fc3d3ad416a2f9977ace16d14164a3e882\"}\n";
 	oss << "\n";
 	oss << "Errors:\n";
-	oss << "* {\"code\":-4,\"message\":\"Unknown key\"}\n"
-	       "  {\"code\":-401,\"message\":\"Failed to lock key\"}\n";
+	oss << "* {\"code\":-4,\"message\":\"Unknown key\"}\n";
+	oss << "* {\"code\":-401,\"message\":\"Failed to lock key\"}\n";
 	oss << "\n";
 	return oss.str();
 }
@@ -4076,8 +4121,11 @@ CUnlockKeyParam& CUnlockKeyParam::FromJSON(const Value& v)
 	CheckJSONType(valPassphrase, "string", "passphrase");
 	strPassphrase = valPassphrase.get_str();
 	auto valTimeout = find_value(obj, "timeout");
-	CheckJSONType(valTimeout, "int", "timeout");
-	nTimeout = valTimeout.get_int64();
+	if (!valTimeout.is_null())
+	{
+		CheckJSONType(valTimeout, "int", "timeout");
+		nTimeout = valTimeout.get_int64();
+	}
 	return *this;
 }
 string CUnlockKeyParam::Method() const
@@ -4134,7 +4182,7 @@ bool CUnlockKeyConfig::PostLoad()
 	{
 		istringstream iss(*++it);
 		iss >> strPubkey;
-		if (!iss.eof())
+		if (!iss.eof() || iss.fail())
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[pubkey] type error, needs string");
 		}
@@ -4147,7 +4195,7 @@ bool CUnlockKeyConfig::PostLoad()
 	{
 		istringstream iss(*++it);
 		iss >> strPassphrase;
-		if (!iss.eof())
+		if (!iss.eof() || iss.fail())
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[passphrase] type error, needs string");
 		}
@@ -4167,7 +4215,7 @@ bool CUnlockKeyConfig::PostLoad()
 		{
 			istringstream iss(*++it);
 			iss >> nTimeout;
-			if (!iss.eof())
+			if (!iss.eof() || iss.fail())
 			{
 				throw CRPCException(RPC_PARSE_ERROR, "[timeout] type error, needs int");
 			}
@@ -4215,9 +4263,9 @@ string CUnlockKeyConfig::Help() const
 	oss << "<< {\"id\":15,\"jsonrpc\":\"2.0\",\"result\":\"Unlock key successfully: f4124c636d37b1308ba95c14b2487134030d5817f7fa93f11bcbc616aab7c3b9\"}\n";
 	oss << "\n";
 	oss << "Errors:\n";
-	oss << "* {\"code\":-4,\"message\":\"Unknown key\"}\n"
-	       "  {\"code\":-409,\"message\":\"Key is already unlocked\"}\n"
-	       "  {\"code\":-406,\"message\":\"The passphrase entered was incorrect.\"}\n";
+	oss << "* {\"code\":-4,\"message\":\"Unknown key\"}\n";
+	oss << "* {\"code\":-409,\"message\":\"Key is already unlocked\"}\n";
+	oss << "* {\"code\":-406,\"message\":\"The passphrase entered was incorrect.\"}\n";
 	oss << "\n";
 	return oss.str();
 }
@@ -4251,8 +4299,11 @@ CImportPrivKeyParam& CImportPrivKeyParam::FromJSON(const Value& v)
 	CheckJSONType(valPrivkey, "string", "privkey");
 	strPrivkey = valPrivkey.get_str();
 	auto valPassphrase = find_value(obj, "passphrase");
-	CheckJSONType(valPassphrase, "string", "passphrase");
-	strPassphrase = valPassphrase.get_str();
+	if (!valPassphrase.is_null())
+	{
+		CheckJSONType(valPassphrase, "string", "passphrase");
+		strPassphrase = valPassphrase.get_str();
+	}
 	return *this;
 }
 string CImportPrivKeyParam::Method() const
@@ -4309,7 +4360,7 @@ bool CImportPrivKeyConfig::PostLoad()
 	{
 		istringstream iss(*++it);
 		iss >> strPrivkey;
-		if (!iss.eof())
+		if (!iss.eof() || iss.fail())
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[privkey] type error, needs string");
 		}
@@ -4329,7 +4380,7 @@ bool CImportPrivKeyConfig::PostLoad()
 		{
 			istringstream iss(*++it);
 			iss >> strPassphrase;
-			if (!iss.eof())
+			if (!iss.eof() || iss.fail())
 			{
 				throw CRPCException(RPC_PARSE_ERROR, "[passphrase] type error, needs string");
 			}
@@ -4371,10 +4422,10 @@ string CImportPrivKeyConfig::Help() const
 	oss << "<< {\"id\":9,\"jsonrpc\":\"2.0\",\"result\":\"d716e72ce58e649a57d54751a7707e325b522497da3a69ae8301a2cbec391c07\"}\n";
 	oss << "\n";
 	oss << "Errors:\n";
-	oss << "* {\"code\":-4,\"message\":\"Invalid private key\"}\n"
-	       "  {\"code\":-401,\"message\":\"Already have key\"}\n"
-	       "  {\"code\":-401,\"message\":\"Failed to add key\"}\n"
-	       "  {\"code\":-401,\"message\":\"Failed to sync wallet tx\"}\n";
+	oss << "* {\"code\":-4,\"message\":\"Invalid private key\"}\n";
+	oss << "* {\"code\":-401,\"message\":\"Already have key\"}\n";
+	oss << "* {\"code\":-401,\"message\":\"Failed to add key\"}\n";
+	oss << "* {\"code\":-401,\"message\":\"Failed to sync wallet tx\"}\n";
 	oss << "\n";
 	return oss.str();
 }
@@ -4454,7 +4505,7 @@ bool CImportKeyConfig::PostLoad()
 	{
 		istringstream iss(*++it);
 		iss >> strPubkey;
-		if (!iss.eof())
+		if (!iss.eof() || iss.fail())
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[pubkey] type error, needs string");
 		}
@@ -4496,10 +4547,10 @@ string CImportKeyConfig::Help() const
 	oss << "<< {\"id\":14,\"jsonrpc\":\"2.0\",\"result\":\"d716e72ce58e649a57d54751a7707e325b522497da3a69ae8301a2cbec391c07\"}\n";
 	oss << "\n";
 	oss << "Errors:\n";
-	oss << "* {\"code\":-32602,\"message\":\"Failed to verify serialized key\"}\n"
-	       "  {\"code\":-401,\"message\":\"Already have key\"}\n"
-	       "  {\"code\":-401,\"message\":\"Failed to add key\"}\n"
-	       "  {\"code\":-401,\"message\":\"Failed to sync wallet tx\"}\n";
+	oss << "* {\"code\":-32602,\"message\":\"Failed to verify serialized key\"}\n";
+	oss << "* {\"code\":-401,\"message\":\"Already have key\"}\n";
+	oss << "* {\"code\":-401,\"message\":\"Failed to add key\"}\n";
+	oss << "* {\"code\":-401,\"message\":\"Failed to sync wallet tx\"}\n";
 	oss << "\n";
 	return oss.str();
 }
@@ -4579,7 +4630,7 @@ bool CExportKeyConfig::PostLoad()
 	{
 		istringstream iss(*++it);
 		iss >> strPubkey;
-		if (!iss.eof())
+		if (!iss.eof() || iss.fail())
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[pubkey] type error, needs string");
 		}
@@ -4621,8 +4672,8 @@ string CExportKeyConfig::Help() const
 	oss << "<< {\"id\":10,\"jsonrpc\":\"2.0\",\"result\":\"071c39eccba20183ae693ada9724525b327e70a75147d5579a648ee52ce716d700000000346783653e9035de91d5ac79545e17911e5825b50d60a2e04ac8451aa83c4ae4f0ea063a5917b68256a3bd391966b30f5660e7d5d1777ae996a49f4f\"}\n";
 	oss << "\n";
 	oss << "Errors:\n";
-	oss << "* {\"code\":-4,\"message\":\"Unknown key\"}\n"
-	       "  {\"code\":-401,\"message\":\"Failed to export key\"}\n";
+	oss << "* {\"code\":-4,\"message\":\"Unknown key\"}\n";
+	oss << "* {\"code\":-401,\"message\":\"Failed to export key\"}\n";
 	oss << "\n";
 	return oss.str();
 }
@@ -4696,7 +4747,7 @@ bool CAddNewTemplateConfig::PostLoad()
 	{
 		istringstream iss(*++it);
 		iss >> data.strType;
-		if (!iss.eof())
+		if (!iss.eof() || iss.fail())
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[type] type error, needs string");
 		}
@@ -4876,13 +4927,13 @@ string CAddNewTemplateConfig::Help() const
 	oss << "<< {\"id\":1,\"jsonrpc\":\"2.0\",\"result\":\"20g0b87qxcd52ceh9zmpzx0hy46pjfzdnqbkh8f4tqs4y0r6sxyzyny25\"}\n";
 	oss << "\n";
 	oss << "Errors:\n";
-	oss << "* {\"code\":-6,\"message\":\"Invalid parameters,failed to make template\"}\n"
-	       "  {\"code\":-401,\"message\":\"Failed to add template\"}\n"
-	       "  {\"code\":-6,\"message\":\"Invalid parameter, missing weight\"}\n"
-	       "  {\"code\":-6,\"message\":\"Invalid parameter, missing redeem address\"}\n"
-	       "  {\"code\":-6,\"message\":\"Invalid parameter, missing spent address\"}\n"
-	       "  {\"code\":-6,\"message\":\"Invalid parameter, missing owner address\"}\n"
-	       "  {\"code\":-6,\"message\":\"template type error. type: xxx\"}\n";
+	oss << "* {\"code\":-6,\"message\":\"Invalid parameters,failed to make template\"}\n";
+	oss << "* {\"code\":-401,\"message\":\"Failed to add template\"}\n";
+	oss << "* {\"code\":-6,\"message\":\"Invalid parameter, missing weight\"}\n";
+	oss << "* {\"code\":-6,\"message\":\"Invalid parameter, missing redeem address\"}\n";
+	oss << "* {\"code\":-6,\"message\":\"Invalid parameter, missing spent address\"}\n";
+	oss << "* {\"code\":-6,\"message\":\"Invalid parameter, missing owner address\"}\n";
+	oss << "* {\"code\":-6,\"message\":\"template type error. type: xxx\"}\n";
 	oss << "\n";
 	return oss.str();
 }
@@ -4962,7 +5013,7 @@ bool CImportTemplateConfig::PostLoad()
 	{
 		istringstream iss(*++it);
 		iss >> strData;
-		if (!iss.eof())
+		if (!iss.eof() || iss.fail())
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[data] type error, needs string");
 		}
@@ -5004,9 +5055,9 @@ string CImportTemplateConfig::Help() const
 	oss << "<< {\"id\":52,\"jsonrpc\":\"2.0\",\"result\":\"21w2040000000000000000000000000000000000000000000000epcek\"}\n";
 	oss << "\n";
 	oss << "Errors:\n";
-	oss << "* {\"code\":-6,\"message\":\"Invalid parameters,failed to make template\"}\n"
-	       "  {\"code\":-401,\"message\":\"Failed to add template\"}\n"
-	       "  {\"code\":-401,\"message\":\"Failed to sync wallet tx\"}\n";
+	oss << "* {\"code\":-6,\"message\":\"Invalid parameters,failed to make template\"}\n";
+	oss << "* {\"code\":-401,\"message\":\"Failed to add template\"}\n";
+	oss << "* {\"code\":-401,\"message\":\"Failed to sync wallet tx\"}\n";
 	oss << "\n";
 	return oss.str();
 }
@@ -5086,7 +5137,7 @@ bool CExportTemplateConfig::PostLoad()
 	{
 		istringstream iss(*++it);
 		iss >> strAddress;
-		if (!iss.eof())
+		if (!iss.eof() || iss.fail())
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[address] type error, needs string");
 		}
@@ -5128,8 +5179,8 @@ string CExportTemplateConfig::Help() const
 	oss << "<< {\"id\":25,\"jsonrpc\":\"2.0\",\"result\":\"0100010282e8a36441d116ce7a97f9a216d43a3dfc4280295874007b8ff5fd45eec9052e01b9c3b7aa16c6cb1bf193faf717580d03347148b2145ca98b30b1376d634c12f402\"}\n";
 	oss << "\n";
 	oss << "Errors:\n";
-	oss << "* {\"code\":-6,\"message\":\"Invalid address, should be template address\"}\n"
-	       "  {\"code\":-401,\"message\":\"Unkown template\"}\n";
+	oss << "* {\"code\":-6,\"message\":\"Invalid address, should be template address\"}\n";
+	oss << "* {\"code\":-401,\"message\":\"Unkown template\"}\n";
 	oss << "\n";
 	return oss.str();
 }
@@ -5232,8 +5283,11 @@ CValidateAddressResult::CAddressdata& CValidateAddressResult::CAddressdata::From
 	if (fIsmine == true)
 	{
 		auto valTemplatedata = find_value(obj, "templatedata");
-		CheckJSONType(valTemplatedata, "object", "templatedata");
-		templatedata.FromJSON(valTemplatedata.get_obj());
+		if (!valTemplatedata.is_null())
+		{
+			CheckJSONType(valTemplatedata, "object", "templatedata");
+			templatedata.FromJSON(valTemplatedata.get_obj());
+		}
 	}
 	return *this;
 }
@@ -5312,7 +5366,7 @@ bool CValidateAddressConfig::PostLoad()
 	{
 		istringstream iss(*++it);
 		iss >> strAddress;
-		if (!iss.eof())
+		if (!iss.eof() || iss.fail())
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[address] type error, needs string");
 		}
@@ -5444,8 +5498,11 @@ CResyncWalletParam& CResyncWalletParam::FromJSON(const Value& v)
 	CheckJSONType(v, "object", "resyncwallet");
 	auto obj = v.get_obj();
 	auto valAddress = find_value(obj, "address");
-	CheckJSONType(valAddress, "string", "address");
-	strAddress = valAddress.get_str();
+	if (!valAddress.is_null())
+	{
+		CheckJSONType(valAddress, "string", "address");
+		strAddress = valAddress.get_str();
+	}
 	return *this;
 }
 string CResyncWalletParam::Method() const
@@ -5497,7 +5554,7 @@ bool CResyncWalletConfig::PostLoad()
 	{
 		istringstream iss(*++it);
 		iss >> strAddress;
-		if (!iss.eof())
+		if (!iss.eof() || iss.fail())
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[address] type error, needs string");
 		}
@@ -5537,8 +5594,8 @@ string CResyncWalletConfig::Help() const
 	oss << "\n>> multiverse-cli resyncwallet 1gbma6s21t4bcwymqz6h1dn1t7qy45019b1t00ywfyqymbvp90mqc1wmq\n";
 	oss << "\n";
 	oss << "Errors:\n";
-	oss << "* {\"code\":-6,\"message\":\"Invalid address\"}\n"
-	       "  {\"code\":-401,\"message\":\"Failed to resync wallet tx\"}\n";
+	oss << "* {\"code\":-6,\"message\":\"Invalid address\"}\n";
+	oss << "* {\"code\":-401,\"message\":\"Failed to resync wallet tx\"}\n";
 	oss << "\n";
 	return oss.str();
 }
@@ -5571,11 +5628,17 @@ CGetBalanceParam& CGetBalanceParam::FromJSON(const Value& v)
 	CheckJSONType(v, "object", "getbalance");
 	auto obj = v.get_obj();
 	auto valFork = find_value(obj, "fork");
-	CheckJSONType(valFork, "string", "fork");
-	strFork = valFork.get_str();
+	if (!valFork.is_null())
+	{
+		CheckJSONType(valFork, "string", "fork");
+		strFork = valFork.get_str();
+	}
 	auto valAddress = find_value(obj, "address");
-	CheckJSONType(valAddress, "string", "address");
-	strAddress = valAddress.get_str();
+	if (!valAddress.is_null())
+	{
+		CheckJSONType(valAddress, "string", "address");
+		strAddress = valAddress.get_str();
+	}
 	return *this;
 }
 string CGetBalanceParam::Method() const
@@ -5697,7 +5760,7 @@ bool CGetBalanceConfig::PostLoad()
 		{
 			istringstream iss(*++it);
 			iss >> strFork;
-			if (!iss.eof())
+			if (!iss.eof() || iss.fail())
 			{
 				throw CRPCException(RPC_PARSE_ERROR, "[fork] type error, needs string");
 			}
@@ -5714,7 +5777,7 @@ bool CGetBalanceConfig::PostLoad()
 		{
 			istringstream iss(*++it);
 			iss >> strAddress;
-			if (!iss.eof())
+			if (!iss.eof() || iss.fail())
 			{
 				throw CRPCException(RPC_PARSE_ERROR, "[address] type error, needs string");
 			}
@@ -5760,11 +5823,11 @@ string CGetBalanceConfig::Help() const
 	oss << "   ]\n";
 	oss << "\n";
 	oss << "Examples:\n";
-	oss << ">> getbalance\n";
+	oss << ">> multiverse-cli getbalance\n";
 	oss << "<< [{\"address\":\"20g098nza351f53wppg0kfnsbxqf80h3x8fwp9vdmc98fbrgbv6mtjagy\",\"avail\":30.00000000,\"locked\":0.00000000,\"unconfirmed\":0.00000000}]\n";
 	oss << "\n>> {\"id\":1,\"method\":\"getbalance\",\"jsonrpc\":\"2.0\",\"params\":{}}\n";
 	oss << "<< {\"id\":1,\"jsonrpc\":\"2.0\",\"result\":[{\"address\":\"20g098nza351f53wppg0kfnsbxqf80h3x8fwp9vdmc98fbrgbv6mtjagy\",\"avail\":30.00000000,\"locked\":0.00000000,\"unconfirmed\":0.00000000}]}\n";
-	oss << "\n>> getbalance -a=20g0944xkyk8ybcmzhpv86vb5777jn1sfrdf3svzqn9phxftqth8116bm\n";
+	oss << "\n>> multiverse-cli getbalance -a=20g0944xkyk8ybcmzhpv86vb5777jn1sfrdf3svzqn9phxftqth8116bm\n";
 	oss << "<< [{\"address\":\"20g0944xkyk8ybcmzhpv86vb5777jn1sfrdf3svzqn9phxftqth8116bm\",\"avail\":58.99990000,\"locked\":0.00000000,\"unconfirmed\":13.99990000}]\n";
 	oss << "\n>> {\"id\":20,\"method\":\"getbalance\",\"jsonrpc\":\"2.0\",\"params\":{\"address\":\"20g0944xkyk8ybcmzhpv86vb5777jn1sfrdf3svzqn9phxftqth8116bm\"}}\n";
 	oss << "<< {\"id\":20,\"jsonrpc\":\"2.0\",\"result\":[{\"address\":\"20g0944xkyk8ybcmzhpv86vb5777jn1sfrdf3svzqn9phxftqth8116bm\",\"avail\":58.99990000,\"locked\":0.00000000,\"unconfirmed\":13.99990000}]}\n";
@@ -5802,11 +5865,17 @@ CListTransactionParam& CListTransactionParam::FromJSON(const Value& v)
 	CheckJSONType(v, "object", "listtransaction");
 	auto obj = v.get_obj();
 	auto valCount = find_value(obj, "count");
-	CheckJSONType(valCount, "uint", "count");
-	nCount = valCount.get_uint64();
+	if (!valCount.is_null())
+	{
+		CheckJSONType(valCount, "uint", "count");
+		nCount = valCount.get_uint64();
+	}
 	auto valOffset = find_value(obj, "offset");
-	CheckJSONType(valOffset, "int", "offset");
-	nOffset = valOffset.get_int64();
+	if (!valOffset.is_null())
+	{
+		CheckJSONType(valOffset, "int", "offset");
+		nOffset = valOffset.get_int64();
+	}
 	return *this;
 }
 string CListTransactionParam::Method() const
@@ -5877,7 +5946,7 @@ bool CListTransactionConfig::PostLoad()
 		{
 			istringstream iss(*++it);
 			iss >> nCount;
-			if (!iss.eof())
+			if (!iss.eof() || iss.fail())
 			{
 				throw CRPCException(RPC_PARSE_ERROR, "[count] type error, needs uint");
 			}
@@ -5894,7 +5963,7 @@ bool CListTransactionConfig::PostLoad()
 		{
 			istringstream iss(*++it);
 			iss >> nOffset;
-			if (!iss.eof())
+			if (!iss.eof() || iss.fail())
 			{
 				throw CRPCException(RPC_PARSE_ERROR, "[offset] type error, needs int");
 			}
@@ -5948,19 +6017,19 @@ string CListTransactionConfig::Help() const
 	oss << "   ]\n";
 	oss << "\n";
 	oss << "Examples:\n";
-	oss << ">> listtransaction\n";
+	oss << ">> multiverse-cli listtransaction\n";
 	oss << "<< [{\"txid\":\"4a8e6035b575699cdb25d45beadd49f18fb1303f57ec55493139e65d811e74ff\",\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\",\"blockheight\":31296,\"type\":\"work\",\"send\":false,\"to\":\"20g098nza351f53wppg0kfnsbxqf80h3x8fwp9vdmc98fbrgbv6mtjagy\",\"amount\":15.00000000,\"fee\":0.00000000,\"lockuntil\":0},{\"txid\":\"0aa6954236382a6c1c46cce7fa3165b4d1718f5e03ca67cd5fe831616a9000da\",\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\",\"blockheight\":31297,\"type\":\"work\",\"send\":false,\"to\":\"20g098nza351f53wppg0kfnsbxqf80h3x8fwp9vdmc98fbrgbv6mtjagy\",\"amount\":15.00000000,\"fee\":0.00000000,\"lockuntil\":0}]\n";
 	oss << "\n>> {\"id\":2,\"method\":\"listtransaction\",\"jsonrpc\":\"2.0\",\"params\":{}}\n";
 	oss << "<< {\"id\":2,\"jsonrpc\":\"2.0\",\"result\":[{\"txid\":\"4a8e6035b575699cdb25d45beadd49f18fb1303f57ec55493139e65d811e74ff\",\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\",\"blockheight\":31296,\"type\":\"work\",\"send\":false,\"to\":\"20g098nza351f53wppg0kfnsbxqf80h3x8fwp9vdmc98fbrgbv6mtjagy\",\"amount\":15.00000000,\"fee\":0.00000000,\"lockuntil\":0},{\"txid\":\"0aa6954236382a6c1c46cce7fa3165b4d1718f5e03ca67cd5fe831616a9000da\",\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\",\"blockheight\":31297,\"type\":\"work\",\"send\":false,\"to\":\"20g098nza351f53wppg0kfnsbxqf80h3x8fwp9vdmc98fbrgbv6mtjagy\",\"amount\":15.00000000,\"fee\":0.00000000,\"lockuntil\":0}]}\n";
-	oss << "\n>> listtransaction 1 -1\n";
+	oss << "\n>> multiverse-cli listtransaction 1 -1\n";
 	oss << "<< [{\"txid\":\"5a1b7bf5e32a77ecb3c53782a8e06f2b12bdcb73b677d6f89b6f82f85f14373a\",\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\",\"blockheight\":32086,\"type\":\"work\",\"send\":false,\"to\":\"20g098nza351f53wppg0kfnsbxqf80h3x8fwp9vdmc98fbrgbv6mtjagy\",\"amount\":15.00000000,\"fee\":0.00000000,\"lockuntil\":0}]\n";
 	oss << "\n>> {\"id\":0,\"method\":\"listtransaction\",\"jsonrpc\":\"2.0\",\"params\":{\"count\":1,\"offset\":-1}}\n";
 	oss << "<< {\"id\":0,\"jsonrpc\":\"2.0\",\"result\":[{\"txid\":\"5a1b7bf5e32a77ecb3c53782a8e06f2b12bdcb73b677d6f89b6f82f85f14373a\",\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\",\"blockheight\":32086,\"type\":\"work\",\"send\":false,\"to\":\"20g098nza351f53wppg0kfnsbxqf80h3x8fwp9vdmc98fbrgbv6mtjagy\",\"amount\":15.00000000,\"fee\":0.00000000,\"lockuntil\":0}]}\n";
 	oss << "\n>> listtransaction -n=1 -o=-1\n";
 	oss << "\n";
 	oss << "Errors:\n";
-	oss << "* {\"code\":-6,\"message\":\"Negative, zero or out of range count\"}\n"
-	       "  {\"code\":-401,\"message\":\"Failed to list transactions\"}\n";
+	oss << "* {\"code\":-6,\"message\":\"Negative, zero or out of range count\"}\n";
+	oss << "* {\"code\":-401,\"message\":\"Failed to list transactions\"}\n";
 	oss << "\n";
 	return oss.str();
 }
@@ -6008,11 +6077,17 @@ CSendFromParam& CSendFromParam::FromJSON(const Value& v)
 	CheckJSONType(valAmount, "double", "amount");
 	fAmount = valAmount.get_real();
 	auto valTxfee = find_value(obj, "txfee");
-	CheckJSONType(valTxfee, "double", "txfee");
-	fTxfee = valTxfee.get_real();
+	if (!valTxfee.is_null())
+	{
+		CheckJSONType(valTxfee, "double", "txfee");
+		fTxfee = valTxfee.get_real();
+	}
 	auto valFork = find_value(obj, "fork");
-	CheckJSONType(valFork, "string", "fork");
-	strFork = valFork.get_str();
+	if (!valFork.is_null())
+	{
+		CheckJSONType(valFork, "string", "fork");
+		strFork = valFork.get_str();
+	}
 	return *this;
 }
 string CSendFromParam::Method() const
@@ -6069,7 +6144,7 @@ bool CSendFromConfig::PostLoad()
 	{
 		istringstream iss(*++it);
 		iss >> strFrom;
-		if (!iss.eof())
+		if (!iss.eof() || iss.fail())
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[from] type error, needs string");
 		}
@@ -6082,7 +6157,7 @@ bool CSendFromConfig::PostLoad()
 	{
 		istringstream iss(*++it);
 		iss >> strTo;
-		if (!iss.eof())
+		if (!iss.eof() || iss.fail())
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[to] type error, needs string");
 		}
@@ -6095,7 +6170,7 @@ bool CSendFromConfig::PostLoad()
 	{
 		istringstream iss(*++it);
 		iss >> fAmount;
-		if (!iss.eof())
+		if (!iss.eof() || iss.fail())
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[amount] type error, needs double");
 		}
@@ -6108,7 +6183,7 @@ bool CSendFromConfig::PostLoad()
 	{
 		istringstream iss(*++it);
 		iss >> fTxfee;
-		if (!iss.eof())
+		if (!iss.eof() || iss.fail())
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[txfee] type error, needs double");
 		}
@@ -6124,7 +6199,7 @@ bool CSendFromConfig::PostLoad()
 		{
 			istringstream iss(*++it);
 			iss >> strFork;
-			if (!iss.eof())
+			if (!iss.eof() || iss.fail())
 			{
 				throw CRPCException(RPC_PARSE_ERROR, "[fork] type error, needs string");
 			}
@@ -6176,11 +6251,11 @@ string CSendFromConfig::Help() const
 	oss << "<< {\"id\":53,\"jsonrpc\":\"2.0\",\"result\":\"8f92969642024234481e104481f36145736b465ead2d52a6657cf38bd52bdf59\"}\n";
 	oss << "\n";
 	oss << "Errors:\n";
-	oss << "* {\"code\":-6,\"message\":\"Invalid address\"}\n"
-	       "  {\"code\":-401,\"message\":\"Failed to create transaction\"}\n"
-	       "  {\"code\":-401,\"message\":\"Failed to sign transaction\"}\n"
-	       "  {\"code\":-401,\"message\":\"The signature is not completed\"}\n"
-	       "  {\"code\":-10,\"message\":\"Tx rejected : xxx\"}\n";
+	oss << "* {\"code\":-6,\"message\":\"Invalid address\"}\n";
+	oss << "* {\"code\":-401,\"message\":\"Failed to create transaction\"}\n";
+	oss << "* {\"code\":-401,\"message\":\"Failed to sign transaction\"}\n";
+	oss << "* {\"code\":-401,\"message\":\"The signature is not completed\"}\n";
+	oss << "* {\"code\":-10,\"message\":\"Tx rejected : xxx\"}\n";
 	oss << "\n";
 	return oss.str();
 }
@@ -6232,14 +6307,23 @@ CCreateTransactionParam& CCreateTransactionParam::FromJSON(const Value& v)
 	CheckJSONType(valAmount, "double", "amount");
 	fAmount = valAmount.get_real();
 	auto valTxfee = find_value(obj, "txfee");
-	CheckJSONType(valTxfee, "double", "txfee");
-	fTxfee = valTxfee.get_real();
+	if (!valTxfee.is_null())
+	{
+		CheckJSONType(valTxfee, "double", "txfee");
+		fTxfee = valTxfee.get_real();
+	}
 	auto valFork = find_value(obj, "fork");
-	CheckJSONType(valFork, "string", "fork");
-	strFork = valFork.get_str();
+	if (!valFork.is_null())
+	{
+		CheckJSONType(valFork, "string", "fork");
+		strFork = valFork.get_str();
+	}
 	auto valData = find_value(obj, "data");
-	CheckJSONType(valData, "string", "data");
-	strData = valData.get_str();
+	if (!valData.is_null())
+	{
+		CheckJSONType(valData, "string", "data");
+		strData = valData.get_str();
+	}
 	return *this;
 }
 string CCreateTransactionParam::Method() const
@@ -6297,7 +6381,7 @@ bool CCreateTransactionConfig::PostLoad()
 	{
 		istringstream iss(*++it);
 		iss >> strFrom;
-		if (!iss.eof())
+		if (!iss.eof() || iss.fail())
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[from] type error, needs string");
 		}
@@ -6310,7 +6394,7 @@ bool CCreateTransactionConfig::PostLoad()
 	{
 		istringstream iss(*++it);
 		iss >> strTo;
-		if (!iss.eof())
+		if (!iss.eof() || iss.fail())
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[to] type error, needs string");
 		}
@@ -6323,7 +6407,7 @@ bool CCreateTransactionConfig::PostLoad()
 	{
 		istringstream iss(*++it);
 		iss >> fAmount;
-		if (!iss.eof())
+		if (!iss.eof() || iss.fail())
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[amount] type error, needs double");
 		}
@@ -6336,7 +6420,7 @@ bool CCreateTransactionConfig::PostLoad()
 	{
 		istringstream iss(*++it);
 		iss >> fTxfee;
-		if (!iss.eof())
+		if (!iss.eof() || iss.fail())
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[txfee] type error, needs double");
 		}
@@ -6352,7 +6436,7 @@ bool CCreateTransactionConfig::PostLoad()
 		{
 			istringstream iss(*++it);
 			iss >> strFork;
-			if (!iss.eof())
+			if (!iss.eof() || iss.fail())
 			{
 				throw CRPCException(RPC_PARSE_ERROR, "[fork] type error, needs string");
 			}
@@ -6369,7 +6453,7 @@ bool CCreateTransactionConfig::PostLoad()
 		{
 			istringstream iss(*++it);
 			iss >> strData;
-			if (!iss.eof())
+			if (!iss.eof() || iss.fail())
 			{
 				throw CRPCException(RPC_PARSE_ERROR, "[data] type error, needs string");
 			}
@@ -6419,8 +6503,8 @@ string CCreateTransactionConfig::Help() const
 	oss << "<< {\"id\":59,\"jsonrpc\":\"2.0\",\"result\":\"01000000000000002b747e24738befccff4a05c21dba749632cb8eb410233fa110e3f58a779b4325010ef45be50157453a57519929052d0818c269dee60be98958d5ab65bc7e0919810001b9c3b7aa16c6cb1bf193faf717580d03347148b2145ca98b30b1376d634c12f440420f0000000000a08601000000000002123400\"}\n";
 	oss << "\n";
 	oss << "Errors:\n";
-	oss << "* {\"code\":-6,\"message\":\"Invalid address\"}\n"
-	       "  {\"code\":-401,\"message\":\"Failed to create transaction\"}\n";
+	oss << "* {\"code\":-6,\"message\":\"Invalid address\"}\n";
+	oss << "* {\"code\":-401,\"message\":\"Failed to create transaction\"}\n";
 	oss << "\n";
 	return oss.str();
 }
@@ -6509,7 +6593,7 @@ bool CSignTransactionConfig::PostLoad()
 	{
 		istringstream iss(*++it);
 		iss >> strTxdata;
-		if (!iss.eof())
+		if (!iss.eof() || iss.fail())
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[txdata] type error, needs string");
 		}
@@ -6557,8 +6641,8 @@ string CSignTransactionConfig::Help() const
 	oss << "<< {\"id\":62,\"jsonrpc\":\"2.0\",\"result\":{\"hex\":\"01000000000000002b747e24738befccff4a05c21dba749632cb8eb410233fa110e3f58a779b4325010ef45be50157453a57519929052d0818c269dee60be98958d5ab65bc7e0919810001b9c3b7aa16c6cb1bf193faf717580d03347148b2145ca98b30b1376d634c12f440420f0000000000a0860100000000000212348182e8a36441d116ce7a97f9a216d43a3dfc4280295874007b8ff5fd45eec9052e0182e8a36441d116ce7a97f9a216d43a3dfc4280295874007b8ff5fd45eec9052ed494d90cd96c252446b4a10459fea8c06186154b2bee2ce2182556e9ba40e7e69ddae2501862e4251bba2abf11c90d6f1fd0dec48a1419e81bb8c7d922cf3e03\",\"complete\":true}}\n";
 	oss << "\n";
 	oss << "Errors:\n";
-	oss << "* {\"code\":-8,\"message\":\"TX decode failed\"}\n"
-	       "  {\"code\":-401,\"message\":\"Failed to sign transaction\"}\n";
+	oss << "* {\"code\":-8,\"message\":\"TX decode failed\"}\n";
+	oss << "* {\"code\":-401,\"message\":\"Failed to sign transaction\"}\n";
 	oss << "\n";
 	return oss.str();
 }
@@ -6643,7 +6727,7 @@ bool CSignMessageConfig::PostLoad()
 	{
 		istringstream iss(*++it);
 		iss >> strPubkey;
-		if (!iss.eof())
+		if (!iss.eof() || iss.fail())
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[pubkey] type error, needs string");
 		}
@@ -6656,7 +6740,7 @@ bool CSignMessageConfig::PostLoad()
 	{
 		istringstream iss(*++it);
 		iss >> strMessage;
-		if (!iss.eof())
+		if (!iss.eof() || iss.fail())
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[message] type error, needs string");
 		}
@@ -6700,9 +6784,9 @@ string CSignMessageConfig::Help() const
 	oss << "<< {\"id\":4,\"jsonrpc\":\"2.0\",\"result\":\"045977f8c07e6d846d6055357f36a70c16c071cb85115e3ffb498e171a9ac3f4aed1292203a0c8e42c4becafad3ced0d9874abd2a8b788fda9f07099a1e71707\"}\n";
 	oss << "\n";
 	oss << "Errors:\n";
-	oss << "* {\"code\":-4,\"message\":\"Unknown key\"}\n"
-	       "  {\"code\":-405,\"message\":\"Key is locked\"}\n"
-	       "  {\"code\":-401,\"message\":\"Failed to sign message\"}\n";
+	oss << "* {\"code\":-4,\"message\":\"Unknown key\"}\n";
+	oss << "* {\"code\":-405,\"message\":\"Key is locked\"}\n";
+	oss << "* {\"code\":-401,\"message\":\"Failed to sign message\"}\n";
 	oss << "\n";
 	return oss.str();
 }
@@ -6786,8 +6870,11 @@ CListAddressResult::CAddressdata& CListAddressResult::CAddressdata::FromJSON(con
 	if (strType == "template")
 	{
 		auto valTemplatedata = find_value(obj, "templatedata");
-		CheckJSONType(valTemplatedata, "object", "templatedata");
-		templatedata.FromJSON(valTemplatedata.get_obj());
+		if (!valTemplatedata.is_null())
+		{
+			CheckJSONType(valTemplatedata, "object", "templatedata");
+			templatedata.FromJSON(valTemplatedata.get_obj());
+		}
 	}
 	return *this;
 }
@@ -7017,7 +7104,7 @@ bool CExportWalletConfig::PostLoad()
 	{
 		istringstream iss(*++it);
 		iss >> strPath;
-		if (!iss.eof())
+		if (!iss.eof() || iss.fail())
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[path] type error, needs string");
 		}
@@ -7059,11 +7146,11 @@ string CExportWalletConfig::Help() const
 	oss << "<< {\"id\":4,\"jsonrpc\":\"2.0\",\"result\":\"Wallet file has been saved at: /Users/Loading/a.txt\"}\n";
 	oss << "\n";
 	oss << "Errors:\n";
-	oss << "* {\"code\":-401,\"message\":\"Must be an absolute path.\"}\n"
-	       "  {\"code\":-401,\"message\":\"Cannot export to a folder.\"}\n"
-	       "  {\"code\":-401,\"message\":\"File has been existed.\"}\n"
-	       "  {\"code\":-401,\"message\":\"Failed to create directories.\"}\n"
-	       "  {\"code\":-401,\"message\":\"filesystem_error\"}\n";
+	oss << "* {\"code\":-401,\"message\":\"Must be an absolute path.\"}\n";
+	oss << "* {\"code\":-401,\"message\":\"Cannot export to a folder.\"}\n";
+	oss << "* {\"code\":-401,\"message\":\"File has been existed.\"}\n";
+	oss << "* {\"code\":-401,\"message\":\"Failed to create directories.\"}\n";
+	oss << "* {\"code\":-401,\"message\":\"filesystem_error\"}\n";
 	oss << "\n";
 	return oss.str();
 }
@@ -7143,7 +7230,7 @@ bool CImportWalletConfig::PostLoad()
 	{
 		istringstream iss(*++it);
 		iss >> strPath;
-		if (!iss.eof())
+		if (!iss.eof() || iss.fail())
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[path] type error, needs string");
 		}
@@ -7185,15 +7272,15 @@ string CImportWalletConfig::Help() const
 	oss << "<< {\"id\":5,\"jsonrpc\":\"2.0\",\"result\":\"Imported 0 keys and 0 templates.\"}\n";
 	oss << "\n";
 	oss << "Errors:\n";
-	oss << "* {\"code\":-401,\"message\":\"Must be an absolute path.\"}\n"
-	       "  {\"code\":-401,\"message\":\"File name is invalid.\"}\n"
-	       "  {\"code\":-401,\"message\":\"Filesystem_error - failed to read.\"}\n"
-	       "  {\"code\":-401,\"message\":\"Data format is not correct, check it and try again.\"}\n"
-	       "  {\"code\":-401,\"message\":\"Failed to verify serialized key\"}\n"
-	       "  {\"code\":-401,\"message\":\"Failed to add key\"}\n"
-	       "  {\"code\":-401,\"message\":\"Failed to sync wallet tx\"}\n"
-	       "  {\"code\":-401,\"message\":\"Invalid parameters,failed to make template\"}\n"
-	       "  {\"code\":-401,\"message\":\"Failed to add template\"}\n";
+	oss << "* {\"code\":-401,\"message\":\"Must be an absolute path.\"}\n";
+	oss << "* {\"code\":-401,\"message\":\"File name is invalid.\"}\n";
+	oss << "* {\"code\":-401,\"message\":\"Filesystem_error - failed to read.\"}\n";
+	oss << "* {\"code\":-401,\"message\":\"Data format is not correct, check it and try again.\"}\n";
+	oss << "* {\"code\":-401,\"message\":\"Failed to verify serialized key\"}\n";
+	oss << "* {\"code\":-401,\"message\":\"Failed to add key\"}\n";
+	oss << "* {\"code\":-401,\"message\":\"Failed to sync wallet tx\"}\n";
+	oss << "* {\"code\":-401,\"message\":\"Invalid parameters,failed to make template\"}\n";
+	oss << "* {\"code\":-401,\"message\":\"Failed to add template\"}\n";
 	oss << "\n";
 	return oss.str();
 }
@@ -7283,7 +7370,7 @@ bool CVerifyMessageConfig::PostLoad()
 	{
 		istringstream iss(*++it);
 		iss >> strPubkey;
-		if (!iss.eof())
+		if (!iss.eof() || iss.fail())
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[pubkey] type error, needs string");
 		}
@@ -7296,7 +7383,7 @@ bool CVerifyMessageConfig::PostLoad()
 	{
 		istringstream iss(*++it);
 		iss >> strMessage;
-		if (!iss.eof())
+		if (!iss.eof() || iss.fail())
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[message] type error, needs string");
 		}
@@ -7309,7 +7396,7 @@ bool CVerifyMessageConfig::PostLoad()
 	{
 		istringstream iss(*++it);
 		iss >> strSig;
-		if (!iss.eof())
+		if (!iss.eof() || iss.fail())
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[sig] type error, needs string");
 		}
@@ -7546,7 +7633,7 @@ bool CGetPubkeyAddressConfig::PostLoad()
 	{
 		istringstream iss(*++it);
 		iss >> strPubkey;
-		if (!iss.eof())
+		if (!iss.eof() || iss.fail())
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[pubkey] type error, needs string");
 		}
@@ -7667,7 +7754,7 @@ bool CGetTemplateAddressConfig::PostLoad()
 	{
 		istringstream iss(*++it);
 		iss >> strTid;
-		if (!iss.eof())
+		if (!iss.eof() || iss.fail())
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[tid] type error, needs string");
 		}
@@ -7791,7 +7878,7 @@ bool CMakeTemplateConfig::PostLoad()
 	{
 		istringstream iss(*++it);
 		iss >> data.strType;
-		if (!iss.eof())
+		if (!iss.eof() || iss.fail())
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[type] type error, needs string");
 		}
@@ -7975,12 +8062,12 @@ string CMakeTemplateConfig::Help() const
 	oss << "<< {\"id\":54,\"jsonrpc\":\"2.0\",\"result\":{\"address\":\"208043ht3c51qztrdfa0f3349pe2m8ajjw1mdb2py68fbckaa2s24tq55\",\"hex\":\"0200010282e8a36441d116ce7a97f9a216d43a3dfc4280295874007b8ff5fd45eec9052eb9c3b7aa16c6cb1bf193faf717580d03347148b2145ca98b30b1376d634c12f4\"}}\n";
 	oss << "\n";
 	oss << "Errors:\n";
-	oss << "* {\"code\":-6,\"message\":\"Invalid parameters,failed to make template\"}\n"
-	       "  {\"code\":-6,\"message\":\"Invalid parameter, missing weight\"}\n"
-	       "  {\"code\":-6,\"message\":\"Invalid parameter, missing redeem address\"}\n"
-	       "  {\"code\":-6,\"message\":\"Invalid parameter, missing spent address\"}\n"
-	       "  {\"code\":-6,\"message\":\"Invalid parameter, missing owner address\"}\n"
-	       "  {\"code\":-6,\"message\":\"template type error. type: xxx\"}\n";
+	oss << "* {\"code\":-6,\"message\":\"Invalid parameters,failed to make template\"}\n";
+	oss << "* {\"code\":-6,\"message\":\"Invalid parameter, missing weight\"}\n";
+	oss << "* {\"code\":-6,\"message\":\"Invalid parameter, missing redeem address\"}\n";
+	oss << "* {\"code\":-6,\"message\":\"Invalid parameter, missing spent address\"}\n";
+	oss << "* {\"code\":-6,\"message\":\"Invalid parameter, missing owner address\"}\n";
+	oss << "* {\"code\":-6,\"message\":\"template type error. type: xxx\"}\n";
 	oss << "\n";
 	return oss.str();
 }
@@ -8058,7 +8145,7 @@ bool CDecodeTransactionConfig::PostLoad()
 	{
 		istringstream iss(*++it);
 		iss >> strTxdata;
-		if (!iss.eof())
+		if (!iss.eof() || iss.fail())
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[txdata] type error, needs string");
 		}
@@ -8121,8 +8208,8 @@ string CDecodeTransactionConfig::Help() const
 	oss << "<< {\"id\":1,\"jsonrpc\":\"2.0\",\"result\":{\"txid\":\"b492ea1de2d540288f6e45fd21bc4ac2cd2fcfeb63ec43c50acdb69debfad10a\",\"version\":1,\"type\":\"token\",\"lockuntil\":0,\"anchor\":\"25439b778af5e310a13f2310b48ecb329674ba1dc2054affccef8b73247e742b\",\"vin\":[{\"txid\":\"8119097ebc65abd55889e90be6de69c218082d05299951573a455701e55bf40e\",\"vout\":0}],\"sendto\":\"1q71vfagprv5hqwckzbvhep0d0ct72j5j2heak2sgp4vptrtc2btdje3q\",\"amount\":1.00000000,\"txfee\":0.10000000,\"data\":\"1234\",\"sig\":\"\",\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\"}}\n";
 	oss << "\n";
 	oss << "Errors:\n";
-	oss << "* {\"code\":-8,\"message\":\"TX decode failed\"}\n"
-	       "  {\"code\":-6,\"message\":\"Unknown anchor block\"}\n";
+	oss << "* {\"code\":-8,\"message\":\"TX decode failed\"}\n";
+	oss << "* {\"code\":-6,\"message\":\"Unknown anchor block\"}\n";
 	oss << "\n";
 	return oss.str();
 }
@@ -8226,7 +8313,7 @@ bool CMakeOriginConfig::PostLoad()
 	{
 		istringstream iss(*++it);
 		iss >> strPrev;
-		if (!iss.eof())
+		if (!iss.eof() || iss.fail())
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[prev] type error, needs string");
 		}
@@ -8239,7 +8326,7 @@ bool CMakeOriginConfig::PostLoad()
 	{
 		istringstream iss(*++it);
 		iss >> strAddress;
-		if (!iss.eof())
+		if (!iss.eof() || iss.fail())
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[address] type error, needs string");
 		}
@@ -8252,7 +8339,7 @@ bool CMakeOriginConfig::PostLoad()
 	{
 		istringstream iss(*++it);
 		iss >> fAmount;
-		if (!iss.eof())
+		if (!iss.eof() || iss.fail())
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[amount] type error, needs double");
 		}
@@ -8265,7 +8352,7 @@ bool CMakeOriginConfig::PostLoad()
 	{
 		istringstream iss(*++it);
 		iss >> strIdent;
-		if (!iss.eof())
+		if (!iss.eof() || iss.fail())
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[ident] type error, needs string");
 		}
@@ -8311,10 +8398,14 @@ string CMakeOriginConfig::Help() const
 	oss << " }\n";
 	oss << "\n";
 	oss << "Examples:\n";
-	oss << "\tnone\n\n";
+	oss << ">> multiverse-cli makeorigin a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0 1gbma6s21t4bcwymqz6h1dn1t7qy45019b1t00ywfyqymbvp90mqc1wmq 1 POW\n";
+	oss << "<< {\"hash\":\"c80cad6f2e8c0b0cee5182fcb70e0da40149b5740223ea17814d70bf8740fdab\",\"hex\":\"010000ffc06f585ac0afdc176980a0a1ebe849d09b51e4b4c1dd46fb939579d71bdc55809d6f3da6000000000000000000000000000000000000000000000000000000000000000003504f5701000001000000000000000000000000000000000000000000000000000000000000000000000000000182e8a36441d116ce7a97f9a216d43a3dfc4280295874007b8ff5fd45eec9052e40420f0000000000000000000000000000000000\"}\n";
+	oss << "\n>> {\"id\":7,\"method\":\"makeorigin\",\"jsonrpc\":\"2.0\",\"params\":{\"prev\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\",\"address\":\"1gbma6s21t4bcwymqz6h1dn1t7qy45019b1t00ywfyqymbvp90mqc1wmq\",\"amount\":1,\"ident\":\"POW\"}}\n";
+	oss << "<< {\"id\":7,\"jsonrpc\":\"2.0\",\"result\":{\"hash\":\"c80cad6f2e8c0b0cee5182fcb70e0da40149b5740223ea17814d70bf8740fdab\",\"hex\":\"010000ffc06f585ac0afdc176980a0a1ebe849d09b51e4b4c1dd46fb939579d71bdc55809d6f3da6000000000000000000000000000000000000000000000000000000000000000003504f5701000001000000000000000000000000000000000000000000000000000000000000000000000000000182e8a36441d116ce7a97f9a216d43a3dfc4280295874007b8ff5fd45eec9052e40420f0000000000000000000000000000000000\"}}\n";
+	oss << "\n";
 	oss << "Errors:\n";
-	oss << "* {\"code\":-8,\"message\":\"TX decode failed\"}\n"
-	       "  {\"code\":-6,\"message\":\"Unknown anchor block\"}\n";
+	oss << "* {\"code\":-8,\"message\":\"TX decode failed\"}\n";
+	oss << "* {\"code\":-6,\"message\":\"Unknown anchor block\"}\n";
 	oss << "\n";
 	return oss.str();
 }
@@ -8343,8 +8434,11 @@ CGetWorkParam& CGetWorkParam::FromJSON(const Value& v)
 	CheckJSONType(v, "object", "getwork");
 	auto obj = v.get_obj();
 	auto valPrev = find_value(obj, "prev");
-	CheckJSONType(valPrev, "string", "prev");
-	strPrev = valPrev.get_str();
+	if (!valPrev.is_null())
+	{
+		CheckJSONType(valPrev, "string", "prev");
+		strPrev = valPrev.get_str();
+	}
 	return *this;
 }
 string CGetWorkParam::Method() const
@@ -8434,11 +8528,17 @@ CGetWorkResult& CGetWorkResult::FromJSON(const Value& v)
 	CheckJSONType(v, "object", "getwork");
 	auto obj = v.get_obj();
 	auto valResult = find_value(obj, "result");
-	CheckJSONType(valResult, "bool", "result");
-	fResult = valResult.get_bool();
+	if (!valResult.is_null())
+	{
+		CheckJSONType(valResult, "bool", "result");
+		fResult = valResult.get_bool();
+	}
 	auto valWork = find_value(obj, "work");
-	CheckJSONType(valWork, "object", "work");
-	work.FromJSON(valWork.get_obj());
+	if (!valWork.is_null())
+	{
+		CheckJSONType(valWork, "object", "work");
+		work.FromJSON(valWork.get_obj());
+	}
 	return *this;
 }
 string CGetWorkResult::Method() const
@@ -8466,7 +8566,7 @@ bool CGetWorkConfig::PostLoad()
 	{
 		istringstream iss(*++it);
 		iss >> strPrev;
-		if (!iss.eof())
+		if (!iss.eof() || iss.fail())
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[prev] type error, needs string");
 		}
@@ -8518,7 +8618,7 @@ string CGetWorkConfig::Help() const
 	oss << " }\n";
 	oss << "\n";
 	oss << "Examples:\n";
-	oss << ">> getwork 7ee748e9a827d476d1b4ddb77dc8f9bad779f7b71593d5c5bf73b535e1cc2446\n";
+	oss << ">> multiverse-cli getwork 7ee748e9a827d476d1b4ddb77dc8f9bad779f7b71593d5c5bf73b535e1cc2446\n";
 	oss << "<< {\"work\":{\"prevblockhash\":\"f734bb6bc12ab4058532113cfe6a3412d1036eae25f60a97ee1b17effc6e74de\",\"prevblocktime\":1538142032,\"algo\":1,\"bits\":25,\"data\":\"01000100822fae5bde746efcef171bee970af625ae6e03d112346afe3c11328505b42ac16bbb34f74300000000000000000000000000000000000000000000000000000000000000000001190000000000000000000000000000000000000000000000000000000000000000\"}}\n";
 	oss << "\n>> {\"id\":1,\"method\":\"getwork\",\"jsonrpc\":\"2.0\",\"params\":{\"prev\":\"7ee748e9a827d476d1b4ddb77dc8f9bad779f7b71593d5c5bf73b535e1cc2446\"}}\n";
 	oss << "<< {\"id\":1,\"jsonrpc\":\"2.0\",\"result\":{\"work\":{\"prevblockhash\":\"f734bb6bc12ab4058532113cfe6a3412d1036eae25f60a97ee1b17effc6e74de\",\"prevblocktime\":1538142032,\"algo\":1,\"bits\":25,\"data\":\"01000100822fae5bde746efcef171bee970af625ae6e03d112346afe3c11328505b42ac16bbb34f74300000000000000000000000000000000000000000000000000000000000000000001190000000000000000000000000000000000000000000000000000000000000000\"}}}\n";
@@ -8613,7 +8713,7 @@ bool CSubmitWorkConfig::PostLoad()
 	{
 		istringstream iss(*++it);
 		iss >> strData;
-		if (!iss.eof())
+		if (!iss.eof() || iss.fail())
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[data] type error, needs string");
 		}
@@ -8626,7 +8726,7 @@ bool CSubmitWorkConfig::PostLoad()
 	{
 		istringstream iss(*++it);
 		iss >> strSpent;
-		if (!iss.eof())
+		if (!iss.eof() || iss.fail())
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[spent] type error, needs string");
 		}
@@ -8639,7 +8739,7 @@ bool CSubmitWorkConfig::PostLoad()
 	{
 		istringstream iss(*++it);
 		iss >> strPrivkey;
-		if (!iss.eof())
+		if (!iss.eof() || iss.fail())
 		{
 			throw CRPCException(RPC_PARSE_ERROR, "[privkey] type error, needs string");
 		}
@@ -8682,7 +8782,7 @@ string CSubmitWorkConfig::Help() const
 	oss << "Examples:\n";
 	oss << ">> {\"id\":2,\"method\":\"submitwork\",\"jsonrpc\":\"2.0\",\"params\":{\"data\":\"01000100502fae5b4624cce135b573bfc5d59315b7f779d7baf9c87db7ddb4d176d427a8e948e77e43000000000000000000000000000000000000000000000000000000000000000000011acfff020000000000000000000000000000000000000000000000000000000000\",\"spent\":\"1dj5qcjst7eh4tems36n1m500hhyba3vx436t4a8hgdm7r7jrdbf2yqp9\",\"privkey\":\"41a9f94395ced97d5066e2d099df4f1e2bd96057f9c38e8ea3f8a02eccd0a98e\"}}\n";
 	oss << "<< {\"id\":2,\"jsonrpc\":\"2.0\",\"result\":\"f734bb6bc12ab4058532113cfe6a3412d1036eae25f60a97ee1b17effc6e74de\"}\n";
-	oss << "\n>> submitwork 01000100502fae5b4624cce135b573bfc5d59315b7f779d7baf9c87db7ddb4d176d427a8e948e77e43000000000000000000000000000000000000000000000000000000000000000000011acfff020000000000000000000000000000000000000000000000000000000000 1dj5qcjst7eh4tems36n1m500hhyba3vx436t4a8hgdm7r7jrdbf2yqp9 41a9f94395ced97d5066e2d099df4f1e2bd96057f9c38e8ea3f8a02eccd0a98e\n";
+	oss << "\n>> multiverse-cli submitwork 01000100502fae5b4624cce135b573bfc5d59315b7f779d7baf9c87db7ddb4d176d427a8e948e77e43000000000000000000000000000000000000000000000000000000000000000000011acfff020000000000000000000000000000000000000000000000000000000000 1dj5qcjst7eh4tems36n1m500hhyba3vx436t4a8hgdm7r7jrdbf2yqp9 41a9f94395ced97d5066e2d099df4f1e2bd96057f9c38e8ea3f8a02eccd0a98e\n";
 	oss << "<< f734bb6bc12ab4058532113cfe6a3412d1036eae25f60a97ee1b17effc6e74de\n";
 	oss << "\n";
 	oss << "Errors:\n";
