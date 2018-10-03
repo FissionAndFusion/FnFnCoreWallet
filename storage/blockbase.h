@@ -8,6 +8,7 @@
 #include "timeseries.h"
 #include "blockdb.h"
 #include "block.h"
+#include "profile.h"
 #include "walleve/walleve.h"
 
 #include <map>
@@ -24,14 +25,15 @@ class CBlockBase;
 class CBlockFork
 {
 public:
-    CBlockFork(CBlockIndex* pIndexLastIn=NULL) 
-    : pIndexLast(pIndexLastIn),spAccess(new walleve::CWalleveRWAccess())
+    CBlockFork(const CProfile& profileIn=CProfile(),CBlockIndex* pIndexLastIn=NULL) 
+    : forkProfile(profileIn),pIndexLast(pIndexLastIn),spAccess(new walleve::CWalleveRWAccess())
     {
     }
     void ReadLock() { spAccess->ReadLock(); }
     void WriteLock() { spAccess->WriteLock(); }
     void ReadUnlock() { spAccess->ReadUnlock(); }
     void WriteUnlock() { spAccess->WriteUnlock(); }
+    const CProfile& GetProfile() const { return forkProfile; }
     CBlockIndex* GetLast() const { return pIndexLast; }
     CBlockIndex* GetOrigin() const { return pIndexLast->pOrigin; }
     void UpdateLast(CBlockIndex* pIndexLastIn) { pIndexLast = pIndexLastIn; UpdateNext(); }
@@ -39,11 +41,11 @@ public:
     {
         if (pIndexLast != NULL)
         {
-            CBlockIndex *pIndexNext = pIndexLast;
+            CBlockIndex* pIndexNext = pIndexLast;
             pIndexLast->pNext = NULL;
             while (!pIndexNext->IsOrigin() && pIndexNext->pPrev->pNext != pIndexNext)
             {
-                CBlockIndex *pIndex = pIndexNext->pPrev;
+                CBlockIndex* pIndex = pIndexNext->pPrev;
                 if (pIndex->pNext != NULL)
                 {
                     CBlockIndex* p = pIndex->pNext;
@@ -96,6 +98,7 @@ public:
         return (pIndex->pNext != NULL || p == pIndex);
     }
 protected:
+    CProfile forkProfile;
     CBlockIndex* pIndexLast;
     boost::shared_ptr<walleve::CWalleveRWAccess> spAccess;
     std::map<uint256,CBlockIndex*> mapAncestry;
@@ -164,6 +167,7 @@ public:
     bool Retrieve(const CBlockIndex* pIndex,CBlockEx& block);
     bool RetrieveIndex(const uint256& hash,CBlockIndex** ppIndex);
     bool RetrieveFork(const uint256& hash,CBlockIndex** ppIndex);
+    bool RetrieveProfile(const uint256& hash,CProfile& profile);
     bool RetrieveTx(const uint256& txid,CTransaction& tx);
     bool RetrieveTxLocation(const uint256& txid,uint256& hashFork,int& nHeight);
     bool RetrieveDelegate(const uint256& hash,int64 nMinAmount,std::map<CDestination,int64>& mapDelegate);
@@ -185,7 +189,8 @@ protected:
     CBlockIndex* GetBranch(CBlockIndex* pIndexRef,CBlockIndex* pIndex,std::vector<CBlockIndex*>& vPath);
     CBlockIndex* GetOriginIndex(const uint256& txidMint) const;
     CBlockIndex* AddNewIndex(const uint256& hash,CBlock& block,uint32 nFile,uint32 nOffset);
-    CBlockFork* AddNewFork(CBlockIndex* pIndexLast);
+    CBlockFork* AddNewFork(const CProfile& profileIn,CBlockIndex* pIndexLast);
+    bool LoadForkProfile(const CBlockIndex* pIndexOrigin,CProfile& profile);
     bool UpdateDelegate(const uint256& hash,CBlockEx& block);
     bool UpdateEnroll(CBlockIndex* pIndexNew,std::vector<std::pair<uint256,CTxIndex> >& vTxNew);
     bool GetTxUnspent(const uint256 fork,const CTxOutPoint& out,CTxOutput& unspent);

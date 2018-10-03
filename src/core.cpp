@@ -171,6 +171,11 @@ MvErr CMvCoreProtocol::ValidateBlock(const CBlock& block)
         return DEBUG(MV_ERR_BLOCK_OVERSIZE,"size overflow size=%u vtx=%u\n",nBlockSize,block.vtx.size());
     }
 
+    if (block.nType == CBlock::BLOCK_ORIGIN && !block.vtx.empty())
+    {
+        return DEBUG(MV_ERR_BLOCK_TRANSACTIONS_INVALID,"origin block vtx is not empty\n");
+    }
+
     vector<uint256> vMerkleTree;
     if (block.hashMerkle != block.BuildMerkleTree(vMerkleTree))
     {
@@ -195,6 +200,26 @@ MvErr CMvCoreProtocol::ValidateBlock(const CBlock& block)
     if (!CheckBlockSignature(block))
     {
         return DEBUG(MV_ERR_BLOCK_SIGNATURE_INVALID,"\n");
+    }
+    return MV_OK;
+}
+
+MvErr CMvCoreProtocol::ValidateOrigin(const CBlock& block,const CProfile& parentProfile,CProfile& forkProfile)
+{
+    if (!forkProfile.Load(block.vchProof))
+    {
+        return DEBUG(MV_ERR_BLOCK_INVALID_FORK,"load profile error\n");
+    }
+    if (forkProfile.IsNull())
+    {
+        return DEBUG(MV_ERR_BLOCK_INVALID_FORK,"invalid profile");
+    }
+    if (parentProfile.IsPrivate())
+    {
+        if (!forkProfile.IsPrivate() || parentProfile.destOwner != forkProfile.destOwner)
+        {
+            return DEBUG(MV_ERR_BLOCK_INVALID_FORK,"permission denied");
+        }
     }
     return MV_OK;
 }

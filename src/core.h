@@ -19,6 +19,7 @@ public:
     virtual void GetGenesisBlock(CBlock& block); 
     virtual MvErr ValidateTransaction(const CTransaction& tx);
     virtual MvErr ValidateBlock(const CBlock& block);
+    virtual MvErr ValidateOrigin(const CBlock& block,const CProfile& parentProfile,CProfile& forkProfile);
     virtual MvErr VerifyBlock(const CBlock& block,CBlockIndex* pIndexPrev);
     virtual MvErr VerifyBlockTx(const CTransaction& tx,const CTxContxt& txContxt,CBlockIndex* pIndexPrev);
     virtual MvErr VerifyTransaction(const CTransaction& tx,const std::vector<CTxOutput>& vPrevOutput,int nForkHeight);

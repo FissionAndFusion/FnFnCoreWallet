@@ -106,6 +106,11 @@ void CWorldLine::GetForkStatus(map<uint256,CForkStatus>& mapForkStatus)
     }
 }
 
+bool CWorldLine::GetForkProfile(const uint256& hashFork,CProfile& profile)
+{
+    return cntrBlock.RetrieveProfile(hashFork,profile);
+}
+
 bool CWorldLine::GetBlockLocation(const uint256& hashBlock,uint256& hashFork,int& nHeight)
 {
     CBlockIndex* pIndex = NULL;
@@ -309,6 +314,94 @@ MvErr CWorldLine::AddNewBlock(const CBlock& block,CWorldLineUpdate& update)
         WalleveLog("AddNewBlock Storage GetBlockChanges Error : %s \n",hash.ToString().c_str());
         return MV_ERR_SYS_STORAGE_ERROR;
     } 
+    return MV_OK;
+}
+
+MvErr CWorldLine::AddNewOrigin(const CBlock& block,CWorldLineUpdate& update)
+{
+    uint256 hash = block.GetHash();
+    MvErr err = MV_OK;
+
+    if (cntrBlock.Exists(hash))
+    {
+        WalleveLog("AddNewOrigin Already Exists : %s \n",hash.ToString().c_str());
+        return MV_ERR_ALREADY_HAVE;
+    }
+    
+    err = pCoreProtocol->ValidateBlock(block);
+    if (err != MV_OK)
+    {
+        WalleveLog("AddNewOrigin Validate Block Error(%s) : %s \n",MvErrString(err),hash.ToString().c_str());
+        return err;
+    }
+   
+    CBlockIndex* pIndexPrev;
+    if (!cntrBlock.RetrieveIndex(block.hashPrev,&pIndexPrev))
+    {
+        WalleveLog("AddNewOrigin Retrieve Prev Index Error: %s \n",block.hashPrev.ToString().c_str());
+        return MV_ERR_SYS_STORAGE_ERROR;
+    }
+
+    CProfile parent;
+    if (!cntrBlock.RetrieveProfile(pIndexPrev->GetOriginHash(),parent))
+    {
+        WalleveLog("AddNewOrigin Retrieve parent profile Error: %s \n",block.hashPrev.ToString().c_str());
+        return MV_ERR_SYS_STORAGE_ERROR;
+    }
+    CProfile profile;
+    err = pCoreProtocol->ValidateOrigin(block,parent,profile);
+    if (err != MV_OK)
+    {
+        WalleveLog("AddNewOrigin Validate Origin Error(%s): %s \n",MvErrString(err),hash.ToString().c_str());
+        return err;
+    }
+    
+    storage::CBlockView view;
+
+    if (profile.IsIsolated())
+    {
+        if (!cntrBlock.GetBlockView(view))
+        {
+            WalleveLog("AddNewOrigin Get Block View Error: %s \n",block.hashPrev.ToString().c_str());
+            return MV_ERR_SYS_STORAGE_ERROR;
+        }
+    }
+    else
+    {
+        if (!cntrBlock.GetBlockView(block.hashPrev,view,false))
+        {
+            WalleveLog("AddNewOrigin Get Block View Error: %s \n",block.hashPrev.ToString().c_str());
+            return MV_ERR_SYS_STORAGE_ERROR;
+        }
+    }
+    
+    if (block.txMint.nAmount != 0)
+    {
+        view.AddTx(block.txMint.GetHash(),block.txMint);
+    }
+
+    CBlockIndex* pIndexNew;
+    CBlockEx blockex(block);
+
+    if (!cntrBlock.AddNew(hash,blockex,&pIndexNew))
+    {
+        WalleveLog("AddNewOrigin Storage AddNew Error : %s \n",hash.ToString().c_str());
+        return MV_ERR_SYS_STORAGE_ERROR;
+    }
+
+    WalleveLog("AddNew Origin Block : %s \n",hash.ToString().c_str());
+    WalleveLog("    %s\n",pIndexNew->ToString().c_str());
+
+    if (!cntrBlock.CommitBlockView(view,pIndexNew))
+    {
+        WalleveLog("AddNewOrigin Storage Commit BlockView Error : %s \n",hash.ToString().c_str());
+        return MV_ERR_SYS_STORAGE_ERROR;
+    }
+   
+    update = CWorldLineUpdate(pIndexNew);
+    view.GetTxUpdated(update.setTxUpdate);
+    update.vBlockAddNew.push_back(blockex);
+
     return MV_OK;
 }
 

@@ -18,6 +18,7 @@ public:
     CWorldLine();
     ~CWorldLine();
     void GetForkStatus(std::map<uint256,CForkStatus>& mapForkStatus); 
+    bool GetForkProfile(const uint256& hashFork,CProfile& profile);
     bool GetBlockLocation(const uint256& hashBlock,uint256& hashFork,int& nHeight);
     bool GetBlockHash(const uint256& hashFork,int nHeight,uint256& hashBlock);
     bool GetLastBlock(const uint256& hashFork,uint256& hashBlock,int& nHeight,int64& nTime);
@@ -31,6 +32,7 @@ public:
                                                     std::vector<CTxOutput>& vOutput);
     bool FilterTx(CTxFilter& filter);
     MvErr AddNewBlock(const CBlock& block,CWorldLineUpdate& update);
+    MvErr AddNewOrigin(const CBlock& block,CWorldLineUpdate& update);
     bool GetProofOfWorkTarget(const uint256& hashPrev,int nAlgo,int& nBits,int64& nReward);
     bool GetDelegatedProofOfStakeReward(const uint256& hashPrev,std::size_t nWeight,int64& nReward);
     bool GetBlockLocator(const uint256& hashFork,CBlockLocator& locator);

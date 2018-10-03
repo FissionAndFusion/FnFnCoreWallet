@@ -30,6 +30,7 @@ public:
     bool RemoveNode(const walleve::CNetHost& node);
     /* Worldline & Tx Pool*/
     int  GetForkCount();
+    void ListFork(std::vector<std::pair<uint256,CProfile> >& vFork);
     bool GetForkGenealogy(const uint256& hashFork,std::vector<std::pair<uint256,int> >& vAncestry,
                                                   std::vector<std::pair<int,uint256> >& vSubline);
     bool GetBlockLocation(const uint256& hashBlock,uint256& hashFork,int& nHeight);

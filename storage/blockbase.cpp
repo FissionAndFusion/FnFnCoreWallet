@@ -449,6 +449,18 @@ bool CBlockBase::RetrieveFork(const uint256& hash,CBlockIndex** ppIndex)
     return true;
 }
 
+bool CBlockBase::RetrieveProfile(const uint256& hash,CProfile& profile)
+{
+    CWalleveReadLock rlock(rwAccess);
+    CBlockFork* pFork = GetFork(hash);
+    if (pFork == NULL)
+    {
+        return false;
+    }
+    profile = pFork->GetProfile();
+    return true;
+}
+
 bool CBlockBase::RetrieveTx(const uint256& txid,CTransaction& tx)
 {
     tx.SetNull();
@@ -627,11 +639,16 @@ bool CBlockBase::CommitBlockView(CBlockView& view,CBlockIndex* pIndexNew)
     } 
     else
     {
+        CProfile profile;
+        if (!LoadForkProfile(pIndexNew->pOrigin,profile))
+        {
+            return false;
+        }
         if (!dbBlock.AddNewFork(hashFork))
         {
             return false;
         }
-        pFork = AddNewFork(pIndexNew);
+        pFork = AddNewFork(profile,pIndexNew);
     }
 
     vector<pair<uint256,CTxIndex> > vTxNew;
@@ -869,11 +886,11 @@ CBlockIndex* CBlockBase::AddNewIndex(const uint256& hash,CBlock& block,uint32 nF
     return pIndexNew;
 }
 
-CBlockFork* CBlockBase::AddNewFork(CBlockIndex* pIndexLast)
+CBlockFork* CBlockBase::AddNewFork(const CProfile& profileIn,CBlockIndex* pIndexLast)
 {
     uint256 hash = pIndexLast->GetOriginHash();
     CBlockFork* pFork = &mapFork[hash];
-    *pFork = CBlockFork(pIndexLast);
+    *pFork = CBlockFork(profileIn,pIndexLast);
     CBlockIndex* pIndexPrev = pIndexLast->pOrigin->pPrev;
     if (pIndexPrev)
     {
@@ -885,6 +902,35 @@ CBlockFork* CBlockBase::AddNewFork(CBlockIndex* pIndexLast)
         } while(pIndexPrev);
     }
     return pFork;
+}
+
+bool CBlockBase::LoadForkProfile(const CBlockIndex* pIndexOrigin,CProfile& profile)
+{
+    profile.SetNull();
+
+    CBlock block;
+    if (!Retrieve(pIndexOrigin,block))
+    {
+        return false;
+    }
+
+    if (pIndexOrigin->IsPrimary())
+    {
+        // hard code genesis profile, should be removed at next regenerating genesis block.. $%$#@@#%^%
+        profile.strName = "Fission And Fusion Network";
+        profile.strSymbol = "FnFn";
+        profile.nMintReward = 15 * 1000000;
+        profile.nMinTxFee = 100;
+        profile.SetFlag(true,false,false);
+    }
+    else
+    {
+        if (!profile.Load(block.vchProof))
+        {
+            return false;
+        }
+    }
+    return true;
 }
 
 bool CBlockBase::UpdateDelegate(const uint256& hash,CBlockEx& block)
@@ -1028,7 +1074,12 @@ bool CBlockBase::LoadDB()
             ClearCache();
             return false;
         }
-        CBlockFork* pFork = AddNewFork(pIndex);
+        CProfile profile;
+        if (!LoadForkProfile(pIndex->pOrigin,profile))
+        {
+            return false;
+        }
+        CBlockFork* pFork = AddNewFork(profile,pIndex);
         pFork->UpdateNext();
     }
 

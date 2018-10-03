@@ -11,6 +11,7 @@
 #include "mvtype.h"
 #include "transaction.h"
 #include "block.h"
+#include "profile.h"
 #include "wallettx.h"
 #include "destination.h"
 #include "template.h"
@@ -34,6 +35,7 @@ public:
     virtual void GetGenesisBlock(CBlock& block) = 0;
     virtual MvErr ValidateTransaction(const CTransaction& tx) = 0;
     virtual MvErr ValidateBlock(const CBlock& block) = 0;
+    virtual MvErr ValidateOrigin(const CBlock& block,const CProfile& parentProfile,CProfile& forkProfile) = 0;
     virtual MvErr VerifyBlock(const CBlock& block,CBlockIndex* pIndexPrev) = 0;
     virtual MvErr VerifyBlockTx(const CTransaction& tx,const CTxContxt& txContxt,CBlockIndex* pIndexPrev) = 0;
     virtual MvErr VerifyTransaction(const CTransaction& tx,const std::vector<CTxOutput>& vPrevOutput,int nForkHeight) = 0;
@@ -49,6 +51,7 @@ class IWorldLine : public walleve::IWalleveBase
 public:
     IWorldLine() : IWalleveBase("worldline") {}
     virtual void GetForkStatus(std::map<uint256,CForkStatus>& mapForkStatus) = 0;
+    virtual bool GetForkProfile(const uint256& hashFork,CProfile& profile) = 0;
     virtual bool GetBlockLocation(const uint256& hashBlock,uint256& hashFork,int& nHeight) = 0;
     virtual bool GetBlockHash(const uint256& hashFork,int nHeight,uint256& hashBlock) = 0;
     virtual bool GetLastBlock(const uint256& hashFork,uint256& hashBlock,int& nHeight,int64& nTime) = 0;
@@ -62,6 +65,7 @@ public:
     virtual bool ExistsTx(const uint256& txid) = 0;
     virtual bool FilterTx(CTxFilter& filter) = 0;
     virtual MvErr AddNewBlock(const CBlock& block,CWorldLineUpdate& update) = 0;    
+    virtual MvErr AddNewOrigin(const CBlock& block,CWorldLineUpdate& update) = 0;    
     virtual bool GetProofOfWorkTarget(const uint256& hashPrev,int nAlgo,int& nBits,int64& nReward) = 0;
     virtual bool GetDelegatedProofOfStakeReward(const uint256& hashPrev,std::size_t nWeight,int64& nReward) = 0;
     virtual bool GetBlockLocator(const uint256& hashFork,CBlockLocator& locator) = 0;
@@ -192,6 +196,7 @@ public:
     virtual bool RemoveNode(const walleve::CNetHost& node) = 0;
     /* Worldline & Tx Pool*/
     virtual int  GetForkCount() = 0;
+    virtual void ListFork(std::vector<std::pair<uint256,CProfile> >& vFork) = 0;
     virtual bool GetForkGenealogy(const uint256& hashFork,std::vector<std::pair<uint256,int> >& vAncestry,
                                                           std::vector<std::pair<int,uint256> >& vSubline) = 0;
     virtual bool GetBlockLocation(const uint256& hashBlock,uint256& hashFork,int& nHeight) = 0;
