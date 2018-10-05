@@ -22,6 +22,7 @@ public:
         if (!out.IsNull() && setCoins.insert(out).second)
         {
             nTotalValue += out.GetAmount();
+            out.AddRef();
         }
     }
     void Pop(const CWalletTxOut& out)
@@ -29,6 +30,7 @@ public:
         if (!out.IsNull() && setCoins.erase(out))
         {
             nTotalValue -= out.GetAmount();
+            out.Release();
         }
     }
 public:
@@ -40,23 +42,29 @@ class CWalletUnspent
 {
 public:
     void Clear() { mapWalletCoins.clear(); }
-    void Push(CWalletTx* pWalletTx,int n)
+    void Push(const uint256& hashFork,CWalletTx* pWalletTx,int n)
     {
-        if (!pWalletTx->IsNull())
-        {
-            mapWalletCoins[pWalletTx->hashFork].Push(CWalletTxOut(pWalletTx,n));
-        }
+        mapWalletCoins[hashFork].Push(CWalletTxOut(pWalletTx,n));
     }
-    void Pop(CWalletTx* pWalletTx,int n)
+    void Pop(const uint256& hashFork,CWalletTx* pWalletTx,int n)
     {
-        if (!pWalletTx->IsNull())
-        {
-            mapWalletCoins[pWalletTx->hashFork].Pop(CWalletTxOut(pWalletTx,n));
-        }
+        mapWalletCoins[hashFork].Pop(CWalletTxOut(pWalletTx,n));
     }
     CWalletCoins& GetCoins(const uint256& hashFork)
     {
         return mapWalletCoins[hashFork];
+    }
+    void Dup(const uint256& hashFrom,const uint256& hashTo)
+    {
+        std::map<uint256,CWalletCoins>::iterator it = mapWalletCoins.find(hashFrom);
+        if (it != mapWalletCoins.end())
+        {
+            CWalletCoins& coin = mapWalletCoins[hashTo];
+            BOOST_FOREACH(const CWalletTxOut& out,(*it).second.setCoins)
+            {
+                coin.Push(out);
+            }
+        }
     }
 public:
     std::map<uint256,CWalletCoins> mapWalletCoins;
@@ -72,6 +80,24 @@ public:
     crypto::CKey key;
     uint32 nTimerId;
     int64 nAutoLockTime;
+};
+
+class CWalletFork
+{
+public:
+    CWalletFork(const uint256& hashParentIn=0,int nOriginHeightIn=-1,bool fIsolatedIn=true)
+    : hashParent(hashParentIn),nOriginHeight(nOriginHeightIn),fIsolated(fIsolatedIn)
+    {
+    }
+    void InsertSubline(int nHeight,const uint256& hashSubline)
+    {
+        mapSubline.insert(std::make_pair(nHeight,hashSubline));
+    }
+public:
+    uint256 hashParent;
+    int nOriginHeight;
+    bool fIsolated;
+    std::multimap<int,uint256> mapSubline;
 };
 
 class CWallet : public IWallet
@@ -113,6 +139,7 @@ public:
     bool UpdateTx(const uint256& hashFork,const CAssembledTx& tx);
     bool ClearTx();
     bool LoadTx(const CWalletTx& wtx);
+    bool AddNewFork(const uint256& hashFork,const uint256& hashParent,int nOriginHeight);
 protected:
     bool WalleveHandleInitialize();
     void WalleveHandleDeinitialize();
@@ -128,6 +155,10 @@ protected:
     CWalletTx* InsertWalletTx(const uint256& txid,const CAssembledTx &tx,const uint256& hashFork,bool fIsMine,bool fFromMe);
     bool SignPubKey(const crypto::CPubKey& pubkey,const uint256& hash,std::vector<uint8>& vchSig) const;
     bool SignDestination(const CDestination& destIn,const uint256& hash,std::vector<uint8>& vchSig,bool& fCompleted) const;
+    bool UpdateFork();
+    void GetWalletTxFork(const uint256& hashFork,int nHeight,std::vector<uint256>& vFork);
+    void AddNewWalletTx(CWalletTx& wtx,std::vector<uint256>& vFork);
+    void RemoveWalletTx(CWalletTx& wtx,const uint256& hashFork);
 protected:
     storage::CWalletDB dbWallet;
     ICoreProtocol* pCoreProtocol;
@@ -138,6 +169,7 @@ protected:
     std::map<CTemplateId,CTemplatePtr> mapTemplatePtr;
     std::map<uint256,CWalletTx> mapWalletTx;
     std::map<CDestination,CWalletUnspent> mapWalletUnspent;
+    std::map<uint256,CWalletFork> mapFork;
 };
 
 } // namespace multiverse

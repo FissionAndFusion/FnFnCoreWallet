@@ -161,6 +161,7 @@ public:
     virtual bool SynchronizeTxSet(CTxSetChange& change) = 0;
     virtual bool UpdateTx(const uint256& hashFork,const CAssembledTx& tx) = 0;
     virtual bool ClearTx() = 0;
+    virtual bool AddNewFork(const uint256& hashFork,const uint256& hashParent,int nOriginHeight) = 0;
     const CMvBasicConfig * WalleveConfig()
     {
         return dynamic_cast<const CMvBasicConfig *>(walleve::IWalleveBase::WalleveConfig());

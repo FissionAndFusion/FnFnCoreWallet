@@ -130,6 +130,16 @@ MvErr CDispatcher::AddNewBlock(const CBlock& block,uint64 nNonce)
     {
         return MV_ERR_SYS_DATABASE_ERROR;
     }
+
+    if (block.IsOrigin())
+    {
+        if (!pWallet->AddNewFork(updateWorldLine.hashFork,updateWorldLine.hashParent,
+                                                          updateWorldLine.nOriginHeight))
+        {
+            return MV_ERR_SYS_DATABASE_ERROR;
+        }
+    }
+
     if (!pWallet->SynchronizeTxSet(changeTxSet))
     {
         return MV_ERR_SYS_DATABASE_ERROR;
