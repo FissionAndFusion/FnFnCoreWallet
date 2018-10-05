@@ -4,19 +4,18 @@
 
 #include "mode/mint_config.h"
 
+#include "mode/config_macro.h"
 #include "address.h"
 
+namespace multiverse
+{
 namespace po = boost::program_options;
-using namespace multiverse;
 
 CMvMintConfig::CMvMintConfig()
 {
     po::options_description desc("LoMoMint");
 
-    AddOpt<std::string>(desc, "mpvssaddress", strAddressMPVss, "");
-    AddOpt<std::string>(desc, "mpvsskey", strKeyMPVss, "");
-    AddOpt<std::string>(desc, "blake512address", strAddressBlake512, "");
-    AddOpt<std::string>(desc, "blake512key", strKeyBlake512, "");
+    CMvMintConfigOption::AddOptionsImpl(desc);
 
     AddOptions(desc);
 }
@@ -25,6 +24,11 @@ CMvMintConfig::~CMvMintConfig() {}
 
 bool CMvMintConfig::PostLoad()
 {
+    if (fHelp)
+    {
+        return true;
+    }
+
     ExtractMintParamPair(strAddressMPVss, strKeyMPVss, destMPVss, keyMPVss);
     ExtractMintParamPair(strAddressBlake512, strKeyBlake512, destBlake512,
                          keyBlake512);
@@ -34,8 +38,13 @@ bool CMvMintConfig::PostLoad()
 std::string CMvMintConfig::ListConfig() const
 {
     std::ostringstream oss;
-    oss << "mint config:\n";
+    oss << CMvMintConfigOption::ListConfigImpl();
     return oss.str();
+}
+
+std::string CMvMintConfig::Help() const
+{
+    return CMvMintConfigOption::HelpImpl();
 }
 
 void CMvMintConfig::ExtractMintParamPair(const std::string& strAddress,
@@ -50,3 +59,5 @@ void CMvMintConfig::ExtractMintParamPair(const std::string& strAddress,
         privkey.SetHex(strKey);
     }
 }
+
+}  // namespace multiverse

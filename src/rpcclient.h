@@ -5,12 +5,13 @@
 #ifndef  MULTIVERSE_RPCCLIENT_H
 #define  MULTIVERSE_RPCCLIENT_H
 
+#include <string>
+#include <vector>
+
 #include "mvbase.h"
 #include "walleve/walleve.h"
 #include "json/json_spirit_value.h"
-
-#include <string>
-#include <vector>
+#include "rpc/rpc.h"
 
 namespace multiverse
 {
@@ -27,12 +28,12 @@ protected:
     void WalleveHandleDeinitialize();
     bool WalleveHandleInvoke();
     void WalleveHandleHalt();
-    const CMvRPCConfig * WalleveConfig();
+    const CMvRPCClientConfig * WalleveConfig();
 
     bool HandleEvent(walleve::CWalleveEventHttpGetRsp& event);
-    bool GetResponse(uint64 nNonce,const std::string& strWallet,json_spirit::Object& jsonReq);
-    bool CallRPC(const std::vector<std::string>& vCommand,
-                 const std::string& strWallet = "", int nReqId = 1);
+    bool GetResponse(uint64 nNonce,const std::string& strWallet,const std::string& content);
+    // bool GetResponse(uint64 nNonce,const std::string& strWallet,json_spirit::Object& jsonReq);
+    bool CallRPC(rpc::CRPCParamPtr spParam, const std::string& strWallet, int nReqId);
     bool CallConsoleCommand(const std::vector<std::string>& vCommand,std::string& strWallet);
     void LaunchConsole();
     void LaunchCommand();

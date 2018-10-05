@@ -4,41 +4,29 @@
 
 #include "mode/network_config.h"
 
-namespace po = boost::program_options;
-using namespace multiverse;
+#include "mode/config_macro.h"
 
-#define DEFAULT_P2PPORT 6811
-#define DEFAULT_TESTNET_P2PPORT 6813
-#define DEFAULT_DNSEED_PORT             6816
-#define DEFAULT_MAX_INBOUNDS 125
-#define DEFAULT_MAX_OUTBOUNDS 10
-#define DEFAULT_CONNECT_TIMEOUT 5
-#define DNSEED__DEFAULT_MAX_TIMES_CONNECT_FAIL 5
+namespace multiverse
+{
+namespace po = boost::program_options;
 
 CMvNetworkConfig::CMvNetworkConfig()
 {
     po::options_description desc("LoMoNetwork");
 
-    AddOpt<bool>(desc, "listen", fListen, false);
-    AddOpt<bool>(desc, "bloom", fBloom, true);
-    AddOpt<int>(desc, "port", nPortInt, 0);
-    AddOpt<int>(desc, "maxconnections", nMaxConnection,
-                DEFAULT_MAX_OUTBOUNDS + DEFAULT_MAX_INBOUNDS);
-    AddOpt<unsigned int>(desc, "timeout", nConnectTimeout,
-                         DEFAULT_CONNECT_TIMEOUT);
-    AddOpt<std::vector<std::string> >(desc, "addnode", vNode);
-    AddOpt<std::vector<std::string> >(desc, "connect", vConnectTo);
-    AddOpt<std::vector<std::string> >(desc, "dnseednode", vDNSeed);
-    AddOpt<int>(desc, "dnseedport",nDNSeedPort,DEFAULT_DNSEED_PORT);
-    AddOpt<unsigned int>(desc, "dnseedmaxtimes",nMaxTimes2ConnectFail,
-                                DNSEED__DEFAULT_MAX_TIMES_CONNECT_FAIL);
-    AddOpt<std::string>(desc, "confidentAddress", strConfidentAddress, "");                              
+    CMvNetworkConfigOption::AddOptionsImpl(desc);
+
     AddOptions(desc);
 }
 CMvNetworkConfig::~CMvNetworkConfig() {}
 
 bool CMvNetworkConfig::PostLoad()
 {
+    if (fHelp)
+    {
+        return true;
+    }
+
     if (nPortInt <= 0 || nPortInt > 0xFFFF)
     {
         nPort = (fTestNet ? DEFAULT_TESTNET_P2PPORT : DEFAULT_P2PPORT);
@@ -74,6 +62,22 @@ bool CMvNetworkConfig::PostLoad()
 std::string CMvNetworkConfig::ListConfig() const
 {
     std::ostringstream oss;
-    oss << "network config:\n";
+    oss << CMvNetworkConfigOption::ListConfigImpl();
+    oss << "port: " << nPort << "\n";
+    oss << "maxOutBounds: " << nMaxOutBounds << "\n";
+    oss << "maxInBounds: " << nMaxInBounds << "\n";
+    oss << "dnseed: ";
+    for (auto& s: vDNSeed)
+    {
+        oss << s << " ";
+    }
+    oss << "\n";
     return oss.str();
 }
+
+std::string CMvNetworkConfig::Help() const
+{
+    return CMvNetworkConfigOption::HelpImpl();
+}
+
+}  // namespace multiverse

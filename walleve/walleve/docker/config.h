@@ -25,6 +25,7 @@ public:
               const std::string& strConfile);
     virtual bool PostLoad();
     virtual std::string ListConfig() const;
+    virtual std::string Help() const;
 
     void SetIgnoreCmd(int number);
 protected:
@@ -42,6 +43,7 @@ public:
 protected:
     boost::program_options::options_description defaultDesc;
     int ignoreCmd;
+    boost::program_options::variables_map vm;
 };
 
 } // namespace walleve

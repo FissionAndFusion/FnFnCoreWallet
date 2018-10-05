@@ -8,6 +8,9 @@ REM delete build directory
 rd /s /q build
 del /f /q multiverse.exe
 
+REM generate template
+python script/generator.py
+
 REM create build directory
 mkdir build
 if "%errorlevel%"=="1" goto :end

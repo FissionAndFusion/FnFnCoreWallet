@@ -2,8 +2,8 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef MULTIVERSE_MODE_MODE_TYPE_H
-#define MULTIVERSE_MODE_MODE_TYPE_H
+#ifndef MULTIVERSE_MODE_TYPE_H
+#define MULTIVERSE_MODE_TYPE_H
 
 namespace multiverse
 {
@@ -19,4 +19,4 @@ enum class EModeType
 
 }  // namespace multiverse
 
-#endif  // MULTIVERSE_MODE_MODE_TYPE_H
+#endif  // MULTIVERSE_MODE_TYPE_H

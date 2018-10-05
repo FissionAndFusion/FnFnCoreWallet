@@ -2,8 +2,8 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef MULTIVERSE_MODE_TEMPLATE_CONFIG_TYPE_H
-#define MULTIVERSE_MODE_TEMPLATE_CONFIG_TYPE_H
+#ifndef MULTIVERSE_TEMPLATE_CONFIG_TYPE_H
+#define MULTIVERSE_TEMPLATE_CONFIG_TYPE_H
 
 #include <tuple>
 
@@ -12,7 +12,8 @@ namespace multiverse
 class CMvBasicConfig;
 class CMvMintConfig;
 class CMvNetworkConfig;
-class CMvRPCConfig;
+class CMvRPCServerConfig;
+class CMvRPCClientConfig;
 class CMvStorageConfig;
 class CMvServerConfig;
 
@@ -23,11 +24,12 @@ class CMvServerConfig;
 // config type
 enum class EConfigType
 {
-    BASIC,    // CMvBasicConfig
-    MINT,     // CMvMintConfig
-    NETWORK,  // CMvNetworkConfig
-    RPC,      // CMvRPCConfig
-    STORAGE,  // CMvStorageConfig
+    BASIC,      // CMvBasicConfig
+    MINT,       // CMvMintConfig
+    NETWORK,    // CMvNetworkConfig
+    RPCSERVER,  // CMvRPCServerConfig
+    RPCCLIENT,  // CMvRPCClientConfig
+    STORAGE,    // CMvStorageConfig
 };
 
 namespace config_type
@@ -37,10 +39,11 @@ static const auto ___ConfigTypeTemplate = std::make_tuple(
     (CMvBasicConfig*)NULL, 
     (CMvMintConfig*)NULL, 
     (CMvNetworkConfig*)NULL,
-    (CMvRPCConfig*)NULL, 
+    (CMvRPCServerConfig*)NULL, 
+    (CMvRPCClientConfig*)NULL, 
     (CMvStorageConfig*)NULL);
 }  // namespace config_type
 
 }  // namespace multiverse
 
-#endif  // MULTIVERSE_MODE_TEMPLATE_CONFIG_TYPE_H
+#endif  // MULTIVERSE_TEMPLATE_CONFIG_TYPE_H

@@ -40,8 +40,6 @@ using namespace walleve;
 using namespace multiverse;
 using namespace boost::filesystem;
 
-extern void DisplayUsage();
-
 //////////////////////////////
 // CMvEntry
 
@@ -62,19 +60,22 @@ CMvEntry::~CMvEntry()
 
 bool CMvEntry::Initialize(int argc,char *argv[])
 {
-    if (!mvConfig.Load(argc, argv, GetDefaultDataDir(), "multiverse.conf") || !mvConfig.GetConfig()->PostLoad())
+    if (!mvConfig.Load(argc, argv, GetDefaultDataDir(), "multiverse.conf") || !mvConfig.PostLoad())
     {
         cerr << "Failed to load/parse arguments and config file\n";
         return false;
     }
 
-    mvConfig.GetConfig()->ListConfig();
-
     // help
     if (mvConfig.GetConfig()->fHelp)
     {
-        DisplayUsage();
+        cout << mvConfig.Help() << endl;
         return false;
+    }
+
+    if (mvConfig.GetConfig()->fDebug)
+    {
+        mvConfig.ListConfig();
     }
 
     // path
@@ -323,7 +324,7 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
 
 CHttpHostConfig CMvEntry::GetRPCHostConfig()
 {
-    const CMvRPCConfig* config = CastConfigPtr<CMvRPCConfig*>(mvConfig.GetConfig());
+    const CMvRPCServerConfig* config = CastConfigPtr<CMvRPCServerConfig*>(mvConfig.GetConfig());
     CIOSSLOption sslRPC(config->fRPCSSLEnable,config->fRPCSSLVerify,
                         config->strRPCCAFile,config->strRPCCertFile,
                         config->strRPCPKFile,config->strRPCCiphers);

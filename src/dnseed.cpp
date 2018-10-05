@@ -58,7 +58,7 @@ bool CDNSeed::WalleveHandleInitialize()
                          StorageConfig()->strDBPass);
     dnseedService.Init(dbConfig);
     dnseedService.nMaxConnectFailTimes = NetworkConfig()->nMaxTimes2ConnectFail;
-    srtConfidentAddress = NetworkConfig()->strConfidentAddress;
+    srtConfidentAddress = NetworkConfig()->strTrustAddress;
 
     Configure(NetworkConfig()->nMagicNum, PROTO_VERSION, network::NODE_NETWORK,
               FormatSubVersion(), !NetworkConfig()->vConnectTo.empty());
@@ -357,7 +357,7 @@ void CDNSeed::VoteHeight(uint32 height)
     {
         for (auto it = vVoteBox.begin(); it != vVoteBox.end();)
         {
-            if (abs(it->first - avgH) > abs(height - avgH) && it->second == 1)
+            if ((it->first - avgH) > (height - avgH) && it->second == 1)
             {
                 it = vVoteBox.erase(it);
                 vVoteBox.push_back(std::make_pair(height, 1));
