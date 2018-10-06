@@ -41,6 +41,7 @@ CRPCMod::CRPCMod()
                 ("removenode",            &CRPCMod::RPCRemoveNode)
                 /* Worldline & TxPool */
                 ("getforkcount",          &CRPCMod::RPCGetForkCount)
+                ("listfork",              &CRPCMod::RPCListFork)
                 ("getgenealogy",          &CRPCMod::RPCGetForkGenealogy)
                 ("getblocklocation",      &CRPCMod::RPCGetBlockLocation)
                 ("getblockcount",         &CRPCMod::RPCGetBlockCount)
@@ -432,6 +433,23 @@ CRPCResultPtr CRPCMod::RPCRemoveNode(CRPCParamPtr param)
 CRPCResultPtr CRPCMod::RPCGetForkCount(CRPCParamPtr param)
 {
     return MakeCGetForkCountResultPtr(pService->GetForkCount());
+}
+
+CRPCResultPtr CRPCMod::RPCListFork(CRPCParamPtr param)
+{
+    vector<pair<uint256,CProfile> > vFork;
+    pService->ListFork(vFork);
+
+    auto spResult = MakeCListForkResultPtr();
+    for (size_t i = 0; i < vFork.size(); i++)
+    {
+        CProfile& profile = vFork[i].second;
+        spResult->vecProfile.push_back({ vFork[i].first.GetHex(), profile.strName, profile.strSymbol,
+                                         profile.IsIsolated(), profile.IsPrivate(), profile.IsEnclosed(),
+                                         CMvAddress(profile.destOwner).ToString() });
+    }
+
+    return spResult;
 }
 
 CRPCResultPtr CRPCMod::RPCGetForkGenealogy(CRPCParamPtr param)

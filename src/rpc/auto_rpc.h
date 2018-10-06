@@ -58,6 +58,10 @@ CMvBasicConfig* CreateConfig(const std::string& cmd)
 	{
 		return new mode_impl::CCombinConfig<CGetForkCountConfig, T...>;
 	}
+	else if (cmd == "listfork")
+	{
+		return new mode_impl::CCombinConfig<CListForkConfig, T...>;
+	}
 	else if (cmd == "getgenealogy")
 	{
 		return new mode_impl::CCombinConfig<CGetGenealogyConfig, T...>;

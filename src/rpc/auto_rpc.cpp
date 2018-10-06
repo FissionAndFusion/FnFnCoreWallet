@@ -50,6 +50,12 @@ CRPCParamPtr CreateCRPCParam(const std::string& cmd, const json_spirit::Value& v
 		ptr->FromJSON(valParam);
 		return ptr;
 	}
+	else if (cmd == "listfork")
+	{
+		auto ptr = MakeCListForkParamPtr();
+		ptr->FromJSON(valParam);
+		return ptr;
+	}
 	else if (cmd == "getgenealogy")
 	{
 		auto ptr = MakeCGetGenealogyParamPtr();
@@ -340,6 +346,12 @@ CRPCResultPtr CreateCRPCResult(const std::string& cmd, const json_spirit::Value&
 		ptr->FromJSON(valResult);
 		return ptr;
 	}
+	else if (cmd == "listfork")
+	{
+		auto ptr = MakeCListForkResultPtr();
+		ptr->FromJSON(valResult);
+		return ptr;
+	}
 	else if (cmd == "getgenealogy")
 	{
 		auto ptr = MakeCGetGenealogyResultPtr();
@@ -623,6 +635,7 @@ std::string Help(EModeType type, const std::string& subCmd, const std::string& o
 			oss << "  addnode                       Attempts add a node into the addnode list.\n";
 			oss << "  removenode                    Attempts remove a node from the addnode list.\n";
 			oss << "  getforkcount                  Returns the number of forks.\n";
+			oss << "  listfork                      Returns the list of forks.\n";
 			oss << "  getgenealogy                  Returns the list of ancestry and subline.\n";
 			oss << "  getblocklocation              Returns the location with given block.\n";
 			oss << "  getblockcount                 Returns the number of blocks in the given fork.\n";
@@ -699,6 +712,10 @@ std::string Help(EModeType type, const std::string& subCmd, const std::string& o
 		if (subCmd == "all" || subCmd == "getforkcount")
 		{
 			oss << CGetForkCountConfig().Help();
+		}
+		if (subCmd == "all" || subCmd == "listfork")
+		{
+			oss << CListForkConfig().Help();
 		}
 		if (subCmd == "all" || subCmd == "getgenealogy")
 		{
@@ -897,6 +914,7 @@ const std::vector<std::string>& RPCCmdList()
 		"addnode",
 		"removenode",
 		"getforkcount",
+		"listfork",
 		"getgenealogy",
 		"getblocklocation",
 		"getblockcount",

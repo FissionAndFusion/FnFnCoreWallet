@@ -695,6 +695,72 @@ public:
 };
 
 /////////////////////////////////////////////////////
+// listfork
+
+// CListForkParam
+class CListForkParam : public CRPCParam
+{
+public:
+	CListForkParam();
+	virtual json_spirit::Value ToJSON() const;
+	virtual CListForkParam& FromJSON(const json_spirit::Value& v);
+	virtual std::string Method() const;
+};
+template <typename... Args>
+std::shared_ptr<CListForkParam> MakeCListForkParamPtr(Args&&... args)
+{
+	return std::make_shared<CListForkParam>(std::forward<Args>(args)...);
+}
+
+// CListForkResult
+class CListForkResult : public CRPCResult
+{
+public:
+	// class CProfile
+	class CProfile
+	{
+	public:
+		__required__ CRPCString strFork;
+		__required__ CRPCString strName;
+		__required__ CRPCString strSymbol;
+		__required__ CRPCBool fIsolated;
+		__required__ CRPCBool fPrivate;
+		__required__ CRPCBool fEnclosed;
+		__required__ CRPCString strOwner;
+	public:
+		CProfile();
+		CProfile(const CRPCString& strFork, const CRPCString& strName, const CRPCString& strSymbol, const CRPCBool& fIsolated, const CRPCBool& fPrivate, const CRPCBool& fEnclosed, const CRPCString& strOwner);
+		CProfile(const CRPCType& type);
+		json_spirit::Value ToJSON() const;
+		CProfile& FromJSON(const json_spirit::Value& v);
+		bool IsValid() const;
+	};
+public:
+	__required__ CRPCVector<CProfile> vecProfile = RPCValid;
+public:
+	CListForkResult();
+	CListForkResult(const CRPCVector<CProfile>& vecProfile);
+	virtual json_spirit::Value ToJSON() const;
+	virtual CListForkResult& FromJSON(const json_spirit::Value& v);
+	virtual std::string Method() const;
+};
+template <typename... Args>
+std::shared_ptr<CListForkResult> MakeCListForkResultPtr(Args&&... args)
+{
+	return std::make_shared<CListForkResult>(std::forward<Args>(args)...);
+}
+
+// CListForkConfig
+class CListForkConfig : virtual public CMvBasicConfig, public CListForkParam
+{
+public:
+	CListForkConfig();
+	virtual bool PostLoad();
+	virtual std::string ListConfig() const;
+	virtual std::string Help() const;
+};
+
+/////////////////////////////////////////////////////
 // getgenealogy
 
 // CGetGenealogyParam

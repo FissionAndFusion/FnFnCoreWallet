@@ -67,6 +67,7 @@ private:
     CRPCResultPtr RPCRemoveNode(CRPCParamPtr param);
     /* Worldline & TxPool */
     CRPCResultPtr RPCGetForkCount(CRPCParamPtr param);
+    CRPCResultPtr RPCListFork(CRPCParamPtr param);
     CRPCResultPtr RPCGetForkGenealogy(CRPCParamPtr param);
     CRPCResultPtr RPCGetBlockLocation(CRPCParamPtr param);
     CRPCResultPtr RPCGetBlockCount(CRPCParamPtr param);

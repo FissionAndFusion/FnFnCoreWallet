@@ -1982,6 +1982,188 @@ string CGetForkCountConfig::Help() const
 }
 
 /////////////////////////////////////////////////////
+// listfork
+
+// CListForkParam
+CListForkParam::CListForkParam() {}
+Value CListForkParam::ToJSON() const
+{
+	Object ret;
+
+	return ret;
+}
+CListForkParam& CListForkParam::FromJSON(const Value& v)
+{
+	CheckJSONType(v, "object", "listfork");
+	auto obj = v.get_obj();
+	return *this;
+}
+string CListForkParam::Method() const
+{
+	return "listfork";
+}
+
+// CListForkResult::CProfile
+CListForkResult::CProfile::CProfile() {}
+CListForkResult::CProfile::CProfile(const CRPCString& strFork, const CRPCString& strName, const CRPCString& strSymbol, const CRPCBool& fIsolated, const CRPCBool& fPrivate, const CRPCBool& fEnclosed, const CRPCString& strOwner)
+	: strFork(strFork), strName(strName), strSymbol(strSymbol), fIsolated(fIsolated), fPrivate(fPrivate), fEnclosed(fEnclosed), strOwner(strOwner)
+{
+}
+CListForkResult::CProfile::CProfile(const CRPCType& null)
+	: strFork(null), strName(null), strSymbol(null), fIsolated(null), fPrivate(null), fEnclosed(null), strOwner(null)
+{
+}
+Value CListForkResult::CProfile::ToJSON() const
+{
+	Object ret;
+	CheckIsValid(strFork, "strFork");
+	ret.push_back(Pair("fork", std::string(strFork)));
+	CheckIsValid(strName, "strName");
+	ret.push_back(Pair("name", std::string(strName)));
+	CheckIsValid(strSymbol, "strSymbol");
+	ret.push_back(Pair("symbol", std::string(strSymbol)));
+	CheckIsValid(fIsolated, "fIsolated");
+	ret.push_back(Pair("isolated", bool(fIsolated)));
+	CheckIsValid(fPrivate, "fPrivate");
+	ret.push_back(Pair("private", bool(fPrivate)));
+	CheckIsValid(fEnclosed, "fEnclosed");
+	ret.push_back(Pair("enclosed", bool(fEnclosed)));
+	CheckIsValid(strOwner, "strOwner");
+	ret.push_back(Pair("owner", std::string(strOwner)));
+
+	return ret;
+}
+CListForkResult::CProfile& CListForkResult::CProfile::FromJSON(const Value& v)
+{
+	CheckJSONType(v, "object", "CListForkResult::CProfile");
+	auto obj = v.get_obj();
+	auto valFork = find_value(obj, "fork");
+	CheckJSONType(valFork, "string", "fork");
+	strFork = valFork.get_str();
+	auto valName = find_value(obj, "name");
+	CheckJSONType(valName, "string", "name");
+	strName = valName.get_str();
+	auto valSymbol = find_value(obj, "symbol");
+	CheckJSONType(valSymbol, "string", "symbol");
+	strSymbol = valSymbol.get_str();
+	auto valIsolated = find_value(obj, "isolated");
+	CheckJSONType(valIsolated, "bool", "isolated");
+	fIsolated = valIsolated.get_bool();
+	auto valPrivate = find_value(obj, "private");
+	CheckJSONType(valPrivate, "bool", "private");
+	fPrivate = valPrivate.get_bool();
+	auto valEnclosed = find_value(obj, "enclosed");
+	CheckJSONType(valEnclosed, "bool", "enclosed");
+	fEnclosed = valEnclosed.get_bool();
+	auto valOwner = find_value(obj, "owner");
+	CheckJSONType(valOwner, "string", "owner");
+	strOwner = valOwner.get_str();
+	return *this;
+}
+bool CListForkResult::CProfile::IsValid() const
+{
+	if (!strFork.IsValid()) { return false; }
+	if (!strName.IsValid()) { return false; }
+	if (!strSymbol.IsValid()) { return false; }
+	if (!fIsolated.IsValid()) { return false; }
+	if (!fPrivate.IsValid()) { return false; }
+	if (!fEnclosed.IsValid()) { return false; }
+	if (!strOwner.IsValid()) { return false; }
+	return true;
+}
+
+// CListForkResult
+CListForkResult::CListForkResult() {}
+CListForkResult::CListForkResult(const CRPCVector<CProfile>& vecProfile)
+	: vecProfile(vecProfile)
+{
+}
+Value CListForkResult::ToJSON() const
+{
+	Array ret;
+	for (auto& v : vecProfile)
+	{
+		ret.push_back(v.ToJSON());
+	}
+	return ret;
+}
+CListForkResult& CListForkResult::FromJSON(const Value& v)
+{
+	CheckJSONType(v, "array", "profile");
+	auto vecProfileArray = v.get_array();
+	for (auto& v : vecProfileArray)
+	{
+		vecProfile.push_back(CRPCVector<CProfile>::value_type().FromJSON(v));
+	}
+	return *this;
+}
+string CListForkResult::Method() const
+{
+	return "listfork";
+}
+
+// CListForkConfig
+CListForkConfig::CListForkConfig()
+{
+}
+bool CListForkConfig::PostLoad()
+{
+	if (fHelp)
+	{
+		return true;
+	}
+
+	if (vecCommand.size() > 1)
+	{
+		throw CRPCException(RPC_PARSE_ERROR, string("too arguments given."));
+	}
+	auto it = vecCommand.begin();
+	return true;
+}
+string CListForkConfig::ListConfig() const
+{
+	return "";
+}
+string CListForkConfig::Help() const
+{
+	std::ostringstream oss;
+	oss << "\nUsage:\n";
+	oss << "        listfork\n";
+	oss << "\n";
+	oss << "Returns the list of forks.\n";
+	oss << "\n";
+	oss << "Arguments:\n";
+	oss << "\tnone\n\n";
+	oss << "Request:\n";
+	oss << " \"param\" : {}\n";
+	oss << "\n";
+	oss << "Response:\n";
+	oss << " \"result\" :\n";
+	oss << "   [\n";
+	oss << "     \"profile\":                 (object, required) fork profile info\n";
+	oss << "     {\n";
+	oss << "       \"fork\": \"\",              (string, required) fork id with hex system\n";
+	oss << "       \"name\": \"\",              (string, required) fork name\n";
+	oss << "       \"symbol\": \"\",            (string, required) fork symbol\n";
+	oss << "       \"isolated\": true|false,  (bool, required) is isolated\n";
+	oss << "       \"private\": true|false,   (bool, required) is private\n";
+	oss << "       \"enclosed\": true|false,  (bool, required) is enclosed\n";
+	oss << "       \"owner\": \"\"              (string, required) owner's address\n";
+	oss << "     }\n";
+	oss << "   ]\n";
+	oss << "\n";
+	oss << "Examples:\n";
+	oss << ">> multiverse-cli listfork\n";
+	oss << "<< 1\n";
+	oss << "\n>> {\"id\":69,\"method\":\"listfork\",\"jsonrpc\":\"2.0\",\"params\":{}}\n";
+	oss << "<< {\"id\":69,\"jsonrpc\":\"2.0\",\"result\":[{\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\",\"name\":\"Fission And Fusion Network\",\"symbol\":\"FnFn\",\"isolated\":true,\"private\":false,\"enclosed\":false,\"owner\":\"1mjw7aa0s7v9sv7x3thvcexxzjz4tq82j5qc12dy29ktqy84haa0j7dwb\"}]}\n";
+	oss << "\n";
+	oss << "Errors:\n";
+	oss << "\tnone\n\n";
+	return oss.str();
+}
+
+/////////////////////////////////////////////////////
 // getgenealogy
 
 // CGetGenealogyParam

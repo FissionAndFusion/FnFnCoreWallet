@@ -621,6 +621,66 @@
             }
         ]
     },
+    "listfork": {
+        "type": "command",
+        "name": "ListFork",
+        "desc": "Returns the list of forks.",
+        "request": {
+            "type": "object",
+            "content": {}
+        },
+        "response": {
+            "type": "array",
+            "name": "profile",
+            "desc": "fork profile list",
+            "content": {
+                "profile": {
+                    "type": "object",
+                    "desc": "fork profile info",
+                    "content": {
+                        "fork": {
+                            "type": "string",
+                            "desc": "fork id with hex system"
+                        },
+                        "name": {
+                            "type": "string",
+                            "desc": "fork name"
+                        },
+                        "symbol": {
+                            "type": "string",
+                            "desc": "fork symbol"
+                        },
+                        "isolated": {
+                            "type": "bool",
+                            "desc": "is isolated"
+                        },
+                        "private": {
+                            "type": "bool",
+                            "desc": "is private"
+                        },
+                        "enclosed": {
+                            "type": "bool",
+                            "desc": "is enclosed"
+                        },
+                        "owner": {
+                            "type": "string",
+                            "desc": "owner's address"
+                        }
+                    }
+                }
+            }
+        },
+        "example": [
+            {
+                "request": "multiverse-cli listfork",
+                "response": "1"
+            },
+            {
+                "request": "{\"id\":69,\"method\":\"listfork\",\"jsonrpc\":\"2.0\",\"params\":{}}",
+                "response": "{\"id\":69,\"jsonrpc\":\"2.0\",\"result\":[{\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\",\"name\":\"Fission And Fusion Network\",\"symbol\":\"FnFn\",\"isolated\":true,\"private\":false,\"enclosed\":false,\"owner\":\"1mjw7aa0s7v9sv7x3thvcexxzjz4tq82j5qc12dy29ktqy84haa0j7dwb\"}]}"
+            }
+        ]
+    },
     "getgenealogy": {
         "type": "command",
         "name": "GetGenealogy",
