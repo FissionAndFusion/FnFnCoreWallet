@@ -7469,6 +7469,349 @@ string CImportWalletConfig::Help() const
 }
 
 /////////////////////////////////////////////////////
+// makeorigin
+
+// CMakeOriginParam
+CMakeOriginParam::CMakeOriginParam() {}
+CMakeOriginParam::CMakeOriginParam(const CRPCString& strPrev, const CRPCString& strOwner, const CRPCDouble& fAmount, const CRPCString& strName, const CRPCString& strSymbol, const CRPCDouble& fReward, const CRPCBool& fIsolated, const CRPCBool& fPrivate, const CRPCBool& fEnclosed)
+	: strPrev(strPrev), strOwner(strOwner), fAmount(fAmount), strName(strName), strSymbol(strSymbol), fReward(fReward), fIsolated(fIsolated), fPrivate(fPrivate), fEnclosed(fEnclosed)
+{
+}
+Value CMakeOriginParam::ToJSON() const
+{
+	Object ret;
+	CheckIsValid(strPrev, "strPrev");
+	ret.push_back(Pair("prev", std::string(strPrev)));
+	CheckIsValid(strOwner, "strOwner");
+	ret.push_back(Pair("owner", std::string(strOwner)));
+	CheckIsValid(fAmount, "fAmount");
+	ret.push_back(Pair("amount", double(fAmount)));
+	CheckIsValid(strName, "strName");
+	ret.push_back(Pair("name", std::string(strName)));
+	CheckIsValid(strSymbol, "strSymbol");
+	ret.push_back(Pair("symbol", std::string(strSymbol)));
+	CheckIsValid(fReward, "fReward");
+	ret.push_back(Pair("reward", double(fReward)));
+	if (fIsolated.IsValid())
+	{
+		ret.push_back(Pair("isolated", bool(fIsolated)));
+	}
+	if (fPrivate.IsValid())
+	{
+		ret.push_back(Pair("private", bool(fPrivate)));
+	}
+	if (fEnclosed.IsValid())
+	{
+		ret.push_back(Pair("enclosed", bool(fEnclosed)));
+	}
+
+	return ret;
+}
+CMakeOriginParam& CMakeOriginParam::FromJSON(const Value& v)
+{
+	CheckJSONType(v, "object", "makeorigin");
+	auto obj = v.get_obj();
+	auto valPrev = find_value(obj, "prev");
+	CheckJSONType(valPrev, "string", "prev");
+	strPrev = valPrev.get_str();
+	auto valOwner = find_value(obj, "owner");
+	CheckJSONType(valOwner, "string", "owner");
+	strOwner = valOwner.get_str();
+	auto valAmount = find_value(obj, "amount");
+	CheckJSONType(valAmount, "double", "amount");
+	fAmount = valAmount.get_real();
+	auto valName = find_value(obj, "name");
+	CheckJSONType(valName, "string", "name");
+	strName = valName.get_str();
+	auto valSymbol = find_value(obj, "symbol");
+	CheckJSONType(valSymbol, "string", "symbol");
+	strSymbol = valSymbol.get_str();
+	auto valReward = find_value(obj, "reward");
+	CheckJSONType(valReward, "double", "reward");
+	fReward = valReward.get_real();
+	auto valIsolated = find_value(obj, "isolated");
+	if (!valIsolated.is_null())
+	{
+		CheckJSONType(valIsolated, "bool", "isolated");
+		fIsolated = valIsolated.get_bool();
+	}
+	auto valPrivate = find_value(obj, "private");
+	if (!valPrivate.is_null())
+	{
+		CheckJSONType(valPrivate, "bool", "private");
+		fPrivate = valPrivate.get_bool();
+	}
+	auto valEnclosed = find_value(obj, "enclosed");
+	if (!valEnclosed.is_null())
+	{
+		CheckJSONType(valEnclosed, "bool", "enclosed");
+		fEnclosed = valEnclosed.get_bool();
+	}
+	return *this;
+}
+string CMakeOriginParam::Method() const
+{
+	return "makeorigin";
+}
+
+// CMakeOriginResult
+CMakeOriginResult::CMakeOriginResult() {}
+CMakeOriginResult::CMakeOriginResult(const CRPCString& strHash, const CRPCString& strHex)
+	: strHash(strHash), strHex(strHex)
+{
+}
+Value CMakeOriginResult::ToJSON() const
+{
+	Object ret;
+	CheckIsValid(strHash, "strHash");
+	ret.push_back(Pair("hash", std::string(strHash)));
+	CheckIsValid(strHex, "strHex");
+	ret.push_back(Pair("hex", std::string(strHex)));
+
+	return ret;
+}
+CMakeOriginResult& CMakeOriginResult::FromJSON(const Value& v)
+{
+	CheckJSONType(v, "object", "makeorigin");
+	auto obj = v.get_obj();
+	auto valHash = find_value(obj, "hash");
+	CheckJSONType(valHash, "string", "hash");
+	strHash = valHash.get_str();
+	auto valHex = find_value(obj, "hex");
+	CheckJSONType(valHex, "string", "hex");
+	strHex = valHex.get_str();
+	return *this;
+}
+string CMakeOriginResult::Method() const
+{
+	return "makeorigin";
+}
+
+// CMakeOriginConfig
+CMakeOriginConfig::CMakeOriginConfig()
+{
+	boost::program_options::options_description desc("CMakeOriginConfig");
+
+	AddOpt<bool>(desc, "i");
+	AddOpt<bool>(desc, "p");
+	AddOpt<bool>(desc, "e");
+
+	AddOptions(desc);
+}
+bool CMakeOriginConfig::PostLoad()
+{
+	if (fHelp)
+	{
+		return true;
+	}
+
+	if (vecCommand.size() > 10)
+	{
+		throw CRPCException(RPC_PARSE_ERROR, string("too arguments given."));
+	}
+	auto it = vecCommand.begin();
+	if (next(it, 1) != vecCommand.end())
+	{
+		istringstream iss(*++it);
+		iss >> strPrev;
+		if (!iss.eof() || iss.fail())
+		{
+			throw CRPCException(RPC_PARSE_ERROR, "[prev] type error, needs string");
+		}
+	}
+	else
+	{
+		throw CRPCException(RPC_PARSE_ERROR, "[prev] is required");
+	}
+	if (next(it, 1) != vecCommand.end())
+	{
+		istringstream iss(*++it);
+		iss >> strOwner;
+		if (!iss.eof() || iss.fail())
+		{
+			throw CRPCException(RPC_PARSE_ERROR, "[owner] type error, needs string");
+		}
+	}
+	else
+	{
+		throw CRPCException(RPC_PARSE_ERROR, "[owner] is required");
+	}
+	if (next(it, 1) != vecCommand.end())
+	{
+		istringstream iss(*++it);
+		iss >> fAmount;
+		if (!iss.eof() || iss.fail())
+		{
+			throw CRPCException(RPC_PARSE_ERROR, "[amount] type error, needs double");
+		}
+	}
+	else
+	{
+		throw CRPCException(RPC_PARSE_ERROR, "[amount] is required");
+	}
+	if (next(it, 1) != vecCommand.end())
+	{
+		istringstream iss(*++it);
+		iss >> strName;
+		if (!iss.eof() || iss.fail())
+		{
+			throw CRPCException(RPC_PARSE_ERROR, "[name] type error, needs string");
+		}
+	}
+	else
+	{
+		throw CRPCException(RPC_PARSE_ERROR, "[name] is required");
+	}
+	if (next(it, 1) != vecCommand.end())
+	{
+		istringstream iss(*++it);
+		iss >> strSymbol;
+		if (!iss.eof() || iss.fail())
+		{
+			throw CRPCException(RPC_PARSE_ERROR, "[symbol] type error, needs string");
+		}
+	}
+	else
+	{
+		throw CRPCException(RPC_PARSE_ERROR, "[symbol] is required");
+	}
+	if (next(it, 1) != vecCommand.end())
+	{
+		istringstream iss(*++it);
+		iss >> fReward;
+		if (!iss.eof() || iss.fail())
+		{
+			throw CRPCException(RPC_PARSE_ERROR, "[reward] type error, needs double");
+		}
+	}
+	else
+	{
+		throw CRPCException(RPC_PARSE_ERROR, "[reward] is required");
+	}
+	if (vm.find("i") != vm.end())
+	{
+		auto value = vm["i"];
+		fIsolated = value.as<bool>();
+	}
+	else
+	{
+		if (next(it, 1) != vecCommand.end())
+		{
+			istringstream iss(*++it);
+			iss >> boolalpha >> fIsolated;
+			if (!iss.eof() || iss.fail())
+			{
+				throw CRPCException(RPC_PARSE_ERROR, "[isolated] type error, needs bool");
+			}
+		}
+		else
+		{
+			fIsolated = true;
+		}
+	}
+	if (vm.find("p") != vm.end())
+	{
+		auto value = vm["p"];
+		fPrivate = value.as<bool>();
+	}
+	else
+	{
+		if (next(it, 1) != vecCommand.end())
+		{
+			istringstream iss(*++it);
+			iss >> boolalpha >> fPrivate;
+			if (!iss.eof() || iss.fail())
+			{
+				throw CRPCException(RPC_PARSE_ERROR, "[private] type error, needs bool");
+			}
+		}
+		else
+		{
+			fPrivate = false;
+		}
+	}
+	if (vm.find("e") != vm.end())
+	{
+		auto value = vm["e"];
+		fEnclosed = value.as<bool>();
+	}
+	else
+	{
+		if (next(it, 1) != vecCommand.end())
+		{
+			istringstream iss(*++it);
+			iss >> boolalpha >> fEnclosed;
+			if (!iss.eof() || iss.fail())
+			{
+				throw CRPCException(RPC_PARSE_ERROR, "[enclosed] type error, needs bool");
+			}
+		}
+		else
+		{
+			fEnclosed = false;
+		}
+	}
+	return true;
+}
+string CMakeOriginConfig::ListConfig() const
+{
+	return "";
+}
+string CMakeOriginConfig::Help() const
+{
+	std::ostringstream oss;
+	oss << "\nUsage:\n";
+	oss << "        makeorigin <\"prev\"> <\"owner\"> <$amount$> <\"name\"> <\"symbol\"> <$reward$> \n"
+	       "        (-i|-noi*isolated*) (-p|-nop*private*) (-e|-noe*enclosed*)\n";
+	oss << "\n";
+	oss << "Return hex-encoded block.\n";
+	oss << "\n";
+	oss << "Arguments:\n";
+	oss << " \"prev\"                         (string, required) prev block hash\n";
+	oss << " \"owner\"                        (string, required) owner address\n";
+	oss << " $amount$                       (double, required) amount\n";
+	oss << " \"name\"                         (string, required) unique fork name\n";
+	oss << " \"symbol\"                       (string, required) fork symbol\n";
+	oss << " $reward$                       (double, required) mint reward\n";
+	oss << " -i|-noi*isolated*              (bool, optional, default=true) is isolated\n";
+	oss << " -p|-nop*private*               (bool, optional, default=false) is private\n";
+	oss << " -e|-noe*enclosed*              (bool, optional, default=false) is enclosed\n";
+	oss << "\n";
+	oss << "Request:\n";
+	oss << " \"param\" :\n";
+	oss << " {\n";
+	oss << "   \"prev\": \"\",                  (string, required) prev block hash\n";
+	oss << "   \"owner\": \"\",                 (string, required) owner address\n";
+	oss << "   \"amount\": 0.0,               (double, required) amount\n";
+	oss << "   \"name\": \"\",                  (string, required) unique fork name\n";
+	oss << "   \"symbol\": \"\",                (string, required) fork symbol\n";
+	oss << "   \"reward\": 0.0,               (double, required) mint reward\n";
+	oss << "   \"isolated\": true|false,      (bool, optional, default=true) is isolated\n";
+	oss << "   \"private\": true|false,       (bool, optional, default=false) is private\n";
+	oss << "   \"enclosed\": true|false       (bool, optional, default=false) is enclosed\n";
+	oss << " }\n";
+	oss << "\n";
+	oss << "Response:\n";
+	oss << " \"result\" :\n";
+	oss << " {\n";
+	oss << "   \"hash\": \"\",                  (string, required) block hash\n";
+	oss << "   \"hex\": \"\"                    (string, required) block data hex\n";
+	oss << " }\n";
+	oss << "\n";
+	oss << "Examples:\n";
+	oss << ">> multiverse-cli makeorigin a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0 1gbma6s21t4bcwymqz6h1dn1t7qy45019b1t00ywfyqymbvp90mqc1wmq 1 POW\n";
+	oss << "<< {\"hash\":\"c80cad6f2e8c0b0cee5182fcb70e0da40149b5740223ea17814d70bf8740fdab\",\"hex\":\"010000ffc06f585ac0afdc176980a0a1ebe849d09b51e4b4c1dd46fb939579d71bdc55809d6f3da6000000000000000000000000000000000000000000000000000000000000000003504f5701000001000000000000000000000000000000000000000000000000000000000000000000000000000182e8a36441d116ce7a97f9a216d43a3dfc4280295874007b8ff5fd45eec9052e40420f0000000000000000000000000000000000\"}\n";
+	oss << "\n>> curl -d '{\"id\":7,\"method\":\"makeorigin\",\"jsonrpc\":\"2.0\",\"params\":{\"prev\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\",\"address\":\"1gbma6s21t4bcwymqz6h1dn1t7qy45019b1t00ywfyqymbvp90mqc1wmq\",\"amount\":1,\"ident\":\"POW\"}}' http://127.0.0.1:6812\n";
+	oss << "<< {\"id\":7,\"jsonrpc\":\"2.0\",\"result\":{\"hash\":\"c80cad6f2e8c0b0cee5182fcb70e0da40149b5740223ea17814d70bf8740fdab\",\"hex\":\"010000ffc06f585ac0afdc176980a0a1ebe849d09b51e4b4c1dd46fb939579d71bdc55809d6f3da6000000000000000000000000000000000000000000000000000000000000000003504f5701000001000000000000000000000000000000000000000000000000000000000000000000000000000182e8a36441d116ce7a97f9a216d43a3dfc4280295874007b8ff5fd45eec9052e40420f0000000000000000000000000000000000\"}}\n";
+	oss << "\n";
+	oss << "Errors:\n";
+	oss << "* {\"code\":-8,\"message\":\"TX decode failed\"}\n";
+	oss << "* {\"code\":-6,\"message\":\"Unknown anchor block\"}\n";
+	oss << "\n";
+	return oss.str();
+}
+
+/////////////////////////////////////////////////////
 // verifymessage
 
 // CVerifyMessageParam
@@ -8389,202 +8732,6 @@ string CDecodeTransactionConfig::Help() const
 	oss << "<< {\"txid\":\"b492ea1de2d540288f6e45fd21bc4ac2cd2fcfeb63ec43c50acdb69debfad10a\",\"version\":1,\"type\":\"token\",\"lockuntil\":0,\"anchor\":\"25439b778af5e310a13f2310b48ecb329674ba1dc2054affccef8b73247e742b\",\"vin\":[{\"txid\":\"8119097ebc65abd55889e90be6de69c218082d05299951573a455701e55bf40e\",\"vout\":0}],\"sendto\":\"1q71vfagprv5hqwckzbvhep0d0ct72j5j2heak2sgp4vptrtc2btdje3q\",\"amount\":1.00000000,\"txfee\":0.10000000,\"data\":\"1234\",\"sig\":\"\",\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\"}\n";
 	oss << "\n>> curl -d '{\"id\":1,\"method\":\"decodetransaction\",\"jsonrpc\":\"2.0\",\"params\":{\"txdata\":\"01000000000000002b747e24738befccff4a05c21dba749632cb8eb410233fa110e3f58a779b4325010ef45be50157453a57519929052d0818c269dee60be98958d5ab65bc7e0919810001b9c3b7aa16c6cb1bf193faf717580d03347148b2145ca98b30b1376d634c12f440420f0000000000a08601000000000002123400\"}}' http://127.0.0.1:6812\n";
 	oss << "<< {\"id\":1,\"jsonrpc\":\"2.0\",\"result\":{\"txid\":\"b492ea1de2d540288f6e45fd21bc4ac2cd2fcfeb63ec43c50acdb69debfad10a\",\"version\":1,\"type\":\"token\",\"lockuntil\":0,\"anchor\":\"25439b778af5e310a13f2310b48ecb329674ba1dc2054affccef8b73247e742b\",\"vin\":[{\"txid\":\"8119097ebc65abd55889e90be6de69c218082d05299951573a455701e55bf40e\",\"vout\":0}],\"sendto\":\"1q71vfagprv5hqwckzbvhep0d0ct72j5j2heak2sgp4vptrtc2btdje3q\",\"amount\":1.00000000,\"txfee\":0.10000000,\"data\":\"1234\",\"sig\":\"\",\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\"}}\n";
-	oss << "\n";
-	oss << "Errors:\n";
-	oss << "* {\"code\":-8,\"message\":\"TX decode failed\"}\n";
-	oss << "* {\"code\":-6,\"message\":\"Unknown anchor block\"}\n";
-	oss << "\n";
-	return oss.str();
-}
-
-/////////////////////////////////////////////////////
-// makeorigin
-
-// CMakeOriginParam
-CMakeOriginParam::CMakeOriginParam() {}
-CMakeOriginParam::CMakeOriginParam(const CRPCString& strPrev, const CRPCString& strAddress, const CRPCDouble& fAmount, const CRPCString& strIdent)
-	: strPrev(strPrev), strAddress(strAddress), fAmount(fAmount), strIdent(strIdent)
-{
-}
-Value CMakeOriginParam::ToJSON() const
-{
-	Object ret;
-	CheckIsValid(strPrev, "strPrev");
-	ret.push_back(Pair("prev", std::string(strPrev)));
-	CheckIsValid(strAddress, "strAddress");
-	ret.push_back(Pair("address", std::string(strAddress)));
-	CheckIsValid(fAmount, "fAmount");
-	ret.push_back(Pair("amount", double(fAmount)));
-	CheckIsValid(strIdent, "strIdent");
-	ret.push_back(Pair("ident", std::string(strIdent)));
-
-	return ret;
-}
-CMakeOriginParam& CMakeOriginParam::FromJSON(const Value& v)
-{
-	CheckJSONType(v, "object", "makeorigin");
-	auto obj = v.get_obj();
-	auto valPrev = find_value(obj, "prev");
-	CheckJSONType(valPrev, "string", "prev");
-	strPrev = valPrev.get_str();
-	auto valAddress = find_value(obj, "address");
-	CheckJSONType(valAddress, "string", "address");
-	strAddress = valAddress.get_str();
-	auto valAmount = find_value(obj, "amount");
-	CheckJSONType(valAmount, "double", "amount");
-	fAmount = valAmount.get_real();
-	auto valIdent = find_value(obj, "ident");
-	CheckJSONType(valIdent, "string", "ident");
-	strIdent = valIdent.get_str();
-	return *this;
-}
-string CMakeOriginParam::Method() const
-{
-	return "makeorigin";
-}
-
-// CMakeOriginResult
-CMakeOriginResult::CMakeOriginResult() {}
-CMakeOriginResult::CMakeOriginResult(const CRPCString& strHash, const CRPCString& strHex)
-	: strHash(strHash), strHex(strHex)
-{
-}
-Value CMakeOriginResult::ToJSON() const
-{
-	Object ret;
-	CheckIsValid(strHash, "strHash");
-	ret.push_back(Pair("hash", std::string(strHash)));
-	CheckIsValid(strHex, "strHex");
-	ret.push_back(Pair("hex", std::string(strHex)));
-
-	return ret;
-}
-CMakeOriginResult& CMakeOriginResult::FromJSON(const Value& v)
-{
-	CheckJSONType(v, "object", "makeorigin");
-	auto obj = v.get_obj();
-	auto valHash = find_value(obj, "hash");
-	CheckJSONType(valHash, "string", "hash");
-	strHash = valHash.get_str();
-	auto valHex = find_value(obj, "hex");
-	CheckJSONType(valHex, "string", "hex");
-	strHex = valHex.get_str();
-	return *this;
-}
-string CMakeOriginResult::Method() const
-{
-	return "makeorigin";
-}
-
-// CMakeOriginConfig
-CMakeOriginConfig::CMakeOriginConfig()
-{
-}
-bool CMakeOriginConfig::PostLoad()
-{
-	if (fHelp)
-	{
-		return true;
-	}
-
-	if (vecCommand.size() > 5)
-	{
-		throw CRPCException(RPC_PARSE_ERROR, string("too arguments given."));
-	}
-	auto it = vecCommand.begin();
-	if (next(it, 1) != vecCommand.end())
-	{
-		istringstream iss(*++it);
-		iss >> strPrev;
-		if (!iss.eof() || iss.fail())
-		{
-			throw CRPCException(RPC_PARSE_ERROR, "[prev] type error, needs string");
-		}
-	}
-	else
-	{
-		throw CRPCException(RPC_PARSE_ERROR, "[prev] is required");
-	}
-	if (next(it, 1) != vecCommand.end())
-	{
-		istringstream iss(*++it);
-		iss >> strAddress;
-		if (!iss.eof() || iss.fail())
-		{
-			throw CRPCException(RPC_PARSE_ERROR, "[address] type error, needs string");
-		}
-	}
-	else
-	{
-		throw CRPCException(RPC_PARSE_ERROR, "[address] is required");
-	}
-	if (next(it, 1) != vecCommand.end())
-	{
-		istringstream iss(*++it);
-		iss >> fAmount;
-		if (!iss.eof() || iss.fail())
-		{
-			throw CRPCException(RPC_PARSE_ERROR, "[amount] type error, needs double");
-		}
-	}
-	else
-	{
-		throw CRPCException(RPC_PARSE_ERROR, "[amount] is required");
-	}
-	if (next(it, 1) != vecCommand.end())
-	{
-		istringstream iss(*++it);
-		iss >> strIdent;
-		if (!iss.eof() || iss.fail())
-		{
-			throw CRPCException(RPC_PARSE_ERROR, "[ident] type error, needs string");
-		}
-	}
-	else
-	{
-		throw CRPCException(RPC_PARSE_ERROR, "[ident] is required");
-	}
-	return true;
-}
-string CMakeOriginConfig::ListConfig() const
-{
-	return "";
-}
-string CMakeOriginConfig::Help() const
-{
-	std::ostringstream oss;
-	oss << "\nUsage:\n";
-	oss << "        makeorigin <\"prev\"> <\"address\"> <$amount$> <\"ident\">\n";
-	oss << "\n";
-	oss << "Return hex-encoded block.\n";
-	oss << "\n";
-	oss << "Arguments:\n";
-	oss << " \"prev\"                         (string, required) prev block hash\n";
-	oss << " \"address\"                      (string, required) address\n";
-	oss << " $amount$                       (double, required) amount\n";
-	oss << " \"ident\"                        (string, required) indent\n";
-	oss << "\n";
-	oss << "Request:\n";
-	oss << " \"param\" :\n";
-	oss << " {\n";
-	oss << "   \"prev\": \"\",                  (string, required) prev block hash\n";
-	oss << "   \"address\": \"\",               (string, required) address\n";
-	oss << "   \"amount\": 0.0,               (double, required) amount\n";
-	oss << "   \"ident\": \"\"                  (string, required) indent\n";
-	oss << " }\n";
-	oss << "\n";
-	oss << "Response:\n";
-	oss << " \"result\" :\n";
-	oss << " {\n";
-	oss << "   \"hash\": \"\",                  (string, required) block hash\n";
-	oss << "   \"hex\": \"\"                    (string, required) block data hex\n";
-	oss << " }\n";
-	oss << "\n";
-	oss << "Examples:\n";
-	oss << ">> multiverse-cli makeorigin a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0 1gbma6s21t4bcwymqz6h1dn1t7qy45019b1t00ywfyqymbvp90mqc1wmq 1 POW\n";
-	oss << "<< {\"hash\":\"c80cad6f2e8c0b0cee5182fcb70e0da40149b5740223ea17814d70bf8740fdab\",\"hex\":\"010000ffc06f585ac0afdc176980a0a1ebe849d09b51e4b4c1dd46fb939579d71bdc55809d6f3da6000000000000000000000000000000000000000000000000000000000000000003504f5701000001000000000000000000000000000000000000000000000000000000000000000000000000000182e8a36441d116ce7a97f9a216d43a3dfc4280295874007b8ff5fd45eec9052e40420f0000000000000000000000000000000000\"}\n";
-	oss << "\n>> curl -d '{\"id\":7,\"method\":\"makeorigin\",\"jsonrpc\":\"2.0\",\"params\":{\"prev\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\",\"address\":\"1gbma6s21t4bcwymqz6h1dn1t7qy45019b1t00ywfyqymbvp90mqc1wmq\",\"amount\":1,\"ident\":\"POW\"}}' http://127.0.0.1:6812\n";
-	oss << "<< {\"id\":7,\"jsonrpc\":\"2.0\",\"result\":{\"hash\":\"c80cad6f2e8c0b0cee5182fcb70e0da40149b5740223ea17814d70bf8740fdab\",\"hex\":\"010000ffc06f585ac0afdc176980a0a1ebe849d09b51e4b4c1dd46fb939579d71bdc55809d6f3da6000000000000000000000000000000000000000000000000000000000000000003504f5701000001000000000000000000000000000000000000000000000000000000000000000000000000000182e8a36441d116ce7a97f9a216d43a3dfc4280295874007b8ff5fd45eec9052e40420f0000000000000000000000000000000000\"}}\n";
 	oss << "\n";
 	oss << "Errors:\n";
 	oss << "* {\"code\":-8,\"message\":\"TX decode failed\"}\n";

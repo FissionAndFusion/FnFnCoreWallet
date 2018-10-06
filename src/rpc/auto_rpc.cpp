@@ -242,6 +242,12 @@ CRPCParamPtr CreateCRPCParam(const std::string& cmd, const json_spirit::Value& v
 		ptr->FromJSON(valParam);
 		return ptr;
 	}
+	else if (cmd == "makeorigin")
+	{
+		auto ptr = MakeCMakeOriginParamPtr();
+		ptr->FromJSON(valParam);
+		return ptr;
+	}
 	else if (cmd == "verifymessage")
 	{
 		auto ptr = MakeCVerifyMessageParamPtr();
@@ -275,12 +281,6 @@ CRPCParamPtr CreateCRPCParam(const std::string& cmd, const json_spirit::Value& v
 	else if (cmd == "decodetransaction")
 	{
 		auto ptr = MakeCDecodeTransactionParamPtr();
-		ptr->FromJSON(valParam);
-		return ptr;
-	}
-	else if (cmd == "makeorigin")
-	{
-		auto ptr = MakeCMakeOriginParamPtr();
 		ptr->FromJSON(valParam);
 		return ptr;
 	}
@@ -538,6 +538,12 @@ CRPCResultPtr CreateCRPCResult(const std::string& cmd, const json_spirit::Value&
 		ptr->FromJSON(valResult);
 		return ptr;
 	}
+	else if (cmd == "makeorigin")
+	{
+		auto ptr = MakeCMakeOriginResultPtr();
+		ptr->FromJSON(valResult);
+		return ptr;
+	}
 	else if (cmd == "verifymessage")
 	{
 		auto ptr = MakeCVerifyMessageResultPtr();
@@ -571,12 +577,6 @@ CRPCResultPtr CreateCRPCResult(const std::string& cmd, const json_spirit::Value&
 	else if (cmd == "decodetransaction")
 	{
 		auto ptr = MakeCDecodeTransactionResultPtr();
-		ptr->FromJSON(valResult);
-		return ptr;
-	}
-	else if (cmd == "makeorigin")
-	{
-		auto ptr = MakeCMakeOriginResultPtr();
 		ptr->FromJSON(valResult);
 		return ptr;
 	}
@@ -674,6 +674,7 @@ std::string Help(EModeType type, const std::string& subCmd, const std::string& o
 			       "                                a specified file in json format.\n";
 			oss << "  importwallet                  Import keys and templates from archived file in \n"
 			       "                                json format to wallet.\n";
+			oss << "  makeorigin                    Return hex-encoded block.\n";
 			oss << "  verifymessage                 Verify a signed message\n";
 			oss << "  makekeypair                   Make a public/private key pair.\n";
 			oss << "  getpubkeyaddress              Returns encoded address for the given pubkey.\n";
@@ -681,7 +682,6 @@ std::string Help(EModeType type, const std::string& subCmd, const std::string& o
 			oss << "  maketemplate                  Returns encoded address for the given template id.\n";
 			oss << "  decodetransaction             Return a JSON object representing the serialized,\n"
 			       "                                 hex-encoded transaction.\n";
-			oss << "  makeorigin                    Return hex-encoded block.\n";
 			oss << "  getwork                       Get mint work\n";
 			oss << "  submitwork                    Submit mint work\n";
 		}
@@ -841,6 +841,10 @@ std::string Help(EModeType type, const std::string& subCmd, const std::string& o
 		{
 			oss << CImportWalletConfig().Help();
 		}
+		if (subCmd == "all" || subCmd == "makeorigin")
+		{
+			oss << CMakeOriginConfig().Help();
+		}
 		if (subCmd == "all" || subCmd == "verifymessage")
 		{
 			oss << CVerifyMessageConfig().Help();
@@ -864,10 +868,6 @@ std::string Help(EModeType type, const std::string& subCmd, const std::string& o
 		if (subCmd == "all" || subCmd == "decodetransaction")
 		{
 			oss << CDecodeTransactionConfig().Help();
-		}
-		if (subCmd == "all" || subCmd == "makeorigin")
-		{
-			oss << CMakeOriginConfig().Help();
 		}
 		if (subCmd == "all" || subCmd == "getwork")
 		{
@@ -946,13 +946,13 @@ const std::vector<std::string>& RPCCmdList()
 		"listaddress",
 		"exportwallet",
 		"importwallet",
+		"makeorigin",
 		"verifymessage",
 		"makekeypair",
 		"getpubkeyaddress",
 		"gettemplateaddress",
 		"maketemplate",
 		"decodetransaction",
-		"makeorigin",
 		"getwork",
 		"submitwork",
 	};

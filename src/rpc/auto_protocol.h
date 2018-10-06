@@ -2413,6 +2413,64 @@ public:
 };
 
 /////////////////////////////////////////////////////
+// makeorigin
+
+// CMakeOriginParam
+class CMakeOriginParam : public CRPCParam
+{
+public:
+	__required__ CRPCString strPrev;
+	__required__ CRPCString strOwner;
+	__required__ CRPCDouble fAmount;
+	__required__ CRPCString strName;
+	__required__ CRPCString strSymbol;
+	__required__ CRPCDouble fReward;
+	__optional__ CRPCBool fIsolated = true;
+	__optional__ CRPCBool fPrivate = false;
+	__optional__ CRPCBool fEnclosed = false;
+public:
+	CMakeOriginParam();
+	CMakeOriginParam(const CRPCString& strPrev, const CRPCString& strOwner, const CRPCDouble& fAmount, const CRPCString& strName, const CRPCString& strSymbol, const CRPCDouble& fReward, const CRPCBool& fIsolated, const CRPCBool& fPrivate, const CRPCBool& fEnclosed);
+	virtual json_spirit::Value ToJSON() const;
+	virtual CMakeOriginParam& FromJSON(const json_spirit::Value& v);
+	virtual std::string Method() const;
+};
+template <typename... Args>
+std::shared_ptr<CMakeOriginParam> MakeCMakeOriginParamPtr(Args&&... args)
+{
+	return std::make_shared<CMakeOriginParam>(std::forward<Args>(args)...);
+}
+
+// CMakeOriginResult
+class CMakeOriginResult : public CRPCResult
+{
+public:
+	__required__ CRPCString strHash;
+	__required__ CRPCString strHex;
+public:
+	CMakeOriginResult();
+	CMakeOriginResult(const CRPCString& strHash, const CRPCString& strHex);
+	virtual json_spirit::Value ToJSON() const;
+	virtual CMakeOriginResult& FromJSON(const json_spirit::Value& v);
+	virtual std::string Method() const;
+};
+template <typename... Args>
+std::shared_ptr<CMakeOriginResult> MakeCMakeOriginResultPtr(Args&&... args)
+{
+	return std::make_shared<CMakeOriginResult>(std::forward<Args>(args)...);
+}
+
+// CMakeOriginConfig
+class CMakeOriginConfig : virtual public CMvBasicConfig, public CMakeOriginParam
+{
+public:
+	CMakeOriginConfig();
+	virtual bool PostLoad();
+	virtual std::string ListConfig() const;
+	virtual std::string Help() const;
+};
+
+/////////////////////////////////////////////////////
 // verifymessage
 
 // CVerifyMessageParam
@@ -2702,59 +2760,6 @@ class CDecodeTransactionConfig : virtual public CMvBasicConfig, public CDecodeTr
 {
 public:
 	CDecodeTransactionConfig();
-	virtual bool PostLoad();
-	virtual std::string ListConfig() const;
-	virtual std::string Help() const;
-};
-
-/////////////////////////////////////////////////////
-// makeorigin
-
-// CMakeOriginParam
-class CMakeOriginParam : public CRPCParam
-{
-public:
-	__required__ CRPCString strPrev;
-	__required__ CRPCString strAddress;
-	__required__ CRPCDouble fAmount;
-	__required__ CRPCString strIdent;
-public:
-	CMakeOriginParam();
-	CMakeOriginParam(const CRPCString& strPrev, const CRPCString& strAddress, const CRPCDouble& fAmount, const CRPCString& strIdent);
-	virtual json_spirit::Value ToJSON() const;
-	virtual CMakeOriginParam& FromJSON(const json_spirit::Value& v);
-	virtual std::string Method() const;
-};
-template <typename... Args>
-std::shared_ptr<CMakeOriginParam> MakeCMakeOriginParamPtr(Args&&... args)
-{
-	return std::make_shared<CMakeOriginParam>(std::forward<Args>(args)...);
-}
-
-// CMakeOriginResult
-class CMakeOriginResult : public CRPCResult
-{
-public:
-	__required__ CRPCString strHash;
-	__required__ CRPCString strHex;
-public:
-	CMakeOriginResult();
-	CMakeOriginResult(const CRPCString& strHash, const CRPCString& strHex);
-	virtual json_spirit::Value ToJSON() const;
-	virtual CMakeOriginResult& FromJSON(const json_spirit::Value& v);
-	virtual std::string Method() const;
-};
-template <typename... Args>
-std::shared_ptr<CMakeOriginResult> MakeCMakeOriginResultPtr(Args&&... args)
-{
-	return std::make_shared<CMakeOriginResult>(std::forward<Args>(args)...);
-}
-
-// CMakeOriginConfig
-class CMakeOriginConfig : virtual public CMvBasicConfig, public CMakeOriginParam
-{
-public:
-	CMakeOriginConfig();
 	virtual bool PostLoad();
 	virtual std::string ListConfig() const;
 	virtual std::string Help() const;

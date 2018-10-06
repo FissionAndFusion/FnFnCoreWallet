@@ -100,6 +100,7 @@ private:
     CRPCResultPtr RPCListAddress(CRPCParamPtr param);
     CRPCResultPtr RPCExportWallet(CRPCParamPtr param);
     CRPCResultPtr RPCImportWallet(CRPCParamPtr param);
+    CRPCResultPtr RPCMakeOrigin(CRPCParamPtr param);
     /* Util */
     CRPCResultPtr RPCVerifyMessage(CRPCParamPtr param);
     CRPCResultPtr RPCMakeKeyPair(CRPCParamPtr param);
@@ -107,7 +108,6 @@ private:
     CRPCResultPtr RPCGetTemplateAddress(CRPCParamPtr param);
     CRPCResultPtr RPCMakeTemplate(CRPCParamPtr param);
     CRPCResultPtr RPCDecodeTransaction(CRPCParamPtr param);
-    CRPCResultPtr RPCMakeOrigin(CRPCParamPtr param);
     /* Mint */
     CRPCResultPtr RPCGetWork(CRPCParamPtr param);
     CRPCResultPtr RPCSubmitWork(CRPCParamPtr param);

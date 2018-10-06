@@ -2151,6 +2151,90 @@
             "{\"code\":-401,\"message\":\"Failed to add template\"}"
         ]
     },
+    "makeorigin": {
+        "type": "command",
+        "name": "MakeOrigin",
+        "desc": "Return hex-encoded block.",
+        "request": {
+            "type": "object",
+            "content": {
+                "prev": {
+                    "type": "string",
+                    "desc": "prev block hash"
+                },
+                "owner": {
+                    "type": "string",
+                    "desc": "owner address"
+                },
+                "amount": {
+                    "type": "double",
+                    "desc": "amount"
+                },
+                "name": {
+                    "type": "string",
+                    "desc": "unique fork name"
+                },
+                "symbol": {
+                    "type": "string",
+                    "desc": "fork symbol"
+                },
+                "reward": {
+                    "type": "double",
+                    "desc": "mint reward"
+                },
+                "isolated": {
+                    "type": "bool",
+                    "desc": "is isolated",
+                    "default": true,
+                    "required": false,
+                    "opt": "i"
+                },
+                "private": {
+                    "type": "bool",
+                    "desc": "is private",
+                    "default": false,
+                    "required": false,
+                    "opt": "p"
+                },
+                "enclosed": {
+                    "type": "bool",
+                    "desc": "is enclosed",
+                    "default": false,
+                    "required": false,
+                    "opt": "e"
+                }
+            }
+        },
+        "response": {
+            "type": "object",
+            "name": "block",
+            "desc": "hex-encoded block",
+            "content":{
+                "hash":{
+                    "type":"string",
+                    "desc":"block hash"
+                },
+                "hex":{
+                    "type":"string",
+                    "desc":"block data hex"
+                }
+            }
+        },
+        "example": [
+            {
+                "request": "multiverse-cli makeorigin a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0 1gbma6s21t4bcwymqz6h1dn1t7qy45019b1t00ywfyqymbvp90mqc1wmq 1 POW",
+                "response": "{\"hash\":\"c80cad6f2e8c0b0cee5182fcb70e0da40149b5740223ea17814d70bf8740fdab\",\"hex\":\"010000ffc06f585ac0afdc176980a0a1ebe849d09b51e4b4c1dd46fb939579d71bdc55809d6f3da6000000000000000000000000000000000000000000000000000000000000000003504f5701000001000000000000000000000000000000000000000000000000000000000000000000000000000182e8a36441d116ce7a97f9a216d43a3dfc4280295874007b8ff5fd45eec9052e40420f0000000000000000000000000000000000\"}"
+            },
+            {
+                "request": "curl -d '{\"id\":7,\"method\":\"makeorigin\",\"jsonrpc\":\"2.0\",\"params\":{\"prev\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\",\"address\":\"1gbma6s21t4bcwymqz6h1dn1t7qy45019b1t00ywfyqymbvp90mqc1wmq\",\"amount\":1,\"ident\":\"POW\"}}' http://127.0.0.1:6812",
+                "response": "{\"id\":7,\"jsonrpc\":\"2.0\",\"result\":{\"hash\":\"c80cad6f2e8c0b0cee5182fcb70e0da40149b5740223ea17814d70bf8740fdab\",\"hex\":\"010000ffc06f585ac0afdc176980a0a1ebe849d09b51e4b4c1dd46fb939579d71bdc55809d6f3da6000000000000000000000000000000000000000000000000000000000000000003504f5701000001000000000000000000000000000000000000000000000000000000000000000000000000000182e8a36441d116ce7a97f9a216d43a3dfc4280295874007b8ff5fd45eec9052e40420f0000000000000000000000000000000000\"}}"
+            }
+        ],
+        "error": [
+            "{\"code\":-8,\"message\":\"TX decode failed\"}",
+            "{\"code\":-6,\"message\":\"Unknown anchor block\"}"
+        ]
+    },
     "verifymessage": {
         "type": "command",
         "name": "VerifyMessage",
@@ -2357,61 +2441,6 @@
             {
                 "request": "curl -d '{\"id\":1,\"method\":\"decodetransaction\",\"jsonrpc\":\"2.0\",\"params\":{\"txdata\":\"01000000000000002b747e24738befccff4a05c21dba749632cb8eb410233fa110e3f58a779b4325010ef45be50157453a57519929052d0818c269dee60be98958d5ab65bc7e0919810001b9c3b7aa16c6cb1bf193faf717580d03347148b2145ca98b30b1376d634c12f440420f0000000000a08601000000000002123400\"}}' http://127.0.0.1:6812",
                 "response": "{\"id\":1,\"jsonrpc\":\"2.0\",\"result\":{\"txid\":\"b492ea1de2d540288f6e45fd21bc4ac2cd2fcfeb63ec43c50acdb69debfad10a\",\"version\":1,\"type\":\"token\",\"lockuntil\":0,\"anchor\":\"25439b778af5e310a13f2310b48ecb329674ba1dc2054affccef8b73247e742b\",\"vin\":[{\"txid\":\"8119097ebc65abd55889e90be6de69c218082d05299951573a455701e55bf40e\",\"vout\":0}],\"sendto\":\"1q71vfagprv5hqwckzbvhep0d0ct72j5j2heak2sgp4vptrtc2btdje3q\",\"amount\":1.00000000,\"txfee\":0.10000000,\"data\":\"1234\",\"sig\":\"\",\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\"}}"
-            }
-        ],
-        "error": [
-            "{\"code\":-8,\"message\":\"TX decode failed\"}",
-            "{\"code\":-6,\"message\":\"Unknown anchor block\"}"
-        ]
-    },
-    "makeorigin": {
-        "type": "command",
-        "name": "MakeOrigin",
-        "desc": "Return hex-encoded block.",
-        "request": {
-            "type": "object",
-            "content": {
-                "prev": {
-                    "type": "string",
-                    "desc": "prev block hash"
-                },
-                "address": {
-                    "type": "string",
-                    "desc": "address"
-                },
-                "amount": {
-                    "type": "double",
-                    "desc": "amount"
-                },
-                "ident": {
-                    "type": "string",
-                    "desc": "indent"
-                }
-            }
-        },
-        "response": {
-            "type": "object",
-            "name": "block",
-            "desc": "hex-encoded block",
-            "content":{
-                "hash":{
-                    "type":"string",
-                    "desc":"block hash"
-                },
-                "hex":{
-                    "type":"string",
-                    "desc":"block data hex"
-                }
-            }
-        },
-        "example": [
-            {
-                "request": "multiverse-cli makeorigin a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0 1gbma6s21t4bcwymqz6h1dn1t7qy45019b1t00ywfyqymbvp90mqc1wmq 1 POW",
-                "response": "{\"hash\":\"c80cad6f2e8c0b0cee5182fcb70e0da40149b5740223ea17814d70bf8740fdab\",\"hex\":\"010000ffc06f585ac0afdc176980a0a1ebe849d09b51e4b4c1dd46fb939579d71bdc55809d6f3da6000000000000000000000000000000000000000000000000000000000000000003504f5701000001000000000000000000000000000000000000000000000000000000000000000000000000000182e8a36441d116ce7a97f9a216d43a3dfc4280295874007b8ff5fd45eec9052e40420f0000000000000000000000000000000000\"}"
-            },
-            {
-                "request": "curl -d '{\"id\":7,\"method\":\"makeorigin\",\"jsonrpc\":\"2.0\",\"params\":{\"prev\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\",\"address\":\"1gbma6s21t4bcwymqz6h1dn1t7qy45019b1t00ywfyqymbvp90mqc1wmq\",\"amount\":1,\"ident\":\"POW\"}}' http://127.0.0.1:6812",
-                "response": "{\"id\":7,\"jsonrpc\":\"2.0\",\"result\":{\"hash\":\"c80cad6f2e8c0b0cee5182fcb70e0da40149b5740223ea17814d70bf8740fdab\",\"hex\":\"010000ffc06f585ac0afdc176980a0a1ebe849d09b51e4b4c1dd46fb939579d71bdc55809d6f3da6000000000000000000000000000000000000000000000000000000000000000003504f5701000001000000000000000000000000000000000000000000000000000000000000000000000000000182e8a36441d116ce7a97f9a216d43a3dfc4280295874007b8ff5fd45eec9052e40420f0000000000000000000000000000000000\"}}"
             }
         ],
         "error": [
