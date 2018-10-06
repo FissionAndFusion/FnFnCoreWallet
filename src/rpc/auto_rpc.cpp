@@ -643,7 +643,7 @@ std::string Help(EModeType type, const std::string& subCmd, const std::string& o
 			oss << "  getblock                      Returns details of a block with given block-hash.\n";
 			oss << "  gettxpool                     Get transaction pool info\n";
 			oss << "  removependingtx               Removes tx whose id is <txid> from txpool.\n";
-			oss << "  gettransaction                get transaction info\n";
+			oss << "  gettransaction                Get transaction info\n";
 			oss << "  sendtransaction               Submits raw transaction (serialized, hex-encoded) \n"
 			       "                                to local node and network.\n";
 			oss << "  listkey                       Returns Object that has pubkey as keys, associated \n"
@@ -668,7 +668,7 @@ std::string Help(EModeType type, const std::string& subCmd, const std::string& o
 			oss << "  createtransaction             Create a transaction.\n";
 			oss << "  signtransaction               Sign a transaction.\n";
 			oss << "  signmessage                   Sign a message with the private key of an pubkey\n";
-			oss << "  listaddress                   list all of addresses from pub keys and template \n"
+			oss << "  listaddress                   List all of addresses from pub keys and template \n"
 			       "                                ids\n";
 			oss << "  exportwallet                  Export all of keys and templates from wallet to \n"
 			       "                                a specified file in json format.\n";

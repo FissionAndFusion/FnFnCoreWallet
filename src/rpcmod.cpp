@@ -904,6 +904,10 @@ CRPCResultPtr CRPCMod::RPCImportTemplate(CRPCParamPtr param)
     {
         throw CRPCException(RPC_INVALID_PARAMETER,"Invalid parameters,failed to make template");
     }
+    if (pService->HaveTemplate(ptr->GetTemplateId()))
+    {
+        throw CRPCException(RPC_WALLET_ERROR,"Already have this template");
+    }
     if (!pService->AddTemplate(ptr))
     {
         throw CRPCException(RPC_WALLET_ERROR,"Failed to add template");
