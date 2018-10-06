@@ -5056,6 +5056,7 @@ string CImportTemplateConfig::Help() const
 	oss << "\n";
 	oss << "Errors:\n";
 	oss << "* {\"code\":-6,\"message\":\"Invalid parameters,failed to make template\"}\n";
+	oss << "* {\"code\":-401,\"message\":\"Already have this template\"}\n";
 	oss << "* {\"code\":-401,\"message\":\"Failed to add template\"}\n";
 	oss << "* {\"code\":-401,\"message\":\"Failed to sync wallet tx\"}\n";
 	oss << "\n";

@@ -1456,6 +1456,7 @@
         ],
         "error": [
             "{\"code\":-6,\"message\":\"Invalid parameters,failed to make template\"}",
+            "{\"code\":-401,\"message\":\"Already have this template\"}",
             "{\"code\":-401,\"message\":\"Failed to add template\"}",
             "{\"code\":-401,\"message\":\"Failed to sync wallet tx\"}"
         ]
