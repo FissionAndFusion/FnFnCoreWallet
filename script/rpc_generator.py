@@ -102,7 +102,7 @@ def Help_cpp(w):
     
     # write 'commands'
     def write_introduction(cmd, introduction, w, indent):
-        introduction_list = split(introduction)
+        introduction_list = split(introduction, max_len = introduction_max_line_len)
         introduction_code = terminal_str_code(indent, 'oss << ', cmd + space(cmd), introduction_list)
         w.write(introduction_code)
 

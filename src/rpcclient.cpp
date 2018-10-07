@@ -31,17 +31,9 @@ static string LocalCommandUsage(string command = "")
     {
         oss << "Local Command:\n";
     }
-    if (command == "" || command == "getwallet")
-    {
-        oss << "  getwallet\t\t\tReturns current wallet name.\n";
-    }
-    if (command == "" || command == "setwallet")
-    {
-        oss << "  setwallet [\"walletname\"=\"\"]\tSets current wallet.\n";
-    }
     if (command == "" || command == "quit")
     {
-        oss << "  quit\t\t\t\tQuits this console.(CTRL-C) or (CTRL-D)\n";
+        oss << "  quit\t\t\t\tQuits this console.(CTRL-D)\n";
     }
     return oss.str();
 }
@@ -151,16 +143,16 @@ bool CRPCDispatch::HandleEvent(CWalleveEventHttpGetRsp& event)
         if (spResp->IsError())
         {
             // Error
-            cerr << spResp->spError->Serialize() << endl;
+            cerr << spResp->spError->Serialize(true) << endl;
             cerr << strHelpTips << endl;
         }
         else if (spResp->IsSuccessful())
         {
-            cout << spResp->spResult->Serialize() << endl;
+            cout << spResp->spResult->Serialize(true) << endl;
         }
         else
         {
-            cerr << "server error: neigher error nor result. resp: " << spResp->Serialize() << endl;
+            cerr << "server error: neigher error nor result. resp: " << spResp->Serialize(true) << endl;
         }
     }
     catch (exception& e)
@@ -172,7 +164,7 @@ bool CRPCDispatch::HandleEvent(CWalleveEventHttpGetRsp& event)
     return true;
 }
 
-bool CRPCDispatch::GetResponse(uint64 nNonce,const string& strWallet,const std::string& content)
+bool CRPCDispatch::GetResponse(uint64 nNonce, const std::string& content)
 {
     if (WalleveConfig()->fDebug)
     {
@@ -198,7 +190,7 @@ bool CRPCDispatch::GetResponse(uint64 nNonce,const string& strWallet,const std::
 
     CNetHost host(WalleveConfig()->strRPCConnect,WalleveConfig()->nRPCPort);
     httpGet.mapHeader["host"] = host.ToString();
-    httpGet.mapHeader["url"] = string("/") + strWallet;
+    httpGet.mapHeader["url"] = "/";
     httpGet.mapHeader["method"] = "POST";
     httpGet.mapHeader["accept"] = "application/json";
     httpGet.mapHeader["content-type"] = "application/json";
@@ -223,12 +215,12 @@ bool CRPCDispatch::GetResponse(uint64 nNonce,const string& strWallet,const std::
     return (ioComplt.WaitForComplete(fResult) && fResult);
 }
 
-bool CRPCDispatch::CallRPC(CRPCParamPtr spParam, const string& strWallet,int nReqId)
+bool CRPCDispatch::CallRPC(CRPCParamPtr spParam, int nReqId)
 {
     try
     {
         CRPCReqPtr spReq = MakeCRPCReqPtr(nReqId, spParam->Method(), spParam);
-        return GetResponse(1, strWallet, spReq->Serialize());
+        return GetResponse(1, spReq->Serialize());
     }
     catch (const std::exception& e)
     {
@@ -241,24 +233,9 @@ bool CRPCDispatch::CallRPC(CRPCParamPtr spParam, const string& strWallet,int nRe
     return false;
 }
 
-bool CRPCDispatch::CallConsoleCommand(const vector<std::string>& vCommand,string& strWallet)
+bool CRPCDispatch::CallConsoleCommand(const vector<std::string>& vCommand)
 {
-    if (vCommand[0] == "getwallet")
-    {
-        if (strWallet.empty())
-        {
-            cout << "main\n";
-        }
-        else
-        {
-            cout << strWallet << "\n";
-        }
-    }
-    else if (vCommand[0] == "setwallet")
-    {
-        strWallet = vCommand.size() > 1 && vCommand[1] != "main" ? vCommand[1] : "";
-    }
-    else if (vCommand[0] == "help")
+    if (vCommand[0] == "help")
     {
         if (vCommand.size() == 1)
         {
@@ -287,7 +264,6 @@ void CRPCDispatch::LaunchConsole()
     const char* prompt = "multiverse> ";
     char *line = NULL;
     Initialize_ReadLine();
-    string strWallet = WalleveConfig()->strRPCWallet;
 
     while ((line = readline(prompt)))
     {
@@ -312,6 +288,7 @@ void CRPCDispatch::LaunchConsole()
         for (; it != end; it++)
         {
             string str = (*it)[3];
+            boost::replace_all(str, "\\\\", "\\");
             boost::replace_all(str, "\\\"", "\"");
             boost::replace_all(str, "\\'", "'");
             vCommand.push_back(str);
@@ -331,7 +308,7 @@ void CRPCDispatch::LaunchConsole()
         {
             add_history(line);
 
-            if (!CallConsoleCommand(vCommand,strWallet))
+            if (!CallConsoleCommand(vCommand))
             {
                 try
                 {
@@ -362,7 +339,7 @@ void CRPCDispatch::LaunchConsole()
                     {
                         // avoid delete global point
                         CRPCParamPtr spParam(param, [](CRPCParam* p) {});
-                        CallRPC(spParam, WalleveConfig()->strRPCWallet, ++nLastNonce);
+                        CallRPC(spParam, ++nLastNonce);
                     }
                     else
                     {
@@ -394,7 +371,7 @@ void CRPCDispatch::LaunchCommand()
     {
         // avoid delete global point
         CRPCParamPtr spParam(const_cast<CRPCParam*>(param), [](CRPCParam* p) {});
-        CallRPC(spParam, WalleveConfig()->strRPCWallet, nLastNonce);
+        CallRPC(spParam, nLastNonce);
     }
     else
     {

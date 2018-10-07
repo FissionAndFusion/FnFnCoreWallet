@@ -67,6 +67,7 @@ private:
     CRPCResultPtr RPCRemoveNode(CRPCParamPtr param);
     /* Worldline & TxPool */
     CRPCResultPtr RPCGetForkCount(CRPCParamPtr param);
+    CRPCResultPtr RPCListFork(CRPCParamPtr param);
     CRPCResultPtr RPCGetForkGenealogy(CRPCParamPtr param);
     CRPCResultPtr RPCGetBlockLocation(CRPCParamPtr param);
     CRPCResultPtr RPCGetBlockCount(CRPCParamPtr param);
@@ -99,6 +100,7 @@ private:
     CRPCResultPtr RPCListAddress(CRPCParamPtr param);
     CRPCResultPtr RPCExportWallet(CRPCParamPtr param);
     CRPCResultPtr RPCImportWallet(CRPCParamPtr param);
+    CRPCResultPtr RPCMakeOrigin(CRPCParamPtr param);
     /* Util */
     CRPCResultPtr RPCVerifyMessage(CRPCParamPtr param);
     CRPCResultPtr RPCMakeKeyPair(CRPCParamPtr param);
@@ -106,7 +108,6 @@ private:
     CRPCResultPtr RPCGetTemplateAddress(CRPCParamPtr param);
     CRPCResultPtr RPCMakeTemplate(CRPCParamPtr param);
     CRPCResultPtr RPCDecodeTransaction(CRPCParamPtr param);
-    CRPCResultPtr RPCMakeOrigin(CRPCParamPtr param);
     /* Mint */
     CRPCResultPtr RPCGetWork(CRPCParamPtr param);
     CRPCResultPtr RPCSubmitWork(CRPCParamPtr param);

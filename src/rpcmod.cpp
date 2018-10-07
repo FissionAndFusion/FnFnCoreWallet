@@ -41,6 +41,7 @@ CRPCMod::CRPCMod()
                 ("removenode",            &CRPCMod::RPCRemoveNode)
                 /* Worldline & TxPool */
                 ("getforkcount",          &CRPCMod::RPCGetForkCount)
+                ("listfork",              &CRPCMod::RPCListFork)
                 ("getgenealogy",          &CRPCMod::RPCGetForkGenealogy)
                 ("getblocklocation",      &CRPCMod::RPCGetBlockLocation)
                 ("getblockcount",         &CRPCMod::RPCGetBlockCount)
@@ -73,6 +74,7 @@ CRPCMod::CRPCMod()
                 ("listaddress",           &CRPCMod::RPCListAddress)
                 ("exportwallet",          &CRPCMod::RPCExportWallet)
                 ("importwallet",          &CRPCMod::RPCImportWallet)
+                ("makeorigin",            &CRPCMod::RPCMakeOrigin)
                 /* Util */
                 ("verifymessage",         &CRPCMod::RPCVerifyMessage)
                 ("makekeypair",           &CRPCMod::RPCMakeKeyPair)
@@ -80,7 +82,6 @@ CRPCMod::CRPCMod()
                 ("gettemplateaddress",    &CRPCMod::RPCGetTemplateAddress)
                 ("maketemplate",          &CRPCMod::RPCMakeTemplate)
                 ("decodetransaction",     &CRPCMod::RPCDecodeTransaction)
-                ("makeorigin",            &CRPCMod::RPCMakeOrigin)
                 /* Mint */
                 ("getwork",               &CRPCMod::RPCGetWork)
                 ("submitwork",            &CRPCMod::RPCSubmitWork)
@@ -194,7 +195,10 @@ bool CRPCMod::HandleEvent(CWalleveEventHttpReq& eventHttpReq)
         cout << "error: " << e.what() << endl;
     }
 
-    WalleveLog("response : %s\n", strResult.c_str());
+    if (WalleveConfig()->fDebug)
+    {
+        WalleveLog("response : %s\n", strResult.c_str());
+    }
 
     // no result means no return
     if (!strResult.empty())
@@ -432,6 +436,23 @@ CRPCResultPtr CRPCMod::RPCRemoveNode(CRPCParamPtr param)
 CRPCResultPtr CRPCMod::RPCGetForkCount(CRPCParamPtr param)
 {
     return MakeCGetForkCountResultPtr(pService->GetForkCount());
+}
+
+CRPCResultPtr CRPCMod::RPCListFork(CRPCParamPtr param)
+{
+    vector<pair<uint256,CProfile> > vFork;
+    pService->ListFork(vFork);
+
+    auto spResult = MakeCListForkResultPtr();
+    for (size_t i = 0; i < vFork.size(); i++)
+    {
+        CProfile& profile = vFork[i].second;
+        spResult->vecProfile.push_back({ vFork[i].first.GetHex(), profile.strName, profile.strSymbol,
+                                         profile.IsIsolated(), profile.IsPrivate(), profile.IsEnclosed(),
+                                         CMvAddress(profile.destOwner).ToString() });
+    }
+
+    return spResult;
 }
 
 CRPCResultPtr CRPCMod::RPCGetForkGenealogy(CRPCParamPtr param)
@@ -1525,6 +1546,79 @@ CRPCResultPtr CRPCMod::RPCImportWallet(CRPCParamPtr param)
                 + string(" keys and ") + std::to_string(nTemp) + string(" templates."));
 }
 
+CRPCResultPtr CRPCMod::RPCMakeOrigin(CRPCParamPtr param)
+{
+    auto spParam = CastParamPtr<CMakeOriginParam>(param);
+    
+    uint256 hashPrev(spParam->strPrev);
+    CDestination destOwner = static_cast<CDestination>(CMvAddress(spParam->strOwner));
+    int64 nAmount = AmountFromValue(spParam->fAmount);
+    int64 nMintReward = AmountFromValue(spParam->fReward);
+
+    CProfile profile;
+    profile.strName     = spParam->strName;
+    profile.strSymbol   = spParam->strSymbol;
+    profile.destOwner   = destOwner;
+    profile.nMintReward = nMintReward;
+    profile.nMinTxFee   = MIN_TX_FEE;
+    profile.SetFlag(spParam->fIsolated,spParam->fPrivate,spParam->fEnclosed);
+
+
+    CBlock blockPrev;
+    uint256 hashParent;
+    int nOriginHeight;
+    if (!pService->GetBlock(hashPrev,blockPrev,hashParent,nOriginHeight))
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Unknown prev block");
+    }
+
+    CBlock block;
+    block.nVersion   = 1;
+    block.nType      = CBlock::BLOCK_ORIGIN;
+    block.nTimeStamp = blockPrev.nTimeStamp + BLOCK_TARGET_SPACING;
+    block.hashPrev   = hashPrev;
+    profile.Save(block.vchProof);
+
+    CTransaction& tx = block.txMint;
+    tx.nType = CTransaction::TX_GENESIS;
+    tx.sendTo  = destOwner;
+    tx.nAmount = nAmount;
+    tx.vchData.assign(profile.strName.begin(),profile.strName.end());
+
+    crypto::CPubKey pubkey;
+    if (!destOwner.GetPubKey(pubkey))
+    {
+        throw CRPCException(RPC_INVALID_ADDRESS_OR_KEY,"Owner' address should be pubkey address");
+    }
+
+    int nVersion;
+    bool fLocked;
+    int64 nAutoLockTime; 
+    if (!pService->GetKeyStatus(pubkey,nVersion,fLocked,nAutoLockTime))
+    {
+        throw CRPCException(RPC_INVALID_ADDRESS_OR_KEY,"Unknown key");
+    }
+    if (fLocked)
+    {
+        throw CRPCException(RPC_WALLET_UNLOCK_NEEDED,"Key is locked");
+    }
+
+    uint256 hashBlock = block.GetHash();
+    if (!pService->SignSignature(pubkey,hashBlock,block.vchSig))
+    {
+        throw CRPCException(RPC_WALLET_ERROR,"Failed to sign message");
+    }
+ 
+    CWalleveBufStream ss;
+    ss << block;
+    
+    auto spResult = MakeCMakeOriginResultPtr();
+    spResult->strHash = hashBlock.GetHex();
+    spResult->strHex = ToHexString((const unsigned char*)ss.GetData(),ss.GetSize());
+
+    return spResult;
+}
+
 /* Util */
 CRPCResultPtr CRPCMod::RPCVerifyMessage(CRPCParamPtr param)
 {
@@ -1617,44 +1711,6 @@ CRPCResultPtr CRPCMod::RPCDecodeTransaction(CRPCParamPtr param)
     }
 
     return MakeCDecodeTransactionResultPtr(TxToJSON(rawTx.GetHash(),rawTx,hashFork,-1));
-}
-
-CRPCResultPtr CRPCMod::RPCMakeOrigin(CRPCParamPtr param)
-{
-    auto spParam = CastParamPtr<CMakeOriginParam>(param);
-    
-    uint256 hashPrev(spParam->strPrev);
-    CMvAddress address(spParam->strAddress);
-    int64 nAmount = AmountFromValue(spParam->fAmount);
-    string strIdent = spParam->strIdent;
-
-    CBlock blockPrev;
-    uint256 fork;
-    int height;
-    if (!pService->GetBlock(hashPrev,blockPrev,fork,height))
-    {
-        throw CRPCException(RPC_INVALID_PARAMETER, "Unknown prev block");
-    }
-
-    CBlock block;
-    block.nVersion   = 1;
-    block.nType      = CBlock::BLOCK_ORIGIN;
-    block.nTimeStamp = blockPrev.nTimeStamp + BLOCK_TARGET_SPACING;
-    block.hashPrev   = hashPrev;
-    block.vchProof = vector<uint8>(strIdent.begin(),strIdent.end());
-
-    CTransaction& tx = block.txMint;
-    tx.nType = CTransaction::TX_GENESIS;
-    tx.sendTo  = static_cast<CDestination>(address);
-    tx.nAmount = nAmount;
-
-    CWalleveBufStream ss;
-    ss << block;
-    
-    auto spResult = MakeCMakeOriginResultPtr();
-    spResult->strHash = block.GetHash().GetHex();
-    spResult->strHex = ToHexString((const unsigned char*)ss.GetData(),ss.GetSize());
-    return spResult;
 }
 
 

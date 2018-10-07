@@ -3,6 +3,7 @@ import sys
 sys.dont_write_bytecode = True
 
 import math
+import re
 
 type_f = type
 
@@ -20,6 +21,8 @@ tab_len = 8
 max_line_len = 80
 # example not split
 example_max_line_len = 1000
+# introduction not split
+introduction_max_line_len = 1000
 # set max "format" length of one line to show on terminal
 max_format_len = 32
 # increasing step length, when format length is not enough
@@ -42,7 +45,6 @@ summary_indent = None
 example_req_indent = tab_to_space('>> ')
 example_resp_indent = tab_to_space('<< ')
 error_indent = tab_to_space('* ')
-
 
 
 def is_str(s):
@@ -75,6 +77,13 @@ def space(s, indent = None):
 
 # split string to multiple line by indent and max_line_len
 def split(s, indent = None, max_len = None):
+    def first_char_index(s, pos = 0):
+        reg = re.compile(r'(\S)')
+        match = reg.search(s, pos)
+        if match:
+            return match.span()[0]
+        return len(s)
+
     if indent == None:
         indent = ' ' * max_format_len
     else:
@@ -87,7 +96,7 @@ def split(s, indent = None, max_len = None):
     line_len = line_len - len(indent)
 
     lines = []
-    begin, end = 0, line_len
+    begin, end = first_char_index(s), line_len
     while begin < len(s):
         # if s contains '\n', wrap there. Or wrap the next ' ' behind end
         enter = s.find('\n', begin, end)
@@ -109,7 +118,8 @@ def split(s, indent = None, max_len = None):
         else:
             lines.append(line + '\n')
 
-        begin, end = end, end + line_len
+        begin = first_char_index(s, end)
+        end = begin + line_len
 
     if len(lines) == 0:
         lines.append('\n')

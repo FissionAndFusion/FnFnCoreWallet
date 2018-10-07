@@ -58,6 +58,10 @@ CMvBasicConfig* CreateConfig(const std::string& cmd)
 	{
 		return new mode_impl::CCombinConfig<CGetForkCountConfig, T...>;
 	}
+	else if (cmd == "listfork")
+	{
+		return new mode_impl::CCombinConfig<CListForkConfig, T...>;
+	}
 	else if (cmd == "getgenealogy")
 	{
 		return new mode_impl::CCombinConfig<CGetGenealogyConfig, T...>;
@@ -182,6 +186,10 @@ CMvBasicConfig* CreateConfig(const std::string& cmd)
 	{
 		return new mode_impl::CCombinConfig<CImportWalletConfig, T...>;
 	}
+	else if (cmd == "makeorigin")
+	{
+		return new mode_impl::CCombinConfig<CMakeOriginConfig, T...>;
+	}
 	else if (cmd == "verifymessage")
 	{
 		return new mode_impl::CCombinConfig<CVerifyMessageConfig, T...>;
@@ -205,10 +213,6 @@ CMvBasicConfig* CreateConfig(const std::string& cmd)
 	else if (cmd == "decodetransaction")
 	{
 		return new mode_impl::CCombinConfig<CDecodeTransactionConfig, T...>;
-	}
-	else if (cmd == "makeorigin")
-	{
-		return new mode_impl::CCombinConfig<CMakeOriginConfig, T...>;
 	}
 	else if (cmd == "getwork")
 	{

@@ -59,13 +59,6 @@
             "default": "DEFAULT_RPC_CONNECT_TIMEOUT",
             "format": "-rpctimeout=<time>",
             "desc": "Connection timeout <time> seconds (default: 120)"
-        },
-        {
-            "name": "strRPCWallet",
-            "type": "string",
-            "opt": "rpcwallet",
-            "format": "-rpcwallet=<wallet>",
-            "desc": "Set <wallet> name for connect"
         }
     ],
     "CMvRPCServerConfigOption": [

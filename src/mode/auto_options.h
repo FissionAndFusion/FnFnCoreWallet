@@ -80,7 +80,6 @@ class CMvRPCClientConfigOption
 public:
 	string strRPCConnect;
 	unsigned int nRPCConnectTimeout;
-	string strRPCWallet;
 protected:
 protected:
 	string HelpImpl() const
@@ -89,21 +88,18 @@ protected:
 		oss << "  -rpchost=<ip>                 Send commands to node running on <ip> (default: \n"
 		       "                                127.0.0.1)\n";
 		oss << "  -rpctimeout=<time>            Connection timeout <time> seconds (default: 120)\n";
-		oss << "  -rpcwallet=<wallet>           Set <wallet> name for connect\n";
 		return oss.str();
 	}
 	void AddOptionsImpl(boost::program_options::options_description& desc)
 	{
 		AddOpt(desc, "rpchost", strRPCConnect, string("127.0.0.1"));
 		AddOpt(desc, "rpctimeout", nRPCConnectTimeout, (unsigned int)(DEFAULT_RPC_CONNECT_TIMEOUT));
-		AddOpt(desc, "rpcwallet", strRPCWallet);
 	}
 	string ListConfigImpl() const
 	{
 		ostringstream oss;
 		oss << " -rpchost: " << strRPCConnect << "\n";
 		oss << " -rpctimeout: " << nRPCConnectTimeout << "\n";
-		oss << " -rpcwallet: " << strRPCWallet << "\n";
 		return oss.str();
 	}
 };
@@ -157,7 +153,7 @@ protected:
 	{
 		ostringstream oss;
 		oss << "  -rpcport=port                 Listen for JSON-RPC connections on <port> (default:\n"
-		       "                                 6802)\n";
+		       "                                6802)\n";
 		oss << "  -rpcuser=<user>               <user> name for JSON-RPC connections\n";
 		oss << "  -rpcpassword=<password>       <password> for JSON-RPC connections\n";
 		oss << "  -rpcssl                       Use OpenSSL (https) for JSON-RPC connections or \n"
@@ -263,13 +259,13 @@ protected:
 		oss << "  -port=<port>                  Listen for connections on <port> (default: 6801 \n"
 		       "                                or testnet: 6803)\n";
 		oss << "  -maxconnections=<n>           Maintain at most <n> connections to peers (default:\n"
-		       "                                 125)\n";
+		       "                                125)\n";
 		oss << "  -timeout=<n>                  Specify connection timeout (in milliseconds)\n";
 		oss << "  -addnode=<ip>                 Add a node to connect to and attempt to keep the \n"
 		       "                                connection open\n";
 		oss << "  -connect=<ip>                 Connect only to the specified node\n";
 		oss << "  -dnseedport=<port>            Listen for dnseed connections on <port> (default:\n"
-		       "                                 6816)\n";
+		       "                                6816)\n";
 		oss << "  -dnseedmaxtimes=<times>       Max <times> dnseed attempt to connect node\n";
 		oss << "  -confidentAddress=<address>   Trust node address\n";
 		return oss.str();

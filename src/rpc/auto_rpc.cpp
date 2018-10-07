@@ -50,6 +50,12 @@ CRPCParamPtr CreateCRPCParam(const std::string& cmd, const json_spirit::Value& v
 		ptr->FromJSON(valParam);
 		return ptr;
 	}
+	else if (cmd == "listfork")
+	{
+		auto ptr = MakeCListForkParamPtr();
+		ptr->FromJSON(valParam);
+		return ptr;
+	}
 	else if (cmd == "getgenealogy")
 	{
 		auto ptr = MakeCGetGenealogyParamPtr();
@@ -236,6 +242,12 @@ CRPCParamPtr CreateCRPCParam(const std::string& cmd, const json_spirit::Value& v
 		ptr->FromJSON(valParam);
 		return ptr;
 	}
+	else if (cmd == "makeorigin")
+	{
+		auto ptr = MakeCMakeOriginParamPtr();
+		ptr->FromJSON(valParam);
+		return ptr;
+	}
 	else if (cmd == "verifymessage")
 	{
 		auto ptr = MakeCVerifyMessageParamPtr();
@@ -269,12 +281,6 @@ CRPCParamPtr CreateCRPCParam(const std::string& cmd, const json_spirit::Value& v
 	else if (cmd == "decodetransaction")
 	{
 		auto ptr = MakeCDecodeTransactionParamPtr();
-		ptr->FromJSON(valParam);
-		return ptr;
-	}
-	else if (cmd == "makeorigin")
-	{
-		auto ptr = MakeCMakeOriginParamPtr();
 		ptr->FromJSON(valParam);
 		return ptr;
 	}
@@ -337,6 +343,12 @@ CRPCResultPtr CreateCRPCResult(const std::string& cmd, const json_spirit::Value&
 	else if (cmd == "getforkcount")
 	{
 		auto ptr = MakeCGetForkCountResultPtr();
+		ptr->FromJSON(valResult);
+		return ptr;
+	}
+	else if (cmd == "listfork")
+	{
+		auto ptr = MakeCListForkResultPtr();
 		ptr->FromJSON(valResult);
 		return ptr;
 	}
@@ -526,6 +538,12 @@ CRPCResultPtr CreateCRPCResult(const std::string& cmd, const json_spirit::Value&
 		ptr->FromJSON(valResult);
 		return ptr;
 	}
+	else if (cmd == "makeorigin")
+	{
+		auto ptr = MakeCMakeOriginResultPtr();
+		ptr->FromJSON(valResult);
+		return ptr;
+	}
 	else if (cmd == "verifymessage")
 	{
 		auto ptr = MakeCVerifyMessageResultPtr();
@@ -559,12 +577,6 @@ CRPCResultPtr CreateCRPCResult(const std::string& cmd, const json_spirit::Value&
 	else if (cmd == "decodetransaction")
 	{
 		auto ptr = MakeCDecodeTransactionResultPtr();
-		ptr->FromJSON(valResult);
-		return ptr;
-	}
-	else if (cmd == "makeorigin")
-	{
-		auto ptr = MakeCMakeOriginResultPtr();
 		ptr->FromJSON(valResult);
 		return ptr;
 	}
@@ -623,6 +635,7 @@ std::string Help(EModeType type, const std::string& subCmd, const std::string& o
 			oss << "  addnode                       Attempts add a node into the addnode list.\n";
 			oss << "  removenode                    Attempts remove a node from the addnode list.\n";
 			oss << "  getforkcount                  Returns the number of forks.\n";
+			oss << "  listfork                      Returns the list of forks.\n";
 			oss << "  getgenealogy                  Returns the list of ancestry and subline.\n";
 			oss << "  getblocklocation              Returns the location with given block.\n";
 			oss << "  getblockcount                 Returns the number of blocks in the given fork.\n";
@@ -630,18 +643,14 @@ std::string Help(EModeType type, const std::string& subCmd, const std::string& o
 			oss << "  getblock                      Returns details of a block with given block-hash.\n";
 			oss << "  gettxpool                     Get transaction pool info\n";
 			oss << "  removependingtx               Removes tx whose id is <txid> from txpool.\n";
-			oss << "  gettransaction                get transaction info\n";
-			oss << "  sendtransaction               Submits raw transaction (serialized, hex-encoded) \n"
-			       "                                to local node and network.\n";
-			oss << "  listkey                       Returns Object that has pubkey as keys, associated \n"
-			       "                                status as values.\n";
+			oss << "  gettransaction                Get transaction info\n";
+			oss << "  sendtransaction               Submits raw transaction (serialized, hex-encoded) to local node and network.\n";
+			oss << "  listkey                       Returns Object that has pubkey as keys, associated status as values.\n";
 			oss << "  getnewkey                     Returns a new pubkey for receiving payments.\n";
 			oss << "  encryptkey                    Encrypts the key.\n";
-			oss << "  lockkey                       Removes the encryption key from memory, locking \n"
-			       "                                the key.\n";
+			oss << "  lockkey                       Removes the encryption key from memory, locking the key.\n";
 			oss << "  unlockkey                     Unlock the key.\n";
-			oss << "  importprivkey                 Adds a private key (as returned by dumpprivkey) \n"
-			       "                                to your wallet.\n";
+			oss << "  importprivkey                 Adds a private key (as returned by dumpprivkey) to your wallet.\n";
 			oss << "  importkey                     Reveals the serialized key corresponding to <pubkey>.\n";
 			oss << "  exportkey                     Reveals the serialized key corresponding to <pubkey>.\n";
 			oss << "  addnewtemplate                Returns encoded address for the given template id.\n";
@@ -655,20 +664,16 @@ std::string Help(EModeType type, const std::string& subCmd, const std::string& o
 			oss << "  createtransaction             Create a transaction.\n";
 			oss << "  signtransaction               Sign a transaction.\n";
 			oss << "  signmessage                   Sign a message with the private key of an pubkey\n";
-			oss << "  listaddress                   list all of addresses from pub keys and template \n"
-			       "                                ids\n";
-			oss << "  exportwallet                  Export all of keys and templates from wallet to \n"
-			       "                                a specified file in json format.\n";
-			oss << "  importwallet                  Import keys and templates from archived file in \n"
-			       "                                json format to wallet.\n";
+			oss << "  listaddress                   List all of addresses from pub keys and template ids\n";
+			oss << "  exportwallet                  Export all of keys and templates from wallet to a specified file in json format.\n";
+			oss << "  importwallet                  Import keys and templates from archived file in json format to wallet.\n";
+			oss << "  makeorigin                    Return hex-encoded block.\n";
 			oss << "  verifymessage                 Verify a signed message\n";
 			oss << "  makekeypair                   Make a public/private key pair.\n";
 			oss << "  getpubkeyaddress              Returns encoded address for the given pubkey.\n";
 			oss << "  gettemplateaddress            Returns encoded address for the given template id.\n";
 			oss << "  maketemplate                  Returns encoded address for the given template id.\n";
-			oss << "  decodetransaction             Return a JSON object representing the serialized,\n"
-			       "                                 hex-encoded transaction.\n";
-			oss << "  makeorigin                    Return hex-encoded block.\n";
+			oss << "  decodetransaction             Return a JSON object representing the serialized, hex-encoded transaction.\n";
 			oss << "  getwork                       Get mint work\n";
 			oss << "  submitwork                    Submit mint work\n";
 		}
@@ -699,6 +704,10 @@ std::string Help(EModeType type, const std::string& subCmd, const std::string& o
 		if (subCmd == "all" || subCmd == "getforkcount")
 		{
 			oss << CGetForkCountConfig().Help();
+		}
+		if (subCmd == "all" || subCmd == "listfork")
+		{
+			oss << CListForkConfig().Help();
 		}
 		if (subCmd == "all" || subCmd == "getgenealogy")
 		{
@@ -824,6 +833,10 @@ std::string Help(EModeType type, const std::string& subCmd, const std::string& o
 		{
 			oss << CImportWalletConfig().Help();
 		}
+		if (subCmd == "all" || subCmd == "makeorigin")
+		{
+			oss << CMakeOriginConfig().Help();
+		}
 		if (subCmd == "all" || subCmd == "verifymessage")
 		{
 			oss << CVerifyMessageConfig().Help();
@@ -847,10 +860,6 @@ std::string Help(EModeType type, const std::string& subCmd, const std::string& o
 		if (subCmd == "all" || subCmd == "decodetransaction")
 		{
 			oss << CDecodeTransactionConfig().Help();
-		}
-		if (subCmd == "all" || subCmd == "makeorigin")
-		{
-			oss << CMakeOriginConfig().Help();
 		}
 		if (subCmd == "all" || subCmd == "getwork")
 		{
@@ -897,6 +906,7 @@ const std::vector<std::string>& RPCCmdList()
 		"addnode",
 		"removenode",
 		"getforkcount",
+		"listfork",
 		"getgenealogy",
 		"getblocklocation",
 		"getblockcount",
@@ -928,13 +938,13 @@ const std::vector<std::string>& RPCCmdList()
 		"listaddress",
 		"exportwallet",
 		"importwallet",
+		"makeorigin",
 		"verifymessage",
 		"makekeypair",
 		"getpubkeyaddress",
 		"gettemplateaddress",
 		"maketemplate",
 		"decodetransaction",
-		"makeorigin",
 		"getwork",
 		"submitwork",
 	};

@@ -37,7 +37,7 @@
             },
             "delegate": {
                 "type": "object",
-                "desc": "delegate template struct",
+                "desc": "a delegate template",
                 "condition": "type=delegate",
                 "content": {
                     "delegate": {
@@ -52,7 +52,7 @@
             },
             "fork": {
                 "type": "object",
-                "desc": "fork template struct",
+                "desc": "a new fork template",
                 "condition": "type=fork",
                 "content": {
                     "redeem": {
@@ -67,7 +67,7 @@
             },
             "mint": {
                 "type": "object",
-                "desc": "mint template struct",
+                "desc": "a mint template",
                 "condition": "type=mint",
                 "content": {
                     "mint": {
@@ -82,7 +82,7 @@
             },
             "multisig": {
                 "type": "object",
-                "desc": "multisig template struct",
+                "desc": "a multiple sign template",
                 "condition": "type=multisig",
                 "content": {
                     "required": {
@@ -102,7 +102,7 @@
             },
             "weighted": {
                 "type": "object",
-                "desc": "weighted template struct",
+                "desc": "a weighted multiple sign template",
                 "condition": "type=weighted",
                 "content": {
                     "required": {
@@ -462,7 +462,7 @@
                 "response": "0"
             },
             {
-                "request": "{\"id\":3,\"method\":\"getpeercount\",\"jsonrpc\":\"2.0\",\"params\":{}}",
+                "request": "curl -d '{\"id\":3,\"method\":\"getpeercount\",\"jsonrpc\":\"2.0\",\"params\":{}}' http://127.0.0.1:6812",
                 "response": "{\"id\":3,\"jsonrpc\":\"2.0\",\"result\":0}"
             }
         ]
@@ -532,7 +532,7 @@
                 "response": "[{\"address\":\"113.105.146.22\",\"services\":\"0000000000000001\",\"lastsend\":1538113861,\"lastrecv\":1538113861,\"conntime\":1538113661,\"version\":\"0.1.0\",\"subver\":\"/Multiverse:0.1.0/Protocol:0.1.0/\",\"inbound\":false,\"height\":31028,\"banscore\":true}]"
             },
             {
-                "request": "curl -d {\"id\":40,\"method\":\"listpeer\",\"jsonrpc\":\"2.0\",\"params\":{}}",
+                "request": "curl -d '{\"id\":40,\"method\":\"listpeer\",\"jsonrpc\":\"2.0\",\"params\":{}}' http://127.0.0.1:6812",
                 "response": "{\"id\":40,\"jsonrpc\":\"2.0\",\"result\":[{\"address\":\"113.105.146.22\",\"services\":\"0000000000000001\",\"lastsend\":1538113861,\"lastrecv\":1538113861,\"conntime\":1538113661,\"version\":\"0.1.0\",\"subver\":\"/Multiverse:0.1.0/Protocol:0.1.0/\",\"inbound\":false,\"height\":31028,\"banscore\":true}]}"
             }
         ]
@@ -561,7 +561,7 @@
                 "response": "Add node successfully: 113.105.146.22"
             },
             {
-                "request": "curl -d {\"id\":3,\"method\":\"addnode\",\"jsonrpc\":\"2.0\",\"params\":{\"node\":\"113.105.146.22:6811\"}}",
+                "request": "curl -d '{\"id\":3,\"method\":\"addnode\",\"jsonrpc\":\"2.0\",\"params\":{\"node\":\"113.105.146.22:6811\"}}' http://127.0.0.1:6812",
                 "response": "{\"id\":3,\"jsonrpc\":\"2.0\",\"result\":\"Add node successfully: 113.105.146.22:6811\"}"
             }
         ],
@@ -591,7 +591,7 @@
                 "response": "Remove node successfully: 113.105.146.22"
             },
             {
-                "request": "{\"id\":67,\"method\":\"removenode\",\"jsonrpc\":\"2.0\",\"params\":{\"node\":\"113.105.146.22:6811\"}}",
+                "request": "curl -d '{\"id\":67,\"method\":\"removenode\",\"jsonrpc\":\"2.0\",\"params\":{\"node\":\"113.105.146.22:6811\"}}' http://127.0.0.1:6812",
                 "response": "{\"id\":67,\"jsonrpc\":\"2.0\",\"result\":\"Remove node successfully: 113.105.146.22:6811\"}"
             }
         ],
@@ -616,8 +616,68 @@
                 "response": "1"
             },
             {
-                "request": "{\"id\":69,\"method\":\"getforkcount\",\"jsonrpc\":\"2.0\",\"params\":{}}",
+                "request": "curl -d '{\"id\":69,\"method\":\"getforkcount\",\"jsonrpc\":\"2.0\",\"params\":{}}' http://127.0.0.1:6812",
                 "response": "{\"id\":69,\"jsonrpc\":\"2.0\",\"result\":1}"
+            }
+        ]
+    },
+    "listfork": {
+        "type": "command",
+        "name": "ListFork",
+        "desc": "Returns the list of forks.",
+        "request": {
+            "type": "object",
+            "content": {}
+        },
+        "response": {
+            "type": "array",
+            "name": "profile",
+            "desc": "fork profile list",
+            "content": {
+                "profile": {
+                    "type": "object",
+                    "desc": "fork profile info",
+                    "content": {
+                        "fork": {
+                            "type": "string",
+                            "desc": "fork id with hex system"
+                        },
+                        "name": {
+                            "type": "string",
+                            "desc": "fork name"
+                        },
+                        "symbol": {
+                            "type": "string",
+                            "desc": "fork symbol"
+                        },
+                        "isolated": {
+                            "type": "bool",
+                            "desc": "is isolated"
+                        },
+                        "private": {
+                            "type": "bool",
+                            "desc": "is private"
+                        },
+                        "enclosed": {
+                            "type": "bool",
+                            "desc": "is enclosed"
+                        },
+                        "owner": {
+                            "type": "string",
+                            "desc": "owner's address"
+                        }
+                    }
+                }
+            }
+        },
+        "example": [
+            {
+                "request": "multiverse-cli listfork",
+                "response": "1"
+            },
+            {
+                "request": "{\"id\":69,\"method\":\"listfork\",\"jsonrpc\":\"2.0\",\"params\":{}}",
+                "response": "{\"id\":69,\"jsonrpc\":\"2.0\",\"result\":[{\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\",\"name\":\"Fission And Fusion Network\",\"symbol\":\"FnFn\",\"isolated\":true,\"private\":false,\"enclosed\":false,\"owner\":\"1mjw7aa0s7v9sv7x3thvcexxzjz4tq82j5qc12dy29ktqy84haa0j7dwb\"}]}"
             }
         ]
     },
@@ -688,7 +748,7 @@
                 "response": "{\"ancestry\":[],\"subline\":[]}"
             },
             {
-                "request": "{\"id\":75,\"method\":\"getgenealogy\",\"jsonrpc\":\"2.0\",\"params\":{}}",
+                "request": "curl -d '{\"id\":75,\"method\":\"getgenealogy\",\"jsonrpc\":\"2.0\",\"params\":{}}' http://127.0.0.1:6812",
                 "response": "{\"id\":75,\"jsonrpc\":\"2.0\",\"result\":{\"ancestry\":[],\"subline\":[]}}"
             },
             {
@@ -696,7 +756,7 @@
                 "response": "{\"code\":-6,\"message\":\"Unknown fork\"}"
             },
             {
-                "request": "{\"id\":1,\"method\":\"getgenealogy\",\"jsonrpc\":\"2.0\",\"params\":{\"fork\":\"1\"}}",
+                "request": "curl -d '{\"id\":1,\"method\":\"getgenealogy\",\"jsonrpc\":\"2.0\",\"params\":{\"fork\":\"1\"}}' http://127.0.0.1:6812",
                 "response": "{\"id\":1,\"jsonrpc\":\"2.0\",\"error\":{\"code\":-6,\"message\":\"Unknown fork\"}}"
             }
         ],
@@ -735,7 +795,7 @@
                 "response": "{\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\",\"height\":1}"
             },
             {
-                "request": "{\"id\":6,\"method\":\"getblocklocation\",\"jsonrpc\":\"2.0\",\"params\":{\"block\":\"609a797ca28042d562b11355038c516d65ba30b91c7033d83c61b81aa8c538e3\"}}",
+                "request": "curl -d '{\"id\":6,\"method\":\"getblocklocation\",\"jsonrpc\":\"2.0\",\"params\":{\"block\":\"609a797ca28042d562b11355038c516d65ba30b91c7033d83c61b81aa8c538e3\"}}' http://127.0.0.1:6812",
                 "response": "{\"id\":6,\"jsonrpc\":\"2.0\",\"result\":{\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\",\"height\":1}}"
             }
         ],
@@ -767,7 +827,7 @@
                 "response": "32081"
             },
             {
-                "request": "{\"id\":4,\"method\":\"getblockcount\",\"jsonrpc\":\"2.0\",\"params\":{}}",
+                "request": "curl -d '{\"id\":4,\"method\":\"getblockcount\",\"jsonrpc\":\"2.0\",\"params\":{}}' http://127.0.0.1:6812",
                 "response": "{\"id\":4,\"jsonrpc\":\"2.0\",\"result\":32081}"
             },
             {
@@ -775,7 +835,7 @@
                 "response": "32081"
             },
             {
-                "request": "{\"id\":5,\"method\":\"getblockcount\",\"jsonrpc\":\"2.0\",\"params\":{\"fork\":\"0\"}}",
+                "request": "curl -d '{\"id\":5,\"method\":\"getblockcount\",\"jsonrpc\":\"2.0\",\"params\":{\"fork\":\"0\"}}' http://127.0.0.1:6812",
                 "response": "{\"id\":5,\"jsonrpc\":\"2.0\",\"result\":32081}"
             }
         ]
@@ -810,7 +870,7 @@
                 "response": "609a797ca28042d562b11355038c516d65ba30b91c7033d83c61b81aa8c538e3"
             },
             {
-                "request": "{\"id\":2,\"method\":\"getblockhash\",\"jsonrpc\":\"2.0\",\"params\":{\"height\":1}}",
+                "request": "curl -d '{\"id\":2,\"method\":\"getblockhash\",\"jsonrpc\":\"2.0\",\"params\":{\"height\":1}}' http://127.0.0.1:6812",
                 "response": "{\"id\":2,\"jsonrpc\":\"2.0\",\"result\":\"609a797ca28042d562b11355038c516d65ba30b91c7033d83c61b81aa8c538e3\"}"
             },
             {
@@ -818,7 +878,7 @@
                 "response": "609a797ca28042d562b11355038c516d65ba30b91c7033d83c61b81aa8c538e3"
             },
             {
-                "request": "{\"id\":3,\"method\":\"getblockhash\",\"jsonrpc\":\"2.0\",\"params\":{\"height\":1,\"fork\":\"0\"}}",
+                "request": "curl -d '{\"id\":3,\"method\":\"getblockhash\",\"jsonrpc\":\"2.0\",\"params\":{\"height\":1,\"fork\":\"0\"}}' http://127.0.0.1:6812",
                 "response": "{\"id\":3,\"jsonrpc\":\"2.0\",\"result\":\"609a797ca28042d562b11355038c516d65ba30b91c7033d83c61b81aa8c538e3\"}"
             },
             {
@@ -852,7 +912,7 @@
                 "response": "{\"hash\":\"ca49b8d07ac2849c455a813dd967bb0b306b48406d787259f4ddb8f6a0e0cf4c\",\"version\":1,\"type\":\"primary-pow\",\"time\":1538138566,\"prev\":\"47b86e794e7ce0546def4fe3603d58d9cc9fc87eeee676bd15ae90e45ab51f8a\",\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\",\"height\":31296,\"txmint\":\"3d4ed629c594b924d72480e29a332ca91915be685c85940a8c501f8248269e29\",\"tx\":[]}"
             },
             {
-                "request": "{\"id\":10,\"method\":\"getblock\",\"jsonrpc\":\"2.0\",\"params\":{\"block\":\"ca49b8d07ac2849c455a813dd967bb0b306b48406d787259f4ddb8f6a0e0cf4c\"}}",
+                "request": "curl -d '{\"id\":10,\"method\":\"getblock\",\"jsonrpc\":\"2.0\",\"params\":{\"block\":\"ca49b8d07ac2849c455a813dd967bb0b306b48406d787259f4ddb8f6a0e0cf4c\"}}' http://127.0.0.1:6812",
                 "response": "{\"id\":10,\"jsonrpc\":\"2.0\",\"result\":{\"hash\":\"ca49b8d07ac2849c455a813dd967bb0b306b48406d787259f4ddb8f6a0e0cf4c\",\"version\":1,\"type\":\"primary-pow\",\"time\":1538138566,\"prev\":\"47b86e794e7ce0546def4fe3603d58d9cc9fc87eeee676bd15ae90e45ab51f8a\",\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\",\"height\":31296,\"txmint\":\"3d4ed629c594b924d72480e29a332ca91915be685c85940a8c501f8248269e29\",\"tx\":[]}}"
             }
         ],
@@ -930,7 +990,7 @@
                 "response": "{\"count\":0,\"size\":0}"
             },
             {
-                "request": "{\"id\":11,\"method\":\"gettxpool\",\"jsonrpc\":\"2.0\",\"params\":{}}",
+                "request": "curl -d '{\"id\":11,\"method\":\"gettxpool\",\"jsonrpc\":\"2.0\",\"params\":{}}' http://127.0.0.1:6812",
                 "response": "{\"id\":11,\"jsonrpc\":\"2.0\",\"result\":{\"count\":0,\"size\":0}}"
             }
         ]
@@ -959,7 +1019,7 @@
                 "response": "Remove tx successfully: 01a9f3bb967f24396293903c856e99896a514756a220266afa347a8b8c7f0038"
             },
             {
-                "request": "{\"id\":21,\"method\":\"removependingtx\",\"jsonrpc\":\"2.0\",\"params\":{\"txid\":\"01a9f3bb967f24396293903c856e99896a514756a220266afa347a8b8c7f0038\"}}",
+                "request": "curl -d '{\"id\":21,\"method\":\"removependingtx\",\"jsonrpc\":\"2.0\",\"params\":{\"txid\":\"01a9f3bb967f24396293903c856e99896a514756a220266afa347a8b8c7f0038\"}}' http://127.0.0.1:6812",
                 "response": "{\"id\":21,\"jsonrpc\":\"2.0\",\"result\":\"Remove tx successfully: 01a9f3bb967f24396293903c856e99896a514756a220266afa347a8b8c7f0038\"}"
             }
         ],
@@ -968,7 +1028,7 @@
     "gettransaction": {
         "type": "command",
         "name": "GetTransaction",
-        "desc": "get transaction info",
+        "desc": "Get transaction info",
         "request": {
             "type": "object",
             "content": {
@@ -1013,7 +1073,7 @@
                 "response": "{\"transaction\":{\"txid\":\"3d4ed629c594b924d72480e29a332ca91915be685c85940a8c501f8248269e29\",\"version\":1,\"type\":\"work\",\"lockuntil\":0,\"anchor\":\"47b86e794e7ce0546def4fe3603d58d9cc9fc87eeee676bd15ae90e45ab51f8a\",\"vin\":[],\"sendto\":\"20g00k7pe4krdbbxpn5swgbxc0w4a54w054stt1z107d9n3sk6q7js9gw\",\"amount\":15.00000000,\"txfee\":0.00000000,\"data\":\"\",\"sig\":\"\",\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\",\"confirmations\":785}}"
             },
             {
-                "request": "{\"id\":13,\"method\":\"gettransaction\",\"jsonrpc\":\"2.0\",\"params\":{\"txid\":\"3d4ed629c594b924d72480e29a332ca91915be685c85940a8c501f8248269e29\",\"serialized\":false}}",
+                "request": "curl -d '{\"id\":13,\"method\":\"gettransaction\",\"jsonrpc\":\"2.0\",\"params\":{\"txid\":\"3d4ed629c594b924d72480e29a332ca91915be685c85940a8c501f8248269e29\",\"serialized\":false}}' http://127.0.0.1:6812",
                 "response": "{\"id\":13,\"jsonrpc\":\"2.0\",\"result\":{\"transaction\":{\"txid\":\"3d4ed629c594b924d72480e29a332ca91915be685c85940a8c501f8248269e29\",\"version\":1,\"type\":\"work\",\"lockuntil\":0,\"anchor\":\"47b86e794e7ce0546def4fe3603d58d9cc9fc87eeee676bd15ae90e45ab51f8a\",\"vin\":[],\"sendto\":\"20g00k7pe4krdbbxpn5swgbxc0w4a54w054stt1z107d9n3sk6q7js9gw\",\"amount\":15.00000000,\"txfee\":0.00000000,\"data\":\"\",\"sig\":\"\",\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\",\"confirmations\":785}}}"
             },
             {
@@ -1021,7 +1081,7 @@
                 "response": "{\"serialization\":\"01000003000000008a1fb55ae490ae15bd76e6ee7ec89fccd9583d60e34fef6d54e07c4e796eb84700020400099ece24f0d5afb6a973c82fac0708a293802933ad07e101da9a8f3335cfc0e1e4000000000000000000000000000000\"}"
             },
             {
-                "request": "{\"id\":13,\"method\":\"gettransaction\",\"jsonrpc\":\"2.0\",\"params\":{\"txid\":\"3d4ed629c594b924d72480e29a332ca91915be685c85940a8c501f8248269e29\",\"serialized\":false}}",
+                "request": "curl -d '{\"id\":13,\"method\":\"gettransaction\",\"jsonrpc\":\"2.0\",\"params\":{\"txid\":\"3d4ed629c594b924d72480e29a332ca91915be685c85940a8c501f8248269e29\",\"serialized\":false}}' http://127.0.0.1:6812",
                 "response": "{\"id\":14,\"method\":\"gettransaction\",\"jsonrpc\":\"2.0\",\"params\":{\"txid\":\"3d4ed629c594b924d72480e29a332ca91915be685c85940a8c501f8248269e29\",\"serialized\":true}}"
             }
         ],
@@ -1051,7 +1111,7 @@
                 "response": "0a1b944071970589aa524a6f4e40e0b50bab9a64feefc292867692bbf35442a6"
             },
             {
-                "request": "{\"id\":9,\"method\":\"sendtransaction\",\"jsonrpc\":\"2.0\",\"params\":{\"txdata\":\"01000000000000002b747e24738befccff4a05c21dba749632cb8eb410233fa110e3f58a779b4325010ef45be50157453a57519929052d0818c269dee60be98958d5ab65bc7e0919810001b9c3b7aa16c6cb1bf193faf717580d03347148b2145ca98b30b1376d634c12f440420f0000000000a0860100000000000212348182e8a36441d116ce7a97f9a216d43a3dfc4280295874007b8ff5fd45eec9052e0182e8a36441d116ce7a97f9a216d43a3dfc4280295874007b8ff5fd45eec9052ed494d90cd96c252446b4a10459fea8c06186154b2bee2ce2182556e9ba40e7e69ddae2501862e4251bba2abf11c90d6f1fd0dec48a1419e81bb8c7d922cf3e03\"}}",
+                "request": "curl -d '{\"id\":9,\"method\":\"sendtransaction\",\"jsonrpc\":\"2.0\",\"params\":{\"txdata\":\"01000000000000002b747e24738befccff4a05c21dba749632cb8eb410233fa110e3f58a779b4325010ef45be50157453a57519929052d0818c269dee60be98958d5ab65bc7e0919810001b9c3b7aa16c6cb1bf193faf717580d03347148b2145ca98b30b1376d634c12f440420f0000000000a0860100000000000212348182e8a36441d116ce7a97f9a216d43a3dfc4280295874007b8ff5fd45eec9052e0182e8a36441d116ce7a97f9a216d43a3dfc4280295874007b8ff5fd45eec9052ed494d90cd96c252446b4a10459fea8c06186154b2bee2ce2182556e9ba40e7e69ddae2501862e4251bba2abf11c90d6f1fd0dec48a1419e81bb8c7d922cf3e03\"}}' http://127.0.0.1:6812",
                 "response": "{\"id\":9,\"jsonrpc\":\"2.0\",\"result\":\"0a1b944071970589aa524a6f4e40e0b50bab9a64feefc292867692bbf35442a6\"}"
             }
         ],
@@ -1095,7 +1155,7 @@
                 "response": "[{\"key\":\"3d266a564ec85f3385babf615b1d7eeb01b3e4456d35174732bb9ec0fa8c8f4f\",\"info\":\"ver=0;locked\"},{\"key\":\"58e148d9e8610a6504c26ed346d15920c4d832cf0f03ecb8a016e0d0ec838b1b\",\"info\":\"ver=0;locked\"}]"
             },
             {
-                "request": "curl -d {\"id\":43,\"method\":\"listkey\",\"jsonrpc\":\"2.0\",\"params\":{}}",
+                "request": "curl -d '{\"id\":43,\"method\":\"listkey\",\"jsonrpc\":\"2.0\",\"params\":{}}' http://127.0.0.1:6812",
                 "response": "{\"id\":43,\"jsonrpc\":\"2.0\",\"result\":[{\"key\":\"3d266a564ec85f3385babf615b1d7eeb01b3e4456d35174732bb9ec0fa8c8f4f\",\"info\":\"ver=0;locked\"},{\"key\":\"58e148d9e8610a6504c26ed346d15920c4d832cf0f03ecb8a016e0d0ec838b1b\",\"info\":\"ver=1;unlocked;timeout=5\"}]}"
             }
         ]
@@ -1129,7 +1189,7 @@
                 "response": "f4124c636d37b1308ba95c14b2487134030d5817f7fa93f11bcbc616aab7c3b9"
             },
             {
-                "request": "{\"id\":7,\"method\":\"getnewkey\",\"jsonrpc\":\"2.0\",\"params\":{\"passphrase\":\"123\"}}",
+                "request": "curl -d '{\"id\":7,\"method\":\"getnewkey\",\"jsonrpc\":\"2.0\",\"params\":{\"passphrase\":\"123\"}}' http://127.0.0.1:6812",
                 "response": "{\"id\":7,\"jsonrpc\":\"2.0\",\"result\":\"f4124c636d37b1308ba95c14b2487134030d5817f7fa93f11bcbc616aab7c3b9\"}"
             }
         ],
@@ -1172,7 +1232,7 @@
                 "response": "Encrypt key successfully: 2e05c9ee45fdf58f7b007458298042fc3d3ad416a2f9977ace16d14164a3e882"
             },
             {
-                "request": "{\"id\":64,\"method\":\"encryptkey\",\"jsonrpc\":\"2.0\",\"params\":{\"pubkey\":\"2e05c9ee45fdf58f7b007458298042fc3d3ad416a2f9977ace16d14164a3e882\",\"passphrase\":\"123\"}}",
+                "request": "curl -d '{\"id\":64,\"method\":\"encryptkey\",\"jsonrpc\":\"2.0\",\"params\":{\"pubkey\":\"2e05c9ee45fdf58f7b007458298042fc3d3ad416a2f9977ace16d14164a3e882\",\"passphrase\":\"123\"}}' http://127.0.0.1:6812",
                 "response": "{\"id\":64,\"jsonrpc\":\"2.0\",\"result\":\"Encrypt key successfully: 2e05c9ee45fdf58f7b007458298042fc3d3ad416a2f9977ace16d14164a3e882\"}"
             },
             "multiverse-cli encryptkey 2e05c9ee45fdf58f7b007458298042fc3d3ad416a2f9977ace16d14164a3e882 456 123"
@@ -1211,7 +1271,7 @@
                 "response": "Lock key successfully: 2e05c9ee45fdf58f7b007458298042fc3d3ad416a2f9977ace16d14164a3e882"
             },
             {
-                "request": "{\"id\":1,\"method\":\"lockkey\",\"jsonrpc\":\"2.0\",\"params\":{\"pubkey\":\"2e05c9ee45fdf58f7b007458298042fc3d3ad416a2f9977ace16d14164a3e882\"}}",
+                "request": "curl -d '{\"id\":1,\"method\":\"lockkey\",\"jsonrpc\":\"2.0\",\"params\":{\"pubkey\":\"2e05c9ee45fdf58f7b007458298042fc3d3ad416a2f9977ace16d14164a3e882\"}}' http://127.0.0.1:6812",
                 "response": "{\"id\":1,\"jsonrpc\":\"2.0\",\"result\":\"Lock key successfully: 2e05c9ee45fdf58f7b007458298042fc3d3ad416a2f9977ace16d14164a3e882\"}"
             },
             "multiverse-cli encryptkey 2e05c9ee45fdf58f7b007458298042fc3d3ad416a2f9977ace16d14164a3e882 456 123"
@@ -1259,7 +1319,7 @@
                 "response": "Unlock key successfully: d716e72ce58e649a57d54751a7707e325b522497da3a69ae8301a2cbec391c07"
             },
             {
-                "request": "{\"id\":13,\"method\":\"unlockkey\",\"jsonrpc\":\"2.0\",\"params\":{\"pubkey\":\"d716e72ce58e649a57d54751a7707e325b522497da3a69ae8301a2cbec391c07\",\"passphrase\":\"1234\"}}",
+                "request": "curl -d '{\"id\":13,\"method\":\"unlockkey\",\"jsonrpc\":\"2.0\",\"params\":{\"pubkey\":\"d716e72ce58e649a57d54751a7707e325b522497da3a69ae8301a2cbec391c07\",\"passphrase\":\"1234\"}}' http://127.0.0.1:6812",
                 "response": "{\"id\":13,\"jsonrpc\":\"2.0\",\"result\":\"Unlock key successfully: d716e72ce58e649a57d54751a7707e325b522497da3a69ae8301a2cbec391c07\"}"
             },
             {
@@ -1267,7 +1327,7 @@
                 "response": "Unlock key successfully: f4124c636d37b1308ba95c14b2487134030d5817f7fa93f11bcbc616aab7c3b9"
             },
             {
-                "request": "{\"id\":15,\"method\":\"unlockkey\",\"jsonrpc\":\"2.0\",\"params\":{\"pubkey\":\"f4124c636d37b1308ba95c14b2487134030d5817f7fa93f11bcbc616aab7c3b9\",\"passphrase\":\"123\",\"timeout\":10}}",
+                "request": "curl -d '{\"id\":15,\"method\":\"unlockkey\",\"jsonrpc\":\"2.0\",\"params\":{\"pubkey\":\"f4124c636d37b1308ba95c14b2487134030d5817f7fa93f11bcbc616aab7c3b9\",\"passphrase\":\"123\",\"timeout\":10}}' http://127.0.0.1:6812",
                 "response": "{\"id\":15,\"jsonrpc\":\"2.0\",\"result\":\"Unlock key successfully: f4124c636d37b1308ba95c14b2487134030d5817f7fa93f11bcbc616aab7c3b9\"}"
             }
         ],
@@ -1311,7 +1371,7 @@
                 "response": "d716e72ce58e649a57d54751a7707e325b522497da3a69ae8301a2cbec391c07"
             },
             {
-                "request": "{\"id\":9,\"method\":\"importprivkey\",\"jsonrpc\":\"2.0\",\"params\":{\"privkey\":\"feb51e048380c0ade1cdb60b25e9f3e05cd4507553a97faadc8a94771fcb1a5b\"}}",
+                "request": "curl -d '{\"id\":9,\"method\":\"importprivkey\",\"jsonrpc\":\"2.0\",\"params\":{\"privkey\":\"feb51e048380c0ade1cdb60b25e9f3e05cd4507553a97faadc8a94771fcb1a5b\"}}' http://127.0.0.1:6812",
                 "response": "{\"id\":9,\"jsonrpc\":\"2.0\",\"result\":\"d716e72ce58e649a57d54751a7707e325b522497da3a69ae8301a2cbec391c07\"}"
             }
         ],
@@ -1346,7 +1406,7 @@
                 "response": "d716e72ce58e649a57d54751a7707e325b522497da3a69ae8301a2cbec391c07"
             },
             {
-                "request": "{\"id\":14,\"method\":\"importkey\",\"jsonrpc\":\"2.0\",\"params\":{\"pubkey\":\"071c39eccba20183ae693ada9724525b327e70a75147d5579a648ee52ce716d700000000346783653e9035de91d5ac79545e17911e5825b50d60a2e04ac8451aa83c4ae4f0ea063a5917b68256a3bd391966b30f5660e7d5d1777ae996a49f4f\"}}",
+                "request": "curl -d '{\"id\":14,\"method\":\"importkey\",\"jsonrpc\":\"2.0\",\"params\":{\"pubkey\":\"071c39eccba20183ae693ada9724525b327e70a75147d5579a648ee52ce716d700000000346783653e9035de91d5ac79545e17911e5825b50d60a2e04ac8451aa83c4ae4f0ea063a5917b68256a3bd391966b30f5660e7d5d1777ae996a49f4f\"}}' http://127.0.0.1:6812",
                 "response": "{\"id\":14,\"jsonrpc\":\"2.0\",\"result\":\"d716e72ce58e649a57d54751a7707e325b522497da3a69ae8301a2cbec391c07\"}"
             }
         ],
@@ -1381,7 +1441,7 @@
                 "response": "071c39eccba20183ae693ada9724525b327e70a75147d5579a648ee52ce716d700000000346783653e9035de91d5ac79545e17911e5825b50d60a2e04ac8451aa83c4ae4f0ea063a5917b68256a3bd391966b30f5660e7d5d1777ae996a49f4f"
             },
             {
-                "request": "{\"id\":10,\"method\":\"exportkey\",\"jsonrpc\":\"2.0\",\"params\":{\"pubkey\":\"d716e72ce58e649a57d54751a7707e325b522497da3a69ae8301a2cbec391c07\"}}",
+                "request": "curl -d '{\"id\":10,\"method\":\"exportkey\",\"jsonrpc\":\"2.0\",\"params\":{\"pubkey\":\"d716e72ce58e649a57d54751a7707e325b522497da3a69ae8301a2cbec391c07\"}}' http://127.0.0.1:6812",
                 "response": "{\"id\":10,\"jsonrpc\":\"2.0\",\"result\":\"071c39eccba20183ae693ada9724525b327e70a75147d5579a648ee52ce716d700000000346783653e9035de91d5ac79545e17911e5825b50d60a2e04ac8451aa83c4ae4f0ea063a5917b68256a3bd391966b30f5660e7d5d1777ae996a49f4f\"}"
             }
         ],
@@ -1408,7 +1468,7 @@
                 "response": "20g0b87qxcd52ceh9zmpzx0hy46pjfzdnqbkh8f4tqs4y0r6sxyzyny25"
             },
             {
-                "request": "{\"id\":1,\"method\":\"addnewtemplate\",\"jsonrpc\":\"2.0\",\"params\":{\"type\":\"mint\",\"mint\":{\"mint\":\"e8e3770e774d5ad84a8ea65ed08cc7c5c30b42e045623604d5c5c6be95afb4f9\",\"spent\":\"1z6taz5dyrv2xa11pc92y0ggbrf2wf36gbtk8wjprb96qe3kqwfm3ayc1\"}}}",
+                "request": "curl -d '{\"id\":1,\"method\":\"addnewtemplate\",\"jsonrpc\":\"2.0\",\"params\":{\"type\":\"mint\",\"mint\":{\"mint\":\"e8e3770e774d5ad84a8ea65ed08cc7c5c30b42e045623604d5c5c6be95afb4f9\",\"spent\":\"1z6taz5dyrv2xa11pc92y0ggbrf2wf36gbtk8wjprb96qe3kqwfm3ayc1\"}}}' http://127.0.0.1:6812",
                 "response": "{\"id\":1,\"jsonrpc\":\"2.0\",\"result\":\"20g0b87qxcd52ceh9zmpzx0hy46pjfzdnqbkh8f4tqs4y0r6sxyzyny25\"}"
             },
             "multiverse-cli addnewtemplate delegate '{\"delegate\":\"2e05c9ee45fdf58f7b007458298042fc3d3ad416a2f9977ace16d14164a3e882\",\"owner\":\"1gbma6s21t4bcwymqz6h1dn1t7qy45019b1t00ywfyqymbvp90mqc1wmq\"}'",
@@ -1450,7 +1510,7 @@
                 "response": "21w2040000000000000000000000000000000000000000000000epcek"
             },
             {
-                "request": "{\"id\":52,\"method\":\"importtemplate\",\"jsonrpc\":\"2.0\",\"params\":{\"data\":\"0100010282e8a36441d116ce7a97f9a216d43a3dfc4280295874007b8ff5fd45eec9052e01b9c3b7aa16c6cb1bf193faf717580d03347148b2145ca98b30b1376d634c12f402\"}}",
+                "request": "curl -d '{\"id\":52,\"method\":\"importtemplate\",\"jsonrpc\":\"2.0\",\"params\":{\"data\":\"0100010282e8a36441d116ce7a97f9a216d43a3dfc4280295874007b8ff5fd45eec9052e01b9c3b7aa16c6cb1bf193faf717580d03347148b2145ca98b30b1376d634c12f402\"}}' http://127.0.0.1:6812",
                 "response": "{\"id\":52,\"jsonrpc\":\"2.0\",\"result\":\"21w2040000000000000000000000000000000000000000000000epcek\"}"
             }
         ],
@@ -1485,7 +1545,7 @@
                 "response": "0100010282e8a36441d116ce7a97f9a216d43a3dfc4280295874007b8ff5fd45eec9052e01b9c3b7aa16c6cb1bf193faf717580d03347148b2145ca98b30b1376d634c12f402"
             },
             {
-                "request": "{\"id\":25,\"method\":\"exporttemplate\",\"jsonrpc\":\"2.0\",\"params\":{\"address\":\"2040fpytdr4k5h8tk0nferr7zb51tkccrkgqf341s6tg05q9xe6hth1m4\"}}",
+                "request": "curl -d '{\"id\":25,\"method\":\"exporttemplate\",\"jsonrpc\":\"2.0\",\"params\":{\"address\":\"2040fpytdr4k5h8tk0nferr7zb51tkccrkgqf341s6tg05q9xe6hth1m4\"}}' http://127.0.0.1:6812",
                 "response": "{\"id\":25,\"jsonrpc\":\"2.0\",\"result\":\"0100010282e8a36441d116ce7a97f9a216d43a3dfc4280295874007b8ff5fd45eec9052e01b9c3b7aa16c6cb1bf193faf717580d03347148b2145ca98b30b1376d634c12f402\"}"
             }
         ],
@@ -1560,7 +1620,7 @@
                 "response": "{\"isvalid\":true,\"addressdata\":{\"address\":\"20g0753dp5b817d7v0hbag6a4neetzfdgbcyt2pkx93hrzn97epzbyn26\",\"ismine\":true,\"type\":\"template\",\"template\":\"mint\"}}"
             },
             {
-                "request": "{\"id\":2,\"method\":\"validateaddress\",\"jsonrpc\":\"2.0\",\"params\":{\"address\":\"20g0753dp5b817d7v0hbag6a4neetzfdgbcyt2pkx93hrzn97epzbyn26\"}}",
+                "request": "curl -d '{\"id\":2,\"method\":\"validateaddress\",\"jsonrpc\":\"2.0\",\"params\":{\"address\":\"20g0753dp5b817d7v0hbag6a4neetzfdgbcyt2pkx93hrzn97epzbyn26\"}}' http://127.0.0.1:6812",
                 "response": "{\"id\":2,\"jsonrpc\":\"2.0\",\"result\":{\"isvalid\":true,\"addressdata\":{\"address\":\"20g0753dp5b817d7v0hbag6a4neetzfdgbcyt2pkx93hrzn97epzbyn26\",\"ismine\":true,\"type\":\"template\",\"template\":\"mint\"}}}"
             },
             {
@@ -1568,7 +1628,7 @@
                 "response": "{\"isvalid\":false}"
             },
             {
-                "request": "{\"id\":3,\"method\":\"validateaddress\",\"jsonrpc\":\"2.0\",\"params\":{\"address\":\"123\"}}",
+                "request": "curl -d '{\"id\":3,\"method\":\"validateaddress\",\"jsonrpc\":\"2.0\",\"params\":{\"address\":\"123\"}}' http://127.0.0.1:6812",
                 "response": "{\"id\":3,\"jsonrpc\":\"2.0\",\"result\":{\"isvalid\":false}}"
             }
         ]
@@ -1602,7 +1662,7 @@
                 "response": "Resync wallet successfully."
             },
             {
-                "request": "{\"id\":38,\"method\":\"resyncwallet\",\"jsonrpc\":\"2.0\",\"params\":{}}",
+                "request": "curl -d '{\"id\":38,\"method\":\"resyncwallet\",\"jsonrpc\":\"2.0\",\"params\":{}}' http://127.0.0.1:6812",
                 "response": "{\"id\":38,\"jsonrpc\":\"2.0\",\"result\":\"Resync wallet successfully.\"}"
             },
             {
@@ -1674,7 +1734,7 @@
                 "response": "[{\"address\":\"20g098nza351f53wppg0kfnsbxqf80h3x8fwp9vdmc98fbrgbv6mtjagy\",\"avail\":30.00000000,\"locked\":0.00000000,\"unconfirmed\":0.00000000}]"
             },
             {
-                "request": "{\"id\":1,\"method\":\"getbalance\",\"jsonrpc\":\"2.0\",\"params\":{}}",
+                "request": "curl -d '{\"id\":1,\"method\":\"getbalance\",\"jsonrpc\":\"2.0\",\"params\":{}}' http://127.0.0.1:6812",
                 "response": "{\"id\":1,\"jsonrpc\":\"2.0\",\"result\":[{\"address\":\"20g098nza351f53wppg0kfnsbxqf80h3x8fwp9vdmc98fbrgbv6mtjagy\",\"avail\":30.00000000,\"locked\":0.00000000,\"unconfirmed\":0.00000000}]}"
             },
             {
@@ -1682,7 +1742,7 @@
                 "response": "[{\"address\":\"20g0944xkyk8ybcmzhpv86vb5777jn1sfrdf3svzqn9phxftqth8116bm\",\"avail\":58.99990000,\"locked\":0.00000000,\"unconfirmed\":13.99990000}]"
             },
             {
-                "request": "{\"id\":20,\"method\":\"getbalance\",\"jsonrpc\":\"2.0\",\"params\":{\"address\":\"20g0944xkyk8ybcmzhpv86vb5777jn1sfrdf3svzqn9phxftqth8116bm\"}}",
+                "request": "curl -d '{\"id\":20,\"method\":\"getbalance\",\"jsonrpc\":\"2.0\",\"params\":{\"address\":\"20g0944xkyk8ybcmzhpv86vb5777jn1sfrdf3svzqn9phxftqth8116bm\"}}' http://127.0.0.1:6812",
                 "response": "{\"id\":20,\"jsonrpc\":\"2.0\",\"result\":[{\"address\":\"20g0944xkyk8ybcmzhpv86vb5777jn1sfrdf3svzqn9phxftqth8116bm\",\"avail\":58.99990000,\"locked\":0.00000000,\"unconfirmed\":13.99990000}]}"
             }
         ]
@@ -1728,7 +1788,7 @@
                 "response": "[{\"txid\":\"4a8e6035b575699cdb25d45beadd49f18fb1303f57ec55493139e65d811e74ff\",\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\",\"blockheight\":31296,\"type\":\"work\",\"send\":false,\"to\":\"20g098nza351f53wppg0kfnsbxqf80h3x8fwp9vdmc98fbrgbv6mtjagy\",\"amount\":15.00000000,\"fee\":0.00000000,\"lockuntil\":0},{\"txid\":\"0aa6954236382a6c1c46cce7fa3165b4d1718f5e03ca67cd5fe831616a9000da\",\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\",\"blockheight\":31297,\"type\":\"work\",\"send\":false,\"to\":\"20g098nza351f53wppg0kfnsbxqf80h3x8fwp9vdmc98fbrgbv6mtjagy\",\"amount\":15.00000000,\"fee\":0.00000000,\"lockuntil\":0}]"
             },
             {
-                "request": "{\"id\":2,\"method\":\"listtransaction\",\"jsonrpc\":\"2.0\",\"params\":{}}",
+                "request": "curl -d '{\"id\":2,\"method\":\"listtransaction\",\"jsonrpc\":\"2.0\",\"params\":{}}' http://127.0.0.1:6812",
                 "response": "{\"id\":2,\"jsonrpc\":\"2.0\",\"result\":[{\"txid\":\"4a8e6035b575699cdb25d45beadd49f18fb1303f57ec55493139e65d811e74ff\",\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\",\"blockheight\":31296,\"type\":\"work\",\"send\":false,\"to\":\"20g098nza351f53wppg0kfnsbxqf80h3x8fwp9vdmc98fbrgbv6mtjagy\",\"amount\":15.00000000,\"fee\":0.00000000,\"lockuntil\":0},{\"txid\":\"0aa6954236382a6c1c46cce7fa3165b4d1718f5e03ca67cd5fe831616a9000da\",\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\",\"blockheight\":31297,\"type\":\"work\",\"send\":false,\"to\":\"20g098nza351f53wppg0kfnsbxqf80h3x8fwp9vdmc98fbrgbv6mtjagy\",\"amount\":15.00000000,\"fee\":0.00000000,\"lockuntil\":0}]}"
             },
             {
@@ -1736,7 +1796,7 @@
                 "response": "[{\"txid\":\"5a1b7bf5e32a77ecb3c53782a8e06f2b12bdcb73b677d6f89b6f82f85f14373a\",\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\",\"blockheight\":32086,\"type\":\"work\",\"send\":false,\"to\":\"20g098nza351f53wppg0kfnsbxqf80h3x8fwp9vdmc98fbrgbv6mtjagy\",\"amount\":15.00000000,\"fee\":0.00000000,\"lockuntil\":0}]"
             },
             {
-                "request": "{\"id\":0,\"method\":\"listtransaction\",\"jsonrpc\":\"2.0\",\"params\":{\"count\":1,\"offset\":-1}}",
+                "request": "curl -d '{\"id\":0,\"method\":\"listtransaction\",\"jsonrpc\":\"2.0\",\"params\":{\"count\":1,\"offset\":-1}}' http://127.0.0.1:6812",
                 "response": "{\"id\":0,\"jsonrpc\":\"2.0\",\"result\":[{\"txid\":\"5a1b7bf5e32a77ecb3c53782a8e06f2b12bdcb73b677d6f89b6f82f85f14373a\",\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\",\"blockheight\":32086,\"type\":\"work\",\"send\":false,\"to\":\"20g098nza351f53wppg0kfnsbxqf80h3x8fwp9vdmc98fbrgbv6mtjagy\",\"amount\":15.00000000,\"fee\":0.00000000,\"lockuntil\":0}]}"
             },
             {
@@ -1795,7 +1855,7 @@
                 "response": "01a9f3bb967f24396293903c856e99896a514756a220266afa347a8b8c7f0038"
             },
             {
-                "request": "{\"id\":18,\"method\":\"sendfrom\",\"jsonrpc\":\"2.0\",\"params\":{\"from\":\"20g0944xkyk8ybcmzhpv86vb5777jn1sfrdf3svzqn9phxftqth8116bm\",\"to\":\"1q71vfagprv5hqwckzbvhep0d0ct72j5j2heak2sgp4vptrtc2btdje3q\",\"amount\":1.00000000}}",
+                "request": "curl -d '{\"id\":18,\"method\":\"sendfrom\",\"jsonrpc\":\"2.0\",\"params\":{\"from\":\"20g0944xkyk8ybcmzhpv86vb5777jn1sfrdf3svzqn9phxftqth8116bm\",\"to\":\"1q71vfagprv5hqwckzbvhep0d0ct72j5j2heak2sgp4vptrtc2btdje3q\",\"amount\":1.00000000}}' http://127.0.0.1:6812",
                 "response": "{\"id\":18,\"jsonrpc\":\"2.0\",\"result\":\"01a9f3bb967f24396293903c856e99896a514756a220266afa347a8b8c7f0038\"}"
             },
             {
@@ -1803,7 +1863,7 @@
                 "response": "8f92969642024234481e104481f36145736b465ead2d52a6657cf38bd52bdf59"
             },
             {
-                "request": "{\"id\":53,\"method\":\"sendfrom\",\"jsonrpc\":\"2.0\",\"params\":{\"from\":\"20g0753dp5b817d7v0hbag6a4neetzfdgbcyt2pkx93hrzn97epzbyn26\",\"to\":\"1q71vfagprv5hqwckzbvhep0d0ct72j5j2heak2sgp4vptrtc2btdje3q\",\"amount\":1.00000000,\"txfee\":0.10000000,\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\"}}",
+                "request": "curl -d '{\"id\":53,\"method\":\"sendfrom\",\"jsonrpc\":\"2.0\",\"params\":{\"from\":\"20g0753dp5b817d7v0hbag6a4neetzfdgbcyt2pkx93hrzn97epzbyn26\",\"to\":\"1q71vfagprv5hqwckzbvhep0d0ct72j5j2heak2sgp4vptrtc2btdje3q\",\"amount\":1.00000000,\"txfee\":0.10000000,\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\"}}' http://127.0.0.1:6812",
                 "response": "{\"id\":53,\"jsonrpc\":\"2.0\",\"result\":\"8f92969642024234481e104481f36145736b465ead2d52a6657cf38bd52bdf59\"}"
             }
         ],
@@ -1868,7 +1928,7 @@
                 "response": "01000000000000002b747e24738befccff4a05c21dba749632cb8eb410233fa110e3f58a779b4325010ef45be50157453a57519929052d0818c269dee60be98958d5ab65bc7e0919810001b9c3b7aa16c6cb1bf193faf717580d03347148b2145ca98b30b1376d634c12f440420f0000000000a08601000000000002123400"
             },
             {
-                "request": "{\"id\":59,\"method\":\"createtransaction\",\"jsonrpc\":\"2.0\",\"params\":{\"from\":\"20g0753dp5b817d7v0hbag6a4neetzfdgbcyt2pkx93hrzn97epzbyn26\",\"to\":\"1q71vfagprv5hqwckzbvhep0d0ct72j5j2heak2sgp4vptrtc2btdje3q\",\"amount\":1.00000000,\"txfee\":0.10000000,\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\",\"data\":\"12345\"}}",
+                "request": "curl -d '{\"id\":59,\"method\":\"createtransaction\",\"jsonrpc\":\"2.0\",\"params\":{\"from\":\"20g0753dp5b817d7v0hbag6a4neetzfdgbcyt2pkx93hrzn97epzbyn26\",\"to\":\"1q71vfagprv5hqwckzbvhep0d0ct72j5j2heak2sgp4vptrtc2btdje3q\",\"amount\":1.00000000,\"txfee\":0.10000000,\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\",\"data\":\"12345\"}}' http://127.0.0.1:6812",
                 "response": "{\"id\":59,\"jsonrpc\":\"2.0\",\"result\":\"01000000000000002b747e24738befccff4a05c21dba749632cb8eb410233fa110e3f58a779b4325010ef45be50157453a57519929052d0818c269dee60be98958d5ab65bc7e0919810001b9c3b7aa16c6cb1bf193faf717580d03347148b2145ca98b30b1376d634c12f440420f0000000000a08601000000000002123400\"}"
             }
         ],
@@ -1915,7 +1975,7 @@
                 "response": "{\"hex\":\"01000000000000002b747e24738befccff4a05c21dba749632cb8eb410233fa110e3f58a779b4325010ef45be50157453a57519929052d0818c269dee60be98958d5ab65bc7e0919810001b9c3b7aa16c6cb1bf193faf717580d03347148b2145ca98b30b1376d634c12f440420f0000000000a0860100000000000212348182e8a36441d116ce7a97f9a216d43a3dfc4280295874007b8ff5fd45eec9052e0182e8a36441d116ce7a97f9a216d43a3dfc4280295874007b8ff5fd45eec9052ed494d90cd96c252446b4a10459fea8c06186154b2bee2ce2182556e9ba40e7e69ddae2501862e4251bba2abf11c90d6f1fd0dec48a1419e81bb8c7d922cf3e03\",\"complete\":true}"
             },
             {
-                "request": "{\"id\":62,\"method\":\"signtransaction\",\"jsonrpc\":\"2.0\",\"params\":{\"txdata\":\"01000000000000002b747e24738befccff4a05c21dba749632cb8eb410233fa110e3f58a779b4325010ef45be50157453a57519929052d0818c269dee60be98958d5ab65bc7e0919810001b9c3b7aa16c6cb1bf193faf717580d03347148b2145ca98b30b1376d634c12f440420f0000000000a08601000000000002123400\"}}",
+                "request": "curl -d '{\"id\":62,\"method\":\"signtransaction\",\"jsonrpc\":\"2.0\",\"params\":{\"txdata\":\"01000000000000002b747e24738befccff4a05c21dba749632cb8eb410233fa110e3f58a779b4325010ef45be50157453a57519929052d0818c269dee60be98958d5ab65bc7e0919810001b9c3b7aa16c6cb1bf193faf717580d03347148b2145ca98b30b1376d634c12f440420f0000000000a08601000000000002123400\"}}' http://127.0.0.1:6812",
                 "response": "{\"id\":62,\"jsonrpc\":\"2.0\",\"result\":{\"hex\":\"01000000000000002b747e24738befccff4a05c21dba749632cb8eb410233fa110e3f58a779b4325010ef45be50157453a57519929052d0818c269dee60be98958d5ab65bc7e0919810001b9c3b7aa16c6cb1bf193faf717580d03347148b2145ca98b30b1376d634c12f440420f0000000000a0860100000000000212348182e8a36441d116ce7a97f9a216d43a3dfc4280295874007b8ff5fd45eec9052e0182e8a36441d116ce7a97f9a216d43a3dfc4280295874007b8ff5fd45eec9052ed494d90cd96c252446b4a10459fea8c06186154b2bee2ce2182556e9ba40e7e69ddae2501862e4251bba2abf11c90d6f1fd0dec48a1419e81bb8c7d922cf3e03\",\"complete\":true}}"
             }
         ],
@@ -1952,7 +2012,7 @@
                 "response": "045977f8c07e6d846d6055357f36a70c16c071cb85115e3ffb498e171a9ac3f4aed1292203a0c8e42c4becafad3ced0d9874abd2a8b788fda9f07099a1e71707"
             },
             {
-                "request": "{\"id\":4,\"method\":\"signmessage\",\"jsonrpc\":\"2.0\",\"params\":{\"pubkey\":\"2e05c9ee45fdf58f7b007458298042fc3d3ad416a2f9977ace16d14164a3e882\",\"message\":\"123456\"}}",
+                "request": "curl -d '{\"id\":4,\"method\":\"signmessage\",\"jsonrpc\":\"2.0\",\"params\":{\"pubkey\":\"2e05c9ee45fdf58f7b007458298042fc3d3ad416a2f9977ace16d14164a3e882\",\"message\":\"123456\"}}' http://127.0.0.1:6812",
                 "response": "{\"id\":4,\"jsonrpc\":\"2.0\",\"result\":\"045977f8c07e6d846d6055357f36a70c16c071cb85115e3ffb498e171a9ac3f4aed1292203a0c8e42c4becafad3ced0d9874abd2a8b788fda9f07099a1e71707\"}"
             }
         ],
@@ -1965,7 +2025,7 @@
     "listaddress": {
         "type": "command",
         "name": "ListAddress",
-        "desc": "list all of addresses from pub keys and template ids",
+        "desc": "List all of addresses from pub keys and template ids",
         "request": {
             "type": "object",
             "content": {}
@@ -2010,7 +2070,7 @@
                 "response": "[{\"type\":\"pubkey\",\"pubkey\":{\"key\":\"182e8a36441d116ce7a97f9a216d43a3dfc4280295874007b8ff5fd45eec9052e\",\"address\":\"1gbma6s21t4bcwymqz6h1dn1t7qy45019b1t00ywfyqymbvp90mqc1wmq\"}},{\"type\":\"pubkey\",\"pubkey\":{\"key\":\"1051ac9b153196c736adf61ad71b51fe9659f8770df643af4d27616ca85c0b365\",\"address\":\"10mdckcak35p76tpzc6pq3d8zx5jsz1vgvxj3nx6jerbcn1e0pdjjfcr6\"}}]"
             },
             {
-                "request": "{\"id\":1,\"method\":\"listaddress\",\"jsonrpc\":\"2.0\",\"params\":{}}",
+                "request": "curl -d '{\"id\":1,\"method\":\"listaddress\",\"jsonrpc\":\"2.0\",\"params\":{}}' http://127.0.0.1:6812",
                 "response": "{\"id\":1,\"jsonrpc\":\"2.0\",\"result\":[{\"type\":\"pubkey\",\"pubkey\":{\"key\":\"182e8a36441d116ce7a97f9a216d43a3dfc4280295874007b8ff5fd45eec9052e\",\"address\":\"1gbma6s21t4bcwymqz6h1dn1t7qy45019b1t00ywfyqymbvp90mqc1wmq\"}},{\"type\":\"pubkey\",\"pubkey\":{\"key\":\"1051ac9b153196c736adf61ad71b51fe9659f8770df643af4d27616ca85c0b365\",\"address\":\"10mdckcak35p76tpzc6pq3d8zx5jsz1vgvxj3nx6jerbcn1e0pdjjfcr6\"}}]}"
             }
         ]
@@ -2091,6 +2151,90 @@
             "{\"code\":-401,\"message\":\"Failed to add template\"}"
         ]
     },
+    "makeorigin": {
+        "type": "command",
+        "name": "MakeOrigin",
+        "desc": "Return hex-encoded block.",
+        "request": {
+            "type": "object",
+            "content": {
+                "prev": {
+                    "type": "string",
+                    "desc": "prev block hash"
+                },
+                "owner": {
+                    "type": "string",
+                    "desc": "owner address"
+                },
+                "amount": {
+                    "type": "double",
+                    "desc": "amount"
+                },
+                "name": {
+                    "type": "string",
+                    "desc": "unique fork name"
+                },
+                "symbol": {
+                    "type": "string",
+                    "desc": "fork symbol"
+                },
+                "reward": {
+                    "type": "double",
+                    "desc": "mint reward"
+                },
+                "isolated": {
+                    "type": "bool",
+                    "desc": "is isolated",
+                    "default": true,
+                    "required": false,
+                    "opt": "i"
+                },
+                "private": {
+                    "type": "bool",
+                    "desc": "is private",
+                    "default": false,
+                    "required": false,
+                    "opt": "p"
+                },
+                "enclosed": {
+                    "type": "bool",
+                    "desc": "is enclosed",
+                    "default": false,
+                    "required": false,
+                    "opt": "e"
+                }
+            }
+        },
+        "response": {
+            "type": "object",
+            "name": "block",
+            "desc": "hex-encoded block",
+            "content":{
+                "hash":{
+                    "type":"string",
+                    "desc":"block hash"
+                },
+                "hex":{
+                    "type":"string",
+                    "desc":"block data hex"
+                }
+            }
+        },
+        "example": [
+            {
+                "request": "multiverse-cli makeorigin a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0 1gbma6s21t4bcwymqz6h1dn1t7qy45019b1t00ywfyqymbvp90mqc1wmq 1 POW",
+                "response": "{\"hash\":\"c80cad6f2e8c0b0cee5182fcb70e0da40149b5740223ea17814d70bf8740fdab\",\"hex\":\"010000ffc06f585ac0afdc176980a0a1ebe849d09b51e4b4c1dd46fb939579d71bdc55809d6f3da6000000000000000000000000000000000000000000000000000000000000000003504f5701000001000000000000000000000000000000000000000000000000000000000000000000000000000182e8a36441d116ce7a97f9a216d43a3dfc4280295874007b8ff5fd45eec9052e40420f0000000000000000000000000000000000\"}"
+            },
+            {
+                "request": "curl -d '{\"id\":7,\"method\":\"makeorigin\",\"jsonrpc\":\"2.0\",\"params\":{\"prev\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\",\"address\":\"1gbma6s21t4bcwymqz6h1dn1t7qy45019b1t00ywfyqymbvp90mqc1wmq\",\"amount\":1,\"ident\":\"POW\"}}' http://127.0.0.1:6812",
+                "response": "{\"id\":7,\"jsonrpc\":\"2.0\",\"result\":{\"hash\":\"c80cad6f2e8c0b0cee5182fcb70e0da40149b5740223ea17814d70bf8740fdab\",\"hex\":\"010000ffc06f585ac0afdc176980a0a1ebe849d09b51e4b4c1dd46fb939579d71bdc55809d6f3da6000000000000000000000000000000000000000000000000000000000000000003504f5701000001000000000000000000000000000000000000000000000000000000000000000000000000000182e8a36441d116ce7a97f9a216d43a3dfc4280295874007b8ff5fd45eec9052e40420f0000000000000000000000000000000000\"}}"
+            }
+        ],
+        "error": [
+            "{\"code\":-8,\"message\":\"TX decode failed\"}",
+            "{\"code\":-6,\"message\":\"Unknown anchor block\"}"
+        ]
+    },
     "verifymessage": {
         "type": "command",
         "name": "VerifyMessage",
@@ -2123,7 +2267,7 @@
                 "response": "true"
             },
             {
-                "request": "{\"id\":5,\"method\":\"verifymessage\",\"jsonrpc\":\"2.0\",\"params\":{\"pubkey\":\"2e05c9ee45fdf58f7b007458298042fc3d3ad416a2f9977ace16d14164a3e882\",\"message\":\"123456\",\"sig\":\"045977f8c07e6d846d6055357f36a70c16c071cb85115e3ffb498e171a9ac3f4aed1292203a0c8e42c4becafad3ced0d9874abd2a8b788fda9f07099a1e71707\"}}",
+                "request": "curl -d '{\"id\":5,\"method\":\"verifymessage\",\"jsonrpc\":\"2.0\",\"params\":{\"pubkey\":\"2e05c9ee45fdf58f7b007458298042fc3d3ad416a2f9977ace16d14164a3e882\",\"message\":\"123456\",\"sig\":\"045977f8c07e6d846d6055357f36a70c16c071cb85115e3ffb498e171a9ac3f4aed1292203a0c8e42c4becafad3ced0d9874abd2a8b788fda9f07099a1e71707\"}}' http://127.0.0.1:6812",
                 "response": "{\"id\":5,\"jsonrpc\":\"2.0\",\"result\":true}"
             },
             {
@@ -2131,7 +2275,7 @@
                 "response": "false"
             },
             {
-                "request": "{\"id\":6,\"method\":\"verifymessage\",\"jsonrpc\":\"2.0\",\"params\":{\"pubkey\":\"2e05c9ee45fdf58f7b007458298042fc3d3ad416a2f9977ace16d14164a3e882\",\"message\":\"12345\",\"sig\":\"045977f8c07e6d846d6055357f36a70c16c071cb85115e3ffb498e171a9ac3f4aed1292203a0c8e42c4becafad3ced0d9874abd2a8b788fda9f07099a1e71707\"}}",
+                "request": "curl -d '{\"id\":6,\"method\":\"verifymessage\",\"jsonrpc\":\"2.0\",\"params\":{\"pubkey\":\"2e05c9ee45fdf58f7b007458298042fc3d3ad416a2f9977ace16d14164a3e882\",\"message\":\"12345\",\"sig\":\"045977f8c07e6d846d6055357f36a70c16c071cb85115e3ffb498e171a9ac3f4aed1292203a0c8e42c4becafad3ced0d9874abd2a8b788fda9f07099a1e71707\"}}' http://127.0.0.1:6812",
                 "response": "{\"id\":6,\"jsonrpc\":\"2.0\",\"result\":false}"
             }
         ]
@@ -2164,7 +2308,7 @@
                 "response": "{\"privkey\":\"833a5d51d2db84debc0eb3a40d7d41b2723452d211d7e81ce489a95ef48b2324\",\"pubkey\":\"e8e3770e774d5ad84a8ea65ed08cc7c5c30b42e045623604d5c5c6be95afb4f9\"}"
             },
             {
-                "request": "curl -d {\"id\":42,\"method\":\"makekeypair\",\"jsonrpc\":\"2.0\",\"params\":{}}",
+                "request": "curl -d '{\"id\":42,\"method\":\"makekeypair\",\"jsonrpc\":\"2.0\",\"params\":{}}' http://127.0.0.1:6812",
                 "response": "{\"id\":42,\"jsonrpc\":\"2.0\",\"result\":{\"privkey\":\"833a5d51d2db84debc0eb3a40d7d41b2723452d211d7e81ce489a95ef48b2324\",\"pubkey\":\"e8e3770e774d5ad84a8ea65ed08cc7c5c30b42e045623604d5c5c6be95afb4f9\"}}"
             }
         ]
@@ -2193,7 +2337,7 @@
                 "response": "1z6taz5dyrv2xa11pc92y0ggbrf2wf36gbtk8wjprb96qe3kqwfm3ayc1"
             },
             {
-                "request": "curl -d {\"id\":44,\"method\":\"getpubkeyaddress\",\"jsonrpc\":\"2.0\",\"params\":{\"pubkey\":\"e8e3770e774d5ad84a8ea65ed08cc7c5c30b42e045623604d5c5c6be95afb4f9\"}}",
+                "request": "curl -d '{\"id\":44,\"method\":\"getpubkeyaddress\",\"jsonrpc\":\"2.0\",\"params\":{\"pubkey\":\"e8e3770e774d5ad84a8ea65ed08cc7c5c30b42e045623604d5c5c6be95afb4f9\"}}' http://127.0.0.1:6812",
                 "response": "{\"id\":44,\"jsonrpc\":\"2.0\",\"result\":\"1z6taz5dyrv2xa11pc92y0ggbrf2wf36gbtk8wjprb96qe3kqwfm3ayc1\"}"
             }
         ]
@@ -2222,7 +2366,7 @@
                 "response": "21w2040000000000000000000000000000000000000000000000epcek"
             },
             {
-                "request": "{\"id\":53,\"method\":\"gettemplateaddress\",\"jsonrpc\":\"2.0\",\"params\":{\"tid\":\"2040fpytdr4k5h8tk0nferr7zb51tkccrkgqf341s6tg05q9xe6hth1m4\"}}",
+                "request": "curl -d '{\"id\":53,\"method\":\"gettemplateaddress\",\"jsonrpc\":\"2.0\",\"params\":{\"tid\":\"2040fpytdr4k5h8tk0nferr7zb51tkccrkgqf341s6tg05q9xe6hth1m4\"}}' http://127.0.0.1:6812",
                 "response": "{\"id\":53,\"jsonrpc\":\"2.0\",\"result\":\"21w2040000000000000000000000000000000000000000000000epcek\"}"
             }
         ]
@@ -2254,7 +2398,7 @@
                 "response": "{\"address\":\"208043ht3c51qztrdfa0f3349pe2m8ajjw1mdb2py68fbckaa2s24tq55\",\"hex\":\"0200010282e8a36441d116ce7a97f9a216d43a3dfc4280295874007b8ff5fd45eec9052eb9c3b7aa16c6cb1bf193faf717580d03347148b2145ca98b30b1376d634c12f4\"}"
             },
             {
-                "request": "{\"id\":54,\"method\":\"maketemplate\",\"jsonrpc\":\"2.0\",\"params\":{\"type\":\"multisig\",\"multisig\":{\"required\":1,\"pubkeys\":[\"2e05c9ee45fdf58f7b007458298042fc3d3ad416a2f9977ace16d14164a3e882\",\"f4124c636d37b1308ba95c14b2487134030d5817f7fa93f11bcbc616aab7c3b9\"]}}}",
+                "request": "curl -d '{\"id\":54,\"method\":\"maketemplate\",\"jsonrpc\":\"2.0\",\"params\":{\"type\":\"multisig\",\"multisig\":{\"required\":1,\"pubkeys\":[\"2e05c9ee45fdf58f7b007458298042fc3d3ad416a2f9977ace16d14164a3e882\",\"f4124c636d37b1308ba95c14b2487134030d5817f7fa93f11bcbc616aab7c3b9\"]}}}' http://127.0.0.1:6812",
                 "response": "{\"id\":54,\"jsonrpc\":\"2.0\",\"result\":{\"address\":\"208043ht3c51qztrdfa0f3349pe2m8ajjw1mdb2py68fbckaa2s24tq55\",\"hex\":\"0200010282e8a36441d116ce7a97f9a216d43a3dfc4280295874007b8ff5fd45eec9052eb9c3b7aa16c6cb1bf193faf717580d03347148b2145ca98b30b1376d634c12f4\"}}"
             },
             "multiverse-cli maketemplate delegate '{\"delegate\":\"2e05c9ee45fdf58f7b007458298042fc3d3ad416a2f9977ace16d14164a3e882\",\"owner\":\"1gbma6s21t4bcwymqz6h1dn1t7qy45019b1t00ywfyqymbvp90mqc1wmq\"}'",
@@ -2295,63 +2439,8 @@
                 "response": "{\"txid\":\"b492ea1de2d540288f6e45fd21bc4ac2cd2fcfeb63ec43c50acdb69debfad10a\",\"version\":1,\"type\":\"token\",\"lockuntil\":0,\"anchor\":\"25439b778af5e310a13f2310b48ecb329674ba1dc2054affccef8b73247e742b\",\"vin\":[{\"txid\":\"8119097ebc65abd55889e90be6de69c218082d05299951573a455701e55bf40e\",\"vout\":0}],\"sendto\":\"1q71vfagprv5hqwckzbvhep0d0ct72j5j2heak2sgp4vptrtc2btdje3q\",\"amount\":1.00000000,\"txfee\":0.10000000,\"data\":\"1234\",\"sig\":\"\",\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\"}"
             },
             {
-                "request": "{\"id\":1,\"method\":\"decodetransaction\",\"jsonrpc\":\"2.0\",\"params\":{\"txdata\":\"01000000000000002b747e24738befccff4a05c21dba749632cb8eb410233fa110e3f58a779b4325010ef45be50157453a57519929052d0818c269dee60be98958d5ab65bc7e0919810001b9c3b7aa16c6cb1bf193faf717580d03347148b2145ca98b30b1376d634c12f440420f0000000000a08601000000000002123400\"}}",
+                "request": "curl -d '{\"id\":1,\"method\":\"decodetransaction\",\"jsonrpc\":\"2.0\",\"params\":{\"txdata\":\"01000000000000002b747e24738befccff4a05c21dba749632cb8eb410233fa110e3f58a779b4325010ef45be50157453a57519929052d0818c269dee60be98958d5ab65bc7e0919810001b9c3b7aa16c6cb1bf193faf717580d03347148b2145ca98b30b1376d634c12f440420f0000000000a08601000000000002123400\"}}' http://127.0.0.1:6812",
                 "response": "{\"id\":1,\"jsonrpc\":\"2.0\",\"result\":{\"txid\":\"b492ea1de2d540288f6e45fd21bc4ac2cd2fcfeb63ec43c50acdb69debfad10a\",\"version\":1,\"type\":\"token\",\"lockuntil\":0,\"anchor\":\"25439b778af5e310a13f2310b48ecb329674ba1dc2054affccef8b73247e742b\",\"vin\":[{\"txid\":\"8119097ebc65abd55889e90be6de69c218082d05299951573a455701e55bf40e\",\"vout\":0}],\"sendto\":\"1q71vfagprv5hqwckzbvhep0d0ct72j5j2heak2sgp4vptrtc2btdje3q\",\"amount\":1.00000000,\"txfee\":0.10000000,\"data\":\"1234\",\"sig\":\"\",\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\"}}"
-            }
-        ],
-        "error": [
-            "{\"code\":-8,\"message\":\"TX decode failed\"}",
-            "{\"code\":-6,\"message\":\"Unknown anchor block\"}"
-        ]
-    },
-    "makeorigin": {
-        "type": "command",
-        "name": "MakeOrigin",
-        "desc": "Return hex-encoded block.",
-        "request": {
-            "type": "object",
-            "content": {
-                "prev": {
-                    "type": "string",
-                    "desc": "prev block hash"
-                },
-                "address": {
-                    "type": "string",
-                    "desc": "address"
-                },
-                "amount": {
-                    "type": "double",
-                    "desc": "amount"
-                },
-                "ident": {
-                    "type": "string",
-                    "desc": "indent"
-                }
-            }
-        },
-        "response": {
-            "type": "object",
-            "name": "block",
-            "desc": "hex-encoded block",
-            "content":{
-                "hash":{
-                    "type":"string",
-                    "desc":"block hash"
-                },
-                "hex":{
-                    "type":"string",
-                    "desc":"block data hex"
-                }
-            }
-        },
-        "example": [
-            {
-                "request": "multiverse-cli makeorigin a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0 1gbma6s21t4bcwymqz6h1dn1t7qy45019b1t00ywfyqymbvp90mqc1wmq 1 POW",
-                "response": "{\"hash\":\"c80cad6f2e8c0b0cee5182fcb70e0da40149b5740223ea17814d70bf8740fdab\",\"hex\":\"010000ffc06f585ac0afdc176980a0a1ebe849d09b51e4b4c1dd46fb939579d71bdc55809d6f3da6000000000000000000000000000000000000000000000000000000000000000003504f5701000001000000000000000000000000000000000000000000000000000000000000000000000000000182e8a36441d116ce7a97f9a216d43a3dfc4280295874007b8ff5fd45eec9052e40420f0000000000000000000000000000000000\"}"
-            },
-            {
-                "request": "{\"id\":7,\"method\":\"makeorigin\",\"jsonrpc\":\"2.0\",\"params\":{\"prev\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\",\"address\":\"1gbma6s21t4bcwymqz6h1dn1t7qy45019b1t00ywfyqymbvp90mqc1wmq\",\"amount\":1,\"ident\":\"POW\"}}",
-                "response": "{\"id\":7,\"jsonrpc\":\"2.0\",\"result\":{\"hash\":\"c80cad6f2e8c0b0cee5182fcb70e0da40149b5740223ea17814d70bf8740fdab\",\"hex\":\"010000ffc06f585ac0afdc176980a0a1ebe849d09b51e4b4c1dd46fb939579d71bdc55809d6f3da6000000000000000000000000000000000000000000000000000000000000000003504f5701000001000000000000000000000000000000000000000000000000000000000000000000000000000182e8a36441d116ce7a97f9a216d43a3dfc4280295874007b8ff5fd45eec9052e40420f0000000000000000000000000000000000\"}}"
             }
         ],
         "error": [
@@ -2429,7 +2518,7 @@
                 "response": "{\"work\":{\"prevblockhash\":\"f734bb6bc12ab4058532113cfe6a3412d1036eae25f60a97ee1b17effc6e74de\",\"prevblocktime\":1538142032,\"algo\":1,\"bits\":25,\"data\":\"01000100822fae5bde746efcef171bee970af625ae6e03d112346afe3c11328505b42ac16bbb34f74300000000000000000000000000000000000000000000000000000000000000000001190000000000000000000000000000000000000000000000000000000000000000\"}}"
             },
             {
-                "request": "{\"id\":1,\"method\":\"getwork\",\"jsonrpc\":\"2.0\",\"params\":{\"prev\":\"7ee748e9a827d476d1b4ddb77dc8f9bad779f7b71593d5c5bf73b535e1cc2446\"}}",
+                "request": "curl -d '{\"id\":1,\"method\":\"getwork\",\"jsonrpc\":\"2.0\",\"params\":{\"prev\":\"7ee748e9a827d476d1b4ddb77dc8f9bad779f7b71593d5c5bf73b535e1cc2446\"}}' http://127.0.0.1:6812",
                 "response": "{\"id\":1,\"jsonrpc\":\"2.0\",\"result\":{\"work\":{\"prevblockhash\":\"f734bb6bc12ab4058532113cfe6a3412d1036eae25f60a97ee1b17effc6e74de\",\"prevblocktime\":1538142032,\"algo\":1,\"bits\":25,\"data\":\"01000100822fae5bde746efcef171bee970af625ae6e03d112346afe3c11328505b42ac16bbb34f74300000000000000000000000000000000000000000000000000000000000000000001190000000000000000000000000000000000000000000000000000000000000000\"}}}"
             }
         ]
@@ -2466,12 +2555,12 @@
         },
         "example": [
             {
-                "request": "{\"id\":2,\"method\":\"submitwork\",\"jsonrpc\":\"2.0\",\"params\":{\"data\":\"01000100502fae5b4624cce135b573bfc5d59315b7f779d7baf9c87db7ddb4d176d427a8e948e77e43000000000000000000000000000000000000000000000000000000000000000000011acfff020000000000000000000000000000000000000000000000000000000000\",\"spent\":\"1dj5qcjst7eh4tems36n1m500hhyba3vx436t4a8hgdm7r7jrdbf2yqp9\",\"privkey\":\"41a9f94395ced97d5066e2d099df4f1e2bd96057f9c38e8ea3f8a02eccd0a98e\"}}",
-                "response": "{\"id\":2,\"jsonrpc\":\"2.0\",\"result\":\"f734bb6bc12ab4058532113cfe6a3412d1036eae25f60a97ee1b17effc6e74de\"}"
-            },
-            {
                 "request": "multiverse-cli submitwork 01000100502fae5b4624cce135b573bfc5d59315b7f779d7baf9c87db7ddb4d176d427a8e948e77e43000000000000000000000000000000000000000000000000000000000000000000011acfff020000000000000000000000000000000000000000000000000000000000 1dj5qcjst7eh4tems36n1m500hhyba3vx436t4a8hgdm7r7jrdbf2yqp9 41a9f94395ced97d5066e2d099df4f1e2bd96057f9c38e8ea3f8a02eccd0a98e",
                 "response": "f734bb6bc12ab4058532113cfe6a3412d1036eae25f60a97ee1b17effc6e74de"
+            },
+            {
+                "request": "curl -d '{\"id\":2,\"method\":\"submitwork\",\"jsonrpc\":\"2.0\",\"params\":{\"data\":\"01000100502fae5b4624cce135b573bfc5d59315b7f779d7baf9c87db7ddb4d176d427a8e948e77e43000000000000000000000000000000000000000000000000000000000000000000011acfff020000000000000000000000000000000000000000000000000000000000\",\"spent\":\"1dj5qcjst7eh4tems36n1m500hhyba3vx436t4a8hgdm7r7jrdbf2yqp9\",\"privkey\":\"41a9f94395ced97d5066e2d099df4f1e2bd96057f9c38e8ea3f8a02eccd0a98e\"}}' http://127.0.0.1:6812",
+                "response": "{\"id\":2,\"jsonrpc\":\"2.0\",\"result\":\"f734bb6bc12ab4058532113cfe6a3412d1036eae25f60a97ee1b17effc6e74de\"}"
             }
         ]
     }

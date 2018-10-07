@@ -31,10 +31,9 @@ protected:
     const CMvRPCClientConfig * WalleveConfig();
 
     bool HandleEvent(walleve::CWalleveEventHttpGetRsp& event);
-    bool GetResponse(uint64 nNonce,const std::string& strWallet,const std::string& content);
-    // bool GetResponse(uint64 nNonce,const std::string& strWallet,json_spirit::Object& jsonReq);
-    bool CallRPC(rpc::CRPCParamPtr spParam, const std::string& strWallet, int nReqId);
-    bool CallConsoleCommand(const std::vector<std::string>& vCommand,std::string& strWallet);
+    bool GetResponse(uint64 nNonce, const std::string& content);
+    bool CallRPC(rpc::CRPCParamPtr spParam, int nReqId);
+    bool CallConsoleCommand(const std::vector<std::string>& vCommand);
     void LaunchConsole();
     void LaunchCommand();
     void CancelCommand();

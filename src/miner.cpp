@@ -147,7 +147,7 @@ bool CMiner::HandleEvent(CWalleveEventHttpGetRsp& event)
             if (spResp->IsError())
             {
                 // Error
-                cerr << spResp->spError->Serialize() << endl;
+                cerr << spResp->spError->Serialize(true) << endl;
                 cerr << strHelpTips << endl;
             }
             else if (spResp->IsSuccessful())
@@ -188,7 +188,7 @@ bool CMiner::HandleEvent(CWalleveEventHttpGetRsp& event)
             }
             else
             {
-                cerr << "server error: neither error nor result. resp: " << spResp->Serialize() << endl;
+                cerr << "server error: neither error nor result. resp: " << spResp->Serialize(true) << endl;
             }
         } 
         else if (event.nNonce == nNonceSubmitWork)
@@ -197,7 +197,7 @@ bool CMiner::HandleEvent(CWalleveEventHttpGetRsp& event)
             if (spResp->IsError())
             {
                 // Error
-                cerr << spResp->spError->Serialize() << endl;
+                cerr << spResp->spError->Serialize(true) << endl;
                 cerr << strHelpTips << endl;
             }
             else if (spResp->IsSuccessful())
@@ -210,7 +210,7 @@ bool CMiner::HandleEvent(CWalleveEventHttpGetRsp& event)
             }
             else
             {
-                cerr << "server error: neither error nor result. resp: " << spResp->Serialize() << endl;
+                cerr << "server error: neither error nor result. resp: " << spResp->Serialize(true) << endl;
             }
         }
         return true;

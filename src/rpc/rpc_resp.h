@@ -24,12 +24,12 @@ public:
     virtual json_spirit::Value ToJSON() const = 0;
     virtual CRPCResult& FromJSON(const json_spirit::Value&) = 0;
 public:
-    std::string Serialize()
+    std::string Serialize(bool indent = false)
     {
         auto val = ToJSON();
         return (val.type() == json_spirit::str_type)
                ? val.get_str()
-               : json_spirit::write_string<json_spirit::Value>(val, false);
+               : json_spirit::write_string<json_spirit::Value>(val, indent);
     }
 };
 
