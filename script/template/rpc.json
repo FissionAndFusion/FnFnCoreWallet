@@ -1607,7 +1607,7 @@
                         "templatedata": {
                             "type": "templateresponse",
                             "desc": "template data",
-                            "required": false,
+                            "required": true,
                             "condition": "ismine=true"
                         }
                     }
@@ -2057,7 +2057,7 @@
                         "templatedata": {
                             "type": "templateresponse",
                             "desc": "template data",
-                            "required": false,
+                            "required": true,
                             "condition": "type=template"
                         }
                     }

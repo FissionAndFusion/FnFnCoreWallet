@@ -1843,7 +1843,7 @@ public:
 		__required__ CRPCString strType;
 		__required__ CRPCString strPubkey;
 		__required__ CRPCString strTemplate;
-		__optional__ CTemplateResponse templatedata;
+		__required__ CTemplateResponse templatedata;
 	public:
 		CAddressdata();
 		CAddressdata(const CRPCString& strAddress, const CRPCBool& fIsmine, const CRPCString& strType, const CRPCString& strPubkey, const CRPCString& strTemplate, const CTemplateResponse& templatedata);
@@ -2280,7 +2280,7 @@ public:
 		__required__ CRPCString strType;
 		__required__ CTemplatePubKey pubkey;
 		__required__ CRPCString strTemplate;
-		__optional__ CTemplateResponse templatedata;
+		__required__ CTemplateResponse templatedata;
 	public:
 		CAddressdata();
 		CAddressdata(const CRPCString& strType, const CTemplatePubKey& pubkey, const CRPCString& strTemplate, const CTemplateResponse& templatedata);

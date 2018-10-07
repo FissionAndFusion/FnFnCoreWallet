@@ -5430,10 +5430,8 @@ Value CValidateAddressResult::CAddressdata::ToJSON() const
 	}
 	if (fIsmine == true)
 	{
-		if (templatedata.IsValid())
-		{
-			ret.push_back(Pair("templatedata", templatedata.ToJSON()));
-		}
+		CheckIsValid(templatedata, "templatedata");
+		ret.push_back(Pair("templatedata", templatedata.ToJSON()));
 	}
 
 	return ret;
@@ -5466,11 +5464,8 @@ CValidateAddressResult::CAddressdata& CValidateAddressResult::CAddressdata::From
 	if (fIsmine == true)
 	{
 		auto valTemplatedata = find_value(obj, "templatedata");
-		if (!valTemplatedata.is_null())
-		{
-			CheckJSONType(valTemplatedata, "object", "templatedata");
-			templatedata.FromJSON(valTemplatedata.get_obj());
-		}
+		CheckJSONType(valTemplatedata, "object", "templatedata");
+		templatedata.FromJSON(valTemplatedata.get_obj());
 	}
 	return *this;
 }
@@ -5486,6 +5481,10 @@ bool CValidateAddressResult::CAddressdata::IsValid() const
 	if (strType == "template")
 	{
 		if (!strTemplate.IsValid()) { return false; }
+	}
+	if (fIsmine == true)
+	{
+		if (!templatedata.IsValid()) { return false; }
 	}
 	return true;
 }
@@ -5596,7 +5595,7 @@ string CValidateAddressConfig::Help() const
 	oss << "     (if \"type\" is \"template\")\n";
 	oss << "     \"template\": \"\",            (string, required) template type name\n";
 	oss << "     (if \"ismine\" is true)\n";
-	oss << "     \"templatedata\":            (object, optional) template data\n";
+	oss << "     \"templatedata\":            (object, required) template data\n";
 	oss << "     {\n";
 	oss << "       \"type\": \"\",              (string, required) template type\n";
 	oss << "       \"hex\": \"\",               (string, required) temtplate data\n";
@@ -7023,10 +7022,8 @@ Value CListAddressResult::CAddressdata::ToJSON() const
 	}
 	if (strType == "template")
 	{
-		if (templatedata.IsValid())
-		{
-			ret.push_back(Pair("templatedata", templatedata.ToJSON()));
-		}
+		CheckIsValid(templatedata, "templatedata");
+		ret.push_back(Pair("templatedata", templatedata.ToJSON()));
 	}
 
 	return ret;
@@ -7053,11 +7050,8 @@ CListAddressResult::CAddressdata& CListAddressResult::CAddressdata::FromJSON(con
 	if (strType == "template")
 	{
 		auto valTemplatedata = find_value(obj, "templatedata");
-		if (!valTemplatedata.is_null())
-		{
-			CheckJSONType(valTemplatedata, "object", "templatedata");
-			templatedata.FromJSON(valTemplatedata.get_obj());
-		}
+		CheckJSONType(valTemplatedata, "object", "templatedata");
+		templatedata.FromJSON(valTemplatedata.get_obj());
 	}
 	return *this;
 }
@@ -7071,6 +7065,10 @@ bool CListAddressResult::CAddressdata::IsValid() const
 	if (strType == "template")
 	{
 		if (!strTemplate.IsValid()) { return false; }
+	}
+	if (strType == "template")
+	{
+		if (!templatedata.IsValid()) { return false; }
 	}
 	return true;
 }
@@ -7155,7 +7153,7 @@ string CListAddressConfig::Help() const
 	oss << "       (if \"type\" is \"template\")\n";
 	oss << "       \"template\": \"\",          (string, required) template type name\n";
 	oss << "       (if \"type\" is \"template\")\n";
-	oss << "       \"templatedata\":          (object, optional) template data\n";
+	oss << "       \"templatedata\":          (object, required) template data\n";
 	oss << "       {\n";
 	oss << "         \"type\": \"\",            (string, required) template type\n";
 	oss << "         \"hex\": \"\",             (string, required) temtplate data\n";

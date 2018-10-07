@@ -984,6 +984,7 @@ CRPCResultPtr CRPCMod::RPCValidateAddress(CRPCParamPtr param)
                 vector<unsigned char> vchTemplate;
                 ptr->Export(vchTemplate);
                 templateData.strHex = ToHexString(vchTemplate);
+                templateData.strType = CTemplateGeneric::GetTypeName(nType);
                 if (nType == TEMPLATE_WEIGHTED)
                 {
                     CTemplateWeighted* p = (CTemplateWeighted*)ptr.get();
@@ -1300,6 +1301,7 @@ CRPCResultPtr CRPCMod::RPCListAddress(CRPCParamPtr param)
 
             auto& templateData = addressData.templatedata;
             templateData.strHex = ToHexString(vchTemplate);
+            templateData.strType = CTemplateGeneric::GetTypeName(nType);
             switch(nType)
             {
                 case TEMPLATE_WEIGHTED:
