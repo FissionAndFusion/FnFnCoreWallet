@@ -195,7 +195,10 @@ bool CRPCMod::HandleEvent(CWalleveEventHttpReq& eventHttpReq)
         cout << "error: " << e.what() << endl;
     }
 
-    WalleveLog("response : %s\n", strResult.c_str());
+    if (WalleveConfig()->fDebug)
+    {
+        WalleveLog("response : %s\n", strResult.c_str());
+    }
 
     // no result means no return
     if (!strResult.empty())
