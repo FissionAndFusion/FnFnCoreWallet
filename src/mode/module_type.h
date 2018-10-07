@@ -19,7 +19,7 @@ enum class EModuleType
     MINER,         // CMiner
     NETCHANNEL,    // CNetChannel
     NETWORK,       // CNetwork
-    RPCDISPATCH,   // CRPCDispatch
+    RPCCLIENT,     // CRPCClient
     RPCMODE,       // CRPCMod
     SERVICE,       // CService
     TXPOOL,        // CTxPool
