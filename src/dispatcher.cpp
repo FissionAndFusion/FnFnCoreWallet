@@ -154,7 +154,7 @@ MvErr CDispatcher::AddNewBlock(const CBlock& block,uint64 nNonce)
 
     if (block.IsPrimary())
     {
-        UpdatePrimaryBlock(updateWorldLine,changeTxSet);
+        UpdatePrimaryBlock(block,updateWorldLine,changeTxSet);
     }
 
     return MV_OK;
@@ -210,7 +210,7 @@ MvErr CDispatcher::AddNewTx(const CTransaction& tx,uint64 nNonce)
     return MV_OK;
 }
 
-void CDispatcher::UpdatePrimaryBlock(const CWorldLineUpdate& updateWorldLine,const CTxSetChange& changeTxSet)
+void CDispatcher::UpdatePrimaryBlock(const CBlock& block,const CWorldLineUpdate& updateWorldLine,const CTxSetChange& changeTxSet)
 {
     CDelegateRoutine routineDelegate;
     pConsensus->PrimaryUpdate(updateWorldLine,changeTxSet,routineDelegate);
@@ -223,9 +223,13 @@ void CDispatcher::UpdatePrimaryBlock(const CWorldLineUpdate& updateWorldLine,con
     CMvEventBlockMakerUpdate *pBlockMakerUpdate = new CMvEventBlockMakerUpdate(0);
     if (pBlockMakerUpdate != NULL)
     {
+        CProofOfSecretShare proof;
+        proof.Load(block.vchProof);
         pBlockMakerUpdate->data.hashBlock = updateWorldLine.hashLastBlock;
         pBlockMakerUpdate->data.nBlockTime = updateWorldLine.nLastBlockTime;
         pBlockMakerUpdate->data.nBlockHeight = updateWorldLine.nLastBlockHeight;
+        pBlockMakerUpdate->data.nAgreement = proof.nAgreement;
+        pBlockMakerUpdate->data.nWeight = proof.nWeight;
         pBlockMaker->PostEvent(pBlockMakerUpdate);
     }
 

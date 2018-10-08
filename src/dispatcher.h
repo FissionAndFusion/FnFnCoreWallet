@@ -13,19 +13,19 @@ namespace multiverse
 
 class CDispatcher : public IDispatcher
 {
-  public:
+public:
     CDispatcher();
     ~CDispatcher();
-    MvErr AddNewBlock(const CBlock &block, uint64 nNonce = 0) override;
-    MvErr AddNewTx(const CTransaction &tx, uint64 nNonce = 0) override;
-
-  protected:
-    bool WalleveHandleInitialize() override;
-    void WalleveHandleDeinitialize() override;
-    bool WalleveHandleInvoke() override;
-    void WalleveHandleHalt() override;
-    void UpdatePrimaryBlock(const CWorldLineUpdate &updateWorldLine, const CTxSetChange &changeTxSet);
-    void ProcessForkTx(const CTransaction &tx, int nPrimaryHeight);
+    
+    MvErr AddNewBlock(const CBlock& block,uint64 nNonce=0);
+    MvErr AddNewTx(const CTransaction& tx,uint64 nNonce=0);
+protected:
+    bool WalleveHandleInitialize();
+    void WalleveHandleDeinitialize();
+    bool WalleveHandleInvoke();
+    void WalleveHandleHalt();
+    void UpdatePrimaryBlock(const CBlock& block,const CWorldLineUpdate& updateWorldLine,const CTxSetChange& changeTxSet);
+    void ProcessForkTx(const CTransaction& tx,int nPrimaryHeight);
     void SyncForkHeight(int nPrimaryHeight);
 
   protected:
