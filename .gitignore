@@ -6,6 +6,7 @@
 *.so
 *.swp
 *~
+*.pyc
 
 build/
 bin/
@@ -16,4 +17,5 @@ cmake-build-release/
 
 multiverse
 multiverse.exe
+multiverse-*
 CMakeSettings.json

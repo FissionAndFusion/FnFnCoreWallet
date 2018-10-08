@@ -22,7 +22,7 @@ public:
     CTxOutPoint() { SetNull(); }
     CTxOutPoint(uint256 hashIn, uint8 nIn) { hash = hashIn; n = nIn; }
     virtual void SetNull() { hash = 0; n = -1; }
-    virtual bool IsNull() const { return (hash == 0 && n == -1); }
+    virtual bool IsNull() const { return (hash == 0 && n == decltype(n)(-1)); }
     friend bool operator<(const CTxOutPoint& a, const CTxOutPoint& b)
     {
         return (a.hash < b.hash || (a.hash == b.hash && a.n < b.n));

@@ -8,11 +8,14 @@
 #include "json/json_spirit_writer_template.h"
 #include "json/json_spirit_utils.h"
 
+#include "rpc/rpc.h"
+
 using namespace std;
 using namespace multiverse;
 using namespace walleve;
 using namespace json_spirit;
 using boost::asio::ip::tcp;
+using namespace multiverse::rpc;
 
 extern void MvShutdown();
 
@@ -102,9 +105,9 @@ void CMiner::WalleveHandleHalt()
     thrMiner.Exit();
 }
 
-const CMvRPCConfig * CMiner::WalleveConfig()
+const CMvRPCClientConfig * CMiner::WalleveConfig()
 {
-    return dynamic_cast<const CMvRPCConfig *>(IWalleveBase::WalleveConfig());
+    return dynamic_cast<const CMvRPCClientConfig *>(IWalleveBase::WalleveConfig());
 }
 
 bool CMiner::HandleEvent(CWalleveEventHttpGetRsp& event)
@@ -138,27 +141,23 @@ bool CMiner::HandleEvent(CWalleveEventHttpGetRsp& event)
         }
 
         // Parse reply
-        Value valReply;
-        if (!read_string(rsp.strContent, valReply))
+        if (event.nNonce == nNonceGetWork) 
         {
-            throw runtime_error("couldn't parse reply from server");
-        }
-        const Object& reply = valReply.get_obj();
-        if (reply.empty())
-        {
-            throw runtime_error("expected reply to have result, error and id properties");
-        }
-
-        const Value& result = find_value(reply, "result");
-        const Value& error  = find_value(reply, "error");
-
-        if (error.type() == null_type)
-        {
-            if (event.nNonce == nNonceGetWork) 
+            auto spResp = DeserializeCRPCResp<CGetWorkResult>(rsp.strContent);
+            if (spResp->IsError())
             {
-                if (result.type() == bool_type)
+                // Error
+                cerr << spResp->spError->Serialize(true) << endl;
+                cerr << strHelpTips << endl;
+            }
+            else if (spResp->IsSuccessful())
+            {
+                auto spResult = CastResultPtr<CGetWorkResult>(spResp->spResult);
+                cout << spResp->spResult->Method() << endl;
+                if (spResult->fResult.IsValid())
                 {
-                    if (!result.get_bool())
+                cout << 18 << endl;
+                    if (!spResult->fResult)
                     {
                         {
                             boost::unique_lock<boost::mutex> lock(mutex);
@@ -169,42 +168,52 @@ bool CMiner::HandleEvent(CWalleveEventHttpGetRsp& event)
                         condMiner.notify_all(); 
                     }
                 }
-                else if (result.type() == obj_type)
+                else if (spResult->work.IsValid())
                 {
-                    const Object& obj = result.get_obj();
-                    const Value& prevhash = find_value(obj,"prevblockhash");
-                    const Value& prevtime = find_value(obj,"prevblocktime");
-                    const Value& algo = find_value(obj,"algo");
-                    const Value& bits = find_value(obj,"bits");
-                    const Value& data = find_value(obj,"data");
+                    cout << "1" << endl;
                     {
                         boost::unique_lock<boost::mutex> lock(mutex);
- 
-                        workCurrent.hashPrev.SetHex(prevhash.get_str());
-                        workCurrent.nPrevTime = prevtime.get_int64();
-                        workCurrent.nAlgo = algo.get_int();
-                        workCurrent.nBits = bits.get_int();
-                        workCurrent.vchWorkData = ParseHexString(data.get_str());
 
+                        workCurrent.hashPrev.SetHex(spResult->work.strPrevblockhash);
+                        workCurrent.nPrevTime = spResult->work.nPrevblocktime;
+                        workCurrent.nAlgo = spResult->work.nAlgo;
+                        workCurrent.nBits = spResult->work.nBits;
+                        workCurrent.vchWorkData = ParseHexString(spResult->work.strData);
+
+                    cout << "2" << endl;
                         nMinerStatus = MINER_RESET;
                     }
                     condMiner.notify_all(); 
                 }
-            } 
-            else if (event.nNonce == nNonceSubmitWork)
+            }
+            else
             {
-                if (result.type() == str_type)
+                cerr << "server error: neither error nor result. resp: " << spResp->Serialize(true) << endl;
+            }
+        } 
+        else if (event.nNonce == nNonceSubmitWork)
+        {
+            auto spResp = DeserializeCRPCResp<CSubmitWorkResult>(rsp.strContent);
+            if (spResp->IsError())
+            {
+                // Error
+                cerr << spResp->spError->Serialize(true) << endl;
+                cerr << strHelpTips << endl;
+            }
+            else if (spResp->IsSuccessful())
+            {
+                auto spResult = CastResultPtr<CSubmitWorkResult>(spResp->spResult);
+                if (spResult->strHash.IsValid())
                 {
-                    cout << "Submited new block : " << result.get_str() << "\n";
+                    cout << "Submited new block : " << spResult->strHash << "\n";
                 }
             }
-            return true;
+            else
+            {
+                cerr << "server error: neither error nor result. resp: " << spResp->Serialize(true) << endl;
+            }
         }
-        else
-        {
-            // Error
-            cerr << "error: " << write_string(error, false) << "\n";
-        }
+        return true;
     }
     catch (const std::exception& e)
     {
@@ -217,7 +226,7 @@ bool CMiner::HandleEvent(CWalleveEventHttpGetRsp& event)
     return true;
 }
 
-bool CMiner::SendRequest(uint64 nNonce,Object& jsonReq)
+bool CMiner::SendRequest(uint64 nNonce, const string& content)
 {
     CWalleveEventHttpGet eventHttpGet(nNonce);
     CWalleveHttpGet& httpGet = eventHttpGet.data;
@@ -242,7 +251,7 @@ bool CMiner::SendRequest(uint64 nNonce,Object& jsonReq)
     httpGet.mapHeader["method"] = "POST";
     httpGet.mapHeader["accept"] = "application/json";
     httpGet.mapHeader["content-type"] = "application/json";
-    httpGet.mapHeader["user-agent"] = string("multivers-json-rpc/");
+    httpGet.mapHeader["user-agent"] = string("multiverse-json-rpc/");
     httpGet.mapHeader["connection"] = "Keep-Alive";
     if (!WalleveConfig()->strRPCPass.empty() || !WalleveConfig()->strRPCUser.empty())
     {
@@ -251,23 +260,19 @@ bool CMiner::SendRequest(uint64 nNonce,Object& jsonReq)
         httpGet.mapHeader["authorization"] = string("Basic ") + strAuth;
     }
 
-    httpGet.strContent = write_string(Value(jsonReq), false) + "\n";
+    httpGet.strContent = content + "\n";
     
     return pHttpGet->DispatchEvent(&eventHttpGet);
 }
 
 bool CMiner::GetWork()
 {
-    Array params;
     try
     {
     //    nNonceGetWork += 2;
-        params.push_back(workCurrent.hashPrev.GetHex());
-        Object request;
-        request.push_back(Pair("method", "getwork"));
-        request.push_back(Pair("params", params));
-        request.push_back(Pair("id", (int)nNonceGetWork));
-        return SendRequest(nNonceGetWork,request);
+        auto spParam = MakeCGetWorkParamPtr(workCurrent.hashPrev.GetHex());
+        CRPCReqPtr spReq = MakeCRPCReqPtr(nNonceGetWork, spParam);
+        return SendRequest(nNonceGetWork, spReq->Serialize());
     }
     catch (...)
     {
@@ -282,15 +287,13 @@ bool CMiner::SubmitWork(const vector<unsigned char>& vchWorkData)
     try
     {
     //    nNonceSubmitWork += 2;
+        auto spParam = MakeCSubmitWorkParamPtr();
+        spParam->strData = ToHexString(vchWorkData);
+        spParam->strSpent = strAddrSpent;
+        spParam->strPrivkey = strMintKey;
 
-        params.push_back(ToHexString(vchWorkData));
-        params.push_back(strAddrSpent);
-        params.push_back(strMintKey);
-        Object request;
-        request.push_back(Pair("method", "submitwork"));
-        request.push_back(Pair("params", params));
-        request.push_back(Pair("id", (int)nNonceSubmitWork));
-        return SendRequest(nNonceSubmitWork,request);
+        CRPCReqPtr spReq = MakeCRPCReqPtr(nNonceSubmitWork, spParam);
+        return SendRequest(nNonceSubmitWork, spReq->Serialize());
     }
     catch (...)
     {

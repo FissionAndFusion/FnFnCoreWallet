@@ -11,6 +11,7 @@ set(sources
 	walleve/type.h
         walleve/util.cpp		walleve/util.h
        	walleve/rwlock.h
+	walleve/compacttv.h
 	walleve/entry/entry.cpp		walleve/entry/entry.h
 	walleve/event/event.cpp		walleve/event/event.h
 	walleve/event/eventproc.cpp	walleve/event/eventproc.h

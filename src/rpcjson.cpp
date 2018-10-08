@@ -3,127 +3,112 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "rpcjson.h"
+
+#include <boost/foreach.hpp>
+
 #include "param.h"
 #include "address.h"
-#include <boost/foreach.hpp>
 
 using namespace std;
 using namespace walleve;
 using namespace json_spirit;
+using namespace multiverse::rpc;
 
 namespace multiverse
 {
 ///////////////////////////////
 
-int64 AmountFromValue(const Value& value)
+int64 AmountFromValue(const double dAmount)
 {
-    double dAmount = value.get_real();
     if (dAmount <= 0.0 || dAmount > MAX_MONEY)
     {
-        throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid amount");
+        throw CRPCException(RPC_INVALID_PARAMETER, "Invalid amount");
     }
     int64 nAmount = (int64)(dAmount * COIN + 0.5);
     if (!MoneyRange(nAmount))
     {
-        throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid amount");
+        throw CRPCException(RPC_INVALID_PARAMETER, "Invalid amount");
     }
     return nAmount;
 }
 
-Value ValueFromAmount(int64 amount)
+double ValueFromAmount(int64 amount)
 {
     return ((double)amount / (double)COIN);
 }
 
-static string GetBlockTypeStr(uint16 nType,uint16 nMintType)
+CBlockData BlockToJSON(const uint256& hashBlock,const CBlock& block,const uint256& hashFork,int nHeight)
 {
-    if (nType == CBlock::BLOCK_GENESIS) return std::string("genesis");
-    if (nType == CBlock::BLOCK_ORIGIN) return std::string("origin");
-    if (nType == CBlock::BLOCK_EXTENDED) return std::string("extended");
-    std::string str("undefined-");
-    if (nType == CBlock::BLOCK_PRIMARY) str = "primary-";
-    if (nType == CBlock::BLOCK_SUBSIDIARY) str = "subsidiary-";
-    if (nMintType == CTransaction::TX_WORK) return (str + "pow"); 
-    if (nMintType == CTransaction::TX_STAKE) return (str + "dpos");
-    return str;
-}
-
-Object BlockToJSON(const uint256& hashBlock,const CBlock& block,const uint256& hashFork,int nHeight)
-{
-    Object result;
-    result.push_back(Pair("hash",hashBlock.GetHex()));
-    result.push_back(Pair("version",block.nVersion));
-    result.push_back(Pair("type",GetBlockTypeStr(block.nType,block.txMint.nType)));
-    result.push_back(Pair("time", (boost::uint64_t)block.GetBlockTime()));
+    CBlockData data;
+    data.strHash = hashBlock.GetHex();
+    data.nVersion = block.nVersion;
+    data.strType = GetBlockTypeStr(block.nType,block.txMint.nType);
+    data.nTime = block.GetBlockTime();
     if (block.hashPrev != 0)
     {
-        result.push_back(Pair("prev",block.hashPrev.GetHex()));
+        data.strPrev = block.hashPrev.GetHex();
     }
-    result.push_back(Pair("fork",hashFork.GetHex()));
-    result.push_back(Pair("height",nHeight));
+    data.strFork = hashFork.GetHex();
+    data.nHeight = nHeight;
     
-    result.push_back(Pair("txmint",block.txMint.GetHash().GetHex()));
-    Array txhash;
+    data.strTxmint = block.txMint.GetHash().GetHex();
     BOOST_FOREACH(const CTransaction& tx,block.vtx)
     {
-        txhash.push_back(tx.GetHash().GetHex());
+        data.vecTx.push_back(tx.GetHash().GetHex());
     }
-    result.push_back(Pair("tx", txhash));
-    return result;
+    return data;
 }
 
-Object TxToJSON(const uint256& txid,const CTransaction& tx,const uint256& hashFork,int nDepth)
+CTransactionData TxToJSON(const uint256& txid,const CTransaction& tx,const uint256& hashFork,int nDepth)
 {
-    Object entry;
-    entry.push_back(Pair("txid", txid.GetHex()));
-    entry.push_back(Pair("version", (boost::int64_t)tx.nVersion));
-    entry.push_back(Pair("type", tx.GetTypeString()));
-    entry.push_back(Pair("lockuntil", (boost::int64_t)tx.nLockUntil));
-    entry.push_back(Pair("anchor", tx.hashAnchor.GetHex()));
-    Array vin;
+    CTransactionData ret;
+    ret.strTxid = txid.GetHex();
+    ret.nVersion = tx.nVersion;
+    ret.strType = tx.GetTypeString();
+    ret.nLockuntil = tx.nLockUntil;
+    ret.strAnchor = tx.hashAnchor.GetHex();
     BOOST_FOREACH(const CTxIn& txin, tx.vInput)
     {
-        Object in;
-        in.push_back(Pair("txid", txin.prevout.hash.GetHex()));
-        in.push_back(Pair("vout", (boost::int64_t)txin.prevout.n));
-        vin.push_back(in);
+        CTransactionData::CVin vin;
+        vin.nVout = txin.prevout.n;
+        vin.strTxid = txin.prevout.hash.GetHex();
+        ret.vecVin.push_back(move(vin));
     }
-    entry.push_back(Pair("vin", vin));
-    entry.push_back(Pair("sendto",CMvAddress(tx.sendTo).ToString()));
-    entry.push_back(Pair("amount",ValueFromAmount(tx.nAmount)));
-    entry.push_back(Pair("txfee",ValueFromAmount(tx.nTxFee)));
+    ret.strSendto = CMvAddress(tx.sendTo).ToString();
+    ret.fAmount = ValueFromAmount(tx.nAmount);
+    ret.fTxfee = ValueFromAmount(tx.nTxFee);
 
-    entry.push_back(Pair("data",walleve::ToHexString(tx.vchData)));
-    entry.push_back(Pair("sig",walleve::ToHexString(tx.vchSig)));
-    entry.push_back(Pair("fork", hashFork.GetHex()));
+    ret.strData = walleve::ToHexString(tx.vchData);
+    ret.strSig = walleve::ToHexString(tx.vchSig);
+    ret.strFork = hashFork.GetHex();
     if (nDepth >= 0)
     {
-        entry.push_back(Pair("confirmations", (boost::int64_t)nDepth));
+        ret.nConfirmations = nDepth;
     }
 
-    return entry;
+    return ret;
 }
 
-Object WalletTxToJSON(const CWalletTx& wtx)
+CWalletTxData WalletTxToJSON(const CWalletTx& wtx)
 {
-    Object entry;
-    entry.push_back(Pair("txid", wtx.txid.GetHex()));
-    entry.push_back(Pair("fork", wtx.hashFork.GetHex()));
+    CWalletTxData data;
+    data.strTxid = wtx.txid.GetHex();
+    data.strFork = wtx.hashFork.GetHex();
     if (wtx.nBlockHeight >= 0)
     {
-        entry.push_back(Pair("blockheight", wtx.nBlockHeight));
+        data.nBlockheight = wtx.nBlockHeight;
     }
-    entry.push_back(Pair("type", wtx.GetTypeString()));
-    entry.push_back(Pair("send", wtx.IsFromMe()));
+    data.strType = wtx.GetTypeString();
+    data.fSend = wtx.IsFromMe();
     if (!wtx.IsMintTx())
     {
-        entry.push_back(Pair("from", CMvAddress(wtx.destIn).ToString()));
+        data.strFrom = CMvAddress(wtx.destIn).ToString();
     }
-    entry.push_back(Pair("to", CMvAddress(wtx.sendTo).ToString()));
-    entry.push_back(Pair("amount", ValueFromAmount(wtx.nAmount)));
-    entry.push_back(Pair("fee", ValueFromAmount(wtx.nTxFee)));
-    entry.push_back(Pair("lockuntil", (boost::int64_t)wtx.nLockUntil));
-    return entry;
+    data.strTo = CMvAddress(wtx.sendTo).ToString();
+    data.fAmount = ValueFromAmount(wtx.nAmount);
+    data.fFee = ValueFromAmount(wtx.nTxFee);
+    data.nLockuntil = (boost::int64_t)wtx.nLockUntil;
+    return data;
 }
 
 } // namespace multiverse

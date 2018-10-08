@@ -49,7 +49,8 @@ class CBlockDB
 public:
     CBlockDB();
     ~CBlockDB();
-    bool Initialize(const CMvDBConfig& config,int nMaxDBConn);
+    bool Initialize();
+    bool DBPoolInitialize(const CMvDBConfig& config,int nMaxDBConn);
     void Deinitialize();
     bool RemoveAll();
     bool AddNewFork(const uint256& hash);
@@ -72,6 +73,7 @@ public:
     bool RetrieveDelegate(const uint256& hash,int64 nMinAmount,std::map<CDestination,int64>& mapDelegate);
     bool RetrieveEnroll(const uint256& hashAnchor,const std::set<uint256>& setBlockRange, 
                         std::map<CDestination,std::pair<uint32,uint32> >& mapEnrollTxPos);
+    bool InnoDB();
 protected:
     int GetForkIndex(const uint256& hash)
     {

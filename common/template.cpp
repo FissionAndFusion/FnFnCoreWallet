@@ -45,7 +45,7 @@ CTemplatePtr CTemplateGeneric::CreateTemplatePtr(const vector<unsigned char>& vc
     }
     uint16 nTemplateTypeIn;
     vector<unsigned char> vchDataIn;
-    nTemplateTypeIn = vchTemplateIn[1] | (((uint16)vchTemplateIn[1]) << 8);
+    nTemplateTypeIn = vchTemplateIn[0] | (((uint16)vchTemplateIn[1]) << 8);
     vchDataIn.assign(vchTemplateIn.begin() + 2,vchTemplateIn.end());
     return CreateTemplatePtr(nTemplateTypeIn,vchDataIn);
 }

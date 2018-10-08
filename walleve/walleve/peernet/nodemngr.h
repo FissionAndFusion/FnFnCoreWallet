@@ -43,6 +43,7 @@ public:
     bool Employ(boost::asio::ip::tcp::endpoint& ep);
     void Dismiss(const boost::asio::ip::tcp::endpoint& ep,bool fForceRetry);
     void Retrieve(std::vector<CNode>& vNode);
+    int GetCandidateNodeCount(){ return mapNode.size(); }
 protected:
     void RemoveInactiveNodes();
 protected:

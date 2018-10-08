@@ -12,6 +12,7 @@ set(sources
 	transaction.h 
 	wallettx.h 
 	proof.h
+	profile.h profile.cpp
 	block.h
 )
 

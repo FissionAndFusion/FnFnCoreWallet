@@ -41,14 +41,14 @@ const string& CHttpEventStream::GetEntry()
 void CHttpEventStream::RegisterEvent(const string& strEventName,CHttpSSEGenerator *pGenerator)
 {
     boost::unique_lock<boost::mutex> lock(mtxEvent);
-    ptr_map<std::string,CHttpSSEGenerator>::iterator it = mapGenerator.find(strEventName);
+    auto it = mapGenerator.find(strEventName);
     if (it != mapGenerator.end())
     {
-        mapGenerator.replace(it,pGenerator);
+       it->second = std::unique_ptr<CHttpSSEGenerator>(pGenerator);
     }
     else
     {
-        mapGenerator.insert(strEventName,auto_ptr<CHttpSSEGenerator>(pGenerator));
+        mapGenerator.insert(std::make_pair(strEventName,std::unique_ptr<CHttpSSEGenerator>(pGenerator)));
     }
 }
 
@@ -61,7 +61,7 @@ void CHttpEventStream::UnregisterEvent(const string& strEventName)
 void CHttpEventStream::ResetData(const std::string& strEventName)
 {
     boost::unique_lock<boost::mutex> lock(mtxEvent);
-    ptr_map<string,CHttpSSEGenerator>::iterator it = mapGenerator.find(strEventName);
+    auto it = mapGenerator.find(strEventName);
     if (it != mapGenerator.end())
     {
         (*it).second->ResetData();
@@ -71,7 +71,7 @@ void CHttpEventStream::ResetData(const std::string& strEventName)
 bool CHttpEventStream::UpdateEventData(const string& strEventName,CHttpSSEData& data)
 {
     boost::unique_lock<boost::mutex> lock(mtxEvent);
-    ptr_map<string,CHttpSSEGenerator>::iterator it = mapGenerator.find(strEventName);
+    auto it = mapGenerator.find(strEventName);
     if (it != mapGenerator.end())
     {
         if ((*it).second->UpdateData(data,nEventId + 1)) 
@@ -97,7 +97,7 @@ bool CHttpEventStream::ConstructResponse(uint64 nLastEventId,CWalleveHttpRsp& rs
     rsp.mapHeader["connection"] = "Keep-Alive";
     
     ostringstream oss;
-    for (ptr_map<string,CHttpSSEGenerator>::iterator it = mapGenerator.begin();
+    for (auto it = mapGenerator.begin();
          it != mapGenerator.end();++it)
     {
         vector<string> vEventData;

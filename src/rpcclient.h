@@ -2,43 +2,45 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef  MULTIVERSE_RPCCLIENT_H
-#define  MULTIVERSE_RPCCLIENT_H
+#ifndef MULTIVERSE_RPCCLIENT_H
+#define MULTIVERSE_RPCCLIENT_H
+
+#include <string>
+#include <vector>
 
 #include "mvbase.h"
 #include "walleve/walleve.h"
 #include "json/json_spirit_value.h"
-
-#include <string>
-#include <vector>
+#include "rpc/rpc.h"
 
 namespace multiverse
 {
 
 class CRPCDispatch : public walleve::IIOModule, virtual public walleve::CWalleveHttpEventListener
 {
-public:
+  public:
     CRPCDispatch();
-    CRPCDispatch(const std::vector<std::string>& vArgsIn);
+    CRPCDispatch(const std::vector<std::string> &vArgsIn);
 
     ~CRPCDispatch();
-protected:
+
+  protected:
     bool WalleveHandleInitialize() override;
     void WalleveHandleDeinitialize() override;
     bool WalleveHandleInvoke() override;
     void WalleveHandleHalt() override;
-    const CMvRPCConfig * WalleveConfig();
+    const CMvRPCClientConfig *WalleveConfig();
 
-    bool HandleEvent(walleve::CWalleveEventHttpGetRsp& event) override;
-    bool GetResponse(uint64 nNonce,const std::string& strWallet,json_spirit::Object& jsonReq);
-    bool CallRPC(const std::vector<std::string>& vCommand,
-                 const std::string& strWallet = "", int nReqId = 1);
-    bool CallConsoleCommand(const std::vector<std::string>& vCommand,std::string& strWallet);
+    bool HandleEvent(walleve::CWalleveEventHttpGetRsp &event) override;
+    bool GetResponse(uint64 nNonce, const std::string &content);
+    bool CallRPC(rpc::CRPCParamPtr spParam, int nReqId);
+    bool CallConsoleCommand(const std::vector<std::string> &vCommand);
     void LaunchConsole();
     void LaunchCommand();
     void CancelCommand();
-    json_spirit::Value GetParamValue(const std::string& strParam);
-protected:
+    json_spirit::Value GetParamValue(const std::string &strParam);
+
+  protected:
     walleve::IIOProc *pHttpGet;
     walleve::CWalleveThread thrDispatch;
     std::vector<std::string> vArgs;
@@ -48,4 +50,3 @@ protected:
 
 } // namespace multiverse
 #endif //MULTIVERSE_RPCCLIENT_H
-

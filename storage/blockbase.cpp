@@ -247,12 +247,23 @@ bool CBlockBase::Initialize(const CMvDBConfig& dbConfig,int nMaxDBConn,const pat
 
     Log("B","Initializing... (Path : %s)\n",pathDataLocation.string().c_str());
 
-    if (!dbBlock.Initialize(dbConfig,nMaxDBConn))
+    if (!dbBlock.DBPoolInitialize(dbConfig,nMaxDBConn))
+    {
+        Error("B","Failed MySQL not connect\n");
+        return false;
+    }
+
+    if (!dbBlock.InnoDB()){
+        Error("B","Failed MySQL not Support InnoDB\n");
+        return false;
+    }
+
+    if (!dbBlock.Initialize())
     {
         Error("B","Failed to initialize block db\n");
         return false;
     }
-     
+
     if (!tsBlock.Initialize(pathDataLocation / "block",BLOCKFILE_PREFIX))
     {
         dbBlock.Deinitialize();
@@ -438,6 +449,18 @@ bool CBlockBase::RetrieveFork(const uint256& hash,CBlockIndex** ppIndex)
     return true;
 }
 
+bool CBlockBase::RetrieveProfile(const uint256& hash,CProfile& profile)
+{
+    CWalleveReadLock rlock(rwAccess);
+    CBlockFork* pFork = GetFork(hash);
+    if (pFork == NULL)
+    {
+        return false;
+    }
+    profile = pFork->GetProfile();
+    return true;
+}
+
 bool CBlockBase::RetrieveTx(const uint256& txid,CTransaction& tx)
 {
     tx.SetNull();
@@ -466,7 +489,7 @@ bool CBlockBase::RetrieveTxLocation(const uint256& txid,uint256& hashFork,int& n
     {
         return false;
     }
-    CBlockIndex* pIndex = GetIndex(hashAnchor);
+    CBlockIndex* pIndex = (hashAnchor != 0 ? GetIndex(hashAnchor) : GetOriginIndex(txid));
     if (pIndex == NULL)
     {
         return false;
@@ -616,11 +639,16 @@ bool CBlockBase::CommitBlockView(CBlockView& view,CBlockIndex* pIndexNew)
     } 
     else
     {
+        CProfile profile;
+        if (!LoadForkProfile(pIndexNew->pOrigin,profile))
+        {
+            return false;
+        }
         if (!dbBlock.AddNewFork(hashFork))
         {
             return false;
         }
-        pFork = AddNewFork(pIndexNew);
+        pFork = AddNewFork(profile,pIndexNew);
     }
 
     vector<pair<uint256,CTxIndex> > vTxNew;
@@ -691,7 +719,7 @@ bool CBlockBase::LoadTx(CTransaction& tx,uint32 nTxFile,uint32 nTxOffset,uint256
     {
         return false;
     }
-    CBlockIndex* pIndex = GetIndex(tx.hashAnchor);
+    CBlockIndex* pIndex = (tx.hashAnchor != 0 ? GetIndex(tx.hashAnchor) : GetOriginIndex(tx.GetHash()));
     if (pIndex == NULL)
     {
         return false;
@@ -811,6 +839,20 @@ CBlockIndex* CBlockBase::GetBranch(CBlockIndex* pIndexRef,CBlockIndex* pIndex,ve
     return pIndex;
 }
 
+CBlockIndex* CBlockBase::GetOriginIndex(const uint256& txidMint) const
+{
+    CBlockIndex* pIndex = NULL;
+    for (map<uint256,CBlockFork>::const_iterator mi = mapFork.begin();mi != mapFork.end();++mi)
+    {
+        CBlockIndex* pIndex = (*mi).second.GetOrigin();
+        if (pIndex->txidMint == txidMint)
+        {
+            return pIndex;
+        }
+    }
+    return NULL;
+}
+
 CBlockIndex* CBlockBase::AddNewIndex(const uint256& hash,CBlock& block,uint32 nFile,uint32 nOffset)
 {
     CBlockIndex* pIndexNew = new CBlockIndex(block,nFile,nOffset);
@@ -844,11 +886,11 @@ CBlockIndex* CBlockBase::AddNewIndex(const uint256& hash,CBlock& block,uint32 nF
     return pIndexNew;
 }
 
-CBlockFork* CBlockBase::AddNewFork(CBlockIndex* pIndexLast)
+CBlockFork* CBlockBase::AddNewFork(const CProfile& profileIn,CBlockIndex* pIndexLast)
 {
     uint256 hash = pIndexLast->GetOriginHash();
     CBlockFork* pFork = &mapFork[hash];
-    *pFork = CBlockFork(pIndexLast);
+    *pFork = CBlockFork(profileIn,pIndexLast);
     CBlockIndex* pIndexPrev = pIndexLast->pOrigin->pPrev;
     if (pIndexPrev)
     {
@@ -860,6 +902,35 @@ CBlockFork* CBlockBase::AddNewFork(CBlockIndex* pIndexLast)
         } while(pIndexPrev);
     }
     return pFork;
+}
+
+bool CBlockBase::LoadForkProfile(const CBlockIndex* pIndexOrigin,CProfile& profile)
+{
+    profile.SetNull();
+
+    CBlock block;
+    if (!Retrieve(pIndexOrigin,block))
+    {
+        return false;
+    }
+
+    if (pIndexOrigin->IsPrimary())
+    {
+        // hard code genesis profile, should be removed at next regenerating genesis block.. $%$#@@#%^%
+        profile.strName = "Fission And Fusion Network";
+        profile.strSymbol = "FnFn";
+        profile.nMintReward = 15 * 1000000;
+        profile.nMinTxFee = 100;
+        profile.SetFlag(true,false,false);
+    }
+    else
+    {
+        if (!profile.Load(block.vchProof))
+        {
+            return false;
+        }
+    }
+    return true;
 }
 
 bool CBlockBase::UpdateDelegate(const uint256& hash,CBlockEx& block)
@@ -1003,7 +1074,12 @@ bool CBlockBase::LoadDB()
             ClearCache();
             return false;
         }
-        CBlockFork* pFork = AddNewFork(pIndex);
+        CProfile profile;
+        if (!LoadForkProfile(pIndex->pOrigin,profile))
+        {
+            return false;
+        }
+        CBlockFork* pFork = AddNewFork(profile,pIndex);
         pFork->UpdateNext();
     }
 
@@ -1012,14 +1088,7 @@ bool CBlockBase::LoadDB()
 
 bool CBlockBase::SetupLog(const path& pathLocation,bool fDebug)
 {
-    if (!exists(pathLocation))
-    {
-        create_directories(pathLocation);
-    }
-    if (!is_directory(pathLocation))
-    {
-        return false;
-    }
+
     if (!walleveLog.SetLogFilePath((pathLocation / LOGFILE_NAME).string()))
     {
         return false;

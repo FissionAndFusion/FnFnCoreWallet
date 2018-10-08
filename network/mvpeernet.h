@@ -30,11 +30,11 @@ class CMvPeerNet : public walleve::CPeerNet, virtual public CMvPeerEventListener
 public:
     CMvPeerNet();
     ~CMvPeerNet();
-    void BuildHello(walleve::CPeer *pPeer,walleve::CWalleveBufStream& ssPayload);
+    virtual void BuildHello(walleve::CPeer *pPeer,walleve::CWalleveBufStream& ssPayload);
     void HandlePeerWriten(walleve::CPeer *pPeer);
-    bool HandlePeerHandshaked(walleve::CPeer *pPeer,uint32 nTimerId);
-    bool HandlePeerRecvMessage(walleve::CPeer *pPeer,int nChannel,int nCommand,
-                               walleve::CWalleveBufStream& ssPayload); 
+    virtual bool HandlePeerHandshaked(walleve::CPeer *pPeer,uint32 nTimerId);
+    virtual bool HandlePeerRecvMessage(walleve::CPeer *pPeer,int nChannel,int nCommand,
+                               walleve::CWalleveBufStream& ssPayload);
 protected:
     bool WalleveHandleInitialize();
     void WalleveHandleDeinitialize();
@@ -48,7 +48,7 @@ protected:
     walleve::CPeerInfo* GetPeerInfo(walleve::CPeer* pPeer,walleve::CPeerInfo* pInfo);
     bool SendDataMessage(uint64 nNonce,int nCommand,walleve::CWalleveBufStream& ssPayload);
     void SetInvTimer(uint64 nNonce,std::vector<CInv>& vInv);
-    void ProcessAskFor(walleve::CPeer* pPeer);
+    virtual void ProcessAskFor(walleve::CPeer* pPeer);
     void Configure(uint32 nMagicNumIn,uint32 nVersionIn,uint64 nServiceIn,const std::string& subVersionIn,bool fEnclosedIn)
     {
         nMagicNum = nMagicNumIn; nVersion = nVersionIn; nService = nServiceIn;

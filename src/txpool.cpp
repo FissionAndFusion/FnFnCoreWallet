@@ -279,7 +279,7 @@ size_t CTxPool::Count(const uint256& fork) const
     return 0;
 }
 
-MvErr CTxPool::Push(CTransaction& tx,uint256& hashFork,CDestination& destIn,int64& nValueIn)
+MvErr CTxPool::Push(const CTransaction& tx,uint256& hashFork,CDestination& destIn,int64& nValueIn)
 {
     boost::unique_lock<boost::shared_mutex> wlock(rwAccess);
     uint256 txid = tx.GetHash();
@@ -482,7 +482,10 @@ bool CTxPool::SynchronizeWorldLine(CWorldLineUpdate& update,CTxSetChange& change
     int nHeight = update.nLastBlockHeight - update.vBlockAddNew.size() + 1;
     BOOST_REVERSE_FOREACH(CBlockEx& block,update.vBlockAddNew)
     {
-        change.vTxAddNew.push_back(CAssembledTx(block.txMint,nHeight)); 
+        if (block.txMint.nAmount != 0)
+        {
+            change.vTxAddNew.push_back(CAssembledTx(block.txMint,nHeight));
+        }
         for (std::size_t i = 0;i < block.vtx.size();i++)
         {
             CTransaction& tx = block.vtx[i];
@@ -543,11 +546,14 @@ bool CTxPool::SynchronizeWorldLine(CWorldLineUpdate& update,CTxSetChange& change
                 }
             }
         }
-        uint256 txidMint = block.txMint.GetHash();
-        CTxOutPoint outMint(txidMint,0);
-        txView.InvalidateSpent(outMint,vInvalidTx);
+        if (block.txMint.nAmount != 0)
+        {
+            uint256 txidMint = block.txMint.GetHash();
+            CTxOutPoint outMint(txidMint,0);
+            txView.InvalidateSpent(outMint,vInvalidTx);
 
-        vTxRemove.push_back(make_pair(txidMint,block.txMint.vInput));
+            vTxRemove.push_back(make_pair(txidMint,block.txMint.vInput));
+        }
     }
 
     change.vTxRemove.reserve(vInvalidTx.size() + vTxRemove.size());
@@ -584,7 +590,7 @@ bool CTxPool::LoadDB()
     return dbTxPool.WalkThroughTx(walker);
 }
 
-MvErr CTxPool::AddNew(CTxPoolView& txView,const uint256& txid,CTransaction& tx,const uint256& hashFork,int nForkHeight)
+MvErr CTxPool::AddNew(CTxPoolView& txView,const uint256& txid,const CTransaction& tx,const uint256& hashFork,int nForkHeight)
 {
     vector<CTxOutput> vPrevOutput;
     if (!pWorldLine->GetTxUnspent(hashFork,tx.vInput,vPrevOutput))

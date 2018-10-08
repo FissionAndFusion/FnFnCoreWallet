@@ -89,11 +89,11 @@ void CMvCoreProtocol::GetGenesisBlock(CBlock& block)
 MvErr CMvCoreProtocol::ValidateTransaction(const CTransaction& tx)
 {
     // Basic checks that don't depend on any context
-    if (tx.vInput.empty() && tx.nType != CTransaction::TX_GENESIS && tx.nType != CTransaction::TX_WORK)
+    if (tx.vInput.empty() && tx.nType != CTransaction::TX_GENESIS && tx.nType != CTransaction::TX_WORK && tx.nType != CTransaction::TX_STAKE)
     {
         return DEBUG(MV_ERR_TRANSACTION_INVALID,"tx vin is empty\n");
     }
-    if (!tx.vInput.empty() && (tx.nType == CTransaction::TX_GENESIS || tx.nType == CTransaction::TX_WORK))
+    if (!tx.vInput.empty() && (tx.nType == CTransaction::TX_GENESIS || tx.nType == CTransaction::TX_WORK || tx.nType == CTransaction::TX_STAKE))
     {
         return DEBUG(MV_ERR_TRANSACTION_INVALID,"tx vin is not empty for genesis or work tx\n");
     }
@@ -138,7 +138,7 @@ MvErr CMvCoreProtocol::ValidateTransaction(const CTransaction& tx)
     return MV_OK;
 }
 
-MvErr CMvCoreProtocol::ValidateBlock(CBlock& block)
+MvErr CMvCoreProtocol::ValidateBlock(const CBlock& block)
 {
     // These are checks that are independent of context
     // Check timestamp
@@ -152,7 +152,13 @@ MvErr CMvCoreProtocol::ValidateBlock(CBlock& block)
     {
         return DEBUG(MV_ERR_BLOCK_TRANSACTIONS_INVALID,"empty extended block\n");
     }
-    
+  
+    // validate vacant block 
+    if (block.nType == CBlock::BLOCK_VACANT)
+    {
+        return ValidateVacantBlock(block);
+    }
+ 
     // Validate mint tx
     if (!block.txMint.IsMintTx() || ValidateTransaction(block.txMint) != MV_OK)
     {
@@ -163,6 +169,11 @@ MvErr CMvCoreProtocol::ValidateBlock(CBlock& block)
     if (nBlockSize > MAX_BLOCK_SIZE)
     {
         return DEBUG(MV_ERR_BLOCK_OVERSIZE,"size overflow size=%u vtx=%u\n",nBlockSize,block.vtx.size());
+    }
+
+    if (block.nType == CBlock::BLOCK_ORIGIN && !block.vtx.empty())
+    {
+        return DEBUG(MV_ERR_BLOCK_TRANSACTIONS_INVALID,"origin block vtx is not empty\n");
     }
 
     vector<uint256> vMerkleTree;
@@ -178,7 +189,7 @@ MvErr CMvCoreProtocol::ValidateBlock(CBlock& block)
         return DEBUG(MV_ERR_BLOCK_DUPLICATED_TRANSACTION,"duplicate tx\n");
     }
 
-    BOOST_FOREACH(CTransaction& tx,block.vtx)
+    BOOST_FOREACH(const CTransaction& tx,block.vtx)
     {
         if (tx.IsMintTx() || ValidateTransaction(tx) != MV_OK)
         {
@@ -193,14 +204,34 @@ MvErr CMvCoreProtocol::ValidateBlock(CBlock& block)
     return MV_OK;
 }
 
-MvErr CMvCoreProtocol::VerifyBlock(CBlock& block,CBlockIndex* pIndexPrev)
+MvErr CMvCoreProtocol::ValidateOrigin(const CBlock& block,const CProfile& parentProfile,CProfile& forkProfile)
+{
+    if (!forkProfile.Load(block.vchProof))
+    {
+        return DEBUG(MV_ERR_BLOCK_INVALID_FORK,"load profile error\n");
+    }
+    if (forkProfile.IsNull())
+    {
+        return DEBUG(MV_ERR_BLOCK_INVALID_FORK,"invalid profile");
+    }
+    if (parentProfile.IsPrivate())
+    {
+        if (!forkProfile.IsPrivate() || parentProfile.destOwner != forkProfile.destOwner)
+        {
+            return DEBUG(MV_ERR_BLOCK_INVALID_FORK,"permission denied");
+        }
+    }
+    return MV_OK;
+}
+
+MvErr CMvCoreProtocol::VerifyBlock(const CBlock& block,CBlockIndex* pIndexPrev)
 {
     (void)block;
     (void)pIndexPrev;
     return MV_OK;
 }
 
-MvErr CMvCoreProtocol::VerifyBlockTx(CTransaction& tx,CTxContxt& txContxt,CBlockIndex* pIndexPrev)
+MvErr CMvCoreProtocol::VerifyBlockTx(const CTransaction& tx,const CTxContxt& txContxt,CBlockIndex* pIndexPrev)
 {
     (void)tx;
     (void)txContxt;
@@ -208,7 +239,7 @@ MvErr CMvCoreProtocol::VerifyBlockTx(CTransaction& tx,CTxContxt& txContxt,CBlock
     return MV_OK;
 }
 
-MvErr CMvCoreProtocol::VerifyTransaction(CTransaction& tx,const vector<CTxOutput>& vPrevOutput,int nForkHeight)
+MvErr CMvCoreProtocol::VerifyTransaction(const CTransaction& tx,const vector<CTxOutput>& vPrevOutput,int nForkHeight)
 {
     CDestination destIn = vPrevOutput[0].destTo;
     int64 nValueIn = 0;
@@ -305,6 +336,43 @@ int CMvCoreProtocol::GetProofOfWorkRunTimeBits(int nBits,int64 nTime,int64 nPrev
     return nBits;
 }
 
+int64 CMvCoreProtocol::GetDelegatedProofOfStakeReward(CBlockIndex* pIndexPrev,size_t nWeight)
+{
+    return (15 * COIN);    
+}
+
+void CMvCoreProtocol::GetDelegatedBallot(const uint256& nAgreement,size_t nWeight,
+                                         const map<CDestination,size_t>& mapBallot,vector<CDestination>& vBallot)
+{
+    vBallot.clear();
+    int nSelected = 0;
+    for (const unsigned char* p = nAgreement.begin();p != nAgreement.end();++p)
+    {
+        nSelected ^= *p;
+    }
+    size_t nWeightWork = ((DELEGATE_THRESH - nWeight) * (DELEGATE_THRESH - nWeight) * (DELEGATE_THRESH - nWeight))
+                         / (DELEGATE_THRESH * DELEGATE_THRESH);
+    if (nSelected >= nWeightWork * 256 / (nWeightWork + nWeight))
+    {
+        size_t nTrust = nWeight;
+        for (const unsigned char* p = nAgreement.begin();p != nAgreement.end() && nTrust != 0;++p)
+        {
+            nSelected += *p;
+            size_t n = nSelected % nWeight;
+            for (map<CDestination,size_t>::const_iterator it = mapBallot.begin();it != mapBallot.end();++it)
+            {
+                if (n < (*it).second)
+                {
+                    vBallot.push_back((*it).first);
+                    break;
+                }
+                n -= (*it).second;
+            }
+            nTrust >>= 1;
+        }
+    }
+}
+
 int64 CMvCoreProtocol::GetProofOfWorkReward(CBlockIndex* pIndexPrev)
 {
     (void)pIndexPrev;
@@ -315,6 +383,21 @@ bool CMvCoreProtocol::CheckBlockSignature(const CBlock& block)
 {
     (void)block;
     return true;
+}
+
+MvErr CMvCoreProtocol::ValidateVacantBlock(const CBlock& block)
+{
+    if (block.hashMerkle != 0 || !block.txMint.IsNull() || !block.vtx.empty())
+    {
+        return DEBUG(MV_ERR_BLOCK_TRANSACTIONS_INVALID,"vacant block tx is not empty.");
+    }
+    
+    if (!block.vchProof.empty() || !block.vchSig.empty())
+    {
+        return DEBUG(MV_ERR_BLOCK_SIGNATURE_INVALID,"vacant block proof or signature is not empty.");
+    }
+
+    return MV_OK;
 }
 
 ///////////////////////////////

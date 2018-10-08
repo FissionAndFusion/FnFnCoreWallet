@@ -86,8 +86,8 @@ bool CService::WalleveHandleInitialize()
 
     if (!WalleveGetObject("dbpservice", pDbpSocket))
     {
-        WalleveLog("Failed to request DbpSocket\n");
-        return false;
+         WalleveLog("Failed to request DbpSocket\n");
+         return false;
     }
 
     return true;
@@ -95,13 +95,13 @@ bool CService::WalleveHandleInitialize()
 
 void CService::WalleveHandleDeinitialize()
 {
-    pCoreProtocol   = NULL;
-    pWorldLine      = NULL;
-    pTxPool         = NULL;
-    pDispatcher     = NULL;
-    pWallet         = NULL;
-    pNetwork        = NULL;
-    pDbpSocket      = NULL;
+    pCoreProtocol = NULL;
+    pWorldLine = NULL;
+    pTxPool = NULL;
+    pDispatcher = NULL;
+    pWallet = NULL;
+    pNetwork = NULL;
+    pDbpSocket = NULL;
 }
 
 bool CService::WalleveHandleInvoke()
@@ -207,6 +207,22 @@ bool CService::RemoveNode(const CNetHost& node)
 int  CService::GetForkCount()
 {
     return mapForkStatus.size();
+}
+
+void CService::ListFork(std::vector<std::pair<uint256,CProfile> >& vFork)
+{
+    vFork.reserve(mapForkStatus.size());
+
+    boost::shared_lock<boost::shared_mutex> rlock(rwForkStatus);
+    
+    for (map<uint256,CForkStatus>::iterator it = mapForkStatus.begin();it != mapForkStatus.end();++it)
+    {
+        CProfile profile;
+        if (pWorldLine->GetForkProfile((*it).first,profile))
+        {
+            vFork.push_back(make_pair((*it).first,profile));
+        }
+    }
 }
 
 bool CService::GetForkGenealogy(const uint256& hashFork,vector<pair<uint256,int> >& vAncestry,vector<pair<int,uint256> >& vSubline)

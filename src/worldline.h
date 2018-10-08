@@ -18,9 +18,11 @@ public:
     CWorldLine();
     ~CWorldLine();
     void GetForkStatus(std::map<uint256,CForkStatus>& mapForkStatus) override; 
+    bool GetForkProfile(const uint256& hashFork,CProfile& profile) override;
     bool GetBlockLocation(const uint256& hashBlock,uint256& hashFork,int& nHeight) override;
     bool GetBlockHash(const uint256& hashFork,int nHeight,uint256& hashBlock) override;
     bool GetLastBlock(const uint256& hashFork,uint256& hashBlock,int& nHeight,int64& nTime) override;
+    bool GetLastBlockTime(const uint256& hashFork,int nDepth,std::vector<int64>& vTime) override;
     bool GetBlock(const uint256& hashBlock,CBlock& block) override;
     bool Exists(const uint256& hashBlock) override;
     bool GetTransaction(const uint256& txid,CTransaction& tx) override;
@@ -29,10 +31,14 @@ public:
     bool GetTxUnspent(const uint256& hashFork,const std::vector<CTxIn>& vInput,
                                                     std::vector<CTxOutput>& vOutput) override;
     bool FilterTx(CTxFilter& filter) override;
-    MvErr AddNewBlock(CBlock& block,CWorldLineUpdate& update) override;
+    MvErr AddNewBlock(const CBlock& block,CWorldLineUpdate& update);
+    MvErr AddNewOrigin(const CBlock& block,CWorldLineUpdate& update);
     bool GetProofOfWorkTarget(const uint256& hashPrev,int nAlgo,int& nBits,int64& nReward) override;
+    bool GetDelegatedProofOfStakeReward(const uint256& hashPrev,std::size_t nWeight,int64& nReward) override;
     bool GetBlockLocator(const uint256& hashFork,CBlockLocator& locator) override;
     bool GetBlockInv(const uint256& hashFork,const CBlockLocator& locator,std::vector<uint256>& vBlockHash,std::size_t nMaxCount) override;
+    bool GetBlockDelegateEnrolled(const uint256& hashBlock,std::map<CDestination,std::size_t>& mapWeight,
+                                                           std::map<CDestination,std::vector<unsigned char> >& mapEnrollData) override;
 protected:
     bool WalleveHandleInitialize() override;
     void WalleveHandleDeinitialize() override;

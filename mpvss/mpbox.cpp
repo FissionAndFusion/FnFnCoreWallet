@@ -56,18 +56,19 @@ CMPOpenedBox::CMPOpenedBox()
 {
 }
 
-CMPOpenedBox::CMPOpenedBox(const std::vector<MPUInt256>& vCoeffIn)
-: vCoeff(vCoeffIn)
+CMPOpenedBox::CMPOpenedBox(const std::vector<MPUInt256>& vCoeffIn,const MPUInt256& nPrivKeyIn)
+: vCoeff(vCoeffIn),nPrivKey(nPrivKeyIn)
 {
 }
 
 const MPUInt256 CMPOpenedBox::PrivKey() const
 {
-    if (IsNull())
-    {
-        throw runtime_error("Box is null");
-    }
-    return vCoeff[0];
+    return nPrivKey;
+}
+
+const MPUInt256 CMPOpenedBox::PubKey() const
+{
+    return MPEccPubkey(PrivKey());
 }
 
 const MPUInt256 CMPOpenedBox::SharedKey(const MPUInt256& pubkey) const
@@ -92,6 +93,39 @@ const MPUInt256 CMPOpenedBox::Polynomial(std::size_t nThresh,uint32_t nX) const
     return MPUInt256(f);
 }
 
+void CMPOpenedBox::Signature(const MPUInt256& hash,const MPUInt256& r,MPUInt256& nR,MPUInt256& nS) const
+{
+    nR = MPEccPubkey(r);
+    nS = MPEccSign(PrivKey(),r,hash);
+}
+
+bool CMPOpenedBox::VerifySignature(const MPUInt256& hash,const MPUInt256& nR,const MPUInt256& nS) const
+{
+    return MPEccVerify(PubKey(),nR,nS,hash);
+}
+
+bool CMPOpenedBox::MakeSealedBox(CMPSealedBox& sealed,const MPUInt256& nIdent,const MPUInt256& r) const
+{
+    if (!Validate() || r.IsZero())
+    {
+        return false;
+    } 
+
+    try
+    {
+        sealed.vEncryptedCoeff.resize(vCoeff.size());
+        for (int i = 0;i < vCoeff.size();i++)
+        {
+            sealed.vEncryptedCoeff[i] = MPEccPubkey(vCoeff[i]);
+        }
+        sealed.nPubKey = PubKey();
+        Signature(nIdent,r,sealed.nR,sealed.nS);
+        return true;
+    }
+    catch (...) {}
+    return false;
+}
+
 //////////////////////////////
 // CMPSealedBox
 
@@ -99,47 +133,23 @@ CMPSealedBox::CMPSealedBox()
 {
 }
 
-CMPSealedBox::CMPSealedBox(const vector<MPUInt256>& vEncryptedCoeffIn,const MPUInt256& nRIn,const MPUInt256& nSIn)
-: vEncryptedCoeff(vEncryptedCoeffIn),nR(nRIn),nS(nSIn)
+CMPSealedBox::CMPSealedBox(const vector<MPUInt256>& vEncryptedCoeffIn,const MPUInt256& nPubKeyIn,const MPUInt256& nRIn,const MPUInt256& nSIn)
+: vEncryptedCoeff(vEncryptedCoeffIn),nPubKey(nPubKeyIn),nR(nRIn),nS(nSIn)
 {
 }
 
 const MPUInt256 CMPSealedBox::PubKey() const
 {
-    if (vEncryptedCoeff.empty())
+    if (IsNull())
     {
         throw runtime_error("Box is empty");
     }
-    return vEncryptedCoeff[0];
-}
-
-bool CMPSealedBox::Make(const MPUInt256& nIdent,CMPOpenedBox& opened,const MPUInt256& r)
-{
-    if (!opened.Validate() || r.IsZero())
-    {
-        return false;
-    } 
-
-    try
-    {
-        MPUInt256 key = opened.PrivKey();
-
-        vEncryptedCoeff.resize(opened.vCoeff.size());
-        for (int i = 0;i < opened.vCoeff.size();i++)
-        {
-            vEncryptedCoeff[i] = MPEccPubkey(opened.vCoeff[i]);
-        }
-        nR = MPEccPubkey(r);
-        nS = MPEccSign(key,r,nIdent);
-        return true;
-    }
-    catch (...) {}
-    return false;
+    return nPubKey;
 }
 
 bool CMPSealedBox::VerifySignature(const MPUInt256& nIdent) const
 {
-    if (vEncryptedCoeff.empty())
+    if (IsNull())
     {
         return false;
     }
@@ -150,7 +160,16 @@ bool CMPSealedBox::VerifySignature(const MPUInt256& nIdent) const
             return false;
         }
     }
-    return MPEccVerify(vEncryptedCoeff[0],nR,nS,nIdent);
+    return MPEccVerify(PubKey(),nR,nS,nIdent);
+}
+
+bool CMPSealedBox::VerifySignature(const MPUInt256& hash,const MPUInt256& nSignR,const MPUInt256& nSignS) const
+{
+    if (IsNull())
+    {
+        return false;
+    }
+    return MPEccVerify(PubKey(),nSignR,nSignS,hash);
 }
 
 bool CMPSealedBox::VerifyPolynomial(uint32_t nX,const MPUInt256& v)
