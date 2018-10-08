@@ -24,7 +24,7 @@ class CDispatcher : public IDispatcher
     void WalleveHandleDeinitialize() override;
     bool WalleveHandleInvoke() override;
     void WalleveHandleHalt() override;
-    void UpdatePrimaryBlock(const CWorldLineUpdate &updateWorldLine, const CTxSetChange &changeTxSet);
+    void UpdatePrimaryBlock(const CBlock& block,const CWorldLineUpdate& updateWorldLine,const CTxSetChange& changeTxSet);
     void ProcessForkTx(const CTransaction &tx, int nPrimaryHeight);
     void SyncForkHeight(int nPrimaryHeight);
 
