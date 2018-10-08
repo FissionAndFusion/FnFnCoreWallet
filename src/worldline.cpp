@@ -434,12 +434,13 @@ bool CWorldLine::GetDelegatedProofOfStakeReward(const uint256& hashPrev,size_t n
         WalleveLog("GetDelegatedProofOfStakeReward : Retrieve Prev Index Error: %s \n",hashPrev.ToString().c_str());
         return false;
     }
+/*
     if (!pIndexPrev->IsPrimary())
     {
         WalleveLog("GetDelegatedProofOfStakeReward : Previous is not primary: %s \n",hashPrev.ToString().c_str());
         return false;
     }
-    
+*/    
     nReward = pCoreProtocol->GetDelegatedProofOfStakeReward(pIndexPrev,nWeight);
     return true;
 }

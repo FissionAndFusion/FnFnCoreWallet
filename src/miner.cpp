@@ -370,7 +370,7 @@ void CMiner::LaunchMiner()
             {
                 break;
             }
-            if (workCurrent.IsNull() || workCurrent.nAlgo != POWA_BLAKE512)
+            if (workCurrent.IsNull() || workCurrent.nAlgo != CM_BLAKE512)
             {
                 nMinerStatus = MINER_HOLD;
                 continue;
@@ -382,7 +382,7 @@ void CMiner::LaunchMiner()
         uint32& nTime = *((uint32*)&work.vchWorkData[4]);
         uint256& nNonce = *((uint256*)&work.vchWorkData[work.vchWorkData.size() - 32]);
 
-        if (work.nAlgo == POWA_BLAKE512)
+        if (work.nAlgo == CM_BLAKE512)
         {
             cout << "Get blake512 work,prev block hash : " << work.hashPrev.GetHex() << "\n";
             uint256 hashTarget = GetHashTarget(work,nTime); 

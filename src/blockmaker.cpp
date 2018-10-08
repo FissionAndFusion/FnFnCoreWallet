@@ -9,6 +9,9 @@ using namespace walleve;
 using namespace multiverse;
 
 #define INITIAL_HASH_RATE      1024
+#define WAIT_AGREEMENT_TIME    (BLOCK_TARGET_SPACING - 5)
+#define WAIT_NEWBLOCK_TIME     (BLOCK_TARGET_SPACING - 5)
+
 //////////////////////////////
 // CBlockMakerHashAlgo
 class CHashAlgo_Blake512 : public multiverse::CBlockMakerHashAlgo
@@ -50,15 +53,14 @@ bool CBlockMakerProfile::BuildTemplate()
 
 CBlockMaker::CBlockMaker()
 : thrMaker("blockmaker",boost::bind(&CBlockMaker::BlockMakerThreadFunc,this)), 
-  nMakerStatus(MAKER_HOLD),hashLastBlock(0),nLastBlockTime(0)
+  nMakerStatus(MAKER_HOLD),hashLastBlock(0),nLastBlockTime(0),nLastBlockHeight(0),nLastAgreement(0),nLastWeight(0)
 {
     pCoreProtocol = NULL;
     pWorldLine = NULL;
     pTxPool = NULL;
     pDispatcher = NULL;
     pConsensus = NULL;
-    mapHashAlgo[POWA_BLAKE512] = new CHashAlgo_Blake512(INITIAL_HASH_RATE);    
-    
+    mapHashAlgo[CM_BLAKE512] = new CHashAlgo_Blake512(INITIAL_HASH_RATE);    
 }
 
 CBlockMaker::~CBlockMaker()
@@ -113,7 +115,7 @@ bool CBlockMaker::WalleveHandleInitialize()
 
     if (!MintConfig()->destBlake512.IsNull() && MintConfig()->keyBlake512 != 0)
     { 
-        CBlockMakerProfile profile(POWA_BLAKE512,MintConfig()->destBlake512, MintConfig()->keyBlake512);
+        CBlockMakerProfile profile(CM_BLAKE512,MintConfig()->destBlake512, MintConfig()->keyBlake512);
         if (profile.IsValid())
         {
             mapProfile.insert(make_pair(CM_BLAKE512,profile));
@@ -140,6 +142,7 @@ bool CBlockMaker::WalleveHandleInvoke()
     {
         return false;
     }
+
     if (!pWorldLine->GetLastBlock(pCoreProtocol->GetGenesisBlockHash(),hashLastBlock,nLastBlockHeight,nLastBlockTime))
     {
         return false;
@@ -147,7 +150,6 @@ bool CBlockMaker::WalleveHandleInvoke()
 
     if (!mapProfile.empty())
     {
-        //nMakerStatus = MAKER_HOLD;
         nMakerStatus = MAKER_RUN;
 
         if (!WalleveThreadDelayStart(thrMaker))
@@ -178,6 +180,8 @@ bool CBlockMaker::HandleEvent(CMvEventBlockMakerUpdate& eventUpdate)
         hashLastBlock = eventUpdate.data.hashBlock;
         nLastBlockTime = eventUpdate.data.nBlockTime;
         nLastBlockHeight = eventUpdate.data.nBlockHeight;
+        nLastAgreement = eventUpdate.data.nAgreement;
+        nLastWeight = eventUpdate.data.nWeight;
     }
     cond.notify_all();
     
@@ -189,7 +193,7 @@ bool CBlockMaker::Wait(long nSeconds)
     boost::system_time const timeout = boost::get_system_time()
                                        + boost::posix_time::seconds(nSeconds);
     boost::unique_lock<boost::mutex> lock(mutex);
-    while(nMakerStatus == MAKER_RUN)
+    while (nMakerStatus == MAKER_RUN)
     {
         if (!cond.timed_wait(lock,timeout))
         {
@@ -197,76 +201,6 @@ bool CBlockMaker::Wait(long nSeconds)
         }
     }
     return (nMakerStatus == MAKER_RUN);
-}
-
-bool CBlockMaker::CreateNewBlock(CBlock& block,const uint256& hashPrev,int64 nPrevTime,int nPrevHeight,const CBlockMakerAgreement& agreement)
-{
-    block.nType = CBlock::BLOCK_PRIMARY;
-    block.nTimeStamp = nPrevTime + BLOCK_TARGET_SPACING;
-    block.hashPrev = hashPrev;
-    CProofOfSecretShare proof;
-    proof.nWeight = agreement.nWeight;
-    proof.nAgreement = agreement.nAgreement;
-    proof.Save(block.vchProof);
-
-    if (agreement.nAgreement != 0)
-    {
-        pConsensus->GetProof(nPrevHeight + 1,block.vchProof);
-    }
-     
-    int nConsensus = CM_MPVSS;
-    if (agreement.vBallot.empty())
-    {
-        nConsensus = CM_BLAKE512;
-        block.nTimeStamp -= 5;
-    } 
-    map<int,CBlockMakerProfile>::iterator it = mapProfile.find(nConsensus);
-    if (it == mapProfile.end())
-    {
-        return false;
-    } 
-
-    CBlockMakerProfile& profile = (*it).second;
-    CDestination destMint = CDestination(profile.templMint->GetTemplateId());
-    if (nConsensus == CM_MPVSS)
-    {
-        if (agreement.vBallot[0] != destMint)
-        {
-            return false;
-        }
-        if (!CreateDelegatedProofOfStake(block,agreement.nWeight,destMint))
-        {
-            return false;
-        }
-    }
-    else if (!CreateProofOfWork(block,profile.nAlgo,destMint))
-    {
-        return false;
-    }
-    
-    size_t nMaxTxSize = MAX_BLOCK_SIZE - GetSerializeSize(block) - profile.GetSignatureSize();
-    int64 nTotalTxFee = 0;
-    pTxPool->ArrangeBlockTx(pCoreProtocol->GetGenesisBlockHash(),nMaxTxSize,block.vtx,nTotalTxFee); 
-    block.hashMerkle = block.CalcMerkleTreeRoot();
-    block.txMint.nAmount += nTotalTxFee;
- 
-    if (!SignBlock(block,profile))
-    {
-        return false;
-    }
-
-    return true;
-}
-
-bool CBlockMaker::SignBlock(CBlock& block,CBlockMakerProfile& profile)
-{
-    uint256 hashSig = block.GetHash();
-    vector<unsigned char> vchMintSig;
-    if (!profile.keyMint.Sign(hashSig,vchMintSig))
-    {
-        return false;
-    }
-    return profile.templMint->BuildBlockSignature(hashSig,vchMintSig,block.vchSig);
 }
 
 bool CBlockMaker::WaitAgreement(CBlockMakerAgreement& agree,int64 nTimeAgree,int nHeight)
@@ -280,28 +214,173 @@ bool CBlockMaker::WaitAgreement(CBlockMakerAgreement& agree,int64 nTimeAgree,int
     return true;
 }
 
-bool CBlockMaker::CreateDelegatedProofOfStake(CBlock& block,size_t nWeight,const CDestination& dest)
+bool CBlockMaker::WaitDelegatedBlock(int64 nPredictedTime,const uint256& nAgreement,bool& fReconstruct)
 {
-    CTransaction& txMint = block.txMint;
-    txMint.nType = CTransaction::TX_STAKE;
-    txMint.hashAnchor = block.hashPrev;
-    txMint.sendTo = dest;
-    if (!pWorldLine->GetDelegatedProofOfStakeReward(block.hashPrev,nWeight,txMint.nAmount))
+    fReconstruct = false;
+    boost::system_time const timeout = boost::get_system_time()
+                                       + boost::posix_time::seconds(nPredictedTime - WalleveGetNetTime());
+    boost::unique_lock<boost::mutex> lock(mutex);
+    while (nMakerStatus == MAKER_RUN)
     {
+        if (!cond.timed_wait(lock,timeout))
+        {
+            break;
+        }
+    }
+    if (nMakerStatus == MAKER_RESET)
+    {
+        return (nAgreement == nLastAgreement);
+    }
+    fReconstruct = true;
+    return false;
+}
+
+void CBlockMaker::PrepareBlock(CBlock& block,const uint256& hashPrev,int64 nPrevTime,int nPrevHeight,const CBlockMakerAgreement& agreement)
+{
+    block.SetNull();
+    block.nType = CBlock::BLOCK_PRIMARY;
+    block.nTimeStamp = nPrevTime + BLOCK_TARGET_SPACING;
+    block.hashPrev = hashPrev;
+    CProofOfSecretShare proof; 
+    proof.nWeight = agreement.nWeight;
+    proof.nAgreement = agreement.nAgreement;
+    proof.Save(block.vchProof);
+    if (agreement.nAgreement != 0)
+    {
+        pConsensus->GetProof(nPrevHeight + 1,block.vchProof);
+    }
+}
+
+void CBlockMaker::ArrangeBlockTx(CBlock& block,const uint256& hashFork,CBlockMakerProfile& profile)
+{
+    size_t nMaxTxSize = MAX_BLOCK_SIZE - GetSerializeSize(block) - profile.GetSignatureSize();
+    int64 nTotalTxFee = 0;
+    pTxPool->ArrangeBlockTx(hashFork,nMaxTxSize,block.vtx,nTotalTxFee); 
+    block.hashMerkle = block.CalcMerkleTreeRoot();
+    block.txMint.nAmount += nTotalTxFee;
+}
+
+bool CBlockMaker::SignBlock(CBlock& block,CBlockMakerProfile& profile)
+{
+    uint256 hashSig = block.GetHash();
+    vector<unsigned char> vchMintSig;
+    if (!profile.keyMint.Sign(hashSig,vchMintSig))
+    {
+        return false;
+    }
+    return profile.templMint->BuildBlockSignature(hashSig,vchMintSig,block.vchSig);
+}
+
+bool CBlockMaker::DispatchBlock(CBlock& block)
+{
+    int nWait = block.nTimeStamp - WalleveGetNetTime();
+    if (nWait > 0 && !Wait(nWait))
+    {
+        return false;
+    }
+    MvErr err = pDispatcher->AddNewBlock(block);
+    if (err != MV_OK)
+    {
+        WalleveLog("Dispatch new block failed (%s) : %s\n",err,MvErrString(err));
         return false;
     }
     return true;
 }
 
-void CBlockMaker::CreatePiggyback(const CBlockMakerAgreement& agreement,const CBlock& refblock,int nPrevHeight)
+bool CBlockMaker::CreateProofOfWorkBlock(CBlock& block)
+{
+    int nConsensus = CM_BLAKE512;
+    map<int,CBlockMakerProfile>::iterator it = mapProfile.find(nConsensus);
+    if (it == mapProfile.end())
+    {
+        return false;
+    } 
+
+    CBlockMakerProfile& profile = (*it).second;
+    CDestination destSendTo = CDestination(profile.templMint->GetTemplateId());
+
+    int nAlgo = nConsensus;
+    int nBits;
+    int64 nReward;
+    if (!pWorldLine->GetProofOfWorkTarget(block.hashPrev,nAlgo,nBits,nReward))
+    {
+        return false;
+    }
+
+    CTransaction& txMint = block.txMint;
+    txMint.nType = CTransaction::TX_WORK;
+    txMint.hashAnchor = block.hashPrev;
+    txMint.sendTo = destSendTo;
+    txMint.nAmount = nReward;
+    
+    block.vchProof.resize(block.vchProof.size() + CProofOfHashWorkCompact::PROOFHASHWORK_SIZE);
+    CProofOfHashWorkCompact proof;
+    proof.nAlgo = nAlgo;
+    proof.nBits = nBits;
+    proof.nNonce = 0;
+    proof.Save(block.vchProof);
+
+    if (!CreateProofOfWork(block,mapHashAlgo[profile.nAlgo]))
+    {
+        return false;
+    }
+
+    ArrangeBlockTx(block,pCoreProtocol->GetGenesisBlockHash(),profile);
+
+    return SignBlock(block,profile);
+}
+
+bool CBlockMaker::ProcessDelegatedProofOfStake(CBlock& block,const CBlockMakerAgreement& agreement,int nPrevHeight)
+{
+    for (map<int,CBlockMakerProfile>::iterator it = mapProfile.lower_bound(CM_MPVSS);it != mapProfile.upper_bound(CM_MPVSS);++it) 
+    {
+        CBlockMakerProfile& profile = (*it).second;
+        if (agreement.vBallot[0] == CDestination(profile.templMint->GetTemplateId()))
+        {
+            if (CreateDelegatedBlock(block,pCoreProtocol->GetGenesisBlockHash(),profile,agreement.nWeight))
+            {
+                if (DispatchBlock(block))
+                {
+                    CreatePiggyback(profile,agreement,block,nPrevHeight);
+                }
+            }
+            break;
+        }
+    }
+    bool fReconstruct = false;
+    if (WaitDelegatedBlock(block.nTimeStamp + WAIT_NEWBLOCK_TIME,agreement.nAgreement,fReconstruct))
+    {
+    }
+    return fReconstruct;
+}
+
+bool CBlockMaker::CreateDelegatedBlock(CBlock& block,const uint256& hashFork,CBlockMakerProfile& profile,size_t nWeight)
+{
+    CDestination destSendTo = CDestination(profile.templMint->GetTemplateId());
+
+    int64 nReward;
+    if (!pWorldLine->GetDelegatedProofOfStakeReward(block.hashPrev,nWeight,nReward))
+    {
+        return false;
+    }
+
+    CTransaction& txMint = block.txMint;
+    txMint.nType = CTransaction::TX_STAKE;
+    txMint.hashAnchor = block.hashPrev;
+    txMint.sendTo = destSendTo;
+    txMint.nAmount = nReward;
+        
+    ArrangeBlockTx(block,hashFork,profile);
+
+    return SignBlock(block,profile);
+}
+
+void CBlockMaker::CreatePiggyback(CBlockMakerProfile& profile,const CBlockMakerAgreement& agreement,const CBlock& refblock,int nPrevHeight)
 {
     CProofOfPiggyback proof;
     proof.nWeight = agreement.nWeight;
     proof.nAgreement = agreement.nAgreement;
     proof.hashRefBlock = refblock.GetHash();
-
-    CBlockMakerProfile& profile = mapProfile[CM_MPVSS];
-    CDestination destMint = CDestination(profile.templMint->GetTemplateId());
 
     map<uint256,CForkStatus> mapForkStatus;
     pWorldLine->GetForkStatus(mapForkStatus);
@@ -318,65 +397,52 @@ void CBlockMaker::CreatePiggyback(const CBlockMakerAgreement& agreement,const CB
             block.nTimeStamp = refblock.nTimeStamp;
             block.hashPrev = status.hashLastBlock;
             proof.Save(block.vchProof);
-            CTransaction& txMint = block.txMint;
-            txMint.nType = CTransaction::TX_STAKE;
-            txMint.hashAnchor = block.hashPrev;
-            txMint.sendTo = destMint;
-            txMint.nAmount = 20 * COIN;
-            size_t nMaxTxSize = MAX_BLOCK_SIZE - GetSerializeSize(block) - profile.GetSignatureSize();
-            int64 nTotalTxFee = 0;
-            pTxPool->ArrangeBlockTx(hashFork,nMaxTxSize,block.vtx,nTotalTxFee); 
-            block.hashMerkle = block.CalcMerkleTreeRoot();
-            block.txMint.nAmount += nTotalTxFee;
- 
-            if (SignBlock(block,profile))
+
+            if (CreateDelegatedBlock(block,hashFork,profile,agreement.nWeight))
             {
-                DispatchNewBlock(block);
+                DispatchBlock(block);
             }
         }
     } 
 }
 
-bool CBlockMaker::CreateProofOfWork(CBlock& block,int nAlgo,const CDestination& dest)
+bool CBlockMaker::CreateProofOfWork(CBlock& block,CBlockMakerHashAlgo* pHashAlgo)
 {
-    int nBits;
-    int64 nReward;
-    if (!pWorldLine->GetProofOfWorkTarget(block.hashPrev,nAlgo,nBits,nReward))
-    {
-        return false;
-    }
-    CTransaction& txMint = block.txMint;
-    txMint.nType = CTransaction::TX_WORK;
-    txMint.hashAnchor = block.hashPrev;
-    txMint.sendTo = dest;
-    txMint.nAmount = nReward;
-    
-    block.vchProof.resize(block.vchProof.size() + CProofOfHashWorkCompact::PROOFHASHWORK_SIZE);
-    CProofOfHashWorkCompact proof;
-    proof.nAlgo = nAlgo;
-    proof.nBits = nBits;
-    proof.nNonce = 0;
-    proof.Save(block.vchProof);    
+    const int64 nTimePrev = block.nTimeStamp - BLOCK_TARGET_SPACING;
+    block.nTimeStamp -= 5;
+
     if (WalleveGetNetTime() > block.nTimeStamp)
     {
         block.nTimeStamp = WalleveGetNetTime();
     }
 
+    CProofOfHashWorkCompact proof;
+    proof.Load(block.vchProof);
+
+    int nBits = proof.nBits;
+
     uint256 hashTarget = (~uint256(0) >> nBits);
+
     vector<unsigned char> vchProofOfWork;
     block.GetSerializedProofOfWorkData(vchProofOfWork);
+
     uint32& nTime = *((uint32*)&vchProofOfWork[4]);
     uint256& nNonce = *((uint256*)&vchProofOfWork[vchProofOfWork.size() - 32]);
-    CBlockMakerHashAlgo* pHashAlgo = mapHashAlgo[nAlgo]; 
+
     int64& nHashRate = pHashAlgo->nHashRate;
+
     while (!Interrupted())
     {
-        hashTarget = (~uint256(0) >> pCoreProtocol->GetProofOfWorkRunTimeBits(nBits,nTime,nLastBlockTime));
+        hashTarget = (~uint256(0) >> pCoreProtocol->GetProofOfWorkRunTimeBits(nBits,nTime,nTimePrev));
         for (int i = 0;i < nHashRate;i++)
         {
             uint256 hash = pHashAlgo->Hash(vchProofOfWork);
             if (hash <= hashTarget)
             {
+                block.nTimeStamp = nTime;
+                proof.nNonce     = nNonce;
+                proof.Save(block.vchProof);
+
                 WalleveLog("Proof-of-work(%s) block found (%ld)\nhash : %s\ntarget : %s\n",
                            pHashAlgo->strAlgo.c_str(),nHashRate,hash.GetHex().c_str(),hashTarget.GetHex().c_str());
                 return true;
@@ -396,22 +462,6 @@ bool CBlockMaker::CreateProofOfWork(CBlock& block,int nAlgo,const CDestination& 
         }
     }
     return false;
-}
-
-bool CBlockMaker::DispatchNewBlock(CBlock& block)
-{
-    int nWait = block.nTimeStamp - WalleveGetNetTime();
-    if (nWait > 0 && !Wait(nWait))
-    {
-        return false;
-    }
-    MvErr err = pDispatcher->AddNewBlock(block);
-    if (err != MV_OK)
-    {
-        WalleveLog("Dispatch new block failed (%s) : %s\n",err,MvErrString(err));
-        return false;
-    }
-    return true;
 }
 
 void CBlockMaker::BlockMakerThreadFunc()
@@ -448,7 +498,7 @@ void CBlockMaker::BlockMakerThreadFunc()
         }
 
         CBlockMakerAgreement agree;
-        if (!WaitAgreement(agree,nPrevTime + BLOCK_TARGET_SPACING - 5,nPrevHeight + 1))
+        if (!WaitAgreement(agree,nPrevTime + WAIT_AGREEMENT_TIME,nPrevHeight + 1))
         {
             continue;
         }
@@ -457,15 +507,26 @@ void CBlockMaker::BlockMakerThreadFunc()
         try
         {
             int nNextStatus = MAKER_HOLD;
-            if (CreateNewBlock(block,hashPrev,nPrevTime,nPrevHeight,agree))
+            
+            PrepareBlock(block,hashPrev,nPrevTime,nPrevHeight,agree);
+            
+            if (!agree.IsProofOfWork())
             {
-                if (!DispatchNewBlock(block))
+                if (!ProcessDelegatedProofOfStake(block,agree,nPrevHeight))
                 {
-                    nNextStatus = MAKER_RESET;
+                    agree = CBlockMakerAgreement();
+                    PrepareBlock(block,hashPrev,nPrevTime + BLOCK_TARGET_SPACING,nPrevHeight,agree);
                 }
-                else if (!block.IsProofOfWork())
+            }
+
+            if (agree.IsProofOfWork())
+            {
+                if (CreateProofOfWorkBlock(block))
                 {
-                    CreatePiggyback(agree,block,nPrevHeight);
+                    if (!DispatchBlock(block))
+                    {
+                        nNextStatus = MAKER_RESET;
+                    }
                 }
             }
 
@@ -485,4 +546,3 @@ void CBlockMaker::BlockMakerThreadFunc()
 
     WalleveLog("Block maker exited\n");
 }
-

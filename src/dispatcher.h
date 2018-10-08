@@ -13,7 +13,7 @@ namespace multiverse
 
 class CDispatcher : public IDispatcher
 {
-  public:
+public:
     CDispatcher();
     ~CDispatcher();
     MvErr AddNewBlock(const CBlock &block, uint64 nNonce = 0) override;
