@@ -29,7 +29,7 @@ set(src
 	dbptype.h
 	dbpserver.h
 	dbpserver.cpp
-	dbputils.hpp
+	dbputils.h
 	dnseed.cpp dnseed.h
 	schedule.cpp schedule.h
 	service.cpp service.h

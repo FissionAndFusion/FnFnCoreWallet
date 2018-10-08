@@ -11,7 +11,7 @@
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/lexical_cast.hpp>
 
-#include "dbputils.hpp"
+#include "dbputils.h"
 
 using namespace multiverse;
 using namespace walleve;
