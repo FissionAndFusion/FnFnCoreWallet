@@ -112,7 +112,7 @@ namespace multiverse
                 for p in params_list:
                     fmt_indent = options_indent + p.format
                     fmt_indent = fmt_indent + space(fmt_indent)
-                    desc_list = split(p.desc)
+                    desc_list = split(p.desc, max_len = option_max_line_len)
                     w.write(terminal_str_code(indent, 'oss << ', fmt_indent, desc_list))
 
                 w.write(indent + 'return oss.str();\n')

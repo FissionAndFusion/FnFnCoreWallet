@@ -14,12 +14,6 @@
 #include "json/json_spirit_value.h"
 #include "rpc/rpc.h"
 
-#ifdef WIN32
-    typedef boost::asio::windows::stream_handle stream_desc;
-#else
-    typedef boost::asio::posix::stream_descriptor stream_desc;
-#endif
-
 namespace multiverse
 {
 
@@ -46,7 +40,11 @@ protected:
     void CancelCommand();
 
     void WaitForChars();
+#if BOOST_VERSION < 106600
     void HandleRead(const boost::system::error_code& err, size_t nTransferred);
+#else
+    void HandleRead(const boost::system::error_code& err);
+#endif
     void EnterLoop();
     void LeaveLoop();
     void ConsoleHandleLine(const std::string& strLine);;
@@ -60,8 +58,9 @@ protected:
     boost::asio::io_service ioService;
     boost::asio::io_service::strand ioStrand;
     stream_desc inStream;
-    boost::asio::mutable_buffer bufRead;
-    bool fReading;
+#if BOOST_VERSION < 106600
+    boost::asio::null_buffers bufRead;
+#endif
 };
 
 } // namespace multiverse

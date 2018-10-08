@@ -156,7 +156,6 @@ bool CMiner::HandleEvent(CWalleveEventHttpGetRsp& event)
                 cout << spResp->spResult->Method() << endl;
                 if (spResult->fResult.IsValid())
                 {
-                cout << 18 << endl;
                     if (!spResult->fResult)
                     {
                         {
@@ -170,7 +169,6 @@ bool CMiner::HandleEvent(CWalleveEventHttpGetRsp& event)
                 }
                 else if (spResult->work.IsValid())
                 {
-                    cout << "1" << endl;
                     {
                         boost::unique_lock<boost::mutex> lock(mutex);
 
@@ -180,7 +178,6 @@ bool CMiner::HandleEvent(CWalleveEventHttpGetRsp& event)
                         workCurrent.nBits = spResult->work.nBits;
                         workCurrent.vchWorkData = ParseHexString(spResult->work.strData);
 
-                    cout << "2" << endl;
                         nMinerStatus = MINER_RESET;
                     }
                     condMiner.notify_all(); 

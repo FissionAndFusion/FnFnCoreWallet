@@ -48,13 +48,9 @@ static const char* prompt = "multiverse> ";
 
 CRPCClient::CRPCClient(bool fConsole)
 : IIOModule("rpcclient"),
-  thrDispatch("rpcclient", fConsole ? boost::bind(&CRPCClient::LaunchConsole,this) : boost::bind(&CRPCClient::LaunchCommand,this)),
   ioStrand(ioService),
-#ifdef WIN32
-  inStream(ioService, GetStdHandle(STD_INPUT_HANDLE))
-#else  
-  inStream(ioService,::dup(STDIN_FILENO))
-#endif
+  inStream(ioService,::dup(STDIN_FILENO)),
+  thrDispatch("rpcclient", boost::bind(fConsole ? &CRPCClient::LaunchConsole : &CRPCClient::LaunchCommand,this))
 {
     nLastNonce = 0;
     pHttpGet = NULL;
@@ -315,40 +311,38 @@ void CRPCClient::CancelCommand()
 
 void CRPCClient::WaitForChars()
 {
-#ifdef WIN32
+#if BOOST_VERSION < 106600
     // TODO: Just to be compilable. It works incorrect.
     inStream.async_read_some(bufRead, boost::bind(&CRPCClient::HandleRead,this,
                                                      boost::asio::placeholders::error,
                                                      boost::asio::placeholders::bytes_transferred));
 #else
-    inStream.async_read_some(bufRead, boost::bind(&CRPCClient::HandleRead,this,
-                                                     boost::asio::placeholders::error,
-                                                     boost::asio::placeholders::bytes_transferred));
+    inStream.async_wait(boost::asio::posix::stream_descriptor::wait_read, boost::bind(&CRPCClient::HandleRead,this,
+                                                     boost::asio::placeholders::error));
 #endif
 }
 
+#if BOOST_VERSION < 106600
 void CRPCClient::HandleRead(const boost::system::error_code& err, size_t nTransferred)
+#else
+void CRPCClient::HandleRead(const boost::system::error_code& err)
+#endif
 {
     if (err == boost::system::errc::success)
     {
         rl_callback_read_char();
-        if (fReading)
-        {
-            WaitForChars();
-        }
+        WaitForChars();
     }
 }
 
 void CRPCClient::EnterLoop()
 {
-    fReading = true;
     Initialize_ReadLine();
 }
 
 void CRPCClient::LeaveLoop()
 {
     cout << "\n";
-    fReading = false;
     Uninitialize_ReadLine();
 }
 
@@ -356,8 +350,7 @@ void CRPCClient::ConsoleHandleLine(const string& strLine)
 {
     if (strLine == "quit")
     {
-        fReading = false;
-        rl_set_prompt("");
+        Uninitialize_ReadLine();
         MvShutdown();
         return;
     }
@@ -365,21 +358,18 @@ void CRPCClient::ConsoleHandleLine(const string& strLine)
     vector<string> vCommand;
 
     // parse command line input
-    // part 1: Parse (blank,',")
-    // part 2: If part 1 is blank, part 2 is any charactor besides (blank,',"). 
-    //         if part 1 is (' or "), part 2 is any charactor besides 0 or even \ + (' or "), \ is escape character
+    // part 1: Parse pair of blank and quote(' or ")
+    // part 2: If part 1 is blank, part 2 is any charactor besides blank. 
+    //         if part 1 is quote, part 2 is any charactor besides the quote in part 1.
     // part 3: consume the tail of match.
     boost::regex e("[ \t]*((?<quote>['\"])|[ \t]*)"
-        "((?(<quote>).*?(?=((?<none>[^\\\\])|(?<even>([\\\\]{2})+))\\k<quote>)(\\k<none>|\\k<even>)|[^ \t'\\\"]+))"
+        "((?(<quote>).*?|[^ \t]+))"
         "(?(<quote>)\\k<quote>|([ \t]+|$))", boost::regex::perl);
     boost::sregex_iterator it(strLine.begin(), strLine.end(), e);
     boost::sregex_iterator end;
     for (; it != end; it++)
     {
         string str = (*it)[3];
-        boost::replace_all(str, "\\\\", "\\");
-        boost::replace_all(str, "\\\"", "\"");
-        boost::replace_all(str, "\\'", "'");
         vCommand.push_back(str);
     }
 
