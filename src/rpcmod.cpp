@@ -1279,11 +1279,11 @@ CRPCResultPtr CRPCMod::RPCListAddress(CRPCParamPtr param)
     for(const auto& des : vDes)
     {
         CListAddressResult::CAddressdata addressData;
+        addressData.strAddress = CMvAddress(des).ToString();
         if(des.IsPubKey())
         {
             addressData.strType = "pubkey";
-            addressData.pubkey.strKey = des.GetHex();
-            addressData.pubkey.strAddress = CMvAddress(des).ToString();
+            addressData.strPubkey = des.GetHex();
         }
         else if(des.IsTemplate())
         {
@@ -1367,7 +1367,7 @@ CRPCResultPtr CRPCMod::RPCExportWallet(CRPCParamPtr param)
 {
     auto spParam = CastParamPtr<CExportWalletParam>(param);
 
-    fs::path pSave(spParam->strPath);
+    fs::path pSave(string(spParam->strPath));
     //check if the file name given is available
     if(!pSave.is_absolute())
     {
@@ -1452,7 +1452,7 @@ CRPCResultPtr CRPCMod::RPCImportWallet(CRPCParamPtr param)
 {
     auto spParam = CastParamPtr<CImportWalletParam>(param);
 
-    fs::path pLoad(spParam->strPath);
+    fs::path pLoad(string(spParam->strPath));
     //check if the file name given is available
     if(!pLoad.is_absolute())
     {

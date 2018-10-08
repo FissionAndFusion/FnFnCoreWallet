@@ -1,18 +1,4 @@
 {
-    "templatepubkey": {
-        "type": "class",
-        "name": "TemplatePubKey",
-        "content": {
-            "key": {
-                "type": "string",
-                "desc": "public key"
-            },
-            "address": {
-                "type": "string",
-                "desc": "public key address"
-            }
-        }
-    },
     "templatepubkeyweight": {
         "type": "class",
         "name": "TemplatePubKeyWeight",
@@ -1595,19 +1581,16 @@
                         "pubkey": {
                             "type": "string",
                             "desc": "public key",
-                            "required": true,
                             "condition": "type=pubkey"
                         },
                         "template": {
                             "type": "string",
                             "desc": "template type name",
-                            "required": true,
                             "condition": "type=template"
                         },
                         "templatedata": {
                             "type": "templateresponse",
                             "desc": "template data",
-                            "required": true,
                             "condition": "ismine=true"
                         }
                     }
@@ -2042,22 +2025,23 @@
                             "type": "string",
                             "desc": "type, pubkey or template"
                         },
+                        "address": {
+                            "type": "string",
+                            "desc": "public key or template address"
+                        },
                         "pubkey": {
-                            "type": "templatepubkey",
+                            "type": "string",
                             "desc": "public key",
-                            "required": true,
                             "condition": "type=pubkey"
                         },
                         "template": {
                             "type": "string",
                             "desc": "template type name",
-                            "required": true,
                             "condition": "type=template"
                         },
                         "templatedata": {
                             "type": "templateresponse",
                             "desc": "template data",
-                            "required": true,
                             "condition": "type=template"
                         }
                     }
@@ -2067,11 +2051,11 @@
         "example": [
             {
                 "request": "multiverse-cli listaddress",
-                "response": "[{\"type\":\"pubkey\",\"pubkey\":{\"key\":\"182e8a36441d116ce7a97f9a216d43a3dfc4280295874007b8ff5fd45eec9052e\",\"address\":\"1gbma6s21t4bcwymqz6h1dn1t7qy45019b1t00ywfyqymbvp90mqc1wmq\"}},{\"type\":\"pubkey\",\"pubkey\":{\"key\":\"1051ac9b153196c736adf61ad71b51fe9659f8770df643af4d27616ca85c0b365\",\"address\":\"10mdckcak35p76tpzc6pq3d8zx5jsz1vgvxj3nx6jerbcn1e0pdjjfcr6\"}}]"
+                "response": "[{\"type\":\"pubkey\",\"address\":\"1gbma6s21t4bcwymqz6h1dn1t7qy45019b1t00ywfyqymbvp90mqc1wmq\",\"pubkey\":\"182e8a36441d116ce7a97f9a216d43a3dfc4280295874007b8ff5fd45eec9052e\"},{\"type\":\"template\",\"address\":\"208043ht3c51qztrdfa0f3349pe2m8ajjw1mdb2py68fbckaa2s24tq55\",\"template\":\"multisig\",\"templatedata\":{\"type\":\"multisig\",\"hex\":\"0200010282e8a36441d116ce7a97f9a216d43a3dfc4280295874007b8ff5fd45eec9052eb9c3b7aa16c6cb1bf193faf717580d03347148b2145ca98b30b1376d634c12f4\",\"multisig\":{\"sigsrequired\":1,\"addresses\":[\"1gbma6s21t4bcwymqz6h1dn1t7qy45019b1t00ywfyqymbvp90mqc1wmq\",\"1q71vfagprv5hqwckzbvhep0d0ct72j5j2heak2sgp4vptrtc2btdje3q\"]}}},{\"type\":\"template\",\"address\":\"20g0b87qxcd52ceh9zmpzx0hy46pjfzdnqbkh8f4tqs4y0r6sxyzyny25\",\"template\":\"mint\",\"templatedata\":{\"type\":\"mint\",\"hex\":\"0400f9b4af95bec6c5d504366245e0420bc3c5c78cd05ea68e4ad85a4d770e77e3e801f9b4af95bec6c5d504366245e0420bc3c5c78cd05ea68e4ad85a4d770e77e3e8\",\"mint\":{\"mint\":\"1z6taz5dyrv2xa11pc92y0ggbrf2wf36gbtk8wjprb96qe3kqwfm3ayc1\",\"spent\":\"1z6taz5dyrv2xa11pc92y0ggbrf2wf36gbtk8wjprb96qe3kqwfm3ayc1\"}}}]"
             },
             {
                 "request": "curl -d '{\"id\":1,\"method\":\"listaddress\",\"jsonrpc\":\"2.0\",\"params\":{}}' http://127.0.0.1:6812",
-                "response": "{\"id\":1,\"jsonrpc\":\"2.0\",\"result\":[{\"type\":\"pubkey\",\"pubkey\":{\"key\":\"182e8a36441d116ce7a97f9a216d43a3dfc4280295874007b8ff5fd45eec9052e\",\"address\":\"1gbma6s21t4bcwymqz6h1dn1t7qy45019b1t00ywfyqymbvp90mqc1wmq\"}},{\"type\":\"pubkey\",\"pubkey\":{\"key\":\"1051ac9b153196c736adf61ad71b51fe9659f8770df643af4d27616ca85c0b365\",\"address\":\"10mdckcak35p76tpzc6pq3d8zx5jsz1vgvxj3nx6jerbcn1e0pdjjfcr6\"}}]}"
+                "response": "{\"id\":0,\"jsonrpc\":\"2.0\",\"result\":[{\"type\":\"pubkey\",\"address\":\"1gbma6s21t4bcwymqz6h1dn1t7qy45019b1t00ywfyqymbvp90mqc1wmq\",\"pubkey\":\"182e8a36441d116ce7a97f9a216d43a3dfc4280295874007b8ff5fd45eec9052e\"},{\"type\":\"template\",\"address\":\"208043ht3c51qztrdfa0f3349pe2m8ajjw1mdb2py68fbckaa2s24tq55\",\"template\":\"multisig\",\"templatedata\":{\"type\":\"multisig\",\"hex\":\"0200010282e8a36441d116ce7a97f9a216d43a3dfc4280295874007b8ff5fd45eec9052eb9c3b7aa16c6cb1bf193faf717580d03347148b2145ca98b30b1376d634c12f4\",\"multisig\":{\"sigsrequired\":1,\"addresses\":[\"1gbma6s21t4bcwymqz6h1dn1t7qy45019b1t00ywfyqymbvp90mqc1wmq\",\"1q71vfagprv5hqwckzbvhep0d0ct72j5j2heak2sgp4vptrtc2btdje3q\"]}}},{\"type\":\"template\",\"address\":\"20g0b87qxcd52ceh9zmpzx0hy46pjfzdnqbkh8f4tqs4y0r6sxyzyny25\",\"template\":\"mint\",\"templatedata\":{\"type\":\"mint\",\"hex\":\"0400f9b4af95bec6c5d504366245e0420bc3c5c78cd05ea68e4ad85a4d770e77e3e801f9b4af95bec6c5d504366245e0420bc3c5c78cd05ea68e4ad85a4d770e77e3e8\",\"mint\":{\"mint\":\"1z6taz5dyrv2xa11pc92y0ggbrf2wf36gbtk8wjprb96qe3kqwfm3ayc1\",\"spent\":\"1z6taz5dyrv2xa11pc92y0ggbrf2wf36gbtk8wjprb96qe3kqwfm3ayc1\"}}}]}"
             }
         ]
     },

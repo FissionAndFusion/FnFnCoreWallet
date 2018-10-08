@@ -5,6 +5,10 @@
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 #------------------------------------------------------------------------------
+
+# auto generate files
+execute_process(COMMAND "../script/generator.py")
+
 set(src
 	multiverse.cpp
 	address.cpp address.h

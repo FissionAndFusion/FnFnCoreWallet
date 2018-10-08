@@ -7,6 +7,7 @@
 
 #include <string>
 #include <vector>
+#include <boost/asio.hpp>
 
 #include "mvbase.h"
 #include "walleve/walleve.h"
@@ -16,13 +17,13 @@
 namespace multiverse
 {
 
-class CRPCDispatch : public walleve::IIOModule, virtual public walleve::CWalleveHttpEventListener
+class CRPCClient : public walleve::IIOModule, virtual public walleve::CWalleveHttpEventListener
 {
 public:
-    CRPCDispatch();
-    CRPCDispatch(const std::vector<std::string>& vArgsIn);
+    CRPCClient(bool fConsole = true);
+    ~CRPCClient();
+    void DispatchLine(const std::string& strLine);
 
-    ~CRPCDispatch();
 protected:
     bool WalleveHandleInitialize();
     void WalleveHandleDeinitialize();
@@ -37,13 +38,29 @@ protected:
     void LaunchConsole();
     void LaunchCommand();
     void CancelCommand();
-    json_spirit::Value GetParamValue(const std::string& strParam);
+
+    void WaitForChars();
+#if BOOST_VERSION < 106600
+    void HandleRead(const boost::system::error_code& err, size_t nTransferred);
+#else
+    void HandleRead(const boost::system::error_code& err);
+#endif
+    void EnterLoop();
+    void LeaveLoop();
+    void ConsoleHandleLine(const std::string& strLine);;
+
 protected:
     walleve::IIOProc *pHttpGet;
     walleve::CWalleveThread thrDispatch;
     std::vector<std::string> vArgs;
     uint64 nLastNonce;
     walleve::CIOCompletion ioComplt;
+    boost::asio::io_service ioService;
+    boost::asio::io_service::strand ioStrand;
+    stream_desc inStream;
+#if BOOST_VERSION < 106600
+    boost::asio::null_buffers bufRead;
+#endif
 };
 
 } // namespace multiverse

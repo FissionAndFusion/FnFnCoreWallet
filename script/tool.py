@@ -19,10 +19,12 @@ copyright = \
 tab_len = 8
 # set max length of one line to show on terminal
 max_line_len = 80
+# options not split
+option_max_line_len = -1
 # example not split
-example_max_line_len = 1000
+example_max_line_len = -1
 # introduction not split
-introduction_max_line_len = 1000
+introduction_max_line_len = -1
 # set max "format" length of one line to show on terminal
 max_format_len = 32
 # increasing step length, when format length is not enough
@@ -91,6 +93,8 @@ def split(s, indent = None, max_len = None):
     
     if max_len == None:
         max_len = max_line_len
+    elif max_len == -1:
+        max_len = len(indent) + len(s)
 
     line_len = step(indent, max_len)
     line_len = line_len - len(indent)

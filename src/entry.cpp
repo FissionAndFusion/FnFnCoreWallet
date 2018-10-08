@@ -233,10 +233,9 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
                 }
                 break;
             }
-        case EModuleType::RPCDISPATCH:
+        case EModuleType::RPCCLIENT:
             {
-                if (!AttachModule(mvConfig.GetConfig()->vecCommand.empty() 
-                        ? new CRPCDispatch() : new CRPCDispatch(mvConfig.GetConfig()->vecCommand)))
+                if (!AttachModule(new CRPCClient(mvConfig.GetConfig()->vecCommand.empty())))
                 {
                     return false;
                 }
