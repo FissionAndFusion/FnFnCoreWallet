@@ -571,8 +571,8 @@ bool CWorldLine::GetBlockChanges(const CBlockIndex* pIndexNew,const CBlockIndex*
 {
     while (pIndexNew != pIndexFork)
     {
-        int nForkHeight = pIndexFork ? pIndexFork->GetBlockHeight() : -1;
-        if (pIndexNew->GetBlockHeight() >= nForkHeight)
+        int64 nLastBlockTime = pIndexFork ? pIndexFork->GetBlockTime() : -1;
+        if (pIndexNew->GetBlockTime() >= nLastBlockTime)
         {
             CBlockEx block;
             if (!cntrBlock.Retrieve(pIndexNew,block))

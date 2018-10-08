@@ -158,7 +158,7 @@ MvErr CMvCoreProtocol::ValidateBlock(const CBlock& block)
     {
         return ValidateVacantBlock(block);
     }
- 
+
     // Validate mint tx
     if (!block.txMint.IsMintTx() || ValidateTransaction(block.txMint) != MV_OK)
     {

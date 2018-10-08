@@ -629,6 +629,7 @@ bool CBlockBase::CommitBlockView(CBlockView& view,CBlockIndex* pIndexNew)
 {
     const uint256 hashFork = pIndexNew->GetOriginHash();
     CBlockFork* pFork = NULL;
+
     if (hashFork == view.GetForkHash())
     {
         if (!view.IsCommittable())
@@ -821,11 +822,11 @@ CBlockFork* CBlockBase::GetFork(const uint256& hash)
 CBlockIndex* CBlockBase::GetBranch(CBlockIndex* pIndexRef,CBlockIndex* pIndex,vector<CBlockIndex*>& vPath)
 {
     vPath.clear();
-    while (pIndexRef->nHeight > pIndex->nHeight)
+    while (pIndexRef->GetBlockTime() > pIndex->GetBlockTime())
     {
         pIndexRef = pIndexRef->pPrev;
     }
-    while (pIndex->nHeight > pIndexRef->nHeight)
+    while (pIndex->GetBlockTime() > pIndexRef->GetBlockTime())
     {
         vPath.push_back(pIndex);
         pIndex = pIndex->pPrev;
@@ -870,7 +871,7 @@ CBlockIndex* CBlockBase::AddNewIndex(const uint256& hash,CBlock& block,uint32 nF
         {
             pIndexPrev = (*miPrev).second;
             pIndexNew->pPrev = pIndexPrev;
-            pIndexNew->nHeight = pIndexPrev->nHeight + 1;
+            pIndexNew->nHeight = pIndexPrev->nHeight + (pIndexNew->IsExtended() ? 0 : 1);
             if (!pIndexNew->IsOrigin())
             {
                 pIndexNew->pOrigin = pIndexPrev->pOrigin;

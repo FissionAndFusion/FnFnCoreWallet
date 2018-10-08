@@ -64,6 +64,10 @@ public:
     {
         return (nType & 1);
     }
+    bool IsExtended() const
+    {
+        return (nType == BLOCK_EXTENDED);
+    }
     bool IsVacant() const
     {
         return (nType == BLOCK_VACANT);
@@ -299,6 +303,14 @@ public:
     bool IsPrimary() const
     {
         return (nType & 1);
+    }
+    bool IsExtended() const
+    {
+        return (nType == CBlock::BLOCK_EXTENDED);
+    }
+    bool IsVacant() const
+    {
+        return (nType == CBlock::BLOCK_VACANT);
     }
     bool IsProofOfWork() const
     {
