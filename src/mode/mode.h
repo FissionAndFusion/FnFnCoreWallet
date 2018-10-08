@@ -129,7 +129,8 @@ public:
                                 EConfigType::MINT, 
                                 EConfigType::NETWORK,
                                 EConfigType::RPCSERVER, 
-                                EConfigType::STORAGE
+                                EConfigType::STORAGE,
+                                EConfigType::DBPSERVER
                              >(cmd);
             }
             case EModeType::CONSOLE:
