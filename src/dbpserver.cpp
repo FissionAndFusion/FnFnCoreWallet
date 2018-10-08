@@ -56,7 +56,6 @@ void CDbpClient::SetSession(const std::string &session)
 void CDbpClient::Activate()
 {
     ssRecv.Clear();
-    // ssSend.Clear();
 
     StartReadHeader();
 }
