@@ -1,18 +1,4 @@
 {
-    "templatepubkey": {
-        "type": "class",
-        "name": "TemplatePubKey",
-        "content": {
-            "key": {
-                "type": "string",
-                "desc": "public key"
-            },
-            "address": {
-                "type": "string",
-                "desc": "public key address"
-            }
-        }
-    },
     "templatepubkeyweight": {
         "type": "class",
         "name": "TemplatePubKeyWeight",
@@ -1595,19 +1581,16 @@
                         "pubkey": {
                             "type": "string",
                             "desc": "public key",
-                            "required": true,
                             "condition": "type=pubkey"
                         },
                         "template": {
                             "type": "string",
                             "desc": "template type name",
-                            "required": true,
                             "condition": "type=template"
                         },
                         "templatedata": {
                             "type": "templateresponse",
                             "desc": "template data",
-                            "required": true,
                             "condition": "ismine=true"
                         }
                     }
@@ -2042,22 +2025,23 @@
                             "type": "string",
                             "desc": "type, pubkey or template"
                         },
+                        "address": {
+                            "type": "string",
+                            "desc": "public key or template address"
+                        },
                         "pubkey": {
-                            "type": "templatepubkey",
+                            "type": "string",
                             "desc": "public key",
-                            "required": true,
                             "condition": "type=pubkey"
                         },
                         "template": {
                             "type": "string",
                             "desc": "template type name",
-                            "required": true,
                             "condition": "type=template"
                         },
                         "templatedata": {
                             "type": "templateresponse",
                             "desc": "template data",
-                            "required": true,
                             "condition": "type=template"
                         }
                     }

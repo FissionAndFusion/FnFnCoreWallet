@@ -61,45 +61,6 @@ static void CheckIsValid(const T& value, const string& key)
 	}
 }
 
-// CTemplatePubKey
-CTemplatePubKey::CTemplatePubKey() {}
-CTemplatePubKey::CTemplatePubKey(const CRPCString& strKey, const CRPCString& strAddress)
-	: strKey(strKey), strAddress(strAddress)
-{
-}
-CTemplatePubKey::CTemplatePubKey(const CRPCType& null)
-	: strKey(null), strAddress(null)
-{
-}
-Value CTemplatePubKey::ToJSON() const
-{
-	Object ret;
-	CheckIsValid(strKey, "strKey");
-	ret.push_back(Pair("key", std::string(strKey)));
-	CheckIsValid(strAddress, "strAddress");
-	ret.push_back(Pair("address", std::string(strAddress)));
-
-	return ret;
-}
-CTemplatePubKey& CTemplatePubKey::FromJSON(const Value& v)
-{
-	CheckJSONType(v, "object", "CTemplatePubKey");
-	auto obj = v.get_obj();
-	auto valKey = find_value(obj, "key");
-	CheckJSONType(valKey, "string", "key");
-	strKey = valKey.get_str();
-	auto valAddress = find_value(obj, "address");
-	CheckJSONType(valAddress, "string", "address");
-	strAddress = valAddress.get_str();
-	return *this;
-}
-bool CTemplatePubKey::IsValid() const
-{
-	if (!strKey.IsValid()) { return false; }
-	if (!strAddress.IsValid()) { return false; }
-	return true;
-}
-
 // CTemplatePubKeyWeight
 CTemplatePubKeyWeight::CTemplatePubKeyWeight() {}
 CTemplatePubKeyWeight::CTemplatePubKeyWeight(const CRPCString& strKey, const CRPCInt64& nWeight)
@@ -6997,12 +6958,12 @@ string CListAddressParam::Method() const
 
 // CListAddressResult::CAddressdata
 CListAddressResult::CAddressdata::CAddressdata() {}
-CListAddressResult::CAddressdata::CAddressdata(const CRPCString& strType, const CTemplatePubKey& pubkey, const CRPCString& strTemplate, const CTemplateResponse& templatedata)
-	: strType(strType), pubkey(pubkey), strTemplate(strTemplate), templatedata(templatedata)
+CListAddressResult::CAddressdata::CAddressdata(const CRPCString& strType, const CRPCString& strAddress, const CRPCString& strPubkey, const CRPCString& strTemplate, const CTemplateResponse& templatedata)
+	: strType(strType), strAddress(strAddress), strPubkey(strPubkey), strTemplate(strTemplate), templatedata(templatedata)
 {
 }
 CListAddressResult::CAddressdata::CAddressdata(const CRPCType& null)
-	: strType(null), pubkey(null), strTemplate(null), templatedata(null)
+	: strType(null), strAddress(null), strPubkey(null), strTemplate(null), templatedata(null)
 {
 }
 Value CListAddressResult::CAddressdata::ToJSON() const
@@ -7010,10 +6971,12 @@ Value CListAddressResult::CAddressdata::ToJSON() const
 	Object ret;
 	CheckIsValid(strType, "strType");
 	ret.push_back(Pair("type", std::string(strType)));
+	CheckIsValid(strAddress, "strAddress");
+	ret.push_back(Pair("address", std::string(strAddress)));
 	if (strType == "pubkey")
 	{
-		CheckIsValid(pubkey, "pubkey");
-		ret.push_back(Pair("pubkey", pubkey.ToJSON()));
+		CheckIsValid(strPubkey, "strPubkey");
+		ret.push_back(Pair("pubkey", std::string(strPubkey)));
 	}
 	if (strType == "template")
 	{
@@ -7035,11 +6998,14 @@ CListAddressResult::CAddressdata& CListAddressResult::CAddressdata::FromJSON(con
 	auto valType = find_value(obj, "type");
 	CheckJSONType(valType, "string", "type");
 	strType = valType.get_str();
+	auto valAddress = find_value(obj, "address");
+	CheckJSONType(valAddress, "string", "address");
+	strAddress = valAddress.get_str();
 	if (strType == "pubkey")
 	{
 		auto valPubkey = find_value(obj, "pubkey");
-		CheckJSONType(valPubkey, "object", "pubkey");
-		pubkey.FromJSON(valPubkey.get_obj());
+		CheckJSONType(valPubkey, "string", "pubkey");
+		strPubkey = valPubkey.get_str();
 	}
 	if (strType == "template")
 	{
@@ -7058,9 +7024,10 @@ CListAddressResult::CAddressdata& CListAddressResult::CAddressdata::FromJSON(con
 bool CListAddressResult::CAddressdata::IsValid() const
 {
 	if (!strType.IsValid()) { return false; }
+	if (!strAddress.IsValid()) { return false; }
 	if (strType == "pubkey")
 	{
-		if (!pubkey.IsValid()) { return false; }
+		if (!strPubkey.IsValid()) { return false; }
 	}
 	if (strType == "template")
 	{
@@ -7144,12 +7111,9 @@ string CListAddressConfig::Help() const
 	oss << "     \"addressdata\":             (object, required) address data\n";
 	oss << "     {\n";
 	oss << "       \"type\": \"\",              (string, required) type, pubkey or template\n";
+	oss << "       \"address\": \"\",           (string, required) public key or template address\n";
 	oss << "       (if \"type\" is \"pubkey\")\n";
-	oss << "       \"pubkey\":                (object, required) public key\n";
-	oss << "       {\n";
-	oss << "         \"key\": \"\",             (string, required) public key\n";
-	oss << "         \"address\": \"\"          (string, required) public key address\n";
-	oss << "       }\n";
+	oss << "       \"pubkey\": \"\",            (string, required) public key\n";
 	oss << "       (if \"type\" is \"template\")\n";
 	oss << "       \"template\": \"\",          (string, required) template type name\n";
 	oss << "       (if \"type\" is \"template\")\n";

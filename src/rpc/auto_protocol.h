@@ -35,28 +35,12 @@ namespace rpc
 # endif
 # define __optional__
 
-class CTemplatePubKey;
 class CTemplatePubKeyWeight;
 class CTemplateRequest;
 class CTemplateResponse;
 class CTransactionData;
 class CWalletTxData;
 class CBlockData;
-
-// class CTemplatePubKey
-class CTemplatePubKey
-{
-public:
-	__required__ CRPCString strKey;
-	__required__ CRPCString strAddress;
-public:
-	CTemplatePubKey();
-	CTemplatePubKey(const CRPCString& strKey, const CRPCString& strAddress);
-	CTemplatePubKey(const CRPCType& type);
-	json_spirit::Value ToJSON() const;
-	CTemplatePubKey& FromJSON(const json_spirit::Value& v);
-	bool IsValid() const;
-};
 
 // class CTemplatePubKeyWeight
 class CTemplatePubKeyWeight
@@ -2278,12 +2262,13 @@ public:
 	{
 	public:
 		__required__ CRPCString strType;
-		__required__ CTemplatePubKey pubkey;
+		__required__ CRPCString strAddress;
+		__required__ CRPCString strPubkey;
 		__required__ CRPCString strTemplate;
 		__required__ CTemplateResponse templatedata;
 	public:
 		CAddressdata();
-		CAddressdata(const CRPCString& strType, const CTemplatePubKey& pubkey, const CRPCString& strTemplate, const CTemplateResponse& templatedata);
+		CAddressdata(const CRPCString& strType, const CRPCString& strAddress, const CRPCString& strPubkey, const CRPCString& strTemplate, const CTemplateResponse& templatedata);
 		CAddressdata(const CRPCType& type);
 		json_spirit::Value ToJSON() const;
 		CAddressdata& FromJSON(const json_spirit::Value& v);
