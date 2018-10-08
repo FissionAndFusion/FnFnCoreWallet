@@ -35,7 +35,7 @@ public:
     
     bool IsValid() const { return (templMint != NULL); }
     bool BuildTemplate();
-    std::size_t GetSignatureSize()
+    std::size_t GetSignatureSize() const
     {
         std::size_t size = templMint->GetTemplateDataSize() + 64;
         walleve::CVarInt var(size);
@@ -61,13 +61,17 @@ protected:
     void WalleveHandleHalt();
     bool Interrupted() { return (nMakerStatus != MAKER_RUN); }
     bool Wait(long nSeconds);
-    bool CreateNewBlock(CBlock& block,const uint256& hashPrev,int64 nPrevTime,int nPrevHeight,const CBlockMakerAgreement& agreement);
-    bool DispatchNewBlock(CBlock& block);
-    bool SignBlock(CBlock& block,CBlockMakerProfile& profile);
-    bool CreateDelegatedProofOfStake(CBlock& block,std::size_t nWeight,const CDestination& dest);
-    bool CreateProofOfWork(CBlock& block,int nAlgo,const CDestination& dest);
-    void CreatePiggyback(const CBlockMakerAgreement& agreement,const CBlock& refblock,int nPrevHeight); 
     bool WaitAgreement(CBlockMakerAgreement& agree,int64 nTimeAgree,int nHeight);
+    bool WaitDelegatedBlock(int64 nPredictedTime,const uint256& nAgreement,bool& fReconstruct);
+    void PrepareBlock(CBlock& block,const uint256& hashPrev,int64 nPrevTime,int nPrevHeight,const CBlockMakerAgreement& agreement);
+    void ArrangeBlockTx(CBlock& block,const uint256& hashFork,CBlockMakerProfile& profile);
+    bool SignBlock(CBlock& block,CBlockMakerProfile& profile);
+    bool DispatchBlock(CBlock& block);
+    bool CreateProofOfWorkBlock(CBlock& block);
+    bool ProcessDelegatedProofOfStake(CBlock& block,const CBlockMakerAgreement& agreement,int nPrevHeight);
+    bool CreateDelegatedBlock(CBlock& block,const uint256& hashFork,CBlockMakerProfile& profile,std::size_t nWeight);
+    bool CreateProofOfWork(CBlock& block,CBlockMakerHashAlgo* pHashAlgo);
+    void CreatePiggyback(CBlockMakerProfile& profile,const CBlockMakerAgreement& agreement,const CBlock& refblock,int nPrevHeight); 
 private:
     enum {MAKER_RUN=0,MAKER_RESET=1,MAKER_EXIT=2,MAKER_HOLD=3};
     void BlockMakerThreadFunc();
@@ -80,6 +84,8 @@ protected:
     uint256 hashLastBlock;
     int64 nLastBlockTime;
     int nLastBlockHeight;
+    uint256 nLastAgreement;
+    std::size_t nLastWeight;
     std::map<int,CBlockMakerHashAlgo*> mapHashAlgo;
     std::map<int,CBlockMakerProfile> mapProfile;
     ICoreProtocol* pCoreProtocol;

@@ -272,7 +272,7 @@ MvErr CMvCoreProtocol::VerifyTransaction(const CTransaction& tx,const vector<CTx
 
 bool CMvCoreProtocol::GetProofOfWorkTarget(CBlockIndex* pIndexPrev,int nAlgo,int& nBits,int64& nReward)
 {
-    if (nAlgo <= 0 || nAlgo >= POWA_MAX || !pIndexPrev->IsPrimary())
+    if (nAlgo <= 0 || nAlgo >= CM_MAX || !pIndexPrev->IsPrimary())
     {
         return false;
     }

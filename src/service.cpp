@@ -540,7 +540,7 @@ bool CService::GetWork(vector<unsigned char>& vchWorkData,uint256& hashPrev,uint
         block.nTimeStamp = nPrevTime + BLOCK_TARGET_SPACING - 10;
     }
  
-    nAlgo = POWA_BLAKE512;
+    nAlgo = CM_BLAKE512;
     int64 nReward;
     if (!pWorldLine->GetProofOfWorkTarget(block.hashPrev,nAlgo,nBits,nReward))
     {
@@ -573,7 +573,7 @@ MvErr CService::SubmitWork(const vector<unsigned char>& vchWorkData,CTemplatePtr
     {
         ss >> block.nVersion >> block.nType >> block.nTimeStamp >> block.hashPrev >> block.vchProof;
         proof.Load(block.vchProof);
-        if (proof.nAlgo != POWA_BLAKE512)
+        if (proof.nAlgo != CM_BLAKE512)
         {
             return MV_ERR_BLOCK_PROOF_OF_WORK_INVALID;
         }

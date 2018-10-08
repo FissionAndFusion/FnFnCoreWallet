@@ -24,16 +24,10 @@ static const unsigned int MIN_TOKEN_TX_SIZE    = 192;
 
 static const unsigned int DELEGATE_THRESH      = 50;
 
-enum ProofOfWorkAlgorithm
-{
-    POWA_BLAKE512 = 1,
-    POWA_MAX
-};
-
 enum ConsensusMethod
 {
-    CM_MPVSS = 0,
-    CM_BLAKE512 = POWA_BLAKE512,
+    CM_MPVSS    = 0,
+    CM_BLAKE512 = 1,
     CM_MAX
 };
 

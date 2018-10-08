@@ -23,7 +23,7 @@ protected:
     void WalleveHandleDeinitialize();
     bool WalleveHandleInvoke();
     void WalleveHandleHalt();
-    void UpdatePrimaryBlock(const CWorldLineUpdate& updateWorldLine,const CTxSetChange& changeTxSet);
+    void UpdatePrimaryBlock(const CBlock& block,const CWorldLineUpdate& updateWorldLine,const CTxSetChange& changeTxSet);
     void ProcessForkTx(const CTransaction& tx,int nPrimaryHeight);
     void SyncForkHeight(int nPrimaryHeight);
 protected:
