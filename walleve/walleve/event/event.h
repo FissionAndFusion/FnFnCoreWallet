@@ -35,7 +35,7 @@ public:
     CWalleveEvent(uint64 nNonceIn,int nTypeIn)
         : nNonce(nNonceIn), nType(nTypeIn) {}
     CWalleveEvent(const std::string& session,int nTypeIn)
-        : session_(session), nType(nTypeIn) {}  
+        : strSessionId(session), nType(nTypeIn) {}  
     virtual ~CWalleveEvent() {}
     virtual bool Handle(CWalleveEventListener& listener) {return listener.HandleEvent(*this);}
     virtual void Free() {delete this;}
@@ -46,7 +46,7 @@ protected:
 public:
     uint64 nNonce;
     int nType;
-    std::string session_;
+    std::string strSessionId;
 };
 
 template <int type,typename L,typename D,typename R>

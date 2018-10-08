@@ -63,13 +63,13 @@ protected:
   IWallet *pWallet;
 
 private:
-  std::map<std::string, std::string> idSubedTopicMap; // id => subed topic
+  std::map<std::string, std::string> mapIdSubedTopic; // id => subed topic
 
-  std::set<std::string> subedAllBlocksIds; // block ids
-  std::set<std::string> subedAllTxIds;     // tx ids
+  std::set<std::string> setSubedAllBlocksIds; // block ids
+  std::set<std::string> setSubedAllTxIds;     // tx ids
 
-  std::map<std::string, std::string> idSubedSessionMap;       // id => session
-  std::unordered_map<std::string, bool> currentTopicExistMap; // topic => enabled
+  std::map<std::string, std::string> mapIdSubedSession;       // id => session
+  std::unordered_map<std::string, bool> mapCurrentTopicExist; // topic => enabled
 };
 
 } // namespace multiverse

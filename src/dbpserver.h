@@ -110,8 +110,8 @@ protected:
   bool IsSentComplete();
 
 private:
-  std::string session_;
-  std::queue<dbp::Base> addedSendQueue;
+  std::string strSessionId;
+  std::queue<dbp::Base> queueAddedSend;
 
 protected:
   CDbpServer *pServer;
@@ -121,18 +121,16 @@ protected:
 
   CWalleveBufStream ssSend;
   CWalleveBufStream ssRecv;
-
-  std::string SendSaver;
 };
 
 class CSessionProfile
 {
 public:
   CDbpClient *pDbpClient;
-  std::string sessionId;
-  uint64 timestamp;
-  std::shared_ptr<boost::asio::deadline_timer> pingTimerPtr;
-  std::string forkid;
+  std::string strSessionId;
+  uint64 nTimeStamp;
+  std::shared_ptr<boost::asio::deadline_timer> ptrPingTimer;
+  std::string strForkId;
 };
 
 class CDbpServer : public CIOProc, virtual public CDBPEventListener, virtual public CMvDBPEventListener
@@ -198,8 +196,8 @@ protected:
 
   typedef boost::bimap<std::string, CDbpClient *> SessionClientBimapType;
   typedef SessionClientBimapType::value_type position_pair;
-  SessionClientBimapType sessionClientBimap;                //session id <=> CDbpClient
-  std::map<std::string, CSessionProfile> sessionProfileMap; // session id => session profile
+  SessionClientBimapType bimapSessionClient;                //session id <=> CDbpClient
+  std::map<std::string, CSessionProfile> mapSessionProfile; // session id => session profile
 };
 } //namespace multiverse
 #endif //MULTIVERSE_DBP_SERVER_H

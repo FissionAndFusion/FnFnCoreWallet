@@ -19,7 +19,7 @@ CDbpService::CDbpService()
 
     std::unordered_map<std::string, bool> temp_map = boost::assign::map_list_of("all-block", true)("all-tx", true)("changed", true)("removed", true);
 
-    currentTopicExistMap = temp_map;
+    mapCurrentTopicExist = temp_map;
 }
 
 CDbpService::~CDbpService()
@@ -76,7 +76,7 @@ bool CDbpService::HandleEvent(CMvEventDbpConnect &event)
     if (isReconnect)
     {
         // reply normal
-        CMvEventDbpConnected eventConnected(event.session_);
+        CMvEventDbpConnected eventConnected(event.strSessionId);
         eventConnected.data.session = event.data.session;
         pDbpServer->DispatchEvent(&eventConnected);
     }
@@ -86,7 +86,7 @@ bool CDbpService::HandleEvent(CMvEventDbpConnect &event)
         {
             // reply failed
             std::vector<int> versions{1};
-            CMvEventDbpFailed eventFailed(event.session_);
+            CMvEventDbpFailed eventFailed(event.strSessionId);
             eventFailed.data.reason = "001";
             eventFailed.data.versions = versions;
             eventFailed.data.session = event.data.session;
@@ -95,7 +95,7 @@ bool CDbpService::HandleEvent(CMvEventDbpConnect &event)
         else
         {
             // reply normal
-            CMvEventDbpConnected eventConnected(event.session_);
+            CMvEventDbpConnected eventConnected(event.strSessionId);
             eventConnected.data.session = event.data.session;
             pDbpServer->DispatchEvent(&eventConnected);
         }
@@ -109,30 +109,21 @@ bool CDbpService::HandleEvent(CMvEventDbpSub &event)
     std::string id = event.data.id;
     std::string topicName = event.data.name;
 
-    std::cout << "Sub topic is:" << topicName << std::endl;
-
     if (!IsTopicExist(topicName))
     {
         // reply nosub
-        std::cout << "Sub topic not exists: " << topicName << std::endl;
-        CMvEventDbpNoSub eventNoSub(event.session_);
+        CMvEventDbpNoSub eventNoSub(event.strSessionId);
         eventNoSub.data.id = event.data.id;
         pDbpServer->DispatchEvent(&eventNoSub);
     }
     else
     {
-        SubTopic(id, event.session_, topicName);
-
-        std::cout << "subed topic: " << topicName << "id: "
-                  << id << std::endl;
+        SubTopic(id, event.strSessionId, topicName);
 
         // reply ready
-        CMvEventDbpReady eventReady(event.session_);
+        CMvEventDbpReady eventReady(event.strSessionId);
         eventReady.data.id = id;
         pDbpServer->DispatchEvent(&eventReady);
-
-        std::cout << "sended ready: " << topicName << "id: "
-                  << id << std::endl;
     }
 
     return true;
@@ -159,14 +150,14 @@ void CDbpService::HandleGetTransaction(CMvEventDbpMethod &event)
         CMvDbpTransaction dbpTx;
         CreateDbpTransaction(tx, dbpTx);
 
-        CMvEventDbpMethodResult eventResult(event.session_);
+        CMvEventDbpMethodResult eventResult(event.strSessionId);
         eventResult.data.id = id;
         eventResult.data.anyResultObjs.push_back(dbpTx);
         pDbpServer->DispatchEvent(&eventResult);
     }
     else
     {
-        CMvEventDbpMethodResult eventResult(event.session_);
+        CMvEventDbpMethodResult eventResult(event.strSessionId);
         eventResult.data.id = id;
         eventResult.data.error = "404";
         pDbpServer->DispatchEvent(&eventResult);
@@ -188,28 +179,17 @@ void CDbpService::HandleSendTransaction(CMvEventDbpMethod &event)
     }
     catch (const std::exception &e)
     {
-
-        std::cout << "stream to CTransaction failed " << std::endl;
-
-        CMvEventDbpMethodResult eventResult(event.session_);
+        CMvEventDbpMethodResult eventResult(event.strSessionId);
         eventResult.data.id = event.data.id;
         eventResult.data.error = "400";
         pDbpServer->DispatchEvent(&eventResult);
         return;
     }
 
-    std::cout << "stream to CTransaction successed " << std::endl;
-    std::cout << "tx amount: " << rawTx.nAmount << std::endl;
-    std::cout << "tx version: " << rawTx.nVersion << std::endl;
-    std::cout << "tx fee: " << rawTx.nTxFee << std::endl;
-
     MvErr err = pService->SendTransaction(rawTx);
     if (err == MV_OK)
     {
-
-        std::cout << "tx send success" << std::endl;
-
-        CMvEventDbpMethodResult eventResult(event.session_);
+        CMvEventDbpMethodResult eventResult(event.strSessionId);
         eventResult.data.id = event.data.id;
 
         CMvDbpSendTxRet sendTxRet;
@@ -221,9 +201,7 @@ void CDbpService::HandleSendTransaction(CMvEventDbpMethod &event)
     }
     else
     {
-        std::cout << "tx send failed" << std::endl;
-
-        CMvEventDbpMethodResult eventResult(event.session_);
+        CMvEventDbpMethodResult eventResult(event.strSessionId);
         eventResult.data.id = event.data.id;
 
         CMvDbpSendTxRet sendTxRet;
@@ -238,33 +216,33 @@ void CDbpService::HandleSendTransaction(CMvEventDbpMethod &event)
 
 bool CDbpService::IsTopicExist(const std::string &topic)
 {
-    return currentTopicExistMap.find(topic) != currentTopicExistMap.end();
+    return mapCurrentTopicExist.find(topic) != mapCurrentTopicExist.end();
 }
 
 bool CDbpService::IsHaveSubedTopicOf(const std::string &id)
 {
-    return idSubedTopicMap.find(id) != idSubedTopicMap.end();
+    return mapIdSubedTopic.find(id) != mapIdSubedTopic.end();
 }
 
 void CDbpService::SubTopic(const std::string &id, const std::string &session, const std::string &topic)
 {
-    idSubedTopicMap.insert(std::make_pair(id, topic));
+    mapIdSubedTopic.insert(std::make_pair(id, topic));
 
     if (topic == "all-block")
-        subedAllBlocksIds.insert(id);
+        setSubedAllBlocksIds.insert(id);
     if (topic == "all-tx")
-        subedAllTxIds.insert(id);
+        setSubedAllTxIds.insert(id);
 
-    idSubedSessionMap.insert(std::make_pair(id, session));
+    mapIdSubedSession.insert(std::make_pair(id, session));
 }
 
 void CDbpService::UnSubTopic(const std::string &id)
 {
-    subedAllBlocksIds.erase(id);
-    subedAllTxIds.erase(id);
+    setSubedAllBlocksIds.erase(id);
+    setSubedAllTxIds.erase(id);
 
-    idSubedTopicMap.erase(id);
-    idSubedSessionMap.erase(id);
+    mapIdSubedTopic.erase(id);
+    mapIdSubedSession.erase(id);
 }
 
 bool CDbpService::IsEmpty(const uint256 &hash)
@@ -291,7 +269,6 @@ bool CDbpService::GetBlocks(const uint256 &forkHash, const uint256 &startHash, i
     int blockHeight = 0;
     if (!pService->GetBlockLocation(blockHash, tempForkHash, blockHeight))
     {
-        std::cout << "block not exists" << std::endl;
         return false;
     }
 
@@ -327,9 +304,7 @@ void CDbpService::HandleGetBlocks(CMvEventDbpMethod &event)
     std::vector<CMvDbpBlock> blocks;
     if (GetBlocks(forkHash, startBlockHash, blockNum, blocks))
     {
-        std::cout << "Get Blocks success[service]: " << blocks.size() << std::endl;
-
-        CMvEventDbpMethodResult eventResult(event.session_);
+        CMvEventDbpMethodResult eventResult(event.strSessionId);
         eventResult.data.id = event.data.id;
 
         for (auto &block : blocks)
@@ -341,8 +316,7 @@ void CDbpService::HandleGetBlocks(CMvEventDbpMethod &event)
     }
     else
     {
-
-        CMvEventDbpMethodResult eventResult(event.session_);
+        CMvEventDbpMethodResult eventResult(event.strSessionId);
         eventResult.data.id = event.data.id;
         eventResult.data.error = "400";
         pDbpServer->DispatchEvent(&eventResult);
@@ -441,12 +415,12 @@ void CDbpService::CreateDbpTransaction(const CTransaction &tx, CMvDbpTransaction
 
 void CDbpService::PushBlock(const CMvDbpBlock &block)
 {
-    for (const auto &kv : idSubedSessionMap)
+    for (const auto &kv : mapIdSubedSession)
     {
         std::string id = kv.first;
         std::string session = kv.second;
 
-        if (subedAllBlocksIds.find(id) != subedAllBlocksIds.end())
+        if (setSubedAllBlocksIds.find(id) != setSubedAllBlocksIds.end())
         {
             CMvEventDbpAdded eventAdded(session);
             eventAdded.data.id = id;
@@ -459,12 +433,12 @@ void CDbpService::PushBlock(const CMvDbpBlock &block)
 
 void CDbpService::PushTx(const CMvDbpTransaction &dbptx)
 {
-    for (const auto &kv : idSubedSessionMap)
+    for (const auto &kv : mapIdSubedSession)
     {
         std::string id = kv.first;
         std::string session = kv.second;
 
-        if (subedAllTxIds.find(id) != subedAllTxIds.end())
+        if (setSubedAllTxIds.find(id) != setSubedAllTxIds.end())
         {
             CMvEventDbpAdded eventAdded(session);
             eventAdded.data.id = id;

@@ -45,12 +45,12 @@ uint64 CDbpClient::GetNonce()
 
 std::string CDbpClient::GetSession() const
 {
-    return session_;
+    return strSessionId;
 }
 
 void CDbpClient::SetSession(const std::string &session)
 {
-    session_ = session;
+    strSessionId = session;
 }
 
 void CDbpClient::Activate()
@@ -65,14 +65,11 @@ void CDbpClient::SendMessage(dbp::Base *pBaseMsg)
 {
     if (ssSend.GetSize() != 0)
     {
-        std::cout << "***********Not Sent Complete [Other Message]********" << std::endl;
         pClient->Write(ssSend, boost::bind(&CDbpClient::HandleWritenResponse, this, _1, OTHER));
         return;
     }
 
     WriteMessageToSendStream(pBaseMsg);
-
-    //  SendSaver.append(std::string(ssSend.GetData(), ssSend.GetSize()));
 
     pClient->Write(ssSend, boost::bind(&CDbpClient::HandleWritenResponse, this, _1, OTHER));
 }
@@ -81,14 +78,11 @@ void CDbpClient::SendPingMessage(dbp::Base *pBaseMsg)
 {
     if (!IsSentComplete())
     {
-        std::cout << "***********Not Sent Complete [Ping Message]********" << std::endl;
         pClient->Write(ssSend, boost::bind(&CDbpClient::HandleWritenResponse, this, _1, OTHER));
         return;
     }
 
     WriteMessageToSendStream(pBaseMsg);
-
-    // SendSaver.append(std::string(ssSend.GetData(), ssSend.GetSize()));
 
     pClient->Write(ssSend, boost::bind(&CDbpClient::HandleWritenResponse, this, _1, PING));
 }
@@ -97,15 +91,12 @@ void CDbpClient::SendAddedMessage(dbp::Base *pBaseMsg)
 {
     if (!IsSentComplete())
     {
-        std::cout << "***********Not Sent complete [Added Message]************" << std::endl;
-        addedSendQueue.push(*pBaseMsg);
+        queueAddedSend.push(*pBaseMsg);
         pClient->Write(ssSend, boost::bind(&CDbpClient::HandleWritenResponse, this, _1, OTHER));
         return;
     }
 
     WriteMessageToSendStream(pBaseMsg);
-
-    // SendSaver.append(std::string(ssSend.GetData(), ssSend.GetSize()));
 
     pClient->Write(ssSend, boost::bind(&CDbpClient::HandleWritenResponse, this, _1, ADDED));
 }
@@ -273,8 +264,6 @@ void CDbpClient::SendResponse(CMvDbpAdded &body)
         google::protobuf::Any *anyBlock = new google::protobuf::Any();
         anyBlock->PackFrom(block);
         addedMsg.set_allocated_object(anyBlock);
-
-        std::cout << "Added Block: " << tempBlock.nHeight << std::endl;
     }
     else if (body.anyAddedObj.type() == typeid(CMvDbpTransaction))
     {
@@ -313,7 +302,6 @@ void CDbpClient::SendResponse(CMvDbpMethodResult &body)
         {
             CMvDbpBlock tempBlock = boost::any_cast<CMvDbpBlock>(obj);
 
-            std::cout << "Add Block to result [GetBlocks]: " << tempBlock.nHeight << std::endl;
             lws::Block block;
             CreateLwsBlock(&tempBlock, block);
             resultMsg.add_result()->PackFrom(block);
@@ -424,7 +412,7 @@ void CDbpClient::WriteMessageToSendStream(dbp::Base *pBaseMsg)
 
 bool CDbpClient::IsSentComplete()
 {
-    return (ssSend.GetSize() == 0 && addedSendQueue.empty());
+    return (ssSend.GetSize() == 0 && queueAddedSend.empty());
 }
 
 void CDbpClient::HandleReadHeader(std::size_t nTransferred)
@@ -508,24 +496,6 @@ void CDbpClient::HandleReadCompleted(uint32_t len)
     }
 }
 
-static void write_msg_file(const std::string &file,
-                           std::string &buf)
-{
-    std::fstream ssFile;
-    std::string data(buf.c_str(), buf.size());
-    ssFile.open(file, std::ios::out | std::ios::binary | std::ios::app);
-    if (!ssFile)
-    {
-        std::cerr << "can't open file !" << std::endl;
-        return;
-    }
-    ssFile.seekp(0, std::ios::end);
-    ssFile << data;
-    ssFile.close();
-    buf.clear();
-    buf.shrink_to_fit();
-}
-
 void CDbpClient::HandleWritenResponse(std::size_t nTransferred, CDbpClient::SendType type)
 {
     if (nTransferred != 0)
@@ -537,14 +507,12 @@ void CDbpClient::HandleWritenResponse(std::size_t nTransferred, CDbpClient::Send
             return;
         }
 
-        if (ssSend.GetSize() == 0 && !addedSendQueue.empty())
+        if (ssSend.GetSize() == 0 && !queueAddedSend.empty())
         {
             dbp::Base base;
-            base = addedSendQueue.front();
+            base = queueAddedSend.front();
             WriteMessageToSendStream(&base);
-            addedSendQueue.pop();
-
-            //  SendSaver.append(std::string(ssSend.GetData(), ssSend.GetSize()));
+            queueAddedSend.pop();
 
             pClient->Write(ssSend, boost::bind(&CDbpClient::HandleWritenResponse, this, _1, ADDED));
             return;
@@ -552,7 +520,6 @@ void CDbpClient::HandleWritenResponse(std::size_t nTransferred, CDbpClient::Send
 
         if (type == OTHER)
         {
-            //write_msg_file("send.dump", SendSaver);
             pServer->HandleClientSent(this);
         }
     }
@@ -730,8 +697,6 @@ void CDbpServer::HandleClientPing(CDbpClient *pDbpClient, google::protobuf::Any 
 {
     dbp::Ping pingMsg;
     any->UnpackTo(&pingMsg);
-
-    std::cout << "RECV PING: " << pingMsg.id() << std::endl;
     pDbpClient->SendPong(pingMsg.id());
 }
 
@@ -740,12 +705,10 @@ void CDbpServer::HandleClientPong(CDbpClient *pDbpClient, google::protobuf::Any 
     dbp::Pong pongMsg;
     any->UnpackTo(&pongMsg);
 
-    std::cout << "RECV PONG: " << pongMsg.id() << std::endl;
-
-    std::string session = sessionClientBimap.right.at(pDbpClient);
+    std::string session = bimapSessionClient.right.at(pDbpClient);
     if (IsSessionExist(session))
     {
-        sessionProfileMap[session].timestamp = CDbpUtils::CurrentUTC();
+        mapSessionProfile[session].nTimeStamp = CDbpUtils::CurrentUTC();
     }
 
     this->HandleClientSent(pDbpClient);
@@ -1004,11 +967,11 @@ void CDbpServer::RemoveSession(CDbpClient *pDbpClient)
 
     if (HaveAssociatedSessionOf(pDbpClient))
     {
-        std::string assciatedSession = sessionClientBimap.right.at(pDbpClient);
-        sessionClientBimap.left.erase(assciatedSession);
-        sessionClientBimap.right.erase(pDbpClient);
-        sessionProfileMap[assciatedSession].pingTimerPtr->cancel();
-        sessionProfileMap.erase(assciatedSession);
+        std::string assciatedSession = bimapSessionClient.right.at(pDbpClient);
+        bimapSessionClient.left.erase(assciatedSession);
+        bimapSessionClient.right.erase(pDbpClient);
+        mapSessionProfile[assciatedSession].ptrPingTimer->cancel();
+        mapSessionProfile.erase(assciatedSession);
     }
 }
 
@@ -1028,7 +991,7 @@ void CDbpServer::RespondFailed(CDbpClient *pDbpClient, const std::string &reason
     CMvEventDbpFailed failedEvent(pDbpClient->GetNonce());
 
     std::string session =
-        HaveAssociatedSessionOf(pDbpClient) ? sessionClientBimap.right.at(pDbpClient) : "";
+        HaveAssociatedSessionOf(pDbpClient) ? bimapSessionClient.right.at(pDbpClient) : "";
     failedEvent.data.session = session;
     failedEvent.data.reason = reason;
     this->HandleEvent(failedEvent);
@@ -1044,18 +1007,18 @@ void CDbpServer::SendPingHandler(const boost::system::error_code &err, const CSe
     std::string utc = std::to_string(CDbpUtils::CurrentUTC());
     sessionProfile.pDbpClient->SendPing(utc);
 
-    sessionProfile.pingTimerPtr->expires_at(sessionProfile.pingTimerPtr->expires_at() + boost::posix_time::seconds(1));
-    sessionProfile.pingTimerPtr->async_wait(boost::bind(&CDbpServer::SendPingHandler,
+    sessionProfile.ptrPingTimer->expires_at(sessionProfile.ptrPingTimer->expires_at() + boost::posix_time::seconds(1));
+    sessionProfile.ptrPingTimer->async_wait(boost::bind(&CDbpServer::SendPingHandler,
                                                         this, boost::asio::placeholders::error,
                                                         boost::ref(sessionProfile)));
 }
 
 bool CDbpServer::HandleEvent(CMvEventDbpConnected &event)
 {
-    auto it = sessionProfileMap.find(event.session_);
-    if (it == sessionProfileMap.end())
+    auto it = mapSessionProfile.find(event.strSessionId);
+    if (it == mapSessionProfile.end())
     {
-        std::cerr << "cannot find session [Connected] " << event.session_ << std::endl;
+        std::cerr << "cannot find session [Connected] " << event.strSessionId << std::endl;
         return false;
     }
 
@@ -1064,13 +1027,13 @@ bool CDbpServer::HandleEvent(CMvEventDbpConnected &event)
 
     pDbpClient->SendResponse(connectedBody);
 
-    it->second.pingTimerPtr =
+    it->second.ptrPingTimer =
         std::make_shared<boost::asio::deadline_timer>(this->GetIoService(),
                                                       boost::posix_time::seconds(1));
 
-    it->second.pingTimerPtr->expires_at(it->second.pingTimerPtr->expires_at() +
+    it->second.ptrPingTimer->expires_at(it->second.ptrPingTimer->expires_at() +
                                         boost::posix_time::seconds(1));
-    it->second.pingTimerPtr->async_wait(boost::bind(&CDbpServer::SendPingHandler,
+    it->second.ptrPingTimer->async_wait(boost::bind(&CDbpServer::SendPingHandler,
                                                     this, boost::asio::placeholders::error,
                                                     boost::ref(it->second)));
 
@@ -1098,10 +1061,10 @@ bool CDbpServer::HandleEvent(CMvEventDbpFailed &event)
 
 bool CDbpServer::HandleEvent(CMvEventDbpNoSub &event)
 {
-    auto it = sessionProfileMap.find(event.session_);
-    if (it == sessionProfileMap.end())
+    auto it = mapSessionProfile.find(event.strSessionId);
+    if (it == mapSessionProfile.end())
     {
-        std::cerr << "cannot find session [NoSub] " << event.session_ << std::endl;
+        std::cerr << "cannot find session [NoSub] " << event.strSessionId << std::endl;
         return false;
     }
 
@@ -1115,10 +1078,10 @@ bool CDbpServer::HandleEvent(CMvEventDbpNoSub &event)
 
 bool CDbpServer::HandleEvent(CMvEventDbpReady &event)
 {
-    auto it = sessionProfileMap.find(event.session_);
-    if (it == sessionProfileMap.end())
+    auto it = mapSessionProfile.find(event.strSessionId);
+    if (it == mapSessionProfile.end())
     {
-        std::cerr << "cannot find session [Ready] " << event.session_ << std::endl;
+        std::cerr << "cannot find session [Ready] " << event.strSessionId << std::endl;
         return false;
     }
 
@@ -1132,10 +1095,10 @@ bool CDbpServer::HandleEvent(CMvEventDbpReady &event)
 
 bool CDbpServer::HandleEvent(CMvEventDbpAdded &event)
 {
-    auto it = sessionProfileMap.find(event.session_);
-    if (it == sessionProfileMap.end())
+    auto it = mapSessionProfile.find(event.strSessionId);
+    if (it == mapSessionProfile.end())
     {
-        std::cerr << "cannot find session [Added] " << event.session_ << std::endl;
+        std::cerr << "cannot find session [Added] " << event.strSessionId << std::endl;
         return false;
     }
 
@@ -1149,10 +1112,10 @@ bool CDbpServer::HandleEvent(CMvEventDbpAdded &event)
 
 bool CDbpServer::HandleEvent(CMvEventDbpMethodResult &event)
 {
-    auto it = sessionProfileMap.find(event.session_);
-    if (it == sessionProfileMap.end())
+    auto it = mapSessionProfile.find(event.strSessionId);
+    if (it == mapSessionProfile.end())
     {
-        std::cerr << "cannot find session [Method Result] " << event.session_ << std::endl;
+        std::cerr << "cannot find session [Method Result] " << event.strSessionId << std::endl;
         return false;
     }
 
@@ -1169,8 +1132,8 @@ bool CDbpServer::IsSessionTimeOut(CDbpClient *pDbpClient)
     if (HaveAssociatedSessionOf(pDbpClient))
     {
         auto timeout = pDbpClient->GetProfile()->nSessionTimeout;
-        std::string assciatedSession = sessionClientBimap.right.at(pDbpClient);
-        uint64 lastTimeStamp = sessionProfileMap[assciatedSession].timestamp;
+        std::string assciatedSession = bimapSessionClient.right.at(pDbpClient);
+        uint64 lastTimeStamp = mapSessionProfile[assciatedSession].nTimeStamp;
         return (CDbpUtils::CurrentUTC() - lastTimeStamp > timeout) ? true : false;
     }
     else
@@ -1183,8 +1146,8 @@ bool CDbpServer::GetSessionForkId(CDbpClient *pDbpClient, std::string &forkid)
 {
     if (HaveAssociatedSessionOf(pDbpClient))
     {
-        std::string assciatedSession = sessionClientBimap.right.at(pDbpClient);
-        forkid = sessionProfileMap[assciatedSession].forkid;
+        std::string assciatedSession = bimapSessionClient.right.at(pDbpClient);
+        forkid = mapSessionProfile[assciatedSession].strForkId;
         return true;
     }
     else
@@ -1200,12 +1163,12 @@ bool CDbpServer::IsSessionReconnect(const std::string &session)
 
 bool CDbpServer::IsSessionExist(const std::string &session)
 {
-    return sessionProfileMap.find(session) != sessionProfileMap.end();
+    return mapSessionProfile.find(session) != mapSessionProfile.end();
 }
 
 bool CDbpServer::HaveAssociatedSessionOf(CDbpClient *pDbpClient)
 {
-    return sessionClientBimap.right.find(pDbpClient) != sessionClientBimap.right.end();
+    return bimapSessionClient.right.find(pDbpClient) != bimapSessionClient.right.end();
 }
 
 std::string CDbpServer::GetUdata(dbp::Connect *pConnect, const std::string &keyName)
@@ -1248,27 +1211,27 @@ std::string CDbpServer::GenerateSessionId()
 void CDbpServer::CreateSession(const std::string &session, const std::string &forkID, CDbpClient *pDbpClient)
 {
     CSessionProfile profile;
-    profile.sessionId = session;
-    profile.forkid = forkID;
+    profile.strSessionId = session;
+    profile.strForkId = forkID;
     profile.pDbpClient = pDbpClient;
-    profile.timestamp = CDbpUtils::CurrentUTC();
+    profile.nTimeStamp = CDbpUtils::CurrentUTC();
 
     pDbpClient->SetSession(session);
 
-    sessionProfileMap.insert(std::make_pair(session, profile));
-    sessionClientBimap.insert(position_pair(session, pDbpClient));
+    mapSessionProfile.insert(std::make_pair(session, profile));
+    bimapSessionClient.insert(position_pair(session, pDbpClient));
 }
 
 void CDbpServer::UpdateSession(const std::string &session, CDbpClient *pDbpClient)
 {
-    if (sessionClientBimap.left.find(session) != sessionClientBimap.left.end())
+    if (bimapSessionClient.left.find(session) != bimapSessionClient.left.end())
     {
-        auto pDbplient = sessionClientBimap.left.at(session);
-        sessionClientBimap.left.erase(session);
-        sessionClientBimap.right.erase(pDbpClient);
+        auto pDbplient = bimapSessionClient.left.at(session);
+        bimapSessionClient.left.erase(session);
+        bimapSessionClient.right.erase(pDbpClient);
     }
 
-    sessionProfileMap[session].pDbpClient = pDbpClient;
-    sessionProfileMap[session].timestamp = CDbpUtils::CurrentUTC();
-    sessionClientBimap.insert(position_pair(session, pDbpClient));
+    mapSessionProfile[session].pDbpClient = pDbpClient;
+    mapSessionProfile[session].nTimeStamp = CDbpUtils::CurrentUTC();
+    bimapSessionClient.insert(position_pair(session, pDbpClient));
 }
