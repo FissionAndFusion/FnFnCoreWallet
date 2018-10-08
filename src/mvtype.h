@@ -146,14 +146,18 @@ public:
     uint256 hashBlock;
     int64 nBlockTime;
     int nBlockHeight;
+    uint256 nAgreement;
+    std::size_t nWeight;
 };
 
 class CBlockMakerAgreement
 {
 public:
-     uint256 nAgreement;
-     std::size_t nWeight;
-     std::vector<CDestination> vBallot;
+    bool IsProofOfWork() const { return (vBallot.empty()); } 
+public:
+    uint256 nAgreement;
+    std::size_t nWeight;
+    std::vector<CDestination> vBallot;
 };
 
 /* Net Channel */
