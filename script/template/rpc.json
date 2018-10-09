@@ -1149,18 +1149,13 @@
     "getnewkey": {
         "type": "command",
         "name": "GetNewKey",
-        "introduction": "Returns a new pubkey for receiving payments.",
-        "desc": [
-            "Returns a new pubkey for receiving payments.  ",
-            "If (passphrase) is specified, the key will be encrypted with (passphrase)."
-        ],
+        "desc": "Returns a new pubkey for receiving payments.",
         "request": {
             "type": "object",
             "content": {
                 "passphrase": {
                     "type": "string",
-                    "desc": "passphrase",
-                    "required": false
+                    "desc": "passphrase"
                 }
             }
         },
@@ -1179,16 +1174,15 @@
                 "response": "{\"id\":7,\"jsonrpc\":\"2.0\",\"result\":\"f4124c636d37b1308ba95c14b2487134030d5817f7fa93f11bcbc616aab7c3b9\"}"
             }
         ],
-        "error": "{\"code\":-401,\"message\":\"Failed add new key.\"}"
+        "error": [
+            "{\"code\":-6,\"message\":\"Passphrase must be nonempty\"}",
+            "{\"code\":-401,\"message\":\"Failed add new key.\"}"
+        ]
     },
     "encryptkey": {
         "type": "command",
         "name": "EncryptKey",
-        "introduction": "Encrypts the key.",
-        "desc": [
-            "Encrypts the key assoiciated with <passphrase>.  ",
-            "For encrypted key, changes the passphrase for (oldpassphrase) to <passphrase>"
-        ],
+        "desc": "Changes the passphrase for <oldpassphrase> to <passphrase>",
         "request": {
             "type": "object",
             "content": {
@@ -1198,12 +1192,13 @@
                 },
                 "passphrase": {
                     "type": "string",
-                    "desc": "passphrase of key"
+                    "desc": "passphrase of key",
+                    "opt": "new"
                 },
                 "oldpassphrase": {
                     "type": "string",
                     "desc": "old passphrase of key",
-                    "required": false
+                    "opt": "old"
                 }
             }
         },
@@ -1214,16 +1209,17 @@
         },
         "example": [
             {
-                "request": "multiverse-cli encryptkey 2e05c9ee45fdf58f7b007458298042fc3d3ad416a2f9977ace16d14164a3e882 123",
-                "response": "Encrypt key successfully: 2e05c9ee45fdf58f7b007458298042fc3d3ad416a2f9977ace16d14164a3e882"
+                "request": "encryptkey f4c3babec11363be80e7b6aa1d803d63206a11f36fc99b874b63a262110a0add -new=456 -old=123",
+                "response": "Encrypt key successfully: f4c3babec11363be80e7b6aa1d803d63206a11f36fc99b874b63a262110a0add"
             },
             {
-                "request": "curl -d '{\"id\":64,\"method\":\"encryptkey\",\"jsonrpc\":\"2.0\",\"params\":{\"pubkey\":\"2e05c9ee45fdf58f7b007458298042fc3d3ad416a2f9977ace16d14164a3e882\",\"passphrase\":\"123\"}}' http://127.0.0.1:6812",
-                "response": "{\"id\":64,\"jsonrpc\":\"2.0\",\"result\":\"Encrypt key successfully: 2e05c9ee45fdf58f7b007458298042fc3d3ad416a2f9977ace16d14164a3e882\"}"
+                "request": "curl -d '{\"id\":5,\"method\":\"encryptkey\",\"jsonrpc\":\"2.0\",\"params\":{\"pubkey\":\"f4c3babec11363be80e7b6aa1d803d63206a11f36fc99b874b63a262110a0add\",\"passphrase\":\"456\",\"oldpassphrase\":\"123\"}}' http://127.0.0.1:6812",
+                "response": "{\"id\":5,\"jsonrpc\":\"2.0\",\"result\":\"Encrypt key successfully: f4c3babec11363be80e7b6aa1d803d63206a11f36fc99b874b63a262110a0add\"}"
             },
-            "multiverse-cli encryptkey 2e05c9ee45fdf58f7b007458298042fc3d3ad416a2f9977ace16d14164a3e882 456 123"
+            "multiverse-cli encryptkey f4c3babec11363be80e7b6aa1d803d63206a11f36fc99b874b63a262110a0add 456 123"
         ],
         "error": [
+            "{\"code\":-6,\"message\":\"Passphrase must be nonempty\"}",
             "{\"code\":-4,\"message\":\"Unknown key\"}",
             "{\"code\":-406,\"message\":\"The passphrase entered was incorrect.\"}"
         ]
@@ -1318,6 +1314,7 @@
             }
         ],
         "error": [
+            "{\"code\":-6,\"message\":\"Passphrase must be nonempty\"}",
             "{\"code\":-4,\"message\":\"Unknown key\"}",
             "{\"code\":-409,\"message\":\"Key is already unlocked\"}",
             "{\"code\":-406,\"message\":\"The passphrase entered was incorrect.\"}"
@@ -1326,11 +1323,7 @@
     "importprivkey": {
         "type": "command",
         "name": "ImportPrivKey",
-        "introduction": "Adds a private key (as returned by dumpprivkey) to your wallet.",
-        "desc": [
-            "Adds a private key (as returned by dumpprivkey) to your wallet.",
-            "If (passphrase) is specified, the key will be encrypted with (passphrase)."
-        ],
+        "desc": "Adds a private key (as returned by dumpprivkey) to your wallet.",
         "request": {
             "type": "object",
             "content": {
@@ -1340,9 +1333,7 @@
                 },
                 "passphrase": {
                     "type": "string",
-                    "desc": "passphrase",
-                    "required": false,
-                    "opt": "p"
+                    "desc": "passphrase"
                 }
             }
         },
@@ -1353,15 +1344,16 @@
         },
         "example": [
             {
-                "request": "multiverse-cli importprivkey feb51e048380c0ade1cdb60b25e9f3e05cd4507553a97faadc8a94771fcb1a5b",
+                "request": "multiverse-cli importprivkey feb51e048380c0ade1cdb60b25e9f3e05cd4507553a97faadc8a94771fcb1a5b 123",
                 "response": "d716e72ce58e649a57d54751a7707e325b522497da3a69ae8301a2cbec391c07"
             },
             {
-                "request": "curl -d '{\"id\":9,\"method\":\"importprivkey\",\"jsonrpc\":\"2.0\",\"params\":{\"privkey\":\"feb51e048380c0ade1cdb60b25e9f3e05cd4507553a97faadc8a94771fcb1a5b\"}}' http://127.0.0.1:6812",
+                "request": "curl -d '{\"id\":9,\"method\":\"importprivkey\",\"jsonrpc\":\"2.0\",\"params\":{\"privkey\":\"feb51e048380c0ade1cdb60b25e9f3e05cd4507553a97faadc8a94771fcb1a5b\",\"passphrase\":\"123\"}}' http://127.0.0.1:6812",
                 "response": "{\"id\":9,\"jsonrpc\":\"2.0\",\"result\":\"d716e72ce58e649a57d54751a7707e325b522497da3a69ae8301a2cbec391c07\"}"
             }
         ],
         "error": [
+            "{\"code\":-6,\"message\":\"Passphrase must be nonempty\"}",
             "{\"code\":-4,\"message\":\"Invalid private key\"}",
             "{\"code\":-401,\"message\":\"Already have key\"}",
             "{\"code\":-401,\"message\":\"Failed to add key\"}",
@@ -1398,6 +1390,7 @@
         ],
         "error": [
             "{\"code\":-32602,\"message\":\"Failed to verify serialized key\"}",
+            "{\"code\":-32602,\"message\":\"Can't import the key with empty passphrase\"}",
             "{\"code\":-401,\"message\":\"Already have key\"}",
             "{\"code\":-401,\"message\":\"Failed to add key\"}",
             "{\"code\":-401,\"message\":\"Failed to sync wallet tx\"}"
@@ -2079,12 +2072,12 @@
         },
         "example": [
             {
-                "request":"multiverse-cli exportwallet /Users/Loading/a.txt",
-                "response":"Wallet file has been saved at: /Users/Loading/a.txt"
+                "request": "multiverse-cli exportwallet /Users/Loading/a.txt",
+                "response": "Wallet file has been saved at: /Users/Loading/a.txt"
             },
             {
-                "request":"{\"id\":4,\"method\":\"exportwallet\",\"jsonrpc\":\"2.0\",\"params\":{\"path\":\"/Users/Loading/a.txt\"}}",
-                "response":"{\"id\":4,\"jsonrpc\":\"2.0\",\"result\":\"Wallet file has been saved at: /Users/Loading/a.txt\"}"
+                "request": "{\"id\":4,\"method\":\"exportwallet\",\"jsonrpc\":\"2.0\",\"params\":{\"path\":\"/Users/Loading/a.txt\"}}",
+                "response": "{\"id\":4,\"jsonrpc\":\"2.0\",\"result\":\"Wallet file has been saved at: /Users/Loading/a.txt\"}"
             }
         ],
         "error": [
@@ -2115,12 +2108,12 @@
         },
         "example": [
             {
-                "request":"multiverse-cli importwallet /Users/Loading/a.txt",
-                "response":"Imported 0 keys and 0 templates."
+                "request": "multiverse-cli importwallet /Users/Loading/a.txt",
+                "response": "Imported 0 keys and 0 templates."
             },
             {
-                "request":"{\"id\":5,\"method\":\"importwallet\",\"jsonrpc\":\"2.0\",\"params\":{\"path\":\"/Users/Loading/a.txt\"}}",
-                "response":"{\"id\":5,\"jsonrpc\":\"2.0\",\"result\":\"Imported 0 keys and 0 templates.\"}"
+                "request": "{\"id\":5,\"method\":\"importwallet\",\"jsonrpc\":\"2.0\",\"params\":{\"path\":\"/Users/Loading/a.txt\"}}",
+                "response": "{\"id\":5,\"jsonrpc\":\"2.0\",\"result\":\"Imported 0 keys and 0 templates.\"}"
             }
         ],
         "error": [
@@ -2128,7 +2121,8 @@
             "{\"code\":-401,\"message\":\"File name is invalid.\"}",
             "{\"code\":-401,\"message\":\"Filesystem_error - failed to read.\"}",
             "{\"code\":-401,\"message\":\"Data format is not correct, check it and try again.\"}",
-            "{\"code\":-401,\"message\":\"Failed to verify serialized key\"}",
+            "{\"code\":-32602,\"message\":\"Failed to verify serialized key\"}",
+            "{\"code\":-32602,\"message\":\"Can't import the key with empty passphrase\"}",
             "{\"code\":-401,\"message\":\"Failed to add key\"}",
             "{\"code\":-401,\"message\":\"Failed to sync wallet tx\"}",
             "{\"code\":-401,\"message\":\"Invalid parameters,failed to make template\"}",
@@ -2193,30 +2187,41 @@
             "type": "object",
             "name": "block",
             "desc": "hex-encoded block",
-            "content":{
-                "hash":{
-                    "type":"string",
-                    "desc":"block hash"
+            "content": {
+                "hash": {
+                    "type": "string",
+                    "desc": "block hash"
                 },
-                "hex":{
-                    "type":"string",
-                    "desc":"block data hex"
+                "hex": {
+                    "type": "string",
+                    "desc": "block data hex"
                 }
             }
         },
         "example": [
             {
-                "request": "multiverse-cli makeorigin a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0 1gbma6s21t4bcwymqz6h1dn1t7qy45019b1t00ywfyqymbvp90mqc1wmq 1 POW",
-                "response": "{\"hash\":\"c80cad6f2e8c0b0cee5182fcb70e0da40149b5740223ea17814d70bf8740fdab\",\"hex\":\"010000ffc06f585ac0afdc176980a0a1ebe849d09b51e4b4c1dd46fb939579d71bdc55809d6f3da6000000000000000000000000000000000000000000000000000000000000000003504f5701000001000000000000000000000000000000000000000000000000000000000000000000000000000182e8a36441d116ce7a97f9a216d43a3dfc4280295874007b8ff5fd45eec9052e40420f0000000000000000000000000000000000\"}"
+                "request": "multiverse-cli makeorigin a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0 1p2e0yjz5y1ga705csrzpsp1wre1vjqepkbwnpchyx2vay86wf01pz3qs 1500 test-fork POW 1.0",
+                "response": "{\"hash\" : \"327ec1ffabeae75295401ec69591f845e6025c24d31ae07d9f6e9dec3462bd7a\",\"hex\" : \"010000ffc06f585ac0afdc176980a0a1ebe849d09b51e4b4c1dd46fb939579d71bdc55809d6f3da600000000000000000000000000000000000000000000000000000000000000004c8001000000e109746573742d666f726be203504f574301a46400000000000000a540420f0000000000e62101b09c0f4be5f060a380acce3f6cd83cc383b95dd69af95b323ee8b6af20dc7803010000010000000000000000000000000000000000000000000000000000000000000000000000000001b09c0f4be5f060a380acce3f6cd83cc383b95dd69af95b323ee8b6af20dc7803002f685900000000000000000000000009746573742d666f726b000040f253de866a5357b5a11e493162885f4b8a34e94279e29b8354b237aaec650af420b61d24721b4e5e3a4096e9370c77f7dad6c05ced6eedcb2229958671620c05\"}"
             },
             {
-                "request": "curl -d '{\"id\":7,\"method\":\"makeorigin\",\"jsonrpc\":\"2.0\",\"params\":{\"prev\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\",\"address\":\"1gbma6s21t4bcwymqz6h1dn1t7qy45019b1t00ywfyqymbvp90mqc1wmq\",\"amount\":1,\"ident\":\"POW\"}}' http://127.0.0.1:6812",
-                "response": "{\"id\":7,\"jsonrpc\":\"2.0\",\"result\":{\"hash\":\"c80cad6f2e8c0b0cee5182fcb70e0da40149b5740223ea17814d70bf8740fdab\",\"hex\":\"010000ffc06f585ac0afdc176980a0a1ebe849d09b51e4b4c1dd46fb939579d71bdc55809d6f3da6000000000000000000000000000000000000000000000000000000000000000003504f5701000001000000000000000000000000000000000000000000000000000000000000000000000000000182e8a36441d116ce7a97f9a216d43a3dfc4280295874007b8ff5fd45eec9052e40420f0000000000000000000000000000000000\"}}"
+                "request": "curl -d '{\"id\":4,\"method\":\"makeorigin\",\"jsonrpc\":\"2.0\",\"params\":{\"prev\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\",\"owner\":\"1p2e0yjz5y1ga705csrzpsp1wre1vjqepkbwnpchyx2vay86wf01pz3qs\",\"amount\":1500,\"name\":\"test-fork\",\"symbol\":\"POW\",\"reward\":1,\"isolated\":true,\"private\":false,\"enclosed\":false}}' http://127.0.0.1:6812",
+                "response": "{\"id\":4,\"jsonrpc\":\"2.0\",\"result\":{\"hash\":\"327ec1ffabeae75295401ec69591f845e6025c24d31ae07d9f6e9dec3462bd7a\",\"hex\":\"010000ffc06f585ac0afdc176980a0a1ebe849d09b51e4b4c1dd46fb939579d71bdc55809d6f3da600000000000000000000000000000000000000000000000000000000000000004c8001000000e109746573742d666f726be203504f574301a46400000000000000a540420f0000000000e62101b09c0f4be5f060a380acce3f6cd83cc383b95dd69af95b323ee8b6af20dc7803010000010000000000000000000000000000000000000000000000000000000000000000000000000001b09c0f4be5f060a380acce3f6cd83cc383b95dd69af95b323ee8b6af20dc7803002f685900000000000000000000000009746573742d666f726b000040f253de866a5357b5a11e493162885f4b8a34e94279e29b8354b237aaec650af420b61d24721b4e5e3a4096e9370c77f7dad6c05ced6eedcb2229958671620c05\"}}"
+            },
+            {
+                "request": "multiverse-cli makeorigin a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0 1p2e0yjz5y1ga705csrzpsp1wre1vjqepkbwnpchyx2vay86wf01pz3qs 1500 test-fork POW 1.0 -i -nop -e",
+                "response": "{\"hash\":\"ade2a8f61082cc0b8e98581e013c52126989d5c15e5c4c6b882f76c98bc68025\",\"hex\":\"010000ffc06f585ac0afdc176980a0a1ebe849d09b51e4b4c1dd46fb939579d71bdc55809d6f3da600000000000000000000000000000000000000000000000000000000000000004c8001000000e109746573742d666f726be203504f574305a46400000000000000a540420f0000000000e62101b09c0f4be5f060a380acce3f6cd83cc383b95dd69af95b323ee8b6af20dc7803010000010000000000000000000000000000000000000000000000000000000000000000000000000001b09c0f4be5f060a380acce3f6cd83cc383b95dd69af95b323ee8b6af20dc7803002f685900000000000000000000000009746573742d666f726b00004078bbc21e237d727a58de54e14a19d0244e9dd27ce7d55dfca891158913068185f3dc5b98d4e11500b7512bc8d0e8aa136b34f22f16c16be45e9650e15253980e\"}"
+            },
+            {
+                "request": "{\"id\":2,\"method\":\"makeorigin\",\"jsonrpc\":\"2.0\",\"params\":{\"prev\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\",\"owner\":\"1p2e0yjz5y1ga705csrzpsp1wre1vjqepkbwnpchyx2vay86wf01pz3qs\",\"amount\":1500,\"name\":\"test-fork\",\"symbol\":\"POW\",\"reward\":1,\"isolated\":true,\"private\":false,\"enclosed\":true}}",
+                "response": "{\"id\":2,\"jsonrpc\":\"2.0\",\"result\":{\"hash\":\"ade2a8f61082cc0b8e98581e013c52126989d5c15e5c4c6b882f76c98bc68025\",\"hex\":\"010000ffc06f585ac0afdc176980a0a1ebe849d09b51e4b4c1dd46fb939579d71bdc55809d6f3da600000000000000000000000000000000000000000000000000000000000000004c8001000000e109746573742d666f726be203504f574305a46400000000000000a540420f0000000000e62101b09c0f4be5f060a380acce3f6cd83cc383b95dd69af95b323ee8b6af20dc7803010000010000000000000000000000000000000000000000000000000000000000000000000000000001b09c0f4be5f060a380acce3f6cd83cc383b95dd69af95b323ee8b6af20dc7803002f685900000000000000000000000009746573742d666f726b00004078bbc21e237d727a58de54e14a19d0244e9dd27ce7d55dfca891158913068185f3dc5b98d4e11500b7512bc8d0e8aa136b34f22f16c16be45e9650e15253980e\"}}"
             }
         ],
         "error": [
-            "{\"code\":-8,\"message\":\"TX decode failed\"}",
-            "{\"code\":-6,\"message\":\"Unknown anchor block\"}"
+            "{\"code\":-6,\"message\":\"Unknown prev block\"}",
+            "{\"code\":-4,\"message\":\"Owner' address should be pubkey address\"}",
+            "{\"code\":-4,\"message\":\"Unknown key\"}",
+            "{\"code\":-405,\"message\":\"Key is locked\"}",
+            "{\"code\":-401,\"message\":\"Failed to sign message\"}"
         ]
     },
     "verifymessage": {

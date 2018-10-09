@@ -27,13 +27,13 @@ public:
     CKey(const CKey& key);
     CKey& operator=(const CKey& key);
     ~CKey();
-    int GetVersion() const;
+    uint32 GetVersion() const;
     bool IsNull() const;
     bool IsLocked() const;
     bool Renew();
-    void Load(const CPubKey& pubkeyIn,int nVersionIn,const CCryptoCipher& cipherIn);
+    void Load(const CPubKey& pubkeyIn,const uint32 nVersionIn,const CCryptoCipher& cipherIn);
     bool Load(const std::vector<unsigned char>& vchKey);
-    void Save(CPubKey& pubkeyRet,int& nVersionRet,CCryptoCipher& cipherRet) const;
+    void Save(CPubKey& pubkeyRet,uint32& nVersionRet,CCryptoCipher& cipherRet) const;
     void Save(std::vector<unsigned char>& vchKey) const;
     bool SetSecret(const CCryptoKeyData& vchSecret);
     bool GetSecret(CCryptoKeyData& vchSecret) const;
@@ -45,9 +45,10 @@ public:
     void Lock();
     bool Unlock(const CCryptoString& strPassphrase = "");
 protected:
-    bool UpdateCipher(int nVersionIn = 0,const CCryptoString& strPassphrase = "");
+    bool UpdateCipher(uint32 nVersionIn = 0,const CCryptoString& strPassphrase = "");
+
 protected:
-    int nVersion;
+    uint32 nVersion;
     CCryptoKey* pCryptoKey;
     CCryptoCipher cipher;
 };

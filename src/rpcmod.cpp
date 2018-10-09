@@ -677,13 +677,12 @@ CRPCResultPtr CRPCMod::RPCGetNewKey(CRPCParamPtr param)
 {
     auto spParam = CastParamPtr<CGetNewKeyParam>(param);
 
-    crypto::CCryptoString strPassphrase;
-    if (spParam->strPassphrase.IsValid())
+    if (spParam->strPassphrase.empty())
     {
-        strPassphrase = spParam->strPassphrase.c_str();
+        throw CRPCException(RPC_INVALID_PARAMETER, "Passphrase must be nonempty");
     }
+    crypto::CCryptoString strPassphrase = spParam->strPassphrase.c_str();
     crypto::CPubKey pubkey;
-
     if (!pService->MakeNewKey(strPassphrase,pubkey))
     {
         throw CRPCException(RPC_WALLET_ERROR,"Failed add new key.");
@@ -698,12 +697,19 @@ CRPCResultPtr CRPCMod::RPCEncryptKey(CRPCParamPtr param)
 
     crypto::CPubKey pubkey;
     pubkey.SetHex(spParam->strPubkey);
-    crypto::CCryptoString strPassphrase,strOldPassphrase;
-    strPassphrase = spParam->strPassphrase.c_str();
-    if (spParam->strOldpassphrase.IsValid())
+
+    if (spParam->strPassphrase.empty())
     {
-        strOldPassphrase = spParam->strOldpassphrase.c_str();
+        throw CRPCException(RPC_INVALID_PARAMETER, "Passphrase must be nonempty");
     }
+    crypto::CCryptoString strPassphrase = spParam->strPassphrase.c_str();
+
+    if (spParam->strOldpassphrase.empty())
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Old passphrase must be nonempty");
+    }
+    crypto::CCryptoString strOldPassphrase = spParam->strOldpassphrase.c_str();
+
     if (!pService->HaveKey(pubkey))
     {
         throw CRPCException(RPC_INVALID_ADDRESS_OR_KEY,"Unknown key");
@@ -770,8 +776,11 @@ CRPCResultPtr CRPCMod::RPCUnlockKey(CRPCParamPtr param)
         pubkey.SetHex(spParam->strPubkey);
     }
 
-    crypto::CCryptoString strPassphrase;
-    strPassphrase = spParam->strPassphrase.c_str();
+    if (spParam->strPassphrase.empty())
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Passphrase must be nonempty");
+    }
+    crypto::CCryptoString strPassphrase = spParam->strPassphrase.c_str();
     int64 nTimeout = 0;
     if (spParam->nTimeout.IsValid())
     {
@@ -801,11 +810,12 @@ CRPCResultPtr CRPCMod::RPCImportPrivKey(CRPCParamPtr param)
     auto spParam = CastParamPtr<CImportPrivKeyParam>(param);
 
     uint256 nPriv(spParam->strPrivkey);
-    crypto::CCryptoString strPassphrase;
-    if (spParam->strPassphrase.IsValid())
+
+    if (spParam->strPassphrase.empty())
     {
-        strPassphrase = spParam->strPassphrase.c_str();
+        throw CRPCException(RPC_INVALID_PARAMETER, "Passphrase must be nonempty");
     }
+    crypto::CCryptoString strPassphrase = spParam->strPassphrase.c_str();
 
     crypto::CKey key;
     if (!key.SetSecret(crypto::CCryptoKeyData(nPriv.begin(),nPriv.end())))
@@ -841,6 +851,10 @@ CRPCResultPtr CRPCMod::RPCImportKey(CRPCParamPtr param)
     if (!key.Load(vchKey))
     {
         throw CRPCException(RPC_INVALID_PARAMS,"Failed to verify serialized key");
+    }
+    if (key.GetVersion() == 0)
+    {
+        throw CRPCException(RPC_INVALID_PARAMS, "Can't import the key with empty passphrase");
     }
     if (pService->HaveKey(key.GetPubKey()))
     {
@@ -1501,6 +1515,10 @@ CRPCResultPtr CRPCMod::RPCImportWallet(CRPCParamPtr param)
             if (!key.Load(vchKey))
             {
                 throw CRPCException(RPC_INVALID_PARAMS, "Failed to verify serialized key");
+            }
+            if (key.GetVersion() == 0)
+            {
+                throw CRPCException(RPC_INVALID_PARAMS, "Can't import the key with empty passphrase");
             }
             if (pService->HaveKey(key.GetPubKey()))
             {
