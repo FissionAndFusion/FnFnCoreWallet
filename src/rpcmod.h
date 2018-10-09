@@ -115,12 +115,12 @@ private:
     CRPCResultPtr RPCGetWork(CRPCParamPtr param);
     CRPCResultPtr RPCSubmitWork(CRPCParamPtr param);
 
-  protected:
+protected:
     walleve::IIOProc *pHttpServer;
     ICoreProtocol *pCoreProtocol;
     IService *pService;
 
-  private:
+private:
     std::map<std::string, RPCFunc> mapRPCFunc;
 };
 
