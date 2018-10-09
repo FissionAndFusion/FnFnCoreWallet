@@ -117,7 +117,7 @@ bool CMvPeer::FetchAskFor(uint256& hashFork,CInv& inv)
 void CMvPeer::SendHello()
 {
     CWalleveBufStream ssPayload;
-    ((CMvPeerNet*)pPeerNet)->BuildHello(this,ssPayload);
+    (static_cast<CMvPeerNet*>(pPeerNet))->BuildHello(this,ssPayload);
     SendMessage(MVPROTO_CHN_NETWORK,MVPROTO_CMD_HELLO,ssPayload);
     nTimeHello = GetTime();
 }
@@ -214,7 +214,7 @@ bool CMvPeer::HandshakeReadCompletd()
 
 bool CMvPeer::HandshakeCompletd()
 {
-    if (!((CMvPeerNet*)pPeerNet)->HandlePeerHandshaked(this,nHsTimerId))
+    if (!(static_cast<CMvPeerNet*>(pPeerNet))->HandlePeerHandshaked(this,nHsTimerId))
     {
         return false;
     }
@@ -231,7 +231,7 @@ bool CMvPeer::HandleReadCompleted()
     {
         try
         {
-            if (((CMvPeerNet*)pPeerNet)->HandlePeerRecvMessage(this,hdrRecv.GetChannel(),hdrRecv.GetCommand(),ss))
+            if ((static_cast<CMvPeerNet*>(pPeerNet))->HandlePeerRecvMessage(this,hdrRecv.GetChannel(),hdrRecv.GetCommand(),ss))
             {
                 Read(MESSAGE_HEADER_SIZE,boost::bind(&CMvPeer::HandleReadHeader,this));
                 return true;

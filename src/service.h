@@ -7,10 +7,11 @@
 
 #include "mvbase.h"
 #include "network.h"
-#include "walleve/netio/netio.h"
+#include "walleve/walleve.h"
 
 namespace multiverse
 {
+
 
 class CService : public IService
 {
@@ -18,16 +19,16 @@ public:
     CService();
     ~CService();
     /* Notify */
-    void NotifyWorldLineUpdate(const CWorldLineUpdate& update);
-    void NotifyNetworkPeerUpdate(const CNetworkPeerUpdate& update);
-    void NotifyTransactionUpdate(const CTransactionUpdate& update);
+    void NotifyWorldLineUpdate(const CWorldLineUpdate& update) override;
+    void NotifyNetworkPeerUpdate(const CNetworkPeerUpdate& update) override;
+    void NotifyTransactionUpdate(const CTransactionUpdate& update) override;
     /* System */
-    void Shutdown();
+    void Shutdown() override;
     /* Network */
-    int GetPeerCount();
-    void GetPeers(std::vector<network::CMvPeerInfo>& vPeerInfo);
-    bool AddNode(const walleve::CNetHost& node);
-    bool RemoveNode(const walleve::CNetHost& node);
+    int GetPeerCount() override;
+    void GetPeers(std::vector<network::CMvPeerInfo>& vPeerInfo) override;
+    bool AddNode(const walleve::CNetHost& node) override;
+    bool RemoveNode(const walleve::CNetHost& node) override;
     /* Worldline & Tx Pool*/
     int  GetForkCount();
     int  GetForkHeight(const uint256& hashFork);
@@ -44,39 +45,39 @@ public:
     MvErr SendTransaction(CTransaction& tx);
     bool RemovePendingTx(const uint256& txid);
     /* Wallet */
-    bool HaveKey(const crypto::CPubKey& pubkey);
-    void GetPubKeys(std::set<crypto::CPubKey>& setPubKey);
-    bool GetKeyStatus(const crypto::CPubKey& pubkey,int& nVersion,bool& fLocked,int64& nAutoLockTime);
-    bool MakeNewKey(const crypto::CCryptoString& strPassphrase,crypto::CPubKey& pubkey);
-    bool AddKey(const crypto::CKey& key);
-    bool ImportKey(const std::vector<unsigned char>& vchKey,crypto::CPubKey& pubkey);
-    bool ExportKey(const crypto::CPubKey& pubkey,std::vector<unsigned char>& vchKey);
+    bool HaveKey(const crypto::CPubKey& pubkey) override;
+    void GetPubKeys(std::set<crypto::CPubKey>& setPubKey) override;
+    bool GetKeyStatus(const crypto::CPubKey& pubkey,int& nVersion,bool& fLocked,int64& nAutoLockTime) override;
+    bool MakeNewKey(const crypto::CCryptoString& strPassphrase,crypto::CPubKey& pubkey) override;
+    bool AddKey(const crypto::CKey& key) override;
+    bool ImportKey(const std::vector<unsigned char>& vchKey,crypto::CPubKey& pubkey) override;
+    bool ExportKey(const crypto::CPubKey& pubkey,std::vector<unsigned char>& vchKey) override;
     bool EncryptKey(const crypto::CPubKey& pubkey,const crypto::CCryptoString& strPassphrase,
-                                                  const crypto::CCryptoString& strCurrentPassphrase);
-    bool Lock(const crypto::CPubKey& pubkey);
-    bool Unlock(const crypto::CPubKey& pubkey,const crypto::CCryptoString& strPassphrase,int64 nTimeout);
-    bool SignSignature(const crypto::CPubKey& pubkey,const uint256& hash,std::vector<unsigned char>& vchSig);
-    bool SignTransaction(CTransaction& tx,bool& fCompleted);
-    bool HaveTemplate(const CTemplateId& tid);
-    void GetTemplateIds(std::set<CTemplateId>& setTid);
-    bool AddTemplate(CTemplatePtr& ptr);
-    bool GetTemplate(const CTemplateId& tid,CTemplatePtr& ptr);
-    bool GetBalance(const CDestination& dest,const uint256& hashFork,CWalletBalance& balance);
-    bool ListWalletTx(int nOffset,int nCount,std::vector<CWalletTx>& vWalletTx); 
+                                                  const crypto::CCryptoString& strCurrentPassphrase) override;
+    bool Lock(const crypto::CPubKey& pubkey) override;
+    bool Unlock(const crypto::CPubKey& pubkey,const crypto::CCryptoString& strPassphrase,int64 nTimeout) override;
+    bool SignSignature(const crypto::CPubKey& pubkey,const uint256& hash,std::vector<unsigned char>& vchSig) override;
+    bool SignTransaction(CTransaction& tx,bool& fCompleted) override;
+    bool HaveTemplate(const CTemplateId& tid) override;
+    void GetTemplateIds(std::set<CTemplateId>& setTid) override;
+    bool AddTemplate(CTemplatePtr& ptr) override;
+    bool GetTemplate(const CTemplateId& tid,CTemplatePtr& ptr) override;
+    bool GetBalance(const CDestination& dest,const uint256& hashFork,CWalletBalance& balance) override;
+    bool ListWalletTx(int nOffset,int nCount,std::vector<CWalletTx>& vWalletTx) override; 
     bool CreateTransaction(const uint256& hashFork,const CDestination& destFrom,
                            const CDestination& destSendTo,int64 nAmount,int64 nTxFee,
-                           const std::vector<unsigned char>& vchData,CTransaction& txNew);
-    bool SynchronizeWalletTx(const CDestination& destNew);
-    bool ResynchronizeWalletTx();
+                           const std::vector<unsigned char>& vchData,CTransaction& txNew) override;
+    bool SynchronizeWalletTx(const CDestination& destNew) override;
+    bool ResynchronizeWalletTx() override;
     /* Mint */
-    bool GetWork(std::vector<unsigned char>& vchWorkData,uint256& hashPrev,uint32& nPrevTime,int& nAlgo,int& nBits);
-    MvErr SubmitWork(const std::vector<unsigned char>& vchWorkData,CTemplatePtr& templMint,crypto::CKey& keyMint,uint256& hashBlock);
+    bool GetWork(std::vector<unsigned char>& vchWorkData,uint256& hashPrev,uint32& nPrevTime,int& nAlgo,int& nBits) override;
+    MvErr SubmitWork(const std::vector<unsigned char>& vchWorkData,CTemplatePtr& templMint,crypto::CKey& keyMint,uint256& hashBlock) override;
     /* Util */
 protected:
-    bool WalleveHandleInitialize();
-    void WalleveHandleDeinitialize();
-    bool WalleveHandleInvoke();
-    void WalleveHandleHalt();
+    bool WalleveHandleInitialize() override;
+    void WalleveHandleDeinitialize() override;
+    bool WalleveHandleInvoke() override;
+    void WalleveHandleHalt() override;
 protected:
     ICoreProtocol* pCoreProtocol;
     IWorldLine* pWorldLine;

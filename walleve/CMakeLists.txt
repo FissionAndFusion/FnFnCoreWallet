@@ -49,7 +49,8 @@ set(sources
 
 add_library(walleve ${sources})
 
-include_directories(${PROJECT_SOURCE_DIR}/walleve)
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
+include_directories(./)
 
 target_link_libraries(walleve
 	Boost::system

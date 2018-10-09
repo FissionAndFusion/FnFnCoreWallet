@@ -54,12 +54,12 @@ class CBlockMaker : public IBlockMaker, virtual public CMvBlockMakerEventListene
 public:
     CBlockMaker();
     ~CBlockMaker();
-    bool HandleEvent(CMvEventBlockMakerUpdate& eventUpdate);
+    bool HandleEvent(CMvEventBlockMakerUpdate& eventUpdate) override;
 protected:
-    bool WalleveHandleInitialize();
-    void WalleveHandleDeinitialize();
-    bool WalleveHandleInvoke();
-    void WalleveHandleHalt();
+    bool WalleveHandleInitialize() override;
+    void WalleveHandleDeinitialize() override;
+    bool WalleveHandleInvoke() override;
+    void WalleveHandleHalt() override;
     bool Interrupted() { return (nMakerStatus != MAKER_RUN); }
     bool Wait(long nSeconds);
     bool WaitAgreement(CBlockMakerAgreement& agree,int64 nTimeAgree,int nHeight);

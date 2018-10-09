@@ -26,10 +26,11 @@ enum class EModuleType
     WALLET,        // CWallet
     WORLDLINE,     // CWorldLine
     CONSENSUS,     // CConsensus
-    DBPSOCKET,     // CDummyDbpSocket
+    DBPSERVER,     // CDbpServer
+    DBPSERVICE,    // CDbpService
     DNSEED,        // CDNSeed
 };
 
-}  // namespace multiverse
+} // namespace multiverse
 
-#endif  // MULTIVERSE_MODULE_TYPE_H
+#endif // MULTIVERSE_MODULE_TYPE_H

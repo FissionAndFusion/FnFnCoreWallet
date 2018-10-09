@@ -107,44 +107,44 @@ public:
     ~CWallet();
     bool IsMine(const CDestination& dest);
     /* Key store */
-    bool AddKey(const crypto::CKey& key);
+    bool AddKey(const crypto::CKey& key) override;
     bool LoadKey(const crypto::CKey& key);
-    void GetPubKeys(std::set<crypto::CPubKey>& setPubKey) const;
-    bool Have(const crypto::CPubKey& pubkey) const;
-    bool Export(const crypto::CPubKey& pubkey,std::vector<unsigned char>& vchKey) const;
-    bool Import(const std::vector<unsigned char>& vchKey,crypto::CPubKey& pubkey);
+    void GetPubKeys(std::set<crypto::CPubKey>& setPubKey) const override;
+    bool Have(const crypto::CPubKey& pubkey) const override;
+    bool Export(const crypto::CPubKey& pubkey,std::vector<unsigned char>& vchKey) const override;
+    bool Import(const std::vector<unsigned char>& vchKey,crypto::CPubKey& pubkey) override;
 
     bool Encrypt(const crypto::CPubKey& pubkey,const crypto::CCryptoString& strPassphrase,
-                                               const crypto::CCryptoString& strCurrentPassphrase);
-    bool GetKeyStatus(const crypto::CPubKey& pubkey,int& nVersion,bool& fLocked,int64& nAutoLockTime) const;
-    bool IsLocked(const crypto::CPubKey& pubkey) const;
-    bool Lock(const crypto::CPubKey& pubkey);
-    bool Unlock(const crypto::CPubKey& pubkey,const crypto::CCryptoString& strPassphrase,int64 nTimeout);
+                                               const crypto::CCryptoString& strCurrentPassphrase) override;
+    bool GetKeyStatus(const crypto::CPubKey& pubkey,int& nVersion,bool& fLocked,int64& nAutoLockTime) const override;
+    bool IsLocked(const crypto::CPubKey& pubkey) const override;
+    bool Lock(const crypto::CPubKey& pubkey) override;
+    bool Unlock(const crypto::CPubKey& pubkey,const crypto::CCryptoString& strPassphrase,int64 nTimeout) override;
     void AutoLock(uint32 nTimerId,const crypto::CPubKey& pubkey);
-    bool Sign(const crypto::CPubKey& pubkey,const uint256& hash,std::vector<uint8>& vchSig) const;
+    bool Sign(const crypto::CPubKey& pubkey,const uint256& hash,std::vector<uint8>& vchSig) const override;
     /* Template */
     bool LoadTemplate(CTemplatePtr ptr);
-    void GetTemplateIds(std::set<CTemplateId>& setTemplateId) const;
-    bool Have(const CTemplateId& tid) const;
-    bool AddTemplate(CTemplatePtr& ptr);
-    bool GetTemplate(const CTemplateId& tid,CTemplatePtr& ptr);
+    void GetTemplateIds(std::set<CTemplateId>& setTemplateId) const override;
+    bool Have(const CTemplateId& tid) const override;
+    bool AddTemplate(CTemplatePtr& ptr) override;
+    bool GetTemplate(const CTemplateId& tid,CTemplatePtr& ptr) override;
     /* Wallet Tx */
-    std::size_t GetTxCount();
-    bool ListTx(int nOffset,int nCount,std::vector<CWalletTx>& vWalletTx);
-    bool GetBalance(const CDestination& dest,const uint256& hashFork,int nForkHeight,CWalletBalance& balance);
-    bool SignTransaction(const CDestination& destIn,CTransaction& tx,bool& fCompleted) const;
-    bool ArrangeInputs(const CDestination& destIn,const uint256& hashFork,int nForkHeight,CTransaction& tx);
+    std::size_t GetTxCount() override;
+    bool ListTx(int nOffset,int nCount,std::vector<CWalletTx>& vWalletTx) override;
+    bool GetBalance(const CDestination& dest,const uint256& hashFork,int nForkHeight,CWalletBalance& balance) override;
+    bool SignTransaction(const CDestination& destIn,CTransaction& tx,bool& fCompleted) const override;
+    bool ArrangeInputs(const CDestination& destIn,const uint256& hashFork,int nForkHeight,CTransaction& tx) override;
     /* Update */
-    bool SynchronizeTxSet(CTxSetChange& change);
-    bool UpdateTx(const uint256& hashFork,const CAssembledTx& tx);
-    bool ClearTx();
+    bool SynchronizeTxSet(CTxSetChange& change) override;
+    bool UpdateTx(const uint256& hashFork,const CAssembledTx& tx) override;
+    bool ClearTx() override;
     bool LoadTx(const CWalletTx& wtx);
     bool AddNewFork(const uint256& hashFork,const uint256& hashParent,int nOriginHeight);
 protected:
-    bool WalleveHandleInitialize();
-    void WalleveHandleDeinitialize();
-    bool WalleveHandleInvoke();
-    void WalleveHandleHalt();
+    bool WalleveHandleInitialize() override;
+    void WalleveHandleDeinitialize() override;
+    bool WalleveHandleInvoke() override;
+    void WalleveHandleHalt() override;
     bool LoadDB();
     void Clear();
     bool InsertKey(const crypto::CKey& key);

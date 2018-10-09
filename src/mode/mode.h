@@ -65,6 +65,7 @@
 #include "mode/mint_config.h"
 #include "mode/network_config.h"
 #include "mode/rpc_config.h"
+#include "mode/dbp_config.h"
 #include "mode/storage_config.h"
 
 #include "rpc/auto_rpc.h"
@@ -128,7 +129,8 @@ public:
                                 EConfigType::MINT, 
                                 EConfigType::NETWORK,
                                 EConfigType::RPCSERVER, 
-                                EConfigType::STORAGE
+                                EConfigType::STORAGE,
+                                EConfigType::DBPSERVER
                              >(cmd);
             }
             case EModeType::CONSOLE:
@@ -177,7 +179,8 @@ public:
                     EModuleType::NETWORK,
                     EModuleType::NETCHANNEL,
                     EModuleType::SERVICE,
-                    EModuleType::DBPSOCKET,
+                    EModuleType::DBPSERVER,
+                    EModuleType::DBPSERVICE,
                     EModuleType::HTTPSERVER,
                     EModuleType::RPCMODE,
                     EModuleType::BLOCKMAKER

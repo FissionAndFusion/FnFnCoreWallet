@@ -2,8 +2,8 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef  MULTIVERSE_RPCCLIENT_H
-#define  MULTIVERSE_RPCCLIENT_H
+#ifndef MULTIVERSE_RPCCLIENT_H
+#define MULTIVERSE_RPCCLIENT_H
 
 #include <string>
 #include <vector>
@@ -65,4 +65,3 @@ protected:
 
 } // namespace multiverse
 #endif //MULTIVERSE_RPCCLIENT_H
-

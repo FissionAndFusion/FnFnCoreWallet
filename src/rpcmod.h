@@ -2,8 +2,8 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef  MULTIVERSE_RPCMOD_H
-#define  MULTIVERSE_RPCMOD_H
+#ifndef MULTIVERSE_RPCMOD_H
+#define MULTIVERSE_RPCMOD_H
 
 #include <boost/function.hpp>
 
@@ -22,19 +22,20 @@ public:
     typedef CRPCResultPtr (CRPCMod::*RPCFunc)(CRPCParamPtr param);
     CRPCMod();
     ~CRPCMod();
-    bool HandleEvent(walleve::CWalleveEventHttpReq& eventHttpReq);
-    bool HandleEvent(walleve::CWalleveEventHttpBroken& eventHttpBroken);
+    bool HandleEvent(walleve::CWalleveEventHttpReq& eventHttpReq) override;
+    bool HandleEvent(walleve::CWalleveEventHttpBroken& eventHttpBroken) override;
+
 protected:
-    bool WalleveHandleInitialize();
-    void WalleveHandleDeinitialize();
+    bool WalleveHandleInitialize() override;
+    void WalleveHandleDeinitialize() override;
     const CMvNetworkConfig* WalleveConfig()
     {
         return dynamic_cast<const CMvNetworkConfig*>(walleve::IWalleveBase::WalleveConfig());
     }
 
-    void JsonReply(uint64 nNonce,const std::string& result);
+    void JsonReply(uint64 nNonce, const std::string& result);
 
-    int GetInt(const rpc::CRPCInt64& i,int valDefault)
+    int GetInt(const rpc::CRPCInt64& i, int valDefault)
     {
         return i.IsValid() ? int(i) : valDefault;
     }
@@ -49,13 +50,15 @@ protected:
         {
             fork.SetHex(hex);
         }
-        if (fork == 0) fork = pCoreProtocol->GetGenesisBlockHash();
+        if (fork == 0)
+            fork = pCoreProtocol->GetGenesisBlockHash();
         return fork;
     }
     bool CheckWalletError(MvErr err);
     multiverse::crypto::CPubKey GetPubKey(const std::string& addr);
     CTemplatePtr MakeTemplate(const rpc::CTemplateRequest& obj);
     void ListDestination(std::vector<CDestination>& vDestination);
+
 private:
     /* System */
     CRPCResultPtr RPCHelp(CRPCParamPtr param);
@@ -111,15 +114,16 @@ private:
     /* Mint */
     CRPCResultPtr RPCGetWork(CRPCParamPtr param);
     CRPCResultPtr RPCSubmitWork(CRPCParamPtr param);
+
 protected:
     walleve::IIOProc *pHttpServer;
     ICoreProtocol *pCoreProtocol;
     IService *pService;
+
 private:
-    std::map<std::string,RPCFunc> mapRPCFunc;
+    std::map<std::string, RPCFunc> mapRPCFunc;
 };
 
 } // namespace multiverse
 
 #endif //MULTIVERSE_RPCMOD_H
-

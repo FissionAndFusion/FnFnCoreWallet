@@ -13,8 +13,8 @@ cmake_minimum_required(VERSION 3.5.1)
 set(CMAKE_DIR "${CMAKE_CURRENT_LIST_DIR}/cmake" CACHE PATH "The path to the cmake directory")
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_DIR})
 
-# support c++11
-set(CMAKE_CXX_STANDARD 11)
+# support c++14, c++14 is like a small patch for c++11
+set(CMAKE_CXX_STANDARD 14)
 
 # packages
 set(Boost_USE_STATIC_LIBS ON)
@@ -32,6 +32,9 @@ find_package(OpenSSL 1.0.0 REQUIRED)
 find_package(MySQL 5.7.20 REQUIRED)
 find_package(sodium 1.0.8 REQUIRED)
 find_package(Readline 5.0 REQUIRED)
+
+set(Protobuf_USE_STATIC_LIBS ON)
+find_package(Protobuf 3.3.0 REQUIRED)
 
 if(${USE_SSL_110} MATCHES "TRUE")
     add_definitions(-DUSE_SSL_110)

@@ -60,7 +60,6 @@ public:
 // CTxPoolView
 void CTxPoolView::InvalidateSpent(const CTxOutPoint& out,vector<uint256>& vInvolvedTx)
 {
-    set<uint256> setInvolvedTx;
     vector<CTxOutPoint> vOutPoint;
     vOutPoint.push_back(out);
     for (std::size_t i = 0;i < vOutPoint.size();i++)

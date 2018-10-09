@@ -28,6 +28,12 @@ set(src
 	blockmaker.cpp blockmaker.h
 	rpcclient.cpp rpcclient.h
 	miner.cpp miner.h
+
+	dbpservice.cpp dbpservice.h
+	dbptype.h
+	dbpserver.h
+	dbpserver.cpp
+	dbputils.h
 	dnseed.cpp dnseed.h
 	schedule.cpp schedule.h
 	service.cpp service.h
@@ -46,6 +52,7 @@ set(mode_src
 	mode/mint_config.cpp mode/mint_config.h
 	mode/network_config.cpp mode/network_config.h
 	mode/rpc_config.cpp mode/rpc_config.h
+	mode/dbp_config.cpp mode/dbp_config.h
 	mode/storage_config.cpp mode/storage_config.h
 	mode/config_macro.h
 	mode/config_type.h
@@ -71,9 +78,15 @@ set(sources
 	${rpc_src}
 )
 
-add_executable(multiverse ${sources})
+protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS 
+dbp-proto/dbp.proto 
+dbp-proto/lws.proto)
+
+add_executable(multiverse ${sources} ${PROTO_SRCS} ${PROTO_HDRS})
 
 include_directories(../walleve ../crypto ../common ../storage ../network ../delegate ../mpvss ./)
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
+include_directories(${Protobuf_INCLUDE_DIRS})
 
 target_link_libraries(multiverse
 	Boost::system
@@ -88,6 +101,7 @@ target_link_libraries(multiverse
 	crypto	
 	storage	
 	network
+	${Protobuf_LIBRARIES}
 	delegate	
 	${WS2_32_LIB}
 	${WSSOCK32_LIB}
