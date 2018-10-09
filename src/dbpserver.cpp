@@ -18,8 +18,8 @@ using namespace walleve;
 
 static const std::size_t MSG_HEADER_LEN = 4;
 
-CDbpClient::CDbpClient(CDbpServer *pServerIn, CDbpProfile *pProfileIn,
-                       CIOClient *pClientIn, uint64 nonce)
+CDbpClient::CDbpClient(CDbpServer* pServerIn, CDbpProfile* pProfileIn,
+                       CIOClient* pClientIn, uint64 nonce)
     : pServer(pServerIn), pProfile(pProfileIn), pClient(pClientIn), nNonce(nonce)
 
 {
@@ -33,7 +33,7 @@ CDbpClient::~CDbpClient()
     }
 }
 
-CDbpProfile *CDbpClient::GetProfile()
+CDbpProfile* CDbpClient::GetProfile()
 {
     return pProfile;
 }
@@ -48,7 +48,7 @@ std::string CDbpClient::GetSession() const
     return strSessionId;
 }
 
-void CDbpClient::SetSession(const std::string &session)
+void CDbpClient::SetSession(const std::string& session)
 {
     strSessionId = session;
 }
@@ -60,7 +60,7 @@ void CDbpClient::Activate()
     StartReadHeader();
 }
 
-void CDbpClient::SendMessage(dbp::Base *pBaseMsg)
+void CDbpClient::SendMessage(dbp::Base* pBaseMsg)
 {
     if (ssSend.GetSize() != 0)
     {
@@ -73,7 +73,7 @@ void CDbpClient::SendMessage(dbp::Base *pBaseMsg)
     pClient->Write(ssSend, boost::bind(&CDbpClient::HandleWritenResponse, this, _1, OTHER));
 }
 
-void CDbpClient::SendPingMessage(dbp::Base *pBaseMsg)
+void CDbpClient::SendPingMessage(dbp::Base* pBaseMsg)
 {
     if (!IsSentComplete())
     {
@@ -86,7 +86,7 @@ void CDbpClient::SendPingMessage(dbp::Base *pBaseMsg)
     pClient->Write(ssSend, boost::bind(&CDbpClient::HandleWritenResponse, this, _1, PING));
 }
 
-void CDbpClient::SendAddedMessage(dbp::Base *pBaseMsg)
+void CDbpClient::SendAddedMessage(dbp::Base* pBaseMsg)
 {
     if (!IsSentComplete())
     {
@@ -100,7 +100,7 @@ void CDbpClient::SendAddedMessage(dbp::Base *pBaseMsg)
     pClient->Write(ssSend, boost::bind(&CDbpClient::HandleWritenResponse, this, _1, ADDED));
 }
 
-void CDbpClient::SendResponse(CMvDbpConnected &body)
+void CDbpClient::SendResponse(CMvDbpConnected& body)
 {
 
     dbp::Base connectedMsgBase;
@@ -109,7 +109,7 @@ void CDbpClient::SendResponse(CMvDbpConnected &body)
     dbp::Connected connectedMsg;
     connectedMsg.set_session(body.session);
 
-    google::protobuf::Any *any = new google::protobuf::Any();
+    google::protobuf::Any* any = new google::protobuf::Any();
     any->PackFrom(connectedMsg);
 
     connectedMsgBase.set_allocated_object(any);
@@ -117,14 +117,14 @@ void CDbpClient::SendResponse(CMvDbpConnected &body)
     SendMessage(&connectedMsgBase);
 }
 
-void CDbpClient::SendResponse(CMvDbpFailed &body)
+void CDbpClient::SendResponse(CMvDbpFailed& body)
 {
     dbp::Base failedMsgBase;
     failedMsgBase.set_msg(dbp::Msg::FAILED);
 
     dbp::Failed failedMsg;
 
-    for (const int32 &version : body.versions)
+    for (const int32& version : body.versions)
     {
         failedMsg.add_version(version);
     }
@@ -132,14 +132,14 @@ void CDbpClient::SendResponse(CMvDbpFailed &body)
     failedMsg.set_reason(body.reason);
     failedMsg.set_session(body.session);
 
-    google::protobuf::Any *any = new google::protobuf::Any();
+    google::protobuf::Any* any = new google::protobuf::Any();
     any->PackFrom(failedMsg);
 
     failedMsgBase.set_allocated_object(any);
     SendMessage(&failedMsgBase);
 }
 
-void CDbpClient::SendResponse(CMvDbpNoSub &body)
+void CDbpClient::SendResponse(CMvDbpNoSub& body)
 {
     dbp::Base noSubMsgBase;
     noSubMsgBase.set_msg(dbp::Msg::NOSUB);
@@ -148,7 +148,7 @@ void CDbpClient::SendResponse(CMvDbpNoSub &body)
     noSubMsg.set_id(body.id);
     noSubMsg.set_error(body.error);
 
-    google::protobuf::Any *any = new google::protobuf::Any();
+    google::protobuf::Any* any = new google::protobuf::Any();
     any->PackFrom(noSubMsg);
 
     noSubMsgBase.set_allocated_object(any);
@@ -156,7 +156,7 @@ void CDbpClient::SendResponse(CMvDbpNoSub &body)
     SendMessage(&noSubMsgBase);
 }
 
-void CDbpClient::SendResponse(CMvDbpReady &body)
+void CDbpClient::SendResponse(CMvDbpReady& body)
 {
     dbp::Base readyMsgBase;
     readyMsgBase.set_msg(dbp::Msg::READY);
@@ -164,7 +164,7 @@ void CDbpClient::SendResponse(CMvDbpReady &body)
     dbp::Ready readyMsg;
     readyMsg.set_id(body.id);
 
-    google::protobuf::Any *any = new google::protobuf::Any();
+    google::protobuf::Any* any = new google::protobuf::Any();
     any->PackFrom(readyMsg);
 
     readyMsgBase.set_allocated_object(any);
@@ -172,7 +172,7 @@ void CDbpClient::SendResponse(CMvDbpReady &body)
     SendMessage(&readyMsgBase);
 }
 
-static void CreateLwsTransaction(const CMvDbpTransaction *dbptx, lws::Transaction *tx)
+static void CreateLwsTransaction(const CMvDbpTransaction* dbptx, lws::Transaction* tx)
 {
     tx->set_nversion(dbptx->nVersion);
     tx->set_ntype(dbptx->nType);
@@ -181,7 +181,7 @@ static void CreateLwsTransaction(const CMvDbpTransaction *dbptx, lws::Transactio
     std::string hashAnchor(dbptx->hashAnchor.begin(), dbptx->hashAnchor.end());
     tx->set_hashanchor(hashAnchor);
 
-    for (const auto &input : dbptx->vInput)
+    for (const auto& input : dbptx->vInput)
     {
         std::string inputHash(input.hash.begin(), input.hash.end());
         auto add = tx->add_vinput();
@@ -189,7 +189,7 @@ static void CreateLwsTransaction(const CMvDbpTransaction *dbptx, lws::Transactio
         add->set_n(input.n);
     }
 
-    lws::Transaction::CDestination *dest = new lws::Transaction::CDestination();
+    lws::Transaction::CDestination* dest = new lws::Transaction::CDestination();
     dest->set_prefix(dbptx->cDestination.prefix);
     dest->set_size(dbptx->cDestination.size);
 
@@ -210,7 +210,7 @@ static void CreateLwsTransaction(const CMvDbpTransaction *dbptx, lws::Transactio
     tx->set_hash(hash);
 }
 
-static void CreateLwsBlock(CMvDbpBlock *pBlock, lws::Block &block)
+static void CreateLwsBlock(CMvDbpBlock* pBlock, lws::Block& block)
 {
     block.set_nversion(pBlock->nVersion);
     block.set_ntype(pBlock->nType);
@@ -229,12 +229,12 @@ static void CreateLwsBlock(CMvDbpBlock *pBlock, lws::Block &block)
     block.set_vchsig(vchSig);
 
     //txMint
-    lws::Transaction *txMint = new lws::Transaction();
+    lws::Transaction* txMint = new lws::Transaction();
     CreateLwsTransaction(&(pBlock->txMint), txMint);
     block.set_allocated_txmint(txMint);
 
     //repeated vtx
-    for (const auto &tx : pBlock->vtx)
+    for (const auto& tx : pBlock->vtx)
     {
         CreateLwsTransaction(&tx, block.add_vtx());
     }
@@ -244,7 +244,7 @@ static void CreateLwsBlock(CMvDbpBlock *pBlock, lws::Block &block)
     block.set_hash(hash);
 }
 
-void CDbpClient::SendResponse(CMvDbpAdded &body)
+void CDbpClient::SendResponse(CMvDbpAdded& body)
 {
     dbp::Base addedMsgBase;
     addedMsgBase.set_msg(dbp::Msg::ADDED);
@@ -260,7 +260,7 @@ void CDbpClient::SendResponse(CMvDbpAdded &body)
         lws::Block block;
         CreateLwsBlock(&tempBlock, block);
 
-        google::protobuf::Any *anyBlock = new google::protobuf::Any();
+        google::protobuf::Any* anyBlock = new google::protobuf::Any();
         anyBlock->PackFrom(block);
         addedMsg.set_allocated_object(anyBlock);
     }
@@ -271,7 +271,7 @@ void CDbpClient::SendResponse(CMvDbpAdded &body)
         std::unique_ptr<lws::Transaction> tx(std::make_unique<lws::Transaction>());
         CreateLwsTransaction(&tempTx, tx.get());
 
-        google::protobuf::Any *anyTx = new google::protobuf::Any();
+        google::protobuf::Any* anyTx = new google::protobuf::Any();
         anyTx->PackFrom(*tx);
 
         addedMsg.set_allocated_object(anyTx);
@@ -280,14 +280,14 @@ void CDbpClient::SendResponse(CMvDbpAdded &body)
     {
     }
 
-    google::protobuf::Any *anyAdded = new google::protobuf::Any();
+    google::protobuf::Any* anyAdded = new google::protobuf::Any();
     anyAdded->PackFrom(addedMsg);
 
     addedMsgBase.set_allocated_object(anyAdded);
     SendAddedMessage(&addedMsgBase);
 }
 
-void CDbpClient::SendResponse(CMvDbpMethodResult &body)
+void CDbpClient::SendResponse(CMvDbpMethodResult& body)
 {
     dbp::Base resultMsgBase;
     resultMsgBase.set_msg(dbp::Msg::RESULT);
@@ -296,7 +296,7 @@ void CDbpClient::SendResponse(CMvDbpMethodResult &body)
     resultMsg.set_id(body.id);
     resultMsg.set_error(body.error);
 
-    auto dispatchHandler = [&](const boost::any &obj) -> void {
+    auto dispatchHandler = [&](const boost::any& obj) -> void {
         if (obj.type() == typeid(CMvDbpBlock))
         {
             CMvDbpBlock tempBlock = boost::any_cast<CMvDbpBlock>(obj);
@@ -330,7 +330,7 @@ void CDbpClient::SendResponse(CMvDbpMethodResult &body)
 
     std::for_each(body.anyResultObjs.begin(), body.anyResultObjs.end(), dispatchHandler);
 
-    google::protobuf::Any *anyResult = new google::protobuf::Any();
+    google::protobuf::Any* anyResult = new google::protobuf::Any();
     anyResult->PackFrom(resultMsg);
 
     resultMsgBase.set_allocated_object(anyResult);
@@ -338,7 +338,7 @@ void CDbpClient::SendResponse(CMvDbpMethodResult &body)
     SendMessage(&resultMsgBase);
 }
 
-void CDbpClient::SendPong(const std::string &id)
+void CDbpClient::SendPong(const std::string& id)
 {
     dbp::Base pongMsgBase;
     pongMsgBase.set_msg(dbp::Msg::PONG);
@@ -353,7 +353,7 @@ void CDbpClient::SendPong(const std::string &id)
     SendMessage(&pongMsgBase);
 }
 
-void CDbpClient::SendPing(const std::string &id)
+void CDbpClient::SendPing(const std::string& id)
 {
     dbp::Base pingMsgBase;
     pingMsgBase.set_msg(dbp::Msg::PING);
@@ -361,7 +361,7 @@ void CDbpClient::SendPing(const std::string &id)
     dbp::Ping msg;
     msg.set_id(id);
 
-    google::protobuf::Any *any = new google::protobuf::Any();
+    google::protobuf::Any* any = new google::protobuf::Any();
     any->PackFrom(msg);
 
     pingMsgBase.set_allocated_object(any);
@@ -369,7 +369,7 @@ void CDbpClient::SendPing(const std::string &id)
     SendPingMessage(&pingMsgBase);
 }
 
-void CDbpClient::SendResponse(const std::string &reason, const std::string &description)
+void CDbpClient::SendResponse(const std::string& reason, const std::string& description)
 {
     dbp::Base errorMsgBase;
     errorMsgBase.set_msg(dbp::Msg::ERROR);
@@ -378,7 +378,7 @@ void CDbpClient::SendResponse(const std::string &reason, const std::string &desc
     errorMsg.set_reason(reason);
     errorMsg.set_explain(description);
 
-    google::protobuf::Any *any = new google::protobuf::Any();
+    google::protobuf::Any* any = new google::protobuf::Any();
     any->PackFrom(errorMsg);
 
     errorMsgBase.set_allocated_object(any);
@@ -398,7 +398,7 @@ void CDbpClient::StartReadPayload(std::size_t nLength)
                   boost::bind(&CDbpClient::HandleReadPayload, this, _1, nLength));
 }
 
-void CDbpClient::WriteMessageToSendStream(dbp::Base *pBaseMsg)
+void CDbpClient::WriteMessageToSendStream(dbp::Base* pBaseMsg)
 {
     std::string bytes;
     pBaseMsg->SerializeToString(&bytes);
@@ -537,7 +537,7 @@ CDbpServer::~CDbpServer()
 {
 }
 
-CIOClient *CDbpServer::CreateIOClient(CIOContainer *pContainer)
+CIOClient* CDbpServer::CreateIOClient(CIOContainer* pContainer)
 {
     std::map<boost::asio::ip::tcp::endpoint, CDbpProfile>::iterator it;
     it = mapProfile.find(pContainer->GetServiceEndpoint());
@@ -548,7 +548,7 @@ CIOClient *CDbpServer::CreateIOClient(CIOContainer *pContainer)
     return CIOProc::CreateIOClient(pContainer);
 }
 
-void CDbpServer::HandleClientConnect(CDbpClient *pDbpClient, google::protobuf::Any *any)
+void CDbpServer::HandleClientConnect(CDbpClient* pDbpClient, google::protobuf::Any* any)
 {
 
     dbp::Connect connectMsg;
@@ -568,7 +568,7 @@ void CDbpServer::HandleClientConnect(CDbpClient *pDbpClient, google::protobuf::A
             return;
         }
 
-        CMvDbpConnect &connectBody = pEventDbpConnect->data;
+        CMvDbpConnect& connectBody = pEventDbpConnect->data;
         connectBody.isReconnect = false;
         connectBody.session = session;
         connectBody.version = connectMsg.version();
@@ -588,7 +588,7 @@ void CDbpServer::HandleClientConnect(CDbpClient *pDbpClient, google::protobuf::A
                 return;
             }
 
-            CMvDbpConnect &connectBody = pEventDbpConnect->data;
+            CMvDbpConnect& connectBody = pEventDbpConnect->data;
             connectBody.isReconnect = true;
             connectBody.session = session;
             connectBody.version = connectMsg.version();
@@ -603,9 +603,9 @@ void CDbpServer::HandleClientConnect(CDbpClient *pDbpClient, google::protobuf::A
     }
 }
 
-void CDbpServer::HandleClientSub(CDbpClient *pDbpClient, google::protobuf::Any *any)
+void CDbpServer::HandleClientSub(CDbpClient* pDbpClient, google::protobuf::Any* any)
 {
-    CMvEventDbpSub *pEventDbpSub = new CMvEventDbpSub(pDbpClient->GetSession());
+    CMvEventDbpSub* pEventDbpSub = new CMvEventDbpSub(pDbpClient->GetSession());
     if (!pEventDbpSub)
     {
         return;
@@ -614,16 +614,16 @@ void CDbpServer::HandleClientSub(CDbpClient *pDbpClient, google::protobuf::Any *
     dbp::Sub subMsg;
     any->UnpackTo(&subMsg);
 
-    CMvDbpSub &subBody = pEventDbpSub->data;
+    CMvDbpSub& subBody = pEventDbpSub->data;
     subBody.id = subMsg.id();
     subBody.name = subMsg.name();
 
     pDbpClient->GetProfile()->pIOModule->PostEvent(pEventDbpSub);
 }
 
-void CDbpServer::HandleClientUnSub(CDbpClient *pDbpClient, google::protobuf::Any *any)
+void CDbpServer::HandleClientUnSub(CDbpClient* pDbpClient, google::protobuf::Any* any)
 {
-    CMvEventDbpUnSub *pEventDbpUnSub = new CMvEventDbpUnSub(pDbpClient->GetSession());
+    CMvEventDbpUnSub* pEventDbpUnSub = new CMvEventDbpUnSub(pDbpClient->GetSession());
     if (!pEventDbpUnSub)
     {
         return;
@@ -632,15 +632,15 @@ void CDbpServer::HandleClientUnSub(CDbpClient *pDbpClient, google::protobuf::Any
     dbp::Unsub unsubMsg;
     any->UnpackTo(&unsubMsg);
 
-    CMvDbpUnSub &unsubBody = pEventDbpUnSub->data;
+    CMvDbpUnSub& unsubBody = pEventDbpUnSub->data;
     unsubBody.id = unsubMsg.id();
 
     pDbpClient->GetProfile()->pIOModule->PostEvent(pEventDbpUnSub);
 }
 
-void CDbpServer::HandleClientMethod(CDbpClient *pDbpClient, google::protobuf::Any *any)
+void CDbpServer::HandleClientMethod(CDbpClient* pDbpClient, google::protobuf::Any* any)
 {
-    CMvEventDbpMethod *pEventDbpMethod = new CMvEventDbpMethod(pDbpClient->GetSession());
+    CMvEventDbpMethod* pEventDbpMethod = new CMvEventDbpMethod(pDbpClient->GetSession());
     if (!pEventDbpMethod)
     {
         return;
@@ -649,7 +649,7 @@ void CDbpServer::HandleClientMethod(CDbpClient *pDbpClient, google::protobuf::An
     dbp::Method methodMsg;
     any->UnpackTo(&methodMsg);
 
-    CMvDbpMethod &methodBody = pEventDbpMethod->data;
+    CMvDbpMethod& methodBody = pEventDbpMethod->data;
     methodBody.id = methodMsg.id();
 
     if (methodMsg.method() == "getblocks")
@@ -692,14 +692,14 @@ void CDbpServer::HandleClientMethod(CDbpClient *pDbpClient, google::protobuf::An
     pDbpClient->GetProfile()->pIOModule->PostEvent(pEventDbpMethod);
 }
 
-void CDbpServer::HandleClientPing(CDbpClient *pDbpClient, google::protobuf::Any *any)
+void CDbpServer::HandleClientPing(CDbpClient* pDbpClient, google::protobuf::Any* any)
 {
     dbp::Ping pingMsg;
     any->UnpackTo(&pingMsg);
     pDbpClient->SendPong(pingMsg.id());
 }
 
-void CDbpServer::HandleClientPong(CDbpClient *pDbpClient, google::protobuf::Any *any)
+void CDbpServer::HandleClientPong(CDbpClient* pDbpClient, google::protobuf::Any* any)
 {
     dbp::Pong pongMsg;
     any->UnpackTo(&pongMsg);
@@ -713,7 +713,7 @@ void CDbpServer::HandleClientPong(CDbpClient *pDbpClient, google::protobuf::Any 
     this->HandleClientSent(pDbpClient);
 }
 
-void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient, const boost::any &anyObj)
+void CDbpServer::HandleClientRecv(CDbpClient* pDbpClient, const boost::any& anyObj)
 {
     if (anyObj.type() != typeid(google::protobuf::Any))
     {
@@ -818,26 +818,26 @@ void CDbpServer::HandleClientRecv(CDbpClient *pDbpClient, const boost::any &anyO
     }
 }
 
-void CDbpServer::HandleClientSent(CDbpClient *pDbpClient)
+void CDbpServer::HandleClientSent(CDbpClient* pDbpClient)
 {
     // keep-alive connection,do not remove
     pDbpClient->Activate();
 }
 
-void CDbpServer::HandleClientError(CDbpClient *pDbpClient)
+void CDbpServer::HandleClientError(CDbpClient* pDbpClient)
 {
     std::cerr << "Client Error. " << std::endl;
     RemoveClient(pDbpClient);
 }
 
-void CDbpServer::AddNewHost(const CDbpHostConfig &confHost)
+void CDbpServer::AddNewHost(const CDbpHostConfig& confHost)
 {
     vecHostConfig.push_back(confHost);
 }
 
 bool CDbpServer::WalleveHandleInitialize()
 {
-    BOOST_FOREACH (const CDbpHostConfig &confHost, vecHostConfig)
+    BOOST_FOREACH (const CDbpHostConfig& confHost, vecHostConfig)
     {
         if (!CreateProfile(confHost))
         {
@@ -881,8 +881,8 @@ void CDbpServer::EnterLoop()
 
 void CDbpServer::LeaveLoop()
 {
-    std::vector<CDbpClient *> vClient;
-    for (std::map<uint64, CDbpClient *>::iterator it = mapClient.begin(); it != mapClient.end(); ++it)
+    std::vector<CDbpClient*> vClient;
+    for (std::map<uint64, CDbpClient*>::iterator it = mapClient.begin(); it != mapClient.end(); ++it)
     {
         vClient.push_back((*it).second);
     }
@@ -894,7 +894,7 @@ void CDbpServer::LeaveLoop()
     WalleveLog("Dbp Server stop\n");
 }
 
-bool CDbpServer::ClientAccepted(const boost::asio::ip::tcp::endpoint &epService, CIOClient *pClient)
+bool CDbpServer::ClientAccepted(const boost::asio::ip::tcp::endpoint& epService, CIOClient* pClient)
 {
     std::map<boost::asio::ip::tcp::endpoint, CDbpProfile>::iterator it = mapProfile.find(epService);
     if (it == mapProfile.end())
@@ -904,7 +904,7 @@ bool CDbpServer::ClientAccepted(const boost::asio::ip::tcp::endpoint &epService,
     return AddNewClient(pClient, &(*it).second) != NULL;
 }
 
-bool CDbpServer::CreateProfile(const CDbpHostConfig &confHost)
+bool CDbpServer::CreateProfile(const CDbpHostConfig& confHost)
 {
     CDbpProfile profile;
     if (!WalleveGetObject(confHost.strIOModule, profile.pIOModule))
@@ -941,7 +941,7 @@ bool CDbpServer::CreateProfile(const CDbpHostConfig &confHost)
     return true;
 }
 
-CDbpClient *CDbpServer::AddNewClient(CIOClient *pClient, CDbpProfile *pDbpProfile)
+CDbpClient *CDbpServer::AddNewClient(CIOClient* pClient, CDbpProfile* pDbpProfile)
 {
     uint64 nNonce = 0;
     RAND_bytes((unsigned char *)&nNonce, sizeof(nNonce));
@@ -950,7 +950,7 @@ CDbpClient *CDbpServer::AddNewClient(CIOClient *pClient, CDbpProfile *pDbpProfil
         RAND_bytes((unsigned char *)&nNonce, sizeof(nNonce));
     }
 
-    CDbpClient *pDbpClient = new CDbpClient(this, pDbpProfile, pClient, nNonce);
+    CDbpClient* pDbpClient = new CDbpClient(this, pDbpProfile, pClient, nNonce);
     if (pDbpClient)
     {
         mapClient.insert(std::make_pair(nNonce, pDbpClient));
@@ -960,7 +960,7 @@ CDbpClient *CDbpServer::AddNewClient(CIOClient *pClient, CDbpProfile *pDbpProfil
     return pDbpClient;
 }
 
-void CDbpServer::RemoveSession(CDbpClient *pDbpClient)
+void CDbpServer::RemoveSession(CDbpClient* pDbpClient)
 {
     mapClient.erase(pDbpClient->GetNonce());
 
@@ -974,18 +974,18 @@ void CDbpServer::RemoveSession(CDbpClient *pDbpClient)
     }
 }
 
-void CDbpServer::RemoveClient(CDbpClient *pDbpClient)
+void CDbpServer::RemoveClient(CDbpClient* pDbpClient)
 {
     RemoveSession(pDbpClient);
     delete pDbpClient;
 }
 
-void CDbpServer::RespondError(CDbpClient *pDbpClient, const std::string &reason, const std::string &strError)
+void CDbpServer::RespondError(CDbpClient* pDbpClient, const std::string& reason, const std::string& strError)
 {
     pDbpClient->SendResponse(reason, strError);
 }
 
-void CDbpServer::RespondFailed(CDbpClient *pDbpClient, const std::string &reason)
+void CDbpServer::RespondFailed(CDbpClient* pDbpClient, const std::string& reason)
 {
     CMvEventDbpFailed failedEvent(pDbpClient->GetNonce());
 
@@ -996,7 +996,7 @@ void CDbpServer::RespondFailed(CDbpClient *pDbpClient, const std::string &reason
     this->HandleEvent(failedEvent);
 }
 
-void CDbpServer::SendPingHandler(const boost::system::error_code &err, const CSessionProfile &sessionProfile)
+void CDbpServer::SendPingHandler(const boost::system::error_code& err, const CSessionProfile& sessionProfile)
 {
     if (err != boost::system::errc::success)
     {
@@ -1012,7 +1012,7 @@ void CDbpServer::SendPingHandler(const boost::system::error_code &err, const CSe
                                                         boost::ref(sessionProfile)));
 }
 
-bool CDbpServer::HandleEvent(CMvEventDbpConnected &event)
+bool CDbpServer::HandleEvent(CMvEventDbpConnected& event)
 {
     auto it = mapSessionProfile.find(event.strSessionId);
     if (it == mapSessionProfile.end())
@@ -1021,8 +1021,8 @@ bool CDbpServer::HandleEvent(CMvEventDbpConnected &event)
         return false;
     }
 
-    CDbpClient *pDbpClient = (*it).second.pDbpClient;
-    CMvDbpConnected &connectedBody = event.data;
+    CDbpClient* pDbpClient = (*it).second.pDbpClient;
+    CMvDbpConnected& connectedBody = event.data;
 
     pDbpClient->SendResponse(connectedBody);
 
@@ -1039,7 +1039,7 @@ bool CDbpServer::HandleEvent(CMvEventDbpConnected &event)
     return true;
 }
 
-bool CDbpServer::HandleEvent(CMvEventDbpFailed &event)
+bool CDbpServer::HandleEvent(CMvEventDbpFailed& event)
 {
     std::map<uint64, CDbpClient *>::iterator it = mapClient.find(event.nNonce);
     if (it == mapClient.end())
@@ -1048,8 +1048,8 @@ bool CDbpServer::HandleEvent(CMvEventDbpFailed &event)
         return false;
     }
 
-    CDbpClient *pDbpClient = (*it).second;
-    CMvDbpFailed &failedBody = event.data;
+    CDbpClient* pDbpClient = (*it).second;
+    CMvDbpFailed& failedBody = event.data;
 
     pDbpClient->SendResponse(failedBody);
 
@@ -1058,7 +1058,7 @@ bool CDbpServer::HandleEvent(CMvEventDbpFailed &event)
     return true;
 }
 
-bool CDbpServer::HandleEvent(CMvEventDbpNoSub &event)
+bool CDbpServer::HandleEvent(CMvEventDbpNoSub& event)
 {
     auto it = mapSessionProfile.find(event.strSessionId);
     if (it == mapSessionProfile.end())
@@ -1067,15 +1067,15 @@ bool CDbpServer::HandleEvent(CMvEventDbpNoSub &event)
         return false;
     }
 
-    CDbpClient *pDbpClient = (*it).second.pDbpClient;
-    CMvDbpNoSub &noSubBody = event.data;
+    CDbpClient* pDbpClient = (*it).second.pDbpClient;
+    CMvDbpNoSub& noSubBody = event.data;
 
     pDbpClient->SendResponse(noSubBody);
 
     return true;
 }
 
-bool CDbpServer::HandleEvent(CMvEventDbpReady &event)
+bool CDbpServer::HandleEvent(CMvEventDbpReady& event)
 {
     auto it = mapSessionProfile.find(event.strSessionId);
     if (it == mapSessionProfile.end())
@@ -1084,15 +1084,15 @@ bool CDbpServer::HandleEvent(CMvEventDbpReady &event)
         return false;
     }
 
-    CDbpClient *pDbpClient = (*it).second.pDbpClient;
-    CMvDbpReady &readyBody = event.data;
+    CDbpClient* pDbpClient = (*it).second.pDbpClient;
+    CMvDbpReady& readyBody = event.data;
 
     pDbpClient->SendResponse(readyBody);
 
     return true;
 }
 
-bool CDbpServer::HandleEvent(CMvEventDbpAdded &event)
+bool CDbpServer::HandleEvent(CMvEventDbpAdded& event)
 {
     auto it = mapSessionProfile.find(event.strSessionId);
     if (it == mapSessionProfile.end())
@@ -1101,15 +1101,15 @@ bool CDbpServer::HandleEvent(CMvEventDbpAdded &event)
         return false;
     }
 
-    CDbpClient *pDbpClient = (*it).second.pDbpClient;
-    CMvDbpAdded &addedBody = event.data;
+    CDbpClient* pDbpClient = (*it).second.pDbpClient;
+    CMvDbpAdded& addedBody = event.data;
 
     pDbpClient->SendResponse(addedBody);
 
     return true;
 }
 
-bool CDbpServer::HandleEvent(CMvEventDbpMethodResult &event)
+bool CDbpServer::HandleEvent(CMvEventDbpMethodResult& event)
 {
     auto it = mapSessionProfile.find(event.strSessionId);
     if (it == mapSessionProfile.end())
@@ -1118,15 +1118,15 @@ bool CDbpServer::HandleEvent(CMvEventDbpMethodResult &event)
         return false;
     }
 
-    CDbpClient *pDbpClient = (*it).second.pDbpClient;
-    CMvDbpMethodResult &resultBody = event.data;
+    CDbpClient* pDbpClient = (*it).second.pDbpClient;
+    CMvDbpMethodResult& resultBody = event.data;
 
     pDbpClient->SendResponse(resultBody);
 
     return true;
 }
 
-bool CDbpServer::IsSessionTimeOut(CDbpClient *pDbpClient)
+bool CDbpServer::IsSessionTimeOut(CDbpClient* pDbpClient)
 {
     if (HaveAssociatedSessionOf(pDbpClient))
     {
@@ -1141,7 +1141,7 @@ bool CDbpServer::IsSessionTimeOut(CDbpClient *pDbpClient)
     }
 }
 
-bool CDbpServer::GetSessionForkId(CDbpClient *pDbpClient, std::string &forkid)
+bool CDbpServer::GetSessionForkId(CDbpClient* pDbpClient, std::string& forkid)
 {
     if (HaveAssociatedSessionOf(pDbpClient))
     {
@@ -1155,22 +1155,22 @@ bool CDbpServer::GetSessionForkId(CDbpClient *pDbpClient, std::string &forkid)
     }
 }
 
-bool CDbpServer::IsSessionReconnect(const std::string &session)
+bool CDbpServer::IsSessionReconnect(const std::string& session)
 {
     return !session.empty();
 }
 
-bool CDbpServer::IsSessionExist(const std::string &session)
+bool CDbpServer::IsSessionExist(const std::string& session)
 {
     return mapSessionProfile.find(session) != mapSessionProfile.end();
 }
 
-bool CDbpServer::HaveAssociatedSessionOf(CDbpClient *pDbpClient)
+bool CDbpServer::HaveAssociatedSessionOf(CDbpClient* pDbpClient)
 {
     return bimapSessionClient.right.find(pDbpClient) != bimapSessionClient.right.end();
 }
 
-std::string CDbpServer::GetUdata(dbp::Connect *pConnect, const std::string &keyName)
+std::string CDbpServer::GetUdata(dbp::Connect* pConnect, const std::string& keyName)
 {
     auto customParamsMap = pConnect->udata();
 
@@ -1207,7 +1207,7 @@ std::string CDbpServer::GenerateSessionId()
     return session;
 }
 
-void CDbpServer::CreateSession(const std::string &session, const std::string &forkID, CDbpClient *pDbpClient)
+void CDbpServer::CreateSession(const std::string& session, const std::string& forkID, CDbpClient* pDbpClient)
 {
     CSessionProfile profile;
     profile.strSessionId = session;
@@ -1221,7 +1221,7 @@ void CDbpServer::CreateSession(const std::string &session, const std::string &fo
     bimapSessionClient.insert(position_pair(session, pDbpClient));
 }
 
-void CDbpServer::UpdateSession(const std::string &session, CDbpClient *pDbpClient)
+void CDbpServer::UpdateSession(const std::string& session, CDbpClient* pDbpClient)
 {
     if (bimapSessionClient.left.find(session) != bimapSessionClient.left.end())
     {
