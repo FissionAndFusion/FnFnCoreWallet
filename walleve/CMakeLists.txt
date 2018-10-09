@@ -59,7 +59,7 @@ target_link_libraries(walleve
 	Boost::thread
 	Boost::date_time
 	Boost::regex
-        OpenSSL::SSL
-        OpenSSL::Crypto
+	OpenSSL::SSL
+	OpenSSL::Crypto
 	${Readline_LIBRARY}
 )
