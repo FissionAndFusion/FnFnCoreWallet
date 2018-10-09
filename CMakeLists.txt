@@ -34,7 +34,7 @@ find_package(sodium 1.0.8 REQUIRED)
 find_package(Readline 5.0 REQUIRED)
 
 set(Protobuf_USE_STATIC_LIBS ON)
-find_package(Protobuf 3.3.0 EXACT REQUIRED)
+find_package(Protobuf 3.3.0 REQUIRED)
 
 if(${USE_SSL_110} MATCHES "TRUE")
     add_definitions(-DUSE_SSL_110)
