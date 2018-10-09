@@ -50,9 +50,9 @@ class CNetChannel : public network::IMvNetChannel
 public:
     CNetChannel();
     ~CNetChannel();
-    int GetPrimaryChainHeight();
-    void BroadcastBlockInv(const uint256& hashFork,const uint256& hashBlock,const std::set<uint64>& setKnownPeer=std::set<uint64>());
-    void BroadcastTxInv(const uint256& hashFork);
+    int GetPrimaryChainHeight() override;
+    void BroadcastBlockInv(const uint256& hashFork,const uint256& hashBlock,const std::set<uint64>& setKnownPeer=std::set<uint64>()) override;
+    void BroadcastTxInv(const uint256& hashFork) override;
 protected:
     enum {MAX_GETBLOCKS_COUNT = 128};
     enum {MAX_PEER_SCHED_COUNT = 8};

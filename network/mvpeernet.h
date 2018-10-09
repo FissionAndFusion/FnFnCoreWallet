@@ -31,21 +31,21 @@ public:
     CMvPeerNet();
     ~CMvPeerNet();
     virtual void BuildHello(walleve::CPeer *pPeer,walleve::CWalleveBufStream& ssPayload);
-    void HandlePeerWriten(walleve::CPeer *pPeer);
+    void HandlePeerWriten(walleve::CPeer *pPeer) override;
     virtual bool HandlePeerHandshaked(walleve::CPeer *pPeer,uint32 nTimerId);
     virtual bool HandlePeerRecvMessage(walleve::CPeer *pPeer,int nChannel,int nCommand,
                                walleve::CWalleveBufStream& ssPayload);
 protected:
-    bool WalleveHandleInitialize();
-    void WalleveHandleDeinitialize();
-    bool HandleEvent(CMvEventPeerInv& eventInv);
-    bool HandleEvent(CMvEventPeerGetData& eventGetData);
-    bool HandleEvent(CMvEventPeerGetBlocks& eventGetBlocks);
-    bool HandleEvent(CMvEventPeerTx& eventTx);
-    bool HandleEvent(CMvEventPeerBlock& eventBlock);
-    walleve::CPeer* CreatePeer(walleve::CIOClient *pClient,uint64 nNonce,bool fInBound);
-    void DestroyPeer(walleve::CPeer* pPeer);
-    walleve::CPeerInfo* GetPeerInfo(walleve::CPeer* pPeer,walleve::CPeerInfo* pInfo);
+    bool WalleveHandleInitialize() override;
+    void WalleveHandleDeinitialize() override;
+    bool HandleEvent(CMvEventPeerInv& eventInv) override;
+    bool HandleEvent(CMvEventPeerGetData& eventGetData) override;
+    bool HandleEvent(CMvEventPeerGetBlocks& eventGetBlocks) override;
+    bool HandleEvent(CMvEventPeerTx& eventTx) override;
+    bool HandleEvent(CMvEventPeerBlock& eventBlock) override;
+    walleve::CPeer* CreatePeer(walleve::CIOClient *pClient,uint64 nNonce,bool fInBound) override;
+    void DestroyPeer(walleve::CPeer* pPeer) override;
+    walleve::CPeerInfo* GetPeerInfo(walleve::CPeer* pPeer,walleve::CPeerInfo* pInfo) override;
     bool SendDataMessage(uint64 nNonce,int nCommand,walleve::CWalleveBufStream& ssPayload);
     void SetInvTimer(uint64 nNonce,std::vector<CInv>& vInv);
     virtual void ProcessAskFor(walleve::CPeer* pPeer);

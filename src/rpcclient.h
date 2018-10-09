@@ -25,13 +25,13 @@ public:
     void DispatchLine(const std::string& strLine);
 
 protected:
-    bool WalleveHandleInitialize();
-    void WalleveHandleDeinitialize();
-    bool WalleveHandleInvoke();
-    void WalleveHandleHalt();
+    bool WalleveHandleInitialize() override;
+    void WalleveHandleDeinitialize() override;
+    bool WalleveHandleInvoke() override;
+    void WalleveHandleHalt() override;
     const CMvRPCClientConfig * WalleveConfig();
 
-    bool HandleEvent(walleve::CWalleveEventHttpGetRsp& event);
+    bool HandleEvent(walleve::CWalleveEventHttpGetRsp& event) override;
     bool GetResponse(uint64 nNonce, const std::string& content);
     bool CallRPC(rpc::CRPCParamPtr spParam, int nReqId);
     bool CallConsoleCommand(const std::vector<std::string>& vCommand);

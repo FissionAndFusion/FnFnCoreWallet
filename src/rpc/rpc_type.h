@@ -238,6 +238,10 @@ public:
     {
         return s.c_str();
     }
+    bool empty() const
+    {
+        return s.empty();
+    }
 protected:
     std::string s;
 };

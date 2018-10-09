@@ -115,15 +115,6 @@ bool CWallet::WalleveHandleInvoke()
         return false;
     }
     
-    if (mapKeyStore.empty())
-    {
-        crypto::CKey key;
-        if (!key.Renew() || !AddKey(key))
-        {
-            WalleveLog("Failed to add initial key\n");
-            return false;
-        }
-    }
     return true;
 }
 

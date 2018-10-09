@@ -71,16 +71,15 @@ class CConsensus : public IConsensus
 public:
     CConsensus();
     ~CConsensus();
-    void PrimaryUpdate(const CWorldLineUpdate& update,const CTxSetChange& change,CDelegateRoutine& routine);
-    void AddNewTx(const CAssembledTx& tx);
-    void GetAgreement(int nTargetHeight,uint256& nAgreement,std::size_t& nWeight,
-                                        std::vector<CDestination>& vBallot);
-    void GetProof(int nTargetHeight,std::vector<unsigned char>& vchProof);
+    void PrimaryUpdate(const CWorldLineUpdate& update,const CTxSetChange& change,CDelegateRoutine& routine) override;
+    void AddNewTx(const CAssembledTx& tx) override;
+    void GetAgreement(int nTargetHeight,uint256& nAgreement,std::size_t& nWeight,std::vector<CDestination>& vBallot) override;
+    void GetProof(int nTargetHeight,std::vector<unsigned char>& vchProof) override;
 protected:
-    bool WalleveHandleInitialize();
-    void WalleveHandleDeinitialize();
-    bool WalleveHandleInvoke();
-    void WalleveHandleHalt();
+    bool WalleveHandleInitialize() override;
+    void WalleveHandleDeinitialize() override;
+    bool WalleveHandleInvoke() override;
+    void WalleveHandleHalt() override;
 
     bool LoadDelegateTx();
 protected:
