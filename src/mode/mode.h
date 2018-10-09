@@ -190,7 +190,7 @@ public:
                 EModeType::CONSOLE, 
                 {
                     EModuleType::HTTPGET,
-                    EModuleType::RPCDISPATCH
+                    EModuleType::RPCCLIENT
                 }
             },
             {

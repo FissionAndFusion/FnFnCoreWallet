@@ -19,3 +19,7 @@ multiverse
 multiverse.exe
 multiverse-*
 CMakeSettings.json
+
+auto_options.h
+auto_protocol.h
+auto_protocol.cpp

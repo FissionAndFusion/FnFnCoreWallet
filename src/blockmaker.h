@@ -41,6 +41,7 @@ public:
         walleve::CVarInt var(size);
         return (size + walleve::GetSerializeSize(var));
     }
+    const CDestination GetDestination() const { return (CDestination(templMint->GetTemplateId())); }
 public:
     int nAlgo;
     CDestination destMint;
@@ -62,16 +63,22 @@ protected:
     bool Interrupted() { return (nMakerStatus != MAKER_RUN); }
     bool Wait(long nSeconds);
     bool WaitAgreement(CBlockMakerAgreement& agree,int64 nTimeAgree,int nHeight);
-    bool WaitDelegatedBlock(int64 nPredictedTime,const uint256& nAgreement,bool& fReconstruct);
+    bool WaitDelegatedBlock(int64 nPredictedTime,const uint256& nAgreement,
+                            uint256& hashNewBlock,int64& nNewBlockTime,int& nNewBlockHeight);
     void PrepareBlock(CBlock& block,const uint256& hashPrev,int64 nPrevTime,int nPrevHeight,const CBlockMakerAgreement& agreement);
-    void ArrangeBlockTx(CBlock& block,const uint256& hashFork,CBlockMakerProfile& profile);
-    bool SignBlock(CBlock& block,CBlockMakerProfile& profile);
+    void ArrangeBlockTx(CBlock& block,const uint256& hashFork,const CBlockMakerProfile& profile);
+    bool SignBlock(CBlock& block,const CBlockMakerProfile& profile);
     bool DispatchBlock(CBlock& block);
     bool CreateProofOfWorkBlock(CBlock& block);
     bool ProcessDelegatedProofOfStake(CBlock& block,const CBlockMakerAgreement& agreement,int nPrevHeight);
-    bool CreateDelegatedBlock(CBlock& block,const uint256& hashFork,CBlockMakerProfile& profile,std::size_t nWeight);
+    void ProcessExtended(const CBlockMakerAgreement& agreement,const uint256& hashPrimaryBlock,
+                                                               int64 nPrimaryBlockTime,int nPrimaryBlockHeight);
+    bool CreateDelegatedBlock(CBlock& block,const uint256& hashFork,const CBlockMakerProfile& profile,std::size_t nWeight);
     bool CreateProofOfWork(CBlock& block,CBlockMakerHashAlgo* pHashAlgo);
-    void CreatePiggyback(CBlockMakerProfile& profile,const CBlockMakerAgreement& agreement,const CBlock& refblock,int nPrevHeight); 
+    void CreatePiggyback(const CBlockMakerProfile& profile,const CBlockMakerAgreement& agreement,const CBlock& refblock,int nPrevHeight); 
+    void CreateExtended(const CBlockMakerProfile& profile,const CBlockMakerAgreement& agreement,const std::set<uint256>& setFork,int64 nTime); 
+    bool GetAvailiableDelegatedProfile(const std::vector<CDestination>& vBallot,std::vector<CBlockMakerProfile*>& vProfile);
+    bool GetAvailiableExtendedFork(int64 nPrimaryBlockTime,int nPrimaryBlockHeight,std::set<uint256>& setFork);
 private:
     enum {MAKER_RUN=0,MAKER_RESET=1,MAKER_EXIT=2,MAKER_HOLD=3};
     void BlockMakerThreadFunc();
@@ -87,7 +94,8 @@ protected:
     uint256 nLastAgreement;
     std::size_t nLastWeight;
     std::map<int,CBlockMakerHashAlgo*> mapHashAlgo;
-    std::map<int,CBlockMakerProfile> mapProfile;
+    std::map<int,CBlockMakerProfile> mapWorkProfile;
+    std::map<CDestination,CBlockMakerProfile> mapDelegatedProfile;
     ICoreProtocol* pCoreProtocol;
     IWorldLine* pWorldLine;
     ITxPool* pTxPool;

@@ -892,7 +892,7 @@ def Help_cpp(config, w, scope):
         elif isinstance(config.example, list):
             for eg in config.example:
                 enter = '' if eg == config.example[0] else '\n'
-                if isinstance(eg, str):
+                if isinstance(eg, unicode):
                     one_line(example, eg, enter + example_req_indent, example_max_line_len)
                 elif isinstance(eg, dict):
                     if 'request' in eg:

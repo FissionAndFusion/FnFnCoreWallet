@@ -85,8 +85,7 @@ protected:
 	string HelpImpl() const
 	{
 		ostringstream oss;
-		oss << "  -rpchost=<ip>                 Send commands to node running on <ip> (default: \n"
-		       "                                127.0.0.1)\n";
+		oss << "  -rpchost=<ip>                 Send commands to node running on <ip> (default: 127.0.0.1)\n";
 		oss << "  -rpctimeout=<time>            Connection timeout <time> seconds (default: 120)\n";
 		return oss.str();
 	}
@@ -103,7 +102,6 @@ protected:
 		return oss.str();
 	}
 };
-
 class CMvDbpServerConfigOption
 {
 public:
@@ -115,7 +113,7 @@ protected:
 	string HelpImpl() const
 	{
 		ostringstream oss;
-		oss << "  -dbpmaxconnections=<num>      Set max connections to <num> (default: 20)\n";
+		oss << "  -dbpmaxconnections=<num>      Set dbp max connections to <num> (default: 20)\n";
 		oss << "  -dbpsessiontimeout=<num>      Set max timeout to <num>  seconds (default: 60*5)\n";
 		oss << "  -dbpallowip=<ip>              Allow DBP connections from specified <ip> address\n";
 		return oss.str();
@@ -139,66 +137,6 @@ protected:
 		oss << "\n";
 		return oss.str();
 	}
-};
-
-class CMvDbpBasicConfigOption
-{
-public:
-	int nDbpPortInt;
-	string strDbpUser;
-	string strDbpPass;
-	bool fDbpSSLEnable;
-	bool fDbpSSLVerify;
-	string strDbpCAFile;
-	string strDbpCertFile;
-	string strDbpPKFile;
-	string strDbpCiphers;
-protected:
-protected:
-	string HelpImpl() const
-	{
-		ostringstream oss;
-		oss << "  -dbpport=port                 Listen for JSON-RPC connections on <port> (default:\n"
-		       "                                6815)\n";
-		oss << "  -dbpuser=<user>               <user> name for DBP connections\n";
-		oss << "  -dbppassword=<password>       <password> for DBP connections\n";
-		oss << "  -dbpssl                       Use OpenSSL (https) for DBP connections or \n"
-		       "                                not (default false)\n";
-		oss << "  -nodbpsslverify               Verify SSL or not (default yes)\n";
-		oss << "  -dbpcafile=<file.cert>        SSL CA file name (default dbpca.crt)\n";
-		oss << "  -dbpcertfile=<file.cert>      Server certificate file (default: dbpserver.cert)\n";
-		oss << "  -dbppkfile=<file.pem>         Server private key (default: dbpserver.pem)\n";
-		oss << "  -dbpciphers=<ciphers>         Acceptable ciphers (default: TLSv1+HIGH:!SSLv2:!aNULL:\n"
-		       "                                !eNULL:!AH:!3DES:@STRENGTH)\n";
-		return oss.str();
-	}
-	void AddOptionsImpl(boost::program_options::options_description& desc)
-	{
-		AddOpt(desc, "dbpport", nDbpPortInt, int(DEFAULT_DBPPORT));
-		AddOpt(desc, "dbpuser", strDbpUser);
-		AddOpt(desc, "dbppassword", strDbpPass);
-		AddOpt(desc, "dbpssl", fDbpSSLEnable, bool(false));
-		AddOpt(desc, "dbpsslverify", fDbpSSLVerify, bool(false));
-		AddOpt(desc, "dbpcafile", strDbpCAFile, string("dbpca.crt"));
-		AddOpt(desc, "dbpcertfile", strDbpCertFile, string("dbpserver.crt"));
-		AddOpt(desc, "dbppkfile", strDbpPKFile, string("dbpserver.key"));
-		AddOpt(desc, "dbpciphers", strDbpCiphers, string("TLSv1+HIGH:!SSLv2:!aNULL:!eNULL:!AH:!3DES:@STRENGTH"));
-	}
-	string ListConfigImpl() const
-	{
-		ostringstream oss;
-		oss << " -dbpport: " << nDbpPortInt << "\n";
-		oss << " -dbpuser: " << strDbpUser << "\n";
-		oss << " -dbppassword: " << strDbpPass << "\n";
-		oss << " -dbpssl: " << (fDbpSSLEnable ? "Y" : "N") << "\n";
-		oss << " -dbpsslverify: " << (fDbpSSLVerify ? "Y" : "N") << "\n";
-		oss << " -dbpcafile: " << strDbpCAFile << "\n";
-		oss << " -dbpcertfile: " << strDbpCertFile << "\n";
-		oss << " -dbppkfile: " << strDbpPKFile << "\n";
-		oss << " -dbpciphers: " << strDbpCiphers << "\n";
-		return oss.str();
-	}
-
 };
 class CMvRPCServerConfigOption
 {
@@ -232,6 +170,61 @@ protected:
 		return oss.str();
 	}
 };
+class CMvDbpBasicConfigOption
+{
+public:
+	int nDbpPortInt;
+	string strDbpUser;
+	string strDbpPass;
+	bool fDbpSSLEnable;
+	bool fDbpSSLVerify;
+	string strDbpCAFile;
+	string strDbpCertFile;
+	string strDbpPKFile;
+	string strDbpCiphers;
+protected:
+protected:
+	string HelpImpl() const
+	{
+		ostringstream oss;
+		oss << "  -dbpport=port                 Listen for DBP connections on <port> (default: 6815)\n";
+		oss << "  -dbpuser=<user>               <user> name for DBP connections\n";
+		oss << "  -dbppassword=<password>       <password> for DBP connections\n";
+		oss << "  -dbpssl                       Use OpenSSL (https) for DBP connections or not (default false)\n";
+		oss << "  -nodbpsslverify               Verify SSL or not (default no)\n";
+		oss << "  -dbpcafile=<file.cert>        SSL CA file name (default dbpca.crt)\n";
+		oss << "  -dbpcertfile=<file.cert>      Server certificate file (default: dbpserver.cert)\n";
+		oss << "  -dbppkfile=<file.pem>         Server private key (default: dbpserver.pem)\n";
+		oss << "  -dbpciphers=<ciphers>         Acceptable ciphers (default: TLSv1+HIGH:!SSLv2:!aNULL:!eNULL:!AH:!3DES:@STRENGTH)\n";
+		return oss.str();
+	}
+	void AddOptionsImpl(boost::program_options::options_description& desc)
+	{
+		AddOpt(desc, "dbpport", nDbpPortInt, int(DEFAULT_DBPPORT));
+		AddOpt(desc, "dbpuser", strDbpUser);
+		AddOpt(desc, "dbppassword", strDbpPass);
+		AddOpt(desc, "dbpssl", fDbpSSLEnable, bool(false));
+		AddOpt(desc, "dbpsslverify", fDbpSSLVerify, bool(false));
+		AddOpt(desc, "dbpcafile", strDbpCAFile, string("dbpca.crt"));
+		AddOpt(desc, "dbpcertfile", strDbpCertFile, string("dbpserver.crt"));
+		AddOpt(desc, "dbppkfile", strDbpPKFile, string("dbpserver.key"));
+		AddOpt(desc, "dbpciphers", strDbpCiphers, string("TLSv1+HIGH:!SSLv2:!aNULL:!eNULL:!AH:!3DES:@STRENGTH"));
+	}
+	string ListConfigImpl() const
+	{
+		ostringstream oss;
+		oss << " -dbpport: " << nDbpPortInt << "\n";
+		oss << " -dbpuser: " << strDbpUser << "\n";
+		oss << " -dbppassword: " << strDbpPass << "\n";
+		oss << " -dbpssl: " << (fDbpSSLEnable ? "Y" : "N") << "\n";
+		oss << " -dbpsslverify: " << (fDbpSSLVerify ? "Y" : "N") << "\n";
+		oss << " -dbpcafile: " << strDbpCAFile << "\n";
+		oss << " -dbpcertfile: " << strDbpCertFile << "\n";
+		oss << " -dbppkfile: " << strDbpPKFile << "\n";
+		oss << " -dbpciphers: " << strDbpCiphers << "\n";
+		return oss.str();
+	}
+};
 class CMvRPCBasicConfigOption
 {
 public:
@@ -249,18 +242,15 @@ protected:
 	string HelpImpl() const
 	{
 		ostringstream oss;
-		oss << "  -rpcport=port                 Listen for JSON-RPC connections on <port> (default:\n"
-		       "                                6802)\n";
+		oss << "  -rpcport=port                 Listen for JSON-RPC connections on <port> (default: 6802)\n";
 		oss << "  -rpcuser=<user>               <user> name for JSON-RPC connections\n";
 		oss << "  -rpcpassword=<password>       <password> for JSON-RPC connections\n";
-		oss << "  -rpcssl                       Use OpenSSL (https) for JSON-RPC connections or \n"
-		       "                                not (default false)\n";
+		oss << "  -rpcssl                       Use OpenSSL (https) for JSON-RPC connections or not (default false)\n";
 		oss << "  -norpcsslverify               Verify SSL or not (default yes)\n";
 		oss << "  -rpccafile=<file.cert>        SSL CA file name (default ca.crt)\n";
 		oss << "  -rpccertfile=<file.cert>      Server certificate file (default: server.cert)\n";
 		oss << "  -rpcpkfile=<file.pem>         Server private key (default: server.pem)\n";
-		oss << "  -rpcciphers=<ciphers>         Acceptable ciphers (default: TLSv1+HIGH:!SSLv2:!aNULL:\n"
-		       "                                !eNULL:!AH:!3DES:@STRENGTH)\n";
+		oss << "  -rpcciphers=<ciphers>         Acceptable ciphers (default: TLSv1+HIGH:!SSLv2:!aNULL:!eNULL:!AH:!3DES:@STRENGTH)\n";
 		return oss.str();
 	}
 	void AddOptionsImpl(boost::program_options::options_description& desc)
@@ -353,16 +343,12 @@ protected:
 		ostringstream oss;
 		oss << "  -listen                       Accept connections from outside (default: 1)\n";
 		oss << "  -nobloom                      \n";
-		oss << "  -port=<port>                  Listen for connections on <port> (default: 6801 \n"
-		       "                                or testnet: 6803)\n";
-		oss << "  -maxconnections=<n>           Maintain at most <n> connections to peers (default:\n"
-		       "                                125)\n";
+		oss << "  -port=<port>                  Listen for connections on <port> (default: 6801 or testnet: 6803)\n";
+		oss << "  -maxconnections=<n>           Maintain at most <n> connections to peers (default: 125)\n";
 		oss << "  -timeout=<n>                  Specify connection timeout (in milliseconds)\n";
-		oss << "  -addnode=<ip>                 Add a node to connect to and attempt to keep the \n"
-		       "                                connection open\n";
+		oss << "  -addnode=<ip>                 Add a node to connect to and attempt to keep the connection open\n";
 		oss << "  -connect=<ip>                 Connect only to the specified node\n";
-		oss << "  -dnseedport=<port>            Listen for dnseed connections on <port> (default:\n"
-		       "                                6816)\n";
+		oss << "  -dnseedport=<port>            Listen for dnseed connections on <port> (default: 6816)\n";
 		oss << "  -dnseedmaxtimes=<times>       Max <times> dnseed attempt to connect node\n";
 		oss << "  -confidentAddress=<address>   Trust node address\n";
 		return oss.str();

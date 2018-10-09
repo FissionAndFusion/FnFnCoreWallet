@@ -19,8 +19,10 @@ public:
     ~CWorldLine();
     void GetForkStatus(std::map<uint256,CForkStatus>& mapForkStatus) override; 
     bool GetForkProfile(const uint256& hashFork,CProfile& profile) override;
+    int  GetBlockCount(const uint256& hashFork) override;
     bool GetBlockLocation(const uint256& hashBlock,uint256& hashFork,int& nHeight) override;
     bool GetBlockHash(const uint256& hashFork,int nHeight,uint256& hashBlock) override;
+    bool GetBlockHash(const uint256& hashFork,int nHeight,std::vector<uint256>& vBlockHash) override;
     bool GetLastBlock(const uint256& hashFork,uint256& hashBlock,int& nHeight,int64& nTime) override;
     bool GetLastBlockTime(const uint256& hashFork,int nDepth,std::vector<int64>& vTime) override;
     bool GetBlock(const uint256& hashBlock,CBlock& block) override;

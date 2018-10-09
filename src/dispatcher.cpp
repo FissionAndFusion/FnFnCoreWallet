@@ -120,6 +120,7 @@ MvErr CDispatcher::AddNewBlock(const CBlock& block,uint64 nNonce)
     {
         err = pWorldLine->AddNewOrigin(block,updateWorldLine);
     }
+
     if (err != MV_OK || updateWorldLine.IsNull())
     {
         return err;

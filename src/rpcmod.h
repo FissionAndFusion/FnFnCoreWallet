@@ -39,7 +39,7 @@ class CRPCMod : public walleve::IIOModule, virtual public walleve::CWalleveHttpE
     {
         return i.IsValid() ? int(i) : valDefault;
     }
-    uint GetUint(const rpc::CRPCUint64 &i, uint valDefault)
+    unsigned int GetUint(const rpc::CRPCUint64& i,unsigned int valDefault)
     {
         return i.IsValid() ? uint64(i) : valDefault;
     }

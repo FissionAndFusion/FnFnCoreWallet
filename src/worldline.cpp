@@ -111,6 +111,21 @@ bool CWorldLine::GetForkProfile(const uint256& hashFork,CProfile& profile)
     return cntrBlock.RetrieveProfile(hashFork,profile);
 }
 
+int  CWorldLine::GetBlockCount(const uint256& hashFork)
+{   
+    int nCount = 0;
+    CBlockIndex* pIndex = NULL;
+    if (cntrBlock.RetrieveFork(hashFork,&pIndex))
+    {
+        while (pIndex != NULL)
+        {
+            pIndex = pIndex->pPrev;
+            ++nCount;                               
+        }
+    }
+    return nCount;
+}   
+
 bool CWorldLine::GetBlockLocation(const uint256& hashBlock,uint256& hashFork,int& nHeight)
 {
     CBlockIndex* pIndex = NULL;
@@ -134,8 +149,32 @@ bool CWorldLine::GetBlockHash(const uint256& hashFork,int nHeight,uint256& hashB
     {
         pIndex = pIndex->pPrev;
     }
+    while (pIndex != NULL && pIndex->GetBlockHeight() == nHeight && pIndex->IsExtended())
+    {
+        pIndex = pIndex->pPrev;
+    }
     hashBlock = !pIndex ? 0 : pIndex->GetBlockHash();
     return (pIndex != NULL);
+}
+
+bool CWorldLine::GetBlockHash(const uint256& hashFork,int nHeight,vector<uint256>& vBlockHash)
+{   
+    CBlockIndex* pIndex = NULL;
+    if (!cntrBlock.RetrieveFork(hashFork,&pIndex) || pIndex->GetBlockHeight() < nHeight)
+    {       
+        return false;                               
+    }   
+    while (pIndex != NULL && pIndex->GetBlockHeight() > nHeight)
+    {
+        pIndex = pIndex->pPrev;
+    }
+    while (pIndex != NULL && pIndex->GetBlockHeight() == nHeight)
+    {
+        vBlockHash.push_back(pIndex->GetBlockHash());
+        pIndex = pIndex->pPrev;
+    }
+    std::reverse(vBlockHash.begin(),vBlockHash.end());
+    return (!vBlockHash.empty());
 }
 
 bool CWorldLine::GetLastBlock(const uint256& hashFork,uint256& hashBlock,int& nHeight,int64& nTime)
@@ -571,8 +610,8 @@ bool CWorldLine::GetBlockChanges(const CBlockIndex* pIndexNew,const CBlockIndex*
 {
     while (pIndexNew != pIndexFork)
     {
-        int nForkHeight = pIndexFork ? pIndexFork->GetBlockHeight() : -1;
-        if (pIndexNew->GetBlockHeight() >= nForkHeight)
+        int64 nLastBlockTime = pIndexFork ? pIndexFork->GetBlockTime() : -1;
+        if (pIndexNew->GetBlockTime() >= nLastBlockTime)
         {
             CBlockEx block;
             if (!cntrBlock.Retrieve(pIndexNew,block))
