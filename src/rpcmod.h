@@ -18,24 +18,24 @@ namespace multiverse
 
 class CRPCMod : public walleve::IIOModule, virtual public walleve::CWalleveHttpEventListener
 {
-  public:
+public:
     typedef CRPCResultPtr (CRPCMod::*RPCFunc)(CRPCParamPtr param);
     CRPCMod();
     ~CRPCMod();
-    bool HandleEvent(walleve::CWalleveEventHttpReq &eventHttpReq) override;
-    bool HandleEvent(walleve::CWalleveEventHttpBroken &eventHttpBroken) override;
+    bool HandleEvent(walleve::CWalleveEventHttpReq& eventHttpReq) override;
+    bool HandleEvent(walleve::CWalleveEventHttpBroken& eventHttpBroken) override;
 
-  protected:
+protected:
     bool WalleveHandleInitialize() override;
     void WalleveHandleDeinitialize() override;
-    const CMvNetworkConfig *WalleveConfig()
+    const CMvNetworkConfig* WalleveConfig()
     {
-        return dynamic_cast<const CMvNetworkConfig *>(walleve::IWalleveBase::WalleveConfig());
+        return dynamic_cast<const CMvNetworkConfig*>(walleve::IWalleveBase::WalleveConfig());
     }
 
-    void JsonReply(uint64 nNonce, const std::string &result);
+    void JsonReply(uint64 nNonce, const std::string& result);
 
-    int GetInt(const rpc::CRPCInt64 &i, int valDefault)
+    int GetInt(const rpc::CRPCInt64& i, int valDefault)
     {
         return i.IsValid() ? int(i) : valDefault;
     }
@@ -43,7 +43,7 @@ class CRPCMod : public walleve::IIOModule, virtual public walleve::CWalleveHttpE
     {
         return i.IsValid() ? uint64(i) : valDefault;
     }
-    const uint256 GetForkHash(const rpc::CRPCString &hex)
+    const uint256 GetForkHash(const rpc::CRPCString& hex)
     {
         uint256 fork;
         if (hex.IsValid())
@@ -55,11 +55,11 @@ class CRPCMod : public walleve::IIOModule, virtual public walleve::CWalleveHttpE
         return fork;
     }
     bool CheckWalletError(MvErr err);
-    multiverse::crypto::CPubKey GetPubKey(const std::string &addr);
-    CTemplatePtr MakeTemplate(const rpc::CTemplateRequest &obj);
-    void ListDestination(std::vector<CDestination> &vDestination);
+    multiverse::crypto::CPubKey GetPubKey(const std::string& addr);
+    CTemplatePtr MakeTemplate(const rpc::CTemplateRequest& obj);
+    void ListDestination(std::vector<CDestination>& vDestination);
 
-  private:
+private:
     /* System */
     CRPCResultPtr RPCHelp(CRPCParamPtr param);
     CRPCResultPtr RPCStop(CRPCParamPtr param);
