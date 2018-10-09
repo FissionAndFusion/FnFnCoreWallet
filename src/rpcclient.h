@@ -34,7 +34,7 @@ protected:
     bool HandleEvent(walleve::CWalleveEventHttpGetRsp& event);
     bool GetResponse(uint64 nNonce, const std::string& content);
     bool CallRPC(rpc::CRPCParamPtr spParam, int nReqId);
-    bool CallConsoleCommand(const std::vector<std::string> &vCommand);
+    bool CallConsoleCommand(const std::vector<std::string>& vCommand);
     void LaunchConsole();
     void LaunchCommand();
     void CancelCommand();
