@@ -128,7 +128,7 @@ void CIOClient::HandleConnCompleted(CallBackConn fnCompleted, const boost::syste
 ///////////////////////////////
 // CSocketClient
 CSocketClient::CSocketClient(CIOContainer* pContainerIn, boost::asio::io_service& ioservice)
-    : CIOClient(pContainerIn), sockClient(ioservice), asioStrand(ioservice)
+    : CIOClient(pContainerIn), sockClient(ioservice)
 {
 }
 
