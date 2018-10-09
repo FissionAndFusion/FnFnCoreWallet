@@ -209,6 +209,18 @@ int  CService::GetForkCount()
     return mapForkStatus.size();
 }
 
+int  CService::GetForkHeight(const uint256& hashFork)
+{
+    boost::shared_lock<boost::shared_mutex> rlock(rwForkStatus);
+
+    map<uint256,CForkStatus>::iterator it = mapForkStatus.find(hashFork);
+    if (it != mapForkStatus.end())
+    {
+        return ((*it).second.nLastBlockHeight);
+    }
+    return 0;
+}
+
 void CService::ListFork(std::vector<std::pair<uint256,CProfile> >& vFork)
 {
     vFork.reserve(mapForkStatus.size());
@@ -253,14 +265,11 @@ bool CService::GetBlockLocation(const uint256& hashBlock,uint256& hashFork,int& 
 
 int CService::GetBlockCount(const uint256& hashFork)
 {
-    boost::shared_lock<boost::shared_mutex> rlock(rwForkStatus);
-
-    map<uint256,CForkStatus>::iterator it = mapForkStatus.find(hashFork);
-    if (it != mapForkStatus.end())
+    if (hashFork == pCoreProtocol->GetGenesisBlockHash())
     {
-        return ((*it).second.nLastBlockHeight + 1);
+        return (GetForkHeight(hashFork) + 1);
     }
-    return 0;
+    return pWorldLine->GetBlockCount(hashFork);
 }
 
 bool CService::GetBlockHash(const uint256& hashFork,int nHeight,uint256& hashBlock)
@@ -277,6 +286,11 @@ bool CService::GetBlockHash(const uint256& hashFork,int nHeight,uint256& hashBlo
         return true;
     }
     return pWorldLine->GetBlockHash(hashFork,nHeight,hashBlock);
+}
+
+bool CService::GetBlockHash(const uint256& hashFork,int nHeight,vector<uint256>& vBlockHash)
+{
+    return pWorldLine->GetBlockHash(hashFork,nHeight,vBlockHash);
 }
 
 bool CService::GetBlock(const uint256& hashBlock,CBlock& block,uint256& hashFork,int& nHeight)
@@ -441,12 +455,12 @@ bool CService::GetTemplate(const CTemplateId& tid,CTemplatePtr& ptr)
 
 bool CService::GetBalance(const CDestination& dest,const uint256& hashFork,CWalletBalance& balance)
 {
-    int nBlockCount = GetBlockCount(hashFork);
-    if (nBlockCount <= 0)
+    int nForkHeight = GetForkHeight(hashFork);
+    if (nForkHeight <= 0)
     {
         return false;
     }
-    return pWallet->GetBalance(dest,hashFork,nBlockCount - 1,balance);
+    return pWallet->GetBalance(dest,hashFork,nForkHeight,balance);
 }
 
 bool CService::ListWalletTx(int nOffset,int nCount,vector<CWalletTx>& vWalletTx)
