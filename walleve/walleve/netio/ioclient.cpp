@@ -14,7 +14,7 @@ using boost::asio::ip::tcp;
 
 ///////////////////////////////
 // CIOClient
-CIOClient::CIOClient(CIOContainer *pContainerIn)
+CIOClient::CIOClient(CIOContainer* pContainerIn)
     : pContainer(pContainerIn)
 {
     nRefCount = 0;
@@ -75,38 +75,38 @@ void CIOClient::Shutdown()
     epRemote = tcp::endpoint();
 }
 
-void CIOClient::Accept(tcp::acceptor &acceptor, CallBackConn fnAccepted)
+void CIOClient::Accept(tcp::acceptor& acceptor, CallBackConn fnAccepted)
 {
     ++nRefCount;
     AsyncAccept(acceptor, fnAccepted);
 }
 
-void CIOClient::Connect(const tcp::endpoint &epRemote, CallBackConn fnConnected)
+void CIOClient::Connect(const tcp::endpoint& epRemote, CallBackConn fnConnected)
 {
     ++nRefCount;
     AsyncConnect(epRemote, fnConnected);
 }
 
-void CIOClient::Read(CWalleveBufStream &ssRecv, size_t nLength, CallBackFunc fnCompleted)
+void CIOClient::Read(CWalleveBufStream& ssRecv, size_t nLength, CallBackFunc fnCompleted)
 {
     ++nRefCount;
     AsyncRead(ssRecv, nLength, fnCompleted);
 }
 
-void CIOClient::ReadUntil(CWalleveBufStream &ssRecv, const string &delim, CallBackFunc fnCompleted)
+void CIOClient::ReadUntil(CWalleveBufStream& ssRecv, const string& delim, CallBackFunc fnCompleted)
 {
     ++nRefCount;
     AsyncReadUntil(ssRecv, delim, fnCompleted);
 }
 
-void CIOClient::Write(CWalleveBufStream &ssSend, CallBackFunc fnCompleted)
+void CIOClient::Write(CWalleveBufStream& ssSend, CallBackFunc fnCompleted)
 {
     ++nRefCount;
     AsyncWrite(ssSend, fnCompleted);
 }
 
 void CIOClient::HandleCompleted(CallBackFunc fnCompleted,
-                                const boost::system::error_code &err, size_t transferred)
+                                const boost::system::error_code& err, size_t transferred)
 {
     if (err != boost::asio::error::operation_aborted && IsSocketOpen())
     {
@@ -115,7 +115,7 @@ void CIOClient::HandleCompleted(CallBackFunc fnCompleted,
     Release();
 }
 
-void CIOClient::HandleConnCompleted(CallBackConn fnCompleted, const boost::system::error_code &err)
+void CIOClient::HandleConnCompleted(CallBackConn fnCompleted, const boost::system::error_code& err)
 {
     fnCompleted(IsSocketOpen() ? err : boost::asio::error::operation_aborted);
 
@@ -127,7 +127,7 @@ void CIOClient::HandleConnCompleted(CallBackConn fnCompleted, const boost::syste
 
 ///////////////////////////////
 // CSocketClient
-CSocketClient::CSocketClient(CIOContainer *pContainerIn, boost::asio::io_service &ioservice)
+CSocketClient::CSocketClient(CIOContainer* pContainerIn, boost::asio::io_service& ioservice)
     : CIOClient(pContainerIn), sockClient(ioservice), asioStrand(ioservice)
 {
 }
@@ -137,19 +137,19 @@ CSocketClient::~CSocketClient()
     CloseSocket();
 }
 
-void CSocketClient::AsyncAccept(tcp::acceptor &acceptor, CallBackConn fnAccepted)
+void CSocketClient::AsyncAccept(tcp::acceptor& acceptor, CallBackConn fnAccepted)
 {
     acceptor.async_accept(sockClient, boost::bind(&CSocketClient::HandleConnCompleted, this,
                                                   fnAccepted, boost::asio::placeholders::error));
 }
 
-void CSocketClient::AsyncConnect(const tcp::endpoint &epRemote, CallBackConn fnConnected)
+void CSocketClient::AsyncConnect(const tcp::endpoint& epRemote, CallBackConn fnConnected)
 {
     sockClient.async_connect(epRemote, boost::bind(&CSocketClient::HandleConnCompleted, this,
                                                    fnConnected, boost::asio::placeholders::error));
 }
 
-void CSocketClient::AsyncRead(CWalleveBufStream &ssRecv, size_t nLength, CallBackFunc fnCompleted)
+void CSocketClient::AsyncRead(CWalleveBufStream& ssRecv, size_t nLength, CallBackFunc fnCompleted)
 {
     boost::asio::async_read(sockClient,
                             (boost::asio::streambuf &)ssRecv,
@@ -159,20 +159,20 @@ void CSocketClient::AsyncRead(CWalleveBufStream &ssRecv, size_t nLength, CallBac
                                         boost::asio::placeholders::bytes_transferred));
 }
 
-void CSocketClient::AsyncReadUntil(CWalleveBufStream &ssRecv, const string &delim, CallBackFunc fnCompleted)
+void CSocketClient::AsyncReadUntil(CWalleveBufStream& ssRecv, const string& delim, CallBackFunc fnCompleted)
 {
     boost::asio::async_read_until(sockClient,
-                                  (boost::asio::streambuf &)ssRecv,
+                                  (boost::asio::streambuf&)ssRecv,
                                   delim,
                                   boost::bind(&CSocketClient::HandleCompleted, this, fnCompleted,
                                               boost::asio::placeholders::error,
                                               boost::asio::placeholders::bytes_transferred));
 }
 
-void CSocketClient::AsyncWrite(CWalleveBufStream &ssSend, CallBackFunc fnCompleted)
+void CSocketClient::AsyncWrite(CWalleveBufStream& ssSend, CallBackFunc fnCompleted)
 {
     boost::asio::async_write(sockClient,
-                             (boost::asio::streambuf &)ssSend,
+                             (boost::asio::streambuf&)ssSend,
                              boost::asio::transfer_all(),
                              boost::bind(&CSocketClient::HandleCompleted, this, fnCompleted,
                                          boost::asio::placeholders::error,
@@ -201,9 +201,9 @@ bool CSocketClient::IsSocketOpen()
 
 ///////////////////////////////
 // CSSLClient
-CSSLClient::CSSLClient(CIOContainer *pContainerIn, boost::asio::io_service &ioserivce,
-                       boost::asio::ssl::context &context,
-                       const string &strVerifyHost)
+CSSLClient::CSSLClient(CIOContainer* pContainerIn, boost::asio::io_service& ioserivce,
+                       boost::asio::ssl::context& context,
+                       const string& strVerifyHost)
     : CIOClient(pContainerIn), sslClient(ioserivce, context)
 {
     if (!strVerifyHost.empty())
@@ -219,7 +219,7 @@ CSSLClient::~CSSLClient()
     CloseSocket();
 }
 
-void CSSLClient::AsyncAccept(tcp::acceptor &acceptor, CallBackConn fnAccepted)
+void CSSLClient::AsyncAccept(tcp::acceptor& acceptor, CallBackConn fnAccepted)
 {
     acceptor.async_accept(sslClient.lowest_layer(),
                           boost::bind(&CSSLClient::HandleConnected, this, fnAccepted,
@@ -227,7 +227,7 @@ void CSSLClient::AsyncAccept(tcp::acceptor &acceptor, CallBackConn fnAccepted)
                                       boost::asio::placeholders::error));
 }
 
-void CSSLClient::AsyncConnect(const tcp::endpoint &epRemote, CallBackConn fnConnected)
+void CSSLClient::AsyncConnect(const tcp::endpoint& epRemote, CallBackConn fnConnected)
 {
     sslClient.lowest_layer().async_connect(epRemote,
                                            boost::bind(&CSSLClient::HandleConnected, this, fnConnected,
@@ -235,30 +235,30 @@ void CSSLClient::AsyncConnect(const tcp::endpoint &epRemote, CallBackConn fnConn
                                                        boost::asio::placeholders::error));
 }
 
-void CSSLClient::AsyncRead(CWalleveBufStream &ssRecv, size_t nLength, CallBackFunc fnCompleted)
+void CSSLClient::AsyncRead(CWalleveBufStream& ssRecv, size_t nLength, CallBackFunc fnCompleted)
 {
     boost::asio::async_read(sslClient,
-                            (boost::asio::streambuf &)ssRecv,
+                            (boost::asio::streambuf&)ssRecv,
                             boost::asio::transfer_exactly(nLength),
                             boost::bind(&CSSLClient::HandleCompleted, this, fnCompleted,
                                         boost::asio::placeholders::error,
                                         boost::asio::placeholders::bytes_transferred));
 }
 
-void CSSLClient::AsyncReadUntil(CWalleveBufStream &ssRecv, const string &delim, CallBackFunc fnCompleted)
+void CSSLClient::AsyncReadUntil(CWalleveBufStream& ssRecv, const string& delim, CallBackFunc fnCompleted)
 {
     boost::asio::async_read_until(sslClient,
-                                  (boost::asio::streambuf &)ssRecv,
+                                  (boost::asio::streambuf&)ssRecv,
                                   delim,
                                   boost::bind(&CSSLClient::HandleCompleted, this, fnCompleted,
                                               boost::asio::placeholders::error,
                                               boost::asio::placeholders::bytes_transferred));
 }
 
-void CSSLClient::AsyncWrite(CWalleveBufStream &ssSend, CallBackFunc fnCompleted)
+void CSSLClient::AsyncWrite(CWalleveBufStream& ssSend, CallBackFunc fnCompleted)
 {
     boost::asio::async_write(sslClient,
-                             (boost::asio::streambuf &)ssSend,
+                             (boost::asio::streambuf&)ssSend,
                              boost::bind(&CSSLClient::HandleCompleted, this, fnCompleted,
                                          boost::asio::placeholders::error,
                                          boost::asio::placeholders::bytes_transferred));
@@ -286,7 +286,7 @@ bool CSSLClient::IsSocketOpen()
 
 void CSSLClient::HandleConnected(CallBackConn fnHandshaked,
                                  boost::asio::ssl::stream_base::handshake_type type,
-                                 const boost::system::error_code &err)
+                                 const boost::system::error_code& err)
 {
     if (!err)
     {
@@ -299,15 +299,15 @@ void CSSLClient::HandleConnected(CallBackConn fnHandshaked,
     }
 }
 
-bool CSSLClient::VerifyCertificate(const string &strVerifyHost, bool fPreverified,
-                                   boost::asio::ssl::verify_context &ctx)
+bool CSSLClient::VerifyCertificate(const string& strVerifyHost, bool fPreverified,
+                                   boost::asio::ssl::verify_context& ctx)
 {
     char subject_name[256];
-    X509 *cert = X509_STORE_CTX_get_current_cert(ctx.native_handle());
+    X509* cert = X509_STORE_CTX_get_current_cert(ctx.native_handle());
     X509_NAME_oneline(X509_get_subject_name(cert), subject_name, 256);
     std::cout << "Verifying " << fPreverified << " " << subject_name << "\n";
 
-    X509_STORE_CTX *cts = ctx.native_handle();
+    X509_STORE_CTX* cts = ctx.native_handle();
 
     //int32_t length = 0;
     //X509* cert = X509_STORE_CTX_get_current_cert(ctx.native_handle());
