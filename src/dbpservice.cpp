@@ -63,13 +63,13 @@ void CDbpService::WalleveHandleDeinitialize()
     pWallet = NULL;
 }
 
-bool CDbpService::HandleEvent(CMvEventDbpPong &event)
+bool CDbpService::HandleEvent(CMvEventDbpPong& event)
 {
     (void)event;
     return true;
 }
 
-bool CDbpService::HandleEvent(CMvEventDbpConnect &event)
+bool CDbpService::HandleEvent(CMvEventDbpConnect& event)
 {
     bool isReconnect = event.data.isReconnect;
 
@@ -104,7 +104,7 @@ bool CDbpService::HandleEvent(CMvEventDbpConnect &event)
     return true;
 }
 
-bool CDbpService::HandleEvent(CMvEventDbpSub &event)
+bool CDbpService::HandleEvent(CMvEventDbpSub& event)
 {
     std::string id = event.data.id;
     std::string topicName = event.data.name;
@@ -129,13 +129,13 @@ bool CDbpService::HandleEvent(CMvEventDbpSub &event)
     return true;
 }
 
-bool CDbpService::HandleEvent(CMvEventDbpUnSub &event)
+bool CDbpService::HandleEvent(CMvEventDbpUnSub& event)
 {
     UnSubTopic(event.data.id);
     return true;
 }
 
-void CDbpService::HandleGetTransaction(CMvEventDbpMethod &event)
+void CDbpService::HandleGetTransaction(CMvEventDbpMethod& event)
 {
     std::string id = event.data.id;
     std::string txid = event.data.params["hash"];
@@ -164,7 +164,7 @@ void CDbpService::HandleGetTransaction(CMvEventDbpMethod &event)
     }
 }
 
-void CDbpService::HandleSendTransaction(CMvEventDbpMethod &event)
+void CDbpService::HandleSendTransaction(CMvEventDbpMethod& event)
 {
     std::string data = event.data.params["data"];
 
@@ -177,7 +177,7 @@ void CDbpService::HandleSendTransaction(CMvEventDbpMethod &event)
     {
         ss >> rawTx;
     }
-    catch (const std::exception &e)
+    catch (const std::exception& e)
     {
         CMvEventDbpMethodResult eventResult(event.strSessionId);
         eventResult.data.id = event.data.id;
@@ -214,17 +214,17 @@ void CDbpService::HandleSendTransaction(CMvEventDbpMethod &event)
     }
 }
 
-bool CDbpService::IsTopicExist(const std::string &topic)
+bool CDbpService::IsTopicExist(const std::string& topic)
 {
     return mapCurrentTopicExist.find(topic) != mapCurrentTopicExist.end();
 }
 
-bool CDbpService::IsHaveSubedTopicOf(const std::string &id)
+bool CDbpService::IsHaveSubedTopicOf(const std::string& id)
 {
     return mapIdSubedTopic.find(id) != mapIdSubedTopic.end();
 }
 
-void CDbpService::SubTopic(const std::string &id, const std::string &session, const std::string &topic)
+void CDbpService::SubTopic(const std::string& id, const std::string& session, const std::string& topic)
 {
     mapIdSubedTopic.insert(std::make_pair(id, topic));
 
@@ -236,7 +236,7 @@ void CDbpService::SubTopic(const std::string &id, const std::string &session, co
     mapIdSubedSession.insert(std::make_pair(id, session));
 }
 
-void CDbpService::UnSubTopic(const std::string &id)
+void CDbpService::UnSubTopic(const std::string& id)
 {
     setSubedAllBlocksIds.erase(id);
     setSubedAllTxIds.erase(id);
@@ -245,13 +245,13 @@ void CDbpService::UnSubTopic(const std::string &id)
     mapIdSubedSession.erase(id);
 }
 
-bool CDbpService::IsEmpty(const uint256 &hash)
+bool CDbpService::IsEmpty(const uint256& hash)
 {
     static const std::string EMPTY_HASH("0000000000000000000000000000000000000000000000000000000000000000");
     return hash.ToString() == EMPTY_HASH;
 }
 
-bool CDbpService::GetBlocks(const uint256 &forkHash, const uint256 &startHash, int32 n, std::vector<CMvDbpBlock> &blocks)
+bool CDbpService::GetBlocks(const uint256& forkHash, const uint256& startHash, int32 n, std::vector<CMvDbpBlock>& blocks)
 {
     uint256 tempForkHash = forkHash;
     uint256 blockHash = startHash;
@@ -293,7 +293,7 @@ bool CDbpService::GetBlocks(const uint256 &forkHash, const uint256 &startHash, i
     return true;
 }
 
-void CDbpService::HandleGetBlocks(CMvEventDbpMethod &event)
+void CDbpService::HandleGetBlocks(CMvEventDbpMethod& event)
 {
     std::string forkid = event.data.params["forkid"];
     std::string blockHash = event.data.params["hash"];
@@ -307,7 +307,7 @@ void CDbpService::HandleGetBlocks(CMvEventDbpMethod &event)
         CMvEventDbpMethodResult eventResult(event.strSessionId);
         eventResult.data.id = event.data.id;
 
-        for (auto &block : blocks)
+        for (auto& block : blocks)
         {
             eventResult.data.anyResultObjs.push_back(block);
         }
@@ -323,7 +323,7 @@ void CDbpService::HandleGetBlocks(CMvEventDbpMethod &event)
     }
 }
 
-bool CDbpService::HandleEvent(CMvEventDbpMethod &event)
+bool CDbpService::HandleEvent(CMvEventDbpMethod& event)
 {
     if (event.data.method == CMvDbpMethod::Method::GET_BLOCKS)
     {
@@ -345,8 +345,8 @@ bool CDbpService::HandleEvent(CMvEventDbpMethod &event)
     return true;
 }
 
-void CDbpService::CreateDbpBlock(const CBlock &blockDetail, const uint256 &forkHash,
-                                 int blockHeight, CMvDbpBlock &block)
+void CDbpService::CreateDbpBlock(const CBlock& blockDetail, const uint256& forkHash,
+                                 int blockHeight, CMvDbpBlock& block)
 {
     block.nVersion = blockDetail.nVersion;
     block.nType = blockDetail.nType;
@@ -365,7 +365,7 @@ void CDbpService::CreateDbpBlock(const CBlock &blockDetail, const uint256 &forkH
     CreateDbpTransaction(blockDetail.txMint, block.txMint);
 
     // vtx
-    for (const auto &tx : blockDetail.vtx)
+    for (const auto& tx : blockDetail.vtx)
     {
         CMvDbpTransaction dbpTx;
         CreateDbpTransaction(tx, dbpTx);
@@ -377,7 +377,7 @@ void CDbpService::CreateDbpBlock(const CBlock &blockDetail, const uint256 &forkH
     blockDetail.GetHash().ToDataStream(hashStream);
 }
 
-void CDbpService::CreateDbpTransaction(const CTransaction &tx, CMvDbpTransaction &dbptx)
+void CDbpService::CreateDbpTransaction(const CTransaction& tx, CMvDbpTransaction& dbptx)
 {
     dbptx.nVersion = tx.nVersion;
     dbptx.nType = tx.nType;
@@ -386,7 +386,7 @@ void CDbpService::CreateDbpTransaction(const CTransaction &tx, CMvDbpTransaction
     walleve::CWalleveODataStream hashAnchorStream(dbptx.hashAnchor);
     tx.hashAnchor.ToDataStream(hashAnchorStream);
 
-    for (const auto &input : tx.vInput)
+    for (const auto& input : tx.vInput)
     {
         CMvDbpTxIn txin;
         txin.n = input.prevout.n;
@@ -413,9 +413,9 @@ void CDbpService::CreateDbpTransaction(const CTransaction &tx, CMvDbpTransaction
     tx.GetHash().ToDataStream(hashStream);
 }
 
-void CDbpService::PushBlock(const CMvDbpBlock &block)
+void CDbpService::PushBlock(const CMvDbpBlock& block)
 {
-    for (const auto &kv : mapIdSubedSession)
+    for (const auto& kv : mapIdSubedSession)
     {
         std::string id = kv.first;
         std::string session = kv.second;
@@ -431,9 +431,9 @@ void CDbpService::PushBlock(const CMvDbpBlock &block)
     }
 }
 
-void CDbpService::PushTx(const CMvDbpTransaction &dbptx)
+void CDbpService::PushTx(const CMvDbpTransaction& dbptx)
 {
-    for (const auto &kv : mapIdSubedSession)
+    for (const auto& kv : mapIdSubedSession)
     {
         std::string id = kv.first;
         std::string session = kv.second;
@@ -449,7 +449,7 @@ void CDbpService::PushTx(const CMvDbpTransaction &dbptx)
     }
 }
 
-bool CDbpService::HandleEvent(CMvEventDbpUpdateNewBlock &event)
+bool CDbpService::HandleEvent(CMvEventDbpUpdateNewBlock& event)
 {
     // get details about new block
     uint256 blockHash = event.data;
@@ -467,9 +467,9 @@ bool CDbpService::HandleEvent(CMvEventDbpUpdateNewBlock &event)
     return true;
 }
 
-bool CDbpService::HandleEvent(CMvEventDbpUpdateNewTx &event)
+bool CDbpService::HandleEvent(CMvEventDbpUpdateNewTx& event)
 {
-    decltype(event.data) &newtx = event.data;
+    decltype(event.data)& newtx = event.data;
 
     CMvDbpTransaction dbpTx;
     CreateDbpTransaction(newtx, dbpTx);
