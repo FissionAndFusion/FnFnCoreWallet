@@ -44,7 +44,7 @@ using namespace boost::filesystem;
 //////////////////////////////
 // CMvEntry
 
-CMvEntry &CMvEntry::GetInstance()
+CMvEntry& CMvEntry::GetInstance()
 {
     static CMvEntry entry;
     return entry;
@@ -80,7 +80,7 @@ bool CMvEntry::Initialize(int argc, char *argv[])
     }
 
     // path
-    path &pathData = mvConfig.GetConfig()->pathData;
+    path& pathData = mvConfig.GetConfig()->pathData;
     if (!exists(pathData))
     {
         if (!create_directories(pathData))
@@ -139,7 +139,7 @@ bool CMvEntry::Initialize(int argc, char *argv[])
     return InitializeModules(mvConfig.GetModeType());
 }
 
-bool CMvEntry::AttachModule(IWalleveBase *pWalleveBase)
+bool CMvEntry::AttachModule(IWalleveBase* pWalleveBase)
 {
     if (!pWalleveBase || !walleveDocker.Attach(pWalleveBase))
     {
@@ -150,11 +150,11 @@ bool CMvEntry::AttachModule(IWalleveBase *pWalleveBase)
     return true;
 }
 
-bool CMvEntry::InitializeModules(const EModeType &mode)
+bool CMvEntry::InitializeModules(const EModeType& mode)
 {
-    const std::vector<EModuleType> &modules = CMode::GetModules(mode);
+    const std::vector<EModuleType>& modules = CMode::GetModules(mode);
 
-    for (auto &m : modules)
+    for (auto& m : modules)
     {
         switch (m)
         {
@@ -247,7 +247,7 @@ bool CMvEntry::InitializeModules(const EModeType &mode)
             {
                 return false;
             }
-            dynamic_cast<CHttpServer *>(pBase)->AddNewHost(GetRPCHostConfig());
+            dynamic_cast<CHttpServer*>(pBase)->AddNewHost(GetRPCHostConfig());
 
             if (!AttachModule(new CRPCMod()))
             {
@@ -310,7 +310,7 @@ bool CMvEntry::InitializeModules(const EModeType &mode)
             {
                 return false;
             }
-            dynamic_cast<CDbpServer *>(pBase)->AddNewHost(GetDbpHostConfig());
+            dynamic_cast<CDbpServer*>(pBase)->AddNewHost(GetDbpHostConfig());
 
             if (!AttachModule(new CDbpService()))
             {
@@ -337,7 +337,7 @@ bool CMvEntry::InitializeModules(const EModeType &mode)
 
 CHttpHostConfig CMvEntry::GetRPCHostConfig()
 {
-    const CMvRPCServerConfig *config = CastConfigPtr<CMvRPCServerConfig *>(mvConfig.GetConfig());
+    const CMvRPCServerConfig* config = CastConfigPtr<CMvRPCServerConfig *>(mvConfig.GetConfig());
     CIOSSLOption sslRPC(config->fRPCSSLEnable, config->fRPCSSLVerify,
                         config->strRPCCAFile, config->strRPCCertFile,
                         config->strRPCPKFile, config->strRPCCiphers);
@@ -354,7 +354,7 @@ CHttpHostConfig CMvEntry::GetRPCHostConfig()
 
 CDbpHostConfig CMvEntry::GetDbpHostConfig()
 {
-    const CMvDbpServerConfig *config = CastConfigPtr<CMvDbpServerConfig *>(mvConfig.GetConfig());
+    const CMvDbpServerConfig* config = CastConfigPtr<CMvDbpServerConfig*>(mvConfig.GetConfig());
     CIOSSLOption sslDbp(config->fDbpSSLEnable, config->fDbpSSLVerify,
                         config->strDbpCAFile, config->strDbpCertFile,
                         config->strDbpPKFile, config->strDbpCiphers);
@@ -443,7 +443,7 @@ bool CMvEntry::SetupEnvironment()
     return true;
 }
 
-bool CMvEntry::RunInBackground(const path &pathData)
+bool CMvEntry::RunInBackground(const path& pathData)
 {
 #ifndef WIN32
     // Daemonize
@@ -455,7 +455,7 @@ bool CMvEntry::RunInBackground(const path &pathData)
     }
     if (pid > 0)
     {
-        FILE *file = fopen((pathData / "multiverse.pid").string().c_str(), "w");
+        FILE* file = fopen((pathData / "multiverse.pid").string().c_str(), "w");
         if (file)
         {
             fprintf(file, "%d\n", pid);
@@ -478,7 +478,7 @@ bool CMvEntry::RunInBackground(const path &pathData)
     return false;
 }
 
-void CMvEntry::ExitBackground(const path &pathData)
+void CMvEntry::ExitBackground(const path& pathData)
 {
 #ifndef WIN32
     boost::filesystem::remove(pathData / "multiverse.pid");

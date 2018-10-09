@@ -25,7 +25,7 @@ public:
 protected:
 
     bool InitializeModules(const EModeType& mode);
-    bool AttachModule(walleve::IWalleveBase *pWalleveBase);
+    bool AttachModule(walleve::IWalleveBase* pWalleveBase);
 
     walleve::CHttpHostConfig GetRPCHostConfig();
     CDbpHostConfig GetDbpHostConfig();

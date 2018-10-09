@@ -16,28 +16,28 @@ class CDispatcher : public IDispatcher
 public:
     CDispatcher();
     ~CDispatcher();
-    MvErr AddNewBlock(const CBlock &block, uint64 nNonce = 0) override;
-    MvErr AddNewTx(const CTransaction &tx, uint64 nNonce = 0) override;
+    MvErr AddNewBlock(const CBlock& block, uint64 nNonce = 0) override;
+    MvErr AddNewTx(const CTransaction& tx, uint64 nNonce = 0) override;
 
-  protected:
+protected:
     bool WalleveHandleInitialize() override;
     void WalleveHandleDeinitialize() override;
     bool WalleveHandleInvoke() override;
     void WalleveHandleHalt() override;
     void UpdatePrimaryBlock(const CBlock& block,const CWorldLineUpdate& updateWorldLine,const CTxSetChange& changeTxSet);
-    void ProcessForkTx(const CTransaction &tx, int nPrimaryHeight);
+    void ProcessForkTx(const CTransaction& tx, int nPrimaryHeight);
     void SyncForkHeight(int nPrimaryHeight);
 
-  protected:
+protected:
     boost::shared_mutex rwAccess;
-    ICoreProtocol *pCoreProtocol;
-    IWorldLine *pWorldLine;
-    ITxPool *pTxPool;
-    IConsensus *pConsensus;
-    IWallet *pWallet;
-    IService *pService;
-    IBlockMaker *pBlockMaker;
-    network::IMvNetChannel *pNetChannel;
+    ICoreProtocol* pCoreProtocol;
+    IWorldLine* pWorldLine;
+    ITxPool* pTxPool;
+    IConsensus* pConsensus;
+    IWallet* pWallet;
+    IService* pService;
+    IBlockMaker* pBlockMaker;
+    network::IMvNetChannel* pNetChannel;
 };
 
 } // namespace multiverse

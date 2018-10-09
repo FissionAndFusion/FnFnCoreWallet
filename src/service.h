@@ -85,7 +85,7 @@ protected:
     IDispatcher* pDispatcher;
     IWallet* pWallet;
     CNetwork* pNetwork;
-    walleve::IIOModule *pDbpSocket;
+    walleve::IIOModule* pDbpSocket;
     mutable boost::shared_mutex rwForkStatus;
     std::map<uint256,CForkStatus> mapForkStatus;
 };
