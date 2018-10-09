@@ -57,7 +57,7 @@ typedef TYPE_BLOCKMAKEREVENT(MV_EVENT_BLOCKMAKER_AGREE, CBlockMakerAgreement) CM
 
 class CMvBlockMakerEventListener : virtual public walleve::CWalleveEventListener
 {
-  public:
+public:
     virtual ~CMvBlockMakerEventListener() {}
     DECLARE_EVENTHANDLER(CMvEventBlockMakerUpdate);
     DECLARE_EVENTHANDLER(CMvEventBlockMakerAgree);
@@ -68,17 +68,17 @@ class CMvEventDbpSocketData : public walleve::CWalleveEvent
 {
     friend class walleve::CWalleveStream;
 
-  public:
-    CMvEventDbpSocketData(uint64 nNonceIn, const uint256 &hashForkIn)
+public:
+    CMvEventDbpSocketData(uint64 nNonceIn, const uint256& hashForkIn)
         : CWalleveEvent(nNonceIn, type), hashFork(hashForkIn) {}
     virtual ~CMvEventDbpSocketData() {}
-    virtual bool Handle(walleve::CWalleveEventListener &listener)
+    virtual bool Handle(walleve::CWalleveEventListener& listener)
     {
         try
         {
             return (dynamic_cast<L &>(listener)).HandleEvent(*this);
         }
-        catch (std::bad_cast &)
+        catch (std::bad_cast& )
         {
             return listener.HandleEvent(*this);
         }
@@ -88,15 +88,15 @@ class CMvEventDbpSocketData : public walleve::CWalleveEvent
         return false;
     }
 
-  protected:
+protected:
     template <typename O>
-    void WalleveSerialize(walleve::CWalleveStream &s, O &opt)
+    void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
     {
         s.Serialize(hashFork, opt);
         s.Serialize(data, opt);
     }
 
-  public:
+public:
     uint256 hashFork;
     D data;
 };
@@ -132,7 +132,7 @@ typedef TYPE_DBP_EVENT(MV_EVENT_DBP_PONG, CMvDbpPong) CMvEventDbpPong;
 
 class CMvDBPEventListener : virtual public walleve::CWalleveEventListener
 {
-  public:
+public:
     virtual ~CMvDBPEventListener() {}
     DECLARE_EVENTHANDLER(CMvEventDbpUpdateNewBlock);
     DECLARE_EVENTHANDLER(CMvEventDbpUpdateNewTx);
@@ -140,7 +140,7 @@ class CMvDBPEventListener : virtual public walleve::CWalleveEventListener
 
 class CDBPEventListener : virtual public walleve::CWalleveEventListener
 {
-  public:
+public:
     virtual ~CDBPEventListener() {}
     DECLARE_EVENTHANDLER(CMvEventDbpRequest);
     DECLARE_EVENTHANDLER(CMvEventDbpRespond);
