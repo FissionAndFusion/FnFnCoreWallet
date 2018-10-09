@@ -12,22 +12,22 @@ namespace multiverse
 
 class CMvDbpContent
 {
-  public:
+public:
 };
 
 class CMvDbpRequest : public CMvDbpContent
 {
-  public:
+public:
 };
 
 class CMvDbpRespond : public CMvDbpContent
 {
-  public:
+public:
 };
 
 class CMvDbpConnect : public CMvDbpRequest
 {
-  public:
+public:
     bool isReconnect;
     std::string session;
     int32 version;
@@ -36,40 +36,40 @@ class CMvDbpConnect : public CMvDbpRequest
 
 class CMvDbpSub : public CMvDbpRequest
 {
-  public:
+public:
     std::string id;
     std::string name;
 };
 
 class CMvDbpUnSub : public CMvDbpRequest
 {
-  public:
+public:
     std::string id;
 };
 
 class CMvDbpNoSub : public CMvDbpRespond
 {
-  public:
+public:
     std::string id;
     std::string error;
 };
 
 class CMvDbpReady : public CMvDbpRespond
 {
-  public:
+public:
     std::string id;
 };
 
 class CMvDbpTxIn
 {
-  public:
+public:
     std::vector<uint8> hash;
     uint32 n;
 };
 
 class CMvDbpDestination
 {
-  public:
+public:
     enum PREFIX
     {
         PREFIX_NULL = 0,
@@ -78,7 +78,7 @@ class CMvDbpDestination
         PREFIX_MAX = 3
     };
 
-  public:
+public:
     uint32 prefix;
     std::vector<uint8> data;
     uint32 size; //设置为33
@@ -86,7 +86,7 @@ class CMvDbpDestination
 
 class CMvDbpTransaction
 {
-  public:
+public:
     uint32 nVersion;               //版本号,目前交易版本为 0x0001
     uint32 nType;                  //类型, 区分公钥地址交易、模板地址交易、即时业务交易和跨分支交易
     uint32 nLockUntil;             //交易冻结至高度为 nLockUntil 区块
@@ -102,7 +102,7 @@ class CMvDbpTransaction
 
 class CMvDbpBlock
 {
-  public:
+public:
     uint32 nVersion;
     uint32 nType;                       // 类型,区分创世纪块、主链区块、业务区块和业务子区块
     uint32 nTimeStamp;                  //时间戳，采用UTC秒单位
@@ -118,7 +118,7 @@ class CMvDbpBlock
 
 class CMvDbpAdded : public CMvDbpRespond
 {
-  public:
+public:
     std::string name;
     std::string id;
     boost::any anyAddedObj; // busniess object (block,tx...)
@@ -126,7 +126,7 @@ class CMvDbpAdded : public CMvDbpRespond
 
 class CMvDbpMethod : public CMvDbpRequest
 {
-  public:
+public:
     enum Method
     {
         GET_BLOCKS,
@@ -137,7 +137,7 @@ class CMvDbpMethod : public CMvDbpRequest
     // param name => param value
     typedef std::map<std::string, std::string> ParamMap;
 
-  public:
+public:
     Method method;
     std::string id;
     ParamMap params;
@@ -145,7 +145,7 @@ class CMvDbpMethod : public CMvDbpRequest
 
 class CMvDbpSendTxRet
 {
-  public:
+public:
     std::string hash;
     std::string result;
     std::string reason;
@@ -153,7 +153,7 @@ class CMvDbpSendTxRet
 
 class CMvDbpMethodResult : public CMvDbpRespond
 {
-  public:
+public:
     std::string id;
     std::string error;
     std::vector<boost::any> anyResultObjs; // blocks,tx,send_tx_ret
@@ -161,30 +161,30 @@ class CMvDbpMethodResult : public CMvDbpRespond
 
 class CMvDbpError : public CMvDbpRespond
 {
-  public:
+public:
 };
 
 class CMvDbpConnected : public CMvDbpRespond
 {
-  public:
+public:
     std::string session;
 };
 
 class CMvDbpPing : public CMvDbpRequest, public CMvDbpRespond
 {
-  public:
+public:
     std::string id;
 };
 
 class CMvDbpPong : public CMvDbpRequest, public CMvDbpRespond
 {
-  public:
+public:
     std::string id;
 };
 
 class CMvDbpFailed : public CMvDbpRespond
 {
-  public:
+public:
     std::string reason;  // failed reason
     std::string session; // for delete session map
     std::vector<int32> versions;
@@ -192,7 +192,7 @@ class CMvDbpFailed : public CMvDbpRespond
 
 class CMvDbpBroken
 {
-  public:
+public:
     bool fEventStream;
 };
 } // namespace multiverse
