@@ -33,8 +33,8 @@ public:
     bool GetTxUnspent(const uint256& hashFork,const std::vector<CTxIn>& vInput,
                                                     std::vector<CTxOutput>& vOutput) override;
     bool FilterTx(CTxFilter& filter) override;
-    MvErr AddNewBlock(const CBlock& block,CWorldLineUpdate& update);
-    MvErr AddNewOrigin(const CBlock& block,CWorldLineUpdate& update);
+    MvErr AddNewBlock(const CBlock& block,CWorldLineUpdate& update) override;
+    MvErr AddNewOrigin(const CBlock& block,CWorldLineUpdate& update) override;
     bool GetProofOfWorkTarget(const uint256& hashPrev,int nAlgo,int& nBits,int64& nReward) override;
     bool GetDelegatedProofOfStakeReward(const uint256& hashPrev,std::size_t nWeight,int64& nReward) override;
     bool GetBlockLocator(const uint256& hashFork,CBlockLocator& locator) override;

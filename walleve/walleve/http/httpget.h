@@ -77,8 +77,8 @@ protected:
     bool PostResponse(const std::string& strIOModule,CWalleveEventHttpGetRsp *pEventResp);
     void PostError(const CWalleveEventHttpGet& eventGet,int nErrCode);
     void PostError(const std::string& strIOModule,uint64 nNonce,int nErrCode);
-    bool HandleEvent(CWalleveEventHttpGet& eventGet);
-    bool HandleEvent(CWalleveEventHttpAbort& eventAbort);
+    bool HandleEvent(CWalleveEventHttpGet& eventGet) override;
+    bool HandleEvent(CWalleveEventHttpAbort& eventAbort) override;
     void CloseConn(CHttpGetClient *pGetClient,int nErrCode = HTTPGET_OK);
     CIOSSLOption GetSSLOption(CWalleveHttpGet& httpGet,const std::string& strHost);
 protected:

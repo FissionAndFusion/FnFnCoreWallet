@@ -30,20 +30,20 @@ public:
     bool AddNode(const walleve::CNetHost& node) override;
     bool RemoveNode(const walleve::CNetHost& node) override;
     /* Worldline & Tx Pool*/
-    int  GetForkCount();
-    int  GetForkHeight(const uint256& hashFork);
-    void ListFork(std::vector<std::pair<uint256,CProfile> >& vFork);
+    int  GetForkCount() override;
+    int  GetForkHeight(const uint256& hashFork) override;
+    void ListFork(std::vector<std::pair<uint256,CProfile> >& vFork) override;
     bool GetForkGenealogy(const uint256& hashFork,std::vector<std::pair<uint256,int> >& vAncestry,
-                                                  std::vector<std::pair<int,uint256> >& vSubline);
-    bool GetBlockLocation(const uint256& hashBlock,uint256& hashFork,int& nHeight);
-    int  GetBlockCount(const uint256& hashFork);
-    bool GetBlockHash(const uint256& hashFork,int nHeight,uint256& hashBlock);
-    bool GetBlockHash(const uint256& hashFork,int nHeight,std::vector<uint256>& vBlockHash);
-    bool GetBlock(const uint256& hashBlock,CBlock& block,uint256& hashFork,int& nHeight);
-    void GetTxPool(const uint256& hashFork,std::vector<std::pair<uint256,std::size_t> >& vTxPool);
-    bool GetTransaction(const uint256& txid,CTransaction& tx,uint256& hashFork,int& nHeight);
-    MvErr SendTransaction(CTransaction& tx);
-    bool RemovePendingTx(const uint256& txid);
+                                                  std::vector<std::pair<int,uint256> >& vSubline) override;
+    bool GetBlockLocation(const uint256& hashBlock,uint256& hashFork,int& nHeight) override;
+    int  GetBlockCount(const uint256& hashFork) override;
+    bool GetBlockHash(const uint256& hashFork,int nHeight,uint256& hashBlock) override;
+    bool GetBlockHash(const uint256& hashFork,int nHeight,std::vector<uint256>& vBlockHash) override;
+    bool GetBlock(const uint256& hashBlock,CBlock& block,uint256& hashFork,int& nHeight) override;
+    void GetTxPool(const uint256& hashFork,std::vector<std::pair<uint256,std::size_t> >& vTxPool) override;
+    bool GetTransaction(const uint256& txid,CTransaction& tx,uint256& hashFork,int& nHeight) override;
+    MvErr SendTransaction(CTransaction& tx) override;
+    bool RemovePendingTx(const uint256& txid) override;
     /* Wallet */
     bool HaveKey(const crypto::CPubKey& pubkey) override;
     void GetPubKeys(std::set<crypto::CPubKey>& setPubKey) override;

@@ -139,7 +139,7 @@ public:
     bool UpdateTx(const uint256& hashFork,const CAssembledTx& tx) override;
     bool ClearTx() override;
     bool LoadTx(const CWalletTx& wtx);
-    bool AddNewFork(const uint256& hashFork,const uint256& hashParent,int nOriginHeight);
+    bool AddNewFork(const uint256& hashFork,const uint256& hashParent,int nOriginHeight) override;
 protected:
     bool WalleveHandleInitialize() override;
     void WalleveHandleDeinitialize() override;

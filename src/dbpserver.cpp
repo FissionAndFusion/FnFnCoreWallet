@@ -533,7 +533,7 @@ CDbpServer::CDbpServer()
 {
 }
 
-CDbpServer::~CDbpServer()
+CDbpServer::~CDbpServer() noexcept
 {
 }
 
