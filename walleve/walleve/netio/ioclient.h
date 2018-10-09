@@ -75,7 +75,7 @@ protected:
 
 protected:
     boost::asio::ip::tcp::socket sockClient;
-    boost::asio::strand asioStrand;
+    boost::asio::io_service::strand asioStrand;
 };
 
 class CSSLClient : public CIOClient
