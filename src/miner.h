@@ -17,14 +17,14 @@ namespace multiverse
 
 class CMinerWork
 {
-  public:
+public:
     std::vector<unsigned char> vchWorkData;
     uint256 hashPrev;
     int64 nPrevTime;
     int nAlgo;
     int nBits;
 
-  public:
+public:
     CMinerWork() { SetNull(); }
     void SetNull()
     {
@@ -39,25 +39,25 @@ class CMinerWork
 
 class CMiner : public walleve::IIOModule, virtual public walleve::CWalleveHttpEventListener
 {
-  public:
-    CMiner(const std::vector<std::string> &vArgsIn);
+public:
+    CMiner(const std::vector<std::string>& vArgsIn);
     ~CMiner();
 
-  protected:
+protected:
     bool WalleveHandleInitialize() override;
     void WalleveHandleDeinitialize() override;
     bool WalleveHandleInvoke() override;
     void WalleveHandleHalt() override;
-    const CMvRPCClientConfig *WalleveConfig();
+    const CMvRPCClientConfig* WalleveConfig();
     bool Interrupted() { return (nMinerStatus != MINER_RUN); }
-    bool HandleEvent(walleve::CWalleveEventHttpGetRsp &event) override;
-    bool SendRequest(uint64 nNonce, const string &content);
+    bool HandleEvent(walleve::CWalleveEventHttpGetRsp& event) override;
+    bool SendRequest(uint64 nNonce, const string& content);
     bool GetWork();
-    bool SubmitWork(const std::vector<unsigned char> &vchWorkData);
+    bool SubmitWork(const std::vector<unsigned char>& vchWorkData);
     void CancelRPC();
-    uint256 GetHashTarget(const CMinerWork &work, int64 nTime);
+    uint256 GetHashTarget(const CMinerWork& work, int64 nTime);
 
-  private:
+private:
     enum
     {
         MINER_RUN = 0,
@@ -68,8 +68,8 @@ class CMiner : public walleve::IIOModule, virtual public walleve::CWalleveHttpEv
     void LaunchFetcher();
     void LaunchMiner();
 
-  protected:
-    walleve::IIOProc *pHttpGet;
+protected:
+    walleve::IIOProc* pHttpGet;
     walleve::CWalleveThread thrFetcher;
     walleve::CWalleveThread thrMiner;
     boost::mutex mutex;
