@@ -2,8 +2,8 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef MULTIVERSE_DBP_UTILS_HPP
-#define MULTIVERSE_DBP_UTILS_HPP
+#ifndef MULTIVERSE_DBP_UTILS_H
+#define MULTIVERSE_DBP_UTILS_H
 
 #include <arpa/inet.h>
 #include <cstring>
@@ -13,7 +13,7 @@ namespace multiverse
 {
 class CDbpUtils
 {
-  public:
+public:
     static uint32_t ParseLenFromMsgHeader(const char *header, int size)
     {
         uint32_t lenNetWorkOrder = 0;
@@ -57,4 +57,4 @@ class CDbpUtils
     }
 };
 } // namespace multiverse
-#endif // MULTIVERSE_DBP_UTILS_HPP
+#endif // MULTIVERSE_DBP_UTILS_H
