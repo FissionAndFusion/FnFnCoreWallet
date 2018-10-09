@@ -268,7 +268,7 @@ void CDbpClient::SendResponse(CMvDbpAdded& body)
     {
         CMvDbpTransaction tempTx = boost::any_cast<CMvDbpTransaction>(body.anyAddedObj);
 
-        std::unique_ptr<lws::Transaction> tx(std::make_unique<lws::Transaction>());
+        std::unique_ptr<lws::Transaction> tx(new lws::Transaction());
         CreateLwsTransaction(&tempTx, tx.get());
 
         google::protobuf::Any* anyTx = new google::protobuf::Any();
@@ -309,7 +309,7 @@ void CDbpClient::SendResponse(CMvDbpMethodResult& body)
         {
             CMvDbpTransaction tempTx = boost::any_cast<CMvDbpTransaction>(obj);
 
-            std::unique_ptr<lws::Transaction> tx(std::make_unique<lws::Transaction>());
+            std::unique_ptr<lws::Transaction> tx(new lws::Transaction());
             CreateLwsTransaction(&tempTx, tx.get());
             resultMsg.add_result()->PackFrom(*tx);
         }

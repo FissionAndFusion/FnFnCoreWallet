@@ -20,4 +20,5 @@ include_directories(../src ../walleve ../crypto ../common ../storage ../network)
 target_link_libraries(test_fnfn
 	Boost::unit_test_framework
 	Boost::system
+	Boost::thread
 )
