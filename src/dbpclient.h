@@ -10,14 +10,16 @@
 namespace multiverse
 {
 
-class CMvDbpClient : public walleve::IIOModule
+class CMvDbpClient : public walleve::CIOProc
 {
 public:
     CMvDbpClient();
-    virtual ~CMvDbpClient();
+    virtual ~CMvDbpClient() noexcept;
 protected:
     bool WalleveHandleInitialize() override;
     void WalleveHandleDeinitialize() override;
+    void EnterLoop() override;
+    void LeaveLoop() override;
 };
 
 } // namespace multiverse
