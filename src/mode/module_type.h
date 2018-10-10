@@ -28,6 +28,7 @@ enum class EModuleType
     CONSENSUS,     // CConsensus
     DBPSERVER,     // CDbpServer
     DBPSERVICE,    // CDbpService
+    DBPCLIENT,     // CMvDbpClient
     DNSEED,        // CDNSeed
 };
 

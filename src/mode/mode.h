@@ -181,6 +181,7 @@ public:
                     EModuleType::SERVICE,
                     EModuleType::DBPSERVER,
                     EModuleType::DBPSERVICE,
+                    EModuleType::DBPCLIENT,
                     EModuleType::HTTPSERVER,
                     EModuleType::RPCMODE,
                     EModuleType::BLOCKMAKER

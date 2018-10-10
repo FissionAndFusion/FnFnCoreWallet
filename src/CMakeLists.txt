@@ -28,8 +28,8 @@ set(src
 	blockmaker.cpp blockmaker.h
 	rpcclient.cpp rpcclient.h
 	miner.cpp miner.h
-
 	dbpservice.cpp dbpservice.h
+	dbpclient.cpp dbpclient.h
 	dbptype.h
 	dbpserver.h
 	dbpserver.cpp

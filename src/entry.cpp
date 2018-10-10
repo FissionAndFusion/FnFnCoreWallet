@@ -17,6 +17,7 @@
 #include "rpcclient.h"
 #include "miner.h"
 #include "dbpservice.h"
+#include "dbpclient.h"
 #include "dnseed.h"
 
 #include <map>
@@ -313,6 +314,14 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
             dynamic_cast<CDbpServer*>(pBase)->AddNewHost(GetDbpHostConfig());
 
             if (!AttachModule(new CDbpService()))
+            {
+                return false;
+            }
+            break;
+        }
+        case EModuleType::DBPCLIENT:
+        {
+            if(!AttachModule(new CMvDbpClient()))
             {
                 return false;
             }
