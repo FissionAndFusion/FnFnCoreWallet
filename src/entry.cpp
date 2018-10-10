@@ -378,6 +378,11 @@ CDbpHostConfig CMvEntry::GetDbpHostConfig()
                           sslDbp, mapUsrDbp, config->vDbpAllowIP, "dbpservice");
 }
 
+CDbpClientConfig CMvEntry::GetDbpClientConfig()
+{
+    //return CDbpClientConfig()
+}
+
 bool CMvEntry::Run()
 {
     if (!walleveDocker.Run())

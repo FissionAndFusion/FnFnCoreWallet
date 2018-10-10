@@ -88,6 +88,10 @@
         }
     ],
 
+    "CMvDbpClientConfigOption": [
+        
+    ],
+
     "CMvRPCServerConfigOption": [
         {
             "name": "nRPCMaxConnections",
