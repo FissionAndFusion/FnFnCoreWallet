@@ -172,6 +172,123 @@ protected:
     std::map<uint256,CWalletFork> mapFork;
 };
 
+// dummy wallet for on wallet server
+class CDummyWallet : public IWallet
+{
+public:
+    CDummyWallet() {}
+    ~CDummyWallet() {}
+    /* Key store */
+    virtual bool AddKey(const crypto::CKey& key) override
+    {
+        return false;
+    }
+    virtual void GetPubKeys(std::set<crypto::CPubKey>& setPubKey) const override {}
+    virtual bool Have(const crypto::CPubKey& pubkey) const override
+    {
+        return false;
+    }
+    virtual bool Export(const crypto::CPubKey& pubkey,
+                        std::vector<unsigned char>& vchKey) const override
+    {
+        return false;
+    }
+    virtual bool Import(const std::vector<unsigned char>& vchKey,
+                        crypto::CPubKey& pubkey) override
+    {
+        return false;
+    }
+    virtual bool Encrypt(
+      const crypto::CPubKey& pubkey, const crypto::CCryptoString& strPassphrase,
+      const crypto::CCryptoString& strCurrentPassphrase) override
+    {
+        return false;
+    }
+    virtual bool GetKeyStatus(const crypto::CPubKey& pubkey, int& nVersion,
+                              bool& fLocked,
+                              int64& nAutoLockTime) const override
+    {
+        return false;
+    }
+    virtual bool IsLocked(const crypto::CPubKey& pubkey) const override
+    {
+        return false;
+    }
+    virtual bool Lock(const crypto::CPubKey& pubkey) override
+    {
+        return false;
+    }
+    virtual bool Unlock(const crypto::CPubKey& pubkey,
+                        const crypto::CCryptoString& strPassphrase,
+                        int64 nTimeout) override
+    {
+        return false;
+    }
+    virtual bool Sign(const crypto::CPubKey& pubkey, const uint256& hash,
+                      std::vector<uint8>& vchSig) const override
+    {
+        return false;
+    }
+    /* Template */
+    virtual void GetTemplateIds(std::set<CTemplateId>& setTemplateId) const override {}
+    virtual bool Have(const CTemplateId& tid) const override
+    {
+        return false;
+    }
+    virtual bool AddTemplate(CTemplatePtr& ptr) override
+    {
+        return false;
+    }
+    virtual bool GetTemplate(const CTemplateId& tid, CTemplatePtr& ptr) override
+    {
+        return false;
+    }
+    /* Wallet Tx */
+    virtual std::size_t GetTxCount() override
+    {
+        return 0;
+    }
+    virtual bool ListTx(int nOffset, int nCount, std::vector<CWalletTx>& vWalletTx) override
+    {
+        return true;
+    }
+    virtual bool GetBalance(const CDestination& dest, const uint256& hashFork,
+                            int nForkHeight, CWalletBalance& balance) override
+    {
+        return false;
+    }
+    virtual bool SignTransaction(const CDestination& destIn, CTransaction& tx,
+                                 bool& fCompleted) const override
+    {
+        return false;
+    }
+    virtual bool ArrangeInputs(const CDestination& destIn,
+                               const uint256& hashFork, int nForkHeight,
+                               CTransaction& tx) override
+    {
+        return false;
+    }
+    /* Update */
+    virtual bool SynchronizeTxSet(CTxSetChange& change) override
+    {
+        return true;
+    }
+    virtual bool UpdateTx(const uint256& hashFork,
+                          const CAssembledTx& tx) override
+    {
+        return true;
+    }
+    virtual bool ClearTx() override
+    {
+        return true;
+    }
+    virtual bool AddNewFork(const uint256& hashFork, const uint256& hashParent,
+                            int nOriginHeight) override
+    {
+        return true;
+    }
+};
+
 } // namespace multiverse
 
 #endif //MULTIVERSE_WALLET_H

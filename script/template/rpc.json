@@ -1380,12 +1380,12 @@
         },
         "example": [
             {
-                "request": "multiverse-cli importkey 071c39eccba20183ae693ada9724525b327e70a75147d5579a648ee52ce716d700000000346783653e9035de91d5ac79545e17911e5825b50d60a2e04ac8451aa83c4ae4f0ea063a5917b68256a3bd391966b30f5660e7d5d1777ae996a49f4f",
-                "response": "d716e72ce58e649a57d54751a7707e325b522497da3a69ae8301a2cbec391c07"
+                "request": "multiverse-cli importkey 642e19a647f9f2b795b8edf97c849ab1866855c9ac6b59d4cf2d9e63d23639de010000002f63a31bed90496a03bb58269e77b98751aa902be47ecbf9ac3adef221cbdcf6ecfba5a9c86e92323fb5af7a2df3f805caaf5dd80caf630e5eb206f0",
+                "response": "de3936d2639e2dcfd4596bacc9556886b19a847cf9edb895b7f2f947a6192e64"
             },
             {
-                "request": "curl -d '{\"id\":14,\"method\":\"importkey\",\"jsonrpc\":\"2.0\",\"params\":{\"pubkey\":\"071c39eccba20183ae693ada9724525b327e70a75147d5579a648ee52ce716d700000000346783653e9035de91d5ac79545e17911e5825b50d60a2e04ac8451aa83c4ae4f0ea063a5917b68256a3bd391966b30f5660e7d5d1777ae996a49f4f\"}}' http://127.0.0.1:6812",
-                "response": "{\"id\":14,\"jsonrpc\":\"2.0\",\"result\":\"d716e72ce58e649a57d54751a7707e325b522497da3a69ae8301a2cbec391c07\"}"
+                "request": "curl -d '{\"id\":3,\"method\":\"importkey\",\"jsonrpc\":\"2.0\",\"params\":{\"pubkey\":\"642e19a647f9f2b795b8edf97c849ab1866855c9ac6b59d4cf2d9e63d23639de010000002f63a31bed90496a03bb58269e77b98751aa902be47ecbf9ac3adef221cbdcf6ecfba5a9c86e92323fb5af7a2df3f805caaf5dd80caf630e5eb206f0\"}}' http://127.0.0.1:6812",
+                "response": "{\"id\":3,\"jsonrpc\":\"2.0\",\"result\":\"de3936d2639e2dcfd4596bacc9556886b19a847cf9edb895b7f2f947a6192e64\"}"
             }
         ],
         "error": [
@@ -1416,12 +1416,12 @@
         },
         "example": [
             {
-                "request": "multiverse-cli exportkey d716e72ce58e649a57d54751a7707e325b522497da3a69ae8301a2cbec391c07",
-                "response": "071c39eccba20183ae693ada9724525b327e70a75147d5579a648ee52ce716d700000000346783653e9035de91d5ac79545e17911e5825b50d60a2e04ac8451aa83c4ae4f0ea063a5917b68256a3bd391966b30f5660e7d5d1777ae996a49f4f"
+                "request": "multiverse-cli exportkey de3936d2639e2dcfd4596bacc9556886b19a847cf9edb895b7f2f947a6192e64",
+                "response": "642e19a647f9f2b795b8edf97c849ab1866855c9ac6b59d4cf2d9e63d23639de010000002f63a31bed90496a03bb58269e77b98751aa902be47ecbf9ac3adef221cbdcf6ecfba5a9c86e92323fb5af7a2df3f805caaf5dd80caf630e5eb206f0"
             },
             {
-                "request": "curl -d '{\"id\":10,\"method\":\"exportkey\",\"jsonrpc\":\"2.0\",\"params\":{\"pubkey\":\"d716e72ce58e649a57d54751a7707e325b522497da3a69ae8301a2cbec391c07\"}}' http://127.0.0.1:6812",
-                "response": "{\"id\":10,\"jsonrpc\":\"2.0\",\"result\":\"071c39eccba20183ae693ada9724525b327e70a75147d5579a648ee52ce716d700000000346783653e9035de91d5ac79545e17911e5825b50d60a2e04ac8451aa83c4ae4f0ea063a5917b68256a3bd391966b30f5660e7d5d1777ae996a49f4f\"}"
+                "request": "curl -d '{\"id\":13,\"method\":\"exportkey\",\"jsonrpc\":\"2.0\",\"params\":{\"pubkey\":\"de3936d2639e2dcfd4596bacc9556886b19a847cf9edb895b7f2f947a6192e64\"}}' http://127.0.0.1:6812",
+                "response": "{\"id\":13,\"jsonrpc\":\"2.0\",\"result\":\"642e19a647f9f2b795b8edf97c849ab1866855c9ac6b59d4cf2d9e63d23639de010000002f63a31bed90496a03bb58269e77b98751aa902be47ecbf9ac3adef221cbdcf6ecfba5a9c86e92323fb5af7a2df3f805caaf5dd80caf630e5eb206f0\"}"
             }
         ],
         "error": [

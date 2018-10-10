@@ -15,7 +15,6 @@ class CMvNetworkConfig;
 class CMvRPCServerConfig;
 class CMvRPCClientConfig;
 class CMvStorageConfig;
-class CMvServerConfig;
 class CMvDbpServerConfig;
 
 ///

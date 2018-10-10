@@ -7,6 +7,14 @@
             "default": false,
             "format": "-testnet",
             "desc": "Use the test network"
+        },
+        {
+            "name": "fWallet",
+            "type": "bool",
+            "opt": "wallet",
+            "default": true,
+            "format": "-nowallet",
+            "desc": "Launch server without wallet"
         }
     ],
     "CMvMintConfigOption": [
@@ -43,6 +51,79 @@
             "desc": "POW blake512 key"
         }
     ],
+    "CMvRPCBasicConfigOption": [
+        {
+            "access": "protected",
+            "name": "nRPCPortInt",
+            "type": "int",
+            "opt": "rpcport",
+            "default": 0,
+            "format": "-rpcport=port",
+            "desc": "Listen for JSON-RPC connections on <port> (default: 6802)"
+        },
+        {
+            "name": "strRPCUser",
+            "type": "string",
+            "opt": "rpcuser",
+            "format": "-rpcuser=<user>",
+            "desc": "<user> name for JSON-RPC connections"
+        },
+        {
+            "name": "strRPCPass",
+            "type": "string",
+            "opt": "rpcpassword",
+            "format": "-rpcpassword=<password>",
+            "desc": "<password> for JSON-RPC connections"
+        },
+        {
+            "name": "fRPCSSLEnable",
+            "type": "bool",
+            "opt": "rpcssl",
+            "default": false,
+            "format": "-rpcssl",
+            "desc": "Use OpenSSL (https) for JSON-RPC connections or not (default false)"
+        },
+        {
+            "name": "fRPCSSLVerify",
+            "type": "bool",
+            "opt": "rpcsslverify",
+            "default": false,
+            "format": "-norpcsslverify",
+            "desc": "Verify SSL or not (default yes)"
+        },
+        {
+            "name": "strRPCCAFile",
+            "type": "string",
+            "opt": "rpccafile",
+            "default": "ca.crt",
+            "format": "-rpccafile=<file.cert>",
+            "desc": "SSL CA file name (default ca.crt)"
+        },
+        {
+            "name": "strRPCCertFile",
+            "type": "string",
+            "opt": "rpccertfile",
+            "default": "server.crt",
+            "format": "-rpccertfile=<file.cert>",
+            "desc": "Server certificate file (default: server.cert)"
+        },
+        {
+            "name": "strRPCPKFile",
+            "type": "string",
+            "opt": "rpcpkfile",
+            "default": "server.key",
+            "format": "-rpcpkfile=<file.pem>",
+            "desc": "Server private key (default: server.pem)"
+        },
+        {
+            "name": "strRPCCiphers",
+            "type": "string",
+            "opt": "rpcciphers",
+            "default": "TLSv1+HIGH:!SSLv2:!aNULL:!eNULL:!AH:!3DES:@STRENGTH",
+            "format": "-rpcciphers=<ciphers>",
+            "desc": "Acceptable ciphers (default: TLSv1+HIGH:!SSLv2:!aNULL:!eNULL:!AH:!3DES:@STRENGTH)"
+        }
+    ],
     "CMvRPCClientConfigOption": [
         {
             "name": "strRPCConnect",
@@ -61,33 +142,6 @@
             "desc": "Connection timeout <time> seconds (default: 120)"
         }
     ],
-
-    "CMvDbpServerConfigOption": [
-        {
-            "name": "nDbpMaxConnections",
-            "type": "unsigned int",
-            "opt": "dbpmaxconnections",
-            "default": "DEFAULT_DBP_MAX_CONNECTIONS",
-            "format": "-dbpmaxconnections=<num>",
-            "desc": "Set dbp max connections to <num> (default: 20)"
-        },
-        {
-            "name": "nDbpSessionTimeout",
-            "type": "unsigned int",
-            "opt": "dbpsessiontimeout",
-            "default": "DEFAULT_DBP_SESSION_TIMEOUT",
-            "format": "-dbpsessiontimeout=<num>",
-            "desc": "Set max timeout to <num>  seconds (default: 60*5)"
-        },
-        {
-            "name": "vDbpAllowIP",
-            "type": "vector<string>",
-            "opt": "dbpallowip",
-            "format": "-dbpallowip=<ip>",
-            "desc": "Allow DBP connections from specified <ip> address"
-        }
-    ],
-
     "CMvRPCServerConfigOption": [
         {
             "name": "nRPCMaxConnections",
@@ -105,8 +159,7 @@
             "desc": "Allow JSON-RPC connections from specified <ip> address"
         }
     ],
-
-    "CMvDbpBasicConfigOption":[
+    "CMvDbpBasicConfigOption": [
         {
             "access": "protected",
             "name": "nDbpPortInt",
@@ -179,78 +232,29 @@
             "desc": "Acceptable ciphers (default: TLSv1+HIGH:!SSLv2:!aNULL:!eNULL:!AH:!3DES:@STRENGTH)"
         }
     ],
-
-    "CMvRPCBasicConfigOption": [
+    "CMvDbpServerConfigOption": [
         {
-            "access": "protected",
-            "name": "nRPCPortInt",
-            "type": "int",
-            "opt": "rpcport",
-            "default": 0,
-            "format": "-rpcport=port",
-            "desc": "Listen for JSON-RPC connections on <port> (default: 6802)"
+            "name": "nDbpMaxConnections",
+            "type": "unsigned int",
+            "opt": "dbpmaxconnections",
+            "default": "DEFAULT_DBP_MAX_CONNECTIONS",
+            "format": "-dbpmaxconnections=<num>",
+            "desc": "Set dbp max connections to <num> (default: 20)"
         },
         {
-            "name": "strRPCUser",
-            "type": "string",
-            "opt": "rpcuser",
-            "format": "-rpcuser=<user>",
-            "desc": "<user> name for JSON-RPC connections"
+            "name": "nDbpSessionTimeout",
+            "type": "unsigned int",
+            "opt": "dbpsessiontimeout",
+            "default": "DEFAULT_DBP_SESSION_TIMEOUT",
+            "format": "-dbpsessiontimeout=<num>",
+            "desc": "Set max timeout to <num>  seconds (default: 60*5)"
         },
         {
-            "name": "strRPCPass",
-            "type": "string",
-            "opt": "rpcpassword",
-            "format": "-rpcpassword=<password>",
-            "desc": "<password> for JSON-RPC connections"
-        },
-        {
-            "name": "fRPCSSLEnable",
-            "type": "bool",
-            "opt": "rpcssl",
-            "default": false,
-            "format": "-rpcssl",
-            "desc": "Use OpenSSL (https) for JSON-RPC connections or not (default false)"
-        },
-        {
-            "name": "fRPCSSLVerify",
-            "type": "bool",
-            "opt": "rpcsslverify",
-            "default": false,
-            "format": "-norpcsslverify",
-            "desc": "Verify SSL or not (default yes)"
-        },
-        {
-            "name": "strRPCCAFile",
-            "type": "string",
-            "opt": "rpccafile",
-            "default": "ca.crt",
-            "format": "-rpccafile=<file.cert>",
-            "desc": "SSL CA file name (default ca.crt)"
-        },
-        {
-            "name": "strRPCCertFile",
-            "type": "string",
-            "opt": "rpccertfile",
-            "default": "server.crt",
-            "format": "-rpccertfile=<file.cert>",
-            "desc": "Server certificate file (default: server.cert)"
-        },
-        {
-            "name": "strRPCPKFile",
-            "type": "string",
-            "opt": "rpcpkfile",
-            "default": "server.key",
-            "format": "-rpcpkfile=<file.pem>",
-            "desc": "Server private key (default: server.pem)"
-        },
-        {
-            "name": "strRPCCiphers",
-            "type": "string",
-            "opt": "rpcciphers",
-            "default": "TLSv1+HIGH:!SSLv2:!aNULL:!eNULL:!AH:!3DES:@STRENGTH",
-            "format": "-rpcciphers=<ciphers>",
-            "desc": "Acceptable ciphers (default: TLSv1+HIGH:!SSLv2:!aNULL:!eNULL:!AH:!3DES:@STRENGTH)"
+            "name": "vDbpAllowIP",
+            "type": "vector<string>",
+            "opt": "dbpallowip",
+            "format": "-dbpallowip=<ip>",
+            "desc": "Allow DBP connections from specified <ip> address"
         }
     ],
     "CMvStorageConfigOption": [
@@ -362,7 +366,7 @@
             "name": "nDNSeedPort",
             "type": "int",
             "opt": "dnseedport",
-            "default":"DEFAULT_DNSEED_PORT",
+            "default": "DEFAULT_DNSEED_PORT",
             "format": "-dnseedport=<port>",
             "desc": "Listen for dnseed connections on <port> (default: 6816)"
         },
@@ -370,7 +374,7 @@
             "name": "nMaxTimes2ConnectFail",
             "type": "unsigned int",
             "opt": "dnseedmaxtimes",
-            "default":"DNSEED_DEFAULT_MAX_TIMES_CONNECT_FAIL",
+            "default": "DNSEED_DEFAULT_MAX_TIMES_CONNECT_FAIL",
             "format": "-dnseedmaxtimes=<times>",
             "desc": "Max <times> dnseed attempt to connect node"
         },
