@@ -2,26 +2,17 @@
 import sys
 sys.dont_write_bytecode = True
 
-import os
 import json
 import re
 from collections import OrderedDict
 from tool import *
 
-root = os.path.dirname(__file__)
-json_root = os.path.abspath(os.path.join(root, 'template'))
-cpp_src_root = os.path.abspath(os.path.join(root, '../src'))
-
-rpc_json = os.path.join(json_root, 'rpc.json')
-rpc_protocol_h = os.path.join(cpp_src_root, 'rpc/auto_protocol.h')
-rpc_protocol_cpp = os.path.join(cpp_src_root, 'rpc/auto_protocol.cpp')
+rpc_json, rpc_protocol_h, rpc_protocol_cpp = None, None, None
 
 # help list and dict
 commands = OrderedDict()
 alone_classes = OrderedDict()
 all_classes = {}
-
-
 json_type_list = ('int', 'uint', 'double', 'bool', 'string', 'array', 'object')
 
 
@@ -152,7 +143,7 @@ def get_cpp_json(value, type):
         return value + '.get_array()'
     else:
         return value + '.get_obj()'
-    
+
 
 def get_cpp_json_type(type):
     if type == 'int':
@@ -304,6 +295,7 @@ def from_json_value(value, key, name, type, w, indent):
     else:
         w.write(indent + name + ' = ' + get_cpp_json(value, type) + ';\n')
 
+
 def call_check_is_valid(value, key, w, indent):
     w.write(indent + 'CheckIsValid(' + value + ', ' + quote(key) + ');\n')
 
@@ -321,15 +313,15 @@ def check_json_type_fun(w):
         indent = brace_begin(w, indent)
         if type == 'uint':
             w.write(indent + 'b = ((value.type() == ' + get_cpp_json_type('uint')
-                + ') && (value.is_uint64() || ' + get_cpp_json('value', 'int') + ' >= 0));\n')
+                    + ') && (value.is_uint64() || ' + get_cpp_json('value', 'int') + ' >= 0));\n')
         elif type == 'double':
             w.write(indent + 'b = ((value.type() == ' + get_cpp_json_type('double')
-                + ') || (value.type() == ' + get_cpp_json_type('int') + '));\n')
+                    + ') || (value.type() == ' + get_cpp_json_type('int') + '));\n')
         else:
-            w.write(indent + 'b = (value.type() == ' +  get_cpp_json_type(type) + ');\n')
+            w.write(indent + 'b = (value.type() == ' + get_cpp_json_type(type) + ');\n')
         indent = brace_end(w, indent)
         w.write(indent + 'else ')
-    
+
     empty_line(w)
     indent = brace_begin(w, indent)
     w.write(indent + 'b = false;\n')
@@ -728,14 +720,14 @@ def Help_h(w, indent):
 
 def Help_cpp(config, w, scope):
     # one line content
-    def one_line(container, content, indent, max_length = None):
+    def one_line(container, content, indent, max_length=None):
         l = split(content, ' ' * len(indent), max_length)
         container.append((indent, l))
 
     # deal one command line argument
     def one_argument(container, format, type, desc, required, default, cond_key, cond_value, indent):
         if cond_key != None:
-            cond_statement = indent+ '(if ' + cond_key + ' is ' + cond_value + ')\n'
+            cond_statement = indent + '(if ' + cond_key + ' is ' + cond_value + ')\n'
             container.append((indent + cond_statement, None))
 
         arg_format = indent + format
@@ -749,12 +741,12 @@ def Help_cpp(config, w, scope):
         container.append((arg_format, desc_list))
 
     # deal one json-rpc param
-    def one_param(container, key, type, desc, required, indent, default = None, 
-                     cond_key = None, cond_value = None, has_dot = True, place_holder = None):
+    def one_param(container, key, type, desc, required, indent, default=None,
+                  cond_key=None, cond_value=None, has_dot=True, place_holder=None):
         if cond_key != None:
             cond_statement = '(if ' + quote(cond_key) + ' is ' + cond_value + ')\n'
             container.append((indent + cond_statement, None))
-        
+
         if type == 'array':
             return
 
@@ -767,7 +759,7 @@ def Help_cpp(config, w, scope):
 
             if has_dot:
                 key_fmt = key_fmt + ','
-            
+
         arg_format = indent + key_fmt
         arg_format = arg_format + space(arg_format, summary_indent)
 
@@ -798,7 +790,7 @@ def Help_cpp(config, w, scope):
             container.append((indent + '{\n', None))
             for p in subclass.params:
                 if p.type != 'array':
-                    one_param(container, p.key, p.type, p.desc, p.required, next_indent, 
+                    one_param(container, p.key, p.type, p.desc, p.required, next_indent,
                               p.default, p.cond_key, p.cond_value, p != subclass.params[-1])
                 if not is_pod(p):
                     sub_params(container, p.type, p.cpp_type, p, find_subclass(p, subclass.subclass), next_indent)
@@ -845,8 +837,9 @@ def Help_cpp(config, w, scope):
         condition = True if p.cond_key else False
 
         # parse one argument
-        one_argument(arguments, format, p.type, p.desc, p.required, p.default, p.cond_key, p.cond_value, argument_indent)
-            
+        one_argument(arguments, format, p.type, p.desc, p.required,
+                     p.default, p.cond_key, p.cond_value, argument_indent)
+
         # index keep same when condition
         if not condition:
             arg_count = arg_count + 1
@@ -861,7 +854,8 @@ def Help_cpp(config, w, scope):
 
         next_indent = argument_indent + sub_argument_indent
         for p in req_params:
-            one_param(request, p.key, p.type, p.desc, p.required, next_indent, p.default, p.cond_key, p.cond_value, p != req_params[-1])
+            one_param(request, p.key, p.type, p.desc, p.required, next_indent,
+                      p.default, p.cond_key, p.cond_value, p != req_params[-1])
             sub_params(request, p.type, p.cpp_type, p, find_subclass(p, config.req_subclass), next_indent)
 
         if config.req_type != 'array':
@@ -871,7 +865,8 @@ def Help_cpp(config, w, scope):
     if resp_params:
         if is_pod(config.resp_type):
             p = resp_params[0]
-            one_param(response, "result", p.type, p.desc, p.required, argument_indent, p.default, p.cond_key, p.cond_value, False, p.key)
+            one_param(response, "result", p.type, p.desc, p.required, argument_indent,
+                      p.default, p.cond_key, p.cond_value, False, p.key)
         else:
             response.append((argument_indent + '"result" :\n', None))
             if config.resp_type != 'array':
@@ -879,7 +874,8 @@ def Help_cpp(config, w, scope):
 
             next_indent = argument_indent + sub_argument_indent
             for p in resp_params:
-                one_param(response, p.key, p.type, p.desc, p.required, next_indent, p.default, p.cond_key, p.cond_value, p != resp_params[-1])
+                one_param(response, p.key, p.type, p.desc, p.required, next_indent,
+                          p.default, p.cond_key, p.cond_value, p != resp_params[-1])
                 sub_params(response, p.type, p.cpp_type, p, find_subclass(p, config.resp_subclass), next_indent)
 
             if config.resp_type != 'array':
@@ -888,17 +884,17 @@ def Help_cpp(config, w, scope):
     # parse example
     if config.example:
         if isinstance(config.example, unicode):
-            one_line(example, config.example, example_req_indent, example_max_line_len)
+            one_line(example, config.example, example_req_indent)
         elif isinstance(config.example, list):
             for eg in config.example:
                 enter = '' if eg == config.example[0] else '\n'
                 if isinstance(eg, unicode):
-                    one_line(example, eg, enter + example_req_indent, example_max_line_len)
+                    one_line(example, eg, enter + example_req_indent)
                 elif isinstance(eg, dict):
                     if 'request' in eg:
-                        one_line(example, eg['request'], enter + example_req_indent, example_max_line_len)
+                        one_line(example, eg['request'], enter + example_req_indent)
                     if 'response' in eg:
-                        one_line(example, eg['response'], example_resp_indent, example_max_line_len)
+                        one_line(example, eg['response'], example_resp_indent)
 
     # parse error
     if config.error:
@@ -907,7 +903,6 @@ def Help_cpp(config, w, scope):
         elif isinstance(config.error, list):
             for e in config.error:
                 one_line(error, e, error_indent)
-
 
     # function begin
     w.write('string ' + scope + 'Help() const\n')
@@ -1317,13 +1312,13 @@ def parse():
 
     # parse request, response
     for cmd in commands:
-        request, response, config  = commands[cmd]
+        request, response, config = commands[cmd]
 
         request.parse()
 
         if response:
             response.parse()
-            config.parse(request.type, request.params, request.subclass, 
+            config.parse(request.type, request.params, request.subclass,
                          response.type, response.params, response.subclass)
         else:
             config.parse(request.type, request.params, request.subclass)
@@ -1573,14 +1568,11 @@ namespace rpc
 ''')
 
 
-def generate_protocol(rpc_json_path = None, protocol_h_path = None, protocol_cpp_path = None):
+def generate_protocol(rpc_json_path, protocol_h_path, protocol_cpp_path):
     global rpc_json, protocol_h, protocol_cpp
-    if rpc_json_path:
-        rpc_json = rpc_json_path
-    if protocol_h_path:
-        protocol_h = protocol_h_path
-    if protocol_cpp_path:
-        protocol_cpp = protocol_cpp_path
+    rpc_json = rpc_json_path
+    protocol_h = protocol_h_path
+    protocol_cpp = protocol_cpp_path
 
     # parse json file
     parse()
@@ -1590,7 +1582,3 @@ def generate_protocol(rpc_json_path = None, protocol_h_path = None, protocol_cpp
 
     # generate template.cpp
     generate_cpp()
-
-
-if __name__ == '__main__':
-    generate_protocol()

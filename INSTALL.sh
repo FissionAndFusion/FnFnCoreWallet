@@ -10,9 +10,6 @@ rm -f multiverse-server
 rm -f multiverse-miner
 rm -f multiverse-dnseed
 
-# generate template
-python script/generator.py
-
 # create build directory
 mkdir build
 

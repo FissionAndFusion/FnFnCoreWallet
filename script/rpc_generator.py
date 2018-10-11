@@ -1,22 +1,14 @@
-#!/usr/bin/env python
 # -*-conding:utf-8-*-
 
 import sys
 sys.dont_write_bytecode = True
 
-import os
 import json
 from collections import OrderedDict
 from tool import *
 
-root = os.path.dirname(__file__)
-json_root = os.path.abspath(os.path.join(root, 'template'))
-cpp_src_root = os.path.abspath(os.path.join(root, '../src'))
 
-rpc_json = os.path.join(json_root, 'rpc.json')
-mode_json = os.path.join(json_root, 'mode.json')
-rpc_h = os.path.join(cpp_src_root, 'rpc/auto_rpc.h')
-rpc_cpp = os.path.join(cpp_src_root, 'rpc/auto_rpc.cpp')
+rpc_json, mode_json, rpc_h, rpc_cpp = None, None, None, None
 
 modes = OrderedDict()
 param_class = OrderedDict()
@@ -99,10 +91,10 @@ def Help_cpp(w):
     def write_options(w, indent):
         w.write(indent + 'oss << "Options:\\n";\n')
         w.write(indent + 'oss << options << "\\n";\n')
-    
+
     # write 'commands'
     def write_introduction(cmd, introduction, w, indent):
-        introduction_list = split(introduction, max_len = introduction_max_line_len)
+        introduction_list = split(introduction)
         introduction_code = terminal_str_code(indent, 'oss << ', cmd + space(cmd), introduction_list)
         w.write(introduction_code)
 
@@ -331,17 +323,12 @@ namespace rpc
 # entry
 
 
-def generate_rpc(mode_json_path = None, rpc_json_path = None, 
-                 rpc_h_path = None, rpc_cpp_path = None):
+def generate_rpc(mode_json_path, rpc_json_path, rpc_h_path, rpc_cpp_path):
     global mode_json, rpc_json, rpc_h, rpc_cpp
-    if mode_json_path:
-        mode_json = mode_json_path
-    if rpc_json_path:
-        rpc_json = rpc_json_path
-    if rpc_h_path:
-        rpc_h = rpc_h_path
-    if rpc_cpp_path:
-        rpc_cpp = rpc_cpp_path
+    mode_json = mode_json_path
+    rpc_json = rpc_json_path
+    rpc_h = rpc_h_path
+    rpc_cpp = rpc_cpp_path
 
     # parse json file
     parse()
@@ -351,7 +338,3 @@ def generate_rpc(mode_json_path = None, rpc_json_path = None,
 
     # generate template.cpp
     generate_cpp()
-
-
-if __name__ == '__main__':
-    generate_rpc()
