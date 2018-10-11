@@ -51,6 +51,7 @@ CRPCMod::CRPCMod()
                 ("removependingtx",       &CRPCMod::RPCRemovePendingTx)
                 ("gettransaction",        &CRPCMod::RPCGetTransaction)
                 ("sendtransaction",       &CRPCMod::RPCSendTransaction)
+                ("getforkheight",         &CRPCMod::RPCGetForkHeight)
                 /* Wallet */
                 ("listkey",               &CRPCMod::RPCListKey)
                 ("getnewkey",             &CRPCMod::RPCGetNewKey)
@@ -510,13 +511,20 @@ CRPCResultPtr CRPCMod::RPCGetBlockHash(CRPCParamPtr param)
 
     int nHeight = spParam->nHeight;
     uint256 fork = GetForkHash(spParam->strFork);
-    uint256 hash = 0;
-    if (!pService->GetBlockHash(fork,nHeight,hash))
+
+    vector<uint256> vBlockHash;
+    if (!pService->GetBlockHash(fork,nHeight,vBlockHash))
     {
         throw CRPCException(RPC_INVALID_PARAMETER, "Block number out of range.");
     }
 
-    return MakeCGetBlockHashResultPtr(hash.GetHex());
+    auto spResult = MakeCGetBlockHashResultPtr();
+    for (const uint256& hash: vBlockHash)
+    {
+        spResult->vecHash.push_back(hash.GetHex());
+    }
+
+    return spResult;
 }
 
 CRPCResultPtr CRPCMod::RPCGetBlock(CRPCParamPtr param)
@@ -634,6 +642,13 @@ CRPCResultPtr CRPCMod::RPCSendTransaction(CRPCParamPtr param)
     }
     
     return MakeCSendTransactionResultPtr(rawTx.GetHash().GetHex());
+}
+
+CRPCResultPtr CRPCMod::RPCGetForkHeight(CRPCParamPtr param)
+{
+    auto spParam = CastParamPtr<CGetForkHeightParam>(param);
+    uint256 fork = GetForkHash(spParam->strFork);
+    return MakeCGetForkHeightResultPtr(pService->GetForkHeight(fork));
 }
 
 /* Wallet */
