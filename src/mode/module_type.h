@@ -29,6 +29,7 @@ enum class EModuleType
     DBPSERVER,     // CDbpServer
     DBPSERVICE,    // CDbpService
     DBPCLIENT,     // CMvDbpClient
+    DBPCLISERVICE, // CMvDbpClientService
     DNSEED,        // CDNSeed
 };
 

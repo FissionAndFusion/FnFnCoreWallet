@@ -337,6 +337,18 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
             }
             break;
         }
+        case EModuleType::DBPCLISERVICE:
+        {
+            auto pBase = walleveDocker.GetObject("dbpclient");
+            if(!pBase)
+            {
+                return false;
+            }
+            dynamic_cast<CMvDbpClient*>(pBase)->AddNewClient(GetDbpClientConfig());
+            
+            
+            break;
+        }
         case EModuleType::DNSEED:
         {
             if (!AttachModule(new CDNSeed()))
@@ -390,7 +402,12 @@ CDbpHostConfig CMvEntry::GetDbpHostConfig()
 
 CDbpClientConfig CMvEntry::GetDbpClientConfig()
 {
-    //return CDbpClientConfig()
+    const CMvDbpClientConfig* config =  CastConfigPtr<CMvDbpClientConfig*>(mvConfig.GetConfig());
+    CIOSSLOption sslDbp(config->fDbpSSLEnable, config->fDbpSSLVerify,
+                        config->strDbpCAFile, config->strDbpCertFile,
+                        config->strDbpPKFile, config->strDbpCiphers);
+    
+    return CDbpClientConfig(config->epParentHost,sslDbp,"dbpclientservice");
 }
 
 bool CMvEntry::Run()

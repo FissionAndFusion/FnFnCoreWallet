@@ -28,12 +28,12 @@ set(src
 	blockmaker.cpp blockmaker.h
 	rpcclient.cpp rpcclient.h
 	miner.cpp miner.h
+	dbptype.h
+	dbputils.h
+	dbpserver.cpp dbpserver.h
 	dbpservice.cpp dbpservice.h
 	dbpclient.cpp dbpclient.h
-	dbptype.h
-	dbpserver.h
-	dbpserver.cpp
-	dbputils.h
+	dbpcliservice.cpp dbpcliservice.h
 	dnseed.cpp dnseed.h
 	schedule.cpp schedule.h
 	service.cpp service.h
