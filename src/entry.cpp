@@ -412,7 +412,7 @@ CDbpClientConfig CMvEntry::GetDbpClientConfig()
                         config->strDbpCAFile, config->strDbpCertFile,
                         config->strDbpPKFile, config->strDbpCiphers);
     
-    return CDbpClientConfig(config->epParentHost,sslDbp,"dbpclientservice");
+    return CDbpClientConfig(config->epParentHost,config->strSupportForks,sslDbp,"dbpclientservice");
 }
 
 bool CMvEntry::Run()

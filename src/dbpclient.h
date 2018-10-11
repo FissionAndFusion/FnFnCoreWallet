@@ -18,14 +18,23 @@ class CDbpClientConfig
 public:
     CDbpClientConfig(){}
     CDbpClientConfig(const boost::asio::ip::tcp::endpoint& epParentHostIn,
-                    const CIOSSLOption &optSSLIn, const std::string& strIOModuleIn)
+                    const std::string&  SupportForksIn,
+                    const CIOSSLOption& optSSLIn, 
+                    const std::string& strIOModuleIn)
     : epParentHost(epParentHostIn),
       optSSL(optSSLIn),
       strIOModule(strIOModuleIn)
     {
+        std::istringstream ss(SupportForksIn);
+        std::string s;    
+        while (std::getline(ss, s, ';')) 
+        {
+            vSupportForks.push_back(s);
+        }
     }
 public:
     boost::asio::ip::tcp::endpoint epParentHost;
+    std::vector<std::string> vSupportForks;
     CIOSSLOption optSSL;
     std::string strIOModule;
 };
@@ -36,6 +45,8 @@ public:
     CDbpClientProfile() : pIOModule(NULL) {}
 public:
     IIOModule* pIOModule;
+    CIOSSLOption optSSL;
+    std::vector<std::string> vSupportForks;
 };
 
 class CMvDbpClientSocket
@@ -82,8 +93,17 @@ protected:
     void EnterLoop() override;
     void LeaveLoop() override;
 
+    bool ClientConnected(CIOClient* pClient) override;
+    void ClientFailToConnect(const boost::asio::ip::tcp::endpoint& epRemote) override;
+    void Timeout(uint64 nNonce,uint32 nTimerId) override;
+
+    bool CreateProfile(const CDbpClientConfig& confClient);
+    bool StartConnection(const boost::asio::ip::tcp::endpoint& epRemote, int64 nTimeout, bool fEnableSSL,
+            const CIOSSLOption& optSSL);
+
 protected:
     std::vector<CDbpClientConfig> vecClientConfig;
+    std::map<boost::asio::ip::tcp::endpoint, CDbpClientProfile> mapProfile;
 };
 
 } // namespace multiverse

@@ -174,9 +174,17 @@
             "name": "strParentHost",
             "type": "string",
             "opt": "dbpparentnodeip",
-            "default": "",
+            "default": "127.0.0.1",
             "format": "-dbpparentnodeip=<ip>",
             "desc": "Set dbp parent node ip to <ip> for super node(default: empty)"
+        },
+        {
+            "name": "strSupportForks",
+            "type": "string",
+            "opt": "supernodeforks",
+            "default": "awdwa;ssss",
+            "format": "-supernodeforks=<forkids>",
+            "desc": "Set Support Fork List to <forkids> for super node(default: empty)"
         }
     ],
 
