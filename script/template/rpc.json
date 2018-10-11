@@ -790,7 +790,7 @@
     "getblockcount": {
         "type": "command",
         "name": "GetBlockCount",
-        "desc": "Returns the number of blocks in the given fork.",
+        "desc": "Returns the number of blocks in the given fork, includes extended block and vacant block",
         "request": {
             "type": "object",
             "content": {
@@ -817,7 +817,7 @@
                 "response": "{\"id\":4,\"jsonrpc\":\"2.0\",\"result\":32081}"
             },
             {
-                "request": "multiverse-cli getblockcount 0",
+                "request": "multiverse-cli getblockcount -f=a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0",
                 "response": "32081"
             },
             {
@@ -829,7 +829,11 @@
     "getblockhash": {
         "type": "command",
         "name": "GetBlockHash",
-        "desc": "Returns hash of block in fork at <index>.",
+        "introduction": "Returns a list of block hash in fork at specific height.",
+        "desc": [
+            "Returns a list of block hash in fork at specific height.",
+            "First of the list is the main block hash, others are extended blocks hash in order."
+        ],
         "request": {
             "type": "object",
             "content": {
@@ -846,31 +850,25 @@
             }
         },
         "response": {
-            "type": "string",
+            "type": "array",
             "name": "hash",
-            "desc": "block hash"
+            "content": {
+                "hash": {
+                    "type": "string",
+                    "desc": "one block hash"
+                }
+            }
         },
         "example": [
             {
-                "request": "multiverse-cli getblockhash 1",
-                "response": "609a797ca28042d562b11355038c516d65ba30b91c7033d83c61b81aa8c538e3"
+                "request": "multiverse-cli getblockhash 0",
+                "response": "[\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\"]"
             },
             {
-                "request": "curl -d '{\"id\":2,\"method\":\"getblockhash\",\"jsonrpc\":\"2.0\",\"params\":{\"height\":1}}' http://127.0.0.1:6812",
-                "response": "{\"id\":2,\"jsonrpc\":\"2.0\",\"result\":\"609a797ca28042d562b11355038c516d65ba30b91c7033d83c61b81aa8c538e3\"}"
+                "request": "curl -d '{\"id\":37,\"method\":\"getblockhash\",\"jsonrpc\":\"2.0\",\"params\":{\"height\":0}}' http://127.0.0.1:6812",
+                "response": "{\"id\":37,\"jsonrpc\":\"2.0\",\"result\":[\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\"]}"
             },
-            {
-                "request": "multiverse-cli getblockhash 1 0",
-                "response": "609a797ca28042d562b11355038c516d65ba30b91c7033d83c61b81aa8c538e3"
-            },
-            {
-                "request": "curl -d '{\"id\":3,\"method\":\"getblockhash\",\"jsonrpc\":\"2.0\",\"params\":{\"height\":1,\"fork\":\"0\"}}' http://127.0.0.1:6812",
-                "response": "{\"id\":3,\"jsonrpc\":\"2.0\",\"result\":\"609a797ca28042d562b11355038c516d65ba30b91c7033d83c61b81aa8c538e3\"}"
-            },
-            {
-                "request": "multiverse-cli getblockhash 1 -f=0",
-                "response": "609a797ca28042d562b11355038c516d65ba30b91c7033d83c61b81aa8c538e3"
-            }
+            "multiverse-cli getblockhash 0 -f=a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0"
         ],
         "error": "{\"code\":-6,\"message\":\"Block number out of range.\"}"
     },
@@ -1104,6 +1102,38 @@
         "error": [
             "{\"code\":-8,\"message\":\"TX decode failed\"}",
             "{\"code\":-10,\"message\":\"Tx rejected : xxx\"}"
+        ]
+    },
+    "getforkheight": {
+        "type": "command",
+        "name": "GetForkHeight",
+        "desc": "Returns the number of height in the given fork.",
+        "request": {
+            "type": "object",
+            "content": {
+                "fork": {
+                    "type": "string",
+                    "desc": "fork hash",
+                    "required": false,
+                    "opt": "f"
+                }
+            }
+        },
+        "response": {
+            "type": "int",
+            "name": "height",
+            "desc": "fork height"
+        },
+        "example": [
+            {
+                "request": "multiverse-cli getblockcount",
+                "response": "32081"
+            },
+            {
+                "request": "curl -d '{\"id\":4,\"method\":\"getblockcount\",\"jsonrpc\":\"2.0\",\"params\":{}}' http://127.0.0.1:6812",
+                "response": "{\"id\":4,\"jsonrpc\":\"2.0\",\"result\":32081}"
+            },
+            "multiverse-cli getblockcount -f=a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0"
         ]
     },
     "listkey": {

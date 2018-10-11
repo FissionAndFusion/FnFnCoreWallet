@@ -4,6 +4,7 @@ sys.dont_write_bytecode = True
 
 import math
 import re
+import os
 
 type_f = type
 
@@ -18,13 +19,8 @@ copyright = \
 # attempt one tab equals how many blanks on terminal
 tab_len = 8
 # set max length of one line to show on terminal
-max_line_len = 80
-# options not split
-option_max_line_len = -1
-# example not split
-example_max_line_len = -1
-# introduction not split
-introduction_max_line_len = -1
+# Temporarily not break line now (system terminal will be auto line break, macosx, ubuntu)
+max_line_len = -1
 # set max "format" length of one line to show on terminal
 max_format_len = 32
 # increasing step length, when format length is not enough
@@ -66,20 +62,20 @@ def step(s, length):
 
 
 # compute how many tabs append string by max length
-def space(s, indent = None):
+def space(s, indent=None):
     if indent == None:
         indent = ' ' * max_format_len
     else:
         indent = tab_to_space(indent)
-    
+
     indent_len = step(s, len(indent))
 
     return ' ' * (indent_len - len(s))
 
 
 # split string to multiple line by indent and max_line_len
-def split(s, indent = None, max_len = None):
-    def first_char_index(s, pos = 0):
+def split(s, indent=None, max_len=None):
+    def first_char_index(s, pos=0):
         reg = re.compile(r'(\S)')
         match = reg.search(s, pos)
         if match:
@@ -90,10 +86,10 @@ def split(s, indent = None, max_len = None):
         indent = ' ' * max_format_len
     else:
         indent = tab_to_space(indent)
-    
+
     if max_len == None:
         max_len = max_line_len
-    elif max_len == -1:
+    if max_len == -1:
         max_len = len(indent) + len(s)
 
     line_len = step(indent, max_len)
@@ -210,7 +206,7 @@ def get_desc(prefix, json):
 
 
 # string to "string", others to string type
-def quote(o, type = 'string'):
+def quote(o, type='string'):
     if type == 'string':
         return u'"%s"' % o
     elif type == 'bool':
@@ -223,6 +219,8 @@ def quote(o, type = 'string'):
 # indent + prefix + "name + desc1"
 #                      "desc2"
 #                      "desc3";
+
+
 def terminal_str_code(indent, prefix, name, split_list):
     if not split_list or len(split_list) == 0:
         return indent + prefix + quote(escape(name)) + ';\n'
@@ -242,6 +240,8 @@ def write_usage(usage, w, indent):
     w.write(indent + 'oss << "\\n";\n')
 
 # write 'Desc'
+
+
 def write_desc(desc, w, indent):
     if desc:
         desc_list = split(desc, desc_indent)
@@ -250,6 +250,8 @@ def write_desc(desc, w, indent):
         w.write(indent + 'oss << "\\n";\n')
 
 # write 'Arguments', 'Requist', 'Result' ...
+
+
 def write_chapter(infos, w, indent):
     if len(infos) > 0:
         for info_fmt, info_list in infos:

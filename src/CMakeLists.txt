@@ -7,7 +7,19 @@
 #------------------------------------------------------------------------------
 
 # auto generate files
-execute_process(COMMAND "../script/generator.py")
+set(auto_files
+	${CMAKE_CURRENT_BINARY_DIR}/rpc/auto_protocol.cpp
+	${CMAKE_CURRENT_BINARY_DIR}/rpc/auto_protocol.h
+	${CMAKE_CURRENT_BINARY_DIR}/rpc/auto_rpc.cpp
+	${CMAKE_CURRENT_BINARY_DIR}/rpc/auto_rpc.h
+	${CMAKE_CURRENT_BINARY_DIR}/mode/auto_options.h
+)
+add_custom_command(OUTPUT ${auto_files}
+	COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/../script/generator.py" "'${CMAKE_CURRENT_BINARY_DIR}'"
+	DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/../script/template/rpc.json"
+			"${CMAKE_CURRENT_SOURCE_DIR}/../script/template/options.json"
+			"${CMAKE_CURRENT_SOURCE_DIR}/../script/template/mode.json"
+)
 
 set(src
 	multiverse.cpp
@@ -60,19 +72,17 @@ set(mode_src
 	mode/mode_impl.h
 	mode/mode_type.h
 	mode/module_type.h
-	mode/auto_options.h
 )
 set(rpc_src
 	rpc/rpc.cpp rpc/rpc.h
 	rpc/rpc_error.cpp rpc/rpc_error.h
 	rpc/rpc_req.cpp rpc/rpc_req.h
 	rpc/rpc_resp.cpp rpc/rpc_resp.h
-	rpc/auto_protocol.cpp rpc/auto_protocol.h
-	rpc/auto_rpc.cpp rpc/auto_rpc.h
 	rpc/rpc_type.h
 )
 
 set(sources
+	${auto_files}
 	${src}
 	${mode_src}
 	${rpc_src}
