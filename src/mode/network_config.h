@@ -27,9 +27,6 @@ public:
     unsigned int nMaxInBounds;
     unsigned int nMaxOutBounds;
     std::vector<std::string> vDNSeed;
-    std::string strTrustAddress;
-    unsigned int nMaxTimes2ConnectFail;
-    int nDNSeedPort;
 protected:
     int nPortInt;
     int nMaxConnection;

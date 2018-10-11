@@ -45,6 +45,8 @@ bool CNetwork::WalleveHandleInitialize()
     {
         BOOST_FOREACH(const string& seed,NetworkConfig()->vDNSeed)
         {
+            // HACK: dnseed port is different from peer port
+            //       dnseed port should be hardcode rather than in configuration
             config.vecNode.push_back(CNetHost(seed,config.nPortDefault,"dnseed",
                                               boost::any(uint64(network::NODE_NETWORK))));
         }

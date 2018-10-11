@@ -274,7 +274,17 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
         }
         case EModuleType::WALLET:
         {
-            if (!AttachModule(new CWallet()))
+            IWallet* pWallet;
+            if (mvConfig.GetConfig()->fWallet)
+            {
+                pWallet = new CWallet();
+            }
+            else
+            {
+                pWallet = new CDummyWallet();
+            }
+
+            if (!AttachModule(pWallet))
             {
                 return false;
             }
