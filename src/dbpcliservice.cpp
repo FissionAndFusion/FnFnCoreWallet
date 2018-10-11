@@ -7,4 +7,30 @@
 namespace multiverse
 {
 
+CDbpCliService::CDbpCliService()
+    : walleve::IIOModule("dbpcliservice")
+{
+    pDbpClient = NULL;
+}
+    
+CDbpCliService::~CDbpCliService()
+{
+
+}
+
+bool CDbpCliService::WalleveHandleInitialize()
+{
+    if (!WalleveGetObject("dbpclient", pDbpClient))
+    {
+        WalleveLog("Failed to request dbpclient\n");
+        return false;
+    }
+    return true;
+}
+
+void CDbpCliService::WalleveHandleDeinitialize()
+{
+    pDbpClient = NULL;
+}
+
 } // namespace multiverse

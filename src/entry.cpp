@@ -18,6 +18,7 @@
 #include "miner.h"
 #include "dbpservice.h"
 #include "dbpclient.h"
+#include "dbpcliservice.h"
 #include "dnseed.h"
 
 #include <map>
@@ -346,6 +347,10 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
             }
             dynamic_cast<CMvDbpClient*>(pBase)->AddNewClient(GetDbpClientConfig());
             
+            if(!AttachModule(new CDbpCliService()))
+            {
+                return false;
+            }
             
             break;
         }
