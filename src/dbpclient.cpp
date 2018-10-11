@@ -6,6 +6,8 @@
 #include "dbputils.h"
 #include "walleve/netio/netio.h"
 
+#include <thread>
+#include <chrono>
 
 static int MSG_HEADER_LEN = 4;
 
@@ -216,6 +218,21 @@ void CMvDbpClient::ClientFailToConnect(const boost::asio::ip::tcp::endpoint& epR
     std::cerr << "Connect parent node" << 
         epRemote.address().to_string() << "failed, " 
         << "port " << epRemote.port() << std::endl;
+    
+    std::this_thread::sleep_for(std::chrono::seconds(5));
+    
+    auto it = mapProfile.find(epRemote);
+    if(it != mapProfile.end())
+    {
+        StartConnection(epRemote,DBPCLIENT_CONNECT_TIMEOUT, 
+            it->second.optSSL.fEnable,it->second.optSSL);
+    }
+    else
+    {
+        std::cerr << "cannot find reconnect parent node " << 
+            epRemote.address().to_string() << " failed, " 
+            << "port " << epRemote.port() << std::endl;
+    }
 }
     
 void CMvDbpClient::Timeout(uint64 nNonce,uint32 nTimerId)
