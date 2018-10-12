@@ -1,20 +1,14 @@
-#!/usr/bin/env python
 # -*-conding:utf-8-*-
 
 import sys
 sys.dont_write_bytecode = True
 
 import json
-import os
 from collections import OrderedDict
 from tool import *
 
-root = os.path.dirname(__file__)
-json_root = os.path.abspath(os.path.join(root, 'template'))
-cpp_src_root = os.path.abspath(os.path.join(root, '../src'))
+options_json, options_h = None, None
 
-options_json = os.path.join(json_root, 'options.json')
-options_h = os.path.join(cpp_src_root, 'mode/auto_options.h')
 
 class Param:
     def __init__(self, p_name, p_type, p_opt, p_format, p_desc, p_default):
@@ -26,11 +20,9 @@ class Param:
         self.desc = p_desc
 
 
-def generate_options(options_json_path = None, options_h_path = None):
-    if options_json_path:
-        options_json = options_json_path
-    if options_h_path:
-        options_h = options_h_path
+def generate_options(options_json_path, options_h_path):
+    options_json = options_json_path
+    options_h = options_h_path
 
     with open(options_json, 'r') as r:
         content = json.loads(r.read(), object_pairs_hook=OrderedDict)
@@ -112,7 +104,7 @@ namespace multiverse
                 for p in params_list:
                     fmt_indent = options_indent + p.format
                     fmt_indent = fmt_indent + space(fmt_indent)
-                    desc_list = split(p.desc, max_len = option_max_line_len)
+                    desc_list = split(p.desc)
                     w.write(terminal_str_code(indent, 'oss << ', fmt_indent, desc_list))
 
                 w.write(indent + 'return oss.str();\n')
@@ -146,7 +138,8 @@ namespace multiverse
                         indent = brace_end(w, indent)
                         w.write(indent + 'oss << "\\n";\n')
                     elif p.type == 'bool':
-                        w.write(indent + 'oss << ' + quote(' -' + p.opt + ': ') + ' << (' + p.name + ' ? "Y" : "N") << "\\n";\n')
+                        w.write(indent + 'oss << ' + quote(' -' + p.opt + ': ') +
+                                ' << (' + p.name + ' ? "Y" : "N") << "\\n";\n')
                     else:
                         w.write(indent + 'oss << ' + quote(' -' + p.opt + ': ') + ' << ' + p.name + ' << "\\n";\n')
 
@@ -163,7 +156,3 @@ namespace multiverse
 
 #endif // MULTIVERSE_AUTO_OPTIONS_H
 ''')
-
-
-if __name__ == '__main__':
-    generate_options()

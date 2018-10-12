@@ -80,6 +80,7 @@ private:
     CRPCResultPtr RPCRemovePendingTx(CRPCParamPtr param);
     CRPCResultPtr RPCGetTransaction(CRPCParamPtr param);
     CRPCResultPtr RPCSendTransaction(CRPCParamPtr param);
+    CRPCResultPtr RPCGetForkHeight(CRPCParamPtr param);
     /* Wallet */
     CRPCResultPtr RPCListKey(CRPCParamPtr param);
     CRPCResultPtr RPCGetNewKey(CRPCParamPtr param);
