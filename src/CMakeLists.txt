@@ -117,3 +117,18 @@ target_link_libraries(multiverse
 	${WSSOCK32_LIB}
 	${Readline_LIBRARY}
 )
+
+# create symbol link
+set(exec_link multiverse-cli multiverse-server multiverse-miner multiverse-dnseed)
+foreach(link ${exec_link})
+	add_custom_command(TARGET multiverse POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E create_symlink multiverse ${link}
+	)
+endforeach()
+
+# install to path
+foreach(link multiverse ${exec_link})
+	install(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/${link}"
+		DESTINATION bin
+	)
+endforeach()
