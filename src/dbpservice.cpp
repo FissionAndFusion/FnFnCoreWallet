@@ -300,7 +300,8 @@ void CDbpService::HandleGetBlocks(CMvEventDbpMethod& event)
     int32 blockNum = boost::lexical_cast<int32>(event.data.params["number"]);
 
     uint256 startBlockHash(std::vector<unsigned char>(blockHash.begin(), blockHash.end()));
-    uint256 forkHash(std::vector<unsigned char>(forkid.begin(), forkid.end()));
+    uint256 forkHash;
+    forkHash.SetHex(forkid);
     std::vector<CMvDbpBlock> blocks;
     if (GetBlocks(forkHash, startBlockHash, blockNum, blocks))
     {
