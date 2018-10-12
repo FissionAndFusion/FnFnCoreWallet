@@ -1484,6 +1484,8 @@ namespace rpc
 
 def generate_cpp():
     with open(protocol_cpp, 'w') as w:
+        # copyright
+        w.write(copyright)
         # file top
         w.write('''\
 # include "auto_protocol.h"
