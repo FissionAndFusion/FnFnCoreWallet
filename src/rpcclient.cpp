@@ -13,6 +13,7 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 
+#include "version.h"
 
 using namespace std;
 using namespace multiverse;
@@ -195,7 +196,7 @@ bool CRPCClient::GetResponse(uint64 nNonce, const std::string& content)
 
     CNetHost host(WalleveConfig()->strRPCConnect,WalleveConfig()->nRPCPort);
     httpGet.mapHeader["host"] = host.ToString();
-    httpGet.mapHeader["url"] = "/";
+    httpGet.mapHeader["url"] = "/" + to_string(MV_VERSION);
     httpGet.mapHeader["method"] = "POST";
     httpGet.mapHeader["accept"] = "application/json";
     httpGet.mapHeader["content-type"] = "application/json";

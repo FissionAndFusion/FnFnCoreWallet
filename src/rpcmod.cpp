@@ -34,6 +34,7 @@ CRPCMod::CRPCMod()
                 /* System */
                 ("help",                  &CRPCMod::RPCHelp)
                 ("stop",                  &CRPCMod::RPCStop)
+                ("version",               &CRPCMod::RPCVersion)
                 /* Network */
                 ("getpeercount",          &CRPCMod::RPCGetPeerCount)
                 ("listpeer",              &CRPCMod::RPCListPeer)
@@ -132,6 +133,18 @@ bool CRPCMod::HandleEvent(CWalleveEventHttpReq& eventHttpReq)
     string strResult;
     try
     {
+        // check version
+        string strVersion = eventHttpReq.data.mapHeader["url"].substr(1);
+        if (!strVersion.empty())
+        {
+            if (!CheckVersion(strVersion))
+            {
+                throw CRPCException(RPC_VERSION_OUT_OF_DATE,
+                    string("Out of date version. Server version is v") + MV_VERSION_STR
+                    + ", but client version is v" + strVersion);
+            }
+        }
+
         bool fArray;
         CRPCReqVec vecReq = DeserializeCRPCReq(eventHttpReq.data.strContent, fArray);
         CRPCRespVec vecResp;
@@ -194,6 +207,9 @@ bool CRPCMod::HandleEvent(CWalleveEventHttpReq& eventHttpReq)
     catch(exception& e)
     {
         cout << "error: " << e.what() << endl;
+        auto spError = MakeCRPCErrorPtr(RPC_MISC_ERROR, e.what());
+        CRPCResp resp(Value(), spError);
+        strResult = resp.Serialize();
     }
 
     if (WalleveConfig()->fDebug)
@@ -364,6 +380,24 @@ void CRPCMod::ListDestination(vector<CDestination>& vDestination)
     }
 }
 
+bool CRPCMod::CheckVersion(string& strVersion)
+{
+    int nMajor, nMinor, nRevision;
+    if (!ResolveVersion(strVersion, nMajor, nMinor, nRevision))
+    {
+        return false;
+    }
+
+    strVersion = FormatVersion(nMajor, nMinor, nRevision);
+    if (nMajor != MV_VERSION_MAJOR || nMinor != MV_VERSION_MINOR)
+    {
+        return false;
+    }
+
+    return true;
+}
+
+/* System */
 CRPCResultPtr CRPCMod::RPCHelp(CRPCParamPtr param)
 {
     auto spParam = CastParamPtr<CHelpParam>(param);
@@ -375,6 +409,12 @@ CRPCResultPtr CRPCMod::RPCStop(CRPCParamPtr param)
 {
     pService->Shutdown();
     return MakeCStopResultPtr("multiverse server stopping");
+}
+
+CRPCResultPtr CRPCMod::RPCVersion(CRPCParamPtr param)
+{
+    string strVersion = string("Multiverse server version is v") + MV_VERSION_STR;
+    return MakeCVersionResultPtr(strVersion);
 }
 
 /* Network */

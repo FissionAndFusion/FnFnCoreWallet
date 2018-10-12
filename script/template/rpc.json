@@ -429,6 +429,30 @@
             }
         ]
     },
+    "version": {
+        "type": "command",
+        "name": "Version",
+        "desc": "Get multiverse server version.",
+        "request": {
+            "type": "object",
+            "content": {}
+        },
+        "response": {
+            "type": "string",
+            "name": "version",
+            "desc": "multiverse version"
+        },
+        "example": [
+            {
+                "request": "multiverse-cli version",
+                "response": "multiverse server stopping"
+            },
+            {
+                "request": "curl -d '{\"id\":1,\"method\":\"stop\",\"jsonrpc\":\"2.0\",\"params\":{}}' http://127.0.0.1:6812",
+                "response": "{\"id\":1,\"jsonrpc\":\"2.0\",\"result\":\"multiverse server stopping\"}"
+            }
+        ]
+    },
     "getpeercount": {
         "type": "command",
         "name": "GetPeerCount",

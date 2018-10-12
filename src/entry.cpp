@@ -18,6 +18,7 @@
 #include "miner.h"
 #include "dbpservice.h"
 #include "dnseed.h"
+#include "version.h"
 
 #include <map>
 #include <string>
@@ -74,6 +75,14 @@ bool CMvEntry::Initialize(int argc, char *argv[])
         return false;
     }
 
+    // version
+    if (mvConfig.GetConfig()->fVersion)
+    {
+        cout << "Multiverse version is v" << MV_VERSION_STR << endl;
+        return false;
+    }
+
+    // list config if in debug mode
     if (mvConfig.GetConfig()->fDebug)
     {
         mvConfig.ListConfig();
