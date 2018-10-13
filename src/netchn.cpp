@@ -548,6 +548,12 @@ void CNetChannel::AddNewBlock(const uint256& hashFork,const uint256& hash,CSched
         {
             if (pDispatcher->AddNewBlock(*pBlock,nNonceSender) == MV_OK)
             {
+                BOOST_FOREACH(const CTransaction& tx,pBlock->vtx)
+                {
+                    uint256 txid = tx.GetHash();
+                    sched.RemoveInv(network::CInv(network::CInv::MSG_TX,txid),setSchedPeer);
+                }
+
                 set<uint64> setKnownPeer;
                 sched.GetNextBlock(hashBlock,vBlockHash);
                 sched.RemoveInv(network::CInv(network::CInv::MSG_BLOCK,hashBlock),setKnownPeer);
@@ -555,12 +561,6 @@ void CNetChannel::AddNewBlock(const uint256& hashFork,const uint256& hash,CSched
 
                 BroadcastBlockInv(hashFork,hashBlock,setKnownPeer); 
                 setSchedPeer.insert(setKnownPeer.begin(),setKnownPeer.end());
-
-                BOOST_FOREACH(const CTransaction& tx,pBlock->vtx)
-                {
-                    uint256 txid = tx.GetHash();
-                    sched.RemoveInv(network::CInv(network::CInv::MSG_TX,txid),setSchedPeer);
-                }
             }
             else
             {
