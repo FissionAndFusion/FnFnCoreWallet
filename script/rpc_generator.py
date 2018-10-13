@@ -270,7 +270,7 @@ namespace rpc
 
         # help tips
         w.write('// help tips used when error occured or help\n')
-        w.write('static const string strHelpTips = "\\n\\nRun \'help COMMAND\' for more information on a command.\\n";\n')
+        w.write('static const string strHelpTips = "\\nRun \'help COMMAND\' for more information on a command.\\n";\n')
 
         # file bottom
         w.write(
@@ -285,6 +285,8 @@ namespace rpc
 
 def generate_cpp():
     with open(rpc_cpp, 'w') as w:
+        # copyright
+        w.write(copyright)
         # file top
         w.write(
             '''\

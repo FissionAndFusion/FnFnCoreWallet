@@ -11,6 +11,7 @@ set(sources
 	test_fnfn.h test_fnfn.cpp
 	uint256_tests.cpp
 	rpc_tests.cpp
+	version_tests.cpp
 )
 
 add_executable(test_fnfn ${sources})
