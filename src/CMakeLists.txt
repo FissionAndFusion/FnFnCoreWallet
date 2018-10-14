@@ -32,6 +32,7 @@ set(src
 	error.cpp error.h
 	miner.cpp miner.h
 	netchn.cpp netchn.h
+	delegatedchn.cpp delegatedchn.h
 	network.cpp network.h
 	rpcclient.cpp rpcclient.h
 	rpcjson.cpp rpcjson.h

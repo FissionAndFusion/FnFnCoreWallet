@@ -77,17 +77,6 @@ void CMvDelegate::Evolve(int nBlockHeight,const map<CDestination,size_t>& mapWei
     }
 }    
 
-bool CMvDelegate::HandleDistribute(int nTargetHeight,const vector<unsigned char>& vchDistributeData)
-{
-    map<int,CMvDelegateVote>::iterator it = mapVote.find(nTargetHeight);
-    if (it != mapVote.end())
-    {
-        CMvDelegateVote& vote = (*it).second;
-        return vote.Accept(vchDistributeData);
-    }
-    return false;
-}
-
 void CMvDelegate::Rollback(int nBlockHeightFrom,int nBlockHeightTo)
 {
     // init
@@ -110,19 +99,35 @@ void CMvDelegate::Rollback(int nBlockHeightFrom,int nBlockHeightTo)
     }
 }
 
-bool CMvDelegate::HandlePublish(int nTargetHeight,const vector<unsigned char>& vchPublishData,bool& fCompleted)
+bool CMvDelegate::HandleDistribute(int nTargetHeight,const CDestination& destFrom,
+                                   const vector<unsigned char>& vchDistributeData)
 {
     map<int,CMvDelegateVote>::iterator it = mapVote.find(nTargetHeight);
     if (it != mapVote.end())
     {
         CMvDelegateVote& vote = (*it).second;
-        return vote.Collect(vchPublishData,fCompleted); 
+        return vote.Accept(destFrom,vchDistributeData);
+    }
+    return false;
+}
+
+bool CMvDelegate::HandlePublish(int nTargetHeight,const CDestination& destFrom,
+                                const vector<unsigned char>& vchPublishData,bool& fCompleted)
+{
+    map<int,CMvDelegateVote>::iterator it = mapVote.find(nTargetHeight);
+    if (it != mapVote.end())
+    {
+        CMvDelegateVote& vote = (*it).second;
+        return vote.Collect(destFrom,vchPublishData,fCompleted); 
     }
     return false;
 }
 
 void CMvDelegate::GetAgreement(int nTargetHeight,uint256& nAgreement,size_t& nWeight,map<CDestination,size_t>& mapBallot)
 {
+    nAgreement = 0;
+    nWeight = 0;
+
     map<int,CMvDelegateVote>::iterator it = mapVote.find(nTargetHeight);
     if (it != mapVote.end())
     {

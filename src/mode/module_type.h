@@ -10,25 +10,26 @@ namespace multiverse
 // module type
 enum class EModuleType
 {
-    LOCK,          // lock file
-    BLOCKMAKER,    // CBlockMaker
-    COREPROTOCOL,  // CMvCoreProtocol
-    DISPATCHER,    // CDispatcher
-    HTTPGET,       // CHttpGet
-    HTTPSERVER,    // CHttpServer
-    MINER,         // CMiner
-    NETCHANNEL,    // CNetChannel
-    NETWORK,       // CNetwork
-    RPCCLIENT,     // CRPCClient
-    RPCMODE,       // CRPCMod
-    SERVICE,       // CService
-    TXPOOL,        // CTxPool
-    WALLET,        // CWallet
-    WORLDLINE,     // CWorldLine
-    CONSENSUS,     // CConsensus
-    DBPSERVER,     // CDbpServer
-    DBPSERVICE,    // CDbpService
-    DNSEED,        // CDNSeed
+    LOCK,                // lock file
+    BLOCKMAKER,          // CBlockMaker
+    COREPROTOCOL,        // CMvCoreProtocol
+    DISPATCHER,          // CDispatcher
+    HTTPGET,             // CHttpGet
+    HTTPSERVER,          // CHttpServer
+    MINER,               // CMiner
+    NETCHANNEL,          // CNetChannel
+    DELEGATEDCHANNEL,    // CDelegatedChannel
+    NETWORK,             // CNetwork
+    RPCCLIENT,           // CRPCClient
+    RPCMODE,             // CRPCMod
+    SERVICE,             // CService
+    TXPOOL,              // CTxPool
+    WALLET,              // CWallet
+    WORLDLINE,           // CWorldLine
+    CONSENSUS,           // CConsensus
+    DBPSERVER,           // CDbpServer
+    DBPSERVICE,          // CDbpService
+    DNSEED,              // CDNSeed
 };
 
 } // namespace multiverse

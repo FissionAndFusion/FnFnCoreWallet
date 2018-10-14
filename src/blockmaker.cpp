@@ -641,7 +641,10 @@ void CBlockMaker::BlockMakerThreadFunc()
         {
             continue;
         }
-
+       
+        WalleveLog("GetAgreement : %s at height=%d, weight=%lu\n",agree.nAgreement.GetHex().c_str(),
+                                                                  nPrevHeight,agree.nWeight); 
+       
         CBlock block;
         try
         {

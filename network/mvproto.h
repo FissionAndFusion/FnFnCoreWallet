@@ -17,42 +17,45 @@ namespace network
 
 enum
 {
-    NODE_NETWORK           = (1 << 0)
+    NODE_NETWORK           = (1 << 0),
+    NODE_DELEGATED         = (1 << 1),
 };
 
 enum
 {
-    MVPROTO_CHN_NETWORK     = 0,
-    MVPROTO_CHN_DELEGATE    = 1,
-    MVPROTO_CHN_DATA        = 2,
-    MVPROTO_CHN_USER        = 3
+    MVPROTO_CHN_NETWORK      = 0,
+    MVPROTO_CHN_DELEGATE     = 1,
+    MVPROTO_CHN_DATA         = 2,
+    MVPROTO_CHN_USER         = 3,
 };
 
 enum
 {
-    MVPROTO_CMD_HELLO       = 1,
-    MVPROTO_CMD_HELLO_ACK   = 2,
-    MVPROTO_CMD_GETADDRESS  = 3,
-    MVPROTO_CMD_ADDRESS     = 4,
-    MVPROTO_CMD_PING        = 5,
-    MVPROTO_CMD_PONG        = 6
+    MVPROTO_CMD_HELLO        = 1,
+    MVPROTO_CMD_HELLO_ACK    = 2,
+    MVPROTO_CMD_GETADDRESS   = 3,
+    MVPROTO_CMD_ADDRESS      = 4,
+    MVPROTO_CMD_PING         = 5,
+    MVPROTO_CMD_PONG         = 6,
 };
 
 enum
 {
-    MVPROTO_CMD_SUBSCRIBE   = 1,
-    MVPROTO_CMD_UNSUBSCRIBE = 2,
-    MVPROTO_CMD_GETBLOCKS   = 3,
-    MVPROTO_CMD_GETDATA     = 4,
-    MVPROTO_CMD_INV         = 5,
-    MVPROTO_CMD_TX          = 6,
-    MVPROTO_CMD_BLOCK       = 7
+    MVPROTO_CMD_SUBSCRIBE    = 1,
+    MVPROTO_CMD_UNSUBSCRIBE  = 2,
+    MVPROTO_CMD_GETBLOCKS    = 3,
+    MVPROTO_CMD_GETDATA      = 4,
+    MVPROTO_CMD_INV          = 5,
+    MVPROTO_CMD_TX           = 6,
+    MVPROTO_CMD_BLOCK        = 7,
 };
 
 enum
 {
-    MVPROTO_CMD_DISTRIBUTE  = 1,
-    MVPROTO_CMD_PUBLISH     = 2
+    MVPROTO_CMD_BULLETIN     = 1,
+    MVPROTO_CMD_GETDELEGATED = 2,
+    MVPROTO_CMD_DISTRIBUTE   = 3,
+    MVPROTO_CMD_PUBLISH      = 4,
 };
 
 #define MESSAGE_HEADER_SIZE		16
@@ -119,7 +122,7 @@ class CInv
 {
     friend class walleve::CWalleveStream;
 public:
-    enum {MSG_ERROR=0,MSG_TX,MSG_BLOCK,MSG_FILTERED_BLOCK,MSG_CMPCT_BLOCK};
+    enum {MSG_ERROR=0,MSG_TX,MSG_BLOCK,MSG_DISTRIBUTE,MSG_PUBLISH,};
     enum {MAX_INV_COUNT = 1024 * 8};
     CInv() {}
     CInv(uint32 nTypeIn,const uint256& nHashIn)

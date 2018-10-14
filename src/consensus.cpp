@@ -284,6 +284,9 @@ void CConsensus::PrimaryUpdate(const CWorldLineUpdate& update,const CTxSetChange
             delegate::CMvDelegateEvolveResult result;
             mvDelegate.Evolve(nBlockHeight,mapWeight,mapEnrollData,result); 
         }
+
+        routine.vEnrolledWeight.push_back(make_pair(hash,mapWeight));
+
         nBlockHeight++;
     }
 
@@ -318,16 +321,18 @@ void CConsensus::PrimaryUpdate(const CWorldLineUpdate& update,const CTxSetChange
             for (map<CDestination,vector<unsigned char> >::iterator it = result.mapDistributeData.begin();
                  it != result.mapDistributeData.end();++it)
             {
-                mvDelegate.HandleDistribute(nDistributeTargetHeight,(*it).second);
+                mvDelegate.HandleDistribute(nDistributeTargetHeight,(*it).first,(*it).second);
             }
+            routine.mapDistributeData = result.mapDistributeData;
 
             for (map<CDestination,vector<unsigned char> >::iterator it = result.mapPublishData.begin();
                  it != result.mapPublishData.end();++it)
             {
                 bool fCompleted = false;
-                mvDelegate.HandlePublish(nPublishTargetHeight,(*it).second,fCompleted);
+                mvDelegate.HandlePublish(nPublishTargetHeight,(*it).first,(*it).second,fCompleted);
                 routine.fPublishCompleted = (routine.fPublishCompleted || fCompleted);
             }
+            routine.mapPublishData = result.mapPublishData;
         }
     }
 }
@@ -339,6 +344,21 @@ void CConsensus::AddNewTx(const CAssembledTx& tx)
     {
         (*it).second.AddNewTx(tx);
     }
+}
+
+bool CConsensus::AddNewDistribute(int nAnchorHeight,const CDestination& destFrom,const vector<unsigned char>& vchDistribute)
+{
+    boost::unique_lock<boost::mutex> lock(mutex);
+    int nDistributeTargetHeight = nAnchorHeight + MV_CONSENSUS_DISTRIBUTE_INTERVAL + 1;
+    return mvDelegate.HandleDistribute(nDistributeTargetHeight,destFrom,vchDistribute);
+}
+
+bool CConsensus::AddNewPublish(int nAnchorHeight,const CDestination& destFrom,const vector<unsigned char>& vchPublish)
+{
+    boost::unique_lock<boost::mutex> lock(mutex);
+    int nPublishTargetHeight = nAnchorHeight + 1;
+    bool fCompleted = false;
+    return mvDelegate.HandlePublish(nPublishTargetHeight,destFrom,vchPublish,fCompleted);
 }
 
 void CConsensus::GetAgreement(int nTargetHeight,uint256& nAgreement,size_t& nWeight,vector<CDestination>& vBallot)

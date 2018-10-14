@@ -178,6 +178,7 @@ public:
                     EModuleType::DISPATCHER,
                     EModuleType::NETWORK,
                     EModuleType::NETCHANNEL,
+                    EModuleType::DELEGATEDCHANNEL,
                     EModuleType::SERVICE,
                     EModuleType::DBPSERVER,
                     EModuleType::DBPSERVICE,

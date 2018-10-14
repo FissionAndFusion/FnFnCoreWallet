@@ -25,6 +25,16 @@ public:
 
 };
 
+class IMvDelegatedChannel : public walleve::IIOModule, virtual public CMvPeerEventListener
+{
+public:
+    IMvDelegatedChannel() : IIOModule("delegatedchannel") {}
+    virtual void PrimaryUpdate(int nStartHeight,
+                               const std::vector<std::pair<uint256,std::map<CDestination,size_t> > >& vEnrolledWeight,
+                               const std::map<CDestination,std::vector<unsigned char> >& mapDistributeData, 
+                               const std::map<CDestination,std::vector<unsigned char> >& mapPublishData) = 0;
+};
+
 class CMvPeerNet : public walleve::CPeerNet, virtual public CMvPeerEventListener
 {
 public:
@@ -43,10 +53,15 @@ protected:
     bool HandleEvent(CMvEventPeerGetBlocks& eventGetBlocks) override;
     bool HandleEvent(CMvEventPeerTx& eventTx) override;
     bool HandleEvent(CMvEventPeerBlock& eventBlock) override;
+    bool HandleEvent(CMvEventPeerBulletin& eventBulletin) override;
+    bool HandleEvent(CMvEventPeerGetDelegated& eventGetDelegated) override;
+    bool HandleEvent(CMvEventPeerDistribute& eventDistribute) override;
+    bool HandleEvent(CMvEventPeerPublish& eventPublish) override;
     walleve::CPeer* CreatePeer(walleve::CIOClient *pClient,uint64 nNonce,bool fInBound) override;
     void DestroyPeer(walleve::CPeer* pPeer) override;
     walleve::CPeerInfo* GetPeerInfo(walleve::CPeer* pPeer,walleve::CPeerInfo* pInfo) override;
     bool SendDataMessage(uint64 nNonce,int nCommand,walleve::CWalleveBufStream& ssPayload);
+    bool SendDelegatedMessage(uint64 nNonce,int nCommand,walleve::CWalleveBufStream& ssPayload);
     void SetInvTimer(uint64 nNonce,std::vector<CInv>& vInv);
     virtual void ProcessAskFor(walleve::CPeer* pPeer);
     void Configure(uint32 nMagicNumIn,uint32 nVersionIn,uint64 nServiceIn,const std::string& subVersionIn,bool fEnclosedIn)
@@ -57,6 +72,7 @@ protected:
     virtual bool CheckPeerVersion(uint32 nVersionIn,uint64 nServiceIn,const std::string& subVersionIn) = 0;
 protected:
     IMvNetChannel* pNetChannel;
+    IMvDelegatedChannel* pDelegatedChannel;
     uint32 nMagicNum;
     uint32 nVersion;
     uint64 nService;

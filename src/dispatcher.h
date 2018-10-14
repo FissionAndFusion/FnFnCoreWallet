@@ -18,6 +18,10 @@ public:
     ~CDispatcher();
     MvErr AddNewBlock(const CBlock& block, uint64 nNonce = 0) override;
     MvErr AddNewTx(const CTransaction& tx, uint64 nNonce = 0) override;
+    bool  AddNewDistribute(const uint256& hashAnchor,const CDestination& dest,
+                           const std::vector<unsigned char>& vchDistribute) override;
+    bool  AddNewPublish(const uint256& hashAnchor,const CDestination& dest,
+                        const std::vector<unsigned char>& vchPublish) override;
 
 protected:
     bool WalleveHandleInitialize() override;
@@ -38,6 +42,7 @@ protected:
     IService* pService;
     IBlockMaker* pBlockMaker;
     network::IMvNetChannel* pNetChannel;
+    network::IMvDelegatedChannel* pDelegatedChannel;
 };
 
 } // namespace multiverse

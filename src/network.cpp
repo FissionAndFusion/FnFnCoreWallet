@@ -25,7 +25,7 @@ CNetwork::~CNetwork()
 
 bool CNetwork::WalleveHandleInitialize()
 {
-    Configure(NetworkConfig()->nMagicNum,PROTO_VERSION,network::NODE_NETWORK,
+    Configure(NetworkConfig()->nMagicNum,PROTO_VERSION,network::NODE_NETWORK | network::NODE_DELEGATED,
               FormatSubVersion(),!NetworkConfig()->vConnectTo.empty());
 
     CPeerNetConfig config;

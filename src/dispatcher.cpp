@@ -23,6 +23,7 @@ CDispatcher::CDispatcher()
     pService = NULL;
     pBlockMaker = NULL;
     pNetChannel = NULL;
+    pDelegatedChannel = NULL;
 }
 
 CDispatcher::~CDispatcher()
@@ -79,6 +80,12 @@ bool CDispatcher::WalleveHandleInitialize()
         return false;
     }
 
+    if (!WalleveGetObject("delegatedchannel",pDelegatedChannel))
+    {
+        WalleveLog("Failed to request delegatedchannel\n");
+        return false;
+    }
+
     return true;
 }
 
@@ -92,6 +99,7 @@ void CDispatcher::WalleveHandleDeinitialize()
     pService = NULL;
     pBlockMaker = NULL;
     pNetChannel = NULL;
+    pDelegatedChannel = NULL;
 }
 
 bool CDispatcher::WalleveHandleInvoke()
@@ -211,10 +219,36 @@ MvErr CDispatcher::AddNewTx(const CTransaction& tx,uint64 nNonce)
     return MV_OK;
 }
 
+bool CDispatcher::AddNewDistribute(const uint256& hashAnchor,const CDestination& dest,const vector<unsigned char>& vchDistribute)
+{
+    uint256 hashFork;
+    int nHeight;
+    if (pWorldLine->GetBlockLocation(hashAnchor,hashFork,nHeight) && hashFork == pCoreProtocol->GetGenesisBlockHash())
+    {
+        return pConsensus->AddNewDistribute(nHeight,dest,vchDistribute);
+    }
+    return false;
+}
+
+bool CDispatcher::AddNewPublish(const uint256& hashAnchor,const CDestination& dest,const vector<unsigned char>& vchPublish)
+{
+    uint256 hashFork;
+    int nHeight;
+    if (pWorldLine->GetBlockLocation(hashAnchor,hashFork,nHeight) && hashFork == pCoreProtocol->GetGenesisBlockHash())
+    {
+        return pConsensus->AddNewPublish(nHeight,dest,vchPublish);
+    }
+    return false;
+}
+
 void CDispatcher::UpdatePrimaryBlock(const CBlock& block,const CWorldLineUpdate& updateWorldLine,const CTxSetChange& changeTxSet)
 {
     CDelegateRoutine routineDelegate;
     pConsensus->PrimaryUpdate(updateWorldLine,changeTxSet,routineDelegate);
+
+    pDelegatedChannel->PrimaryUpdate(updateWorldLine.nLastBlockHeight - updateWorldLine.vBlockAddNew.size(),
+                                     routineDelegate.vEnrolledWeight,routineDelegate.mapDistributeData,routineDelegate.mapPublishData);
+
     BOOST_FOREACH(const CTransaction& tx,routineDelegate.vEnrollTx)
     {
         MvErr err = AddNewTx(tx);
