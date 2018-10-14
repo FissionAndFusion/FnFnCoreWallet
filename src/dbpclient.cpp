@@ -5,9 +5,16 @@
 #include "dbpclient.h"
 #include "dbputils.h"
 #include "walleve/netio/netio.h"
+#include "uint256.h"
 
 #include <thread>
 #include <chrono>
+#include <memory>
+#include <algorithm>
+#include <openssl/rand.h>
+#include <boost/foreach.hpp>
+#include <boost/algorithm/string/trim.hpp>
+#include <boost/lexical_cast.hpp>
 
 static int MSG_HEADER_LEN = 4;
 
@@ -15,9 +22,9 @@ static int MSG_HEADER_LEN = 4;
 namespace multiverse
 {
 
-CMvDbpClientSocket::CMvDbpClientSocket(const std::string& strIOModuleIn,const uint64 nNonceIn,
+CMvDbpClientSocket::CMvDbpClientSocket(IIOModule* pIOModuleIn,const uint64 nNonceIn,
                    CMvDbpClient* pDbpClientIn,CIOClient* pClientIn)
-: strIOModule(strIOModuleIn),
+: pIOModule(pIOModuleIn),
   nNonce(nNonceIn),
   pDbpClient(pDbpClientIn),
   pClient(pClientIn)
@@ -30,9 +37,9 @@ CMvDbpClientSocket::~CMvDbpClientSocket()
 
 }
 
-const std::string& CMvDbpClientSocket::GetIOModule()
+IIOModule* CMvDbpClientSocket::GetIOModule()
 {
-    return strIOModule;
+    return pIOModule;
 }
     
 uint64 CMvDbpClientSocket::GetNonce()
@@ -45,9 +52,53 @@ CNetHost CMvDbpClientSocket::GetHost()
     return CNetHost(pClient->GetRemote());
 }
     
-void CMvDbpClientSocket::Activate()
+void CMvDbpClientSocket::WriteMessage()
 {
     pClient->Write(ssSend,boost::bind(&CMvDbpClientSocket::HandleWritenRequest,this,_1));
+}
+
+void CMvDbpClientSocket::SendConnectSession(const std::string& session, const std::vector<std::string>& forks)
+{
+    dbp::Connect connect;
+    connect.set_session(session);
+    connect.set_version(1);
+
+    google::protobuf::Any anyFork;
+    lws::ForkID forkidMsg;
+
+    for(const auto& fork : forks)
+    {
+        forkidMsg.add_ids(fork);
+    }
+    
+    anyFork.PackFrom(forkidMsg);
+    (*connect.mutable_udata())["supernode-forks"] = anyFork;
+
+    google::protobuf::Any *any = new google::protobuf::Any();
+    any->PackFrom(connect);
+
+    SendMessage(dbp::Msg::CONNECT,any);
+}
+
+void CMvDbpClientSocket::SendMessage(dbp::Msg type, google::protobuf::Any* any)
+{
+    dbp::Base base;
+    base.set_msg(type);
+    base.set_allocated_object(any);
+
+    std::string bytes;
+    base.SerializeToString(&bytes);
+
+    uint32_t len;
+    char len_buffer[4];
+    len = bytes.size();
+    len = htonl(len);
+    std::memcpy(&len_buffer[0], &len, 4);
+    bytes.insert(0, len_buffer, 4);
+  
+    ssSend.Write((char*)bytes.data(),bytes.size());
+    
+    WriteMessage();
 }
 
 void CMvDbpClientSocket::StartReadHeader()
@@ -63,7 +114,8 @@ void CMvDbpClientSocket::StartReadPayload(std::size_t nLength)
 }
 
 void CMvDbpClientSocket::HandleWritenRequest(std::size_t nTransferred)
-{
+{ 
+    
     if(ssSend.GetSize() != 0)
     {
         pClient->Write(ssSend,boost::bind(&CMvDbpClientSocket::HandleWritenRequest,this,_1));
@@ -119,9 +171,31 @@ void CMvDbpClientSocket::HandleReadPayload(std::size_t nTransferred,uint32_t len
 
 void CMvDbpClientSocket::HandleReadCompleted(uint32_t len)
 {
+    std::string payloadBuffer(len, 0);
+    ssRecv.Read(&payloadBuffer[0], len);
+
+    dbp::Base msgBase;
+    if (!msgBase.ParseFromString(payloadBuffer))
+    {
+        std::cerr << "parse payload failed. [dbpclient]" << std::endl;
+        pDbpClient->HandleClientSocketError(this);
+        return;
+    }
+
+    dbp::Msg currentMsgType = msgBase.msg();
+    google::protobuf::Any anyObj = msgBase.object();
+    switch(currentMsgType)
+    {
+    case dbp::CONNECTED:
+        pDbpClient->HandleClientSocketRecv(this,anyObj);
+        break;
+    default:
+        std::cerr << "is not Message Base Type is unknown. [dbpclient]" << std::endl;
+        pDbpClient->HandleClientSocketError(this);
+        break;
+    }
 
 }
-
 
 CMvDbpClient::CMvDbpClient()
   : walleve::CIOProc("dbpclient")
@@ -133,7 +207,31 @@ CMvDbpClient::~CMvDbpClient(){}
 
 void CMvDbpClient::HandleClientSocketError(CMvDbpClientSocket* pClientSocket)
 {
+    std::cerr << "Client Socket Error." << std::endl;
+    CloseConnect(pClientSocket);
+}
 
+void CMvDbpClient::HandleClientSocketRecv(CMvDbpClientSocket* pClientSocket, const boost::any& anyObj)
+{
+    if(anyObj.type() != typeid(google::protobuf::Any))
+    {
+        return;
+    }
+
+    google::protobuf::Any any = boost::any_cast<google::protobuf::Any>(anyObj);
+
+    if(any.Is<dbp::Connected>())
+    {
+        dbp::Connected connected;
+        any.UnpackTo(&connected);
+        std::cout << "[<]connected session is: " << connected.session() << std::endl;
+    }
+    else if(any.Is<dbp::Failed>())
+    {
+        dbp::Failed failed;
+        any.UnpackTo(&failed);
+        std::cout << "[<]connect session failed: " << failed.reason() << std::endl;
+    }
 }
 
 void CMvDbpClient::AddNewClient(const CDbpClientConfig& confClient)
@@ -202,11 +300,11 @@ bool CMvDbpClient::ClientConnected(CIOClient* pClient)
                        (*it).first.address().to_string().c_str(),
                        (*it).first.port());
     
-    std::cerr << "Connect parent node" << 
+    std::cout << "Connect parent node" << 
         (*it).first.address().to_string() << "success, " 
         << "port " << (*it).first.port() << std::endl;
 
-    return true;
+    return ActivateConnect(pClient);
 }
 
 void CMvDbpClient::ClientFailToConnect(const boost::asio::ip::tcp::endpoint& epRemote)
@@ -238,6 +336,10 @@ void CMvDbpClient::ClientFailToConnect(const boost::asio::ip::tcp::endpoint& epR
 void CMvDbpClient::Timeout(uint64 nNonce,uint32 nTimerId)
 {
     std::cerr << "time out" << std::endl;
+
+    WalleveLog("Connect parent node %s timeout,  nonce = %d  timerid = %d\n",
+                       nNonce,
+                       nTimerId);
 }
 
 bool CMvDbpClient::CreateProfile(const CDbpClientConfig& confClient)
@@ -270,6 +372,36 @@ bool CMvDbpClient::StartConnection(const boost::asio::ip::tcp::endpoint& epRemot
     {
         return SSLConnect(epRemote,nTimeout,optSSL) ? true : false;
     }
+}
+
+bool CMvDbpClient::ActivateConnect(CIOClient* pClient)
+{
+    uint64 nNonce = 0;
+    RAND_bytes((unsigned char *)&nNonce, sizeof(nNonce));
+    while (mapClientSocket.count(nNonce))
+    {
+        RAND_bytes((unsigned char *)&nNonce, sizeof(nNonce));
+    }
+    
+    IIOModule* pIOModule = mapProfile[pClient->GetRemote()].pIOModule;
+    CMvDbpClientSocket* pDbpClientSocket = new CMvDbpClientSocket(pIOModule,nNonce,this,pClient);
+    if(!pDbpClientSocket)
+    {
+        return false;
+    }
+
+    mapClientSocket.insert(std::make_pair(nNonce,pDbpClientSocket));
+    
+    std::vector<std::string> vSupportForks = mapProfile[pClient->GetRemote()].vSupportForks;
+    
+    pDbpClientSocket->SendConnectSession("",vSupportForks);
+    
+    return true;
+}
+
+void CMvDbpClient::CloseConnect(CMvDbpClientSocket* pClientSocket)
+{
+    delete pClientSocket;
 }
 
 
