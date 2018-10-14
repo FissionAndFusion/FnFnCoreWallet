@@ -15,6 +15,14 @@
             "default": true,
             "format": "-nowallet",
             "desc": "Launch server without wallet"
+        },
+        {
+            "name": "fVersion",
+            "type": "bool",
+            "opt": "version",
+            "default": false,
+            "format": "-version",
+            "desc": "Get multiverse version"
         }
     ],
     "CMvMintConfigOption": [

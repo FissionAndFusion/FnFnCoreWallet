@@ -58,11 +58,12 @@ protected:
     multiverse::crypto::CPubKey GetPubKey(const std::string& addr);
     CTemplatePtr MakeTemplate(const rpc::CTemplateRequest& obj);
     void ListDestination(std::vector<CDestination>& vDestination);
-
+    bool CheckVersion(std::string& strVersion);
 private:
     /* System */
     CRPCResultPtr RPCHelp(CRPCParamPtr param);
     CRPCResultPtr RPCStop(CRPCParamPtr param);
+    CRPCResultPtr RPCVersion(CRPCParamPtr param);
     /* Network */
     CRPCResultPtr RPCGetPeerCount(CRPCParamPtr param);
     CRPCResultPtr RPCListPeer(CRPCParamPtr param);

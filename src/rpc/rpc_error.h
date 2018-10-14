@@ -38,6 +38,7 @@ enum RPCErrorCode
     RPC_VERIFY_ALREADY_IN_CHAIN = -11,  //!< Transaction already in chain
     RPC_IN_WARMUP               = -12,  //!< Client still warming up
     RPC_REQUEST_ID_NOT_FOUND    = -13,  //!< Request id is missing when get response
+    RPC_VERSION_OUT_OF_DATE     = -14,  //!< Request version is out of date
 
     //! Aliases for backward compatibility
     RPC_TRANSACTION_ERROR               = RPC_VERIFY_ERROR,
