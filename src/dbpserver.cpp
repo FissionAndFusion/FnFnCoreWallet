@@ -404,6 +404,7 @@ void CDbpClient::WriteMessageToSendStream(dbp::Base* pBaseMsg)
     pBaseMsg->SerializeToString(&bytes);
 
     unsigned char msgLenBuf[MSG_HEADER_LEN];
+    std::cout << "[dbp server] header size: " << bytes.size() << "\n";
     CDbpUtils::WriteLenToMsgHeader(bytes.size(), (char *)msgLenBuf, MSG_HEADER_LEN);
     ssSend.Write((char *)msgLenBuf, MSG_HEADER_LEN);
     ssSend.Write((char *)bytes.data(), bytes.size());
@@ -459,7 +460,7 @@ void CDbpClient::HandleReadCompleted(uint32_t len)
     dbp::Base msgBase;
     if (!msgBase.ParseFromString(payloadBuffer))
     {
-        std::cerr << "parse payload failed. " << std::endl;
+        std::cerr << "#######parse payload failed. " << std::endl;
         pServer->RespondError(this, "002", "server recv invalid protobuf object");
         pServer->HandleClientError(this);
         return;
@@ -505,6 +506,8 @@ void CDbpClient::HandleWritenResponse(std::size_t nTransferred, CDbpClient::Send
                                                this, _1, type));
             return;
         }
+
+        std::cout << "[dbp server]transferred: " << nTransferred << " bytes\n";
 
         if (ssSend.GetSize() == 0 && !queueAddedSend.empty())
         {
@@ -696,7 +699,7 @@ void CDbpServer::HandleClientPing(CDbpClient* pDbpClient, google::protobuf::Any*
 {
     dbp::Ping pingMsg;
     any->UnpackTo(&pingMsg);
-    std::cout << "[<]: ping [dbp server]\n";
+    std::cout << "[<]: ping " << pingMsg.id() << " [dbp server]\n";
     pDbpClient->SendPong(pingMsg.id());
 }
 
@@ -704,7 +707,7 @@ void CDbpServer::HandleClientPong(CDbpClient* pDbpClient, google::protobuf::Any*
 {
     dbp::Pong pongMsg;
     any->UnpackTo(&pongMsg);
-    std::cout << "[<]: pong [dbp server]\n";
+    std::cout << "[<]: pong " << pongMsg.id() << " [dbp server]\n";
     std::string session = bimapSessionClient.right.at(pDbpClient);
     if (IsSessionExist(session))
     {
@@ -738,7 +741,6 @@ void CDbpServer::HandleClientRecv(CDbpClient* pDbpClient, const boost::any& anyO
         if (IsSessionTimeOut(pDbpClient))
         {
             RespondFailed(pDbpClient, "002");
-            RemoveSession(pDbpClient);
             return;
         }
 
@@ -755,7 +757,6 @@ void CDbpServer::HandleClientRecv(CDbpClient* pDbpClient, const boost::any& anyO
         if (IsSessionTimeOut(pDbpClient))
         {
             RespondFailed(pDbpClient, "002");
-            RemoveSession(pDbpClient);
             return;
         }
 
@@ -772,7 +773,6 @@ void CDbpServer::HandleClientRecv(CDbpClient* pDbpClient, const boost::any& anyO
         if (IsSessionTimeOut(pDbpClient))
         {
             RespondFailed(pDbpClient, "002");
-            RemoveSession(pDbpClient);
             return;
         }
 
@@ -789,7 +789,6 @@ void CDbpServer::HandleClientRecv(CDbpClient* pDbpClient, const boost::any& anyO
         if (IsSessionTimeOut(pDbpClient))
         {
             RespondFailed(pDbpClient, "002");
-            RemoveSession(pDbpClient);
             return;
         }
 
@@ -806,7 +805,6 @@ void CDbpServer::HandleClientRecv(CDbpClient* pDbpClient, const boost::any& anyO
         if (IsSessionTimeOut(pDbpClient))
         {
             RespondFailed(pDbpClient, "002");
-            RemoveSession(pDbpClient);
             return;
         }
 
@@ -1004,8 +1002,6 @@ void CDbpServer::SendPingHandler(const boost::system::error_code& err, const CSe
         return;
     }
 
-    std::cout << "sent ping [dbp server]\n";
-
     std::string utc = std::to_string(CDbpUtils::CurrentUTC());
     sessionProfile.pDbpClient->SendPing(utc);
 
@@ -1034,7 +1030,7 @@ bool CDbpServer::HandleEvent(CMvEventDbpConnected& event)
                                                       boost::posix_time::seconds(5));
 
     it->second.ptrPingTimer->expires_at(it->second.ptrPingTimer->expires_at() +
-                                        boost::posix_time::seconds(5));
+                                       boost::posix_time::seconds(5));
     it->second.ptrPingTimer->async_wait(boost::bind(&CDbpServer::SendPingHandler,
                                                     this, boost::asio::placeholders::error,
                                                     boost::ref(it->second)));

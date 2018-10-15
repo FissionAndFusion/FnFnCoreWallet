@@ -59,6 +59,12 @@ public:
 class CMvDbpClientSocket
 {
 public:
+    enum SendType
+    {
+        PING = 0,
+        OTHER = 100
+    };
+public:
     CMvDbpClientSocket(IIOModule* pIOModuleIn,const uint64 nNonceIn,
                    CMvDbpClient* pDbpClientIn,CIOClient* pClientIn);
     ~CMvDbpClientSocket();
@@ -69,7 +75,6 @@ public:
     std::string GetSession() const;
     void SetSession(const std::string& session);
     
-    void WriteMessage();
     void ReadMessage();
     void SendPong(const std::string& id);
     void SendPing(const std::string& id);
@@ -79,7 +84,7 @@ protected:
     void StartReadHeader();
     void StartReadPayload(std::size_t nLength);
     
-    void HandleWritenRequest(std::size_t nTransferred);
+    void HandleWritenRequest(std::size_t nTransferred, SendType type);
     void HandleReadHeader(std::size_t nTransferred);
     void HandleReadPayload(std::size_t nTransferred,uint32_t len);
     void HandleReadCompleted(uint32_t len);
@@ -115,6 +120,7 @@ public:
     virtual ~CMvDbpClient() noexcept;
 
     void HandleClientSocketError(CMvDbpClientSocket* pClientSocket);
+    void HandleClientSocketSent(CMvDbpClientSocket* pClientSocket);
     void HandleClientSocketRecv(CMvDbpClientSocket* pClientSocket, const boost::any& anyObj);
     void AddNewClient(const CDbpClientConfig& confClient);
 
