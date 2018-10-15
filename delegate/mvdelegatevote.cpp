@@ -157,14 +157,14 @@ void CMvDelegateVote::Enroll(const map<CDestination,size_t>& mapWeight,
     }
 }
 
-bool CMvDelegateVote::Accept(const vector<unsigned char>& vchDistributeData)
+bool CMvDelegateVote::Accept(const CDestination& destFrom,const vector<unsigned char>& vchDistributeData)
 {
     CMvDelegateData delegateData;
     try
     {
         CWalleveIDataStream is(vchDistributeData);
         is >> delegateData;
-        if (!VerifySignature(delegateData))
+        if (delegateData.nIdentFrom != DestToIdentUInt256(destFrom) || !VerifySignature(delegateData))
         {
             return false;
         }
@@ -192,14 +192,14 @@ bool CMvDelegateVote::Accept(const vector<unsigned char>& vchDistributeData)
     return true;
 }
 
-bool CMvDelegateVote::Collect(const vector<unsigned char>& vchPublishData,bool& fCompleted)
+bool CMvDelegateVote::Collect(const CDestination& destFrom,const vector<unsigned char>& vchPublishData,bool& fCompleted)
 {
     try
     {
         CMvDelegateData delegateData;
         CWalleveIDataStream is(vchPublishData);
         is >> delegateData;
-        if (VerifySignature(delegateData))
+        if (delegateData.nIdentFrom == DestToIdentUInt256(destFrom) && VerifySignature(delegateData))
         {
             if (witness.Collect(delegateData.nIdentFrom,delegateData.mapShare,fCompleted))
             {

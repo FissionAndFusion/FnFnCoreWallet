@@ -26,6 +26,7 @@
 #include <walleve/console/console.h>
 #include <walleve/peernet/peer.h>
 #include <walleve/peernet/peernet.h>
+#include <walleve/peernet/datasched.h>
 #include <walleve/http/httptype.h>
 #include <walleve/http/httpcookie.h>
 #include <walleve/http/httpsse.h>

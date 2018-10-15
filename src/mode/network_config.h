@@ -27,9 +27,6 @@ public:
     unsigned int nMaxInBounds;
     unsigned int nMaxOutBounds;
     std::vector<std::string> vDNSeed;
-protected:
-    int nPortInt;
-    int nMaxConnection;
 };
 
 }  // namespace multiverse

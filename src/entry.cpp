@@ -11,6 +11,7 @@
 #include "dispatcher.h"
 #include "network.h"
 #include "netchn.h"
+#include "delegatedchn.h"
 #include "rpcmod.h"
 #include "service.h"
 #include "blockmaker.h"
@@ -230,6 +231,14 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
         case EModuleType::NETCHANNEL:
         {
             if (!AttachModule(new CNetChannel()))
+            {
+                return false;
+            }
+            break;
+        }
+        case EModuleType::DELEGATEDCHANNEL:
+        {
+            if (!AttachModule(new CDelegatedChannel()))
             {
                 return false;
             }

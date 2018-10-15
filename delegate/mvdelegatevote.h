@@ -84,8 +84,8 @@ public:
 
     void Enroll(const std::map<CDestination,size_t>& mapWeight,
                 const std::map<CDestination,std::vector<unsigned char> >& mapEnrollData);
-    bool Accept(const std::vector<unsigned char>& vchDistributeData);
-    bool Collect(const std::vector<unsigned char>& vchPublishData,bool& fCompleted);
+    bool Accept(const CDestination& destFrom,const std::vector<unsigned char>& vchDistributeData);
+    bool Collect(const CDestination& destFrom,const std::vector<unsigned char>& vchPublishData,bool& fCompleted);
     void GetAgreement(uint256& nAgreement,std::size_t& nWeight,std::map<CDestination,std::size_t>& mapBallot);
     void GetProof(std::vector<unsigned char>& vchProof);
 protected:

@@ -43,8 +43,10 @@ public:
                                  const std::map<CDestination,std::vector<unsigned char> >& mapEnrollData,
                                  CMvDelegateEvolveResult& result);
     void Rollback(int nBlockHeightFrom,int nBlockHeightTo);
-    bool HandleDistribute(int nTargetHeight,const std::vector<unsigned char>& vchDistributeData);
-    bool HandlePublish(int nTargetHeight,const std::vector<unsigned char>& vchPublishData,bool& fCompleted);
+    bool HandleDistribute(int nTargetHeight,const CDestination& destFrom,
+                          const std::vector<unsigned char>& vchDistributeData);
+    bool HandlePublish(int nTargetHeight,const CDestination& destFrom,
+                       const std::vector<unsigned char>& vchPublishData,bool& fCompleted);
     void GetAgreement(int nTargetHeight,uint256& nAgreement,std::size_t& nWeight,std::map<CDestination,std::size_t>& mapBallot);
     void GetProof(int nTargetHeight,std::vector<unsigned char>& vchProof);
 protected:

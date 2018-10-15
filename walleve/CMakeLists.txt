@@ -29,6 +29,7 @@ set(sources
 	walleve/peernet/epmngr.cpp	walleve/peernet/epmngr.h
 	walleve/peernet/peer.cpp	walleve/peernet/peer.h
 	walleve/peernet/peernet.cpp	walleve/peernet/peernet.h
+	walleve/peernet/datasched.h
 	walleve/http/httpcookie.cpp	walleve/http/httpcookie.h
 	walleve/http/httpsse.cpp	walleve/http/httpsse.h
 	walleve/http/httputil.cpp	walleve/http/httputil.h
