@@ -822,20 +822,23 @@ CBlockFork* CBlockBase::GetFork(const uint256& hash)
 CBlockIndex* CBlockBase::GetBranch(CBlockIndex* pIndexRef,CBlockIndex* pIndex,vector<CBlockIndex*>& vPath)
 {
     vPath.clear();
-    while (pIndexRef->GetBlockTime() > pIndex->GetBlockTime())
-    {
-        pIndexRef = pIndexRef->pPrev;
-    }
-    while (pIndex->GetBlockTime() > pIndexRef->GetBlockTime())
-    {
-        vPath.push_back(pIndex);
-        pIndex = pIndex->pPrev;
-    }
     while (pIndex != pIndexRef)
     {
-        vPath.push_back(pIndex);
-        pIndex = pIndex->pPrev;
-        pIndexRef = pIndexRef->pPrev;
+        if (pIndexRef->GetBlockTime() > pIndex->GetBlockTime())
+        {
+            pIndexRef = pIndexRef->pPrev;
+        }
+        else if (pIndex->GetBlockTime() > pIndexRef->GetBlockTime())
+        {
+            vPath.push_back(pIndex);
+            pIndex = pIndex->pPrev;
+        }
+        else
+        {
+            vPath.push_back(pIndex);
+            pIndex = pIndex->pPrev;
+            pIndexRef = pIndexRef->pPrev;
+        }
     }
     return pIndex;
 }

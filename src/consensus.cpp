@@ -334,6 +334,7 @@ void CConsensus::PrimaryUpdate(const CWorldLineUpdate& update,const CTxSetChange
             }
             routine.mapPublishData = result.mapPublishData;
         }
+        routine.vEnrolledWeight.push_back(make_pair(hash,mapWeight));
     }
 }
 
