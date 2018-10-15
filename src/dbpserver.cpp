@@ -696,6 +696,7 @@ void CDbpServer::HandleClientPing(CDbpClient* pDbpClient, google::protobuf::Any*
 {
     dbp::Ping pingMsg;
     any->UnpackTo(&pingMsg);
+    std::cout << "[<]: ping [dbp server]\n";
     pDbpClient->SendPong(pingMsg.id());
 }
 
@@ -703,7 +704,7 @@ void CDbpServer::HandleClientPong(CDbpClient* pDbpClient, google::protobuf::Any*
 {
     dbp::Pong pongMsg;
     any->UnpackTo(&pongMsg);
-
+    std::cout << "[<]: pong [dbp server]\n";
     std::string session = bimapSessionClient.right.at(pDbpClient);
     if (IsSessionExist(session))
     {
@@ -1003,10 +1004,12 @@ void CDbpServer::SendPingHandler(const boost::system::error_code& err, const CSe
         return;
     }
 
+    std::cout << "sent ping [dbp server]\n";
+
     std::string utc = std::to_string(CDbpUtils::CurrentUTC());
     sessionProfile.pDbpClient->SendPing(utc);
 
-    sessionProfile.ptrPingTimer->expires_at(sessionProfile.ptrPingTimer->expires_at() + boost::posix_time::seconds(1));
+    sessionProfile.ptrPingTimer->expires_at(sessionProfile.ptrPingTimer->expires_at() + boost::posix_time::seconds(5));
     sessionProfile.ptrPingTimer->async_wait(boost::bind(&CDbpServer::SendPingHandler,
                                                         this, boost::asio::placeholders::error,
                                                         boost::ref(sessionProfile)));
@@ -1028,10 +1031,10 @@ bool CDbpServer::HandleEvent(CMvEventDbpConnected& event)
 
     it->second.ptrPingTimer =
         std::make_shared<boost::asio::deadline_timer>(this->GetIoService(),
-                                                      boost::posix_time::seconds(1));
+                                                      boost::posix_time::seconds(5));
 
     it->second.ptrPingTimer->expires_at(it->second.ptrPingTimer->expires_at() +
-                                        boost::posix_time::seconds(1));
+                                        boost::posix_time::seconds(5));
     it->second.ptrPingTimer->async_wait(boost::bind(&CDbpServer::SendPingHandler,
                                                     this, boost::asio::placeholders::error,
                                                     boost::ref(it->second)));

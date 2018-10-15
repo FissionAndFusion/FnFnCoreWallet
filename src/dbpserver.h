@@ -196,7 +196,7 @@ protected:
 
     typedef boost::bimap<std::string, CDbpClient*> SessionClientBimapType;
     typedef SessionClientBimapType::value_type position_pair;
-    SessionClientBimapType bimapSessionClient;                //session id <=> CDbpClient
+    SessionClientBimapType bimapSessionClient;                // session id <=> CDbpClient
     std::map<std::string, CSessionProfile> mapSessionProfile; // session id => session profile
 };
 } //namespace multiverse

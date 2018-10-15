@@ -66,7 +66,13 @@ public:
     IIOModule* GetIOModule();
     uint64 GetNonce();
     CNetHost GetHost();
+    std::string GetSession() const;
+    void SetSession(const std::string& session);
+    
     void WriteMessage();
+    void ReadMessage();
+    void SendPong(const std::string& id);
+    void SendPing(const std::string& id);
 
     void SendConnectSession(const std::string& session, const std::vector<std::string>& forks);
 protected:
@@ -79,6 +85,10 @@ protected:
     void HandleReadCompleted(uint32_t len);
 
     void SendMessage(dbp::Msg type, google::protobuf::Any* any);
+
+private:
+    std::string strSessionId;
+
 protected:
     IIOModule* pIOModule;
     const uint64 nNonce;
@@ -87,6 +97,15 @@ protected:
 
     CWalleveBufStream ssRecv;
     CWalleveBufStream ssSend;
+};
+
+class CMvSessionProfile
+{
+public:
+    CMvDbpClientSocket* pClientSocket;
+    std::string strSessionId;
+    uint64 nTimeStamp;
+    std::shared_ptr<boost::asio::deadline_timer> ptrPingTimer;
 };
 
 class CMvDbpClient : public walleve::CIOProc
@@ -98,6 +117,12 @@ public:
     void HandleClientSocketError(CMvDbpClientSocket* pClientSocket);
     void HandleClientSocketRecv(CMvDbpClientSocket* pClientSocket, const boost::any& anyObj);
     void AddNewClient(const CDbpClientConfig& confClient);
+
+    void HandleConnected(CMvDbpClientSocket* pClientSocket, google::protobuf::Any* any);
+    void HandleFailed(CMvDbpClientSocket* pClientSocket, google::protobuf::Any* any);
+    void HandlePing(CMvDbpClientSocket* pClientSocket, google::protobuf::Any* any);
+    void HandlePong(CMvDbpClientSocket* pClientSocket, google::protobuf::Any* any);
+
 protected:
     bool WalleveHandleInitialize() override;
     void WalleveHandleDeinitialize() override;
@@ -111,14 +136,27 @@ protected:
     bool CreateProfile(const CDbpClientConfig& confClient);
     bool StartConnection(const boost::asio::ip::tcp::endpoint& epRemote, int64 nTimeout, bool fEnableSSL,
             const CIOSSLOption& optSSL);
+    void StartPingTimer(const std::string& session);
+    void SendPingHandler(const boost::system::error_code& err, const CMvSessionProfile& sessionProfile);
+    void CreateSession(const std::string& session, CMvDbpClientSocket* pClientSocket);
+    bool HaveAssociatedSessionOf(CMvDbpClientSocket* pClientSocket);
+    bool IsSessionExist(const std::string& session);    
 
     bool ActivateConnect(CIOClient* pClient);
     void CloseConnect(CMvDbpClientSocket* pClientSocket);
+    void RemoveSession(CMvDbpClientSocket* pClientSocket);
+    void RemoveClientSocket(CMvDbpClientSocket* pClientSocket);
 
 protected:
     std::vector<CDbpClientConfig> vecClientConfig;
     std::map<boost::asio::ip::tcp::endpoint, CDbpClientProfile> mapProfile;
-    std::map<uint64, CMvDbpClientSocket*> mapClientSocket;
+    std::map<uint64, CMvDbpClientSocket*> mapClientSocket; // nonce => CDbpClientSocket
+
+    typedef boost::bimap<std::string, CMvDbpClientSocket*> SessionClientSocketBimapType;
+    typedef SessionClientSocketBimapType::value_type position_pair;
+    SessionClientSocketBimapType bimapSessionClientSocket;      // session id <=> CMvDbpClientSocket
+    std::map<std::string, CMvSessionProfile> mapSessionProfile; // session id => session profile
+
 };
 
 } // namespace multiverse

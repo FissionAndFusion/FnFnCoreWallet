@@ -51,10 +51,60 @@ CNetHost CMvDbpClientSocket::GetHost()
 {
     return CNetHost(pClient->GetRemote());
 }
+
+std::string CMvDbpClientSocket::GetSession() const
+{
+    return strSessionId;
+}
+
+void CMvDbpClientSocket::SetSession(const std::string& session)
+{
+    strSessionId = session;
+}
     
 void CMvDbpClientSocket::WriteMessage()
 {
     pClient->Write(ssSend,boost::bind(&CMvDbpClientSocket::HandleWritenRequest,this,_1));
+}
+
+void CMvDbpClientSocket::ReadMessage()
+{
+    while(ssSend.GetSize() != 0)
+    {
+        WriteMessage();
+        std::cout << "is not sent complete\n";
+    }
+    
+    //std::cout << "read stream size: " << ssRecv.GetSize() << "\n";
+    //std::cout << "read mesage [dbpclient]\n";
+    StartReadHeader();
+}
+
+void CMvDbpClientSocket::SendPong(const std::string& id)
+{
+    dbp::Pong pong;
+    pong.set_id(id);
+
+    google::protobuf::Any *any = new google::protobuf::Any();
+    any->PackFrom(pong);
+
+    SendMessage(dbp::Msg::PONG,any);
+}
+
+void CMvDbpClientSocket::SendPing(const std::string& id)
+{
+    dbp::Ping ping;
+    ping.set_id(id);
+
+    google::protobuf::Any *any = new google::protobuf::Any();
+    any->PackFrom(ping);
+
+    while(ssSend.GetSize() != 0)
+    {
+        WriteMessage();
+    }
+
+    SendMessage(dbp::Msg::PING,any);
 }
 
 void CMvDbpClientSocket::SendConnectSession(const std::string& session, const std::vector<std::string>& forks)
@@ -95,7 +145,8 @@ void CMvDbpClientSocket::SendMessage(dbp::Msg type, google::protobuf::Any* any)
     len = htonl(len);
     std::memcpy(&len_buffer[0], &len, 4);
     bytes.insert(0, len_buffer, 4);
-  
+
+    
     ssSend.Write((char*)bytes.data(),bytes.size());
     
     WriteMessage();
@@ -109,22 +160,22 @@ void CMvDbpClientSocket::StartReadHeader()
 
 void CMvDbpClientSocket::StartReadPayload(std::size_t nLength)
 {
-     pClient->Read(ssRecv, nLength,
+    std::cout << "start read payload [dbpclient] " << nLength << " bytes\n";
+    pClient->Read(ssRecv, nLength,
                   boost::bind(&CMvDbpClientSocket::HandleReadPayload, this, _1, nLength));
 }
 
 void CMvDbpClientSocket::HandleWritenRequest(std::size_t nTransferred)
 { 
-    
     if(ssSend.GetSize() != 0)
     {
-        pClient->Write(ssSend,boost::bind(&CMvDbpClientSocket::HandleWritenRequest,this,_1));
+        WriteMessage();
         return;
     }
 
     if(nTransferred != 0)
     {
-        StartReadHeader();
+        ReadMessage();
     }
     else
     {
@@ -134,6 +185,8 @@ void CMvDbpClientSocket::HandleWritenRequest(std::size_t nTransferred)
     
 void CMvDbpClientSocket::HandleReadHeader(std::size_t nTransferred)
 {
+    std::cout << "read header handler [dbpclient]\n";
+    
     if (nTransferred == MSG_HEADER_LEN)
     {
         std::string lenBuffer(MSG_HEADER_LEN, 0);
@@ -171,6 +224,8 @@ void CMvDbpClientSocket::HandleReadPayload(std::size_t nTransferred,uint32_t len
 
 void CMvDbpClientSocket::HandleReadCompleted(uint32_t len)
 {
+    std::cout << "handle read compele [dbpclient]\n";
+    
     std::string payloadBuffer(len, 0);
     ssRecv.Read(&payloadBuffer[0], len);
 
@@ -188,6 +243,23 @@ void CMvDbpClientSocket::HandleReadCompleted(uint32_t len)
     {
     case dbp::CONNECTED:
         pDbpClient->HandleClientSocketRecv(this,anyObj);
+        break;
+    case dbp::FAILED:
+        pDbpClient->HandleClientSocketRecv(this,anyObj);
+        break;
+    case dbp::PING:
+        pDbpClient->HandleClientSocketRecv(this,anyObj);
+        break;
+    case dbp::PONG:
+        pDbpClient->HandleClientSocketRecv(this,anyObj);
+        break;
+    case dbp::NOSUB:
+    case dbp::READY:
+    case dbp::RESULT:
+    case dbp::ADDED:
+        // ignore these messages
+        std::cerr << "nosub ready result added message type cannot support" << std::endl;
+        pDbpClient->HandleClientSocketError(this);
         break;
     default:
         std::cerr << "is not Message Base Type is unknown. [dbpclient]" << std::endl;
@@ -207,8 +279,8 @@ CMvDbpClient::~CMvDbpClient(){}
 
 void CMvDbpClient::HandleClientSocketError(CMvDbpClientSocket* pClientSocket)
 {
-    std::cerr << "Client Socket Error." << std::endl;
-    CloseConnect(pClientSocket);
+    std::cerr << "Client Socket Error." << std::endl; 
+    RemoveClientSocket(pClientSocket);
 }
 
 void CMvDbpClient::HandleClientSocketRecv(CMvDbpClientSocket* pClientSocket, const boost::any& anyObj)
@@ -222,21 +294,81 @@ void CMvDbpClient::HandleClientSocketRecv(CMvDbpClientSocket* pClientSocket, con
 
     if(any.Is<dbp::Connected>())
     {
-        dbp::Connected connected;
-        any.UnpackTo(&connected);
-        std::cout << "[<]connected session is: " << connected.session() << std::endl;
+        HandleConnected(pClientSocket,&any);
     }
     else if(any.Is<dbp::Failed>())
     {
-        dbp::Failed failed;
-        any.UnpackTo(&failed);
-        std::cout << "[<]connect session failed: " << failed.reason() << std::endl;
+        HandleFailed(pClientSocket,&any);
+    }
+    else if(any.Is<dbp::Ping>())
+    {
+        if(!HaveAssociatedSessionOf(pClientSocket))
+        {
+            return;
+        }
+        
+        HandlePing(pClientSocket,&any);
+    }
+    else if(any.Is<dbp::Pong>())
+    {
+        if(!HaveAssociatedSessionOf(pClientSocket))
+        {
+            return;
+        }
+
+        HandlePong(pClientSocket,&any);
     }
 }
 
 void CMvDbpClient::AddNewClient(const CDbpClientConfig& confClient)
 {
     vecClientConfig.push_back(confClient);
+}
+
+void CMvDbpClient::HandleConnected(CMvDbpClientSocket* pClientSocket, google::protobuf::Any* any)
+{
+    dbp::Connected connected;
+    any->UnpackTo(&connected);
+    std::cout << "[<]connected session is: " << connected.session() << std::endl;
+    CreateSession(connected.session(),pClientSocket);
+    
+    if(IsSessionExist(connected.session()))
+    {
+        StartPingTimer(connected.session());
+    }
+
+    //pClientSocket->ReadMessage();
+}
+
+void CMvDbpClient::HandleFailed(CMvDbpClientSocket* pClientSocket, google::protobuf::Any* any)
+{
+    dbp::Failed failed;
+    any->UnpackTo(&failed);
+    std::cout << "[<]connect session failed: " << failed.reason() << std::endl;
+
+}
+    
+void CMvDbpClient::HandlePing(CMvDbpClientSocket* pClientSocket, google::protobuf::Any* any)
+{
+    dbp::Ping ping;
+    any->UnpackTo(&ping);
+    std::cout << "[<]ping: " << ping.id() << std::endl;
+    pClientSocket->SendPong(ping.id());
+}
+    
+void CMvDbpClient::HandlePong(CMvDbpClientSocket* pClientSocket, google::protobuf::Any* any)
+{
+    dbp::Pong pong;
+    any->UnpackTo(&pong);
+    std::cout << "[<]pong: " << pong.id() << std::endl;
+
+    std::string session = bimapSessionClientSocket.right.at(pClientSocket);
+    if(IsSessionExist(session))
+    {
+        mapSessionProfile[session].nTimeStamp = CDbpUtils::CurrentUTC();
+    }
+
+    pClientSocket->ReadMessage();
 }
 
 bool CMvDbpClient::WalleveHandleInitialize()
@@ -256,6 +388,7 @@ bool CMvDbpClient::WalleveHandleInitialize()
 void CMvDbpClient::WalleveHandleDeinitialize()
 {
     // delete client config
+    mapProfile.clear();
 }
 
 void CMvDbpClient::EnterLoop()
@@ -284,8 +417,19 @@ void CMvDbpClient::EnterLoop()
 
 void CMvDbpClient::LeaveLoop()
 {
-    WalleveLog("Dbp Client stop\n");
     // destory resource
+    std::vector<CMvDbpClientSocket*> vSocket;
+    for(auto it = mapClientSocket.begin(); it != mapClientSocket.end(); ++it)
+    {
+        vSocket.push_back((*it).second);
+    }
+
+    for(CMvDbpClientSocket* pSocket : vSocket)
+    {
+        RemoveClientSocket(pSocket);
+    }
+    
+    WalleveLog("Dbp Client stop\n");
 }
 
 bool CMvDbpClient::ClientConnected(CIOClient* pClient)
@@ -374,6 +518,60 @@ bool CMvDbpClient::StartConnection(const boost::asio::ip::tcp::endpoint& epRemot
     }
 }
 
+void CMvDbpClient::SendPingHandler(const boost::system::error_code& err, const CMvSessionProfile& sessionProfile)
+{
+    if (err != boost::system::errc::success)
+    {
+        return;
+    }
+
+    std::string utc = std::to_string(CDbpUtils::CurrentUTC());
+    sessionProfile.pClientSocket->SendPing(utc);
+    std::cout << "sent ping\n";
+    
+    sessionProfile.ptrPingTimer->expires_at(sessionProfile.ptrPingTimer->expires_at() + boost::posix_time::seconds(5));
+    sessionProfile.ptrPingTimer->async_wait(boost::bind(&CMvDbpClient::SendPingHandler,
+                                                        this, boost::asio::placeholders::error,
+                                                        boost::ref(sessionProfile)));
+}
+ 
+void CMvDbpClient::StartPingTimer(const std::string& session)
+{
+    auto& profile = mapSessionProfile[session];
+    
+    profile.ptrPingTimer = 
+        std::make_shared<boost::asio::deadline_timer>(this->GetIoService(),
+                                                      boost::posix_time::seconds(5));
+    profile.ptrPingTimer->expires_at(profile.ptrPingTimer->expires_at() +
+                                        boost::posix_time::seconds(5));
+    profile.ptrPingTimer->async_wait(boost::bind(&CMvDbpClient::SendPingHandler,
+                                                    this, boost::asio::placeholders::error,
+                                                    boost::ref(profile)));
+}
+
+void CMvDbpClient::CreateSession(const std::string& session, CMvDbpClientSocket* pClientSocket)
+{
+    CMvSessionProfile profile;
+    profile.strSessionId = session;
+    profile.nTimeStamp = CDbpUtils::CurrentUTC();
+    profile.pClientSocket = pClientSocket;
+
+    pClientSocket->SetSession(session);
+
+    mapSessionProfile.insert(std::make_pair(session,profile));
+    bimapSessionClientSocket.insert(position_pair(session,pClientSocket));
+}
+
+bool CMvDbpClient::HaveAssociatedSessionOf(CMvDbpClientSocket* pClientSocket)
+{
+    return bimapSessionClientSocket.right.find(pClientSocket) != bimapSessionClientSocket.right.end();
+}
+
+bool CMvDbpClient::IsSessionExist(const std::string& session)
+{
+  return mapSessionProfile.find(session) != mapSessionProfile.end();
+}
+
 bool CMvDbpClient::ActivateConnect(CIOClient* pClient)
 {
     uint64 nNonce = 0;
@@ -402,6 +600,24 @@ bool CMvDbpClient::ActivateConnect(CIOClient* pClient)
 void CMvDbpClient::CloseConnect(CMvDbpClientSocket* pClientSocket)
 {
     delete pClientSocket;
+}
+
+void CMvDbpClient::RemoveSession(CMvDbpClientSocket* pClientSocket)
+{
+    if (HaveAssociatedSessionOf(pClientSocket))
+    {
+        std::string assciatedSession = bimapSessionClientSocket.right.at(pClientSocket);
+        bimapSessionClientSocket.left.erase(assciatedSession);
+        bimapSessionClientSocket.right.erase(pClientSocket);
+        mapSessionProfile[assciatedSession].ptrPingTimer->cancel();
+        mapSessionProfile.erase(assciatedSession);
+    }
+}
+
+void CMvDbpClient::RemoveClientSocket(CMvDbpClientSocket* pClientSocket)
+{
+    RemoveSession(pClientSocket);
+    CloseConnect(pClientSocket);
 }
 
 
