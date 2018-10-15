@@ -345,7 +345,22 @@ void CMvDbpClient::HandleFailed(CMvDbpClientSocket* pClientSocket, google::proto
     dbp::Failed failed;
     any->UnpackTo(&failed);
     std::cout << "[<]connect session failed: " << failed.reason() << std::endl;
-
+    
+    auto epRemote = pClientSocket->GetHost().ToEndPoint();
+    RemoveClientSocket(pClientSocket);
+    
+    auto it = mapProfile.find(epRemote);
+    if(it != mapProfile.end())
+    {
+        StartConnection(epRemote,DBPCLIENT_CONNECT_TIMEOUT, 
+            it->second.optSSL.fEnable,it->second.optSSL);
+    }
+    else
+    {
+        std::cerr << "cannot find reconnect parent node " << 
+            epRemote.address().to_string() << " failed, " 
+            << "port " << epRemote.port() << std::endl;
+    }
 }
     
 void CMvDbpClient::HandlePing(CMvDbpClientSocket* pClientSocket, google::protobuf::Any* any)
