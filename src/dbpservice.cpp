@@ -70,6 +70,12 @@ bool CDbpService::HandleEvent(CMvEventDbpPong& event)
     return true;
 }
 
+bool CDbpService::HandleEvent(CMvEventDbpBroken& event)
+{
+    mapSessionChildNodeForks.erase(event.strSessionId);
+    return true;
+}
+
 bool CDbpService::HandleEvent(CMvEventDbpConnect& event)
 {
     bool isReconnect = event.data.isReconnect;
@@ -464,7 +470,8 @@ void CDbpService::UpdateChildNodeForks(const std::string& session, const std::st
     {
         setForks.insert(fork);
     }
-    mapSessionForks[session] = setForks;
+
+    mapSessionChildNodeForks[session] = setForks;
 }
 
 bool CDbpService::HandleEvent(CMvEventDbpUpdateNewBlock& event)

@@ -28,6 +28,7 @@ public:
     bool HandleEvent(CMvEventDbpUnSub& event) override;
     bool HandleEvent(CMvEventDbpMethod& event) override;
     bool HandleEvent(CMvEventDbpPong& event) override;
+    bool HandleEvent(CMvEventDbpBroken& event) override;
 
     // notify add msg(block tx ...) to event handler
     bool HandleEvent(CMvEventDbpUpdateNewBlock& event) override;
@@ -71,7 +72,7 @@ private:
     std::set<std::string> setSubedAllTxIds;     // tx ids
 
     typedef std::set<std::string> ForksType;
-    std::map<std::string, ForksType> mapSessionForks; // session => forks
+    std::map<std::string, ForksType> mapSessionChildNodeForks; // session => child node forks
 
     std::map<std::string, std::string> mapIdSubedSession;       // id => session
     std::unordered_map<std::string, bool> mapCurrentTopicExist; // topic => enabled

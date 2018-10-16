@@ -194,7 +194,7 @@ public:
 class CMvDbpBroken
 {
 public:
-    bool fEventStream;
+    std::string session;
 };
 } // namespace multiverse
 #endif //MULTIVERSE_DBP_TYPE_H
