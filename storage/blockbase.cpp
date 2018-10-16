@@ -449,6 +449,18 @@ bool CBlockBase::RetrieveFork(const uint256& hash,CBlockIndex** ppIndex)
     return true;
 }
 
+bool CBlockBase::RetrieveFork(const string& strName,CBlockIndex** ppIndex)
+{
+    CWalleveReadLock rlock(rwAccess);
+    CBlockFork* pFork = GetFork(strName);
+    if (pFork == NULL)
+    {
+        return false;
+    }
+    *ppIndex = pFork->GetLast();
+    return true;
+}
+
 bool CBlockBase::RetrieveProfile(const uint256& hash,CProfile& profile)
 {
     CWalleveReadLock rlock(rwAccess);
@@ -817,6 +829,19 @@ CBlockFork* CBlockBase::GetFork(const uint256& hash)
 {
     map<uint256,CBlockFork>::iterator mi = mapFork.find(hash);
     return (mi != mapFork.end() ? &(*mi).second : NULL);
+}
+
+CBlockFork* CBlockBase::GetFork(const std::string& strName) 
+{
+    for (map<uint256,CBlockFork>::iterator mi = mapFork.begin(); mi != mapFork.end(); ++mi)
+    {
+        const CProfile& profile = (*mi).second.GetProfile();
+        if (profile.strName == strName)
+        {
+            return (&(*mi).second);
+        }
+    }
+    return NULL;
 }
 
 CBlockIndex* CBlockBase::GetBranch(CBlockIndex* pIndexRef,CBlockIndex* pIndex,vector<CBlockIndex*>& vPath)
