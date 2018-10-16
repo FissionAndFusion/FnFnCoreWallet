@@ -33,4 +33,10 @@ void CDbpCliService::WalleveHandleDeinitialize()
     pDbpClient = NULL;
 }
 
+bool CDbpCliService::HandleEvent(CMvEventDbpBroken& event)
+{
+    (void)event;
+    return true;
+}
+
 } // namespace multiverse

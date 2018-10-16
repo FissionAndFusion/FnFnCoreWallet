@@ -6,6 +6,7 @@
 #define MULTIVERSE_DBP_CLIENT_H
 
 #include "walleve/walleve.h"
+#include "event.h"
 
 #include <boost/bimap.hpp>
 #include <boost/any.hpp>
@@ -110,7 +111,7 @@ public:
     std::shared_ptr<boost::asio::deadline_timer> ptrPingTimer;
 };
 
-class CMvDbpClient : public walleve::CIOProc
+class CMvDbpClient : public walleve::CIOProc, virtual public CDBPEventListener
 {
 public:
     CMvDbpClient();

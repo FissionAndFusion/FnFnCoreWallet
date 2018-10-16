@@ -6,14 +6,18 @@
 #define MULTIVERSE_DBP_CLIENT_SERVICE_H
 
 #include "walleve/walleve.h"
+#include "event.h"
 namespace multiverse
 {
 
-class CDbpCliService : public walleve::IIOModule
+class CDbpCliService : public walleve::IIOModule, virtual public CDBPEventListener
 {
 public:
     CDbpCliService();
     virtual ~CDbpCliService() noexcept;
+
+    bool HandleEvent(CMvEventDbpBroken& event) override;
+    
 protected:
     bool WalleveHandleInitialize() override;
     void WalleveHandleDeinitialize() override;

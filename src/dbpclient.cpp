@@ -284,6 +284,12 @@ void CMvDbpClient::HandleClientSocketError(CMvDbpClientSocket* pClientSocket)
 {
     std::cerr << "Client Socket Error." << std::endl; 
     
+    CMvEventDbpBroken *pEventDbpBroken = new CMvEventDbpBroken(pClientSocket->GetSession());
+    if(pEventDbpBroken)
+    {
+        pClientSocket->GetIOModule()->PostEvent(pEventDbpBroken);
+    }
+
     auto epRemote = pClientSocket->GetHost().ToEndPoint();
     RemoveClientSocket(pClientSocket);
 
