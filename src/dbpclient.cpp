@@ -345,8 +345,6 @@ void CMvDbpClient::HandleConnected(CMvDbpClientSocket* pClientSocket, google::pr
     {
         StartPingTimer(connected.session());
     }
-
-  //  this->HandleClientSocketSent(pClientSocket);
 }
 
 void CMvDbpClient::HandleFailed(CMvDbpClientSocket* pClientSocket, google::protobuf::Any* any)
@@ -391,8 +389,6 @@ void CMvDbpClient::HandlePong(CMvDbpClientSocket* pClientSocket, google::protobu
     {
         mapSessionProfile[session].nTimeStamp = CDbpUtils::CurrentUTC();
     }
-
-   // this->HandleClientSocketSent(pClientSocket);
 }
 
 bool CMvDbpClient::WalleveHandleInitialize()
@@ -553,7 +549,7 @@ void CMvDbpClient::SendPingHandler(const boost::system::error_code& err, const C
     sessionProfile.pClientSocket->SendPing(utc);
     std::cout << "[>]ping " << utc << std::endl;
     
-    sessionProfile.ptrPingTimer->expires_at(sessionProfile.ptrPingTimer->expires_at() + boost::posix_time::seconds(5));
+    sessionProfile.ptrPingTimer->expires_at(sessionProfile.ptrPingTimer->expires_at() + boost::posix_time::seconds(3));
     sessionProfile.ptrPingTimer->async_wait(boost::bind(&CMvDbpClient::SendPingHandler,
                                                         this, boost::asio::placeholders::error,
                                                         boost::ref(sessionProfile)));
@@ -565,9 +561,9 @@ void CMvDbpClient::StartPingTimer(const std::string& session)
     
     profile.ptrPingTimer = 
         std::make_shared<boost::asio::deadline_timer>(this->GetIoService(),
-                                                      boost::posix_time::seconds(5));
+                                                      boost::posix_time::seconds(3));
     profile.ptrPingTimer->expires_at(profile.ptrPingTimer->expires_at() +
-                                        boost::posix_time::seconds(5));
+                                        boost::posix_time::seconds(3));
     profile.ptrPingTimer->async_wait(boost::bind(&CMvDbpClient::SendPingHandler,
                                                     this, boost::asio::placeholders::error,
                                                     boost::ref(profile)));

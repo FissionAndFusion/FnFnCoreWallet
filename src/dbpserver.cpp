@@ -1005,7 +1005,7 @@ void CDbpServer::SendPingHandler(const boost::system::error_code& err, const CSe
     std::string utc = std::to_string(CDbpUtils::CurrentUTC());
     sessionProfile.pDbpClient->SendPing(utc);
 
-    sessionProfile.ptrPingTimer->expires_at(sessionProfile.ptrPingTimer->expires_at() + boost::posix_time::seconds(5));
+    sessionProfile.ptrPingTimer->expires_at(sessionProfile.ptrPingTimer->expires_at() + boost::posix_time::seconds(3));
     sessionProfile.ptrPingTimer->async_wait(boost::bind(&CDbpServer::SendPingHandler,
                                                         this, boost::asio::placeholders::error,
                                                         boost::ref(sessionProfile)));
@@ -1027,10 +1027,10 @@ bool CDbpServer::HandleEvent(CMvEventDbpConnected& event)
 
     it->second.ptrPingTimer =
         std::make_shared<boost::asio::deadline_timer>(this->GetIoService(),
-                                                      boost::posix_time::seconds(5));
+                                                      boost::posix_time::seconds(3));
 
     it->second.ptrPingTimer->expires_at(it->second.ptrPingTimer->expires_at() +
-                                       boost::posix_time::seconds(5));
+                                       boost::posix_time::seconds(3));
     it->second.ptrPingTimer->async_wait(boost::bind(&CDbpServer::SendPingHandler,
                                                     this, boost::asio::placeholders::error,
                                                     boost::ref(it->second)));
