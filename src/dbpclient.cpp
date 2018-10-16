@@ -452,17 +452,17 @@ void CMvDbpClient::EnterLoop()
 void CMvDbpClient::LeaveLoop()
 {
     // destory resource
-    std::vector<CMvDbpClientSocket*> vSocket;
-    for(auto it = mapClientSocket.begin(); it != mapClientSocket.end(); ++it)
+    std::vector<CMvSessionProfile> vProfile;
+    for(auto it = mapSessionProfile.begin(); it != mapSessionProfile.end(); ++it)
     {
-        vSocket.push_back((*it).second);
+        vProfile.push_back((*it).second);
     }
 
-    for(CMvDbpClientSocket* pSocket : vSocket)
+    for(const auto& profile : vProfile)
     {
-        RemoveClientSocket(pSocket);
+        RemoveClientSocket(profile.pClientSocket);
     }
-    
+
     WalleveLog("Dbp Client stop\n");
 }
 
@@ -555,6 +555,11 @@ bool CMvDbpClient::StartConnection(const boost::asio::ip::tcp::endpoint& epRemot
 void CMvDbpClient::SendPingHandler(const boost::system::error_code& err, const CMvSessionProfile& sessionProfile)
 {
     if (err != boost::system::errc::success)
+    {
+        return;
+    }
+
+    if(!HaveAssociatedSessionOf(sessionProfile.pClientSocket))
     {
         return;
     }
