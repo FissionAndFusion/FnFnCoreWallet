@@ -51,8 +51,8 @@ public:
                     CBlockIndex* p = pIndex->pNext;
                     while (p != NULL)
                     {
-                        p = p->pNext;
                         p->pPrev->pNext = NULL;
+                        p = p->pNext;
                     }
                 }
                 pIndex->pNext = pIndexNext;

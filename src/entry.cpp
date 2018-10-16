@@ -108,13 +108,6 @@ bool CMvEntry::Initialize(int argc, char *argv[])
         return false;
     }
 
-    // log
-    if ((mvConfig.GetModeType() == EModeType::SERVER || mvConfig.GetModeType() == EModeType::MINER) && !walleveLog.SetLogFilePath((pathData / "multiverse.log").string()))
-    {
-        cerr << "Failed to open log file : " << (pathData / "multiverse.log") << "\n";
-        return false;
-    }
-
     // hard disk
     if (space(pathData).available < MINIMUM_HARD_DISK_AVAILABLE)
     {

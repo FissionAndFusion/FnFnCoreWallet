@@ -380,8 +380,6 @@ bool CDelegatedChannel::HandleEvent(network::CMvEventPeerDistribute& eventDistri
 
 bool CDelegatedChannel::HandleEvent(network::CMvEventPeerPublish& eventPublish)
 {
-    boost::unique_lock<boost::shared_mutex> wlock(rwPeer);
-
     uint64 nNonce = eventPublish.nNonce;
     const uint256& hashAnchor = eventPublish.hashAnchor;
     const CDestination& dest = eventPublish.data.destDelegate;

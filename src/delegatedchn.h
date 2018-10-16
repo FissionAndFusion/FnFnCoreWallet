@@ -92,6 +92,7 @@ public:
                 {
                     break;
                 }
+                ++i;
             }
             return (i < bulletin.vBitmap.size());
         }
