@@ -22,7 +22,8 @@ public:
     virtual int GetPrimaryChainHeight() = 0;
     virtual void BroadcastBlockInv(const uint256& hashFork,const uint256& hashBlock,const std::set<uint64>& setKnownPeer=std::set<uint64>())=0;
     virtual void BroadcastTxInv(const uint256& hashFork)=0;
-
+    virtual void SubscribeFork(const uint256& hashFork)=0;
+    virtual void UnsubscribeFork(const uint256& hashFork)=0;
 };
 
 class IMvDelegatedChannel : public walleve::IIOModule, virtual public CMvPeerEventListener
@@ -48,6 +49,8 @@ public:
 protected:
     bool WalleveHandleInitialize() override;
     void WalleveHandleDeinitialize() override;
+    bool HandleEvent(CMvEventPeerSubscribe& eventSubscribe) override;
+    bool HandleEvent(CMvEventPeerUnsubscribe& eventUnsubscribe) override;
     bool HandleEvent(CMvEventPeerInv& eventInv) override;
     bool HandleEvent(CMvEventPeerGetData& eventGetData) override;
     bool HandleEvent(CMvEventPeerGetBlocks& eventGetBlocks) override;

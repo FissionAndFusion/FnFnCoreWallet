@@ -61,6 +61,20 @@ void CMvPeerNet::WalleveHandleDeinitialize()
     pDelegatedChannel = NULL;
 }
 
+bool CMvPeerNet::HandleEvent(CMvEventPeerSubscribe& eventSubscribe)
+{
+    CWalleveBufStream ssPayload;
+    ssPayload << eventSubscribe;
+    return SendDataMessage(eventSubscribe.nNonce,MVPROTO_CMD_SUBSCRIBE,ssPayload);
+}
+
+bool CMvPeerNet::HandleEvent(CMvEventPeerUnsubscribe& eventUnsubscribe)
+{
+    CWalleveBufStream ssPayload;
+    ssPayload << eventUnsubscribe;
+    return SendDataMessage(eventUnsubscribe.nNonce,MVPROTO_CMD_UNSUBSCRIBE,ssPayload);
+}
+
 bool CMvPeerNet::HandleEvent(CMvEventPeerInv& eventInv)
 {
     CWalleveBufStream ssPayload;
@@ -379,6 +393,28 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
         ssPayload >> hashFork;
         switch (nCommand)
         {
+        case MVPROTO_CMD_SUBSCRIBE:
+            {
+                CMvEventPeerSubscribe* pEvent = new CMvEventPeerSubscribe(pMvPeer->GetNonce(),hashFork);
+                if (pEvent != NULL)
+                {
+                    ssPayload >> pEvent->data;
+                    pNetChannel->PostEvent(pEvent);
+                    return true;
+                }
+            }
+            break;
+        case MVPROTO_CMD_UNSUBSCRIBE:
+            {
+                CMvEventPeerUnsubscribe* pEvent = new CMvEventPeerUnsubscribe(pMvPeer->GetNonce(),hashFork);
+                if (pEvent != NULL)
+                {
+                    ssPayload >> pEvent->data;
+                    pNetChannel->PostEvent(pEvent);
+                    return true;
+                }
+            }
+            break;
         case MVPROTO_CMD_GETBLOCKS:
             {
                 CMvEventPeerGetBlocks* pEvent = new CMvEventPeerGetBlocks(pMvPeer->GetNonce(),hashFork);

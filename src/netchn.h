@@ -37,6 +37,14 @@ public:
     bool IsSynchronized(const uint256& hashFork) const;
     bool SetSyncStatus(const uint256& hashFork,bool fSync,bool& fInverted);
     void AddKnownTx(const uint256& hashFork,const std::vector<uint256>& vTxHash);
+    void Subscribe(const uint256& hashFork)
+    {
+        mapSubscribedFork.insert(std::make_pair(hashFork,CNetChannelPeerFork()));
+    }
+    void Unsubscribe(const uint256& hashFork)
+    {
+        mapSubscribedFork.erase(hashFork);
+    }
     bool IsSubscribed(const uint256& hashFork) const { return (!!mapSubscribedFork.count(hashFork)); }
     void MakeTxInv(const uint256& hashFork,const std::vector<uint256>& vTxPool,
                                            std::vector<network::CInv>& vInv,std::size_t nMaxCount);
@@ -53,6 +61,8 @@ public:
     int GetPrimaryChainHeight() override;
     void BroadcastBlockInv(const uint256& hashFork,const uint256& hashBlock,const std::set<uint64>& setKnownPeer=std::set<uint64>()) override;
     void BroadcastTxInv(const uint256& hashFork) override;
+    void SubscribeFork(const uint256& hashFork) override;
+    void UnsubscribeFork(const uint256& hashFork) override;
 protected:
     enum {MAX_GETBLOCKS_COUNT = 128};
     enum {MAX_PEER_SCHED_COUNT = 8};
@@ -64,6 +74,8 @@ protected:
 
     bool HandleEvent(network::CMvEventPeerActive& eventActive) override;
     bool HandleEvent(network::CMvEventPeerDeactive& eventDeactive) override;
+    bool HandleEvent(network::CMvEventPeerSubscribe& eventSubscribe) override;
+    bool HandleEvent(network::CMvEventPeerUnsubscribe& eventUnsubscribe) override;
     bool HandleEvent(network::CMvEventPeerInv& eventInv) override;
     bool HandleEvent(network::CMvEventPeerGetData& eventGetData) override;
     bool HandleEvent(network::CMvEventPeerGetBlocks& eventGetBlocks) override;
@@ -92,6 +104,7 @@ protected:
     IDispatcher* pDispatcher;
     IService *pService;
     mutable boost::shared_mutex rwNetPeer; 
+    mutable boost::recursive_mutex mtxSched; 
     std::map<uint256,CSchedule> mapSched; 
     std::map<uint64,CNetChannelPeer> mapPeer;
 };
