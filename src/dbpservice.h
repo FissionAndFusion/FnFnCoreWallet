@@ -56,6 +56,8 @@ private:
     void PushBlock(const CMvDbpBlock& block);
     void PushTx(const CMvDbpTransaction& dbptx);
 
+    ///////////  super node  ////////////
+    void UpdateChildNodeForks(const std::string& session, const std::string& forks);
 protected:
     walleve::IIOProc* pDbpServer;
     IService* pService;
@@ -67,6 +69,9 @@ private:
 
     std::set<std::string> setSubedAllBlocksIds; // block ids
     std::set<std::string> setSubedAllTxIds;     // tx ids
+
+    typedef std::set<std::string> ForksType;
+    std::map<std::string, ForksType> mapSessionForks; // session => forks
 
     std::map<std::string, std::string> mapIdSubedSession;       // id => session
     std::unordered_map<std::string, bool> mapCurrentTopicExist; // topic => enabled

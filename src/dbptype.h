@@ -32,6 +32,7 @@ public:
     std::string session;
     int32 version;
     std::string client;
+    std::string forks; // supre node child node fork ids
 };
 
 class CMvDbpSub : public CMvDbpRequest

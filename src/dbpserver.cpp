@@ -565,6 +565,8 @@ void CDbpServer::HandleClientConnect(CDbpClient* pDbpClient, google::protobuf::A
         std::string forkid = GetUdata(&connectMsg, "forkid");
         CreateSession(session, forkid, pDbpClient);
 
+        std::string childNodeforks = GetUdata(&connectMsg,"supernode-forks");
+        
         CMvEventDbpConnect *pEventDbpConnect = new CMvEventDbpConnect(session);
         if (!pEventDbpConnect)
         {
@@ -574,6 +576,7 @@ void CDbpServer::HandleClientConnect(CDbpClient* pDbpClient, google::protobuf::A
         CMvDbpConnect& connectBody = pEventDbpConnect->data;
         connectBody.isReconnect = false;
         connectBody.session = session;
+        connectBody.forks = childNodeforks;
         connectBody.version = connectMsg.version();
         connectBody.client = connectMsg.client();
 
@@ -1172,24 +1175,34 @@ bool CDbpServer::HaveAssociatedSessionOf(CDbpClient* pDbpClient)
 std::string CDbpServer::GetUdata(dbp::Connect* pConnect, const std::string& keyName)
 {
     auto customParamsMap = pConnect->udata();
+    google::protobuf::Any paramAny = customParamsMap[keyName];
+    lws::ForkID forkidArg;
+
+    if (!paramAny.Is<lws::ForkID>())
+    {
+        return std::string();
+    }
 
     if (keyName == "forkid")
     {
-        google::protobuf::Any paramAny = customParamsMap[keyName];
-        lws::ForkID forkidArg;
-
-        if (paramAny.Is<lws::ForkID>())
-        {
-            paramAny.UnpackTo(&forkidArg);
-            if (forkidArg.ids_size() != 0)
-                return forkidArg.ids(0);
-            else
-                return std::string();
-        }
+        paramAny.UnpackTo(&forkidArg);
+        if (forkidArg.ids_size() != 0)
+            return forkidArg.ids(0);
         else
-        {
             return std::string();
+       
+    }
+
+    if(keyName == "supernode-forks")
+    {
+        std::string forks;
+        paramAny.UnpackTo(&forkidArg);
+        for(int i = 0; i < forkidArg.ids_size(); ++i)
+        {
+            forks.append(forkidArg.ids(i));
+            forks.append(";");
         }
+        return std::string(forks.begin(),forks.end() - 1);    
     }
 
     return std::string();

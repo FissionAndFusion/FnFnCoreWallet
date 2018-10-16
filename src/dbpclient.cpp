@@ -561,6 +561,7 @@ void CMvDbpClient::SendPingHandler(const boost::system::error_code& err, const C
 
     if(!HaveAssociatedSessionOf(sessionProfile.pClientSocket))
     {
+        std::cout << "*****PIng handler session error\n"; 
         return;
     }
 

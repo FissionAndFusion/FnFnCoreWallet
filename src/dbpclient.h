@@ -13,6 +13,8 @@
 #include "dbp.pb.h"
 #include "lws.pb.h"
 
+#include "dbputils.h"
+
 using namespace walleve;
 
 namespace multiverse
@@ -32,12 +34,7 @@ public:
       optSSL(optSSLIn),
       strIOModule(strIOModuleIn)
     {
-        std::istringstream ss(SupportForksIn);
-        std::string s;    
-        while (std::getline(ss, s, ';')) 
-        {
-            vSupportForks.push_back(s);
-        }
+        vSupportForks = CDbpUtils::Split(SupportForksIn,';');
     }
 public:
     boost::asio::ip::tcp::endpoint epParentHost;

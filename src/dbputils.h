@@ -8,6 +8,7 @@
 #include <arpa/inet.h>
 #include <cstring>
 #include <random>
+#include <vector>
 
 namespace multiverse
 {
@@ -54,6 +55,18 @@ public:
             s += chrs[pick(rg)];
 
         return s;
+    }
+
+    static std::vector<std::string> Split(const std::string& str, char delim)
+    {
+        std::vector<std::string> ret;
+        std::istringstream ss(str);
+        std::string s;    
+        while (std::getline(ss, s, ';')) 
+        {
+            ret.push_back(s);
+        }
+        return ret;
     }
 };
 } // namespace multiverse

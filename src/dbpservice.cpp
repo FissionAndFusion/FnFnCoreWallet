@@ -4,6 +4,7 @@
 
 #include "dbpservice.h"
 
+#include "dbputils.h"
 #include <boost/assign/list_of.hpp>
 #include <boost/lexical_cast.hpp>
 
@@ -75,6 +76,8 @@ bool CDbpService::HandleEvent(CMvEventDbpConnect& event)
 
     if (isReconnect)
     {
+        UpdateChildNodeForks(event.strSessionId,event.data.forks);
+        
         // reply normal
         CMvEventDbpConnected eventConnected(event.strSessionId);
         eventConnected.data.session = event.data.session;
@@ -94,6 +97,9 @@ bool CDbpService::HandleEvent(CMvEventDbpConnect& event)
         }
         else
         {
+            
+            UpdateChildNodeForks(event.strSessionId,event.data.forks);
+            
             // reply normal
             CMvEventDbpConnected eventConnected(event.strSessionId);
             eventConnected.data.session = event.data.session;
@@ -448,6 +454,17 @@ void CDbpService::PushTx(const CMvDbpTransaction& dbptx)
             pDbpServer->DispatchEvent(&eventAdded);
         }
     }
+}
+
+void CDbpService::UpdateChildNodeForks(const std::string& session, const std::string& forks)
+{
+    std::vector<std::string> vForks = CDbpUtils::Split(forks,';');
+    ForksType setForks;
+    for(const auto& fork : vForks)
+    {
+        setForks.insert(fork);
+    }
+    mapSessionForks[session] = setForks;
 }
 
 bool CDbpService::HandleEvent(CMvEventDbpUpdateNewBlock& event)
