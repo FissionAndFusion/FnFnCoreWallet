@@ -67,7 +67,7 @@
             "opt": "rpcport",
             "default": 0,
             "format": "-rpcport=port",
-            "desc": "Listen for JSON-RPC connections on <port> (default: 6802)"
+            "desc": "Listen for JSON-RPC connections on <port> (default: 6812 or testnet: 6814))"
         },
         {
             "name": "strRPCUser",
@@ -322,7 +322,7 @@
             "opt": "listen",
             "default": false,
             "format": "-listen",
-            "desc": "Accept connections from outside (default: 1)"
+            "desc": "Accept connections from outside (default: 0)"
         },
         {
             "name": "fBloom",
@@ -338,7 +338,7 @@
             "opt": "port",
             "default": 0,
             "format": "-port=<port>",
-            "desc": "Listen for connections on <port> (default: 6801 or testnet: 6803)"
+            "desc": "Listen for connections on <port> (default: 6811 or testnet: 6813)"
         },
         {
             "name": "nMaxConnection",
