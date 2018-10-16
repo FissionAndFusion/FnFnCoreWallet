@@ -69,6 +69,8 @@ Secret : 7c6a6aba05cec77a998c19649ee1fa0e29c7b5246d0e3a6501ee1d4d81dd73ea
 
 void CMvCoreProtocol::GetGenesisBlock(CBlock& block)
 {
+    const CDestination destOwner = CDestination(multiverse::crypto::CPubKey(uint256("575f2041770496489120bb102d9dd55f5e75b0c4aa528d5762b92b59acd6d939")));
+
     block.SetNull();
 
     block.nVersion   = 1;
@@ -78,12 +80,19 @@ void CMvCoreProtocol::GetGenesisBlock(CBlock& block)
     
     CTransaction& tx = block.txMint;
     tx.nType   = CTransaction::TX_GENESIS;
-    tx.sendTo  = CDestination(multiverse::crypto::CPubKey(uint256("575f2041770496489120bb102d9dd55f5e75b0c4aa528d5762b92b59acd6d939")));
+    tx.sendTo  = destOwner;
     tx.nAmount = 745000000 * COIN; // 745000000 is initial number of token
 
-    const char* pszGenesis = "The third machine age : Revolution";
-    block.vchProof = vector<uint8>((const uint8*)pszGenesis, (const uint8*)pszGenesis + strlen(pszGenesis));
-    
+    CProfile profile;
+    profile.strName = "Fission And Fusion Network";
+    profile.strSymbol = "FnFn";
+    profile.destOwner = destOwner;
+    profile.nMintReward = 15 * COIN;
+    profile.nMinTxFee = MIN_TX_FEE;
+    profile.SetFlag(true,false,false);
+
+    profile.Save(block.vchProof);
+     
 }
 
 MvErr CMvCoreProtocol::ValidateTransaction(const CTransaction& tx)

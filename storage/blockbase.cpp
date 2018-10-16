@@ -943,22 +943,11 @@ bool CBlockBase::LoadForkProfile(const CBlockIndex* pIndexOrigin,CProfile& profi
         return false;
     }
 
-    if (pIndexOrigin->IsPrimary())
+    if (!profile.Load(block.vchProof))
     {
-        // hard code genesis profile, should be removed at next regenerating genesis block.. $%$#@@#%^%
-        profile.strName = "Fission And Fusion Network";
-        profile.strSymbol = "FnFn";
-        profile.nMintReward = 15 * 1000000;
-        profile.nMinTxFee = 100;
-        profile.SetFlag(true,false,false);
+        return false;
     }
-    else
-    {
-        if (!profile.Load(block.vchProof))
-        {
-            return false;
-        }
-    }
+
     return true;
 }
 
