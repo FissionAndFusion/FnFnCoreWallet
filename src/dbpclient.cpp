@@ -16,7 +16,7 @@
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/lexical_cast.hpp>
 
-static int MSG_HEADER_LEN = 4;
+static std::size_t MSG_HEADER_LEN = 4;
 
 #define DBPCLIENT_CONNECT_TIMEOUT 10 
 namespace multiverse
@@ -34,7 +34,10 @@ CMvDbpClientSocket::CMvDbpClientSocket(IIOModule* pIOModuleIn,const uint64 nNonc
     
 CMvDbpClientSocket::~CMvDbpClientSocket()
 {
-
+    if(pClient)
+    {
+        pClient->Close();
+    }
 }
 
 IIOModule* CMvDbpClientSocket::GetIOModule()
@@ -171,11 +174,7 @@ void CMvDbpClientSocket::HandleWritenRequest(std::size_t nTransferred, SendType 
         {
             pClient->Write(ssSend,boost::bind(&CMvDbpClientSocket::HandleWritenRequest,this,_1,type));
             return;
-        }
-
-        
-        std::cout << "transferred: " << nTransferred << " bytes\n";
-        
+        } 
 
         //if(type == OTHER)
        // {
@@ -284,7 +283,22 @@ CMvDbpClient::~CMvDbpClient(){}
 void CMvDbpClient::HandleClientSocketError(CMvDbpClientSocket* pClientSocket)
 {
     std::cerr << "Client Socket Error." << std::endl; 
+    
+    auto epRemote = pClientSocket->GetHost().ToEndPoint();
     RemoveClientSocket(pClientSocket);
+
+    auto it = mapProfile.find(epRemote);
+    if(it != mapProfile.end())
+    {
+        StartConnection(epRemote,DBPCLIENT_CONNECT_TIMEOUT, 
+            it->second.optSSL.fEnable,it->second.optSSL);
+    }
+    else
+    {
+        std::cerr << "cannot find reconnect parent node " << 
+            epRemote.address().to_string() << " failed, " 
+            << "port " << epRemote.port() << std::endl;
+    }
 }
 
 void CMvDbpClient::HandleClientSocketSent(CMvDbpClientSocket* pClientSocket)
