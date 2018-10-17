@@ -10,6 +10,7 @@
 
 #include <boost/bimap.hpp>
 #include <boost/any.hpp>
+#include <queue>
 
 #include "dbp.pb.h"
 #include "lws.pb.h"
@@ -60,6 +61,7 @@ public:
     enum SendType
     {
         PING = 0,
+        METHOD = 1,
         OTHER = 100
     };
 public:
@@ -102,6 +104,8 @@ protected:
 
     CWalleveBufStream ssRecv;
     CWalleveBufStream ssSend;
+
+    std::queue<std::string> queueMessage;
 };
 
 class CMvSessionProfile

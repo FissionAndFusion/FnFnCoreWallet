@@ -339,6 +339,8 @@ void CDbpService::HandleGetBlocks(CMvEventDbpMethod& event)
 
 void CDbpService::HandleRegisterFork(CMvEventDbpMethod& event)
 {
+    std::cout << "entry register for\n";
+
     std::string forkid = event.data.params["forkid"];
     UpdateChildNodeForks(event.strSessionId,forkid);
 

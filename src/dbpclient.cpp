@@ -101,7 +101,7 @@ void CMvDbpClientSocket::SendForkId(const std::string& fork)
 
     google::protobuf::Any *fork_any = new google::protobuf::Any();
     fork_any->PackFrom(forkArg);
-
+    
     dbp::Method method;
     method.set_method("registerforkid");
     std::string id(std::to_string(time(NULL)));
@@ -163,9 +163,11 @@ void CMvDbpClientSocket::SendMessage(dbp::Msg type, google::protobuf::Any* any)
 
     if(type == dbp::Msg::PING)
     {
-        if(ssSend.GetSize() != 0)
+        if(ssSend.GetSize() != 0 || !queueMessage.empty())
         {
-            pClient->Write(ssSend,boost::bind(&CMvDbpClientSocket::HandleWritenRequest,this,_1,OTHER));
+            std::cout << "not sent complete [PING]\n";
+           // queueMessage.push(bytes);
+            //pClient->Write(ssSend,boost::bind(&CMvDbpClientSocket::HandleWritenRequest,this,_1,OTHER));
             return;
         }
 
@@ -173,8 +175,29 @@ void CMvDbpClientSocket::SendMessage(dbp::Msg type, google::protobuf::Any* any)
        
         pClient->Write(ssSend,boost::bind(&CMvDbpClientSocket::HandleWritenRequest,this,_1,PING));
     }
+    else if(type == dbp::Msg::METHOD)
+    {
+        if(ssSend.GetSize() != 0 || !queueMessage.empty())
+        {
+            std::cout << "not sent complete [METHOD]\n";
+            queueMessage.push(bytes);
+           // pClient->Write(ssSend,boost::bind(&CMvDbpClientSocket::HandleWritenRequest,this,_1,OTHER));
+            return;
+        }
+        
+        ssSend.Write((char*)bytes.data(),bytes.size());
+        pClient->Write(ssSend,boost::bind(&CMvDbpClientSocket::HandleWritenRequest,this,_1,METHOD));
+    }
     else
     {
+        if(ssSend.GetSize() != 0 || !queueMessage.empty())
+        {
+            std::cout << "not sent complete [OTHER]\n";
+            queueMessage.push(bytes);
+            pClient->Write(ssSend,boost::bind(&CMvDbpClientSocket::HandleWritenRequest,this,_1,OTHER));
+            return;
+        }
+        
         ssSend.Write((char*)bytes.data(),bytes.size());
         pClient->Write(ssSend,boost::bind(&CMvDbpClientSocket::HandleWritenRequest,this,_1,OTHER));
     }
@@ -204,8 +227,17 @@ void CMvDbpClientSocket::HandleWritenRequest(std::size_t nTransferred, SendType 
             return;
         } 
 
+        if(ssSend.GetSize() == 0 && !queueMessage.empty())
+        {
+            std::string bytes = queueMessage.front();
+            queueMessage.pop();
+            ssSend.Write((char*)bytes.data(),bytes.size());
+            pClient->Write(ssSend,boost::bind(&CMvDbpClientSocket::HandleWritenRequest,this,_1,METHOD));
+            return;
+        }
+
         //if(type == OTHER)
-       // {
+        //{
             pDbpClient->HandleClientSocketSent(this);
         //}
         
@@ -465,6 +497,8 @@ void CMvDbpClient::HandleResult(CMvDbpClientSocket* pClientSocket, google::proto
     if (!result.error().empty())
     {
         std::cout << "[-]method error:" << result.error() << std::endl;
+        
+        return;
     }
 
     int size = result.result_size();
@@ -473,7 +507,8 @@ void CMvDbpClient::HandleResult(CMvDbpClientSocket* pClientSocket, google::proto
         google::protobuf::Any any = result.result(i);
         lws::RegisterForkIDRet ret;
         any.UnpackTo(&ret);
-        std::cout << "register ret fork id: " << ret.id() << "\n";
+
+        if()
     }
 }
 

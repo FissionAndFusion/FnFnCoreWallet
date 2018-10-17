@@ -77,7 +77,7 @@ void CDbpClient::SendPingMessage(dbp::Base* pBaseMsg)
 {
     if (!IsSentComplete())
     {
-        pClient->Write(ssSend, boost::bind(&CDbpClient::HandleWritenResponse, this, _1, OTHER));
+        //pClient->Write(ssSend, boost::bind(&CDbpClient::HandleWritenResponse, this, _1, OTHER));
         return;
     }
 
@@ -91,7 +91,7 @@ void CDbpClient::SendAddedMessage(dbp::Base* pBaseMsg)
     if (!IsSentComplete())
     {
         queueAddedSend.push(*pBaseMsg);
-        pClient->Write(ssSend, boost::bind(&CDbpClient::HandleWritenResponse, this, _1, OTHER));
+       // pClient->Write(ssSend, boost::bind(&CDbpClient::HandleWritenResponse, this, _1, OTHER));
         return;
     }
 
@@ -702,6 +702,7 @@ void CDbpServer::HandleClientMethod(CDbpClient* pDbpClient, google::protobuf::An
     {
         lws::RegisterForkIDArg args;
         methodMsg.params().UnpackTo(&args);
+        std::cout << "super node fork id: " << args.id() << "\n";
         methodBody.params.insert(std::make_pair("forkid",args.id()));
     }
     else
