@@ -21,6 +21,8 @@ enum
     //PEER
     MV_EVENT_PEER_ACTIVE,
     MV_EVENT_PEER_DEACTIVE,
+    MV_EVENT_PEER_SUBSCRIBE,
+    MV_EVENT_PEER_UNSUBSCRIBE,
     MV_EVENT_PEER_INV,
     MV_EVENT_PEER_GETDATA,
     MV_EVENT_PEER_GETBLOCKS,
@@ -183,6 +185,8 @@ class CMvPeerEventListener;
 
 typedef TYPE_PEEREVENT(MV_EVENT_PEER_ACTIVE,CAddress) CMvEventPeerActive;
 typedef TYPE_PEEREVENT(MV_EVENT_PEER_DEACTIVE,CAddress) CMvEventPeerDeactive;
+typedef TYPE_PEERDATAEVENT(MV_EVENT_PEER_SUBSCRIBE,std::vector<uint256>) CMvEventPeerSubscribe;
+typedef TYPE_PEERDATAEVENT(MV_EVENT_PEER_UNSUBSCRIBE,std::vector<uint256>) CMvEventPeerUnsubscribe;
 typedef TYPE_PEERDATAEVENT(MV_EVENT_PEER_INV,std::vector<CInv>) CMvEventPeerInv;
 typedef TYPE_PEERDATAEVENT(MV_EVENT_PEER_GETDATA,std::vector<CInv>) CMvEventPeerGetData;
 typedef TYPE_PEERDATAEVENT(MV_EVENT_PEER_GETBLOCKS,CBlockLocator) CMvEventPeerGetBlocks;
@@ -200,6 +204,8 @@ public:
     virtual ~CMvPeerEventListener() {}
     DECLARE_EVENTHANDLER(CMvEventPeerActive);
     DECLARE_EVENTHANDLER(CMvEventPeerDeactive);
+    DECLARE_EVENTHANDLER(CMvEventPeerSubscribe);
+    DECLARE_EVENTHANDLER(CMvEventPeerUnsubscribe);
     DECLARE_EVENTHANDLER(CMvEventPeerInv);
     DECLARE_EVENTHANDLER(CMvEventPeerGetData);
     DECLARE_EVENTHANDLER(CMvEventPeerGetBlocks);

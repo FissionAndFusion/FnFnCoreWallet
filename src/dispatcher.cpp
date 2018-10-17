@@ -309,6 +309,7 @@ void CDispatcher::ProcessForkTx(const CTransaction& tx,int nPrimaryHeight)
     {
         WalleveLog("Add origin block in tx (%s), hash=%s\n",txid.GetHex().c_str(),
                                                             block.GetHash().GetHex().c_str());
+        pNetChannel->SubscribeFork(block.GetHash()); 
     }
     else
     {

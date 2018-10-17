@@ -449,6 +449,18 @@ bool CBlockBase::RetrieveFork(const uint256& hash,CBlockIndex** ppIndex)
     return true;
 }
 
+bool CBlockBase::RetrieveFork(const string& strName,CBlockIndex** ppIndex)
+{
+    CWalleveReadLock rlock(rwAccess);
+    CBlockFork* pFork = GetFork(strName);
+    if (pFork == NULL)
+    {
+        return false;
+    }
+    *ppIndex = pFork->GetLast();
+    return true;
+}
+
 bool CBlockBase::RetrieveProfile(const uint256& hash,CProfile& profile)
 {
     CWalleveReadLock rlock(rwAccess);
@@ -819,6 +831,19 @@ CBlockFork* CBlockBase::GetFork(const uint256& hash)
     return (mi != mapFork.end() ? &(*mi).second : NULL);
 }
 
+CBlockFork* CBlockBase::GetFork(const std::string& strName) 
+{
+    for (map<uint256,CBlockFork>::iterator mi = mapFork.begin(); mi != mapFork.end(); ++mi)
+    {
+        const CProfile& profile = (*mi).second.GetProfile();
+        if (profile.strName == strName)
+        {
+            return (&(*mi).second);
+        }
+    }
+    return NULL;
+}
+
 CBlockIndex* CBlockBase::GetBranch(CBlockIndex* pIndexRef,CBlockIndex* pIndex,vector<CBlockIndex*>& vPath)
 {
     vPath.clear();
@@ -918,22 +943,11 @@ bool CBlockBase::LoadForkProfile(const CBlockIndex* pIndexOrigin,CProfile& profi
         return false;
     }
 
-    if (pIndexOrigin->IsPrimary())
+    if (!profile.Load(block.vchProof))
     {
-        // hard code genesis profile, should be removed at next regenerating genesis block.. $%$#@@#%^%
-        profile.strName = "Fission And Fusion Network";
-        profile.strSymbol = "FnFn";
-        profile.nMintReward = 15 * 1000000;
-        profile.nMinTxFee = 100;
-        profile.SetFlag(true,false,false);
+        return false;
     }
-    else
-    {
-        if (!profile.Load(block.vchProof))
-        {
-            return false;
-        }
-    }
+
     return true;
 }
 

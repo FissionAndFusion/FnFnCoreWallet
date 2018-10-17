@@ -394,7 +394,15 @@ MvErr CWorldLine::AddNewOrigin(const CBlock& block,CWorldLineUpdate& update)
         WalleveLog("AddNewOrigin Validate Origin Error(%s): %s \n",MvErrString(err),hash.ToString().c_str());
         return err;
     }
-    
+   
+    CBlockIndex* pIndexDuplicated;
+    if (cntrBlock.RetrieveFork(profile.strName,&pIndexDuplicated))
+    {
+        WalleveLog("AddNewOrigin Validate Origin Error(duplated fork name): %s, \nexisted: %s\n",
+                   hash.ToString().c_str(),pIndexDuplicated->GetOriginHash().GetHex().c_str());
+        return MV_ERR_ALREADY_HAVE;
+    }
+
     storage::CBlockView view;
 
     if (profile.IsIsolated())

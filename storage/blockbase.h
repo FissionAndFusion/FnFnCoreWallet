@@ -167,6 +167,7 @@ public:
     bool Retrieve(const CBlockIndex* pIndex,CBlockEx& block);
     bool RetrieveIndex(const uint256& hash,CBlockIndex** ppIndex);
     bool RetrieveFork(const uint256& hash,CBlockIndex** ppIndex);
+    bool RetrieveFork(const std::string& strName,CBlockIndex** ppIndex);
     bool RetrieveProfile(const uint256& hash,CProfile& profile);
     bool RetrieveTx(const uint256& txid,CTransaction& tx);
     bool RetrieveTxLocation(const uint256& txid,uint256& hashFork,int& nHeight);
@@ -186,6 +187,7 @@ public:
 protected:
     CBlockIndex* GetIndex(const uint256& hash) const;
     CBlockFork* GetFork(const uint256& hash);
+    CBlockFork* GetFork(const std::string& strName);
     CBlockIndex* GetBranch(CBlockIndex* pIndexRef,CBlockIndex* pIndex,std::vector<CBlockIndex*>& vPath);
     CBlockIndex* GetOriginIndex(const uint256& txidMint) const;
     CBlockIndex* AddNewIndex(const uint256& hash,CBlock& block,uint32 nFile,uint32 nOffset);
