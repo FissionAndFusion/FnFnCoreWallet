@@ -190,7 +190,7 @@
             "name": "strSupportForks",
             "type": "string",
             "opt": "supernodeforks",
-            "default": "a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0",
+            "default": "a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0;avciywtdafivkdawtd;avciywtdafivkdawtd",
             "format": "-supernodeforks=<forkids>",
             "desc": "Set Support Fork List to <forkids> for super node(default: empty)"
         }
