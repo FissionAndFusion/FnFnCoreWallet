@@ -7,6 +7,7 @@
 #include "dbputils.h"
 #include <boost/assign/list_of.hpp>
 #include <boost/lexical_cast.hpp>
+#include <algorithm>
 
 using namespace multiverse;
 
@@ -336,6 +337,20 @@ void CDbpService::HandleGetBlocks(CMvEventDbpMethod& event)
     }
 }
 
+void CDbpService::HandleRegisterFork(CMvEventDbpMethod& event)
+{
+    std::string forkid = event.data.params["forkid"];
+    UpdateChildNodeForks(event.strSessionId,forkid);
+
+    CMvEventDbpMethodResult eventResult(event.strSessionId);
+    eventResult.data.id = event.data.id;
+    CMvDbpRegisterForkIDRet ret;
+    ret.forkid = forkid;
+    eventResult.data.anyResultObjs.push_back(ret);
+
+    pDbpServer->DispatchEvent(&eventResult);
+}
+
 bool CDbpService::HandleEvent(CMvEventDbpMethod& event)
 {
     if (event.data.method == CMvDbpMethod::Method::GET_BLOCKS)
@@ -349,6 +364,10 @@ bool CDbpService::HandleEvent(CMvEventDbpMethod& event)
     else if (event.data.method == CMvDbpMethod::Method::SEND_TX)
     {
         HandleSendTransaction(event);
+    }
+    else if(event.data.method == CMvDbpMethod::Method::REGISTER_FORK)
+    {
+        HandleRegisterFork(event);
     }
     else
     {
@@ -470,8 +489,16 @@ void CDbpService::UpdateChildNodeForks(const std::string& session, const std::st
     {
         setForks.insert(fork);
     }
-
-    mapSessionChildNodeForks[session] = setForks;
+    
+    if(mapSessionChildNodeForks.count(session) == 0)
+    {
+        mapSessionChildNodeForks[session] = setForks;
+    }
+    else
+    {
+        auto& forks = mapSessionChildNodeForks[session];
+        forks.insert(setForks.begin(),setForks.end());
+    }
 }
 
 bool CDbpService::HandleEvent(CMvEventDbpUpdateNewBlock& event)

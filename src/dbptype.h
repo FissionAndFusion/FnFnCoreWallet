@@ -132,7 +132,8 @@ public:
     {
         GET_BLOCKS,
         GET_TX,
-        SEND_TX
+        SEND_TX,
+        REGISTER_FORK
     };
 
     // param name => param value
@@ -150,6 +151,12 @@ public:
     std::string hash;
     std::string result;
     std::string reason;
+};
+
+class CMvDbpRegisterForkIDRet
+{
+public:
+    std::string forkid;
 };
 
 class CMvDbpMethodResult : public CMvDbpRespond

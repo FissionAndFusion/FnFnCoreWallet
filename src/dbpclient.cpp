@@ -94,6 +94,34 @@ void CMvDbpClientSocket::SendPing(const std::string& id)
     SendMessage(dbp::Msg::PING,any);
 }
 
+void CMvDbpClientSocket::SendForkId(const std::string& fork)
+{
+    lws::RegisterForkIDArg forkArg;
+    forkArg.set_id(fork);
+
+    google::protobuf::Any *fork_any = new google::protobuf::Any();
+    fork_any->PackFrom(forkArg);
+
+    dbp::Method method;
+    method.set_method("registerforkid");
+    std::string id(std::to_string(time(NULL)));
+    method.set_id(id);
+    method.set_allocated_params(fork_any);
+
+    google::protobuf::Any *any = new google::protobuf::Any();
+    any->PackFrom(method);
+
+    SendMessage(dbp::Msg::METHOD,any);
+}
+
+void CMvDbpClientSocket::SendForkIds(const std::vector<std::string>& forks)
+{
+    for(const auto& fork : forks)
+    {
+        SendForkId(fork);
+    }
+}
+
 void CMvDbpClientSocket::SendConnectSession(const std::string& session, const std::vector<std::string>& forks)
 {
     dbp::Connect connect;
@@ -256,9 +284,11 @@ void CMvDbpClientSocket::HandleReadCompleted(uint32_t len)
     case dbp::PONG:
         pDbpClient->HandleClientSocketRecv(this,anyObj);
         break;
+    case dbp::RESULT:
+        pDbpClient->HandleClientSocketRecv(this,anyObj);
+        break;
     case dbp::NOSUB:
     case dbp::READY:
-    case dbp::RESULT:
     case dbp::ADDED:
         // ignore these messages
         std::cerr << "nosub ready result added message type cannot support" << std::endl;
@@ -347,6 +377,19 @@ void CMvDbpClient::HandleClientSocketRecv(CMvDbpClientSocket* pClientSocket, con
 
         HandlePong(pClientSocket,&any);
     }
+    else if(any.Is<dbp::Result>())
+    {
+        if(!HaveAssociatedSessionOf(pClientSocket))
+        {
+            return;
+        }
+
+        HandleResult(pClientSocket,&any);
+    }
+    else
+    {
+
+    }
 }
 
 void CMvDbpClient::AddNewClient(const CDbpClientConfig& confClient)
@@ -365,6 +408,9 @@ void CMvDbpClient::HandleConnected(CMvDbpClientSocket* pClientSocket, google::pr
     {
         StartPingTimer(connected.session());
     }
+
+    std::vector<std::string> vSupportForks = mapProfile[pClientSocket->GetHost().ToEndPoint()].vSupportForks;
+    pClientSocket->SendForkIds(vSupportForks);
 }
 
 void CMvDbpClient::HandleFailed(CMvDbpClientSocket* pClientSocket, google::protobuf::Any* any)
@@ -408,6 +454,26 @@ void CMvDbpClient::HandlePong(CMvDbpClientSocket* pClientSocket, google::protobu
     if(IsSessionExist(session))
     {
         mapSessionProfile[session].nTimeStamp = CDbpUtils::CurrentUTC();
+    }
+}
+
+void CMvDbpClient::HandleResult(CMvDbpClientSocket* pClientSocket, google::protobuf::Any* any)
+{
+    dbp::Result result;
+    any->UnpackTo(&result);
+
+    if (!result.error().empty())
+    {
+        std::cout << "[-]method error:" << result.error() << std::endl;
+    }
+
+    int size = result.result_size();
+    for (int i = 0; i < size; i++)
+    {
+        google::protobuf::Any any = result.result(i);
+        lws::RegisterForkIDRet ret;
+        any.UnpackTo(&ret);
+        std::cout << "register ret fork id: " << ret.id() << "\n";
     }
 }
 

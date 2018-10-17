@@ -77,6 +77,7 @@ public:
     void SendPong(const std::string& id);
     void SendPing(const std::string& id);
 
+    void SendForkIds(const std::vector<std::string>& forks);
     void SendConnectSession(const std::string& session, const std::vector<std::string>& forks);
 protected:
     void StartReadHeader();
@@ -87,6 +88,7 @@ protected:
     void HandleReadPayload(std::size_t nTransferred,uint32_t len);
     void HandleReadCompleted(uint32_t len);
 
+    void SendForkId(const std::string& fork);
     void SendMessage(dbp::Msg type, google::protobuf::Any* any);
 
 private:
@@ -126,6 +128,7 @@ public:
     void HandleFailed(CMvDbpClientSocket* pClientSocket, google::protobuf::Any* any);
     void HandlePing(CMvDbpClientSocket* pClientSocket, google::protobuf::Any* any);
     void HandlePong(CMvDbpClientSocket* pClientSocket, google::protobuf::Any* any);
+    void HandleResult(CMvDbpClientSocket* pClientSocket, google::protobuf::Any* any);
 
 protected:
     bool WalleveHandleInitialize() override;

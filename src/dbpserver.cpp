@@ -323,6 +323,13 @@ void CDbpClient::SendResponse(CMvDbpMethodResult& body)
             sendTxRet.set_reason(txret.reason);
             resultMsg.add_result()->PackFrom(sendTxRet);
         }
+        else if(obj.type() == typeid(CMvDbpRegisterForkIDRet))
+        {
+            CMvDbpRegisterForkIDRet ret = boost::any_cast<CMvDbpRegisterForkIDRet>(obj);
+            lws::RegisterForkIDRet forkRet;
+            forkRet.set_id(ret.forkid);
+            resultMsg.add_result()->PackFrom(forkRet);
+        }
         else
         {
         }
@@ -664,6 +671,8 @@ void CDbpServer::HandleClientMethod(CDbpClient* pDbpClient, google::protobuf::An
         methodBody.method = CMvDbpMethod::Method::GET_TX;
     if (methodMsg.method() == "sendtransaction")
         methodBody.method = CMvDbpMethod::Method::SEND_TX;
+    if (methodMsg.method() == "registerforkid")
+        methodBody.method = CMvDbpMethod::Method::REGISTER_FORK;
 
     if (methodBody.method == CMvDbpMethod::Method::GET_BLOCKS && methodMsg.params().Is<lws::GetBlocksArg>())
     {
@@ -688,6 +697,12 @@ void CDbpServer::HandleClientMethod(CDbpClient* pDbpClient, google::protobuf::An
         lws::SendTxArg args;
         methodMsg.params().UnpackTo(&args);
         methodBody.params.insert(std::make_pair("data", args.data()));
+    }
+    else if(methodBody.method == CMvDbpMethod::Method::REGISTER_FORK)
+    {
+        lws::RegisterForkIDArg args;
+        methodMsg.params().UnpackTo(&args);
+        methodBody.params.insert(std::make_pair("forkid",args.id()));
     }
     else
     {

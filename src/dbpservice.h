@@ -47,6 +47,7 @@ private:
     void HandleGetBlocks(CMvEventDbpMethod& event);
     void HandleGetTransaction(CMvEventDbpMethod& event);
     void HandleSendTransaction(CMvEventDbpMethod& event);
+    void HandleRegisterFork(CMvEventDbpMethod& event);
 
     bool IsTopicExist(const std::string& topic);
     bool IsHaveSubedTopicOf(const std::string& id);

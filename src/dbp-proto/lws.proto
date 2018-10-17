@@ -7,6 +7,16 @@ message ForkID
     repeated string ids = 1;
 }
 
+message RegisterForkIDArg 
+{
+    string id = 1;
+}
+
+message RegisterForkIDRet
+{
+    string id = 1;
+}
+
 message GetBlocksArg 
 {
     bytes hash = 1; //起始块hash
