@@ -26,7 +26,7 @@ CMvDNSeedPeer::CMvDNSeedPeer(CPeerNet *pPeerNetIn, CIOClient *pClientIn, uint64 
 {
 }
 
-bool CMvDNSeedPeer::HandshakeCompletd()
+bool CMvDNSeedPeer::HandshakeCompleted()
 {
     nHsTimerId = 0;
     Read(MESSAGE_HEADER_SIZE, boost::bind(&CMvDNSeedPeer::HandleReadHeader, this));
