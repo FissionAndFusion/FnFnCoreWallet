@@ -529,7 +529,7 @@
                             "desc": "starting height"
                         },
                         "banscore": {
-                            "type": "bool",
+                            "type": "int",
                             "desc": "ban score"
                         }
                     }
