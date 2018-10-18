@@ -61,6 +61,7 @@ public:
     std::string id;
 };
 
+
 class CMvDbpTxIn
 {
 public:
@@ -154,6 +155,12 @@ public:
 };
 
 class CMvDbpRegisterForkIDRet
+{
+public:
+    std::string forkid;
+};
+
+class CMvDbpRegisterForkID : public CMvDbpRequest
 {
 public:
     std::string forkid;

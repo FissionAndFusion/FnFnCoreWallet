@@ -62,6 +62,7 @@ private:
     void UpdateChildNodeForks(const std::string& session, const std::string& forks);
 protected:
     walleve::IIOProc* pDbpServer;
+    walleve::IIOProc* pDbpClient;
     IService* pService;
     ICoreProtocol* pCoreProtocol;
     IWallet* pWallet;

@@ -496,8 +496,7 @@ void CMvDbpClient::HandleResult(CMvDbpClientSocket* pClientSocket, google::proto
 
     if (!result.error().empty())
     {
-        std::cout << "[-]method error:" << result.error() << std::endl;
-        
+        std::cerr << "[-]method error:" << result.error() << std::endl;    
         return;
     }
 
@@ -507,8 +506,6 @@ void CMvDbpClient::HandleResult(CMvDbpClientSocket* pClientSocket, google::proto
         google::protobuf::Any any = result.result(i);
         lws::RegisterForkIDRet ret;
         any.UnpackTo(&ret);
-
-        if()
     }
 }
 
@@ -766,6 +763,19 @@ void CMvDbpClient::RemoveClientSocket(CMvDbpClientSocket* pClientSocket)
 {
     RemoveSession(pClientSocket);
     CloseConnect(pClientSocket);
+}
+
+bool CMvDbpClient::HandleEvent(CMvEventDbpRegisterForkID& event)
+{
+    if(!event.strSessionId.empty() || event.data.forkid.empty())
+    {
+        std::cerr << "cannot handle Register fork event." << std::endl;
+        return false;
+    }
+
+    
+    
+    return true;
 }
 
 

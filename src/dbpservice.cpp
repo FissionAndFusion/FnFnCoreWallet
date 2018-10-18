@@ -54,6 +54,12 @@ bool CDbpService::WalleveHandleInitialize()
         return false;
     }
 
+    if(!WalleveGetObject("dbpclient",pDbpClient))
+    {
+        WalleveLog("Failed to request dbpclient\n");
+        return false;
+    }
+
     return true;
 }
 
@@ -339,8 +345,6 @@ void CDbpService::HandleGetBlocks(CMvEventDbpMethod& event)
 
 void CDbpService::HandleRegisterFork(CMvEventDbpMethod& event)
 {
-    std::cout << "entry register for\n";
-
     std::string forkid = event.data.params["forkid"];
     UpdateChildNodeForks(event.strSessionId,forkid);
 
@@ -351,6 +355,12 @@ void CDbpService::HandleRegisterFork(CMvEventDbpMethod& event)
     eventResult.data.anyResultObjs.push_back(ret);
 
     pDbpServer->DispatchEvent(&eventResult);
+
+
+    // notify dbp client to send message to parent node
+    CMvEventDbpRegisterForkID eventRegister("");
+    eventRegister.data.forkid = forkid;
+    pDbpClient->DispatchEvent(&eventRegister);
 }
 
 bool CDbpService::HandleEvent(CMvEventDbpMethod& event)

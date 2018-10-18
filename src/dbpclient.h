@@ -159,6 +159,9 @@ protected:
     void RemoveClientSocket(CMvDbpClientSocket* pClientSocket);
 
 protected:
+    bool HandleEvent(CMvEventDbpRegisterForkID& event) override;
+
+protected:
     std::vector<CDbpClientConfig> vecClientConfig;
     std::map<boost::asio::ip::tcp::endpoint, CDbpClientProfile> mapProfile;
     std::map<uint64, CMvDbpClientSocket*> mapClientSocket; // nonce => CDbpClientSocket
