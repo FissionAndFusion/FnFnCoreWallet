@@ -305,10 +305,6 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerActive& eventActive)
         if (!eventSubscribe.data.empty())
         {
             pPeerNet->DispatchEvent(&eventSubscribe);
-            BOOST_FOREACH(const uint256& hashFork,eventSubscribe.data)
-            {
-                DispatchGetBlocksEvent(nNonce,hashFork);
-            }
         }
     }
     {
@@ -358,6 +354,14 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerSubscribe& eventSubscribe)
             BOOST_FOREACH(const uint256& hash,eventSubscribe.data)
             {
                 (*it).second.Subscribe(hash);
+
+                {
+                    boost::recursive_mutex::scoped_lock scoped_lock(mtxSched);
+                    if (mapSched.count(hash))
+                    {
+                        DispatchGetBlocksEvent(nNonce,hash);
+                    }
+                }
             }
         } 
     }

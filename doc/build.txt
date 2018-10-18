@@ -8,8 +8,8 @@ To Build
 Macosx, Ubuntu16.04/18.04, Centos7:
 ./INSTALL.sh
 
-WINDOWS 10(MinGW-W64):
-./INSTALL.bat
+Install debug archive:
+./INSTALL.sh debug
 
 Dependencies
 ------------

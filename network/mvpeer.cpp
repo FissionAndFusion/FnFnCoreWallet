@@ -147,10 +147,10 @@ bool CMvPeer::HandshakeReadHeader()
 
     if (hdrRecv.nPayloadSize != 0)
     {
-        Read(hdrRecv.nPayloadSize,boost::bind(&CMvPeer::HandshakeReadCompletd,this));
+        Read(hdrRecv.nPayloadSize,boost::bind(&CMvPeer::HandshakeReadCompleted,this));
         return true;
     }
-    return HandshakeReadCompletd();
+    return HandshakeReadCompleted();
 }
 
 bool CMvPeer::HandleReadHeader()
@@ -168,7 +168,7 @@ bool CMvPeer::HandleReadHeader()
     return HandleReadCompleted();
 }
 
-bool CMvPeer::HandshakeReadCompletd()
+bool CMvPeer::HandshakeReadCompleted()
 {
     CWalleveBufStream& ss = ReadStream();
     uint256 hash = multiverse::crypto::CryptoHash(ss.GetData(),ss.GetSize());
@@ -191,7 +191,7 @@ bool CMvPeer::HandshakeReadCompletd()
                 {
                     nTimeDelta += (nTimeRecv - nTimeHello) / 2;
                     SendHelloAck();
-                    return HandshakeCompletd();
+                    return HandshakeCompleted();
                 }
                 SendHello();
                 Read(MESSAGE_HEADER_SIZE,boost::bind(&CMvPeer::HandshakeReadHeader,this));
@@ -204,7 +204,7 @@ bool CMvPeer::HandshakeReadCompletd()
                     return false;
                 }
                 nTimeDelta += (nTimeRecv - nTimeHello) / 2;
-                return HandshakeCompletd();
+                return HandshakeCompleted();
             }
         }
         catch (...) {}
@@ -212,7 +212,7 @@ bool CMvPeer::HandshakeReadCompletd()
     return false;
 }
 
-bool CMvPeer::HandshakeCompletd()
+bool CMvPeer::HandshakeCompleted()
 {
     if (!(static_cast<CMvPeerNet*>(pPeerNet))->HandlePeerHandshaked(this,nHsTimerId))
     {

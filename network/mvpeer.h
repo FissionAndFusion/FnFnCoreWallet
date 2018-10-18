@@ -38,8 +38,8 @@ protected:
     void SendHelloAck();
     bool ParseMessageHeader();
     bool HandshakeReadHeader();
-    bool HandshakeReadCompletd();
-    virtual bool HandshakeCompletd();
+    bool HandshakeReadCompleted();
+    virtual bool HandshakeCompleted();
     bool HandleReadHeader();
     bool HandleReadCompleted();
 public:
