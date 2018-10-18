@@ -123,6 +123,7 @@ class CMvDbpAdded : public CMvDbpRespond
 public:
     std::string name;
     std::string id;
+    std::string forkid;
     boost::any anyAddedObj; // busniess object (block,tx...)
 };
 
