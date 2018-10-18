@@ -259,11 +259,13 @@ bool CDbpService::GetBlocks(const uint256& forkHash, const uint256& startHash, i
     if (IsEmpty(tempForkHash))
     {
         tempForkHash = pCoreProtocol->GetGenesisBlockHash();
+        std::cout << "fork hash is empty. default main fork\n";
     }
 
     if (IsEmpty(blockHash))
     {
-        pService->GetBlockHash(tempForkHash, 0, blockHash);
+        blockHash = tempForkHash;
+        std::cout << "start block hash is empty, default value is fork hash\n";
     }
 
     int blockHeight = 0;
@@ -272,12 +274,16 @@ bool CDbpService::GetBlocks(const uint256& forkHash, const uint256& startHash, i
         return false;
     }
 
+    std::cout << "GetBocks fork hash is: " << tempForkHash.ToString() << "\n";
+
     const std::size_t primaryBlockMaxNum = n;
     std::size_t primaryBlockCount = 0;
     while (primaryBlockCount != primaryBlockMaxNum && pService->GetBlockHash(tempForkHash, blockHeight, blockHash))
     {
         CBlock block;
         pService->GetBlock(blockHash, block, tempForkHash, blockHeight);
+        std::cout << "block height: " << blockHeight << "\n";
+        std::cout << "block fork: " << tempForkHash.ToString() << "\n"; 
         if (block.nType == CBlock::BLOCK_PRIMARY)
         {
             primaryBlockCount++;
