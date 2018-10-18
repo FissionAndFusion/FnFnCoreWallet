@@ -77,7 +77,7 @@ void CDbpClient::SendPingMessage(dbp::Base* pBaseMsg)
 {
     if (!IsSentComplete())
     {
-        pClient->Write(ssSend, boost::bind(&CDbpClient::HandleWritenResponse, this, _1, OTHER));
+        //pClient->Write(ssSend, boost::bind(&CDbpClient::HandleWritenResponse, this, _1, OTHER));
         return;
     }
 
@@ -91,7 +91,7 @@ void CDbpClient::SendAddedMessage(dbp::Base* pBaseMsg)
     if (!IsSentComplete())
     {
         queueAddedSend.push(*pBaseMsg);
-        pClient->Write(ssSend, boost::bind(&CDbpClient::HandleWritenResponse, this, _1, OTHER));
+       // pClient->Write(ssSend, boost::bind(&CDbpClient::HandleWritenResponse, this, _1, OTHER));
         return;
     }
 
