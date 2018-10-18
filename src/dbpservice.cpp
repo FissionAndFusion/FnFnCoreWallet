@@ -72,7 +72,7 @@ bool CDbpService::HandleEvent(CMvEventDbpPong& event)
 bool CDbpService::HandleEvent(CMvEventDbpConnect& event)
 {
     bool isReconnect = event.data.isReconnect;
-
+    
     if (isReconnect)
     {
         // reply normal
@@ -414,7 +414,7 @@ void CDbpService::CreateDbpTransaction(const CTransaction& tx, CMvDbpTransaction
     tx.GetHash().ToDataStream(hashStream);
 }
 
-void CDbpService::PushBlock(const CMvDbpBlock& block)
+void CDbpService::PushBlock(const std::string& forkid, const CMvDbpBlock& block)
 {
     for (const auto& kv : mapIdSubedSession)
     {
@@ -425,6 +425,7 @@ void CDbpService::PushBlock(const CMvDbpBlock& block)
         {
             CMvEventDbpAdded eventAdded(session);
             eventAdded.data.id = id;
+            eventAdded.data.forkid = forkid;
             eventAdded.data.name = "all-block";
             eventAdded.data.anyAddedObj = block;
             pDbpServer->DispatchEvent(&eventAdded);
@@ -432,7 +433,7 @@ void CDbpService::PushBlock(const CMvDbpBlock& block)
     }
 }
 
-void CDbpService::PushTx(const CMvDbpTransaction& dbptx)
+void CDbpService::PushTx(const std::string& forkid, const CMvDbpTransaction& dbptx)
 {
     for (const auto& kv : mapIdSubedSession)
     {
@@ -443,6 +444,7 @@ void CDbpService::PushTx(const CMvDbpTransaction& dbptx)
         {
             CMvEventDbpAdded eventAdded(session);
             eventAdded.data.id = id;
+            eventAdded.data.forkid = forkid;
             eventAdded.data.name = "all-tx";
             eventAdded.data.anyAddedObj = dbptx;
             pDbpServer->DispatchEvent(&eventAdded);
@@ -462,7 +464,7 @@ bool CDbpService::HandleEvent(CMvEventDbpUpdateNewBlock& event)
     {
         CMvDbpBlock block;
         CreateDbpBlock(newBlock, forkHash, blockHeight, block);
-        PushBlock(block);
+        PushBlock(forkHash.ToString(),block);
     }
 
     return true;
@@ -471,10 +473,11 @@ bool CDbpService::HandleEvent(CMvEventDbpUpdateNewBlock& event)
 bool CDbpService::HandleEvent(CMvEventDbpUpdateNewTx& event)
 {
     decltype(event.data)& newtx = event.data;
+    std::string forkid;
 
     CMvDbpTransaction dbpTx;
     CreateDbpTransaction(newtx, dbpTx);
-    PushTx(dbpTx);
+    PushTx(forkid,dbpTx);
 
     return true;
 }
