@@ -536,7 +536,7 @@ bool CDbpService::HandleEvent(CMvEventDbpUpdateNewBlock& event)
 bool CDbpService::HandleEvent(CMvEventDbpUpdateNewTx& event)
 {
     decltype(event.data)& newtx = event.data;
-    std::string forkid;
+    std::string forkid = event.hashFork.ToString();
 
     CMvDbpTransaction dbpTx;
     CreateDbpTransaction(newtx, dbpTx);
