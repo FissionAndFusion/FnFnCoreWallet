@@ -47,7 +47,7 @@ bool CMvPeerNet::WalleveHandleInitialize()
 
     if (!WalleveGetObject("delegatedchannel",pDelegatedChannel))
     {
-        WalleveLog("Failed to request peer net datachannel\n");
+        WalleveLog("Failed to request delegated datachannel\n");
         return false;
     }
 

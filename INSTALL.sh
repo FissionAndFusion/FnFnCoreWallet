@@ -28,9 +28,19 @@ fi
 # make & install
 os=`uname`
 if [ "$os" == "Darwin" ]; then
-    make install -j8
+    cores=`sysctl -n hw.logicalcpu`
+    if [ "${cores}" == "" ]; then
+        cores = 1
+    fi
+    echo "make install -j${cores}"
+    make install -j${cores}
 else
-    sudo make install -j8
+    cores=`nproc --all`
+    if [ "${cores}" == "" ]; then
+        cores = 1
+    fi
+    echo "sudo make install -j${cores}"
+    sudo make install -j${cores}
 fi
 
 cd $origin_path

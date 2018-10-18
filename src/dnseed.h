@@ -25,7 +25,7 @@ public:
   bool fIsTestPeer;
 
 protected:
-  virtual bool HandshakeCompletd() override;
+  virtual bool HandshakeCompleted() override;
 };
 } // namespace network
 
