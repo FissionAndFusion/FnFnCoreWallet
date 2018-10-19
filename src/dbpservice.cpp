@@ -349,6 +349,14 @@ bool CDbpService::GetBlocks(const uint256& forkHash, const uint256& startHash, i
         return false;
     }
 
+    /*for(const auto& ss : path)
+    {
+        std::cout << "( " << ss.first.ToString().substr(0,5) << ", " 
+            << ss.second.ToString().substr(0,5) << " )\n";
+    }*/
+    
+   // return false;
+
     const std::size_t nonExtendBlockMaxNum = n;
     std::size_t nonExtendBlockCount = 0;
     
@@ -356,29 +364,40 @@ bool CDbpService::GetBlocks(const uint256& forkHash, const uint256& startHash, i
     pService->GetBlockLocation(blockHash, tempForkHash, blockHeight);
     
     std::vector<uint256> blocksHash;
-    while (nonExtendBlockCount != nonExtendBlockMaxNum && 
+    while (nonExtendBlockCount < nonExtendBlockMaxNum && 
             pService->GetBlockHash(tempForkHash, blockHeight, blocksHash))
     {
+        
+        
+        std::cout << "###############################\n";
+
         
         for(int i = 0; i < blocksHash.size(); ++i)
         {
             CBlock block;
-            pService->GetBlock(blocksHash[i], block, tempForkHash, blockHeight);
-            std::cout << "block height: " << blockHeight << "\n";
-            std::cout << "block fork: " << tempForkHash.ToString() << "\n"; 
+            int height;
+            pService->GetBlock(blocksHash[i], block, tempForkHash, height);
+            std::cout << "block hash: "  << block.GetHash().ToString() << "\n";
+            std::cout << "block height: " << height << "\n";
+            std::cout << "block fork: " << tempForkHash.ToString() << "\n";
+            std::cout << "block type: " << block.nType << "\n"; 
             if (block.nType != CBlock::BLOCK_EXTENDED)
             {
                 nonExtendBlockCount++;
             }
 
             CMvDbpBlock DbpBlock;
-            CreateDbpBlock(block, tempForkHash, blockHeight, DbpBlock);
+            CreateDbpBlock(block, tempForkHash, height, DbpBlock);
             blocks.push_back(DbpBlock);
         }
         
-        TrySwitchFork(blockHash,path,tempForkHash);
-
+        TrySwitchFork(blocksHash[0],path,tempForkHash);
+        std::cout << "try swicth: " << tempForkHash.ToString() << "\n";
         blockHeight++;
+        std::cout << "input block height: " << blockHeight << "\n";
+        std::cout << "blocksHash size: " << blocksHash.size() << "\n";
+        blocksHash.clear(); blocksHash.shrink_to_fit();
+       
     }
 
     return true;
@@ -389,7 +408,7 @@ void CDbpService::HandleGetBlocks(CMvEventDbpMethod& event)
     std::string forkid = event.data.params["forkid"];
     std::string blockHash = event.data.params["hash"];
     int32 blockNum = boost::lexical_cast<int32>(event.data.params["number"]);
-
+    
     uint256 startBlockHash(std::vector<unsigned char>(blockHash.begin(), blockHash.end()));
     uint256 forkHash;
     forkHash.SetHex(forkid);
