@@ -349,27 +349,33 @@ bool CDbpService::GetBlocks(const uint256& forkHash, const uint256& startHash, i
         return false;
     }
 
-    const std::size_t primaryBlockMaxNum = n;
-    std::size_t primaryBlockCount = 0;
+    const std::size_t nonExtendBlockMaxNum = n;
+    std::size_t nonExtendBlockCount = 0;
     
     
     pService->GetBlockLocation(blockHash, tempForkHash, blockHeight);
     
-    while (primaryBlockCount != primaryBlockMaxNum && pService->GetBlockHash(tempForkHash, blockHeight, blockHash))
+    std::vector<uint256> blocksHash;
+    while (nonExtendBlockCount != nonExtendBlockMaxNum && 
+            pService->GetBlockHash(tempForkHash, blockHeight, blocksHash))
     {
-        CBlock block;
-        pService->GetBlock(blockHash, block, tempForkHash, blockHeight);
-        std::cout << "block height: " << blockHeight << "\n";
-        std::cout << "block fork: " << tempForkHash.ToString() << "\n"; 
-        if (block.nType == CBlock::BLOCK_PRIMARY)
+        
+        for(int i = 0; i < blocksHash.size(); ++i)
         {
-            primaryBlockCount++;
+            CBlock block;
+            pService->GetBlock(blocksHash[i], block, tempForkHash, blockHeight);
+            std::cout << "block height: " << blockHeight << "\n";
+            std::cout << "block fork: " << tempForkHash.ToString() << "\n"; 
+            if (block.nType != CBlock::BLOCK_EXTENDED)
+            {
+                nonExtendBlockCount++;
+            }
+
+            CMvDbpBlock DbpBlock;
+            CreateDbpBlock(block, tempForkHash, blockHeight, DbpBlock);
+            blocks.push_back(DbpBlock);
         }
-
-        CMvDbpBlock DbpBlock;
-        CreateDbpBlock(block, tempForkHash, blockHeight, DbpBlock);
-        blocks.push_back(DbpBlock);
-
+        
         TrySwitchFork(blockHash,path,tempForkHash);
 
         blockHeight++;
