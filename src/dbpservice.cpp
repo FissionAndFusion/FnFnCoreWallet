@@ -251,33 +251,110 @@ bool CDbpService::IsEmpty(const uint256& hash)
     return hash.ToString() == EMPTY_HASH;
 }
 
-bool CDbpService::GetBlocks(const uint256& forkHash, const uint256& startHash, int32 n, std::vector<CMvDbpBlock>& blocks)
+bool CDbpService::IsForkHash(const uint256& hash)
 {
-    uint256 tempForkHash = forkHash;
-    uint256 blockHash = startHash;
+    std::vector<std::pair<uint256,CProfile>> forks;
+    pService->ListFork(forks);
 
-    if (IsEmpty(tempForkHash))
+    for(const auto& fork : forks)
     {
-        tempForkHash = pCoreProtocol->GetGenesisBlockHash();
-        std::cout << "fork hash is empty. default main fork\n";
+        if(fork.first == hash)
+        {
+            return true;
+        }
     }
 
-    if (IsEmpty(blockHash))
-    {
-        blockHash = tempForkHash;
-        std::cout << "start block hash is empty, default value is fork hash\n";
-    }
+    return false;
+}
 
-    int blockHeight = 0;
-    if (!pService->GetBlockLocation(blockHash, tempForkHash, blockHeight))
+void CDbpService::TrySwitchFork(const uint256& blockHash, std::vector<std::pair<uint256,uint256>>& path,uint256& forkHash)
+{
+    for(const auto& fork : path)
+    {
+        if(blockHash == fork.second)
+        {
+            forkHash = fork.first;
+        }
+    }
+}
+
+bool CDbpService::GetForkPath(const uint256& forkHash, std::vector<std::pair<uint256,uint256>>& path)
+{
+    std::vector<std::pair<uint256,int>> vAncestors;
+    std::vector<std::pair<int,uint256>> vSublines;
+    if(!pService->GetForkGenealogy(forkHash,vAncestors,vSublines))
     {
         return false;
     }
 
-    std::cout << "GetBocks fork hash is: " << tempForkHash.ToString() << "\n";
+    std::vector<std::pair<uint256,uint256>> forkAncestors;
+    for(int i = vAncestors.size() - 1; i >= 0; i--)
+    {
+        CBlock block;
+        uint256 tempFork;
+        int nHeight = 0;
+        pService->GetBlock(vAncestors[i].first,block,tempFork,nHeight);
+        forkAncestors.push_back(std::make_pair(vAncestors[i].first,block.hashPrev));
+    }
+
+    path = forkAncestors;
+    CBlock block;
+    uint256 tempFork;
+    int nHeight = 0;
+    pService->GetBlock(forkHash,block,tempFork,nHeight);
+    path.push_back(std::make_pair(forkHash,block.hashPrev));
+    
+    return true;
+}
+
+bool CDbpService::GetBlocks(const uint256& forkHash, const uint256& startHash, int32 n, std::vector<CMvDbpBlock>& blocks)
+{
+    uint256 connectForkHash = forkHash;
+    uint256 blockHash = startHash;
+
+    if (IsEmpty(connectForkHash))
+    {
+        connectForkHash = pCoreProtocol->GetGenesisBlockHash();
+        std::cout << "fork hash is empty. default main fork\n";
+    }
+
+    if(!IsForkHash(connectForkHash))
+    {
+        std::cerr << "connect fork hash is not a fork hash.\n";
+        return false;
+    }
+
+    if (IsEmpty(blockHash))
+    {
+        blockHash = connectForkHash;
+        std::cout << "start block hash is empty, default value is fork hash\n";
+    }
+
+    int blockHeight = 0;
+    uint256 tempForkHash;
+    if (!pService->GetBlockLocation(blockHash, tempForkHash, blockHeight))
+    {
+        std::cerr << "GetBlockLocation failed\n";
+        return false;
+    }
+
+
+    std::cout << "GetBocks fork hash is: " << connectForkHash.ToString() << "\n";
+
+    // path.size() >= 1
+    std::vector<std::pair<uint256,uint256>> path;
+    if(!GetForkPath(connectForkHash,path))
+    {
+        std::cerr << "GetForkAncestors failed.\n";
+        return false;
+    }
 
     const std::size_t primaryBlockMaxNum = n;
     std::size_t primaryBlockCount = 0;
+    
+    
+    pService->GetBlockLocation(blockHash, tempForkHash, blockHeight);
+    
     while (primaryBlockCount != primaryBlockMaxNum && pService->GetBlockHash(tempForkHash, blockHeight, blockHash))
     {
         CBlock block;
@@ -292,6 +369,8 @@ bool CDbpService::GetBlocks(const uint256& forkHash, const uint256& startHash, i
         CMvDbpBlock DbpBlock;
         CreateDbpBlock(block, tempForkHash, blockHeight, DbpBlock);
         blocks.push_back(DbpBlock);
+
+        TrySwitchFork(blockHash,path,tempForkHash);
 
         blockHeight++;
     }

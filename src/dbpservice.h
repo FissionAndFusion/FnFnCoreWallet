@@ -41,8 +41,11 @@ private:
     void CreateDbpBlock(const CBlock& blockDetail, const uint256& forkHash,
                       int blockHeight, CMvDbpBlock& block);
     void CreateDbpTransaction(const CTransaction& tx, CMvDbpTransaction& dbptx);
+    bool GetForkPath(const uint256& forkHash, std::vector<std::pair<uint256,uint256>>& path);
+    void TrySwitchFork(const uint256& blockHash, std::vector<std::pair<uint256,uint256>>& path, uint256& forkHash);
     bool GetBlocks(const uint256& forkHash, const uint256& startHash, int32 n, std::vector<CMvDbpBlock>& blocks);
     bool IsEmpty(const uint256& hash);
+    bool IsForkHash(const uint256& hash);
     void HandleGetBlocks(CMvEventDbpMethod& event);
     void HandleGetTransaction(CMvEventDbpMethod& event);
     void HandleSendTransaction(CMvEventDbpMethod& event);
