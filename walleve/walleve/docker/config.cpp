@@ -52,9 +52,8 @@ bool CWalleveConfig::Load(int argc,char *argv[],const fs::path& pathDefault,cons
         po::positional_options_description defaultPosDesc;
         defaultPosDesc.add("cmd",-1).add("ignore", ignoreCmd);
 
-        po::variables_map vm;
         auto parser = po::command_line_parser(argc, argv).options(defaultDesc).style(defaultCmdStyle)
-                .allow_unregistered().extra_parser(CWalleveConfig::ExtraParser)
+                .extra_parser(CWalleveConfig::ExtraParser)
                 .positional(defaultPosDesc);
         po::store(parser.run(),vm);
 
@@ -95,25 +94,35 @@ bool CWalleveConfig::PostLoad()
 string CWalleveConfig::ListConfig() const
 {
     ostringstream oss;
-    oss << "Debug : " << (fDebug ? "Y" : "N") << "\n"
-        << "Data Path : " << pathData << "\n";
+    oss << "debug : " << (fDebug ? "Y" : "N") << "\n"
+        << "data path : " << pathData << "\n";
     return oss.str();
+}
+
+string CWalleveConfig::Help() const
+{
+    return string()
+        + "  -help                         Get more information\n"
+        + "  -daemon                       Run server in background\n"
+        + "  -debug                        Run in debug mode\n"
+        + "  -datadir                      Root directory of resources\n"
+        + "  -conf                         Configuration file name\n";
 }
 
 pair<string,string> CWalleveConfig::ExtraParser(const string& s)
 {
-    if (s[0] == '-')
+    if (s[0] == '-' && !isdigit(s[1]))
     {
         bool fRev = (s.substr(1,2) == "no");
         size_t eq = s.find('=');
         if (eq == string::npos)
         {
             if (fRev)
-            {   
+            {
                 return make_pair(s.substr(3),string("0"));
             }
             else
-            {   
+            {
                 return make_pair(s.substr(1),string("1"));
             }
         }

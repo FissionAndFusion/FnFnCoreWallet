@@ -1,0 +1,18 @@
+{
+    "EModeType::SERVER": {
+        "usage": "multiverse-server (OPTIONS)",
+        "desc": "Run multiverse server"
+    },
+    "EModeType::CONSOLE": {
+        "usage": "multiverse-cli (OPTIONS) COMMAND",
+        "desc": "Run multiverse RPC client"
+    },
+    "EModeType::MINER": {
+        "usage": "multiverse-miner (OPTIONS)",
+        "desc": "Run multiverse miner"
+    },
+    "EModeType::DNSEED": {
+        "usage": "multiverse-dnseed (OPTIONS)",
+        "desc": "Run multiverse dnseed"
+    }
+}

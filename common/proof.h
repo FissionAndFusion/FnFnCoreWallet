@@ -36,6 +36,23 @@ protected:
     }
 };
 
+class CProofOfPiggyback : public CProofOfSecretShare
+{
+public:
+    uint256 hashRefBlock;
+protected:
+    virtual void ToStream(walleve::CWalleveODataStream& os)
+    {
+        CProofOfSecretShare::ToStream(os);
+        os << hashRefBlock;
+    }
+    virtual void FromStream(walleve::CWalleveIDataStream& is)
+    {
+        CProofOfSecretShare::FromStream(is);
+        is >> hashRefBlock;
+    }
+};
+
 class CProofOfHashWork : public CProofOfSecretShare
 {
 public:

@@ -8,6 +8,7 @@
 #include <walleve/type.h>
 #include <walleve/util.h>
 #include <walleve/rwlock.h>
+#include <walleve/compacttv.h>
 #include <walleve/entry/entry.h>
 #include <walleve/stream/stream.h>
 #include <walleve/stream/datastream.h>
@@ -25,6 +26,7 @@
 #include <walleve/console/console.h>
 #include <walleve/peernet/peer.h>
 #include <walleve/peernet/peernet.h>
+#include <walleve/peernet/datasched.h>
 #include <walleve/http/httptype.h>
 #include <walleve/http/httpcookie.h>
 #include <walleve/http/httpsse.h>

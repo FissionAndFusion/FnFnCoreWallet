@@ -1,31 +1,32 @@
-@echo off
+echo "Not support source installation in WIN32"
+REM @echo off
 
-set old_dir=%cd%
+REM set old_dir=%cd%
 
-cd %~dp0
+REM cd %~dp0
 
-REM delete build directory
-rd /s /q build
-del /f /q multiverse.exe
+REM REM delete build directory
+REM rd /s /q build
+REM del /f /q multiverse.exe
 
-REM create build directory
-mkdir build
-if "%errorlevel%"=="1" goto :end
+REM REM create build directory
+REM mkdir build
+REM if "%errorlevel%"=="1" goto :end
 
-REM go to build
-cd build
-if "%errorlevel%"=="1" goto :end
+REM REM go to build
+REM cd build
+REM if "%errorlevel%"=="1" goto :end
 
-REM cmake
-cmake .. -G "MinGW Makefiles"
-if "%errorlevel%"=="1" goto :end
+REM REM cmake
+REM cmake .. -G "MinGW Makefiles"
+REM if "%errorlevel%"=="1" goto :end
 
-REM make
-mingw32-make
-if "%errorlevel%"=="1" goto :end
+REM REM make
+REM mingw32-make
+REM if "%errorlevel%"=="1" goto :end
 
-REM install
-copy src\multiverse.exe ..\
+REM REM install
+REM copy src\multiverse.exe ..\
 
-:end
-cd %old_dir%
+REM :end
+REM cd %old_dir%

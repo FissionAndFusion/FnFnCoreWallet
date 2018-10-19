@@ -11,22 +11,25 @@
 #include "dispatcher.h"
 #include "network.h"
 #include "netchn.h"
+#include "delegatedchn.h"
 #include "rpcmod.h"
 #include "service.h"
 #include "blockmaker.h"
 #include "rpcclient.h"
 #include "miner.h"
+#include "dbpservice.h"
 #include "dnseed.h"
+#include "version.h"
 
 #include <map>
 #include <string>
 
 #ifdef WIN32
 #ifdef _MSC_VER
-#pragma warning(disable:4786)
-#pragma warning(disable:4804)
-#pragma warning(disable:4805)
-#pragma warning(disable:4717)
+#pragma warning(disable : 4786)
+#pragma warning(disable : 4804)
+#pragma warning(disable : 4805)
+#pragma warning(disable : 4717)
 #endif
 #include "shlobj.h"
 #include "shlwapi.h"
@@ -39,8 +42,6 @@ using namespace std;
 using namespace walleve;
 using namespace multiverse;
 using namespace boost::filesystem;
-
-extern void DisplayUsage();
 
 //////////////////////////////
 // CMvEntry
@@ -57,31 +58,43 @@ CMvEntry::CMvEntry()
 
 CMvEntry::~CMvEntry()
 {
-    Exit(); 
+    Exit();
 }
 
-bool CMvEntry::Initialize(int argc,char *argv[])
+bool CMvEntry::Initialize(int argc, char *argv[])
 {
-    if (!mvConfig.Load(argc, argv, GetDefaultDataDir(), "multiverse.conf") || !mvConfig.GetConfig()->PostLoad())
+    if (!mvConfig.Load(argc, argv, GetDefaultDataDir(), "multiverse.conf") || !mvConfig.PostLoad())
     {
         cerr << "Failed to load/parse arguments and config file\n";
         return false;
     }
 
-    mvConfig.GetConfig()->ListConfig();
-
     // help
     if (mvConfig.GetConfig()->fHelp)
     {
-        DisplayUsage();
+        cout << mvConfig.Help() << endl;
         return false;
+    }
+
+    // version
+    if (mvConfig.GetConfig()->fVersion)
+    {
+        cout << "Multiverse version is v" << MV_VERSION_STR << endl;
+        return false;
+    }
+
+    // list config if in debug mode
+    if (mvConfig.GetConfig()->fDebug)
+    {
+        mvConfig.ListConfig();
     }
 
     // path
     path& pathData = mvConfig.GetConfig()->pathData;
     if (!exists(pathData))
     {
-        if (!create_directories(pathData)){
+        if (!create_directories(pathData))
+        {
             cerr << "Failed create directory : " << pathData << "\n";
             return false;
         }
@@ -93,22 +106,15 @@ bool CMvEntry::Initialize(int argc,char *argv[])
         return false;
     }
 
-    // log
-    if ((mvConfig.GetModeType() == EModeType::SERVER || mvConfig.GetModeType() == EModeType::MINER)
-        && !walleveLog.SetLogFilePath((pathData / "multiverse.log").string()))
-    {
-        cerr << "Failed to open log file : " << (pathData / "multiverse.log") << "\n";
-        return false;
-    }
-
     // hard disk
-    if (space(pathData).available < MINIMUM_HARD_DISK_AVAILABLE){
+    if (space(pathData).available < MINIMUM_HARD_DISK_AVAILABLE)
+    {
         cerr << "Warning: hard disk available < 100M\n";
         return false;
     }
 
     // daemon
-    if (mvConfig.GetConfig()->fDaemon && 
+    if (mvConfig.GetConfig()->fDaemon &&
         (mvConfig.GetModeType() == EModeType::SERVER || mvConfig.GetModeType() == EModeType::MINER))
     {
         if (!RunInBackground(pathData))
@@ -119,17 +125,14 @@ bool CMvEntry::Initialize(int argc,char *argv[])
     }
 
     // log
-    if ((mvConfig.GetModeType() == EModeType::SERVER 
-        || mvConfig.GetModeType() == EModeType::MINER 
-        || mvConfig.GetModeType() == EModeType::DNSEED)
-        && !walleveLog.SetLogFilePath((pathData / "multiverse.log").string()))
+    if ((mvConfig.GetModeType() == EModeType::SERVER || mvConfig.GetModeType() == EModeType::MINER || mvConfig.GetModeType() == EModeType::DNSEED) && !walleveLog.SetLogFilePath((pathData / "multiverse.log").string()))
     {
         cerr << "Failed to open log file : " << (pathData / "multiverse.log") << "\n";
-        return false; 
+        return false;
     }
 
     // docker
-    if (!walleveDocker.Initialize(mvConfig.GetConfig(),&walleveLog))
+    if (!walleveDocker.Initialize(mvConfig.GetConfig(), &walleveLog))
     {
         cerr << "Failed to initialize docker\n";
         return false;
@@ -139,7 +142,7 @@ bool CMvEntry::Initialize(int argc,char *argv[])
     return InitializeModules(mvConfig.GetModeType());
 }
 
-bool CMvEntry::AttachModule(IWalleveBase *pWalleveBase) 
+bool CMvEntry::AttachModule(IWalleveBase* pWalleveBase)
 {
     if (!pWalleveBase || !walleveDocker.Attach(pWalleveBase))
     {
@@ -156,162 +159,194 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
 
     for (auto& m : modules)
     {
-        switch(m) 
+        switch (m)
         {
         case EModuleType::LOCK:
+        {
+            if (!TryLockFile((mvConfig.GetConfig()->pathData / ".lock").string()))
             {
-                if (!TryLockFile((mvConfig.GetConfig()->pathData / ".lock").string()))
-                {
-                    cerr << "Cannot obtain a lock on data directory " << mvConfig.GetConfig()->pathData << "\n"
-                        << "Multiverse is probably already running.\n";
-                    return false;
-                }
-                break;
+                cerr << "Cannot obtain a lock on data directory " << mvConfig.GetConfig()->pathData << "\n"
+                     << "Multiverse is probably already running.\n";
+                return false;
             }
+            break;
+        }
         case EModuleType::BLOCKMAKER:
+        {
+            if (!AttachModule(new CBlockMaker()))
             {
-                if (!AttachModule(new CBlockMaker()))
-                {
-                    return false;
-                }
-                break;
+                return false;
             }
+            break;
+        }
         case EModuleType::COREPROTOCOL:
+        {
+            if (!AttachModule(mvConfig.GetConfig()->fTestNet ? new CMvTestNetCoreProtocol : new CMvCoreProtocol()))
             {
-                if (!AttachModule(mvConfig.GetConfig()->fTestNet ? new CMvTestNetCoreProtocol : new CMvCoreProtocol()))
-                {
-                    return false;
-                }
-                break;
+                return false;
             }
+            break;
+        }
         case EModuleType::DISPATCHER:
+        {
+            if (!AttachModule(new CDispatcher()))
             {
-                if (!AttachModule(new CDispatcher()))
-                {
-                    return false;
-                }
-                break;
+                return false;
             }
+            break;
+        }
         case EModuleType::HTTPGET:
+        {
+            if (!AttachModule(new CHttpGet()))
             {
-                if (!AttachModule(new CHttpGet()))
-                {
-                    return false;
-                }
-                break;
+                return false;
             }
+            break;
+        }
         case EModuleType::HTTPSERVER:
+        {
+            if (!AttachModule(new CHttpServer()))
             {
-                if (!AttachModule(new CHttpServer()))
-                {
-                    return false;
-                }
-                break;
+                return false;
             }
+            break;
+        }
         case EModuleType::MINER:
+        {
+            if (!AttachModule(new CMiner(mvConfig.GetConfig()->vecCommand)))
             {
-                if (!AttachModule(new CMiner(mvConfig.GetConfig()->vecCommand)))
-                {
-                    return false;
-                }
-                break;
+                return false;
             }
+            break;
+        }
         case EModuleType::NETCHANNEL:
+        {
+            if (!AttachModule(new CNetChannel()))
             {
-                if (!AttachModule(new CNetChannel()))
-                {
-                    return false;
-                }
-                break;
+                return false;
             }
+            break;
+        }
+        case EModuleType::DELEGATEDCHANNEL:
+        {
+            if (!AttachModule(new CDelegatedChannel()))
+            {
+                return false;
+            }
+            break;
+        }
         case EModuleType::NETWORK:
+        {
+            if (!AttachModule(new CNetwork()))
             {
-                if (!AttachModule(new CNetwork()))
-                {
-                    return false;
-                }
-                break;
+                return false;
             }
-        case EModuleType::RPCDISPATCH:
+            break;
+        }
+        case EModuleType::RPCCLIENT:
+        {
+            if (!AttachModule(new CRPCClient(mvConfig.GetConfig()->vecCommand.empty())))
             {
-                if (!AttachModule(mvConfig.GetConfig()->vecCommand.empty() 
-                        ? new CRPCDispatch() : new CRPCDispatch(mvConfig.GetConfig()->vecCommand)))
-                {
-                    return false;
-                }
-                break;
+                return false;
             }
+            break;
+        }
         case EModuleType::RPCMODE:
+        {
+            auto pBase = walleveDocker.GetObject("httpserver");
+            if (!pBase)
             {
-                auto pBase = walleveDocker.GetObject("httpserver");
-                if (!pBase)
-                {
-                    return false;
-                }
-                dynamic_cast<CHttpServer*>(pBase)->AddNewHost(GetRPCHostConfig());
+                return false;
+            }
+            dynamic_cast<CHttpServer*>(pBase)->AddNewHost(GetRPCHostConfig());
 
-                if (!AttachModule(new CRPCMod()))
-                {
-                    return false;
-                }
-                break;
+            if (!AttachModule(new CRPCMod()))
+            {
+                return false;
             }
+            break;
+        }
         case EModuleType::SERVICE:
+        {
+            if (!AttachModule(new CService()))
             {
-                if (!AttachModule(new CService()))
-                {
-                    return false;
-                }
-                break;
+                return false;
             }
+            break;
+        }
         case EModuleType::TXPOOL:
+        {
+            if (!AttachModule(new CTxPool()))
             {
-                if (!AttachModule(new CTxPool()))
-                {
-                    return false;
-                }
-                break;
+                return false;
             }
+            break;
+        }
         case EModuleType::WALLET:
+        {
+            IWallet* pWallet;
+            if (mvConfig.GetConfig()->fWallet)
             {
-                if (!AttachModule(new CWallet()))
-                {
-                    return false;
-                }
-                break;
+                pWallet = new CWallet();
             }
+            else
+            {
+                pWallet = new CDummyWallet();
+            }
+
+            if (!AttachModule(pWallet))
+            {
+                return false;
+            }
+            break;
+        }
         case EModuleType::WORLDLINE:
+        {
+            if (!AttachModule(new CWorldLine()))
             {
-                if (!AttachModule(new CWorldLine()))
-                {
-                    return false;
-                }
-                break;
+                return false;
             }
+            break;
+        }
         case EModuleType::CONSENSUS:
+        {
+            if (!AttachModule(new CConsensus()))
             {
-                if (!AttachModule(new CConsensus()))
-                {
-                    return false;
-                }
-                break;
+                return false;
             }
-        case EModuleType::DBPSOCKET:
+            break;
+        }
+        case EModuleType::DBPSERVER:
+        {
+            if (!AttachModule(new CDbpServer()))
             {
-                if (!AttachModule(new CDummyDbpSocket()))
-                {
-                    return false;
-                }
-                break;
+                return false;
             }
+            break;
+        }
+        case EModuleType::DBPSERVICE:
+        {
+            auto pBase = walleveDocker.GetObject("dbpserver");
+            if (!pBase)
+            {
+                return false;
+            }
+            dynamic_cast<CDbpServer*>(pBase)->AddNewHost(GetDbpHostConfig());
+
+            if (!AttachModule(new CDbpService()))
+            {
+                return false;
+            }
+            break;
+        }
         case EModuleType::DNSEED:
+        {
+            if (!AttachModule(new CDNSeed()))
             {
-                if (!AttachModule(new CDNSeed()))
-                {
-                    return false;
-                }
-                break;
-            }    
+                return false;
+            }
+            break;
+        }
         default:
             cerr << "Unknown module:%d" << CMode::IntValue(m) << endl;
             break;
@@ -323,19 +358,36 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
 
 CHttpHostConfig CMvEntry::GetRPCHostConfig()
 {
-    const CMvRPCConfig* config = CastConfigPtr<CMvRPCConfig*>(mvConfig.GetConfig());
-    CIOSSLOption sslRPC(config->fRPCSSLEnable,config->fRPCSSLVerify,
-                        config->strRPCCAFile,config->strRPCCertFile,
-                        config->strRPCPKFile,config->strRPCCiphers);
-    
-    map<string,string> mapUsrRPC;
+    const CMvRPCServerConfig* config = CastConfigPtr<CMvRPCServerConfig *>(mvConfig.GetConfig());
+    CIOSSLOption sslRPC(config->fRPCSSLEnable, config->fRPCSSLVerify,
+                        config->strRPCCAFile, config->strRPCCertFile,
+                        config->strRPCPKFile, config->strRPCCiphers);
+
+    map<string, string> mapUsrRPC;
     if (!config->strRPCUser.empty())
     {
         mapUsrRPC[config->strRPCUser] = config->strRPCPass;
     }
 
-    return CHttpHostConfig(config->epRPC,config->nRPCMaxConnections,sslRPC,mapUsrRPC,
-                           config->vRPCAllowIP,"rpcmod");
+    return CHttpHostConfig(config->epRPC, config->nRPCMaxConnections, sslRPC, mapUsrRPC,
+                           config->vRPCAllowIP, "rpcmod");
+}
+
+CDbpHostConfig CMvEntry::GetDbpHostConfig()
+{
+    const CMvDbpServerConfig* config = CastConfigPtr<CMvDbpServerConfig*>(mvConfig.GetConfig());
+    CIOSSLOption sslDbp(config->fDbpSSLEnable, config->fDbpSSLVerify,
+                        config->strDbpCAFile, config->strDbpCertFile,
+                        config->strDbpPKFile, config->strDbpCiphers);
+
+    map<string, string> mapUsrDbp;
+    if (!config->strDbpUser.empty())
+    {
+        mapUsrDbp[config->strDbpUser] = config->strDbpPass;
+    }
+
+    return CDbpHostConfig(config->epDbp, config->nDbpMaxConnections, config->nDbpSessionTimeout,
+                          sslDbp, mapUsrDbp, config->vDbpAllowIP, "dbpservice");
 }
 
 bool CMvEntry::Run()
@@ -358,7 +410,6 @@ void CMvEntry::Exit()
     }
 }
 
-
 path CMvEntry::GetDefaultDataDir()
 {
     // Windows: C:\Documents and Settings\username\Local Settings\Application Data\Multiverse
@@ -368,14 +419,14 @@ path CMvEntry::GetDefaultDataDir()
 #ifdef WIN32
     // Windows
     char pszPath[MAX_PATH] = "";
-    if (SHGetSpecialFolderPathA(NULL, pszPath,CSIDL_LOCAL_APPDATA,true))
+    if (SHGetSpecialFolderPathA(NULL, pszPath, CSIDL_LOCAL_APPDATA, true))
     {
         return path(pszPath) / "Multiverse";
     }
     return path("C:\\Multiverse");
 #else
     path pathRet;
-    char* pszHome = getenv("HOME");
+    char *pszHome = getenv("HOME");
     if (pszHome == NULL || strlen(pszHome) == 0)
     {
         pathRet = path("/");
@@ -392,8 +443,8 @@ path CMvEntry::GetDefaultDataDir()
 #else
     // Unix
     return pathRet / ".multiverse";
-#endif    
-#endif   
+#endif
+#endif
 }
 
 bool CMvEntry::SetupEnvironment()
@@ -454,4 +505,3 @@ void CMvEntry::ExitBackground(const path& pathData)
     boost::filesystem::remove(pathData / "multiverse.pid");
 #endif
 }
-

@@ -16,10 +16,10 @@ class CNetwork : public network::CMvPeerNet
 public:
     CNetwork();
     ~CNetwork();
-    bool CheckPeerVersion(uint32 nVersionIn,uint64 nServiceIn,const std::string& subVersionIn);
+    bool CheckPeerVersion(uint32 nVersionIn,uint64 nServiceIn,const std::string& subVersionIn) override;
 protected:
-    bool WalleveHandleInitialize();
-    void WalleveHandleDeinitialize();
+    bool WalleveHandleInitialize() override;
+    void WalleveHandleDeinitialize() override;
     const CMvNetworkConfig * NetworkConfig()
     {
         return dynamic_cast<const CMvNetworkConfig *>(walleve::IWalleveBase::WalleveConfig());

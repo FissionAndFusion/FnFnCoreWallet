@@ -67,18 +67,18 @@ public:
     void HandleClientCompleted(CHttpGetClient *pGetClient);
     void HandleClientError(CHttpGetClient *pGetClient);    
 protected:
-    void LeaveLoop();
-    void HostResolved(const CNetHost& host,const boost::asio::ip::tcp::endpoint& ep);
-    void HostFailToResolve(const CNetHost& host);
-    bool ClientConnected(CIOClient* pClient);
-    void ClientFailToConnect(const boost::asio::ip::tcp::endpoint& epRemote);
-    void Timeout(uint64 nNonce,uint32 nTimerId);
+    void LeaveLoop() override;
+    void HostResolved(const CNetHost& host,const boost::asio::ip::tcp::endpoint& ep) override;
+    void HostFailToResolve(const CNetHost& host) override;
+    bool ClientConnected(CIOClient* pClient) override;
+    void ClientFailToConnect(const boost::asio::ip::tcp::endpoint& epRemote) override;
+    void Timeout(uint64 nNonce,uint32 nTimerId) override;
     int  ActivateConn(CIOClient *pClient,CWalleveEventHttpGet& eventGet);
     bool PostResponse(const std::string& strIOModule,CWalleveEventHttpGetRsp *pEventResp);
     void PostError(const CWalleveEventHttpGet& eventGet,int nErrCode);
     void PostError(const std::string& strIOModule,uint64 nNonce,int nErrCode);
-    bool HandleEvent(CWalleveEventHttpGet& eventGet);
-    bool HandleEvent(CWalleveEventHttpAbort& eventAbort);
+    bool HandleEvent(CWalleveEventHttpGet& eventGet) override;
+    bool HandleEvent(CWalleveEventHttpAbort& eventAbort) override;
     void CloseConn(CHttpGetClient *pGetClient,int nErrCode = HTTPGET_OK);
     CIOSSLOption GetSSLOption(CWalleveHttpGet& httpGet,const std::string& strHost);
 protected:

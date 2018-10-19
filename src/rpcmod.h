@@ -2,112 +2,130 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef  MULTIVERSE_RPCMOD_H
-#define  MULTIVERSE_RPCMOD_H
+#ifndef MULTIVERSE_RPCMOD_H
+#define MULTIVERSE_RPCMOD_H
+
+#include <boost/function.hpp>
 
 #include "mvbase.h"
 #include "walleve/walleve.h"
+#include "json/json_spirit.h"
 #include "rpcjson.h"
-#include <boost/function.hpp>
+#include "rpc/rpc.h"
+
 namespace multiverse
 {
 
 class CRPCMod : public walleve::IIOModule, virtual public walleve::CWalleveHttpEventListener
 {
 public:
-    typedef json_spirit::Value (CRPCMod::*RPCFunc)(const json_spirit::Array&,bool);
+    typedef CRPCResultPtr (CRPCMod::*RPCFunc)(CRPCParamPtr param);
     CRPCMod();
     ~CRPCMod();
-    bool HandleEvent(walleve::CWalleveEventHttpReq& eventHttpReq);
-    bool HandleEvent(walleve::CWalleveEventHttpBroken& eventHttpBroken);
+    bool HandleEvent(walleve::CWalleveEventHttpReq& eventHttpReq) override;
+    bool HandleEvent(walleve::CWalleveEventHttpBroken& eventHttpBroken) override;
+
 protected:
-    bool WalleveHandleInitialize();
-    void WalleveHandleDeinitialize();
+    bool WalleveHandleInitialize() override;
+    void WalleveHandleDeinitialize() override;
     const CMvNetworkConfig* WalleveConfig()
     {
         return dynamic_cast<const CMvNetworkConfig*>(walleve::IWalleveBase::WalleveConfig());
     }
 
-    void JsonReply(uint64 nNonce,const json_spirit::Value& result,
-                                 const json_spirit::Value& id);
-    void JsonError(uint64 nNonce,const json_spirit::Object& objError,
-                                 const json_spirit::Value& id);
-    int GetInt(const json_spirit::Array& params,int index,int valDefault)
+    void JsonReply(uint64 nNonce, const std::string& result);
+
+    int GetInt(const rpc::CRPCInt64& i, int valDefault)
     {
-        return (params.size() > index ? params[index].get_int() : valDefault);
+        return i.IsValid() ? int(i) : valDefault;
     }
-    const uint256 GetForkHash(const json_spirit::Array& params,int index)
+    unsigned int GetUint(const rpc::CRPCUint64& i,unsigned int valDefault)
+    {
+        return i.IsValid() ? uint64(i) : valDefault;
+    }
+    const uint256 GetForkHash(const rpc::CRPCString& hex)
     {
         uint256 fork;
-        if (params.size() > index) fork.SetHex(params[index].get_str());
-        if (fork == 0) fork = pCoreProtocol->GetGenesisBlockHash();
+        if (hex.IsValid())
+        {
+            fork.SetHex(hex);
+        }
+        if (fork == 0)
+            fork = pCoreProtocol->GetGenesisBlockHash();
         return fork;
     }
     bool CheckWalletError(MvErr err);
-    multiverse::crypto::CPubKey GetPubKey(const json_spirit::Value& value);
-    CTemplatePtr MakeTemplate(const std::string& strType,const json_spirit::Object& obj);
+    multiverse::crypto::CPubKey GetPubKey(const std::string& addr);
+    CTemplatePtr MakeTemplate(const rpc::CTemplateRequest& obj);
     void ListDestination(std::vector<CDestination>& vDestination);
+    bool CheckVersion(std::string& strVersion);
 private:
     /* System */
-    json_spirit::Value RPCHelp(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCStop(const json_spirit::Array& params,bool fHelp);
+    CRPCResultPtr RPCHelp(CRPCParamPtr param);
+    CRPCResultPtr RPCStop(CRPCParamPtr param);
+    CRPCResultPtr RPCVersion(CRPCParamPtr param);
     /* Network */
-    json_spirit::Value RPCGetPeerCount(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCListPeer(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCAddNode(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCRemoveNode(const json_spirit::Array& params,bool fHelp);
+    CRPCResultPtr RPCGetPeerCount(CRPCParamPtr param);
+    CRPCResultPtr RPCListPeer(CRPCParamPtr param);
+    CRPCResultPtr RPCAddNode(CRPCParamPtr param);
+    CRPCResultPtr RPCRemoveNode(CRPCParamPtr param);
     /* Worldline & TxPool */
-    json_spirit::Value RPCGetForkCount(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCGetForkGenealogy(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCGetBlockLocation(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCGetBlockCount(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCGetBlockHash(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCGetBlock(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCGetTxPool(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCRemovePendingTx(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCGetTransaction(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCSendTransaction(const json_spirit::Array& params,bool fHelp);
+    CRPCResultPtr RPCGetForkCount(CRPCParamPtr param);
+    CRPCResultPtr RPCListFork(CRPCParamPtr param);
+    CRPCResultPtr RPCGetForkGenealogy(CRPCParamPtr param);
+    CRPCResultPtr RPCGetBlockLocation(CRPCParamPtr param);
+    CRPCResultPtr RPCGetBlockCount(CRPCParamPtr param);
+    CRPCResultPtr RPCGetBlockHash(CRPCParamPtr param);
+    CRPCResultPtr RPCGetBlock(CRPCParamPtr param);
+    CRPCResultPtr RPCGetTxPool(CRPCParamPtr param);
+    CRPCResultPtr RPCRemovePendingTx(CRPCParamPtr param);
+    CRPCResultPtr RPCGetTransaction(CRPCParamPtr param);
+    CRPCResultPtr RPCSendTransaction(CRPCParamPtr param);
+    CRPCResultPtr RPCGetForkHeight(CRPCParamPtr param);
     /* Wallet */
-    json_spirit::Value RPCListKey(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCGetNewKey(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCEncryptKey(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCLockKey(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCUnlockKey(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCImportPrivKey(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCImportKey(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCExportKey(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCAddNewTemplate(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCImportTemplate(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCExportTemplate(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCValidateAddress(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCResyncWallet(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCGetBalance(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCListTransaction(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCSendFrom(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCCreateTransaction(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCSignTransaction(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCSignMessage(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCListAddress(const json_spirit::Array& params,bool fHelp);
+    CRPCResultPtr RPCListKey(CRPCParamPtr param);
+    CRPCResultPtr RPCGetNewKey(CRPCParamPtr param);
+    CRPCResultPtr RPCEncryptKey(CRPCParamPtr param);
+    CRPCResultPtr RPCLockKey(CRPCParamPtr param);
+    CRPCResultPtr RPCUnlockKey(CRPCParamPtr param);
+    CRPCResultPtr RPCImportPrivKey(CRPCParamPtr param);
+    CRPCResultPtr RPCImportKey(CRPCParamPtr param);
+    CRPCResultPtr RPCExportKey(CRPCParamPtr param);
+    CRPCResultPtr RPCAddNewTemplate(CRPCParamPtr param);
+    CRPCResultPtr RPCImportTemplate(CRPCParamPtr param);
+    CRPCResultPtr RPCExportTemplate(CRPCParamPtr param);
+    CRPCResultPtr RPCValidateAddress(CRPCParamPtr param);
+    CRPCResultPtr RPCResyncWallet(CRPCParamPtr param);
+    CRPCResultPtr RPCGetBalance(CRPCParamPtr param);
+    CRPCResultPtr RPCListTransaction(CRPCParamPtr param);
+    CRPCResultPtr RPCSendFrom(CRPCParamPtr param);
+    CRPCResultPtr RPCCreateTransaction(CRPCParamPtr param);
+    CRPCResultPtr RPCSignTransaction(CRPCParamPtr param);
+    CRPCResultPtr RPCSignMessage(CRPCParamPtr param);
+    CRPCResultPtr RPCListAddress(CRPCParamPtr param);
+    CRPCResultPtr RPCExportWallet(CRPCParamPtr param);
+    CRPCResultPtr RPCImportWallet(CRPCParamPtr param);
+    CRPCResultPtr RPCMakeOrigin(CRPCParamPtr param);
     /* Util */
-    json_spirit::Value RPCVerifyMessage(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCMakeKeyPair(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCGetPubKeyAddress(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCGetTemplateAddress(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCMakeTemplate(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCDecodeTransaction(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCMakeOrigin(const json_spirit::Array& params,bool fHelp);
+    CRPCResultPtr RPCVerifyMessage(CRPCParamPtr param);
+    CRPCResultPtr RPCMakeKeyPair(CRPCParamPtr param);
+    CRPCResultPtr RPCGetPubKeyAddress(CRPCParamPtr param);
+    CRPCResultPtr RPCGetTemplateAddress(CRPCParamPtr param);
+    CRPCResultPtr RPCMakeTemplate(CRPCParamPtr param);
+    CRPCResultPtr RPCDecodeTransaction(CRPCParamPtr param);
     /* Mint */
-    json_spirit::Value RPCGetWork(const json_spirit::Array& params,bool fHelp);
-    json_spirit::Value RPCSubmitWork(const json_spirit::Array& params,bool fHelp);
+    CRPCResultPtr RPCGetWork(CRPCParamPtr param);
+    CRPCResultPtr RPCSubmitWork(CRPCParamPtr param);
+
 protected:
     walleve::IIOProc *pHttpServer;
     ICoreProtocol *pCoreProtocol;
     IService *pService;
+
 private:
-    std::map<std::string,RPCFunc> mapRPCFunc;
+    std::map<std::string, RPCFunc> mapRPCFunc;
 };
 
 } // namespace multiverse
 
 #endif //MULTIVERSE_RPCMOD_H
-

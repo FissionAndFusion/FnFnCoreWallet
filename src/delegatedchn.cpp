@@ -1,0 +1,513 @@
+// Copyright (c) 2017-2018 The Multiverse developers
+// Distributed under the MIT/X11 software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
+#include "delegatedchn.h"
+#include "mvdelegatecomm.h"
+
+using namespace std;
+using namespace walleve;
+using namespace multiverse;
+using boost::asio::ip::tcp;
+
+//////////////////////////////
+// CDelegatedChannelChain
+
+void CDelegatedChannelChain::Clear()
+{
+    listBlockHash.clear();
+    mapChainData.clear();
+    nLastBlockHeight = -1;
+}
+
+void CDelegatedChannelChain::Update(int nStartHeight,
+                                    const vector<pair<uint256,map<CDestination,size_t> > >& vEnrolledWeight,
+                                    const map<CDestination,vector<unsigned char> >& mapDistributeData,
+                                    const map<CDestination,vector<unsigned char> >& mapPublishData)
+{
+    if (nLastBlockHeight < nStartHeight)
+    {
+        Clear();
+    }
+    while (nLastBlockHeight > nStartHeight && !listBlockHash.empty())
+    {
+        const uint256& hash = listBlockHash.front();
+        mapChainData.erase(hash);
+        listBlockHash.pop_front();
+        --nLastBlockHeight;
+    }
+    nLastBlockHeight = nStartHeight;
+
+    for (size_t i = 0;i < vEnrolledWeight.size();i++)
+    {
+        const uint256& hash = vEnrolledWeight[i].first;
+        CDelegatedChannelChainData& data = mapChainData[hash];
+ 
+        for (map<CDestination,size_t>::const_iterator it = vEnrolledWeight[i].second.begin();
+             it != vEnrolledWeight[i].second.end(); ++it)
+        {
+            data.vEnrolled.push_back((*it).first);
+        }
+        listBlockHash.push_front(hash);
+        ++nLastBlockHeight;
+    }
+
+    if (!listBlockHash.empty())
+    {
+        const uint256& hash = listBlockHash.front();
+        CDelegatedChannelChainData& data = mapChainData[hash];
+        data.mapDistributeData.insert(mapDistributeData.begin(),mapDistributeData.end());
+        data.mapPublishData.insert(mapPublishData.begin(),mapPublishData.end());
+    }
+
+    while (listBlockHash.size() > MV_CONSENSUS_DISTRIBUTE_INTERVAL + 1)
+    {
+        const uint256& hash = listBlockHash.back();
+        mapChainData.erase(hash);
+        listBlockHash.pop_back();
+    }
+}
+
+uint64 CDelegatedChannelChain::GetDistributeBitmap(const uint256& hashAnchor)
+{
+    map<uint256,CDelegatedChannelChainData>::iterator it = mapChainData.find(hashAnchor);
+    if (it != mapChainData.end())
+    {
+        return ((*it).second.GetBitmap((*it).second.mapDistributeData));
+    }
+    return 0;
+}
+
+uint64 CDelegatedChannelChain::GetPublishBitmap(const uint256& hashAnchor)
+{
+    if (listBlockHash.size() == MV_CONSENSUS_DISTRIBUTE_INTERVAL + 1 && hashAnchor == listBlockHash.front())
+    {
+        return (mapChainData[listBlockHash.back()].GetBitmap(mapChainData[hashAnchor].mapPublishData));
+    }
+    return 0;
+}
+
+void CDelegatedChannelChain::GetDistribute(const uint256& hashAnchor, uint64 bmDistribute,set<CDestination>& setDestination)
+{
+    map<uint256,CDelegatedChannelChainData>::iterator it = mapChainData.find(hashAnchor);
+    if (it != mapChainData.end())
+    {
+        CDelegatedChannelChainData& chain = (*it).second;
+        chain.GetKnownData(bmDistribute,setDestination); 
+    }
+}
+
+void CDelegatedChannelChain::GetPublish(const uint256& hashAnchor, uint64 bmPublish,set<CDestination>& setDestination)
+{
+    if (listBlockHash.size() == MV_CONSENSUS_DISTRIBUTE_INTERVAL + 1 && hashAnchor == listBlockHash.front())
+    {
+        CDelegatedChannelChainData& chain = mapChainData[listBlockHash.back()];
+        chain.GetKnownData(bmPublish,setDestination); 
+    }
+}
+
+void CDelegatedChannelChain::AskForDistribute(const uint256& hashAnchor,uint64 bmDistribute,set<CDestination>& setDestination)
+{
+    map<uint256,CDelegatedChannelChainData>::iterator it = mapChainData.find(hashAnchor);
+    if (it != mapChainData.end())
+    {
+        CDelegatedChannelChainData& chain = (*it).second;
+        uint64 bitmap = chain.GetBitmap(chain.mapDistributeData);
+        bitmap = (bitmap & bmDistribute) ^ bmDistribute;
+        chain.GetKnownData(bitmap,setDestination); 
+    }
+}
+
+void CDelegatedChannelChain::AskForPublish(const uint256& hashAnchor,uint64 bmDistribute,set<CDestination>& setDestination)
+{
+    if (listBlockHash.size() == MV_CONSENSUS_DISTRIBUTE_INTERVAL + 1 && hashAnchor == listBlockHash.front())
+    {
+        CDelegatedChannelChainData& chain = mapChainData[listBlockHash.back()];
+        uint64 bitmap = chain.GetBitmap(mapChainData[hashAnchor].mapPublishData);
+        bitmap = (bitmap & bmDistribute) ^ bmDistribute;
+        chain.GetKnownData(bitmap,setDestination);
+    }
+}
+
+bool CDelegatedChannelChain::GetDistributeData(const uint256& hashAnchor, const CDestination& dest,
+                                               vector<unsigned char>& vchData)
+{
+    map<uint256,CDelegatedChannelChainData>::iterator it = mapChainData.find(hashAnchor);
+    if (it != mapChainData.end())
+    {
+        map<CDestination,vector<unsigned char> >::iterator mi = (*it).second.mapDistributeData.find(dest);
+        if (mi != (*it).second.mapDistributeData.end())
+        {
+            vchData = (*mi).second;
+            return true;
+        }
+    }
+    return false;
+}
+
+bool CDelegatedChannelChain::GetPublishData(const uint256& hashAnchor, const CDestination& dest,
+                                            vector<unsigned char>& vchData)
+{
+    map<uint256,CDelegatedChannelChainData>::iterator it = mapChainData.find(hashAnchor);
+    if (it != mapChainData.end())
+    {
+        map<CDestination,vector<unsigned char> >::iterator mi = (*it).second.mapPublishData.find(dest);
+        if (mi != (*it).second.mapPublishData.end())
+        {
+            vchData = (*mi).second;
+            return true;
+        }
+    }
+    return false;
+}
+
+bool CDelegatedChannelChain::IsOutOfDistributeRange(const uint256& hashAnchor) const
+{
+    return (!mapChainData.count(hashAnchor));
+}
+
+bool CDelegatedChannelChain::IsOutOfPublishRange(const uint256& hashAnchor) const
+{
+    return (listBlockHash.empty() || listBlockHash.front() != hashAnchor);
+}
+
+bool CDelegatedChannelChain::InsertDistributeData(const uint256& hashAnchor, const CDestination& dest,
+                                                  const vector<unsigned char>& vchData)
+{
+    map<uint256,CDelegatedChannelChainData>::iterator it = mapChainData.find(hashAnchor);
+    if (it != mapChainData.end())
+    {
+        return ((*it).second.mapDistributeData.insert(make_pair(dest,vchData))).second;
+    }
+    return false;
+}
+
+bool CDelegatedChannelChain::InsertPublishData(const uint256& hashAnchor, const CDestination& dest,
+                                               const vector<unsigned char>& vchData)
+{
+    if (listBlockHash.empty() || listBlockHash.front() != hashAnchor)
+    {
+        return false;
+    }
+    map<uint256,CDelegatedChannelChainData>::iterator it = mapChainData.find(hashAnchor);
+    if (it != mapChainData.end())
+    {
+        return ((*it).second.mapPublishData.insert(make_pair(dest,vchData))).second;
+    }
+    return false;
+}
+
+//////////////////////////////
+// CDelegatedChannel 
+
+CDelegatedChannel::CDelegatedChannel()
+{
+    pPeerNet = NULL;
+    pCoreProtocol = NULL;
+    pWorldLine = NULL;
+    pDispatcher = NULL;
+}
+
+CDelegatedChannel::~CDelegatedChannel()
+{
+}
+
+bool CDelegatedChannel::WalleveHandleInitialize()
+{
+    if (!WalleveGetObject("peernet",pPeerNet))
+    {
+        WalleveLog("Failed to request peer net\n");
+        return false;
+    }
+
+    if (!WalleveGetObject("coreprotocol",pCoreProtocol))
+    {
+        WalleveLog("Failed to request coreprotocol\n");
+        return false;
+    }
+
+    if (!WalleveGetObject("worldline",pWorldLine))
+    {
+        WalleveLog("Failed to request worldline\n");
+        return false;
+    }
+
+    if (!WalleveGetObject("dispatcher",pDispatcher))
+    {
+        WalleveLog("Failed to request dispatcher\n");
+        return false;
+    }
+    return true;
+}
+
+void CDelegatedChannel::WalleveHandleDeinitialize()
+{
+    pPeerNet = NULL;
+    pCoreProtocol = NULL;
+    pWorldLine = NULL;
+    pDispatcher = NULL;
+}
+
+bool CDelegatedChannel::WalleveHandleInvoke()
+{
+    return network::IMvDelegatedChannel::WalleveHandleInvoke(); 
+}
+
+void CDelegatedChannel::WalleveHandleHalt()
+{
+    network::IMvDelegatedChannel::WalleveHandleHalt();
+    schedPeer.Clear();
+    dataChain.Clear();
+}
+
+bool CDelegatedChannel::HandleEvent(network::CMvEventPeerActive& eventActive)
+{
+    uint64 nNonce = eventActive.nNonce;
+    if ((eventActive.data.nService & network::NODE_DELEGATED))
+    {
+        boost::unique_lock<boost::shared_mutex> wlock(rwPeer);
+        schedPeer.ActivatePeer(std::shared_ptr<CDataPeer<CDelegatedDataIdent> >(new CDelegatedChannelPeer(nNonce))); 
+    }
+    return true;
+}
+
+bool CDelegatedChannel::HandleEvent(network::CMvEventPeerDeactive& eventDeactive)
+{
+    uint64 nNonce = eventDeactive.nNonce;
+    {
+        boost::unique_lock<boost::shared_mutex> wlock(rwPeer);
+        schedPeer.DeactivatePeer(nNonce); 
+        DispatchGetDelegated();
+    }
+    return true;
+}
+
+bool CDelegatedChannel::HandleEvent(network::CMvEventPeerBulletin& eventBulletin)
+{
+    uint64 nNonce = eventBulletin.nNonce;
+    const uint256& hashAnchor = eventBulletin.hashAnchor;
+
+    {
+        boost::unique_lock<boost::shared_mutex> wlock(rwPeer);
+
+        AddPeerKnownDistrubute(nNonce, hashAnchor, eventBulletin.data.bmDistribute);
+        AddPeerKnownPublish(nNonce, hashAnchor, eventBulletin.data.bmPublish);
+            
+        for (size_t i = 0; i < eventBulletin.data.vBitmap.size(); ++i)
+        {
+            AddPeerKnownDistrubute(nNonce, eventBulletin.data.vBitmap[i].hashAnchor, 
+                                           eventBulletin.data.vBitmap[i].bitmap); 
+        }
+        DispatchGetDelegated();
+
+        std::shared_ptr<CDelegatedChannelPeer> spPeer = GetPeer(nNonce);
+        if (spPeer != NULL)
+        {
+            spPeer->Renew(hashAnchor,eventBulletin.data);
+        }
+    }
+
+    return true;
+}
+
+bool CDelegatedChannel::HandleEvent(network::CMvEventPeerGetDelegated& eventGetDelegated)
+{
+    uint64 nNonce = eventGetDelegated.nNonce;
+    const uint256& hashAnchor = eventGetDelegated.hashAnchor;
+    const CDestination& dest = eventGetDelegated.data.destDelegate;
+  
+    if (eventGetDelegated.data.nInvType == network::CInv::MSG_DISTRIBUTE)
+    {
+        boost::shared_lock<boost::shared_mutex> wlock(rwPeer);
+
+        network::CMvEventPeerDistribute eventDistribute(nNonce,hashAnchor);
+        eventDistribute.data.destDelegate = dest;
+        if (dataChain.GetDistributeData(hashAnchor,dest,eventDistribute.data.vchData))
+        {
+            pPeerNet->DispatchEvent(&eventDistribute);
+        } 
+    } 
+    else if (eventGetDelegated.data.nInvType == network::CInv::MSG_PUBLISH)
+    {
+        boost::shared_lock<boost::shared_mutex> wlock(rwPeer);
+
+        network::CMvEventPeerPublish eventPublish(nNonce,hashAnchor);
+        eventPublish.data.destDelegate = dest;
+        if (dataChain.GetPublishData(hashAnchor,dest,eventPublish.data.vchData))
+        {
+            pPeerNet->DispatchEvent(&eventPublish);
+        } 
+    }
+ 
+    return true;
+}
+
+bool CDelegatedChannel::HandleEvent(network::CMvEventPeerDistribute& eventDistribute)
+{
+    uint64 nNonce = eventDistribute.nNonce;
+    const uint256& hashAnchor = eventDistribute.hashAnchor;
+    const CDestination& dest = eventDistribute.data.destDelegate;
+    CDelegatedDataIdent ident(hashAnchor,network::CInv::MSG_DISTRIBUTE,dest);
+    {
+        boost::unique_lock<boost::shared_mutex> wlock(rwPeer);
+
+        if (nNonce == schedPeer.GetAssignedPeer(ident))
+        {
+            const vector<unsigned char>& vchData = eventDistribute.data.vchData;
+
+            schedPeer.RemoveKnownData(ident);
+            
+            if (dataChain.IsOutOfDistributeRange(hashAnchor))
+            {
+                DispatchGetDelegated();
+                return true;
+            }
+            if (pDispatcher->AddNewDistribute(hashAnchor,dest,vchData))
+            {
+                bool fAssigned = DispatchGetDelegated();
+                if (dataChain.InsertDistributeData(hashAnchor,dest,vchData) && !fAssigned)
+                {
+                    BroadcastBulletin();
+                }
+                return true;
+            }
+        }
+
+        DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
+    }
+    return true;
+}
+
+bool CDelegatedChannel::HandleEvent(network::CMvEventPeerPublish& eventPublish)
+{
+    uint64 nNonce = eventPublish.nNonce;
+    const uint256& hashAnchor = eventPublish.hashAnchor;
+    const CDestination& dest = eventPublish.data.destDelegate;
+    CDelegatedDataIdent ident(hashAnchor,network::CInv::MSG_PUBLISH,dest);
+    {
+        boost::unique_lock<boost::shared_mutex> wlock(rwPeer);
+
+        if (nNonce == schedPeer.GetAssignedPeer(ident))
+        {
+            const vector<unsigned char>& vchData = eventPublish.data.vchData;
+
+            schedPeer.RemoveKnownData(ident);
+      
+            if (dataChain.IsOutOfPublishRange(hashAnchor))
+            {
+                DispatchGetDelegated();
+                return true;
+            }
+            else if (pDispatcher->AddNewPublish(hashAnchor,dest,vchData))
+            {
+                bool fAssigned = DispatchGetDelegated();
+                if (dataChain.InsertPublishData(hashAnchor,dest,vchData) && !fAssigned)
+                {
+                    BroadcastBulletin();
+                }
+                return true;
+            }
+        }
+
+        DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
+    }
+    return true;
+}
+
+void CDelegatedChannel::PrimaryUpdate(int nStartHeight,
+                                      const vector<pair<uint256,map<CDestination,size_t> > >& vEnrolledWeight,
+                                      const map<CDestination,vector<unsigned char> >& mapDistributeData,
+                                      const map<CDestination,vector<unsigned char> >& mapPublishData)
+{
+    boost::unique_lock<boost::shared_mutex> wlock(rwPeer);
+
+    dataChain.Update(nStartHeight, vEnrolledWeight, mapDistributeData, mapPublishData);
+
+    if (!mapDistributeData.empty() || !mapPublishData.empty())
+    {
+        BroadcastBulletin();
+    }
+}
+
+void CDelegatedChannel::BroadcastBulletin()
+{
+    vector<uint64> vPeer;
+    schedPeer.GetPeerNonce(vPeer);
+
+    list<uint256>& listHash = dataChain.GetHashList();
+
+    if (!listHash.empty() && !vPeer.empty())
+    {
+        const uint256& hashAnchor = listHash.front();
+
+        network::CMvEventPeerBulletin eventBulletin(0ULL,hashAnchor);
+        eventBulletin.data.bmDistribute = dataChain.GetDistributeBitmap(hashAnchor);
+        eventBulletin.data.bmPublish = dataChain.GetPublishBitmap(hashAnchor);
+        for (list<uint256>::iterator it = ++listHash.begin(); it != listHash.end(); ++it)
+        {
+            const uint256& hash = (*it);
+            uint64 bitmap = dataChain.GetDistributeBitmap(hash);
+            if (bitmap != 0)
+            {
+                eventBulletin.data.AddBitmap(hash,bitmap);
+            }
+        }
+
+        BOOST_FOREACH(const uint64& nNonce, vPeer)
+        {
+            std::shared_ptr<CDelegatedChannelPeer> spPeer = GetPeer(nNonce);
+            if (spPeer != NULL && spPeer->HaveUnknown(hashAnchor,eventBulletin.data))
+            {
+                spPeer->Update(hashAnchor,eventBulletin.data);
+                eventBulletin.nNonce = nNonce;
+                pPeerNet->DispatchEvent(&eventBulletin);
+            }
+        }
+    }
+}
+
+bool CDelegatedChannel::DispatchGetDelegated()
+{
+    vector<pair<uint64,CDelegatedDataIdent> > vAssigned;
+    schedPeer.Schedule(vAssigned);
+
+    for (size_t i = 0;i < vAssigned.size();i++)
+    {
+        uint64 nNonce = vAssigned[i].first;
+        const CDelegatedDataIdent& ident = vAssigned[i].second;
+        network::CMvEventPeerGetDelegated eventGetDelegated(nNonce, ident.hashAnchor);
+        eventGetDelegated.data.nInvType = ident.nInvType;
+        eventGetDelegated.data.destDelegate = ident.destDelegated;
+        pPeerNet->DispatchEvent(&eventGetDelegated);
+    }
+
+    return (!vAssigned.empty());
+}
+
+void CDelegatedChannel::AddPeerKnownDistrubute(uint64 nNonce, const uint256& hashAnchor, uint64 bmDistrubute)
+{
+    set<CDestination> setDestination;
+    dataChain.GetDistribute(hashAnchor, bmDistrubute, setDestination);
+    BOOST_FOREACH(const CDestination& dest,setDestination)
+    {
+        schedPeer.AddKnownData(nNonce, CDelegatedDataIdent(hashAnchor, network::CInv::MSG_DISTRIBUTE, dest));
+    }
+}
+
+void CDelegatedChannel::AddPeerKnownPublish(uint64 nNonce, const uint256& hashAnchor, uint64 bmPublish)
+{
+    set<CDestination> setDestination;
+    dataChain.GetPublish(hashAnchor, bmPublish, setDestination);
+    BOOST_FOREACH(const CDestination& dest, setDestination)
+    {
+        schedPeer.AddKnownData(nNonce, CDelegatedDataIdent(hashAnchor, network::CInv::MSG_PUBLISH, dest));
+    }
+}
+
+void CDelegatedChannel::DispatchMisbehaveEvent(uint64 nNonce, CEndpointManager::CloseReason reason)
+{
+    CWalleveEventPeerNetClose eventClose(nNonce);
+    eventClose.data = reason;
+    pPeerNet->DispatchEvent(&eventClose);
+}
+

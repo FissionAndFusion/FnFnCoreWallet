@@ -1,9 +1,9 @@
 ### 编译/运行单元测试
 
-单元测试已经通过`./CMakeLists.txt`和`./src/test/CMakeLists.txt`集成在FnFnCoreWallet
+单元测试已经通过`./CMakeLists.txt`和`./test/CMakeLists.txt`集成在FnFnCoreWallet
 项目中，target设置为构建所有或者仅仅构建指定的test_fnfn即可构建该单元测试。
 
-通过加载`src/test/test_fnfn`来手工运行multiverse测试。如果单元测试文件或被测试的代
+通过加载`./test/test_fnfn`来手工运行multiverse测试。如果单元测试文件或被测试的代
 码文件发生变化，重新构建单元测试即可。
 
 有2种方式来添加更多的multiverse单元测试，第一种是向位于`test/`目录下存在的.cpp文件
@@ -30,7 +30,7 @@ test_fnfn有一些内建的命令行参数，例如，仅仅运行uint256_tests�
 
 构建系统被设置成编译一个可执行程序名字为`test_fnfn`，它运行所有的单元
 测试。主要的源文件名字为`test_fnfn.cpp`。欲添加一个新的单元测试文件到
-我们的测试套件中，你需要要将这些文件名列表加入到`./src/test/CMakeLists.txt`
+我们的测试套件中，你需要要将这些文件名列表加入到`./test/CMakeLists.txt`
 中。我们以一个单元测试文件来囊括一个类或一个源代码文件的测试为一般性的原则。
 文件的命名规则为：`<source_filename>_tests.cpp`，这些文件封装它们的测试在
 一个名为：`<source_filename>_tests`的测试套件中。`uint256_tests.cpp`可以

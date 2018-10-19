@@ -106,6 +106,26 @@ void CWorldLine::GetForkStatus(map<uint256,CForkStatus>& mapForkStatus)
     }
 }
 
+bool CWorldLine::GetForkProfile(const uint256& hashFork,CProfile& profile)
+{
+    return cntrBlock.RetrieveProfile(hashFork,profile);
+}
+
+int  CWorldLine::GetBlockCount(const uint256& hashFork)
+{   
+    int nCount = 0;
+    CBlockIndex* pIndex = NULL;
+    if (cntrBlock.RetrieveFork(hashFork,&pIndex))
+    {
+        while (pIndex != NULL)
+        {
+            pIndex = pIndex->pPrev;
+            ++nCount;                               
+        }
+    }
+    return nCount;
+}   
+
 bool CWorldLine::GetBlockLocation(const uint256& hashBlock,uint256& hashFork,int& nHeight)
 {
     CBlockIndex* pIndex = NULL;
@@ -129,8 +149,32 @@ bool CWorldLine::GetBlockHash(const uint256& hashFork,int nHeight,uint256& hashB
     {
         pIndex = pIndex->pPrev;
     }
+    while (pIndex != NULL && pIndex->GetBlockHeight() == nHeight && pIndex->IsExtended())
+    {
+        pIndex = pIndex->pPrev;
+    }
     hashBlock = !pIndex ? 0 : pIndex->GetBlockHash();
     return (pIndex != NULL);
+}
+
+bool CWorldLine::GetBlockHash(const uint256& hashFork,int nHeight,vector<uint256>& vBlockHash)
+{   
+    CBlockIndex* pIndex = NULL;
+    if (!cntrBlock.RetrieveFork(hashFork,&pIndex) || pIndex->GetBlockHeight() < nHeight)
+    {       
+        return false;                               
+    }   
+    while (pIndex != NULL && pIndex->GetBlockHeight() > nHeight)
+    {
+        pIndex = pIndex->pPrev;
+    }
+    while (pIndex != NULL && pIndex->GetBlockHeight() == nHeight)
+    {
+        vBlockHash.push_back(pIndex->GetBlockHash());
+        pIndex = pIndex->pPrev;
+    }
+    std::reverse(vBlockHash.begin(),vBlockHash.end());
+    return (!vBlockHash.empty());
 }
 
 bool CWorldLine::GetLastBlock(const uint256& hashFork,uint256& hashBlock,int& nHeight,int64& nTime)
@@ -143,6 +187,23 @@ bool CWorldLine::GetLastBlock(const uint256& hashFork,uint256& hashBlock,int& nH
     hashBlock = pIndex->GetBlockHash();
     nHeight = pIndex->GetBlockHeight();
     nTime = pIndex->GetBlockTime();
+    return true;
+}
+
+bool CWorldLine::GetLastBlockTime(const uint256& hashFork,int nDepth,vector<int64>& vTime)
+{
+    CBlockIndex* pIndex = NULL;
+    if (!cntrBlock.RetrieveFork(hashFork,&pIndex))
+    {
+        return false;
+    }
+
+    vTime.clear();
+    while ((nDepth--) > 0 && pIndex != NULL)
+    {
+        vTime.push_back(pIndex->GetBlockTime());
+        pIndex = pIndex->pPrev;
+    }
     return true;
 }
 
@@ -230,8 +291,11 @@ MvErr CWorldLine::AddNewBlock(const CBlock& block,CWorldLineUpdate& update)
         WalleveLog("AddNewBlock Verify Block Error(%s) : %s \n",MvErrString(err),hash.ToString().c_str());
         return err;
     } 
-    
-    view.AddTx(block.txMint.GetHash(),block.txMint);
+
+    if (!block.IsVacant())
+    {
+        view.AddTx(block.txMint.GetHash(),block.txMint);
+    }
 
     CBlockEx blockex(block);
     vector<CTxContxt>& vTxContxt = blockex.vTxContxt;
@@ -270,7 +334,8 @@ MvErr CWorldLine::AddNewBlock(const CBlock& block,CWorldLineUpdate& update)
 
     CBlockIndex* pIndexFork = NULL;
     if (cntrBlock.RetrieveFork(pIndexNew->GetOriginHash(),&pIndexFork)
-        && pIndexFork->nChainTrust >= pIndexNew->nChainTrust )
+        && (pIndexFork->nChainTrust > pIndexNew->nChainTrust
+            || (pIndexFork->nChainTrust == pIndexNew->nChainTrust && !pIndexNew->IsEquivalent(pIndexFork))))
     {
         return MV_OK;
     }
@@ -288,6 +353,102 @@ MvErr CWorldLine::AddNewBlock(const CBlock& block,CWorldLineUpdate& update)
         WalleveLog("AddNewBlock Storage GetBlockChanges Error : %s \n",hash.ToString().c_str());
         return MV_ERR_SYS_STORAGE_ERROR;
     } 
+    return MV_OK;
+}
+
+MvErr CWorldLine::AddNewOrigin(const CBlock& block,CWorldLineUpdate& update)
+{
+    uint256 hash = block.GetHash();
+    MvErr err = MV_OK;
+
+    if (cntrBlock.Exists(hash))
+    {
+        WalleveLog("AddNewOrigin Already Exists : %s \n",hash.ToString().c_str());
+        return MV_ERR_ALREADY_HAVE;
+    }
+    
+    err = pCoreProtocol->ValidateBlock(block);
+    if (err != MV_OK)
+    {
+        WalleveLog("AddNewOrigin Validate Block Error(%s) : %s \n",MvErrString(err),hash.ToString().c_str());
+        return err;
+    }
+   
+    CBlockIndex* pIndexPrev;
+    if (!cntrBlock.RetrieveIndex(block.hashPrev,&pIndexPrev))
+    {
+        WalleveLog("AddNewOrigin Retrieve Prev Index Error: %s \n",block.hashPrev.ToString().c_str());
+        return MV_ERR_SYS_STORAGE_ERROR;
+    }
+
+    CProfile parent;
+    if (!cntrBlock.RetrieveProfile(pIndexPrev->GetOriginHash(),parent))
+    {
+        WalleveLog("AddNewOrigin Retrieve parent profile Error: %s \n",block.hashPrev.ToString().c_str());
+        return MV_ERR_SYS_STORAGE_ERROR;
+    }
+    CProfile profile;
+    err = pCoreProtocol->ValidateOrigin(block,parent,profile);
+    if (err != MV_OK)
+    {
+        WalleveLog("AddNewOrigin Validate Origin Error(%s): %s \n",MvErrString(err),hash.ToString().c_str());
+        return err;
+    }
+   
+    CBlockIndex* pIndexDuplicated;
+    if (cntrBlock.RetrieveFork(profile.strName,&pIndexDuplicated))
+    {
+        WalleveLog("AddNewOrigin Validate Origin Error(duplated fork name): %s, \nexisted: %s\n",
+                   hash.ToString().c_str(),pIndexDuplicated->GetOriginHash().GetHex().c_str());
+        return MV_ERR_ALREADY_HAVE;
+    }
+
+    storage::CBlockView view;
+
+    if (profile.IsIsolated())
+    {
+        if (!cntrBlock.GetBlockView(view))
+        {
+            WalleveLog("AddNewOrigin Get Block View Error: %s \n",block.hashPrev.ToString().c_str());
+            return MV_ERR_SYS_STORAGE_ERROR;
+        }
+    }
+    else
+    {
+        if (!cntrBlock.GetBlockView(block.hashPrev,view,false))
+        {
+            WalleveLog("AddNewOrigin Get Block View Error: %s \n",block.hashPrev.ToString().c_str());
+            return MV_ERR_SYS_STORAGE_ERROR;
+        }
+    }
+    
+    if (block.txMint.nAmount != 0)
+    {
+        view.AddTx(block.txMint.GetHash(),block.txMint);
+    }
+
+    CBlockIndex* pIndexNew;
+    CBlockEx blockex(block);
+
+    if (!cntrBlock.AddNew(hash,blockex,&pIndexNew))
+    {
+        WalleveLog("AddNewOrigin Storage AddNew Error : %s \n",hash.ToString().c_str());
+        return MV_ERR_SYS_STORAGE_ERROR;
+    }
+
+    WalleveLog("AddNew Origin Block : %s \n",hash.ToString().c_str());
+    WalleveLog("    %s\n",pIndexNew->ToString().c_str());
+
+    if (!cntrBlock.CommitBlockView(view,pIndexNew))
+    {
+        WalleveLog("AddNewOrigin Storage Commit BlockView Error : %s \n",hash.ToString().c_str());
+        return MV_ERR_SYS_STORAGE_ERROR;
+    }
+   
+    update = CWorldLineUpdate(pIndexNew);
+    view.GetTxUpdated(update.setTxUpdate);
+    update.vBlockAddNew.push_back(blockex);
+
     return MV_OK;
 }
 
@@ -320,12 +481,13 @@ bool CWorldLine::GetDelegatedProofOfStakeReward(const uint256& hashPrev,size_t n
         WalleveLog("GetDelegatedProofOfStakeReward : Retrieve Prev Index Error: %s \n",hashPrev.ToString().c_str());
         return false;
     }
+/*
     if (!pIndexPrev->IsPrimary())
     {
         WalleveLog("GetDelegatedProofOfStakeReward : Previous is not primary: %s \n",hashPrev.ToString().c_str());
         return false;
     }
-    
+*/    
     nReward = pCoreProtocol->GetDelegatedProofOfStakeReward(pIndexPrev,nWeight);
     return true;
 }
@@ -456,8 +618,8 @@ bool CWorldLine::GetBlockChanges(const CBlockIndex* pIndexNew,const CBlockIndex*
 {
     while (pIndexNew != pIndexFork)
     {
-        int nForkHeight = pIndexFork ? pIndexFork->GetBlockHeight() : -1;
-        if (pIndexNew->GetBlockHeight() >= nForkHeight)
+        int64 nLastBlockTime = pIndexFork ? pIndexFork->GetBlockTime() : -1;
+        if (pIndexNew->GetBlockTime() >= nLastBlockTime)
         {
             CBlockEx block;
             if (!cntrBlock.Retrieve(pIndexNew,block))

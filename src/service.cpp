@@ -32,14 +32,14 @@ public:
 // CService 
 
 CService::CService()
+: pCoreProtocol(NULL)
+, pWorldLine(NULL)
+, pTxPool(NULL)
+, pDispatcher(NULL)
+, pWallet(NULL)
+, pNetwork(NULL)
+, pDbpSocket(NULL)
 {
-    pCoreProtocol = NULL;
-    pWorldLine = NULL;
-    pTxPool = NULL;
-    pDispatcher = NULL;
-    pWallet = NULL;
-    pNetwork = NULL;
-    pDbpSocket = NULL;
 }
 
 CService::~CService()
@@ -209,6 +209,34 @@ int  CService::GetForkCount()
     return mapForkStatus.size();
 }
 
+int  CService::GetForkHeight(const uint256& hashFork)
+{
+    boost::shared_lock<boost::shared_mutex> rlock(rwForkStatus);
+
+    map<uint256,CForkStatus>::iterator it = mapForkStatus.find(hashFork);
+    if (it != mapForkStatus.end())
+    {
+        return ((*it).second.nLastBlockHeight);
+    }
+    return 0;
+}
+
+void CService::ListFork(std::vector<std::pair<uint256,CProfile> >& vFork)
+{
+    vFork.reserve(mapForkStatus.size());
+
+    boost::shared_lock<boost::shared_mutex> rlock(rwForkStatus);
+    
+    for (map<uint256,CForkStatus>::iterator it = mapForkStatus.begin();it != mapForkStatus.end();++it)
+    {
+        CProfile profile;
+        if (pWorldLine->GetForkProfile((*it).first,profile))
+        {
+            vFork.push_back(make_pair((*it).first,profile));
+        }
+    }
+}
+
 bool CService::GetForkGenealogy(const uint256& hashFork,vector<pair<uint256,int> >& vAncestry,vector<pair<int,uint256> >& vSubline)
 {
     boost::shared_lock<boost::shared_mutex> rlock(rwForkStatus);
@@ -237,14 +265,11 @@ bool CService::GetBlockLocation(const uint256& hashBlock,uint256& hashFork,int& 
 
 int CService::GetBlockCount(const uint256& hashFork)
 {
-    boost::shared_lock<boost::shared_mutex> rlock(rwForkStatus);
-
-    map<uint256,CForkStatus>::iterator it = mapForkStatus.find(hashFork);
-    if (it != mapForkStatus.end())
+    if (hashFork == pCoreProtocol->GetGenesisBlockHash())
     {
-        return ((*it).second.nLastBlockHeight + 1);
+        return (GetForkHeight(hashFork) + 1);
     }
-    return 0;
+    return pWorldLine->GetBlockCount(hashFork);
 }
 
 bool CService::GetBlockHash(const uint256& hashFork,int nHeight,uint256& hashBlock)
@@ -261,6 +286,11 @@ bool CService::GetBlockHash(const uint256& hashFork,int nHeight,uint256& hashBlo
         return true;
     }
     return pWorldLine->GetBlockHash(hashFork,nHeight,hashBlock);
+}
+
+bool CService::GetBlockHash(const uint256& hashFork,int nHeight,vector<uint256>& vBlockHash)
+{
+    return pWorldLine->GetBlockHash(hashFork,nHeight,vBlockHash);
 }
 
 bool CService::GetBlock(const uint256& hashBlock,CBlock& block,uint256& hashFork,int& nHeight)
@@ -425,12 +455,12 @@ bool CService::GetTemplate(const CTemplateId& tid,CTemplatePtr& ptr)
 
 bool CService::GetBalance(const CDestination& dest,const uint256& hashFork,CWalletBalance& balance)
 {
-    int nBlockCount = GetBlockCount(hashFork);
-    if (nBlockCount <= 0)
+    int nForkHeight = GetForkHeight(hashFork);
+    if (nForkHeight <= 0)
     {
         return false;
     }
-    return pWallet->GetBalance(dest,hashFork,nBlockCount - 1,balance);
+    return pWallet->GetBalance(dest,hashFork,nForkHeight,balance);
 }
 
 bool CService::ListWalletTx(int nOffset,int nCount,vector<CWalletTx>& vWalletTx)
@@ -524,7 +554,7 @@ bool CService::GetWork(vector<unsigned char>& vchWorkData,uint256& hashPrev,uint
         block.nTimeStamp = nPrevTime + BLOCK_TARGET_SPACING - 10;
     }
  
-    nAlgo = POWA_BLAKE512;
+    nAlgo = CM_BLAKE512;
     int64 nReward;
     if (!pWorldLine->GetProofOfWorkTarget(block.hashPrev,nAlgo,nBits,nReward))
     {
@@ -557,7 +587,7 @@ MvErr CService::SubmitWork(const vector<unsigned char>& vchWorkData,CTemplatePtr
     {
         ss >> block.nVersion >> block.nType >> block.nTimeStamp >> block.hashPrev >> block.vchProof;
         proof.Load(block.vchProof);
-        if (proof.nAlgo != POWA_BLAKE512)
+        if (proof.nAlgo != CM_BLAKE512)
         {
             return MV_ERR_BLOCK_PROOF_OF_WORK_INVALID;
         }

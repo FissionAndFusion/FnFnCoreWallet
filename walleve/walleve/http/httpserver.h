@@ -20,7 +20,7 @@ public:
     CHttpHostConfig() {}
     CHttpHostConfig(const boost::asio::ip::tcp::endpoint& epHostIn,unsigned int nMaxConnectionsIn,
                     const CIOSSLOption& optSSLIn,const std::map<std::string,std::string>& mapUserPassIn,
-                    const std::vector<std::string> vAllowMaskIn,const std::string& strIOModuleIn)
+                    const std::vector<std::string>& vAllowMaskIn,const std::string& strIOModuleIn)
     : epHost(epHostIn),nMaxConnections(nMaxConnectionsIn),optSSL(optSSLIn),
       mapUserPass(mapUserPassIn),vAllowMask(vAllowMaskIn),strIOModule(strIOModuleIn)
     {
@@ -87,7 +87,7 @@ class CHttpServer : public CIOProc, virtual public CWalleveHttpEventListener
 public:
     CHttpServer();
     virtual ~CHttpServer();
-    CIOClient* CreateIOClient(CIOContainer *pContainer);
+    CIOClient* CreateIOClient(CIOContainer *pContainer) override;
     void HandleClientRecv(CHttpClient *pHttpClient,MAPIKeyValue& mapHeader,
                           MAPKeyValue& mapQuery,MAPIKeyValue& mapCookie,
                           CWalleveBufStream& ssPayload);
@@ -95,18 +95,18 @@ public:
     void HandleClientError(CHttpClient *pHttpClient);
     void AddNewHost(const CHttpHostConfig& confHost);
 protected:
-    bool WalleveHandleInitialize();
-    void WalleveHandleDeinitialize();
-    void EnterLoop();
-    void LeaveLoop();
+    bool WalleveHandleInitialize() override;
+    void WalleveHandleDeinitialize() override;
+    void EnterLoop() override;
+    void LeaveLoop() override;
 
-    bool ClientAccepted(const boost::asio::ip::tcp::endpoint& epService,CIOClient *pClient);
+    bool ClientAccepted(const boost::asio::ip::tcp::endpoint& epService,CIOClient *pClient) override;
 
     bool CreateProfile(const CHttpHostConfig& confHost);
     CHttpClient* AddNewClient(CIOClient *pClient,CHttpProfile *pHttpProfile);
     void RemoveClient(CHttpClient *pHttpClient);
     void RespondError(CHttpClient *pHttpClient,int nStatusCode,const std::string& strError = "");
-    bool HandleEvent(CWalleveEventHttpRsp& eventRsp);
+    bool HandleEvent(CWalleveEventHttpRsp& eventRsp) override;
 protected:
     std::vector<CHttpHostConfig> vecHostConfig;
     std::map<boost::asio::ip::tcp::endpoint,CHttpProfile> mapProfile;

@@ -25,7 +25,7 @@ public:
   bool fIsTestPeer;
 
 protected:
-  virtual bool HandshakeCompletd() override;
+  virtual bool HandshakeCompleted() override;
 };
 } // namespace network
 
@@ -43,8 +43,8 @@ public:
   void DnseedTestConnSuccess(walleve::CPeer *pPeer);
 
 protected:
-  bool WalleveHandleInitialize();
-  void WalleveHandleDeinitialize();
+  bool WalleveHandleInitialize() override;
+  void WalleveHandleDeinitialize() override;
   void ClientFailToConnect(const boost::asio::ip::tcp::endpoint &epRemote) override;
   virtual void DestroyPeer(walleve::CPeer *pPeer) override;
   virtual void ProcessAskFor(walleve::CPeer *pPeer) override;

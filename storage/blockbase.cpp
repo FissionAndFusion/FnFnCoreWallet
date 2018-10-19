@@ -449,6 +449,30 @@ bool CBlockBase::RetrieveFork(const uint256& hash,CBlockIndex** ppIndex)
     return true;
 }
 
+bool CBlockBase::RetrieveFork(const string& strName,CBlockIndex** ppIndex)
+{
+    CWalleveReadLock rlock(rwAccess);
+    CBlockFork* pFork = GetFork(strName);
+    if (pFork == NULL)
+    {
+        return false;
+    }
+    *ppIndex = pFork->GetLast();
+    return true;
+}
+
+bool CBlockBase::RetrieveProfile(const uint256& hash,CProfile& profile)
+{
+    CWalleveReadLock rlock(rwAccess);
+    CBlockFork* pFork = GetFork(hash);
+    if (pFork == NULL)
+    {
+        return false;
+    }
+    profile = pFork->GetProfile();
+    return true;
+}
+
 bool CBlockBase::RetrieveTx(const uint256& txid,CTransaction& tx)
 {
     tx.SetNull();
@@ -617,6 +641,7 @@ bool CBlockBase::CommitBlockView(CBlockView& view,CBlockIndex* pIndexNew)
 {
     const uint256 hashFork = pIndexNew->GetOriginHash();
     CBlockFork* pFork = NULL;
+
     if (hashFork == view.GetForkHash())
     {
         if (!view.IsCommittable())
@@ -627,11 +652,16 @@ bool CBlockBase::CommitBlockView(CBlockView& view,CBlockIndex* pIndexNew)
     } 
     else
     {
+        CProfile profile;
+        if (!LoadForkProfile(pIndexNew->pOrigin,profile))
+        {
+            return false;
+        }
         if (!dbBlock.AddNewFork(hashFork))
         {
             return false;
         }
-        pFork = AddNewFork(pIndexNew);
+        pFork = AddNewFork(profile,pIndexNew);
     }
 
     vector<pair<uint256,CTxIndex> > vTxNew;
@@ -801,23 +831,39 @@ CBlockFork* CBlockBase::GetFork(const uint256& hash)
     return (mi != mapFork.end() ? &(*mi).second : NULL);
 }
 
+CBlockFork* CBlockBase::GetFork(const std::string& strName) 
+{
+    for (map<uint256,CBlockFork>::iterator mi = mapFork.begin(); mi != mapFork.end(); ++mi)
+    {
+        const CProfile& profile = (*mi).second.GetProfile();
+        if (profile.strName == strName)
+        {
+            return (&(*mi).second);
+        }
+    }
+    return NULL;
+}
+
 CBlockIndex* CBlockBase::GetBranch(CBlockIndex* pIndexRef,CBlockIndex* pIndex,vector<CBlockIndex*>& vPath)
 {
     vPath.clear();
-    while (pIndexRef->nHeight > pIndex->nHeight)
-    {
-        pIndexRef = pIndexRef->pPrev;
-    }
-    while (pIndex->nHeight > pIndexRef->nHeight)
-    {
-        vPath.push_back(pIndex);
-        pIndex = pIndex->pPrev;
-    }
     while (pIndex != pIndexRef)
     {
-        vPath.push_back(pIndex);
-        pIndex = pIndex->pPrev;
-        pIndexRef = pIndexRef->pPrev;
+        if (pIndexRef->GetBlockTime() > pIndex->GetBlockTime())
+        {
+            pIndexRef = pIndexRef->pPrev;
+        }
+        else if (pIndex->GetBlockTime() > pIndexRef->GetBlockTime())
+        {
+            vPath.push_back(pIndex);
+            pIndex = pIndex->pPrev;
+        }
+        else
+        {
+            vPath.push_back(pIndex);
+            pIndex = pIndex->pPrev;
+            pIndexRef = pIndexRef->pPrev;
+        }
     }
     return pIndex;
 }
@@ -853,7 +899,7 @@ CBlockIndex* CBlockBase::AddNewIndex(const uint256& hash,CBlock& block,uint32 nF
         {
             pIndexPrev = (*miPrev).second;
             pIndexNew->pPrev = pIndexPrev;
-            pIndexNew->nHeight = pIndexPrev->nHeight + 1;
+            pIndexNew->nHeight = pIndexPrev->nHeight + (pIndexNew->IsExtended() ? 0 : 1);
             if (!pIndexNew->IsOrigin())
             {
                 pIndexNew->pOrigin = pIndexPrev->pOrigin;
@@ -869,11 +915,11 @@ CBlockIndex* CBlockBase::AddNewIndex(const uint256& hash,CBlock& block,uint32 nF
     return pIndexNew;
 }
 
-CBlockFork* CBlockBase::AddNewFork(CBlockIndex* pIndexLast)
+CBlockFork* CBlockBase::AddNewFork(const CProfile& profileIn,CBlockIndex* pIndexLast)
 {
     uint256 hash = pIndexLast->GetOriginHash();
     CBlockFork* pFork = &mapFork[hash];
-    *pFork = CBlockFork(pIndexLast);
+    *pFork = CBlockFork(profileIn,pIndexLast);
     CBlockIndex* pIndexPrev = pIndexLast->pOrigin->pPrev;
     if (pIndexPrev)
     {
@@ -885,6 +931,24 @@ CBlockFork* CBlockBase::AddNewFork(CBlockIndex* pIndexLast)
         } while(pIndexPrev);
     }
     return pFork;
+}
+
+bool CBlockBase::LoadForkProfile(const CBlockIndex* pIndexOrigin,CProfile& profile)
+{
+    profile.SetNull();
+
+    CBlock block;
+    if (!Retrieve(pIndexOrigin,block))
+    {
+        return false;
+    }
+
+    if (!profile.Load(block.vchProof))
+    {
+        return false;
+    }
+
+    return true;
 }
 
 bool CBlockBase::UpdateDelegate(const uint256& hash,CBlockEx& block)
@@ -1028,7 +1092,12 @@ bool CBlockBase::LoadDB()
             ClearCache();
             return false;
         }
-        CBlockFork* pFork = AddNewFork(pIndex);
+        CProfile profile;
+        if (!LoadForkProfile(pIndex->pOrigin,profile))
+        {
+            return false;
+        }
+        CBlockFork* pFork = AddNewFork(profile,pIndex);
         pFork->UpdateNext();
     }
 

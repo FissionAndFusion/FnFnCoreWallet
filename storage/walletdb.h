@@ -47,14 +47,16 @@ public:
     bool WalkThroughTemplate(CWalletDBTemplateWalker& walker);
 
     bool AddNewTx(const CWalletTx& wtx);
-    bool UpdateTx(const std::vector<CWalletTx>& vWalletTx,const std::vector<uint256>& vRemove);
+    bool UpdateTx(const std::vector<CWalletTx>& vWalletTx,const std::vector<uint256>& vRemove=std::vector<uint256>());
     bool RetrieveTx(const uint256& txid,CWalletTx& wtx);
     bool ExistsTx(const uint256& txid);
     std::size_t GetTxCount();
     bool ListTx(int nOffset,int nCount,std::vector<CWalletTx>& vWalletTx);
-    bool WalkThroughUnspent(CWalletDBTxWalker& walker);
+    bool ListForkTx(const uint256& hashFork,int nMinHeight,std::vector<uint256>& vForkTx);
+    bool WalkThroughTx(CWalletDBTxWalker& walker);
     bool ClearTx();
 protected:
+    bool ParseTxIn(const std::vector<unsigned char>& vchTxIn,CWalletTx& wtx);
     bool CreateTable();
 protected:
     CMvDBConn dbConn;

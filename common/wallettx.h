@@ -13,6 +13,7 @@ public:
     uint16 nVersion;
     uint16 nType;
     uint32 nLockUntil;
+    std::vector<CTxIn> vInput;
     CDestination sendTo;
     int64 nAmount;
     int64 nTxFee;
@@ -22,8 +23,8 @@ public:
     int nFlags;
     uint256 txid;
     uint256 hashFork;
-    uint256 txidSpent;
-    uint256 txidChange;
+    // memory only
+    mutable int nRefCount;
 public:
     enum { WTX_ISMINE  = (1 << 0), WTX_FROMME = (1 << 1)};
     CWalletTx() { SetNull(); }
@@ -32,6 +33,7 @@ public:
         nVersion     = tx.nVersion;
         nType        = tx.nType;
         nLockUntil   = tx.nLockUntil;
+        vInput       = tx.vInput;
         sendTo       = tx.sendTo;
         nAmount      = tx.nAmount;
         nTxFee       = tx.nTxFee;
@@ -41,12 +43,7 @@ public:
         nFlags       = (fIsMine ? WTX_ISMINE : 0) | (fFromMe ? WTX_FROMME : 0);
         txid         = txidIn;
         hashFork     = hashForkIn;
-        txidSpent  = 0;
-        txidChange = 0;
-        if (destIn.IsNull() || GetChange() <= 0)
-        {
-            txidChange = txid;
-        }
+        nRefCount = 0;
     }
     void SetNull()
     {
@@ -62,8 +59,6 @@ public:
         nFlags       = 0;
         txid         = 0;
         hashFork     = 0;
-        txidSpent    = 0;
-        txidChange   = 0;
     }
     bool IsNull() const { return (txid == 0); }
     bool IsMintTx() const 
@@ -73,7 +68,6 @@ public:
     }
     bool IsMine() const { return (nFlags & WTX_ISMINE); }
     bool IsFromMe() const { return (nFlags & WTX_FROMME); }
-    bool IsRunOut() const { return ((!IsMine() || txidSpent != 0) && (!IsFromMe() || txidChange != 0)); }
     std::string GetTypeString() const
     {
         if (nType == CTransaction::TX_TOKEN) return std::string("token");
@@ -87,21 +81,6 @@ public:
     {
         return (nValueIn - nAmount - nTxFee);
     }
-    void SetSpent(int n,const uint256& txidNextTx)
-    {
-        if (n == 0)
-        {
-            txidSpent = txidNextTx;
-        }
-        else if (n == 1 && txidChange != txid)
-        {
-            txidChange = txidNextTx;
-        }
-    }
-    void SetUnspent(int n)
-    {
-        SetSpent(n,0);
-    }
     const CTxOutput GetOutput(int n=0) const
     {
         if (n == 0)
@@ -114,6 +93,10 @@ public:
         }
         return CTxOutput();
     }
+    int GetRefCount() const
+    {
+        return nRefCount;
+    }
 };
 
 class CWalletTxOut
@@ -125,6 +108,8 @@ public:
     int GetDepth(int nHeight) const { return (pWalletTx->nBlockHeight >= 0 ? nHeight - pWalletTx->nBlockHeight + 1 : 0); }
     int64 GetAmount() const { return (n == 0 ? pWalletTx->nAmount : pWalletTx->GetChange()); }
     CTxOutPoint GetTxOutPoint() const { return CTxOutPoint(pWalletTx->txid,n); }
+    void AddRef() const { ++pWalletTx->nRefCount; }
+    void Release() const { --pWalletTx->nRefCount; }
     friend inline bool operator==(const CWalletTxOut& a,const CWalletTxOut& b)
     {
         return (a.pWalletTx == b.pWalletTx && a.n == b.n);

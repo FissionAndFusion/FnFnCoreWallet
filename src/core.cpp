@@ -69,6 +69,8 @@ Secret : 7c6a6aba05cec77a998c19649ee1fa0e29c7b5246d0e3a6501ee1d4d81dd73ea
 
 void CMvCoreProtocol::GetGenesisBlock(CBlock& block)
 {
+    const CDestination destOwner = CDestination(multiverse::crypto::CPubKey(uint256("575f2041770496489120bb102d9dd55f5e75b0c4aa528d5762b92b59acd6d939")));
+
     block.SetNull();
 
     block.nVersion   = 1;
@@ -78,12 +80,19 @@ void CMvCoreProtocol::GetGenesisBlock(CBlock& block)
     
     CTransaction& tx = block.txMint;
     tx.nType   = CTransaction::TX_GENESIS;
-    tx.sendTo  = CDestination(multiverse::crypto::CPubKey(uint256("575f2041770496489120bb102d9dd55f5e75b0c4aa528d5762b92b59acd6d939")));
+    tx.sendTo  = destOwner;
     tx.nAmount = 745000000 * COIN; // 745000000 is initial number of token
 
-    const char* pszGenesis = "The third machine age : Revolution";
-    block.vchProof = vector<uint8>((const uint8*)pszGenesis, (const uint8*)pszGenesis + strlen(pszGenesis));
-    
+    CProfile profile;
+    profile.strName = "Fission And Fusion Network";
+    profile.strSymbol = "FnFn";
+    profile.destOwner = destOwner;
+    profile.nMintReward = 15 * COIN;
+    profile.nMinTxFee = MIN_TX_FEE;
+    profile.SetFlag(true,false,false);
+
+    profile.Save(block.vchProof);
+     
 }
 
 MvErr CMvCoreProtocol::ValidateTransaction(const CTransaction& tx)
@@ -152,7 +161,13 @@ MvErr CMvCoreProtocol::ValidateBlock(const CBlock& block)
     {
         return DEBUG(MV_ERR_BLOCK_TRANSACTIONS_INVALID,"empty extended block\n");
     }
-    
+  
+    // validate vacant block 
+    if (block.nType == CBlock::BLOCK_VACANT)
+    {
+        return ValidateVacantBlock(block);
+    }
+
     // Validate mint tx
     if (!block.txMint.IsMintTx() || ValidateTransaction(block.txMint) != MV_OK)
     {
@@ -163,6 +178,11 @@ MvErr CMvCoreProtocol::ValidateBlock(const CBlock& block)
     if (nBlockSize > MAX_BLOCK_SIZE)
     {
         return DEBUG(MV_ERR_BLOCK_OVERSIZE,"size overflow size=%u vtx=%u\n",nBlockSize,block.vtx.size());
+    }
+
+    if (block.nType == CBlock::BLOCK_ORIGIN && !block.vtx.empty())
+    {
+        return DEBUG(MV_ERR_BLOCK_TRANSACTIONS_INVALID,"origin block vtx is not empty\n");
     }
 
     vector<uint256> vMerkleTree;
@@ -189,6 +209,26 @@ MvErr CMvCoreProtocol::ValidateBlock(const CBlock& block)
     if (!CheckBlockSignature(block))
     {
         return DEBUG(MV_ERR_BLOCK_SIGNATURE_INVALID,"\n");
+    }
+    return MV_OK;
+}
+
+MvErr CMvCoreProtocol::ValidateOrigin(const CBlock& block,const CProfile& parentProfile,CProfile& forkProfile)
+{
+    if (!forkProfile.Load(block.vchProof))
+    {
+        return DEBUG(MV_ERR_BLOCK_INVALID_FORK,"load profile error\n");
+    }
+    if (forkProfile.IsNull())
+    {
+        return DEBUG(MV_ERR_BLOCK_INVALID_FORK,"invalid profile");
+    }
+    if (parentProfile.IsPrivate())
+    {
+        if (!forkProfile.IsPrivate() || parentProfile.destOwner != forkProfile.destOwner)
+        {
+            return DEBUG(MV_ERR_BLOCK_INVALID_FORK,"permission denied");
+        }
     }
     return MV_OK;
 }
@@ -241,7 +281,7 @@ MvErr CMvCoreProtocol::VerifyTransaction(const CTransaction& tx,const vector<CTx
 
 bool CMvCoreProtocol::GetProofOfWorkTarget(CBlockIndex* pIndexPrev,int nAlgo,int& nBits,int64& nReward)
 {
-    if (nAlgo <= 0 || nAlgo >= POWA_MAX || !pIndexPrev->IsPrimary())
+    if (nAlgo <= 0 || nAlgo >= CM_MAX || !pIndexPrev->IsPrimary())
     {
         return false;
     }
@@ -352,6 +392,21 @@ bool CMvCoreProtocol::CheckBlockSignature(const CBlock& block)
 {
     (void)block;
     return true;
+}
+
+MvErr CMvCoreProtocol::ValidateVacantBlock(const CBlock& block)
+{
+    if (block.hashMerkle != 0 || !block.txMint.IsNull() || !block.vtx.empty())
+    {
+        return DEBUG(MV_ERR_BLOCK_TRANSACTIONS_INVALID,"vacant block tx is not empty.");
+    }
+    
+    if (!block.vchProof.empty() || !block.vchSig.empty())
+    {
+        return DEBUG(MV_ERR_BLOCK_SIGNATURE_INVALID,"vacant block proof or signature is not empty.");
+    }
+
+    return MV_OK;
 }
 
 ///////////////////////////////

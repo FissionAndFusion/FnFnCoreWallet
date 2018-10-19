@@ -406,7 +406,7 @@ bool CHttpGet::HandleEvent(CWalleveEventHttpGet& eventGet)
         }
     }
 
-    CNetHost host(httpGet.mapHeader["host"],httpGet.strProtocol == "https" ? 433 : 80);
+    CNetHost host(httpGet.mapHeader["host"],httpGet.strProtocol == "https" ? 443 : 80);
     tcp::endpoint ep = host.ToEndPoint();
     if (ep != tcp::endpoint())
     {

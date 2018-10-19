@@ -23,6 +23,7 @@ CDispatcher::CDispatcher()
     pService = NULL;
     pBlockMaker = NULL;
     pNetChannel = NULL;
+    pDelegatedChannel = NULL;
 }
 
 CDispatcher::~CDispatcher()
@@ -79,6 +80,12 @@ bool CDispatcher::WalleveHandleInitialize()
         return false;
     }
 
+    if (!WalleveGetObject("delegatedchannel",pDelegatedChannel))
+    {
+        WalleveLog("Failed to request delegatedchannel\n");
+        return false;
+    }
+
     return true;
 }
 
@@ -92,6 +99,7 @@ void CDispatcher::WalleveHandleDeinitialize()
     pService = NULL;
     pBlockMaker = NULL;
     pNetChannel = NULL;
+    pDelegatedChannel = NULL;
 }
 
 bool CDispatcher::WalleveHandleInvoke()
@@ -112,7 +120,15 @@ MvErr CDispatcher::AddNewBlock(const CBlock& block,uint64 nNonce)
     }
 
     CWorldLineUpdate updateWorldLine;
-    err = pWorldLine->AddNewBlock(block,updateWorldLine);
+    if (!block.IsOrigin())
+    {
+        err = pWorldLine->AddNewBlock(block,updateWorldLine);
+    }
+    else
+    {
+        err = pWorldLine->AddNewOrigin(block,updateWorldLine);
+    }
+
     if (err != MV_OK || updateWorldLine.IsNull())
     {
         return err;
@@ -123,6 +139,16 @@ MvErr CDispatcher::AddNewBlock(const CBlock& block,uint64 nNonce)
     {
         return MV_ERR_SYS_DATABASE_ERROR;
     }
+
+    if (block.IsOrigin())
+    {
+        if (!pWallet->AddNewFork(updateWorldLine.hashFork,updateWorldLine.hashParent,
+                                                          updateWorldLine.nOriginHeight))
+        {
+            return MV_ERR_SYS_DATABASE_ERROR;
+        }
+    }
+
     if (!pWallet->SynchronizeTxSet(changeTxSet))
     {
         return MV_ERR_SYS_DATABASE_ERROR;
@@ -130,14 +156,14 @@ MvErr CDispatcher::AddNewBlock(const CBlock& block,uint64 nNonce)
 
     pService->NotifyWorldLineUpdate(updateWorldLine);
 
-    if (!nNonce && !block.IsOrigin())
+    if (!nNonce && !block.IsOrigin() && !block.IsVacant())
     {
         pNetChannel->BroadcastBlockInv(updateWorldLine.hashFork,block.GetHash());
     }
 
     if (block.IsPrimary())
     {
-        UpdatePrimaryBlock(updateWorldLine,changeTxSet);
+        UpdatePrimaryBlock(block,updateWorldLine,changeTxSet);
     }
 
     return MV_OK;
@@ -193,10 +219,36 @@ MvErr CDispatcher::AddNewTx(const CTransaction& tx,uint64 nNonce)
     return MV_OK;
 }
 
-void CDispatcher::UpdatePrimaryBlock(const CWorldLineUpdate& updateWorldLine,const CTxSetChange& changeTxSet)
+bool CDispatcher::AddNewDistribute(const uint256& hashAnchor,const CDestination& dest,const vector<unsigned char>& vchDistribute)
+{
+    uint256 hashFork;
+    int nHeight;
+    if (pWorldLine->GetBlockLocation(hashAnchor,hashFork,nHeight) && hashFork == pCoreProtocol->GetGenesisBlockHash())
+    {
+        return pConsensus->AddNewDistribute(nHeight,dest,vchDistribute);
+    }
+    return false;
+}
+
+bool CDispatcher::AddNewPublish(const uint256& hashAnchor,const CDestination& dest,const vector<unsigned char>& vchPublish)
+{
+    uint256 hashFork;
+    int nHeight;
+    if (pWorldLine->GetBlockLocation(hashAnchor,hashFork,nHeight) && hashFork == pCoreProtocol->GetGenesisBlockHash())
+    {
+        return pConsensus->AddNewPublish(nHeight,dest,vchPublish);
+    }
+    return false;
+}
+
+void CDispatcher::UpdatePrimaryBlock(const CBlock& block,const CWorldLineUpdate& updateWorldLine,const CTxSetChange& changeTxSet)
 {
     CDelegateRoutine routineDelegate;
     pConsensus->PrimaryUpdate(updateWorldLine,changeTxSet,routineDelegate);
+
+    pDelegatedChannel->PrimaryUpdate(updateWorldLine.nLastBlockHeight - updateWorldLine.vBlockAddNew.size(),
+                                     routineDelegate.vEnrolledWeight,routineDelegate.mapDistributeData,routineDelegate.mapPublishData);
+
     BOOST_FOREACH(const CTransaction& tx,routineDelegate.vEnrollTx)
     {
         MvErr err = AddNewTx(tx);
@@ -206,9 +258,13 @@ void CDispatcher::UpdatePrimaryBlock(const CWorldLineUpdate& updateWorldLine,con
     CMvEventBlockMakerUpdate *pBlockMakerUpdate = new CMvEventBlockMakerUpdate(0);
     if (pBlockMakerUpdate != NULL)
     {
+        CProofOfSecretShare proof;
+        proof.Load(block.vchProof);
         pBlockMakerUpdate->data.hashBlock = updateWorldLine.hashLastBlock;
         pBlockMakerUpdate->data.nBlockTime = updateWorldLine.nLastBlockTime;
         pBlockMakerUpdate->data.nBlockHeight = updateWorldLine.nLastBlockHeight;
+        pBlockMakerUpdate->data.nAgreement = proof.nAgreement;
+        pBlockMakerUpdate->data.nWeight = proof.nWeight;
         pBlockMaker->PostEvent(pBlockMakerUpdate);
     }
 
@@ -223,6 +279,8 @@ void CDispatcher::UpdatePrimaryBlock(const CWorldLineUpdate& updateWorldLine,con
             }
         }
     }
+
+    SyncForkHeight(updateWorldLine.nLastBlockHeight);
 }
 
 void CDispatcher::ProcessForkTx(const CTransaction& tx,int nPrimaryHeight)
@@ -251,10 +309,43 @@ void CDispatcher::ProcessForkTx(const CTransaction& tx,int nPrimaryHeight)
     {
         WalleveLog("Add origin block in tx (%s), hash=%s\n",txid.GetHex().c_str(),
                                                             block.GetHash().GetHex().c_str());
+        pNetChannel->SubscribeFork(block.GetHash()); 
     }
     else
     {
         WalleveLog("Add origin block in tx (%s) failed : %s\n",txid.GetHex().c_str(),
                                                                MvErrString(err));
+    }
+}
+
+void CDispatcher::SyncForkHeight(int nPrimaryHeight)
+{
+    map<uint256,CForkStatus> mapForkStatus;
+    pWorldLine->GetForkStatus(mapForkStatus);
+    for (map<uint256,CForkStatus>::iterator it = mapForkStatus.begin();it != mapForkStatus.end();++it)
+    {
+        const uint256& hashFork = (*it).first;
+        CForkStatus& status = (*it).second;
+        
+        vector<int64> vTimeStamp;
+        int nDepth = nPrimaryHeight - status.nLastBlockHeight;
+
+        if (nDepth > 1 && hashFork != pCoreProtocol->GetGenesisBlockHash()
+            && pWorldLine->GetLastBlockTime(pCoreProtocol->GetGenesisBlockHash(),nDepth,vTimeStamp))
+        {
+            uint256 hashPrev = status.hashLastBlock;
+            for (int nHeight = status.nLastBlockHeight + 1;nHeight < nPrimaryHeight;nHeight++)
+            {
+                CBlock block;
+                block.nType = CBlock::BLOCK_VACANT;
+                block.hashPrev = hashPrev;
+                block.nTimeStamp = vTimeStamp[nPrimaryHeight - nHeight];
+                if (AddNewBlock(block) != MV_OK)
+                {
+                    break;
+                }
+                hashPrev = block.GetHash();
+            }
+        }
     }
 }

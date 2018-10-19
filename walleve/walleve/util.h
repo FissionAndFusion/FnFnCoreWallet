@@ -103,7 +103,7 @@ inline std::string UIntToHexString(const T& t)
     char hex[sizeof(T) * 2 + 1];
     for (std::size_t i = 0;i < sizeof(T);i++)
     {
-        int byte = (t >> (sizeof(T) - i - 1)) & 0xFF;
+        int byte = (t >> ((sizeof(T) - i - 1)) * 8) & 0xFF;
         hex[i * 2]     = hexc[byte >> 4];
         hex[i * 2 + 1] = hexc[byte & 15];
     }

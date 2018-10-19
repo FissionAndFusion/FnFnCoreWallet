@@ -21,12 +21,15 @@ public:
     ~CMvConfig();
     bool Load(int argc,char *argv[],const boost::filesystem::path& pathDefault,
               const std::string& strConfile);
+    bool PostLoad();
+    void ListConfig() const;
+    std::string Help() const;
 
     inline CMvBasicConfig* GetConfig() { return pImpl; }
     inline EModeType GetModeType() { return emMode; }
-
 protected:
     EModeType emMode;
+    std::string subCmd;
     CMvBasicConfig* pImpl;
 };
 

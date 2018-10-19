@@ -32,7 +32,8 @@ public:
         BLOCK_ORIGIN     = 0xff00,
         BLOCK_PRIMARY    = 0x0001,
         BLOCK_SUBSIDIARY = 0x0002,
-        BLOCK_EXTENDED   = 0x0004
+        BLOCK_EXTENDED   = 0x0004,
+        BLOCK_VACANT     = 0x0008,
     };
 public:
     CBlock()
@@ -62,6 +63,14 @@ public:
     bool IsPrimary() const
     {
         return (nType & 1);
+    }
+    bool IsExtended() const
+    {
+        return (nType == BLOCK_EXTENDED);
+    }
+    bool IsVacant() const
+    {
+        return (nType == BLOCK_VACANT);
     }
     bool IsProofOfWork() const
     {
@@ -98,7 +107,11 @@ public:
     }
     uint64 GetBlockTrust() const
     {
-        if (vchProof.empty())
+        if (IsVacant())
+        {
+            return 0;
+        }
+        else if (vchProof.empty())
         {
             return 1;
         }
@@ -174,6 +187,20 @@ protected:
     }
 };
 
+inline std::string GetBlockTypeStr(uint16 nType,uint16 nMintType)
+{
+    if (nType == CBlock::BLOCK_GENESIS) return std::string("genesis");
+    if (nType == CBlock::BLOCK_ORIGIN) return std::string("origin");
+    if (nType == CBlock::BLOCK_EXTENDED) return std::string("extended");
+    std::string str("undefined-");
+    if (nType == CBlock::BLOCK_PRIMARY) str = "primary-";
+    if (nType == CBlock::BLOCK_SUBSIDIARY) str = "subsidiary-";
+    if (nType == CBlock::BLOCK_VACANT) str = "vacant";
+    if (nMintType == CTransaction::TX_WORK) return (str + "pow");
+    if (nMintType == CTransaction::TX_STAKE) return (str + "dpos");
+    return str;
+}
+
 class CBlockIndex
 {
 public:
@@ -221,7 +248,7 @@ public:
         pOrigin = this;
         pPrev = NULL;
         pNext = NULL;
-        txidMint = block.txMint.GetHash();
+        txidMint = (block.IsVacant() ? 0 : block.txMint.GetHash());
         nMintType = block.txMint.nType;
         nVersion = block.nVersion;
         nType = block.nType;
@@ -277,21 +304,42 @@ public:
     {
         return (nType & 1);
     }
+    bool IsExtended() const
+    {
+        return (nType == CBlock::BLOCK_EXTENDED);
+    }
+    bool IsVacant() const
+    {
+        return (nType == CBlock::BLOCK_VACANT);
+    }
     bool IsProofOfWork() const
     {
         return (nMintType == CTransaction::TX_WORK);
     }
+    bool IsEquivalent(const CBlockIndex* pIndexCompare) const
+    {
+        if (pIndexCompare != NULL)
+        {
+            const CBlockIndex* pIndex = this;
+            while (pIndex)
+            {
+                if (pIndex == pIndexCompare)
+                {
+                    return true;
+                }
+                if (pIndex->nType != CBlock::BLOCK_VACANT 
+                    || pIndex->GetBlockHeight() <= pIndexCompare->GetBlockHeight())
+                {
+                    break;
+                }
+                pIndex = pIndex->pPrev;
+            }
+        }
+        return false;
+    }
     const std::string GetBlockType() const
     {
-        if (nType == CBlock::BLOCK_GENESIS) return std::string("genesis");
-        if (nType == CBlock::BLOCK_ORIGIN) return std::string("origin");
-        if (nType == CBlock::BLOCK_EXTENDED) return std::string("extended");
-        std::string str("undefined-");
-        if (nType == CBlock::BLOCK_PRIMARY) str = "primary-";
-        if (nType == CBlock::BLOCK_SUBSIDIARY) str = "subsidiary-";
-        if (nMintType == CTransaction::TX_WORK) return (str + "pow"); 
-        if (nMintType == CTransaction::TX_STAKE) return (str + "dpos"); 
-        return str;
+        return GetBlockTypeStr(nType,nMintType);
     }
     std::string ToString() const
     {

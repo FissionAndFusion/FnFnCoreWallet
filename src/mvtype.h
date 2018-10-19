@@ -116,7 +116,11 @@ public:
 class CDelegateRoutine
 {
 public:
+    std::vector<std::pair<uint256,std::map<CDestination,size_t> > > vEnrolledWeight;
+
     std::vector<CTransaction> vEnrollTx;
+    std::map<CDestination,std::vector<unsigned char> > mapDistributeData;
+    std::map<CDestination,std::vector<unsigned char> > mapPublishData;
     bool fPublishCompleted;
 public:
     CDelegateRoutine() : fPublishCompleted(false) {}
@@ -146,14 +150,18 @@ public:
     uint256 hashBlock;
     int64 nBlockTime;
     int nBlockHeight;
+    uint256 nAgreement;
+    std::size_t nWeight;
 };
 
 class CBlockMakerAgreement
 {
 public:
-     uint256 nAgreement;
-     std::size_t nWeight;
-     std::vector<CDestination> vBallot;
+    bool IsProofOfWork() const { return (vBallot.empty()); } 
+public:
+    uint256 nAgreement;
+    std::size_t nWeight;
+    std::vector<CDestination> vBallot;
 };
 
 /* Net Channel */

@@ -53,7 +53,6 @@ protected:
  
 class CDBTxWalker : public storage::CWalletDBTxWalker
 {
-
 public:
     CDBTxWalker(CWallet* pWalletIn) : pWallet(pWalletIn) {}
     bool Walk(const CWalletTx& wtx)
@@ -116,15 +115,6 @@ bool CWallet::WalleveHandleInvoke()
         return false;
     }
     
-    if (mapKeyStore.empty())
-    {
-        crypto::CKey key;
-        if (!key.Renew() || !AddKey(key))
-        {
-            WalleveLog("Failed to add initial key\n");
-            return false;
-        }
-    }
     return true;
 }
 
@@ -455,17 +445,60 @@ bool CWallet::ArrangeInputs(const CDestination& destIn,const uint256& hashFork,i
 
 bool CWallet::LoadTx(const CWalletTx& wtx)
 {
-    if (!wtx.IsRunOut())
+    CWalletTx& wtxNew = (*mapWalletTx.insert(make_pair(wtx.txid,wtx)).first).second;
+
+    vector<uint256> vFork;
+    GetWalletTxFork(wtxNew.hashFork,wtxNew.nBlockHeight,vFork);
+
+    AddNewWalletTx(wtxNew,vFork);
+
+    return true; 
+}
+
+bool CWallet::AddNewFork(const uint256& hashFork,const uint256& hashParent,int nOriginHeight)
+{
+    boost::unique_lock<boost::shared_mutex> wlock(rwWalletTx);
+    
+    CProfile profile;
+    if (!pWorldLine->GetForkProfile(hashFork,profile))
     {
-        CWalletTx& wtxNew = (*mapWalletTx.insert(make_pair(wtx.txid,wtx)).first).second;
-        
-        if (wtx.IsMine() && wtx.txidSpent == 0)
+        return false;
+    }
+    if (mapFork.insert(make_pair(hashFork,CWalletFork(hashParent,nOriginHeight,profile.IsIsolated()))).second)
+    {
+        if (hashParent != 0)
         {
-            mapWalletUnspent[wtx.sendTo].Push(&wtxNew,0);
+            mapFork[hashParent].InsertSubline(nOriginHeight,hashFork);
         }
-        if (wtx.IsFromMe() && wtx.txidChange == 0)
+        if (!profile.IsIsolated())
         {
-            mapWalletUnspent[wtx.destIn].Push(&wtxNew,1);
+            for (map<CDestination,CWalletUnspent>::iterator it = mapWalletUnspent.begin();
+                 it != mapWalletUnspent.end(); ++it)
+            {
+                CWalletUnspent& unspent = (*it).second;
+                unspent.Dup(hashParent,hashFork);
+            }
+            vector<uint256> vForkTx;
+            if (!dbWallet.ListForkTx(hashParent,nOriginHeight + 1,vForkTx))
+            {
+                return false;
+            }
+            for (int i = vForkTx.size() - 1;i >= 0;--i)
+            {
+                CWalletTx* pWalletTx = LoadWalletTx(vForkTx[i]);
+                if (pWalletTx != NULL)
+                {
+                    RemoveWalletTx(*pWalletTx,hashFork);
+                    if (!pWalletTx->GetRefCount())
+                    {
+                        mapWalletTx.erase(vForkTx[i]);
+                    }
+                }
+                else
+                {
+                    return false;
+                }
+            }
         }
     }
     return true;
@@ -490,10 +523,16 @@ bool CWallet::LoadDB()
             }
         }
     }
+
     {
         boost::unique_lock<boost::shared_mutex> wlock(rwWalletTx);
+        if (!UpdateFork())
+        {
+            return false;
+        }
+
         CDBTxWalker walker(this);
-        if (!dbWallet.WalkThroughUnspent(walker))
+        if (!dbWallet.WalkThroughTx(walker))
         {
             return false;
         } 
@@ -534,40 +573,21 @@ bool CWallet::SynchronizeTxSet(CTxSetChange& change)
 {
     boost::unique_lock<boost::shared_mutex> wlock(rwWalletTx);
 
-    set<uint256> setTxUpdate;
+    vector<CWalletTx> vWalletTx;
+    vector<uint256> vRemove;
+    
     for (std::size_t i = 0;i < change.vTxRemove.size();i++)
     {
         uint256& txid = change.vTxRemove[i].first;
         CWalletTx* pWalletTx = LoadWalletTx(txid);
         if (pWalletTx != NULL)
         {
-            BOOST_FOREACH(const CTxIn& txin,change.vTxRemove[i].second)
-            {
-                CWalletTx* pWalletPrevTx = LoadWalletTx(txin.prevout.hash);
-                if (pWalletPrevTx != NULL)
-                {
-                    // Restore prevout unspent
-                    pWalletPrevTx->SetUnspent(txin.prevout.n);
-                    setTxUpdate.insert(txin.prevout.hash);
-                    if (pWalletTx->IsFromMe())
-                    {
-                        mapWalletUnspent[pWalletTx->destIn].Push(pWalletPrevTx,txin.prevout.n);
-                    }   
-                }
-            }
-            if (pWalletTx->IsMine())
-            {
-                 mapWalletUnspent[pWalletTx->sendTo].Pop(pWalletTx,0);
-            }
-            if (pWalletTx->IsFromMe())
-            {
-                 mapWalletUnspent[pWalletTx->destIn].Pop(pWalletTx,1);
-            }
-            
-            pWalletTx->SetNull();
-            setTxUpdate.insert(txid);
+            RemoveWalletTx(*pWalletTx,change.hashFork);
+            mapWalletTx.erase(txid); 
+            vRemove.push_back(txid); 
         }
     }
+    
     for (map<uint256,int>::iterator it = change.mapTxUpdate.begin();it != change.mapTxUpdate.end();++it)
     {
         const uint256& txid = (*it).first;
@@ -575,13 +595,14 @@ bool CWallet::SynchronizeTxSet(CTxSetChange& change)
         if (pWalletTx != NULL)
         {
             pWalletTx->nBlockHeight = (*it).second;
-            setTxUpdate.insert(txid);
+            vWalletTx.push_back(*pWalletTx);
         }
     }
 
+    map<int,vector<uint256> > mapPreFork;
     BOOST_FOREACH(CAssembledTx& tx,change.vTxAddNew)
     {
-        bool fIsMine = IsMine(tx.sendTo); 
+        bool fIsMine = IsMine(tx.sendTo);
         bool fFromMe = IsMine(tx.destIn);
         if (fFromMe || fIsMine)
         {
@@ -589,69 +610,60 @@ bool CWallet::SynchronizeTxSet(CTxSetChange& change)
             CWalletTx* pWalletTx = InsertWalletTx(txid,tx,change.hashFork,fIsMine,fFromMe);
             if (pWalletTx != NULL)
             {
-                BOOST_FOREACH(const CTxIn& txin,tx.vInput)
+                vector<uint256>& vFork = mapPreFork[pWalletTx->nBlockHeight];
+                if (vFork.empty())
                 {
-                    CWalletTx* pWalletPrevTx = LoadWalletTx(txin.prevout.hash);
-                    if (pWalletPrevTx != NULL)
-                    {
-                        // Setup prevout unspent
-                        pWalletPrevTx->SetSpent(txin.prevout.n,txid);
-                        setTxUpdate.insert(txin.prevout.hash);
-                        if (fFromMe)
-                        {
-                            mapWalletUnspent[tx.destIn].Pop(pWalletPrevTx,txin.prevout.n);
-                        }
-                    }
+                    GetWalletTxFork(change.hashFork,pWalletTx->nBlockHeight,vFork);
                 }
-                if (fIsMine)
-                {
-                    mapWalletUnspent[tx.sendTo].Push(pWalletTx,0);
-                }
-                if (fFromMe)
-                {
-                    mapWalletUnspent[tx.destIn].Push(pWalletTx,1);
-                }
-                setTxUpdate.insert(txid);
+                AddNewWalletTx(*pWalletTx,vFork);
+                vWalletTx.push_back(*pWalletTx);
             }
         }
     }
 
-    vector<CWalletTx> vWalletTx;
-    vector<uint256> vRemove;
-    BOOST_FOREACH(const uint256& txid,setTxUpdate)
+    BOOST_FOREACH(const CWalletTx& wtx,vWalletTx)
     {
-        map<uint256,CWalletTx>::iterator it = mapWalletTx.find(txid);
-        if (it != mapWalletTx.end())
+        map<uint256,CWalletTx>::iterator it = mapWalletTx.find(wtx.txid);
+        if (it != mapWalletTx.end() && !(*it).second.GetRefCount())
         {
-            CWalletTx& wtx = (*it).second;
-            if (wtx.IsNull())
-            {
-                vRemove.push_back(txid);
-                mapWalletTx.erase(it);
-            }
-            else
-            {
-                vWalletTx.push_back(wtx);
-                if (wtx.IsRunOut())
-                {
-                    mapWalletTx.erase(it);
-                }
-            }
+            mapWalletTx.erase(it);
         }
     }
+    
     if (!vWalletTx.empty() || !vRemove.empty())
     {
         return dbWallet.UpdateTx(vWalletTx,vRemove);
     }
+
     return true;
 }
 
 bool CWallet::UpdateTx(const uint256& hashFork,const CAssembledTx& tx)
 {
-    CTxSetChange change;
-    change.hashFork = hashFork; 
-    change.vTxAddNew.push_back(tx);
-    return SynchronizeTxSet(change);
+    vector<CWalletTx> vWalletTx;
+    bool fIsMine = IsMine(tx.sendTo);
+    bool fFromMe = IsMine(tx.destIn);
+    if (fFromMe || fIsMine)
+    {
+        uint256 txid = tx.GetHash();
+        CWalletTx* pWalletTx = InsertWalletTx(txid,tx,hashFork,fIsMine,fFromMe);
+        if (pWalletTx != NULL)
+        {
+            vector<uint256> vFork;
+            GetWalletTxFork(hashFork,tx.nBlockHeight,vFork);
+            AddNewWalletTx(*pWalletTx,vFork);
+            vWalletTx.push_back(*pWalletTx);
+            if (!pWalletTx->GetRefCount())
+            {
+                mapWalletTx.erase(txid);
+            }
+        }
+    }
+    if (!vWalletTx.empty())
+    {
+        return dbWallet.UpdateTx(vWalletTx);
+    }
+    return true;
 }
 
 bool CWallet::ClearTx()
@@ -869,3 +881,123 @@ bool CWallet::SignDestination(const CDestination& destIn,const uint256& hash,vec
     }
     return false;
 }
+
+bool CWallet::UpdateFork()
+{
+    map<uint256,CForkStatus> mapForkStatus;
+    multimap<uint256,pair<int,uint256> > mapSubline;
+
+    pWorldLine->GetForkStatus(mapForkStatus);
+
+    for (map<uint256,CForkStatus>::iterator it = mapForkStatus.begin();it != mapForkStatus.end();++it)
+    {
+        const uint256 hashFork = (*it).first;
+        const CForkStatus& status = (*it).second;
+        if (!mapFork.count(hashFork))
+        {
+            CProfile profile;
+            if (!pWorldLine->GetForkProfile(hashFork,profile))
+            {
+                return false;
+            }
+            mapFork.insert(make_pair(hashFork,CWalletFork(status.hashParent,status.nOriginHeight,profile.IsIsolated())));
+            if (status.hashParent != 0)
+            {
+                mapSubline.insert(make_pair(status.hashParent,make_pair(status.nOriginHeight,hashFork)));
+            }
+        }
+    }
+
+    for (multimap<uint256,pair<int,uint256> >::iterator it = mapSubline.begin();it != mapSubline.end();++it)
+    {
+        mapFork[(*it).first].InsertSubline((*it).second.first,(*it).second.second);
+    }
+    return true;
+}
+
+void CWallet::GetWalletTxFork(const uint256& hashFork,int nHeight,vector<uint256>& vFork)
+{
+    vector<pair<uint256,CWalletFork*> >vForkPtr;
+    {
+        map<uint256,CWalletFork>::iterator it = mapFork.find(hashFork);
+        if (it != mapFork.end())
+        {
+            vForkPtr.push_back(make_pair(hashFork,&(*it).second));
+        }
+    }
+    if (nHeight >= 0)
+    {
+        for (size_t i = 0;i < vForkPtr.size();i++)
+        {
+            CWalletFork* pFork = vForkPtr[i].second;
+            for (multimap<int,uint256>::iterator mi = pFork->mapSubline.lower_bound(nHeight);mi != pFork->mapSubline.end();++mi)
+            {
+                map<uint256,CWalletFork>::iterator it = mapFork.find((*mi).second);
+                if (it != mapFork.end() && !(*it).second.fIsolated)
+                {
+                    vForkPtr.push_back(make_pair((*it).first,&(*it).second));
+                }
+            } 
+        }
+    }
+    vFork.reserve(vForkPtr.size());
+    for (size_t i = 0;i < vForkPtr.size();i++)
+    {
+        vFork.push_back(vForkPtr[i].first);
+    }
+}
+
+void CWallet::AddNewWalletTx(CWalletTx& wtx,vector<uint256>& vFork)
+{
+    if (wtx.IsFromMe())
+    {
+        BOOST_FOREACH(const CTxIn& txin,wtx.vInput)
+        {
+            map<uint256,CWalletTx>::iterator it = mapWalletTx.find(txin.prevout.hash);
+            if (it != mapWalletTx.end())
+            {
+                CWalletTx& wtxPrev = (*it).second;
+                BOOST_FOREACH(const uint256& hashFork,vFork)
+                {
+                    mapWalletUnspent[wtx.destIn].Pop(hashFork,&wtxPrev,txin.prevout.n);
+                }
+                if (!wtxPrev.GetRefCount())
+                {
+                     mapWalletTx.erase(it);
+                }
+            }
+        }
+        BOOST_FOREACH(const uint256& hashFork,vFork)
+        {
+            mapWalletUnspent[wtx.destIn].Push(hashFork,&wtx,1);
+        }
+    }
+    if (wtx.IsMine())
+    {
+        BOOST_FOREACH(const uint256& hashFork,vFork)
+        {
+            mapWalletUnspent[wtx.sendTo].Push(hashFork,&wtx,0);
+        }
+    }
+}
+
+void CWallet::RemoveWalletTx(CWalletTx& wtx,const uint256& hashFork)
+{
+    if (wtx.IsFromMe())
+    {
+        BOOST_FOREACH(const CTxIn& txin,wtx.vInput)
+        {
+            CWalletTx* pWalletPrevTx = LoadWalletTx(txin.prevout.hash);
+            if (pWalletPrevTx != NULL)
+            {
+                mapWalletUnspent[wtx.destIn].Push(hashFork,pWalletPrevTx,txin.prevout.n);
+            }
+        }
+        mapWalletUnspent[wtx.destIn].Pop(hashFork,&wtx,1);
+    }
+    if (wtx.IsMine())
+    {
+        mapWalletUnspent[wtx.sendTo].Pop(hashFork,&wtx,0);
+    }
+}
+

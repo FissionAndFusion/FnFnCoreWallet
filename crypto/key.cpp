@@ -62,7 +62,7 @@ CKey::~CKey()
     CryptoFree(pCryptoKey);
 }
 
-int CKey::GetVersion() const
+uint32 CKey::GetVersion() const
 {
     return nVersion;
 }
@@ -82,7 +82,7 @@ bool CKey::Renew()
     return (CryptoMakeNewKey(*pCryptoKey) != 0 && UpdateCipher());
 }
 
-void CKey::Load(const CPubKey& pubkeyIn,int nVersionIn,const CCryptoCipher& cipherIn)
+void CKey::Load(const CPubKey& pubkeyIn,const uint32 nVersionIn,const CCryptoCipher& cipherIn)
 {
     pCryptoKey->pubkey = pubkeyIn;
     pCryptoKey->secret = 0;
@@ -115,7 +115,7 @@ bool CKey::Load(const std::vector<unsigned char>& vchKey)
     return true;
 }
 
-void CKey::Save(CPubKey& pubkeyRet,int& nVersionRet,CCryptoCipher& cipherRet) const
+void CKey::Save(CPubKey& pubkeyRet,uint32& nVersionRet,CCryptoCipher& cipherRet) const
 {
     pubkeyRet = pCryptoKey->pubkey;
     nVersionRet = nVersion;
@@ -205,7 +205,7 @@ bool CKey::Unlock(const CCryptoString& strPassphrase)
     return false;
 }
 
-bool CKey::UpdateCipher(int nVersionIn,const CCryptoString& strPassphrase)
+bool CKey::UpdateCipher(uint32 nVersionIn,const CCryptoString& strPassphrase)
 {
     try
     {

@@ -1,17 +1,12 @@
-#!/bin/sh
+#!/bin/bash
 
+origin_path=$(cd `dirname $0`; pwd)
 cd `dirname $0`
 
-# delete build directory
-rm -rf build
-rm -f multiverse
-rm -f multiverse-cli
-rm -f multiverse-server
-rm -f multiverse-miner
-rm -f multiverse-dnseed
-
 # create build directory
-mkdir build
+if [ ! -d "build/" ]; then
+    mkdir build
+fi
 
 # go to build
 cd build
@@ -19,25 +14,33 @@ cd build
 # cmake
 flag=""
 if [ "$1" == "debug" ]; then
-    flag="-DCMAKE_BUILD_TYPE=debug"
+    flag="-DCMAKE_BUILD_TYPE=Debug"
+else
+    flag="-DCMAKE_BUILD_TYPE=Release"
 fi
 
 cmake .. $flag
-
 if [ $? -ne 0 ]; then 
+    cd $origin_path
     exit 1 
 fi 
 
-# make
-make -j8
-if [ $? -ne 0 ]; then 
-    exit 1 
-fi 
+# make & install
+os=`uname`
+if [ "$os" == "Darwin" ]; then
+    cores=`sysctl -n hw.logicalcpu`
+    if [ "${cores}" == "" ]; then
+        cores = 1
+    fi
+    echo "make install -j${cores}"
+    make install -j${cores}
+else
+    cores=`nproc --all`
+    if [ "${cores}" == "" ]; then
+        cores = 1
+    fi
+    echo "sudo make install -j${cores}"
+    sudo make install -j${cores}
+fi
 
-# install
-cp src/multiverse ../
-cd ..
-ln -s multiverse multiverse-cli
-ln -s multiverse multiverse-server
-ln -s multiverse multiverse-miner
-ln -s multiverse multiverse-dnseed
+cd $origin_path

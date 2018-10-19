@@ -7,9 +7,11 @@
 #include <boost/bind.hpp>
 #include <boost/any.hpp>
 
-#define HANDSHAKE_TIMEOUT               5
-#define RESPONSE_TX_TIMEOUT             15
-#define RESPONSE_BLOCK_TIMEOUT          120
+#define HANDSHAKE_TIMEOUT               (5)
+#define RESPONSE_TX_TIMEOUT             (15)
+#define RESPONSE_BLOCK_TIMEOUT          (120)
+#define RESPONSE_DISTRIBUTE_TIMEOUT     (5)
+#define RESPONSE_PUBLISH_TIMEOUT        (10)
 #define NODE_ACTIVE_TIME                (3 * 60 * 60)
 
 using namespace std;
@@ -28,6 +30,7 @@ CMvPeerNet::CMvPeerNet()
     nService  = 0;
     fEnclosed = false;
     pNetChannel = NULL;
+    pDelegatedChannel = NULL;
 }   
 
 CMvPeerNet::~CMvPeerNet()
@@ -41,6 +44,13 @@ bool CMvPeerNet::WalleveHandleInitialize()
         WalleveLog("Failed to request peer net datachannel\n");
         return false;
     }
+
+    if (!WalleveGetObject("delegatedchannel",pDelegatedChannel))
+    {
+        WalleveLog("Failed to request delegated datachannel\n");
+        return false;
+    }
+
     return true;
 }
 
@@ -48,6 +58,21 @@ void CMvPeerNet::WalleveHandleDeinitialize()
 {
     setDNSeed.clear();
     pNetChannel = NULL;
+    pDelegatedChannel = NULL;
+}
+
+bool CMvPeerNet::HandleEvent(CMvEventPeerSubscribe& eventSubscribe)
+{
+    CWalleveBufStream ssPayload;
+    ssPayload << eventSubscribe;
+    return SendDataMessage(eventSubscribe.nNonce,MVPROTO_CMD_SUBSCRIBE,ssPayload);
+}
+
+bool CMvPeerNet::HandleEvent(CMvEventPeerUnsubscribe& eventUnsubscribe)
+{
+    CWalleveBufStream ssPayload;
+    ssPayload << eventUnsubscribe;
+    return SendDataMessage(eventUnsubscribe.nNonce,MVPROTO_CMD_UNSUBSCRIBE,ssPayload);
 }
 
 bool CMvPeerNet::HandleEvent(CMvEventPeerInv& eventInv)
@@ -91,6 +116,47 @@ bool CMvPeerNet::HandleEvent(CMvEventPeerBlock& eventBlock)
     return SendDataMessage(eventBlock.nNonce,MVPROTO_CMD_BLOCK,ssPayload);
 }
 
+bool CMvPeerNet::HandleEvent(CMvEventPeerBulletin& eventBulletin)
+{
+    CWalleveBufStream ssPayload;
+    ssPayload << eventBulletin;
+    return SendDelegatedMessage(eventBulletin.nNonce,MVPROTO_CMD_BULLETIN,ssPayload);
+}
+
+bool CMvPeerNet::HandleEvent(CMvEventPeerGetDelegated& eventGetDelegated)
+{
+    CWalleveBufStream ssPayload;
+    ssPayload << eventGetDelegated;
+    if (!SendDelegatedMessage(eventGetDelegated.nNonce,MVPROTO_CMD_GETDELEGATED,ssPayload))
+    {
+        return false;
+    }
+
+    CWalleveBufStream ss;
+    ss << eventGetDelegated.hashAnchor << eventGetDelegated.data.destDelegate;
+    uint256 hash = crypto::CryptoHash(ss.GetData(),ss.GetSize());
+
+    vector<CInv> vInv;
+    vInv.push_back(CInv(eventGetDelegated.data.nInvType,hash));
+
+    SetInvTimer(eventGetDelegated.nNonce,vInv);
+    return true;
+}
+
+bool CMvPeerNet::HandleEvent(CMvEventPeerDistribute& eventDistribute)
+{
+    CWalleveBufStream ssPayload;
+    ssPayload << eventDistribute;
+    return SendDelegatedMessage(eventDistribute.nNonce,MVPROTO_CMD_DISTRIBUTE,ssPayload);
+}
+
+bool CMvPeerNet::HandleEvent(CMvEventPeerPublish& eventPublish)
+{
+    CWalleveBufStream ssPayload;
+    ssPayload << eventPublish;
+    return SendDelegatedMessage(eventPublish.nNonce,MVPROTO_CMD_PUBLISH,ssPayload);
+}
+
 CPeer* CMvPeerNet::CreatePeer(CIOClient *pClient,uint64 nNonce,bool fInBound)
 {
     uint32_t nTimerId = SetTimer(nNonce,HANDSHAKE_TIMEOUT);
@@ -107,11 +173,19 @@ void CMvPeerNet::DestroyPeer(CPeer* pPeer)
     CMvPeer *pMvPeer = static_cast<CMvPeer *>(pPeer);
     if (pMvPeer->IsHandshaked())
     {
-        CMvEventPeerDeactive *pEventDeactive = new CMvEventPeerDeactive(pMvPeer->GetNonce());
+        CMvEventPeerDeactive* pEventDeactive = new CMvEventPeerDeactive(pMvPeer->GetNonce());
         if (pEventDeactive != NULL)
         {
             pEventDeactive->data = CAddress(pMvPeer->nService,pMvPeer->GetRemote());
+
+            CMvEventPeerDeactive* pEventDeactiveDelegated = new CMvEventPeerDeactive(*pEventDeactive);
+
             pNetChannel->PostEvent(pEventDeactive);
+
+            if (pEventDeactiveDelegated != NULL)
+            {
+                pDelegatedChannel->PostEvent(pEventDeactiveDelegated);
+            }
         }
     }
     CPeerNet::DestroyPeer(pPeer);
@@ -143,32 +217,31 @@ bool CMvPeerNet::SendDataMessage(uint64 nNonce,int nCommand,CWalleveBufStream& s
     return pMvPeer->SendMessage(MVPROTO_CHN_DATA,nCommand,ssPayload);
 }
 
+bool CMvPeerNet::SendDelegatedMessage(uint64 nNonce,int nCommand,walleve::CWalleveBufStream& ssPayload)
+{
+    CMvPeer *pMvPeer = static_cast<CMvPeer *>(GetPeer(nNonce));
+    if (pMvPeer == NULL)
+    {
+        return false;
+    }
+    return pMvPeer->SendMessage(MVPROTO_CHN_DELEGATE,nCommand,ssPayload);
+}
+
 void CMvPeerNet::SetInvTimer(uint64 nNonce,vector<CInv>& vInv)
 {
+    const int64 nTimeout[] = { 0, RESPONSE_TX_TIMEOUT, RESPONSE_BLOCK_TIMEOUT,
+                                  RESPONSE_DISTRIBUTE_TIMEOUT, RESPONSE_PUBLISH_TIMEOUT};
     CMvPeer *pMvPeer = static_cast<CMvPeer *>(GetPeer(nNonce));
     if (pMvPeer != NULL)
     {
         int64 nElapse = 0;
         BOOST_FOREACH(CInv &inv,vInv)
         {
-            switch(inv.nType)
+            if (inv.nType >= CInv::MSG_TX && inv.nType <= CInv::MSG_PUBLISH)
             {
-            case CInv::MSG_TX:
-                {
-                    nElapse += RESPONSE_TX_TIMEOUT;
-                    uint32 nTimerId = SetTimer(nNonce,nElapse);
-                    CancelTimer(pMvPeer->Request(inv,nTimerId));
-                    break;
-                }
-            case CInv::MSG_BLOCK:
-                {
-                    nElapse += RESPONSE_BLOCK_TIMEOUT;
-                    uint32 nTimerId = SetTimer(nNonce,nElapse);
-                    CancelTimer(pMvPeer->Request(inv,nTimerId));
-                    break;
-                }
-            default:
-                break;
+                nElapse += nTimeout[inv.nType];
+                uint32 nTimerId = SetTimer(nNonce,nElapse);
+                CancelTimer(pMvPeer->Request(inv,nTimerId));
             }
         }
     }
@@ -235,9 +308,16 @@ bool CMvPeerNet::HandlePeerHandshaked(CPeer *pPeer,uint32 nTimerId)
     if (pEventActive == NULL)
     {
         return false;
-    }   
+    }
+
     pEventActive->data = CAddress(pMvPeer->nService,pMvPeer->GetRemote());
+    CMvEventPeerActive* pEventActiveDelegated = new CMvEventPeerActive(*pEventActive);
+
     pNetChannel->PostEvent(pEventActive);
+    if (pEventActiveDelegated != NULL)
+    {
+        pDelegatedChannel->PostEvent(pEventActiveDelegated);
+    }
 
     if (!fEnclosed)
     {
@@ -313,6 +393,28 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
         ssPayload >> hashFork;
         switch (nCommand)
         {
+        case MVPROTO_CMD_SUBSCRIBE:
+            {
+                CMvEventPeerSubscribe* pEvent = new CMvEventPeerSubscribe(pMvPeer->GetNonce(),hashFork);
+                if (pEvent != NULL)
+                {
+                    ssPayload >> pEvent->data;
+                    pNetChannel->PostEvent(pEvent);
+                    return true;
+                }
+            }
+            break;
+        case MVPROTO_CMD_UNSUBSCRIBE:
+            {
+                CMvEventPeerUnsubscribe* pEvent = new CMvEventPeerUnsubscribe(pMvPeer->GetNonce(),hashFork);
+                if (pEvent != NULL)
+                {
+                    ssPayload >> pEvent->data;
+                    pNetChannel->PostEvent(pEvent);
+                    return true;
+                }
+            }
+            break;
         case MVPROTO_CMD_GETBLOCKS:
             {
                 CMvEventPeerGetBlocks* pEvent = new CMvEventPeerGetBlocks(pMvPeer->GetNonce(),hashFork);
@@ -366,6 +468,75 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                     CInv inv(CInv::MSG_BLOCK,pEvent->data.GetHash());
                     CancelTimer(pMvPeer->Responded(inv));
                     pNetChannel->PostEvent(pEvent);
+                    return true;
+                }
+            }
+            break;
+        default:
+            break;
+        }
+    }
+    else if (nChannel == MVPROTO_CHN_DELEGATE)
+    {
+        uint256 hashAnchor;
+        ssPayload >> hashAnchor;
+        switch (nCommand)
+        {
+        case MVPROTO_CMD_BULLETIN:
+            {
+                CMvEventPeerBulletin* pEvent = new CMvEventPeerBulletin(pMvPeer->GetNonce(),hashAnchor);
+                if (pEvent != NULL)
+                {           
+                    ssPayload >> pEvent->data;
+                    pDelegatedChannel->PostEvent(pEvent);
+                    return true;
+                }
+            }
+            break;
+        case MVPROTO_CMD_GETDELEGATED:
+            {
+                CMvEventPeerGetDelegated* pEvent = new CMvEventPeerGetDelegated(pMvPeer->GetNonce(),hashAnchor);
+                if (pEvent != NULL)
+                {           
+                    ssPayload >> pEvent->data;
+                    pDelegatedChannel->PostEvent(pEvent);
+                    return true;
+                }
+            }
+            break;
+        case MVPROTO_CMD_DISTRIBUTE:
+            {
+                CMvEventPeerDistribute* pEvent = new CMvEventPeerDistribute(pMvPeer->GetNonce(),hashAnchor);
+                if (pEvent != NULL)
+                {           
+                    ssPayload >> pEvent->data;
+
+                    CWalleveBufStream ss;
+                    ss << hashAnchor << (pEvent->data.destDelegate);
+                    uint256 hash = crypto::CryptoHash(ss.GetData(),ss.GetSize());
+                    CInv inv(CInv::MSG_DISTRIBUTE,hash);
+                    CancelTimer(pMvPeer->Responded(inv));
+
+                    pDelegatedChannel->PostEvent(pEvent);
+
+                    return true;
+                }
+            }
+            break;
+        case MVPROTO_CMD_PUBLISH:
+            {
+                CMvEventPeerPublish* pEvent = new CMvEventPeerPublish(pMvPeer->GetNonce(),hashAnchor);
+                if (pEvent != NULL)
+                {           
+                    ssPayload >> pEvent->data;
+
+                    CWalleveBufStream ss;
+                    ss << hashAnchor << (pEvent->data.destDelegate);
+                    uint256 hash = crypto::CryptoHash(ss.GetData(),ss.GetSize());
+                    CInv inv(CInv::MSG_PUBLISH,hash);
+                    CancelTimer(pMvPeer->Responded(inv));
+
+                    pDelegatedChannel->PostEvent(pEvent);
                     return true;
                 }
             }

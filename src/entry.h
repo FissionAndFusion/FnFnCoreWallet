@@ -6,6 +6,7 @@
 #define  MULTIVERSE_ENTRY_H
 
 #include "config.h"
+#include "dbpserver.h"
 #include <walleve/walleve.h>
 #include <boost/filesystem.hpp>
 
@@ -19,14 +20,15 @@ public:
 public:
     ~CMvEntry();
     bool Initialize(int argc,char *argv[]);
-    bool Run();
+    bool Run() override;
     void Exit();
 protected:
 
     bool InitializeModules(const EModeType& mode);
-    bool AttachModule(walleve::IWalleveBase *pWalleveBase);
+    bool AttachModule(walleve::IWalleveBase* pWalleveBase);
 
     walleve::CHttpHostConfig GetRPCHostConfig();
+    CDbpHostConfig GetDbpHostConfig();
 
     boost::filesystem::path GetDefaultDataDir();
 

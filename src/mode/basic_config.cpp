@@ -4,17 +4,17 @@
 
 #include "mode/basic_config.h"
 
-namespace po = boost::program_options;
-using namespace multiverse;
+#include "mode/config_macro.h"
 
-#define MAINNET_MAGICNUM 0xd5f97d23
-#define TESTNET_MAGICNUM 0xef93a7b2
+namespace multiverse
+{
+namespace po = boost::program_options;
 
 CMvBasicConfig::CMvBasicConfig()
 {
     po::options_description desc("MvBasic");
 
-    AddOpt<bool>(desc, "testnet", fTestNet, false);
+    CMvBasicConfigOption::AddOptionsImpl(desc);
 
     AddOptions(desc);
 }
@@ -23,6 +23,11 @@ CMvBasicConfig::~CMvBasicConfig() {}
 
 bool CMvBasicConfig::PostLoad()
 {
+    if (fHelp)
+    {
+        return true;
+    }
+
     if (fTestNet)
     {
         pathData /= "testnet";
@@ -35,6 +40,15 @@ bool CMvBasicConfig::PostLoad()
 std::string CMvBasicConfig::ListConfig() const
 {
     std::ostringstream oss;
-    oss << "TestNet: " << (fTestNet ? "Y" : "N") << "\n";
+    oss << CMvBasicConfigOption::ListConfigImpl();
+    oss << "magicNum: " << nMagicNum << "\n";
     return oss.str();
 }
+
+std::string CMvBasicConfig::Help() const
+{
+    return CMvBasicConfigOption::HelpImpl();
+}
+
+
+}  // namespace multiverse

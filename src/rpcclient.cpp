@@ -8,42 +8,60 @@
 #include "json/json_spirit_writer_template.h"
 #include "json/json_spirit_utils.h"
 
+#include <boost/regex.hpp>
+#include <boost/algorithm/string.hpp>
 #include <readline/readline.h>
 #include <readline/history.h>
+
+#include "version.h"
 
 using namespace std;
 using namespace multiverse;
 using namespace walleve;
 using namespace json_spirit;
+using namespace multiverse::rpc;
 using boost::asio::ip::tcp;
 
 static void Initialize_ReadLine();
+static void Uninitialize_ReadLine();
+static void ReadlineCallback(char* line);
 extern void MvShutdown();
+
+static string LocalCommandUsage(string command = "")
+{
+    ostringstream oss;
+    if (command == "")
+    {
+        oss << "Local Command:\n";
+    }
+    if (command == "" || command == "quit")
+    {
+        oss << "  quit\t\t\t\tQuits this console.(CTRL-D)\n";
+    }
+    return oss.str();
+}
+
+static CRPCClient* pClient = NULL;
+static const char* prompt = "multiverse> ";
+
 ///////////////////////////////
-// CRPCDispatch
+// CRPCClient
 
-CRPCDispatch::CRPCDispatch()
-: IIOModule("rpcdispatch"),
-  thrDispatch("rpcconsole",boost::bind(&CRPCDispatch::LaunchConsole,this))
+CRPCClient::CRPCClient(bool fConsole)
+: IIOModule("rpcclient"),
+  ioStrand(ioService),
+  inStream(ioService,::dup(STDIN_FILENO)),
+  thrDispatch("rpcclient", boost::bind(fConsole ? &CRPCClient::LaunchConsole : &CRPCClient::LaunchCommand,this))
 {
     nLastNonce = 0;
     pHttpGet = NULL;
 }
 
-CRPCDispatch::CRPCDispatch(const vector<string>& vArgsIn)
-: IIOModule("rpcdispatch"),
-  thrDispatch("rpccommand",boost::bind(&CRPCDispatch::LaunchCommand,this)),
-  vArgs(vArgsIn)
-{
-    nLastNonce = 0;
-    pHttpGet = NULL;
-}
-
-CRPCDispatch::~CRPCDispatch()
+CRPCClient::~CRPCClient()
 {
 }
 
-bool CRPCDispatch::WalleveHandleInitialize()
+bool CRPCClient::WalleveHandleInitialize()
 {
     if (!WalleveGetObject("httpget",pHttpGet))
     {
@@ -53,23 +71,30 @@ bool CRPCDispatch::WalleveHandleInitialize()
     return true;
 }
 
-void CRPCDispatch::WalleveHandleDeinitialize()
+void CRPCClient::WalleveHandleDeinitialize()
 {
     pHttpGet = NULL;
 }
 
-bool CRPCDispatch::WalleveHandleInvoke()
+bool CRPCClient::WalleveHandleInvoke()
 {
     if (!WalleveThreadDelayStart(thrDispatch))
     {
         return false;
     }
+    pClient = this;
     return IIOModule::WalleveHandleInvoke();
 }
 
-void CRPCDispatch::WalleveHandleHalt()
+void CRPCClient::WalleveHandleHalt()
 {
     IIOModule::WalleveHandleHalt();
+
+    pClient = NULL;
+    if (!ioService.stopped())
+    {
+        ioService.stop();
+    }
 
     if (thrDispatch.IsRunning())
     {
@@ -79,12 +104,12 @@ void CRPCDispatch::WalleveHandleHalt()
     thrDispatch.Exit();
 }
 
-const CMvRPCConfig * CRPCDispatch::WalleveConfig()
+const CMvRPCClientConfig * CRPCClient::WalleveConfig()
 {
-    return dynamic_cast<const CMvRPCConfig *>(IWalleveBase::WalleveConfig());
+    return dynamic_cast<const CMvRPCClientConfig *>(IWalleveBase::WalleveConfig());
 }
 
-bool CRPCDispatch::HandleEvent(CWalleveEventHttpGetRsp& event)
+bool CRPCClient::HandleEvent(CWalleveEventHttpGetRsp& event)
 {
     try
     {
@@ -115,55 +140,43 @@ bool CRPCDispatch::HandleEvent(CWalleveEventHttpGetRsp& event)
         }
 
         // Parse reply
-        Value valReply;
-        if (!read_string(rsp.strContent, valReply))
+        if (WalleveConfig()->fDebug)
         {
-            throw runtime_error("couldn't parse reply from server");
-        }
-        const Object& reply = valReply.get_obj();
-        if (reply.empty())
-        {
-            throw runtime_error("expected reply to have result, error and id properties");
+            cout << "response: " << rsp.strContent;
         }
 
-        // Parse reply
-        const Value& result = find_value(reply, "result");
-        const Value& error  = find_value(reply, "error");
-
-        if (error.type() == null_type)
+        auto spResp = DeserializeCRPCResp("", rsp.strContent);
+        if (spResp->IsError())
         {
-            // Result
-            if (result.type() == str_type)
-            {
-                cout << result.get_str() << "\n";
-            }
-            else if (result.type() != null_type)
-            {
-                cout << write_string(result, true) << "\n";
-            }
-            ioComplt.Completed(true);
-            return true;
+            // Error
+            cerr << spResp->spError->Serialize(true) << endl;
+            cerr << strHelpTips << endl;
+        }
+        else if (spResp->IsSuccessful())
+        {
+            cout << spResp->spResult->Serialize(true) << endl;
         }
         else
         {
-            // Error
-            cerr << "error: " << write_string(error, false) << "\n";
+            cerr << "server error: neigher error nor result. resp: " << spResp->Serialize(true) << endl;
         }
     }
-    catch (const std::exception& e)
+    catch (exception& e)
     {
         cerr << "error: " << e.what() << "\n";
     }
-    catch (...)
-    {
-        cerr << "unknown exception\n";
-    }
+
     ioComplt.Completed(false);
     return true;
 }
 
-bool CRPCDispatch::GetResponse(uint64 nNonce,const string& strWallet,Object& jsonReq)
+bool CRPCClient::GetResponse(uint64 nNonce, const std::string& content)
 {
+    if (WalleveConfig()->fDebug)
+    {
+        cout << "request: " << content << endl;
+    }
+
     CWalleveEventHttpGet eventHttpGet(nNonce);
     CWalleveHttpGet& httpGet = eventHttpGet.data;
     httpGet.strIOModule = WalleveGetOwnKey();
@@ -183,11 +196,11 @@ bool CRPCDispatch::GetResponse(uint64 nNonce,const string& strWallet,Object& jso
 
     CNetHost host(WalleveConfig()->strRPCConnect,WalleveConfig()->nRPCPort);
     httpGet.mapHeader["host"] = host.ToString();
-    httpGet.mapHeader["url"] = string("/") + strWallet;
+    httpGet.mapHeader["url"] = "/" + to_string(MV_VERSION);
     httpGet.mapHeader["method"] = "POST";
     httpGet.mapHeader["accept"] = "application/json";
     httpGet.mapHeader["content-type"] = "application/json";
-    httpGet.mapHeader["user-agent"] = string("multivers-json-rpc/");
+    httpGet.mapHeader["user-agent"] = string("multiverse-json-rpc/");
     httpGet.mapHeader["connection"] = "Keep-Alive";
     if (!WalleveConfig()->strRPCPass.empty() || !WalleveConfig()->strRPCUser.empty())
     {
@@ -196,7 +209,7 @@ bool CRPCDispatch::GetResponse(uint64 nNonce,const string& strWallet,Object& jso
         httpGet.mapHeader["authorization"] = string("Basic ") + strAuth;
     }
 
-    httpGet.strContent = write_string(Value(jsonReq), false) + "\n";
+    httpGet.strContent = content + "\n";
     
     ioComplt.Reset();
 
@@ -208,24 +221,12 @@ bool CRPCDispatch::GetResponse(uint64 nNonce,const string& strWallet,Object& jso
     return (ioComplt.WaitForComplete(fResult) && fResult);
 }
 
-bool CRPCDispatch::CallRPC(const vector<string>& vCommand,const string& strWallet,int nReqId)
+bool CRPCClient::CallRPC(CRPCParamPtr spParam, int nReqId)
 {
-    string strMethod;
-    Array params;
     try
     {
-        vector<string>::const_iterator it = vCommand.begin();
-        strMethod = (*it);
-        while (++it != vCommand.end())
-        {
-            params.push_back(GetParamValue((*it)));
-        }
-
-        Object request;
-        request.push_back(Pair("method", strMethod));
-        request.push_back(Pair("params", params));
-        request.push_back(Pair("id", nReqId));
-        return GetResponse(1,strWallet,request);
+        CRPCReqPtr spReq = MakeCRPCReqPtr(nReqId, spParam->Method(), spParam);
+        return GetResponse(1, spReq->Serialize());
     }
     catch (const std::exception& e)
     {
@@ -238,45 +239,23 @@ bool CRPCDispatch::CallRPC(const vector<string>& vCommand,const string& strWalle
     return false;
 }
 
-bool CRPCDispatch::CallConsoleCommand(const vector<std::string>& vCommand,string& strWallet)
+bool CRPCClient::CallConsoleCommand(const vector<std::string>& vCommand)
 {
-    if (vCommand[0] == "getwallet")
-    {
-        if (strWallet.empty())
-        {
-            cout << "main\n";
-        }
-        else
-        {
-            cout << strWallet << "\n";
-        }
-    }
-    else if (vCommand[0] == "setwallet")
-    {
-        strWallet = vCommand.size() > 1 && vCommand[1] != "main" ? vCommand[1] : "";
-    }
-    else if (vCommand[0] == "help")
+    if (vCommand[0] == "help")
     {
         if (vCommand.size() == 1)
         {
-            cout << "getwallet\n" << "setwallet [\"walletname\"=\"\"]\n" << "quit\n";
-            CallRPC(vCommand,strWallet,++nLastNonce);
-        }
-        else if (vCommand[1] == "getwallet")
-        {
-            cout << "getwallet\nReturns current wallet name.\n";
-        }
-        else if (vCommand[1] == "setwallet")
-        {
-            cout << "setwallet [\"walletname\"=\"\"]\nSets current wallet.\n";
-        }
-        else if (vCommand[1] == "quit")
-        {
-            cout << "quit\n Quits this console.(CTRL-D)\n";
+            cout << LocalCommandUsage() << endl;
+            return false;
         }
         else
         {
-            return false;
+            string usage = LocalCommandUsage(vCommand[1]);
+            if (usage.empty())
+            {
+                return false;
+            }
+            cout << usage << endl;
         }
     }
     else
@@ -286,59 +265,40 @@ bool CRPCDispatch::CallConsoleCommand(const vector<std::string>& vCommand,string
     return true;
 }
 
-void CRPCDispatch::LaunchConsole()
+void CRPCClient::LaunchConsole()
 {
-    const char* prompt = "multivers> ";
-    char *line = NULL;
-    Initialize_ReadLine();
-    string strWallet = WalleveConfig()->strRPCWallet;
+    ioService.reset();
 
-    while ((line = readline(prompt)))
+    EnterLoop();
+
+    WaitForChars();
+    ioService.run();
+
+    LeaveLoop();
+}
+
+void CRPCClient::DispatchLine(const string& strLine)
+{
+    ioStrand.dispatch(boost::bind(&CRPCClient::ConsoleHandleLine, this, strLine));
+}
+
+void CRPCClient::LaunchCommand()
+{
+    const CRPCParam* param = dynamic_cast<const CRPCParam*>(IWalleveBase::WalleveConfig());
+    if (param != NULL)
     {
-        if (strncmp(line,"quit",4) == 0)
-        {
-            break;
-        }
-        vector<string> vCommand;
-        string strLine(line);
-        size_t start,stop = 0;
-        while ((start = strLine.find_first_not_of(" ",stop)) != string::npos)
-        {
-            stop = strLine.find(" ",start);
-            if (stop == string::npos)
-            {
-                vCommand.push_back(strLine.substr(start));
-                break;
-            }
-            else
-            {
-                vCommand.push_back(strLine.substr(start,stop - start));
-            }
-        }
-        if (!vCommand.empty())
-        {
-            add_history(line);
-
-            if (!CallConsoleCommand(vCommand,strWallet))
-            {
-                CallRPC(vCommand,strWallet,++nLastNonce);
-            }
-        }
+        // avoid delete global pointer
+        CRPCParamPtr spParam(const_cast<CRPCParam*>(param), [](CRPCParam* p) {});
+        CallRPC(spParam, nLastNonce);
     }
-    if (!line)
+    else
     {
-       cout << "\n";
+        cerr << "Unknown command" << endl;
     }
     MvShutdown();
 }
 
-void CRPCDispatch::LaunchCommand()
-{
-    CallRPC(vArgs,WalleveConfig()->strRPCWallet);
-    MvShutdown();
-}
-
-void CRPCDispatch::CancelCommand()
+void CRPCClient::CancelCommand()
 {
     if (pHttpGet)
     {
@@ -350,116 +310,138 @@ void CRPCDispatch::CancelCommand()
     }
 }
 
-Value CRPCDispatch::GetParamValue(const string& strParam)
+void CRPCClient::WaitForChars()
 {
-    Value v,value(strParam);
-    if (!read_string(value.get_str(), v))
-    {
-        return value;
-    }
-
-    if (strParam[0] == '[')
-    {
-        return v.get_array();
-    }
-    else if (strParam[0] == '{')
-    {
-        return v.get_obj();
-    }
-    else if (strcasecmp(strParam.c_str(),"true") == 0
-             || strcasecmp(strParam.c_str(),"false") == 0)
-    {
-        return v.get_value<bool>();
-    }
-    else if (strParam.find_first_not_of("0123456789.-+") == string::npos)
-    {
-        size_t pos = strParam.find_first_of('.');
-        if (pos == string::npos)
-        {
-            return v.get_value<boost::int64_t>();
-        }
-        else if (pos == strParam.find_last_of('.'))
-        {
-            return v.get_value<double>();
-        }
-    }
-
-    if (value.type() != str_type)
-    {
-        throw runtime_error("type mismatch");
-    }
-    return value;
+#if BOOST_VERSION < 106600
+    // TODO: Just to be compilable. It works incorrect.
+    inStream.async_read_some(bufRead, boost::bind(&CRPCClient::HandleRead,this,
+                                                     boost::asio::placeholders::error,
+                                                     boost::asio::placeholders::bytes_transferred));
+#else
+    inStream.async_wait(boost::asio::posix::stream_descriptor::wait_read, boost::bind(&CRPCClient::HandleRead,this,
+                                                     boost::asio::placeholders::error));
+#endif
 }
 
+#if BOOST_VERSION < 106600
+void CRPCClient::HandleRead(const boost::system::error_code& err, size_t nTransferred)
+#else
+void CRPCClient::HandleRead(const boost::system::error_code& err)
+#endif
+{
+    if (err == boost::system::errc::success)
+    {
+        rl_callback_read_char();
+        WaitForChars();
+    }
+}
 
+void CRPCClient::EnterLoop()
+{
+    Initialize_ReadLine();
+}
+
+void CRPCClient::LeaveLoop()
+{
+    cout << "\n";
+    Uninitialize_ReadLine();
+}
+
+void CRPCClient::ConsoleHandleLine(const string& strLine)
+{
+    if (strLine == "quit")
+    {
+        Uninitialize_ReadLine();
+        MvShutdown();
+        return;
+    }
+
+    vector<string> vCommand;
+
+    // parse command line input
+    // part 1: Parse pair of blank and quote(' or ")
+    // part 2: If part 1 is blank, part 2 is any charactor besides blank. 
+    //         if part 1 is quote, part 2 is any charactor besides the quote in part 1.
+    // part 3: consume the tail of match.
+    boost::regex e("[ \t]*((?<quote>['\"])|[ \t]*)"
+        "((?(<quote>).*?|[^ \t]+))"
+        "(?(<quote>)\\k<quote>|([ \t]+|$))", boost::regex::perl);
+    boost::sregex_iterator it(strLine.begin(), strLine.end(), e);
+    boost::sregex_iterator end;
+    for (; it != end; it++)
+    {
+        string str = (*it)[3];
+        vCommand.push_back(str);
+    }
+
+    if (WalleveConfig()->fDebug)
+    {
+        cout << "command : " ;
+        for (auto& x: vCommand)
+        {
+            cout << x << ',';
+        }
+        cout << endl;
+    }
+
+    if (!vCommand.empty())
+    {
+        add_history(strLine.c_str());
+
+        if (!CallConsoleCommand(vCommand))
+        {
+            try
+            {
+                CMvConfig config;
+
+                char* argv[vCommand.size() + 1];
+                argv[0] = const_cast<char*>("multiverse-cli");
+                for (int i = 0; i < vCommand.size(); ++i)
+                {
+                    argv[i + 1] = const_cast<char*>(vCommand[i].c_str());
+                }
+
+                if (!config.Load(vCommand.size() + 1, argv, "", "") || !config.PostLoad())
+                {
+                    return;
+                }
+
+                // help
+                if (config.GetConfig()->fHelp)
+                {
+                    cout << config.Help() << endl;
+                    return;
+                }
+
+                // call rpc
+                CRPCParam* param = dynamic_cast<CRPCParam*>(config.GetConfig());
+                if (param != NULL)
+                {
+                    // avoid delete global point
+                    CRPCParamPtr spParam(param, [](CRPCParam* p) {});
+                    CallRPC(spParam, ++nLastNonce);
+                }
+                else
+                {
+                    cerr << "Unknown command" << endl;
+                }
+            }
+            catch (CRPCException& e)
+            {
+                cerr << e.strMessage + strHelpTips << endl;
+            }
+            catch (exception& e)
+            {
+                cerr << e.what() << endl;
+            }
+        }
+    }
+}
 
 ///////////////////////////////
 // readline
-static const char *rpccmd[] =
-{
-    "addcoldmintingaddress",
-    "addnewwallet",
-    "addnode",
-    "addmultisigaddress",
-    "createrawtransaction",
-    "createsendfromaddress",
-    "decodetransaction",
-    "deladdressbook",
-    "dumpprivkey",
-    "encryptwallet",
-    "getaccount",
-    "getaccountaddress",
-    "getaddressbook",
-    "getaddressesbyaccount",
-    "getaddressinfo",
-    "getbalance",
-    "getblock",
-    "getblockcount",
-    "getblockhash",
-    "getconnectioncount",
-    "getinfo",
-    "getmininginfo",
-    "getnewaddress",
-    "getpeerinfo",
-    "getrawmempool",
-    "getrawtransaction",
-    "getreceivedbyaccount",
-    "getreceivedbyaddress",
-    "gettransaction",
-    "help",
-    "importprivkey",
-    "listaccounts",
-    "listaddressbook",
-    "listreceivedbyaccount",
-    "listreceivedbyaddress",
-    "listsinceblock",
-    "listtransactions",
-    "listunspent",
-    "listwallet",
-    "makekeypair",
-    "sendfrom",
-    "sendmany",
-    "sendrawtransaction",
-    "sendtoaddress",
-    "setaccount",
-    "setaddressbook",
-    "settxfee",
-    "signmessage",
-    "signrawtransaction",
-    "stop",
-    "validateaddress",
-    "verifymessage",
-    "walletexport",
-    "walletimport",
-    "walletlock",
-    "walletpassphrase",
-    "walletpassphrasechange",
-    "getwallet",
-    "setwallet",
-    NULL,
-};
 
-static char * RPCCommand_Generator(const char *text,int state)
+static char * RPCCommand_Generator(const char* text,int state)
 {
     static int listIndex,len;
     if (!state)
@@ -468,9 +450,10 @@ static char * RPCCommand_Generator(const char *text,int state)
         len = strlen(text);
     }
 
-    const char *cmd;
-    while((cmd = rpccmd[listIndex]))
+    auto& list = RPCCmdList();
+    for (; listIndex < list.size(); )
     {
+        const char* cmd = list[listIndex].c_str();
         listIndex++;
         if (strncmp(cmd,text,len) == 0)
         {
@@ -482,7 +465,7 @@ static char * RPCCommand_Generator(const char *text,int state)
     return NULL;
 }
 
-static char ** RPCCommand_Completion(const char *text,int start,int end)
+static char ** RPCCommand_Completion(const char* text, int start, int end)
 {
     (void)end;
     char **matches = NULL;
@@ -495,5 +478,21 @@ static char ** RPCCommand_Completion(const char *text,int start,int end)
 
 static void Initialize_ReadLine()
 {
+    rl_catch_signals = 0;
     rl_attempted_completion_function = RPCCommand_Completion;
+    rl_callback_handler_install(prompt, ReadlineCallback);
+}
+
+static void Uninitialize_ReadLine()
+{
+    rl_callback_handler_remove();
+}
+
+static void ReadlineCallback(char* line)
+{
+    string strLine = line ? line : "quit";
+    if (pClient)
+    {
+        pClient->DispatchLine(strLine);
+    }
 }

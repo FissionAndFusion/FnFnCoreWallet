@@ -179,7 +179,7 @@ void CConsole::ConsoleHandleEvent(CWalleveEvent* pEvent,CIOCompletion& compltHan
     compltHandle.Completed(pEvent->Handle(*this));
 }
 
-void CConsole::ConsoleHandleLine(const string strLine)
+void CConsole::ConsoleHandleLine(const string& strLine)
 {
     if (HandleLine(strLine))
     {
@@ -191,7 +191,7 @@ void CConsole::ConsoleHandleLine(const string strLine)
     }
 }
 
-void CConsole::ConsoleHandleOutput(const string strOutput)
+void CConsole::ConsoleHandleOutput(const string& strOutput)
 {
     boost::unique_lock<boost::mutex> lock(CConsole::mutexConsole);
     if (pCurrentConsole == this)

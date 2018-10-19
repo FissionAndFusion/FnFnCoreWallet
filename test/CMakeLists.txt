@@ -9,8 +9,9 @@
 set(sources
 	test_fnfn_main.cpp
 	test_fnfn.h test_fnfn.cpp
-    uint256_tests.cpp
-    rpc_tests.cpp
+	uint256_tests.cpp
+	rpc_tests.cpp
+	version_tests.cpp
 )
 
 add_executable(test_fnfn ${sources})
@@ -19,5 +20,6 @@ include_directories(../src ../walleve ../crypto ../common ../storage ../network)
 
 target_link_libraries(test_fnfn
 	Boost::unit_test_framework
-    Boost::system
+	Boost::system
+	Boost::thread
 )

@@ -4,21 +4,17 @@
 
 #include "mode/storage_config.h"
 
-namespace po = boost::program_options;
-using namespace multiverse;
+#include "mode/config_macro.h"
 
-#define DEFAULT_DB_CONNECTION 8
+namespace multiverse
+{
+namespace po = boost::program_options;
 
 CMvStorageConfig::CMvStorageConfig()
 {
     po::options_description desc("MvStorage");
 
-    AddOpt<std::string>(desc, "dbhost", strDBHost, "localhost");
-    AddOpt<std::string>(desc, "dbname", strDBName, "multiverse");
-    AddOpt<std::string>(desc, "dbuser", strDBUser, "multiverse");
-    AddOpt<std::string>(desc, "dbpass", strDBPass, "multiverse");
-    AddOpt<int>(desc, "dbport", nDBPort, 0);
-    AddOpt<int>(desc, "dbconn", nDBConn, DEFAULT_DB_CONNECTION);
+    CMvStorageConfigOption::AddOptionsImpl(desc);
 
     AddOptions(desc);
 }
@@ -27,6 +23,11 @@ CMvStorageConfig::~CMvStorageConfig() {}
 
 bool CMvStorageConfig::PostLoad()
 {
+    if (fHelp)
+    {
+        return true;
+    }
+
     if (fTestNet)
     {
         strDBName += "-testnet";
@@ -38,4 +39,16 @@ bool CMvStorageConfig::PostLoad()
     return true;
 }
 
-std::string CMvStorageConfig::ListConfig() const { return "storage"; }
+std::string CMvStorageConfig::ListConfig() const
+{
+    std::ostringstream oss;
+    oss << CMvStorageConfigOption::ListConfigImpl();
+    return oss.str();
+}
+
+std::string CMvStorageConfig::Help() const
+{
+    return CMvStorageConfigOption::HelpImpl();
+}
+
+}  // namespace multiverse

@@ -22,7 +22,18 @@ public:
     virtual int GetPrimaryChainHeight() = 0;
     virtual void BroadcastBlockInv(const uint256& hashFork,const uint256& hashBlock,const std::set<uint64>& setKnownPeer=std::set<uint64>())=0;
     virtual void BroadcastTxInv(const uint256& hashFork)=0;
+    virtual void SubscribeFork(const uint256& hashFork)=0;
+    virtual void UnsubscribeFork(const uint256& hashFork)=0;
+};
 
+class IMvDelegatedChannel : public walleve::IIOModule, virtual public CMvPeerEventListener
+{
+public:
+    IMvDelegatedChannel() : IIOModule("delegatedchannel") {}
+    virtual void PrimaryUpdate(int nStartHeight,
+                               const std::vector<std::pair<uint256,std::map<CDestination,size_t> > >& vEnrolledWeight,
+                               const std::map<CDestination,std::vector<unsigned char> >& mapDistributeData, 
+                               const std::map<CDestination,std::vector<unsigned char> >& mapPublishData) = 0;
 };
 
 class CMvPeerNet : public walleve::CPeerNet, virtual public CMvPeerEventListener
@@ -31,22 +42,29 @@ public:
     CMvPeerNet();
     ~CMvPeerNet();
     virtual void BuildHello(walleve::CPeer *pPeer,walleve::CWalleveBufStream& ssPayload);
-    void HandlePeerWriten(walleve::CPeer *pPeer);
+    void HandlePeerWriten(walleve::CPeer *pPeer) override;
     virtual bool HandlePeerHandshaked(walleve::CPeer *pPeer,uint32 nTimerId);
     virtual bool HandlePeerRecvMessage(walleve::CPeer *pPeer,int nChannel,int nCommand,
                                walleve::CWalleveBufStream& ssPayload);
 protected:
-    bool WalleveHandleInitialize();
-    void WalleveHandleDeinitialize();
-    bool HandleEvent(CMvEventPeerInv& eventInv);
-    bool HandleEvent(CMvEventPeerGetData& eventGetData);
-    bool HandleEvent(CMvEventPeerGetBlocks& eventGetBlocks);
-    bool HandleEvent(CMvEventPeerTx& eventTx);
-    bool HandleEvent(CMvEventPeerBlock& eventBlock);
-    walleve::CPeer* CreatePeer(walleve::CIOClient *pClient,uint64 nNonce,bool fInBound);
-    void DestroyPeer(walleve::CPeer* pPeer);
-    walleve::CPeerInfo* GetPeerInfo(walleve::CPeer* pPeer,walleve::CPeerInfo* pInfo);
+    bool WalleveHandleInitialize() override;
+    void WalleveHandleDeinitialize() override;
+    bool HandleEvent(CMvEventPeerSubscribe& eventSubscribe) override;
+    bool HandleEvent(CMvEventPeerUnsubscribe& eventUnsubscribe) override;
+    bool HandleEvent(CMvEventPeerInv& eventInv) override;
+    bool HandleEvent(CMvEventPeerGetData& eventGetData) override;
+    bool HandleEvent(CMvEventPeerGetBlocks& eventGetBlocks) override;
+    bool HandleEvent(CMvEventPeerTx& eventTx) override;
+    bool HandleEvent(CMvEventPeerBlock& eventBlock) override;
+    bool HandleEvent(CMvEventPeerBulletin& eventBulletin) override;
+    bool HandleEvent(CMvEventPeerGetDelegated& eventGetDelegated) override;
+    bool HandleEvent(CMvEventPeerDistribute& eventDistribute) override;
+    bool HandleEvent(CMvEventPeerPublish& eventPublish) override;
+    walleve::CPeer* CreatePeer(walleve::CIOClient *pClient,uint64 nNonce,bool fInBound) override;
+    void DestroyPeer(walleve::CPeer* pPeer) override;
+    walleve::CPeerInfo* GetPeerInfo(walleve::CPeer* pPeer,walleve::CPeerInfo* pInfo) override;
     bool SendDataMessage(uint64 nNonce,int nCommand,walleve::CWalleveBufStream& ssPayload);
+    bool SendDelegatedMessage(uint64 nNonce,int nCommand,walleve::CWalleveBufStream& ssPayload);
     void SetInvTimer(uint64 nNonce,std::vector<CInv>& vInv);
     virtual void ProcessAskFor(walleve::CPeer* pPeer);
     void Configure(uint32 nMagicNumIn,uint32 nVersionIn,uint64 nServiceIn,const std::string& subVersionIn,bool fEnclosedIn)
@@ -57,6 +75,7 @@ protected:
     virtual bool CheckPeerVersion(uint32 nVersionIn,uint64 nServiceIn,const std::string& subVersionIn) = 0;
 protected:
     IMvNetChannel* pNetChannel;
+    IMvDelegatedChannel* pDelegatedChannel;
     uint32 nMagicNum;
     uint32 nVersion;
     uint64 nService;

@@ -7,6 +7,10 @@
 #include <algorithm>
 #include <boost/filesystem.hpp>
 #include <numeric>
+#include <exception>
+#include <iostream>
+
+#include "rpc/rpc_error.h"
 
 using namespace multiverse;
 
@@ -54,6 +58,11 @@ bool CMvConfig::Load(int argc, char* argv[], const fs::path& pathDefault,
     else if (exec == "multiverse-cli")
     {
         emMode = EModeType::CONSOLE;
+
+        if (vecCmd.size() > 0)
+        {
+            subCmd = vecCmd[0];
+        }
     }
     else
     {
@@ -83,6 +92,11 @@ bool CMvConfig::Load(int argc, char* argv[], const fs::path& pathDefault,
             {
                 ignoreCmd = 1;
             }
+
+            if (vecCmd.size() > ignoreCmd)
+            {
+                subCmd = vecCmd[ignoreCmd];
+            }
         }
     }
 
@@ -91,11 +105,51 @@ bool CMvConfig::Load(int argc, char* argv[], const fs::path& pathDefault,
         return false;
     }
 
-    // Add desc
-    pImpl = CMode::CreateConfig(emMode);
-
+    pImpl = CMode::CreateConfig(emMode, subCmd);
     pImpl->SetIgnoreCmd(ignoreCmd);
 
     // Load
     return pImpl->Load(argc, argv, pathDefault, strConfile);
+}
+
+bool CMvConfig::PostLoad()
+{
+    if (pImpl)
+    {
+        try
+        {
+            return pImpl->PostLoad();
+        }
+        catch (rpc::CRPCException& e)
+        {
+            std::cerr << e.strMessage + rpc::strHelpTips << std::endl;
+            return false;
+        }
+        catch (std::exception& e)
+        {
+            std::cerr << e.what() << std::endl;
+            return false;
+        }
+    }
+    return false;
+}
+
+void CMvConfig::ListConfig() const
+{
+    if (pImpl)
+    {
+        std::cout << pImpl->ListConfig() << std::endl;
+    }
+}
+
+std::string CMvConfig::Help() const
+{
+    if (pImpl)
+    {
+        return CMode::Help(emMode, subCmd, pImpl->Help());
+    }
+    else
+    {
+        return CMode::Help(emMode, subCmd);
+    }
 }
