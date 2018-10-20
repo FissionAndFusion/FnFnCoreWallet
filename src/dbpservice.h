@@ -41,8 +41,8 @@ private:
     void CreateDbpBlock(const CBlock& blockDetail, const uint256& forkHash,
                       int blockHeight, CMvDbpBlock& block);
     void CreateDbpTransaction(const CTransaction& tx, CMvDbpTransaction& dbptx);
-    bool GetForkPath(const uint256& forkHash, std::vector<std::pair<uint256,uint256>>& path);
-    void TrySwitchFork(const uint256& blockHash, std::vector<std::pair<uint256,uint256>>& path, uint256& forkHash);
+    bool CalcForkPoints(const uint256& forkHash);
+    void TrySwitchFork(const uint256& blockHash, uint256& forkHash);
     bool GetBlocks(const uint256& forkHash, const uint256& startHash, int32 n, std::vector<CMvDbpBlock>& blocks);
     bool IsEmpty(const uint256& hash);
     bool IsForkHash(const uint256& hash);
@@ -73,6 +73,8 @@ private:
 
     std::map<std::string, std::string> mapIdSubedSession;       // id => session
     std::unordered_map<std::string, bool> mapCurrentTopicExist; // topic => enabled
+
+    std::unordered_map<std::string, std::pair<uint256,uint256>> mapForkPoint; // fork point hash => (fork hash, fork point hash)
 };
 
 } // namespace multiverse
