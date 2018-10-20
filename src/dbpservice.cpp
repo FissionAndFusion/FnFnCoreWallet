@@ -356,29 +356,28 @@ bool CDbpService::GetBlocks(const uint256& forkHash, const uint256& startHash, i
     pService->GetBlockLocation(blockHash, tempForkHash, blockHeight);
     
     std::vector<uint256> blocksHash;
-    while (nonExtendBlockCount != nonExtendBlockMaxNum && 
+    while (nonExtendBlockCount < nonExtendBlockMaxNum && 
             pService->GetBlockHash(tempForkHash, blockHeight, blocksHash))
     {
-        
         for(int i = 0; i < blocksHash.size(); ++i)
         {
             CBlock block;
-            pService->GetBlock(blocksHash[i], block, tempForkHash, blockHeight);
-            std::cout << "block height: " << blockHeight << "\n";
-            std::cout << "block fork: " << tempForkHash.ToString() << "\n"; 
+            int height;
+            pService->GetBlock(blocksHash[i], block, tempForkHash, height);
             if (block.nType != CBlock::BLOCK_EXTENDED)
             {
                 nonExtendBlockCount++;
             }
 
             CMvDbpBlock DbpBlock;
-            CreateDbpBlock(block, tempForkHash, blockHeight, DbpBlock);
+            CreateDbpBlock(block, tempForkHash, height, DbpBlock);
             blocks.push_back(DbpBlock);
         }
         
-        TrySwitchFork(blockHash,path,tempForkHash);
-
+        TrySwitchFork(blocksHash[0],path,tempForkHash);
         blockHeight++;
+        blocksHash.clear(); blocksHash.shrink_to_fit();
+       
     }
 
     return true;
