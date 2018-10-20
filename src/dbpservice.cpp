@@ -267,21 +267,21 @@ bool CDbpService::IsForkHash(const uint256& hash)
     return false;
 }
 
-void CDbpService::TrySwitchFork(const uint256& blockHash, std::vector<std::pair<uint256,uint256>>& path,uint256& forkHash)
+void CDbpService::TrySwitchFork(const uint256& blockHash,uint256& forkHash)
 {
-    for(const auto& fork : path)
+    auto it = mapForkPoint.find(blockHash.ToString());
+    if(it != mapForkPoint.end())
     {
-        if(blockHash == fork.second)
-        {
-            forkHash = fork.first;
-        }
-    }
+        auto value = it->second; 
+        forkHash = value.first;
+    } 
 }
 
-bool CDbpService::GetForkPath(const uint256& forkHash, std::vector<std::pair<uint256,uint256>>& path)
+bool CDbpService::CalcForkPoints(const uint256& forkHash)
 {
     std::vector<std::pair<uint256,int>> vAncestors;
     std::vector<std::pair<int,uint256>> vSublines;
+    std::vector<std::pair<uint256,uint256>> path;
     if(!pService->GetForkGenealogy(forkHash,vAncestors,vSublines))
     {
         return false;
@@ -303,6 +303,12 @@ bool CDbpService::GetForkPath(const uint256& forkHash, std::vector<std::pair<uin
     int nHeight = 0;
     pService->GetBlock(forkHash,block,tempFork,nHeight);
     path.push_back(std::make_pair(forkHash,block.hashPrev));
+
+    for(const auto& fork : path)
+    {
+        mapForkPoint.insert(std::make_pair(fork.second.ToString(), 
+            std::make_pair(fork.first,fork.second)));
+    }
     
     return true;
 }
@@ -335,11 +341,9 @@ bool CDbpService::GetBlocks(const uint256& forkHash, const uint256& startHash, i
         return false;
     }
 
-    // path.size() >= 1
-    std::vector<std::pair<uint256,uint256>> path;
-    if(!GetForkPath(connectForkHash,path))
+    if(!CalcForkPoints(connectForkHash))
     {
-        std::cerr << "GetForkAncestors failed.\n";
+        std::cerr << "CalcForkPoint failed.\n";
         return false;
     }
 
@@ -367,10 +371,9 @@ bool CDbpService::GetBlocks(const uint256& forkHash, const uint256& startHash, i
             blocks.push_back(DbpBlock);
         }
         
-        TrySwitchFork(blocksHash[0],path,tempForkHash);
+        TrySwitchFork(blocksHash[0],tempForkHash);
         blockHeight++;
         blocksHash.clear(); blocksHash.shrink_to_fit();
-       
     }
 
     return true;
@@ -381,7 +384,7 @@ void CDbpService::HandleGetBlocks(CMvEventDbpMethod& event)
     std::string forkid = event.data.params["forkid"];
     std::string blockHash = event.data.params["hash"];
     int32 blockNum = boost::lexical_cast<int32>(event.data.params["number"]);
-
+    
     uint256 startBlockHash(std::vector<unsigned char>(blockHash.begin(), blockHash.end()));
     uint256 forkHash;
     forkHash.SetHex(forkid);
