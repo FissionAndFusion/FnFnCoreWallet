@@ -41,8 +41,11 @@ private:
     void CreateDbpBlock(const CBlock& blockDetail, const uint256& forkHash,
                       int blockHeight, CMvDbpBlock& block);
     void CreateDbpTransaction(const CTransaction& tx, CMvDbpTransaction& dbptx);
+    bool CalcForkPoints(const uint256& forkHash);
+    void TrySwitchFork(const uint256& blockHash, uint256& forkHash);
     bool GetBlocks(const uint256& forkHash, const uint256& startHash, int32 n, std::vector<CMvDbpBlock>& blocks);
     bool IsEmpty(const uint256& hash);
+    bool IsForkHash(const uint256& hash);
     void HandleGetBlocks(CMvEventDbpMethod& event);
     void HandleGetTransaction(CMvEventDbpMethod& event);
     void HandleSendTransaction(CMvEventDbpMethod& event);
@@ -53,8 +56,8 @@ private:
     void SubTopic(const std::string& id, const std::string& session, const std::string& topic);
     void UnSubTopic(const std::string& id);
 
-    void PushBlock(const CMvDbpBlock& block);
-    void PushTx(const CMvDbpTransaction& dbptx);
+    void PushBlock(const std::string& forkid, const CMvDbpBlock& block);
+    void PushTx(const std::string& forkid, const CMvDbpTransaction& dbptx);
 
 protected:
     walleve::IIOProc* pDbpServer;
@@ -70,6 +73,8 @@ private:
 
     std::map<std::string, std::string> mapIdSubedSession;       // id => session
     std::unordered_map<std::string, bool> mapCurrentTopicExist; // topic => enabled
+
+    std::unordered_map<std::string, std::pair<uint256,uint256>> mapForkPoint; // fork point hash => (fork hash, fork point hash)
 };
 
 } // namespace multiverse
