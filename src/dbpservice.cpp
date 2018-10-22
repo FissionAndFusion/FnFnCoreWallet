@@ -332,8 +332,8 @@ bool CDbpService::GetBlocks(const uint256& forkHash, const uint256& startHash, i
 
     if (IsEmpty(blockHash))
     {
-        blockHash = connectForkHash;
-        std::cout << "start block hash is empty, default value is fork hash\n";
+        blockHash = pCoreProtocol->GetGenesisBlockHash();
+        std::cout << "start block hash is empty, default value is main fork hash\n";
     }
 
     int blockHeight = 0;
