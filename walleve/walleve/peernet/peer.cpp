@@ -96,11 +96,13 @@ void CPeer::HandleRead(size_t nTransferred,CompltFunc fnComplt)
         nTimeRecv = GetTime();
         if (!fnComplt())
         {
+            std::cout << "**********CPeer::HandleRead fnComplt failed\n";
             pPeerNet->HandlePeerViolate(this);
         }
     }
     else 
     {
+        std::cout << "**********CPeer::HandleRead transferred is 0\n";
         pPeerNet->HandlePeerError(this);
     }
 }
