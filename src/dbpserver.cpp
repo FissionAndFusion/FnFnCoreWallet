@@ -64,7 +64,6 @@ void CDbpClient::SendMessage(dbp::Base* pBaseMsg)
 {
     if (ssSend.GetSize() != 0)
     {
-        pClient->Write(ssSend, boost::bind(&CDbpClient::HandleWritenResponse, this, _1, OTHER));
         return;
     }
 
@@ -91,7 +90,6 @@ void CDbpClient::SendAddedMessage(dbp::Base* pBaseMsg)
     if (!IsSentComplete())
     {
         queueAddedSend.push(*pBaseMsg);
-       // pClient->Write(ssSend, boost::bind(&CDbpClient::HandleWritenResponse, this, _1, OTHER));
         return;
     }
 
@@ -407,12 +405,14 @@ void CDbpClient::StartReadPayload(std::size_t nLength)
 
 void CDbpClient::WriteMessageToSendStream(dbp::Base* pBaseMsg)
 {
+    
     std::string bytes;
     pBaseMsg->SerializeToString(&bytes);
 
     unsigned char msgLenBuf[MSG_HEADER_LEN];
     std::cout << "[dbp server] header size: " << bytes.size() << "\n";
     CDbpUtils::WriteLenToMsgHeader(bytes.size(), (char *)msgLenBuf, MSG_HEADER_LEN);
+    
     ssSend.Write((char *)msgLenBuf, MSG_HEADER_LEN);
     ssSend.Write((char *)bytes.data(), bytes.size());
 }

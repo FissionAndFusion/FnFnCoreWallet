@@ -441,7 +441,7 @@ CRPCResultPtr CRPCMod::RPCListPeer(CRPCParamPtr param)
         peer.strSubver = info.strSubVer;
         peer.fInbound = info.fInBound;
         peer.nHeight = info.nStartingHeight;
-        peer.fBanscore = info.nScore;
+        peer.nBanscore = info.nScore;
         spResult->vecPeer.push_back(peer);
     }
 
