@@ -234,12 +234,15 @@ bool CBlockDB::UpdateFork(const uint256& hash,const uint256& hashRefBlock,const 
     }
     {
         CMvDBTxn txn(*db);
-        for (int i = 0;i < vTxDel.size();i++)
+        if (nIndexBased < 0)
         {
-            ostringstream oss;
-            oss << "DELETE FROM tansaction WHERE txid = " 
-                <<            "\'" << db->ToEscString(vTxDel[i]) << "\'";
-            txn.Query(oss.str());
+            for (int i = 0;i < vTxDel.size();i++)
+            {
+                ostringstream oss;
+                oss << "DELETE FROM transaction WHERE txid = " 
+                    <<            "\'" << db->ToEscString(vTxDel[i]) << "\'";
+                txn.Query(oss.str());
+            }
         }
         for (int i = 0;i < vTxNew.size();i++)
         {

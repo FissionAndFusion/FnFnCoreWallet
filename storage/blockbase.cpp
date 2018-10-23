@@ -605,7 +605,10 @@ bool CBlockBase::GetBlockView(const uint256& hash,CBlockView& view,bool fCommita
         {
             view.RemoveTx(block.vtx[j].GetHash(),block.vtx[j],block.vTxContxt[j]);
         }
-        view.RemoveTx(block.txMint.GetHash(),block.txMint);
+        if (!block.txMint.IsNull())
+        {
+            view.RemoveTx(block.txMint.GetHash(),block.txMint);
+        }
     }
 
     for (int i = vPath.size() - 1;i >= 0;i--)
