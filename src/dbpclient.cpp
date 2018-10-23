@@ -773,10 +773,27 @@ bool CMvDbpClient::HandleEvent(CMvEventDbpRegisterForkID& event)
         return false;
     }
 
-    // TODO SendForks to parent node
+    // pick one session to sendforks
+    CMvDbpClientSocket* pClientSocket = nullptr;
+    if(mapSessionProfile.size() > 0)
+    {
+        pClientSocket = mapSessionProfile.begin()->second.pClientSocket;
+    }
+    else
+    {
+        std::cerr << "mapSessionProfile is empty\n";
+        return false;
+    }
 
-    
-    
+    if(!pClientSocket)
+    {
+        std::cerr << "Client Socket is invalid\n";
+        return false;
+    }
+
+    std::vector<std::string> forks{event.data.forkid};
+    pClientSocket->SendForkIds(forks);
+
     return true;
 }
 
