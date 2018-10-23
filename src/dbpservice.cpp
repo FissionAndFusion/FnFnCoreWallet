@@ -350,7 +350,7 @@ bool CDbpService::GetBlocks(const uint256& forkHash, const uint256& startHash, i
 
     if (IsEmpty(blockHash))
     {
-        blockHash = connectForkHash;
+        blockHash = pCoreProtocol->GetGenesisBlockHash();
     }
 
     int blockHeight = 0;
