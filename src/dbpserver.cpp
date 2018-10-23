@@ -201,7 +201,7 @@ static void CreateLwsTransaction(const CMvDbpTransaction* dbptx, lws::Transactio
     std::string mintVchData(dbptx->vchData.begin(), dbptx->vchData.end());
     tx->set_vchdata(mintVchData);
 
-    std::string mintVchSig(dbptx->vchData.begin(), dbptx->vchData.end());
+    std::string mintVchSig(dbptx->vchSig.begin(), dbptx->vchSig.end());
     tx->set_vchsig(mintVchSig);
 
     std::string hash(dbptx->hash.begin(), dbptx->hash.end());
