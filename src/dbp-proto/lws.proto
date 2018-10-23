@@ -7,6 +7,7 @@ message ForkID
     repeated string ids = 1;
 }
 
+
 message RegisterForkIDArg 
 {
     string id = 1;
@@ -86,4 +87,14 @@ message SendTxRet
     bytes hash = 1; //上链数据的hash
     string result = 2; //处理结果 succeed/failed/processing
     string reason = 3; //错误原因
+}
+
+message SendBlockArg 
+{
+    Block block = 1;
+}
+
+message SendBlockRet
+{
+    bytes hash = 1;
 }

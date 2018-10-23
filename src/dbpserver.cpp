@@ -201,14 +201,48 @@ static void CreateLwsTransaction(const CMvDbpTransaction* dbptx, lws::Transactio
     std::string mintVchData(dbptx->vchData.begin(), dbptx->vchData.end());
     tx->set_vchdata(mintVchData);
 
-    std::string mintVchSig(dbptx->vchData.begin(), dbptx->vchData.end());
+    std::string mintVchSig(dbptx->vchSig.begin(), dbptx->vchSig.end());
     tx->set_vchsig(mintVchSig);
 
     std::string hash(dbptx->hash.begin(), dbptx->hash.end());
     tx->set_hash(hash);
 }
 
-static void CreateLwsBlock(CMvDbpBlock* pBlock, lws::Block& block)
+static void CreateDbpTransaction(const lws::Transaction* tx, CMvDbpTransaction* dbptx)
+{
+    dbptx->nVersion = tx->nversion();
+    dbptx->nType = tx->ntype();
+    dbptx->nLockUntil = tx->nlockuntil();
+
+    std::vector<unsigned char> hashAnchor(tx->hashanchor().begin(), tx->hashanchor().end());
+    dbptx->hashAnchor = hashAnchor;
+
+    for(int i = 0; i < tx->vinput_size(); ++i)
+    {
+        auto input = tx->vinput(i);
+        CMvDbpTxIn txin;
+        txin.hash = std::vector<unsigned char>(input.hash().begin(), input.hash().end());
+        txin.n = input.n();
+
+        dbptx->vInput.push_back(txin);
+    }
+
+    dbptx->cDestination.prefix = tx->cdestination().prefix();
+    dbptx->cDestination.size = tx->cdestination().size();
+    auto& data = tx->cdestination().data();
+    dbptx->cDestination.data = std::vector<unsigned char>(data.begin(),data.end());
+
+    dbptx->nAmount = tx->namount();
+    dbptx->nTxFee = tx->ntxfee();
+
+    dbptx->vchData = std::vector<unsigned char>(tx->vchdata().begin(), tx->vchdata().end());
+    dbptx->vchSig = std::vector<unsigned char>(tx->vchsig().begin(), tx->vchsig().end());
+
+    dbptx->hash = std::vector<unsigned char>(tx->hash().begin(), tx->hash().end());
+
+}
+
+static void CreateLwsBlock(const CMvDbpBlock* pBlock, lws::Block& block)
 {
     block.set_nversion(pBlock->nVersion);
     block.set_ntype(pBlock->nType);
@@ -240,6 +274,34 @@ static void CreateLwsBlock(CMvDbpBlock* pBlock, lws::Block& block)
     block.set_nheight(pBlock->nHeight);
     std::string hash(pBlock->hash.begin(), pBlock->hash.end());
     block.set_hash(hash);
+}
+
+static void CreateDbpBlock(const lws::Block *pBlock, CMvDbpBlock& block)
+{
+    block.nVersion = pBlock->nversion();
+    block.nType = pBlock->ntype();
+    block.nTimeStamp = pBlock->ntimestamp();
+
+    block.hashPrev = std::vector<unsigned char>(pBlock->hashprev().begin(),pBlock->hashprev().end());
+    block.hashMerkle = std::vector<unsigned char>(pBlock->hashmerkle().begin(),pBlock->hashmerkle().end());
+    block.vchProof = std::vector<unsigned char>(pBlock->vchproof().begin(), pBlock->vchproof().end());
+    block.vchSig = std::vector<unsigned char>(pBlock->vchsig().begin(), pBlock->vchsig().end());
+
+    //txMint
+    CreateDbpTransaction(&(pBlock->txmint()), &(block.txMint));
+
+    //repeated vtx
+    for(int i = 0; i < pBlock->vtx_size(); ++i)
+    {
+        auto vtx = pBlock->vtx(i);
+        CMvDbpTransaction tx;
+        CreateDbpTransaction(&vtx,&tx);
+        block.vtx.push_back(tx);
+    }
+
+    block.nHeight = pBlock->nheight();
+    block.hash = std::vector<unsigned char>(pBlock->hash().begin(), pBlock->hash().end());
+
 }
 
 void CDbpClient::SendResponse(CMvDbpAdded& body)
@@ -673,6 +735,9 @@ void CDbpServer::HandleClientMethod(CDbpClient* pDbpClient, google::protobuf::An
         methodBody.method = CMvDbpMethod::Method::SEND_TX;
     if (methodMsg.method() == "registerforkid")
         methodBody.method = CMvDbpMethod::Method::REGISTER_FORK;
+    if (methodMsg.method() == "sendblock")
+        methodBody.method = CMvDbpMethod::Method::SEND_BLOCK;
+
 
     if (methodBody.method == CMvDbpMethod::Method::GET_BLOCKS && methodMsg.params().Is<lws::GetBlocksArg>())
     {
@@ -704,6 +769,16 @@ void CDbpServer::HandleClientMethod(CDbpClient* pDbpClient, google::protobuf::An
         methodMsg.params().UnpackTo(&args);
         std::cout << "super node fork id: " << args.id() << "\n";
         methodBody.params.insert(std::make_pair("forkid",args.id()));
+    }
+    else if(methodBody.method == CMvDbpMethod::Method::SEND_BLOCK)
+    {
+        lws::SendBlockArg args;
+        methodMsg.params().UnpackTo(&args);
+
+        CMvDbpBlock dbpBlock;
+        CreateDbpBlock(&(args.block()),dbpBlock);
+
+        methodBody.params.insert(std::make_pair("data", dbpBlock));
     }
     else
     {

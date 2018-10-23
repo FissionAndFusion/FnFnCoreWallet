@@ -135,11 +135,12 @@ public:
         GET_BLOCKS,
         GET_TX,
         SEND_TX,
-        REGISTER_FORK
+        REGISTER_FORK,
+        SEND_BLOCK
     };
 
     // param name => param value
-    typedef std::map<std::string, std::string> ParamMap;
+    typedef std::map<std::string, boost::any> ParamMap;
 
 public:
     Method method;

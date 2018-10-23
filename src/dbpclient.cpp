@@ -791,8 +791,8 @@ bool CMvDbpClient::HandleEvent(CMvEventDbpRegisterForkID& event)
         return false;
     }
 
-    std::vector<std::string> forks{event.data.forkid};
-    pClientSocket->SendForkIds(forks);
+   // std::vector<std::string> forks{event.data.forkid};
+   // pClientSocket->SendForkIds(forks);
 
     return true;
 }

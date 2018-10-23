@@ -165,7 +165,8 @@ bool CDbpService::HandleEvent(CMvEventDbpUnSub& event)
 void CDbpService::HandleGetTransaction(CMvEventDbpMethod& event)
 {
     std::string id = event.data.id;
-    std::string txid = event.data.params["hash"];
+    std::string txid = boost::any_cast<std::string> 
+     (event.data.params["hash"]);
 
     uint256 txHash(txid);
     CTransaction tx;
@@ -193,7 +194,8 @@ void CDbpService::HandleGetTransaction(CMvEventDbpMethod& event)
 
 void CDbpService::HandleSendTransaction(CMvEventDbpMethod& event)
 {
-    std::string data = event.data.params["data"];
+    std::string data = boost::any_cast 
+        <std::string>(event.data.params["data"]);
 
     std::vector<unsigned char> txData(data.begin(), data.end());
     walleve::CWalleveBufStream ss;
@@ -408,9 +410,10 @@ bool CDbpService::GetBlocks(const uint256& forkHash, const uint256& startHash, i
 
 void CDbpService::HandleGetBlocks(CMvEventDbpMethod& event)
 {
-    std::string forkid = event.data.params["forkid"];
-    std::string blockHash = event.data.params["hash"];
-    int32 blockNum = boost::lexical_cast<int32>(event.data.params["number"]);
+    std::string forkid = boost::any_cast<std::string>(event.data.params["forkid"]);
+    std::string blockHash = boost::any_cast<std::string>(event.data.params["hash"]);
+    std::string num = boost::any_cast<std::string>(event.data.params["number"]);
+    int32 blockNum = boost::lexical_cast<int32>(num);
     
     uint256 startBlockHash(std::vector<unsigned char>(blockHash.begin(), blockHash.end()));
     uint256 forkHash;
@@ -439,7 +442,7 @@ void CDbpService::HandleGetBlocks(CMvEventDbpMethod& event)
 
 void CDbpService::HandleRegisterFork(CMvEventDbpMethod& event)
 {
-    std::string forkid = event.data.params["forkid"];
+    std::string forkid = boost::any_cast<std::string>(event.data.params["forkid"]);
     UpdateChildNodeForks(event.strSessionId,forkid);
 
     CMvEventDbpMethodResult eventResult(event.strSessionId);
@@ -455,6 +458,19 @@ void CDbpService::HandleRegisterFork(CMvEventDbpMethod& event)
     CMvEventDbpRegisterForkID eventRegister("");
     eventRegister.data.forkid = forkid;
     pDbpClient->DispatchEvent(&eventRegister);
+}
+
+void CDbpService::HandleSendBlock(CMvEventDbpMethod& event)
+{
+    CMvDbpBlock block = boost::any_cast<CMvDbpBlock>(event.data.params["data"]);
+    
+
+    // TO DO
+
+
+
+    
+
 }
 
 bool CDbpService::HandleEvent(CMvEventDbpMethod& event)
@@ -474,6 +490,10 @@ bool CDbpService::HandleEvent(CMvEventDbpMethod& event)
     else if(event.data.method == CMvDbpMethod::Method::REGISTER_FORK)
     {
         HandleRegisterFork(event);
+    }
+    else if(event.data.method == CMvDbpMethod::Method::SEND_BLOCK)
+    {
+        HandleSendBlock(event);
     }
     else
     {
