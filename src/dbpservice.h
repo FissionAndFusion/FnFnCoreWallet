@@ -8,14 +8,18 @@
 #include "mvbase.h"
 #include "dbpserver.h"
 #include "event.h"
+#include "mvpeernet.h"
 #include "walleve/walleve.h"
 
 #include <set>
 #include <utility>
 #include <unordered_map>
 
+
 namespace multiverse
 {
+
+using namespace network;
 
 class CDbpService : public walleve::IIOModule, virtual public CDBPEventListener, virtual public CMvDBPEventListener
 {
@@ -69,6 +73,7 @@ protected:
     IService* pService;
     ICoreProtocol* pCoreProtocol;
     IWallet* pWallet;
+    IMvNetChannel* pNetChannel;
 
 private:
     std::map<std::string, std::string> mapIdSubedTopic; // id => subed topic

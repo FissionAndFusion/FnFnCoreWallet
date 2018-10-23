@@ -18,6 +18,7 @@ CDbpService::CDbpService()
     pCoreProtocol = NULL;
     pWallet = NULL;
     pDbpServer = NULL;
+    pNetChannel = NULL;
 
     std::unordered_map<std::string, bool> temp_map = boost::assign::map_list_of("all-block", true)("all-tx", true)("changed", true)("removed", true);
 
@@ -60,6 +61,12 @@ bool CDbpService::WalleveHandleInitialize()
         return false;
     }
 
+    if (!WalleveGetObject("netchannel",pNetChannel))
+    {
+        WalleveLog("Failed to request peer net datachannel\n");
+        return false;
+    }
+
     return true;
 }
 
@@ -69,6 +76,7 @@ void CDbpService::WalleveHandleDeinitialize()
     pService = NULL;
     pCoreProtocol = NULL;
     pWallet = NULL;
+    pNetChannel = NULL;
 }
 
 bool CDbpService::HandleEvent(CMvEventDbpPong& event)
