@@ -172,6 +172,10 @@ void CDbpService::HandleSendTransaction(CMvEventDbpMethod& event)
     walleve::CWalleveBufStream ss;
     ss.Write((char *)&txData[0], txData.size());
 
+    std::cout << "dump txData: \n";
+    ss.Dump();
+    
+
     CTransaction rawTx;
     try
     {
