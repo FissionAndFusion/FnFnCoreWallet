@@ -160,6 +160,8 @@ protected:
 
 protected:
     bool HandleEvent(CMvEventDbpRegisterForkID& event) override;
+    bool HandleEvent(CMvEventDbpSendBlock& event) override;
+    bool HandleEvent(CMvEventDbpSendTx& event) override;
 
 protected:
     std::vector<CDbpClientConfig> vecClientConfig;

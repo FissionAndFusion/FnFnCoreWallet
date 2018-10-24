@@ -162,10 +162,28 @@ public:
     std::string forkid;
 };
 
+class CMvDbpSendBlockRet
+{
+public:
+    std::string hash;
+};
+
 class CMvDbpRegisterForkID : public CMvDbpRequest
 {
 public:
     std::string forkid;
+};
+
+class CMvDbpSendBlock : public CMvDbpRequest
+{
+public:
+    boost::any block;
+};
+
+class CMvDbpSendTx : public CMvDbpRequest
+{
+public:
+    boost::any tx;
 };
 
 class CMvDbpMethodResult : public CMvDbpRespond

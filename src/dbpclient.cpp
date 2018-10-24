@@ -791,10 +791,50 @@ bool CMvDbpClient::HandleEvent(CMvEventDbpRegisterForkID& event)
         return false;
     }
 
+    // TODO
+
    // std::vector<std::string> forks{event.data.forkid};
    // pClientSocket->SendForkIds(forks);
 
     return true;
+}
+
+bool CMvDbpClient::HandleEvent(CMvEventDbpSendBlock& event)
+{
+    if(!event.strSessionId.empty() || event.data.block.type() != typeid(CMvDbpBlock))
+    {
+        std::cerr << "cannot handle SendBlock event." << std::endl;
+        return false;
+    }
+
+    // pick one session to sendblock
+    CMvDbpClientSocket* pClientSocket = nullptr;
+    if(mapSessionProfile.size() > 0)
+    {
+        pClientSocket = mapSessionProfile.begin()->second.pClientSocket;
+    }
+    else
+    {
+        std::cerr << "mapSessionProfile is empty\n";
+        return false;
+    }
+
+    if(!pClientSocket)
+    {
+        std::cerr << "Client Socket is invalid\n";
+        return false;
+    }
+
+    // TODO
+    
+    return true;
+}
+
+bool CMvDbpClient::HandleEvent(CMvEventDbpSendTx& event)
+{
+    // TODO
+    
+    return false;
 }
 
 

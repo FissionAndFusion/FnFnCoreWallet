@@ -450,7 +450,6 @@ void CDbpService::HandleRegisterFork(CMvEventDbpMethod& event)
     CMvDbpRegisterForkIDRet ret;
     ret.forkid = forkid;
     eventResult.data.anyResultObjs.push_back(ret);
-
     pDbpServer->DispatchEvent(&eventResult);
 
 
@@ -464,13 +463,21 @@ void CDbpService::HandleSendBlock(CMvEventDbpMethod& event)
 {
     CMvDbpBlock block = boost::any_cast<CMvDbpBlock>(event.data.params["data"]);
     
-
     // TO DO
-
-
-
     
 
+
+    CMvEventDbpMethodResult eventResult(event.strSessionId);
+    eventResult.data.id = event.data.id;
+    CMvDbpSendBlockRet ret;
+    ret.hash = std::string(block.hash.begin(), block.hash.end()); 
+    eventResult.data.anyResultObjs.push_back(ret);
+    pDbpServer->DispatchEvent(&eventResult);
+
+
+    CMvEventDbpSendBlock eventSendBlock("");
+    eventSendBlock.data.block = block;
+    pDbpClient->DispatchEvent(&eventSendBlock);
 }
 
 bool CDbpService::HandleEvent(CMvEventDbpMethod& event)
