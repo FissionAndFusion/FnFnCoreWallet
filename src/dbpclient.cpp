@@ -104,7 +104,7 @@ void CMvDbpClientSocket::SendForkId(const std::string& fork)
     
     dbp::Method method;
     method.set_method("registerforkid");
-    std::string id(std::to_string(time(NULL)));
+    std::string id(CDbpUtils::RandomString());  
     method.set_id(id);
     method.set_allocated_params(fork_any);
 
@@ -114,11 +114,31 @@ void CMvDbpClientSocket::SendForkId(const std::string& fork)
     SendMessage(dbp::Msg::METHOD,any);
 }
 
+void CMvDbpClientSocket::SendSubscribeTopic(const std::string& topic)
+{
+    dbp::Sub sub;
+    sub.set_name(topic);
+    std::string id(CDbpUtils::RandomString());
+    sub.set_id(id);
+    google::protobuf::Any *any = new google::protobuf::Any();
+    any->PackFrom(sub);
+
+    SendMessage(dbp::Msg::SUB,any);
+}
+
 void CMvDbpClientSocket::SendForkIds(const std::vector<std::string>& forks)
 {
     for(const auto& fork : forks)
     {
         SendForkId(fork);
+    }
+}
+
+void CMvDbpClientSocket::SendSubScribeTopics(const std::vector<std::string>& topics)
+{
+    for(const auto& topic : topics)
+    {
+        SendSubscribeTopic(topic);
     }
 }
 
@@ -166,13 +186,10 @@ void CMvDbpClientSocket::SendMessage(dbp::Msg type, google::protobuf::Any* any)
         if(ssSend.GetSize() != 0 || !queueMessage.empty())
         {
             std::cout << "not sent complete [PING]\n";
-           // queueMessage.push(bytes);
-            //pClient->Write(ssSend,boost::bind(&CMvDbpClientSocket::HandleWritenRequest,this,_1,OTHER));
             return;
         }
 
-        ssSend.Write((char*)bytes.data(),bytes.size());
-       
+        ssSend.Write((char*)bytes.data(),bytes.size()); 
         pClient->Write(ssSend,boost::bind(&CMvDbpClientSocket::HandleWritenRequest,this,_1,PING));
     }
     else if(type == dbp::Msg::METHOD)
@@ -181,7 +198,6 @@ void CMvDbpClientSocket::SendMessage(dbp::Msg type, google::protobuf::Any* any)
         {
             std::cout << "not sent complete [METHOD]\n";
             queueMessage.push(bytes);
-           // pClient->Write(ssSend,boost::bind(&CMvDbpClientSocket::HandleWritenRequest,this,_1,OTHER));
             return;
         }
         
@@ -194,7 +210,7 @@ void CMvDbpClientSocket::SendMessage(dbp::Msg type, google::protobuf::Any* any)
         {
             std::cout << "not sent complete [OTHER]\n";
             queueMessage.push(bytes);
-            pClient->Write(ssSend,boost::bind(&CMvDbpClientSocket::HandleWritenRequest,this,_1,OTHER));
+            //pClient->Write(ssSend,boost::bind(&CMvDbpClientSocket::HandleWritenRequest,this,_1,OTHER));
             return;
         }
         
@@ -320,11 +336,13 @@ void CMvDbpClientSocket::HandleReadCompleted(uint32_t len)
         pDbpClient->HandleClientSocketRecv(this,anyObj);
         break;
     case dbp::NOSUB:
+        pDbpClient->HandleClientSocketRecv(this,anyObj);
+        break;
     case dbp::READY:
+        pDbpClient->HandleClientSocketRecv(this,anyObj);
+        break;
     case dbp::ADDED:
-        // ignore these messages
-        std::cerr << "nosub ready result added message type cannot support" << std::endl;
-        pDbpClient->HandleClientSocketError(this);
+        pDbpClient->HandleClientSocketRecv(this,anyObj);
         break;
     default:
         std::cerr << "is not Message Base Type is unknown. [dbpclient]" << std::endl;
@@ -418,6 +436,33 @@ void CMvDbpClient::HandleClientSocketRecv(CMvDbpClientSocket* pClientSocket, con
 
         HandleResult(pClientSocket,&any);
     }
+    else if(any.Is<dbp::Added>())
+    {
+        if(!HaveAssociatedSessionOf(pClientSocket))
+        {
+            return;
+        }
+
+        HandleAdded(pClientSocket,&any);
+    }
+    else if(any.Is<dbp::Ready>())
+    {
+        if(!HaveAssociatedSessionOf(pClientSocket))
+        {
+            return;
+        }
+
+        HandleReady(pClientSocket,&any);
+    }
+    else if(any.Is<dbp::Nosub>())
+    {
+        if(!HaveAssociatedSessionOf(pClientSocket))
+        {
+            return;
+        }
+
+        HandleNoSub(pClientSocket,&any);
+    }
     else
     {
 
@@ -439,10 +484,9 @@ void CMvDbpClient::HandleConnected(CMvDbpClientSocket* pClientSocket, google::pr
     if(IsSessionExist(connected.session()))
     {
         StartPingTimer(connected.session());
+        RegisterDefaultForks(pClientSocket);
+        SubscribeDefaultTopics(pClientSocket);
     }
-
-    std::vector<std::string> vSupportForks = mapProfile[pClientSocket->GetHost().ToEndPoint()].vSupportForks;
-    pClientSocket->SendForkIds(vSupportForks);
 }
 
 void CMvDbpClient::HandleFailed(CMvDbpClientSocket* pClientSocket, google::protobuf::Any* any)
@@ -504,9 +548,46 @@ void CMvDbpClient::HandleResult(CMvDbpClientSocket* pClientSocket, google::proto
     for (int i = 0; i < size; i++)
     {
         google::protobuf::Any any = result.result(i);
-        lws::RegisterForkIDRet ret;
-        any.UnpackTo(&ret);
+        
+        if(any.Is<lws::RegisterForkIDRet>())
+        {
+            lws::RegisterForkIDRet ret;
+            any.UnpackTo(&ret);
+        }
+        
     }
+}
+
+void CMvDbpClient::HandleAdded(CMvDbpClientSocket* pClientSocket, google::protobuf::Any* any)
+{
+    dbp::Added added;
+    any->UnpackTo(&added);
+
+    if (added.name() == "all-block")
+    {
+        lws::Block block;
+        added.object().UnpackTo(&block);
+    }
+
+    if (added.name() == "all-tx")
+    {
+        lws::Transaction tx;
+        added.object().UnpackTo(&tx);
+    }
+}
+
+void CMvDbpClient::HandleReady(CMvDbpClientSocket* pClientSocket, google::protobuf::Any* any)
+{
+    dbp::Ready ready;
+    any->UnpackTo(&ready);
+    std::cout << "[<]ready: " << ready.id() << std::endl;
+}
+
+void CMvDbpClient::HandleNoSub(CMvDbpClientSocket* pClientSocket, google::protobuf::Any* any)
+{
+    dbp::Nosub nosub;
+    any->UnpackTo(&nosub);
+    std::cout << "[<]nosub: " << nosub.id() << "errorcode: " << nosub.error() << std::endl;
 }
 
 bool CMvDbpClient::WalleveHandleInitialize()
@@ -691,6 +772,18 @@ void CMvDbpClient::StartPingTimer(const std::string& session)
     profile.ptrPingTimer->async_wait(boost::bind(&CMvDbpClient::SendPingHandler,
                                                     this, boost::asio::placeholders::error,
                                                     boost::ref(profile)));
+}
+
+void CMvDbpClient::RegisterDefaultForks(CMvDbpClientSocket* pClientSocket)
+{
+    std::vector<std::string> vSupportForks = mapProfile[pClientSocket->GetHost().ToEndPoint()].vSupportForks;
+    pClientSocket->SendForkIds(vSupportForks);
+}
+
+void CMvDbpClient::SubscribeDefaultTopics(CMvDbpClientSocket* pClientSocket)
+{
+    std::vector<std::string> vTopics{"all-block","all-tx"};
+    pClientSocket->SendSubScribeTopics(vTopics);
 }
 
 void CMvDbpClient::CreateSession(const std::string& session, CMvDbpClientSocket* pClientSocket)

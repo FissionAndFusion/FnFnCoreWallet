@@ -80,6 +80,7 @@ public:
     void SendPing(const std::string& id);
 
     void SendForkIds(const std::vector<std::string>& forks);
+    void SendSubScribeTopics(const std::vector<std::string>& topics);
     void SendConnectSession(const std::string& session, const std::vector<std::string>& forks);
 protected:
     void StartReadHeader();
@@ -91,6 +92,7 @@ protected:
     void HandleReadCompleted(uint32_t len);
 
     void SendForkId(const std::string& fork);
+    void SendSubscribeTopic(const std::string& topic);
     void SendMessage(dbp::Msg type, google::protobuf::Any* any);
 
 private:
@@ -133,6 +135,9 @@ public:
     void HandlePing(CMvDbpClientSocket* pClientSocket, google::protobuf::Any* any);
     void HandlePong(CMvDbpClientSocket* pClientSocket, google::protobuf::Any* any);
     void HandleResult(CMvDbpClientSocket* pClientSocket, google::protobuf::Any* any);
+    void HandleAdded(CMvDbpClientSocket* pClientSocket, google::protobuf::Any* any);
+    void HandleReady(CMvDbpClientSocket* pClientSocket, google::protobuf::Any* any);
+    void HandleNoSub(CMvDbpClientSocket* pClientSocket, google::protobuf::Any* any);
 
 protected:
     bool WalleveHandleInitialize() override;
@@ -147,6 +152,8 @@ protected:
     bool CreateProfile(const CDbpClientConfig& confClient);
     bool StartConnection(const boost::asio::ip::tcp::endpoint& epRemote, int64 nTimeout, bool fEnableSSL,
             const CIOSSLOption& optSSL);
+    void RegisterDefaultForks(CMvDbpClientSocket* pClientSocket);
+    void SubscribeDefaultTopics(CMvDbpClientSocket* pClientSocket);
     void StartPingTimer(const std::string& session);
     void SendPingHandler(const boost::system::error_code& err, const CMvSessionProfile& sessionProfile);
     void CreateSession(const std::string& session, CMvDbpClientSocket* pClientSocket);
