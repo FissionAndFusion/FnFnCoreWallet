@@ -9,7 +9,7 @@ message ForkID
 
 message Transaction 
 {
-	uint32 nVersion = 1; //版本号,目前交易版本为 0x0001
+uint32 nVersion = 1; //版本号,目前交易版本为 0x0001
     uint32 nType = 2; //类型, 区分公钥地址交易、模板地址交易、即时业务交易和跨分支交易
     uint32 nLockUntil = 3; //交易冻结至高度为 nLockUntil 区块
     bytes hashAnchor = 4; //交易有效起始区块 HASH
@@ -37,11 +37,12 @@ message Transaction
     int64 nTxFee = 8; //网络交易费 
     bytes vchData = 9; //输出参数(模板地址参数、跨分支交易共轭交易)
     bytes vchSig = 10; //交易签名
+    bytes hash = 11; //当前tx hash
 }
 
 message Block
 {
-	uint32 nVersion = 1; //版本号，目前区块版本为 0x0001
+    uint32 nVersion = 1; //版本号，目前区块版本为 0x0001
     uint32 nType = 2; // 类型,区分创世纪块、主链区块、业务区块和业务子区块
     uint32  nTimeStamp = 3; //时间戳，采用UTC秒单位
     bytes hashPrev = 4; //前一区块的hash
@@ -50,6 +51,8 @@ message Block
     Transaction txMint = 7; // 出块奖励交易
     repeated Transaction vtx = 8; //区块打包的所有交易
     bytes vchSig = 9; //区块签名
+    uint32 nHeight = 10; //区块高度
+    bytes hash = 11; //当前区块hash
 }
 
 message SendBlockArg 
