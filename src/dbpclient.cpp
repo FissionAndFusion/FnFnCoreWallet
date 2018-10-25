@@ -146,6 +146,7 @@ void CMvDbpClientSocket::SendConnectSession(const std::string& session, const st
 {
     dbp::Connect connect;
     connect.set_session(session);
+    connect.set_client("supernode");
     connect.set_version(1);
 
     google::protobuf::Any anyFork;

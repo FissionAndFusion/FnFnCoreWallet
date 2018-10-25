@@ -89,8 +89,8 @@ public:
     void SendResponse(CMvDbpFailed& body);
     void SendResponse(CMvDbpNoSub& body);
     void SendResponse(CMvDbpReady& body);
-    void SendResponse(CMvDbpAdded& body);
-    void SendResponse(CMvDbpMethodResult& body);
+    void SendResponse(const std::string& client, CMvDbpAdded& body);
+    void SendResponse(const std::string& client, CMvDbpMethodResult& body);
     void SendPong(const std::string& id);
     void SendPing(const std::string& id);
     void SendResponse(const std::string& reason, const std::string& description);
@@ -129,6 +129,7 @@ class CSessionProfile
 public:
     CDbpClient* pDbpClient;
     std::string strSessionId;
+    std::string strClient;
     uint64 nTimeStamp;
     std::shared_ptr<boost::asio::deadline_timer> ptrPingTimer;
     std::string strForkId;
@@ -185,7 +186,7 @@ protected:
 
     std::string GetUdata(dbp::Connect* pConnect, const std::string& keyName);
     std::string GenerateSessionId();
-    void CreateSession(const std::string& session, const std::string& forkID, CDbpClient* pDbpClient);
+    void CreateSession(const std::string& session, const std::string& client, const std::string& forkID, CDbpClient* pDbpClient);
     void UpdateSession(const std::string& session, CDbpClient* pDbpClient);
 
     void SendPingHandler(const boost::system::error_code& err, const CSessionProfile& sessionProfile);
