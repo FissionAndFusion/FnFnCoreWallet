@@ -13,6 +13,7 @@
 
 #include "dbp.pb.h"
 #include "lws.pb.h"
+#include "sn.pb.h"
 
 using namespace walleve;
 

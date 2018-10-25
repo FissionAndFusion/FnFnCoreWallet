@@ -1,27 +1,10 @@
 syntax = "proto3";
 
-package lws;
+package sn;
 
 message ForkID 
 {
     repeated string ids = 1;
-}
-
-
-message GetBlocksArg 
-{
-    bytes hash = 1; //起始块hash
-    int32 number = 2; //将要获取的最大块数
-}
-
-message GetTxArg
-{
-    bytes hash = 1; //txid
-}
-
-message SendTxArg
-{
-    bytes data = 1; //上链的tx数据
 }
 
 message Transaction 
@@ -54,7 +37,6 @@ message Transaction
     int64 nTxFee = 8; //网络交易费 
     bytes vchData = 9; //输出参数(模板地址参数、跨分支交易共轭交易)
     bytes vchSig = 10; //交易签名
-    bytes hash = 11; //当前tx hash
 }
 
 message Block
@@ -68,13 +50,34 @@ message Block
     Transaction txMint = 7; // 出块奖励交易
     repeated Transaction vtx = 8; //区块打包的所有交易
     bytes vchSig = 9; //区块签名
-    uint32 nHeight = 10; //区块高度
-    bytes hash = 11; //当前区块hash
+}
+
+message SendBlockArg 
+{
+    Block block = 1;
+}
+
+message SendBlockRet
+{
+    bytes hash = 1;
+}
+
+message SendTxArg
+{
+    Transaction tx = 1;
 }
 
 message SendTxRet
 {
-    bytes hash = 1; //上链数据的hash
-    string result = 2; //处理结果 succeed/failed/processing
-    string reason = 3; //错误原因
+    bytes hash = 1;
+}
+
+message RegisterForkIDArg 
+{
+    string id = 1;
+}
+
+message RegisterForkIDRet
+{
+    string id = 1;
 }

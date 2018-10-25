@@ -170,7 +170,7 @@ void CDbpClient::SendResponse(CMvDbpReady& body)
     SendMessage(&readyMsgBase);
 }
 
-static void CreateLwsTransaction(const CMvDbpTransaction* dbptx, lws::Transaction* tx)
+static void DbpToLwsTransaction(const CMvDbpTransaction* dbptx, lws::Transaction* tx)
 {
     tx->set_nversion(dbptx->nVersion);
     tx->set_ntype(dbptx->nType);
@@ -208,7 +208,7 @@ static void CreateLwsTransaction(const CMvDbpTransaction* dbptx, lws::Transactio
     tx->set_hash(hash);
 }
 
-static void CreateDbpTransaction(const lws::Transaction* tx, CMvDbpTransaction* dbptx)
+static void LwsToDbpTransaction(const lws::Transaction* tx, CMvDbpTransaction* dbptx)
 {
     dbptx->nVersion = tx->nversion();
     dbptx->nType = tx->ntype();
@@ -242,7 +242,7 @@ static void CreateDbpTransaction(const lws::Transaction* tx, CMvDbpTransaction* 
 
 }
 
-static void CreateLwsBlock(const CMvDbpBlock* pBlock, lws::Block& block)
+static void DbpToLwsBlock(const CMvDbpBlock* pBlock, lws::Block& block)
 {
     block.set_nversion(pBlock->nVersion);
     block.set_ntype(pBlock->nType);
@@ -262,13 +262,13 @@ static void CreateLwsBlock(const CMvDbpBlock* pBlock, lws::Block& block)
 
     //txMint
     lws::Transaction* txMint = new lws::Transaction();
-    CreateLwsTransaction(&(pBlock->txMint), txMint);
+    DbpToLwsTransaction(&(pBlock->txMint), txMint);
     block.set_allocated_txmint(txMint);
 
     //repeated vtx
     for (const auto& tx : pBlock->vtx)
     {
-        CreateLwsTransaction(&tx, block.add_vtx());
+        DbpToLwsTransaction(&tx, block.add_vtx());
     }
 
     block.set_nheight(pBlock->nHeight);
@@ -276,7 +276,9 @@ static void CreateLwsBlock(const CMvDbpBlock* pBlock, lws::Block& block)
     block.set_hash(hash);
 }
 
-static void CreateDbpBlock(const lws::Block *pBlock, CMvDbpBlock& block)
+
+
+static void LwsToDbpBlock(const lws::Block *pBlock, CMvDbpBlock& block)
 {
     block.nVersion = pBlock->nversion();
     block.nType = pBlock->ntype();
@@ -288,14 +290,14 @@ static void CreateDbpBlock(const lws::Block *pBlock, CMvDbpBlock& block)
     block.vchSig = std::vector<unsigned char>(pBlock->vchsig().begin(), pBlock->vchsig().end());
 
     //txMint
-    CreateDbpTransaction(&(pBlock->txmint()), &(block.txMint));
+    LwsToDbpTransaction(&(pBlock->txmint()), &(block.txMint));
 
     //repeated vtx
     for(int i = 0; i < pBlock->vtx_size(); ++i)
     {
         auto vtx = pBlock->vtx(i);
         CMvDbpTransaction tx;
-        CreateDbpTransaction(&vtx,&tx);
+        LwsToDbpTransaction(&vtx,&tx);
         block.vtx.push_back(tx);
     }
 
@@ -318,7 +320,7 @@ void CDbpClient::SendResponse(CMvDbpAdded& body)
         CMvDbpBlock tempBlock = boost::any_cast<CMvDbpBlock>(body.anyAddedObj);
 
         lws::Block block;
-        CreateLwsBlock(&tempBlock, block);
+        DbpToLwsBlock(&tempBlock, block);
 
         google::protobuf::Any* anyBlock = new google::protobuf::Any();
         anyBlock->PackFrom(block);
@@ -329,7 +331,7 @@ void CDbpClient::SendResponse(CMvDbpAdded& body)
         CMvDbpTransaction tempTx = boost::any_cast<CMvDbpTransaction>(body.anyAddedObj);
 
         std::unique_ptr<lws::Transaction> tx(new lws::Transaction());
-        CreateLwsTransaction(&tempTx, tx.get());
+        DbpToLwsTransaction(&tempTx, tx.get());
 
         google::protobuf::Any* anyTx = new google::protobuf::Any();
         anyTx->PackFrom(*tx);
@@ -362,7 +364,7 @@ void CDbpClient::SendResponse(CMvDbpMethodResult& body)
             CMvDbpBlock tempBlock = boost::any_cast<CMvDbpBlock>(obj);
 
             lws::Block block;
-            CreateLwsBlock(&tempBlock, block);
+            DbpToLwsBlock(&tempBlock, block);
             resultMsg.add_result()->PackFrom(block);
         }
         else if (obj.type() == typeid(CMvDbpTransaction))
@@ -370,7 +372,7 @@ void CDbpClient::SendResponse(CMvDbpMethodResult& body)
             CMvDbpTransaction tempTx = boost::any_cast<CMvDbpTransaction>(obj);
 
             std::unique_ptr<lws::Transaction> tx(new lws::Transaction());
-            CreateLwsTransaction(&tempTx, tx.get());
+            DbpToLwsTransaction(&tempTx, tx.get());
             resultMsg.add_result()->PackFrom(*tx);
         }
         else if (obj.type() == typeid(CMvDbpSendTxRet))
@@ -386,7 +388,7 @@ void CDbpClient::SendResponse(CMvDbpMethodResult& body)
         else if(obj.type() == typeid(CMvDbpRegisterForkIDRet))
         {
             CMvDbpRegisterForkIDRet ret = boost::any_cast<CMvDbpRegisterForkIDRet>(obj);
-            lws::RegisterForkIDRet forkRet;
+            sn::RegisterForkIDRet forkRet;
             forkRet.set_id(ret.forkid);
             resultMsg.add_result()->PackFrom(forkRet);
         }
@@ -765,18 +767,18 @@ void CDbpServer::HandleClientMethod(CDbpClient* pDbpClient, google::protobuf::An
     }
     else if(methodBody.method == CMvDbpMethod::Method::REGISTER_FORK)
     {
-        lws::RegisterForkIDArg args;
+        sn::RegisterForkIDArg args;
         methodMsg.params().UnpackTo(&args);
         std::cout << "super node fork id: " << args.id() << "\n";
         methodBody.params.insert(std::make_pair("forkid",args.id()));
     }
     else if(methodBody.method == CMvDbpMethod::Method::SEND_BLOCK)
     {
-        lws::SendBlockArg args;
+        sn::SendBlockArg args;
         methodMsg.params().UnpackTo(&args);
 
         CMvDbpBlock dbpBlock;
-        CreateDbpBlock(&(args.block()),dbpBlock);
+        //CreateDbpBlock(&(args.block()),dbpBlock);
 
         methodBody.params.insert(std::make_pair("data", dbpBlock));
     }

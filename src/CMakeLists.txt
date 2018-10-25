@@ -91,7 +91,8 @@ set(sources
 
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS 
 dbp-proto/dbp.proto 
-dbp-proto/lws.proto)
+dbp-proto/lws.proto
+dbp-proto/sn.proto)
 
 add_executable(multiverse ${sources} ${PROTO_SRCS} ${PROTO_HDRS})
 

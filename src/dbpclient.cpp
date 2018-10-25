@@ -96,7 +96,7 @@ void CMvDbpClientSocket::SendPing(const std::string& id)
 
 void CMvDbpClientSocket::SendForkId(const std::string& fork)
 {
-    lws::RegisterForkIDArg forkArg;
+    sn::RegisterForkIDArg forkArg;
     forkArg.set_id(fork);
 
     google::protobuf::Any *fork_any = new google::protobuf::Any();
@@ -149,7 +149,7 @@ void CMvDbpClientSocket::SendConnectSession(const std::string& session, const st
     connect.set_version(1);
 
     google::protobuf::Any anyFork;
-    lws::ForkID forkidMsg;
+    sn::ForkID forkidMsg;
 
     for(const auto& fork : forks)
     {
@@ -549,9 +549,9 @@ void CMvDbpClient::HandleResult(CMvDbpClientSocket* pClientSocket, google::proto
     {
         google::protobuf::Any any = result.result(i);
         
-        if(any.Is<lws::RegisterForkIDRet>())
+        if(any.Is<sn::RegisterForkIDRet>())
         {
-            lws::RegisterForkIDRet ret;
+            sn::RegisterForkIDRet ret;
             any.UnpackTo(&ret);
         }
         
@@ -565,13 +565,13 @@ void CMvDbpClient::HandleAdded(CMvDbpClientSocket* pClientSocket, google::protob
 
     if (added.name() == "all-block")
     {
-        lws::Block block;
+        sn::Block block;
         added.object().UnpackTo(&block);
     }
 
     if (added.name() == "all-tx")
     {
-        lws::Transaction tx;
+        sn::Transaction tx;
         added.object().UnpackTo(&tx);
     }
 }
