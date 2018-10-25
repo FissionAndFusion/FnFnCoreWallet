@@ -52,6 +52,7 @@ public:
 public:
     IIOModule* pIOModule;
     CIOSSLOption optSSL;
+    boost::asio::ip::tcp::endpoint epParentHost;
     std::vector<std::string> vSupportForks;
 };
 
@@ -158,7 +159,8 @@ protected:
     void SendPingHandler(const boost::system::error_code& err, const CMvSessionProfile& sessionProfile);
     void CreateSession(const std::string& session, CMvDbpClientSocket* pClientSocket);
     bool HaveAssociatedSessionOf(CMvDbpClientSocket* pClientSocket);
-    bool IsSessionExist(const std::string& session);    
+    bool IsSessionExist(const std::string& session);
+    bool IsForkNode();    
 
     bool ActivateConnect(CIOClient* pClient);
     void CloseConnect(CMvDbpClientSocket* pClientSocket);
@@ -179,6 +181,9 @@ protected:
     typedef SessionClientSocketBimapType::value_type position_pair;
     SessionClientSocketBimapType bimapSessionClientSocket;      // session id <=> CMvDbpClientSocket
     std::map<std::string, CMvSessionProfile> mapSessionProfile; // session id => session profile
+
+private:
+    IIOModule* pDbpService;
 
 };
 

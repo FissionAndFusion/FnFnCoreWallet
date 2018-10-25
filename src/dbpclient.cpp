@@ -602,11 +602,18 @@ bool CMvDbpClient::WalleveHandleInitialize()
         }
     }
 
+    if(!WalleveGetObject("dbpservice",pDbpService))
+    {
+        WalleveLog("request dbpservice failed in dbpclient.");
+        return false;
+    }
+
     return true;
 }
 
 void CMvDbpClient::WalleveHandleDeinitialize()
 {
+    pDbpService = NULL;
     // delete client config
     mapProfile.clear();
 }
@@ -719,7 +726,7 @@ bool CMvDbpClient::CreateProfile(const CDbpClientConfig& confClient)
         profile.optSSL = confClient.optSSL;
     
     profile.vSupportForks = confClient.vSupportForks;
-    
+    profile.epParentHost = confClient.epParentHost;
     mapProfile[confClient.epParentHost] = profile;
 
     return true;
@@ -810,6 +817,18 @@ bool CMvDbpClient::IsSessionExist(const std::string& session)
   return mapSessionProfile.find(session) != mapSessionProfile.end();
 }
 
+bool CMvDbpClient::IsForkNode()
+{
+    if(mapProfile.size() > 0)
+    {
+        return mapProfile.begin()->second.epParentHost.address().to_string().empty() ? false : true; 
+    }
+    else
+    {
+        return false;
+    }
+}
+
 bool CMvDbpClient::ActivateConnect(CIOClient* pClient)
 {
     uint64 nNonce = 0;
@@ -861,7 +880,7 @@ void CMvDbpClient::RemoveClientSocket(CMvDbpClientSocket* pClientSocket)
 
 bool CMvDbpClient::HandleEvent(CMvEventDbpRegisterForkID& event)
 {
-    if(!event.strSessionId.empty() || event.data.forkid.empty())
+    if(!event.strSessionId.empty() || event.data.forkid.empty() || !IsForkNode())
     {
         std::cerr << "cannot handle Register fork event." << std::endl;
         return false;
@@ -887,15 +906,17 @@ bool CMvDbpClient::HandleEvent(CMvEventDbpRegisterForkID& event)
 
     // TODO
 
-   // std::vector<std::string> forks{event.data.forkid};
-   // pClientSocket->SendForkIds(forks);
+
+    // std::vector<std::string> forks{event.data.forkid};
+    // pClientSocket->SendForkIds(forks);
 
     return true;
 }
 
 bool CMvDbpClient::HandleEvent(CMvEventDbpSendBlock& event)
 {
-    if(!event.strSessionId.empty() || event.data.block.type() != typeid(CMvDbpBlock))
+    if(!event.strSessionId.empty() || event.data.block.type() != typeid(CMvDbpBlock)
+        || !IsForkNode())
     {
         std::cerr << "cannot handle SendBlock event." << std::endl;
         return false;
@@ -919,6 +940,8 @@ bool CMvDbpClient::HandleEvent(CMvEventDbpSendBlock& event)
         return false;
     }
 
+    
+
     // TODO
     
     return true;
@@ -926,13 +949,14 @@ bool CMvDbpClient::HandleEvent(CMvEventDbpSendBlock& event)
 
 bool CMvDbpClient::HandleEvent(CMvEventDbpSendTx& event)
 {
-    if(!event.strSessionId.empty() || event.data.tx.type() != typeid(CMvDbpTransaction))
+    if(!event.strSessionId.empty() || event.data.tx.type() != typeid(CMvDbpTransaction)
+        || !IsForkNode())
     {
         std::cerr << "cannot handle SendTx event." << std::endl;
         return false;
     }
     
-    // pick one session to sendblock
+    // pick one session to sendtx
     CMvDbpClientSocket* pClientSocket = nullptr;
     if(mapSessionProfile.size() > 0)
     {
