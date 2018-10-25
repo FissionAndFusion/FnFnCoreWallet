@@ -926,6 +926,30 @@ bool CMvDbpClient::HandleEvent(CMvEventDbpSendBlock& event)
 
 bool CMvDbpClient::HandleEvent(CMvEventDbpSendTx& event)
 {
+    if(!event.strSessionId.empty() || event.data.tx.type() != typeid(CMvDbpTransaction))
+    {
+        std::cerr << "cannot handle SendTx event." << std::endl;
+        return false;
+    }
+    
+    // pick one session to sendblock
+    CMvDbpClientSocket* pClientSocket = nullptr;
+    if(mapSessionProfile.size() > 0)
+    {
+        pClientSocket = mapSessionProfile.begin()->second.pClientSocket;
+    }
+    else
+    {
+        std::cerr << "mapSessionProfile is empty\n";
+        return false;
+    }
+
+    if(!pClientSocket)
+    {
+        std::cerr << "Client Socket is invalid\n";
+        return false;
+    }
+
     // TODO
     
     return false;

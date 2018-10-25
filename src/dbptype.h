@@ -133,8 +133,9 @@ public:
     enum Method
     {
         GET_BLOCKS,
-        GET_TX,
-        SEND_TX,
+        GET_TRANSACTION,
+        SEND_TRANSACTION,
+        SEND_TX, // supernode 
         REGISTER_FORK,
         SEND_BLOCK
     };
@@ -148,7 +149,7 @@ public:
     ParamMap params;
 };
 
-class CMvDbpSendTxRet
+class CMvDbpSendTransactionRet
 {
 public:
     std::string hash;
@@ -163,6 +164,12 @@ public:
 };
 
 class CMvDbpSendBlockRet
+{
+public:
+    std::string hash;
+};
+
+class CMvDbpSendTxRet
 {
 public:
     std::string hash;

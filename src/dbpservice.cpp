@@ -221,7 +221,7 @@ void CDbpService::HandleSendTransaction(CMvEventDbpMethod& event)
         CMvEventDbpMethodResult eventResult(event.strSessionId);
         eventResult.data.id = event.data.id;
 
-        CMvDbpSendTxRet sendTxRet;
+        CMvDbpSendTransactionRet sendTxRet;
         sendTxRet.hash = data;
         sendTxRet.result = "succeed";
         eventResult.data.anyResultObjs.push_back(sendTxRet);
@@ -233,7 +233,7 @@ void CDbpService::HandleSendTransaction(CMvEventDbpMethod& event)
         CMvEventDbpMethodResult eventResult(event.strSessionId);
         eventResult.data.id = event.data.id;
 
-        CMvDbpSendTxRet sendTxRet;
+        CMvDbpSendTransactionRet sendTxRet;
         sendTxRet.hash = data;
         sendTxRet.result = "failed";
         sendTxRet.reason = std::string(MvErrString(err));
@@ -474,10 +474,29 @@ void CDbpService::HandleSendBlock(CMvEventDbpMethod& event)
     eventResult.data.anyResultObjs.push_back(ret);
     pDbpServer->DispatchEvent(&eventResult);
 
-
     CMvEventDbpSendBlock eventSendBlock("");
     eventSendBlock.data.block = block;
     pDbpClient->DispatchEvent(&eventSendBlock);
+}
+
+void CDbpService::HandleSendTx(CMvEventDbpMethod& event)
+{
+    CMvDbpTransaction tx = boost::any_cast<CMvDbpTransaction>(event.data.params["data"]);
+
+    // TODO
+
+
+
+    CMvEventDbpMethodResult eventResult(event.strSessionId);
+    eventResult.data.id = event.data.id;
+    CMvDbpSendTxRet ret;
+    ret.hash = std::string(tx.hash.begin(), tx.hash.end()); 
+    eventResult.data.anyResultObjs.push_back(ret);
+    pDbpServer->DispatchEvent(&eventResult);
+
+    CMvEventDbpSendTx eventSendTx("");
+    eventSendTx.data.tx = tx;
+    pDbpClient->DispatchEvent(&eventSendTx);
 }
 
 bool CDbpService::HandleEvent(CMvEventDbpMethod& event)
@@ -486,11 +505,11 @@ bool CDbpService::HandleEvent(CMvEventDbpMethod& event)
     {
         HandleGetBlocks(event);
     }
-    else if (event.data.method == CMvDbpMethod::Method::GET_TX)
+    else if (event.data.method == CMvDbpMethod::Method::GET_TRANSACTION)
     {
         HandleGetTransaction(event);
     }
-    else if (event.data.method == CMvDbpMethod::Method::SEND_TX)
+    else if (event.data.method == CMvDbpMethod::Method::SEND_TRANSACTION)
     {
         HandleSendTransaction(event);
     }
@@ -501,6 +520,10 @@ bool CDbpService::HandleEvent(CMvEventDbpMethod& event)
     else if(event.data.method == CMvDbpMethod::Method::SEND_BLOCK)
     {
         HandleSendBlock(event);
+    }
+    else if(event.data.method == CMvDbpMethod::Method::SEND_TX)
+    {
+
     }
     else
     {

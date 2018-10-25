@@ -56,6 +56,7 @@ private:
     void HandleSendTransaction(CMvEventDbpMethod& event);
     void HandleRegisterFork(CMvEventDbpMethod& event);
     void HandleSendBlock(CMvEventDbpMethod& event);
+    void HandleSendTx(CMvEventDbpMethod& event);
 
     bool IsTopicExist(const std::string& topic);
     bool IsHaveSubedTopicOf(const std::string& id);

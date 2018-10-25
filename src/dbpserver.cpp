@@ -539,21 +539,32 @@ void CDbpClient::SendResponse(const std::string& client, CMvDbpMethodResult& bod
                 resultMsg.add_result()->PackFrom(*tx);
             }    
         }
-        else if (obj.type() == typeid(CMvDbpSendTxRet))
+        else if (obj.type() == typeid(CMvDbpSendTransactionRet))
         {
-            CMvDbpSendTxRet txret = boost::any_cast<CMvDbpSendTxRet>(obj);
-            if(client == "supernode")
-            {
+            CMvDbpSendTransactionRet txret = boost::any_cast<CMvDbpSendTransactionRet>(obj);
+            
+            lws::SendTxRet sendTxRet;
+            sendTxRet.set_hash(txret.hash);
+            sendTxRet.set_result(txret.result);
+            sendTxRet.set_reason(txret.reason);
+            resultMsg.add_result()->PackFrom(sendTxRet);
+          
+        }
+        else if(obj.type() == typeid(CMvDbpSendBlockRet))
+        {
+            CMvDbpSendBlockRet blockRet = boost::any_cast<CMvDbpSendBlockRet>(obj);
 
-            }
-            else
-            {
-                lws::SendTxRet sendTxRet;
-                sendTxRet.set_hash(txret.hash);
-                sendTxRet.set_result(txret.result);
-                sendTxRet.set_reason(txret.reason);
-                resultMsg.add_result()->PackFrom(sendTxRet);
-            }
+            sn::SendBlockRet sendBlockRet;
+            sendBlockRet.set_hash(blockRet.hash);
+            resultMsg.add_result()->PackFrom(sendBlockRet);
+        }
+        else if(obj.type() == typeid(CMvDbpSendTxRet))
+        {
+            CMvDbpSendTxRet txRet = boost::any_cast<CMvDbpSendTxRet>(obj);
+
+            sn::SendTxRet sendTxRet;
+            sendTxRet.set_hash(txRet.hash);
+            resultMsg.add_result()->PackFrom(sendTxRet);
         }
         else if(obj.type() == typeid(CMvDbpRegisterForkIDRet))
         {
@@ -903,13 +914,15 @@ void CDbpServer::HandleClientMethod(CDbpClient* pDbpClient, google::protobuf::An
     if (methodMsg.method() == "getblocks")
         methodBody.method = CMvDbpMethod::Method::GET_BLOCKS;
     if (methodMsg.method() == "gettransaction")
-        methodBody.method = CMvDbpMethod::Method::GET_TX;
+        methodBody.method = CMvDbpMethod::Method::GET_TRANSACTION;
     if (methodMsg.method() == "sendtransaction")
-        methodBody.method = CMvDbpMethod::Method::SEND_TX;
+        methodBody.method = CMvDbpMethod::Method::SEND_TRANSACTION;
     if (methodMsg.method() == "registerforkid")
         methodBody.method = CMvDbpMethod::Method::REGISTER_FORK;
     if (methodMsg.method() == "sendblock")
         methodBody.method = CMvDbpMethod::Method::SEND_BLOCK;
+    if (methodMsg.method() == "sendtx")
+        methodBody.method = CMvDbpMethod::Method::SEND_TX;
 
 
     if (methodBody.method == CMvDbpMethod::Method::GET_BLOCKS && methodMsg.params().Is<lws::GetBlocksArg>())
@@ -924,13 +937,13 @@ void CDbpServer::HandleClientMethod(CDbpClient* pDbpClient, google::protobuf::An
         methodBody.params.insert(std::make_pair("hash", args.hash()));
         methodBody.params.insert(std::make_pair("number", boost::lexical_cast<std::string>(args.number())));
     }
-    else if (methodBody.method == CMvDbpMethod::Method::GET_TX && methodMsg.params().Is<lws::GetTxArg>())
+    else if (methodBody.method == CMvDbpMethod::Method::GET_TRANSACTION && methodMsg.params().Is<lws::GetTxArg>())
     {
         lws::GetTxArg args;
         methodMsg.params().UnpackTo(&args);
         methodBody.params.insert(std::make_pair("hash", args.hash()));
     }
-    else if (methodBody.method == CMvDbpMethod::Method::SEND_TX && methodMsg.params().Is<lws::SendTxArg>())
+    else if (methodBody.method == CMvDbpMethod::Method::SEND_TRANSACTION && methodMsg.params().Is<lws::SendTxArg>())
     {
         lws::SendTxArg args;
         methodMsg.params().UnpackTo(&args);
@@ -952,6 +965,16 @@ void CDbpServer::HandleClientMethod(CDbpClient* pDbpClient, google::protobuf::An
         SnToDbpBlock(&(args.block()),dbpBlock);
 
         methodBody.params.insert(std::make_pair("data", dbpBlock));
+    }
+    else if(methodBody.method == CMvDbpMethod::Method::SEND_TX)
+    {
+        sn::SendTxArg args;
+        methodMsg.params().UnpackTo(&args);
+
+        CMvDbpTransaction dbptx;
+        SnToDbpTransaction(&(args.tx()),&dbptx);
+
+        methodBody.params.insert(std::make_pair("data", dbptx));
     }
     else
     {
