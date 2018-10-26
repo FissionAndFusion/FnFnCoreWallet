@@ -69,8 +69,8 @@ class CMvEventDbpSocketData : public walleve::CWalleveEvent
     friend class walleve::CWalleveStream;
 
 public:
-    CMvEventDbpSocketData(uint64 nNonceIn, const uint256& hashForkIn)
-        : CWalleveEvent(nNonceIn, type), hashFork(hashForkIn) {}
+    CMvEventDbpSocketData(uint64 nNonceIn, const uint256& hashForkIn, int64 nChangeIn)
+        : CWalleveEvent(nNonceIn, type), hashFork(hashForkIn), nChange(nChangeIn) {}
     virtual ~CMvEventDbpSocketData() {}
     virtual bool Handle(walleve::CWalleveEventListener& listener)
     {
@@ -98,6 +98,7 @@ protected:
 
 public:
     uint256 hashFork;
+    int64 nChange;
     D data;
 };
 
