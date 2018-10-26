@@ -356,6 +356,7 @@ void CMvDbpClientSocket::HandleReadCompleted(uint32_t len)
 CMvDbpClient::CMvDbpClient()
   : walleve::CIOProc("dbpclient")
 {
+    pDbpCliService = NULL;
 }
 
 CMvDbpClient::~CMvDbpClient(){}
@@ -568,12 +569,33 @@ void CMvDbpClient::HandleAdded(CMvDbpClientSocket* pClientSocket, google::protob
     {
         sn::Block block;
         added.object().UnpackTo(&block);
+
+        CMvDbpBlock dbpBlock;
+        CDbpUtils::SnToDbpBlock(&block,dbpBlock);
+        
+        CMvEventDbpAdded* pEventAdded =  new CMvEventDbpAdded(pClientSocket->GetSession());
+        pEventAdded->data.id = added.id();
+        pEventAdded->data.name = added.name();
+        pEventAdded->data.anyAddedObj = dbpBlock;
+
+        pDbpCliService->PostEvent(pEventAdded);
+        
     }
 
     if (added.name() == "all-tx")
     {
         sn::Transaction tx;
         added.object().UnpackTo(&tx);
+
+        CMvDbpTransaction dbpTx;
+        CDbpUtils::SnToDbpTransaction(&tx,&dbpTx);
+
+        CMvEventDbpAdded* pEventAdded =  new CMvEventDbpAdded(pClientSocket->GetSession());
+        pEventAdded->data.id = added.id();
+        pEventAdded->data.name = added.name();
+        pEventAdded->data.anyAddedObj = dbpTx;
+
+        pDbpCliService->PostEvent(pEventAdded);
     }
 }
 
@@ -602,9 +624,9 @@ bool CMvDbpClient::WalleveHandleInitialize()
         }
     }
 
-    if(!WalleveGetObject("dbpservice",pDbpService))
+    if(!WalleveGetObject("dbpcliservice",pDbpCliService))
     {
-        WalleveLog("request dbpservice failed in dbpclient.");
+        WalleveLog("request dbpcliservice failed in dbpclient.");
         return false;
     }
 
@@ -613,7 +635,7 @@ bool CMvDbpClient::WalleveHandleInitialize()
 
 void CMvDbpClient::WalleveHandleDeinitialize()
 {
-    pDbpService = NULL;
+    pDbpCliService = NULL;
     // delete client config
     mapProfile.clear();
 }

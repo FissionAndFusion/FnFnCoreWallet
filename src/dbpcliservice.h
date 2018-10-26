@@ -17,12 +17,14 @@ public:
     virtual ~CDbpCliService() noexcept;
 
     bool HandleEvent(CMvEventDbpBroken& event) override;
+    bool HandleEvent(CMvEventDbpAdded& event) override;
     
 protected:
     bool WalleveHandleInitialize() override;
     void WalleveHandleDeinitialize() override;
 protected:
     walleve::IIOProc* pDbpClient;
+    walleve::IIOProc* pDbpServer;
 }; 
 } // namespace multiverse
 

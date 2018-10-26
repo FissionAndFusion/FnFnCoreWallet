@@ -12,9 +12,6 @@
 #include <boost/any.hpp>
 #include <queue>
 
-#include "dbp.pb.h"
-#include "sn.pb.h"
-
 #include "dbputils.h"
 
 using namespace walleve;
@@ -183,7 +180,7 @@ protected:
     std::map<std::string, CMvSessionProfile> mapSessionProfile; // session id => session profile
 
 private:
-    IIOModule* pDbpService;
+    IIOModule* pDbpCliService;
 
 };
 

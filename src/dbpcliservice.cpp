@@ -11,6 +11,7 @@ CDbpCliService::CDbpCliService()
     : walleve::IIOModule("dbpcliservice")
 {
     pDbpClient = NULL;
+    pDbpServer = NULL;
 }
     
 CDbpCliService::~CDbpCliService()
@@ -25,17 +26,29 @@ bool CDbpCliService::WalleveHandleInitialize()
         WalleveLog("Failed to request dbpclient\n");
         return false;
     }
+
+    if(!WalleveGetObject("dbpserver", pDbpServer))
+    {
+        WalleveLog("Failed to request dbpserver\n");
+        return false;
+    }
     return true;
 }
 
 void CDbpCliService::WalleveHandleDeinitialize()
 {
     pDbpClient = NULL;
+    pDbpServer = NULL;
 }
 
 bool CDbpCliService::HandleEvent(CMvEventDbpBroken& event)
 {
     (void)event;
+    return true;
+}
+
+bool CDbpCliService::HandleEvent(CMvEventDbpAdded& event)
+{
     return true;
 }
 

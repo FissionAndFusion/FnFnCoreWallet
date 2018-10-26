@@ -11,9 +11,7 @@
 #include <boost/bimap.hpp>
 #include <boost/any.hpp>
 
-#include "dbp.pb.h"
-#include "lws.pb.h"
-#include "sn.pb.h"
+#include "dbputils.h"
 
 using namespace walleve;
 
