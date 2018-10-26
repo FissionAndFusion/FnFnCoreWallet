@@ -72,7 +72,7 @@ bool CDbpService::HandleEvent(CMvEventDbpPong& event)
 bool CDbpService::HandleEvent(CMvEventDbpConnect& event)
 {
     bool isReconnect = event.data.isReconnect;
-
+    
     if (isReconnect)
     {
         // reply normal
@@ -251,43 +251,129 @@ bool CDbpService::IsEmpty(const uint256& hash)
     return hash.ToString() == EMPTY_HASH;
 }
 
+bool CDbpService::IsForkHash(const uint256& hash)
+{
+    std::vector<std::pair<uint256,CProfile>> forks;
+    pService->ListFork(forks);
+
+    for(const auto& fork : forks)
+    {
+        if(fork.first == hash)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void CDbpService::TrySwitchFork(const uint256& blockHash,uint256& forkHash)
+{
+    auto it = mapForkPoint.find(blockHash.ToString());
+    if(it != mapForkPoint.end())
+    {
+        auto value = it->second; 
+        forkHash = value.first;
+    } 
+}
+
+bool CDbpService::CalcForkPoints(const uint256& forkHash)
+{
+    std::vector<std::pair<uint256,int>> vAncestors;
+    std::vector<std::pair<int,uint256>> vSublines;
+    std::vector<std::pair<uint256,uint256>> path;
+    if(!pService->GetForkGenealogy(forkHash,vAncestors,vSublines))
+    {
+        return false;
+    }
+
+    std::vector<std::pair<uint256,uint256>> forkAncestors;
+    for(int i = vAncestors.size() - 1; i >= 0; i--)
+    {
+        CBlock block;
+        uint256 tempFork;
+        int nHeight = 0;
+        pService->GetBlock(vAncestors[i].first,block,tempFork,nHeight);
+        forkAncestors.push_back(std::make_pair(vAncestors[i].first,block.hashPrev));
+    }
+
+    path = forkAncestors;
+    CBlock block;
+    uint256 tempFork;
+    int nHeight = 0;
+    pService->GetBlock(forkHash,block,tempFork,nHeight);
+    path.push_back(std::make_pair(forkHash,block.hashPrev));
+
+    for(const auto& fork : path)
+    {
+        mapForkPoint.insert(std::make_pair(fork.second.ToString(), 
+            std::make_pair(fork.first,fork.second)));
+    }
+    
+    return true;
+}
+
 bool CDbpService::GetBlocks(const uint256& forkHash, const uint256& startHash, int32 n, std::vector<CMvDbpBlock>& blocks)
 {
-    uint256 tempForkHash = forkHash;
+    uint256 connectForkHash = forkHash;
     uint256 blockHash = startHash;
 
-    if (IsEmpty(tempForkHash))
+    if (IsEmpty(connectForkHash))
     {
-        tempForkHash = pCoreProtocol->GetGenesisBlockHash();
+        connectForkHash = pCoreProtocol->GetGenesisBlockHash();
+    }
+
+    if(!IsForkHash(connectForkHash))
+    {
+        std::cerr << "connect fork hash is not a fork hash.\n";
+        return false;
     }
 
     if (IsEmpty(blockHash))
     {
-        pService->GetBlockHash(tempForkHash, 0, blockHash);
+        blockHash = pCoreProtocol->GetGenesisBlockHash();
     }
 
     int blockHeight = 0;
+    uint256 tempForkHash;
     if (!pService->GetBlockLocation(blockHash, tempForkHash, blockHeight))
     {
         return false;
     }
 
-    const std::size_t primaryBlockMaxNum = n;
-    std::size_t primaryBlockCount = 0;
-    while (primaryBlockCount != primaryBlockMaxNum && pService->GetBlockHash(tempForkHash, blockHeight, blockHash))
+    if(!CalcForkPoints(connectForkHash))
     {
-        CBlock block;
-        pService->GetBlock(blockHash, block, tempForkHash, blockHeight);
-        if (block.nType == CBlock::BLOCK_PRIMARY)
+        std::cerr << "CalcForkPoint failed.\n";
+        return false;
+    }
+
+    const std::size_t nonExtendBlockMaxNum = n;
+    std::size_t nonExtendBlockCount = 0;
+    
+    pService->GetBlockLocation(blockHash, tempForkHash, blockHeight);
+    
+    std::vector<uint256> blocksHash;
+    while (nonExtendBlockCount < nonExtendBlockMaxNum && 
+            pService->GetBlockHash(tempForkHash, blockHeight, blocksHash))
+    {
+        for(int i = 0; i < blocksHash.size(); ++i)
         {
-            primaryBlockCount++;
+            CBlock block;
+            int height;
+            pService->GetBlock(blocksHash[i], block, tempForkHash, height);
+            if (block.nType != CBlock::BLOCK_EXTENDED)
+            {
+                nonExtendBlockCount++;
+            }
+
+            CMvDbpBlock DbpBlock;
+            CreateDbpBlock(block, tempForkHash, height, DbpBlock);
+            blocks.push_back(DbpBlock);
         }
-
-        CMvDbpBlock DbpBlock;
-        CreateDbpBlock(block, tempForkHash, blockHeight, DbpBlock);
-        blocks.push_back(DbpBlock);
-
+        
+        TrySwitchFork(blocksHash[0],tempForkHash);
         blockHeight++;
+        blocksHash.clear(); blocksHash.shrink_to_fit();
     }
 
     return true;
@@ -298,7 +384,7 @@ void CDbpService::HandleGetBlocks(CMvEventDbpMethod& event)
     std::string forkid = event.data.params["forkid"];
     std::string blockHash = event.data.params["hash"];
     int32 blockNum = boost::lexical_cast<int32>(event.data.params["number"]);
-
+    
     uint256 startBlockHash(std::vector<unsigned char>(blockHash.begin(), blockHash.end()));
     uint256 forkHash;
     forkHash.SetHex(forkid);
@@ -414,7 +500,7 @@ void CDbpService::CreateDbpTransaction(const CTransaction& tx, CMvDbpTransaction
     tx.GetHash().ToDataStream(hashStream);
 }
 
-void CDbpService::PushBlock(const CMvDbpBlock& block)
+void CDbpService::PushBlock(const std::string& forkid, const CMvDbpBlock& block)
 {
     for (const auto& kv : mapIdSubedSession)
     {
@@ -425,6 +511,7 @@ void CDbpService::PushBlock(const CMvDbpBlock& block)
         {
             CMvEventDbpAdded eventAdded(session);
             eventAdded.data.id = id;
+            eventAdded.data.forkid = forkid;
             eventAdded.data.name = "all-block";
             eventAdded.data.anyAddedObj = block;
             pDbpServer->DispatchEvent(&eventAdded);
@@ -432,7 +519,7 @@ void CDbpService::PushBlock(const CMvDbpBlock& block)
     }
 }
 
-void CDbpService::PushTx(const CMvDbpTransaction& dbptx)
+void CDbpService::PushTx(const std::string& forkid, const CMvDbpTransaction& dbptx)
 {
     for (const auto& kv : mapIdSubedSession)
     {
@@ -443,6 +530,7 @@ void CDbpService::PushTx(const CMvDbpTransaction& dbptx)
         {
             CMvEventDbpAdded eventAdded(session);
             eventAdded.data.id = id;
+            eventAdded.data.forkid = forkid;
             eventAdded.data.name = "all-tx";
             eventAdded.data.anyAddedObj = dbptx;
             pDbpServer->DispatchEvent(&eventAdded);
@@ -462,7 +550,7 @@ bool CDbpService::HandleEvent(CMvEventDbpUpdateNewBlock& event)
     {
         CMvDbpBlock block;
         CreateDbpBlock(newBlock, forkHash, blockHeight, block);
-        PushBlock(block);
+        PushBlock(forkHash.ToString(),block);
     }
 
     return true;
@@ -471,10 +559,11 @@ bool CDbpService::HandleEvent(CMvEventDbpUpdateNewBlock& event)
 bool CDbpService::HandleEvent(CMvEventDbpUpdateNewTx& event)
 {
     decltype(event.data)& newtx = event.data;
+    std::string forkid = event.hashFork.ToString();
 
     CMvDbpTransaction dbpTx;
     CreateDbpTransaction(newtx, dbpTx);
-    PushTx(dbpTx);
+    PushTx(forkid,dbpTx);
 
     return true;
 }

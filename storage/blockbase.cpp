@@ -605,7 +605,10 @@ bool CBlockBase::GetBlockView(const uint256& hash,CBlockView& view,bool fCommita
         {
             view.RemoveTx(block.vtx[j].GetHash(),block.vtx[j],block.vTxContxt[j]);
         }
-        view.RemoveTx(block.txMint.GetHash(),block.txMint);
+        if (!block.txMint.IsNull())
+        {
+            view.RemoveTx(block.txMint.GetHash(),block.txMint);
+        }
     }
 
     for (int i = vPath.size() - 1;i >= 0;i--)
@@ -1035,11 +1038,14 @@ bool CBlockBase::GetTxNewIndex(CBlockView& view,CBlockIndex* pIndexNew,vector<pa
         }
         int nHeight = pIndex->GetBlockHeight();
         uint32 nOffset = pIndex->nOffset + block.GetTxSerializedOffset();
+
+        if (!block.txMint.IsNull())
         {
             CTxIndex txIndex(block.txMint,CDestination(),0,nHeight,pIndex->nFile,nOffset);
             vTxNew.push_back(make_pair(block.txMint.GetHash(),txIndex));
-            nOffset += ss.GetSerializeSize(block.txMint);
         }
+        nOffset += ss.GetSerializeSize(block.txMint);
+
         CVarInt var(block.vtx.size());
         nOffset += ss.GetSerializeSize(var);
         for (int i = 0;i < block.vtx.size();i++)

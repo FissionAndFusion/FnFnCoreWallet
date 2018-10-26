@@ -31,7 +31,7 @@ public:
     }
     uint32 Request(CInv& inv,uint32 nTimerId);
     uint32 Responded(CInv& inv);
-    void AskFor(const uint256& hashFork,std::vector<CInv>& vInv);
+    void AskFor(const uint256& hashFork, const std::vector<CInv>& vInv);
     bool FetchAskFor(uint256& hashFork,CInv& inv);
 protected:
     void SendHello();
