@@ -614,7 +614,6 @@ MvErr CService::SubmitWork(const vector<unsigned char>& vchWorkData,CTemplatePtr
     int64 nTotalTxFee = 0;
     pTxPool->ArrangeBlockTx(pCoreProtocol->GetGenesisBlockHash(),nMaxTxSize,block.vtx,nTotalTxFee);
     block.hashMerkle = block.CalcMerkleTreeRoot();
-    block.txMint.nAmount += nTotalTxFee;
 
     hashBlock = block.GetHash();
     vector<unsigned char> vchMintSig;
