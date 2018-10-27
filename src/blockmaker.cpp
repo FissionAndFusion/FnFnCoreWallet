@@ -269,6 +269,7 @@ void CBlockMaker::ArrangeBlockTx(CBlock& block,const uint256& hashFork,const CBl
     int64 nTotalTxFee = 0;
     pTxPool->ArrangeBlockTx(hashFork,nMaxTxSize,block.vtx,nTotalTxFee); 
     block.hashMerkle = block.CalcMerkleTreeRoot();
+    block.txMint.nAmount += nTotalTxFee;
 }
 
 bool CBlockMaker::SignBlock(CBlock& block,const CBlockMakerProfile& profile)
