@@ -899,6 +899,7 @@ CBlockIndex* CBlockBase::AddNewIndex(const uint256& hash,CBlock& block,uint32 nF
             {
                 nTotalTxFee += t.nTxFee;
             }
+            return nTotalTxFee;
         };
         int64 nTxFee = 0;
         nTxFee = lmd(block.vtx);
