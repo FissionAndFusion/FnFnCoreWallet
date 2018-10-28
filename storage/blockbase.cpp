@@ -893,7 +893,17 @@ CBlockIndex* CBlockBase::AddNewIndex(const uint256& hash,CBlock& block,uint32 nF
         map<uint256, CBlockIndex*>::iterator mi = mapIndex.insert(make_pair(hash, pIndexNew)).first;
         pIndexNew->phashBlock = &((*mi).first);
     
-        int64 nMoneySupply = block.txMint.nAmount;
+        auto lmd = [] (const vector<CTransaction>& vTX) -> int64 {
+            int64 nTotalTxFee = 0;
+            for(const auto& t : vTX)
+            {
+                nTotalTxFee += t.nTxFee;
+            }
+            return nTotalTxFee;
+        };
+        int64 nTxFee = 0;
+        nTxFee = lmd(block.vtx);
+        int64 nMoneySupply = block.txMint.nAmount - nTxFee;
         uint64 nChainTrust = block.GetBlockTrust();
         uint64 nRandBeacon = block.GetBlockBeacon();
         CBlockIndex* pIndexPrev = NULL;
