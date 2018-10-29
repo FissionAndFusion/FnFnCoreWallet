@@ -544,12 +544,11 @@ void CDbpService::PushTx(const std::string& forkid, const CMvDbpTransaction& dbp
 bool CDbpService::HandleEvent(CMvEventDbpUpdateNewBlock& event)
 {
     // get details about new block
-    uint256 blockHash = event.data;
-    CBlockEx newBlock;
-    uint256 forkHash;
-    int blockHeight;
-
-    if (pService->GetBlock(blockHash, newBlock, forkHash, blockHeight))
+    CBlockEx& newBlock = event.data;
+    uint256 forkHash = event.hashFork;
+    int blockHeight = 0;
+    CBlock tempBlock;
+    if (pService->GetBlock(newBlock.GetHash(), tempBlock, forkHash, blockHeight))
     {
         CMvDbpBlock block;
         CreateDbpBlock(newBlock, forkHash, blockHeight, block);

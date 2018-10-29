@@ -110,7 +110,7 @@ class CDBPEventListener;
 #define TYPE_DBP_EVENT(type, body) \
     walleve::CWalleveEventCategory<type, CDBPEventListener, body, bool>
 
-typedef TYPE_DBPEVENT(MV_EVENT_DBP_SOCKET_ADD_NEW_BLOCK, uint256) CMvEventDbpUpdateNewBlock;
+typedef TYPE_DBPEVENT(MV_EVENT_DBP_SOCKET_ADD_NEW_BLOCK, CBlockEx) CMvEventDbpUpdateNewBlock;
 typedef TYPE_DBPEVENT(MV_EVENT_DBP_SOCKET_ADD_NEW_TX, CTransaction) CMvEventDbpUpdateNewTx;
 
 typedef TYPE_DBP_EVENT(MV_EVENT_DBP_REQ, CMvDbpRequest) CMvEventDbpRequest;
