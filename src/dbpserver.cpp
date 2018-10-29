@@ -1125,8 +1125,16 @@ bool CDbpServer::HandleEvent(CMvEventDbpAdded& event)
         std::cerr << "cannot find session [Added] " << event.strSessionId << std::endl;
         return false;
     }
-    
-    if((*it).second.strForkId == event.data.forkid)
+
+    if(it->second.strClient != "supernode" && it->second.strForkId == event.data.forkid)
+    {
+        CDbpClient* pDbpClient = (*it).second.pDbpClient;
+        CMvDbpAdded& addedBody = event.data;
+
+        pDbpClient->SendResponse(it->second.strClient,addedBody);
+    }
+
+    if(it->second.strClient == "supernode")
     {
         CDbpClient* pDbpClient = (*it).second.pDbpClient;
         CMvDbpAdded& addedBody = event.data;

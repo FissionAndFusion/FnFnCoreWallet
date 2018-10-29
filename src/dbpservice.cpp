@@ -111,10 +111,10 @@ static std::string GetHex(std::string data)
 static void print_block(CMvDbpBlock &block)
 {
     std::string hash(block.hash.begin(), block.hash.end());
-    reverse(hash.begin(), hash.end());
+    std::reverse(hash.begin(), hash.end());
 
     std::string prev_hash(block.hashPrev.begin(), block.hashPrev.end());
-    reverse(prev_hash.begin(), prev_hash.end());
+    std::reverse(prev_hash.begin(), prev_hash.end());
     std::cout << "[<]recived block" << std::endl;
     std::cout << "   hash:" << GetHex(hash) << std::endl;
     std::cout << "   height:" << block.nHeight << std::endl;
@@ -134,10 +134,10 @@ static void print_block(CMvDbpBlock &block)
 static void print_tx(CMvDbpTransaction &tx)
 {
     std::string hash(tx.hash.begin(),tx.hash.end());
-    reverse(hash.begin(), hash.end());
+    std::reverse(hash.begin(), hash.end());
 
     std::string sig(tx.vchSig.begin(),tx.vchSig.end());
-    reverse(sig.begin(), sig.end());
+    std::reverse(sig.begin(), sig.end());
 
     std::cout << "[<]recived transaction" << std::endl;
     std::cout << "   hash:" << GetHex(hash) << std::endl;
@@ -692,6 +692,19 @@ void CDbpService::PushBlock(const std::string& forkid, const CMvDbpBlock& block)
             eventAdded.data.name = "all-block";
             eventAdded.data.anyAddedObj = block;
             pDbpServer->DispatchEvent(&eventAdded);
+        }
+
+        if(setSubedPrimaryBlockIds.find(id) != setSubedAllBlocksIds.end())
+        {
+            if(block.nType != CBlock::BLOCK_EXTENDED)
+            {
+                CMvEventDbpAdded eventAdded(session);
+                eventAdded.data.id = id;
+                eventAdded.data.forkid = forkid;
+                eventAdded.data.name = "primary-block";
+                eventAdded.data.anyAddedObj = block;
+                pDbpServer->DispatchEvent(&eventAdded);
+            }
         }
     }
 }
