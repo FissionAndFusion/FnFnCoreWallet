@@ -142,8 +142,9 @@ void CService::NotifyWorldLineUpdate(const CWorldLineUpdate& update)
         status.nMoneySupply = update.nMoneySupply;
     }
 
+
     uint64 nNonce;
-    CMvEventDbpUpdateNewBlock *pUpdateNewBlockEvent = new CMvEventDbpUpdateNewBlock(nNonce, update.hashFork);
+    CMvEventDbpUpdateNewBlock *pUpdateNewBlockEvent = new CMvEventDbpUpdateNewBlock(nNonce, update.hashFork, 0);
     pUpdateNewBlockEvent->data = update.hashLastBlock;
     pDbpSocket->PostEvent(pUpdateNewBlockEvent);
 }
@@ -156,7 +157,7 @@ void CService::NotifyNetworkPeerUpdate(const CNetworkPeerUpdate& update)
 void CService::NotifyTransactionUpdate(const CTransactionUpdate& update)
 {
     uint64 nNonce;
-    CMvEventDbpUpdateNewTx *pUpdateNewTxEvent = new CMvEventDbpUpdateNewTx(nNonce, update.hashFork);
+    CMvEventDbpUpdateNewTx *pUpdateNewTxEvent = new CMvEventDbpUpdateNewTx(nNonce, update.hashFork, update.nChange);
     pUpdateNewTxEvent->data = update.txUpdate;
     pDbpSocket->PostEvent(pUpdateNewTxEvent);
 }

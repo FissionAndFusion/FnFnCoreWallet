@@ -110,6 +110,7 @@ public:
     bool IsNull() const { return (hashFork == 0); }
 public:
     uint256 hashFork;
+    int64 nChange;
     CTransaction txUpdate;
 };
 

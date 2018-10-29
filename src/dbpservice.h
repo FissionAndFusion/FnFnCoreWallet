@@ -38,9 +38,9 @@ protected:
     void WalleveHandleDeinitialize() override;
 
 private:
-    void CreateDbpBlock(const CBlock& blockDetail, const uint256& forkHash,
+    void CreateDbpBlock(const CBlockEx& blockDetail, const uint256& forkHash,
                       int blockHeight, CMvDbpBlock& block);
-    void CreateDbpTransaction(const CTransaction& tx, CMvDbpTransaction& dbptx);
+    void CreateDbpTransaction(const CTransaction& tx, int64 nChange, CMvDbpTransaction& dbptx);
     bool CalcForkPoints(const uint256& forkHash);
     void TrySwitchFork(const uint256& blockHash, uint256& forkHash);
     bool GetBlocks(const uint256& forkHash, const uint256& startHash, int32 n, std::vector<CMvDbpBlock>& blocks);
