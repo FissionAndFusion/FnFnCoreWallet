@@ -373,11 +373,19 @@ string CHttpUtil::BuildResponseHeader(int nStatusCode,MAPIKeyValue& mapHeader,MA
 {
     string strStatus;
     if (nStatusCode == 200) strStatus = "OK";
+    if (nStatusCode == 201) strStatus = "Created";
+    if (nStatusCode == 202) strStatus = "Accepted";
+    if (nStatusCode == 203) strStatus = "Non-Authoritative Information";
+    if (nStatusCode == 204) strStatus = "No Content";
     if (nStatusCode == 400) strStatus = "Bad Request";
     if (nStatusCode == 401) strStatus = "Authorization Required";
     if (nStatusCode == 403) strStatus = "Forbidden";
     if (nStatusCode == 404) strStatus = "Not Found";
+    if (nStatusCode == 405) strStatus = "Method Not Allowed";
+    if (nStatusCode == 406) strStatus = "Not Acceptable";
+    if (nStatusCode == 410) strStatus = "Gone";
     if (nStatusCode == 500) strStatus = "Internal Server Error";
+    if (nStatusCode == 503) strStatus = "Service Unavailable";
 
     ostringstream oss;
     oss << "HTTP/1.1 " << nStatusCode << " " << strStatus << "\r\n"

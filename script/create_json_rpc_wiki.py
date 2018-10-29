@@ -8,8 +8,8 @@ import commands
 import os
 import re
 
-root = os.path.dirname(__file__)
-multiverse_cli = os.path.join(root, '../multiverse-cli')
+# root = os.path.dirname(__file__)
+multiverse_cli = 'multiverse-cli'
 
 simple_help = multiverse_cli + ' -help'
 detail_help = multiverse_cli + ' all -help'

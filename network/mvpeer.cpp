@@ -94,7 +94,7 @@ uint32 CMvPeer::Responded(CInv& inv)
     return nTimerId;
 }
 
-void CMvPeer::AskFor(const uint256& hashFork,vector<CInv>& vInv)
+void CMvPeer::AskFor(const uint256& hashFork, const vector<CInv>& vInv)
 {
     BOOST_FOREACH(const CInv& inv,vInv)
     {
