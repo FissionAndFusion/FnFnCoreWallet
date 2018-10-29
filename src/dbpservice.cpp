@@ -545,10 +545,9 @@ bool CDbpService::HandleEvent(CMvEventDbpUpdateNewBlock& event)
 {
     // get details about new block
     CBlockEx& newBlock = event.data;
-    uint256 forkHash = event.hashFork;
+    uint256 forkHash;
     int blockHeight = 0;
-    CBlock tempBlock;
-    if (pService->GetBlock(newBlock.GetHash(), tempBlock, forkHash, blockHeight))
+    if (pService->GetBlockLocation(newBlock.GetHash(),forkHash,blockHeight))
     {
         CMvDbpBlock block;
         CreateDbpBlock(newBlock, forkHash, blockHeight, block);
