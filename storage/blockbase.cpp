@@ -885,7 +885,7 @@ CBlockIndex* CBlockBase::GetOriginIndex(const uint256& txidMint) const
     return NULL;
 }
 
-CBlockIndex* CBlockBase::AddNewIndex(const uint256& hash,CBlock& block,uint32 nFile,uint32 nOffset)
+CBlockIndex* CBlockBase::AddNewIndex(const uint256& hash,const CBlock& block,uint32 nFile,uint32 nOffset)
 {
     CBlockIndex* pIndexNew = new CBlockIndex(block,nFile,nOffset);
     if (pIndexNew != NULL)

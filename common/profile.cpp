@@ -29,6 +29,11 @@ bool CProfile::Save(std::vector<unsigned char>& vchProfile)
         os << destOwner.prefix << destOwner.data;
         encoder.Push(PROFILE_OWNER,vchDestOwner);
 
+        if (hashParent != 0)
+        {
+            encoder.Push(PROFILE_PARENT,hashParent);
+        }
+
         encoder.Encode(vchProfile);
     }
     catch (...)
@@ -74,6 +79,12 @@ bool CProfile::Load(const vector<unsigned char>& vchProfile)
         {
             return false;
         }
+
+        if (!decoder.Get(PROFILE_PARENT,hashParent))
+        {
+            hashParent = 0;
+        }
+
         vector<unsigned char> vchDestOwner;
         if (decoder.Get(PROFILE_OWNER,vchDestOwner))
         {

@@ -1210,9 +1210,14 @@ CRPCResultPtr CRPCMod::RPCSendFrom(CRPCParamPtr param)
         }
     }
     uint256 hashFork = GetForkHash(spParam->strFork);
+    vector<unsigned char> vchData;
+    if (spParam->strData.IsValid())
+    {
+        vchData = ParseHexString(spParam->strData);
+    }
 
     CTransaction txNew;
-    if (!pService->CreateTransaction(hashFork,from,to,nAmount,nTxFee,vector<unsigned char>(),txNew))
+    if (!pService->CreateTransaction(hashFork,from,to,nAmount,nTxFee,vchData,txNew))
     {
         throw CRPCException(RPC_WALLET_ERROR,"Failed to create transaction");
     }
@@ -1630,22 +1635,22 @@ CRPCResultPtr CRPCMod::RPCMakeOrigin(CRPCParamPtr param)
     int64 nAmount = AmountFromValue(spParam->fAmount);
     int64 nMintReward = AmountFromValue(spParam->fReward);
 
+    CBlock blockPrev;
+    uint256 hashParent;
+    int nPrevHeight;
+    if (!pService->GetBlock(hashPrev,blockPrev,hashParent,nPrevHeight))
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Unknown prev block");
+    }
+
     CProfile profile;
     profile.strName     = spParam->strName;
     profile.strSymbol   = spParam->strSymbol;
     profile.destOwner   = destOwner;
+    profile.hashParent  = hashParent; 
     profile.nMintReward = nMintReward;
     profile.nMinTxFee   = MIN_TX_FEE;
     profile.SetFlag(spParam->fIsolated,spParam->fPrivate,spParam->fEnclosed);
-
-
-    CBlock blockPrev;
-    uint256 hashParent;
-    int nOriginHeight;
-    if (!pService->GetBlock(hashPrev,blockPrev,hashParent,nOriginHeight))
-    {
-        throw CRPCException(RPC_INVALID_PARAMETER, "Unknown prev block");
-    }
 
     CBlock block;
     block.nVersion   = 1;

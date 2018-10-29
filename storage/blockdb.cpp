@@ -62,15 +62,108 @@ bool CBlockDB::RemoveAll()
             oss << "DROP TABLE IF EXISTS unspent" << (*it).second; 
             txn.Query(oss.str());
         }
+        txn.Query("TRUNCATE TABLE forkcontext");
         txn.Query("TRUNCATE TABLE fork");
         txn.Query("TRUNCATE TABLE block");
         txn.Query("TRUNCATE TABLE transaction");
+        txn.Query("TRUNCATE TABLE delegate");
+        txn.Query("TRUNCATE TABLE enroll");
         if (!txn.Commit())
         {
             return false;
         }
     }
     mapForkIndex.clear();
+    return true;
+}
+
+bool CBlockDB::AddNewForkContext(const CForkContext& ctxt)
+{
+    CMvDBInst db(&dbPool);
+    if (!db.Available())
+    {
+        return false;
+    }
+    ostringstream oss;
+    oss << "INSERT INTO forkcontext (name,symbol,hash,parent,joint,txid,version,flag,mintreward,mintxfee,owner) "
+        <<    "VALUE("
+        <<           "\'" << db->ToEscString(ctxt.strName) << "\',"
+        <<           "\'" << db->ToEscString(ctxt.strSymbol) << "\',"
+        <<           "\'" << db->ToEscString(ctxt.hashFork) << "\',"
+        <<           "\'" << db->ToEscString(ctxt.hashParent) << "\',"
+        <<           "\'" << db->ToEscString(ctxt.hashJoint) << "\',"
+        <<           "\'" << db->ToEscString(ctxt.txidEmbedded) << "\',"
+        <<           "\'" << ctxt.nVersion << "\',"
+        <<           "\'" << ctxt.nFlag << "\',"
+        <<           "\'" << ctxt.nMintReward << "\',"
+        <<           "\'" << ctxt.nMinTxFee << "\',"
+        <<           "\'" << db->ToEscString(ctxt.destOwner) << "\')";
+
+    return db->Query(oss.str());
+}
+
+bool CBlockDB::RetrieveForkContext(const uint256& hash,CForkContext& ctxt)
+{
+    ctxt.SetNull();
+
+    CMvDBInst db(&dbPool);
+    if (db.Available())
+    {
+        ctxt.hashFork = hash;
+
+        ostringstream oss;
+        oss << "SELECT name,symbol,parent,joint,txid,version,flag,mintreward,mintxfee,owner FROM forkcontext WHERE hash = "
+            <<            "\'" << db->ToEscString(hash) << "\'";
+        CMvDBRes res(*db,oss.str());
+        return (res.GetRow()
+                && res.GetField(0,ctxt.strName) && res.GetField(1,ctxt.strSymbol) 
+                && res.GetField(2,ctxt.hashParent) && res.GetField(3,ctxt.hashJoint) 
+                && res.GetField(4,ctxt.txidEmbedded) && res.GetField(5,ctxt.nVersion) 
+                && res.GetField(6,ctxt.nFlag) && res.GetField(7,ctxt.nMintReward) 
+                && res.GetField(8,ctxt.nMinTxFee) && res.GetField(8,ctxt.destOwner));
+    }
+
+    return false;
+}
+
+bool CBlockDB::FilterForkContext(CForkContextFilter& filter)
+{
+    CMvDBInst db(&dbPool);
+    if (!db.Available())
+    {
+        return false;
+    }
+
+    string strQuery = "SELECT name,symbol,hash,parent,joint,txid,version,flag,mintreward,mintxfee,owner FROM forkcontext";
+    if (filter.hashParent != 0)
+    {
+        strQuery += string(" WHERE parent = \'") + db->ToEscString(filter.hashParent) + "\'";
+        if (!filter.strSymbol.empty())
+        {
+            strQuery += string(" AND symbol = \'") + db->ToEscString(filter.strSymbol) + "\'";
+        }
+    }
+    else if (!filter.strSymbol.empty())
+    {
+        strQuery += string(" WHERE symbol = \'") + db->ToEscString(filter.strSymbol) + "\'";
+    }
+
+    {
+        CMvDBRes res(*db,strQuery,true);
+        while (res.GetRow())
+        {
+            CForkContext ctxt;
+            if (   !res.GetField(0,ctxt.strName)     || !res.GetField(1,ctxt.strSymbol)
+                || !res.GetField(2,ctxt.hashFork)     || !res.GetField(3,ctxt.hashParent) 
+                || !res.GetField(4,ctxt.hashJoint)   || !res.GetField(5,ctxt.txidEmbedded) 
+                || !res.GetField(6,ctxt.nVersion)    || !res.GetField(7,ctxt.nFlag) 
+                || !res.GetField(8,ctxt.nMintReward) || !res.GetField(9,ctxt.nMinTxFee) 
+                || !res.GetField(10,ctxt.destOwner)  || !filter.FoundForkContext(ctxt) )
+            {
+                return false;
+            }
+        }
+    }
     return true;
 }
 
@@ -87,9 +180,9 @@ bool CBlockDB::AddNewFork(const uint256& hash)
     {
         ostringstream oss;
         oss << "INSERT INTO fork(hash,refblock) "
-            << "VALUE("
-            << "\'" << strEscHash << "\',"
-            << "\'" << db->ToEscString(uint256(0)) << "\')";
+            <<   "VALUE("
+            <<          "\'" << strEscHash << "\',"
+            <<          "\'" << db->ToEscString(uint256(0)) << "\')";
         if (!db->Query(oss.str()))
         {
             return false;
@@ -663,6 +756,22 @@ bool CBlockDB::CreateTable()
     }
 
     return (
+        db->Query("CREATE TABLE IF NOT EXISTS forkcontext ("
+                    "id INT NOT NULL AUTO_INCREMENT,"
+                    "name VARCHAR(128) NOT NULL UNIQUE KEY,"
+                    "symbol VARCHAR(16) NOT NULL,"
+                    "hash BINARY(32) NOT NULL UNIQUE KEY,"
+                    "parent BINARY(32) NOT NULL,"
+                    "joint BINARY(32) NOT NULL,"
+                    "txid BINARY(32) NOT NULL,"
+                    "version SMALLINT UNSIGNED NOT NULL,"
+                    "flag SMALLINT UNSIGNED NOT NULL,"
+                    "mintreward BIGINT UNSIGNED NOT NULL,"
+                    "mintxfee BIGINT UNSIGNED NOT NULL,"
+                    "owner BINARY(33) NOT NULL,"
+                    "INDEX(hash),INDEX(id)"
+                    "ENGINE=InnoDB")
+           &&
         db->Query("CREATE TABLE IF NOT EXISTS fork ("
                     "id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,"
                     "hash BINARY(32) NOT NULL UNIQUE KEY,"
@@ -769,7 +878,8 @@ bool CBlockDB::InnoDB()
 
         string engine(support.begin(),support.end());
 
-        if (engine == "InnoDB"){
+        if (engine == "InnoDB")
+        {
             return true;
         }
     }

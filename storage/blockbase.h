@@ -190,7 +190,7 @@ protected:
     CBlockFork* GetFork(const std::string& strName);
     CBlockIndex* GetBranch(CBlockIndex* pIndexRef,CBlockIndex* pIndex,std::vector<CBlockIndex*>& vPath);
     CBlockIndex* GetOriginIndex(const uint256& txidMint) const;
-    CBlockIndex* AddNewIndex(const uint256& hash,CBlock& block,uint32 nFile,uint32 nOffset);
+    CBlockIndex* AddNewIndex(const uint256& hash,const CBlock& block,uint32 nFile,uint32 nOffset);
     CBlockFork* AddNewFork(const CProfile& profileIn,CBlockIndex* pIndexLast);
     bool LoadForkProfile(const CBlockIndex* pIndexOrigin,CProfile& profile);
     bool UpdateDelegate(const uint256& hash,CBlockEx& block);
