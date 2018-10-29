@@ -684,7 +684,7 @@ void CDbpServer::HandleClientMethod(CDbpClient* pDbpClient, google::protobuf::An
         methodMsg.params().UnpackTo(&args);
         
         std::string session = pDbpClient->GetSession();
-        mapSessionProfile[session].setForks.insert(args.id());
+        mapSessionProfile[session].setChildForks.insert(args.id());
         
         std::cout << "super node fork id: " << args.id() << "\n";
         methodBody.params.insert(std::make_pair("forkid",args.id()));
@@ -1138,7 +1138,7 @@ bool CDbpServer::HandleEvent(CMvEventDbpAdded& event)
         pDbpClient->SendResponse(it->second.strClient,addedBody);
     }
 
-    auto& childForks = it->second.setForks;
+    auto& childForks = it->second.setChildForks;
     if(it->second.strClient == "supernode" && childForks.find(event.data.forkid) != childForks.end())
     {
         CDbpClient* pDbpClient = (*it).second.pDbpClient;
