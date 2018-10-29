@@ -197,7 +197,9 @@ MvErr CDispatcher::AddNewTx(const CTransaction& tx,uint64 nNonce)
     {
         return err;
     }
-    if (!pWallet->UpdateTx(hashFork,CAssembledTx(tx,-1,destIn,nValueIn)))
+
+    CAssembledTx assembledTx(tx,-1,destIn,nValueIn);
+    if (!pWallet->UpdateTx(hashFork,assembledTx))
     {
         return MV_ERR_SYS_DATABASE_ERROR;
     }
@@ -205,6 +207,7 @@ MvErr CDispatcher::AddNewTx(const CTransaction& tx,uint64 nNonce)
     CTransactionUpdate updateTransaction;
     updateTransaction.hashFork = hashFork; 
     updateTransaction.txUpdate = tx;
+    updateTransaction.nChange = assembledTx.GetChange();
     pService->NotifyTransactionUpdate(updateTransaction);
 
     if (!nNonce)

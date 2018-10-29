@@ -97,6 +97,7 @@ public:
     CMvDbpDestination cDestination; // 输出地址
     int64 nAmount;                  //输出金额
     int64 nTxFee;                   //网络交易费
+    int64 nChange;                  //余额
     std::vector<uint8> vchData;     //输出参数(模板地址参数、跨分支交易共轭交易)
     std::vector<uint8> vchSig;      //交易签名
     std::vector<uint8> hash;
