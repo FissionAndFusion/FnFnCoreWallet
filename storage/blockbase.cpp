@@ -605,7 +605,10 @@ bool CBlockBase::GetBlockView(const uint256& hash,CBlockView& view,bool fCommita
         {
             view.RemoveTx(block.vtx[j].GetHash(),block.vtx[j],block.vTxContxt[j]);
         }
-        view.RemoveTx(block.txMint.GetHash(),block.txMint);
+        if (!block.txMint.IsNull())
+        {
+            view.RemoveTx(block.txMint.GetHash(),block.txMint);
+        }
     }
 
     for (int i = vPath.size() - 1;i >= 0;i--)
@@ -890,7 +893,17 @@ CBlockIndex* CBlockBase::AddNewIndex(const uint256& hash,CBlock& block,uint32 nF
         map<uint256, CBlockIndex*>::iterator mi = mapIndex.insert(make_pair(hash, pIndexNew)).first;
         pIndexNew->phashBlock = &((*mi).first);
     
-        int64 nMoneySupply = block.txMint.nAmount;
+        auto lmd = [] (const vector<CTransaction>& vTX) -> int64 {
+            int64 nTotalTxFee = 0;
+            for(const auto& t : vTX)
+            {
+                nTotalTxFee += t.nTxFee;
+            }
+            return nTotalTxFee;
+        };
+        int64 nTxFee = 0;
+        nTxFee = lmd(block.vtx);
+        int64 nMoneySupply = block.txMint.nAmount - nTxFee;
         uint64 nChainTrust = block.GetBlockTrust();
         uint64 nRandBeacon = block.GetBlockBeacon();
         CBlockIndex* pIndexPrev = NULL;
@@ -1035,11 +1048,14 @@ bool CBlockBase::GetTxNewIndex(CBlockView& view,CBlockIndex* pIndexNew,vector<pa
         }
         int nHeight = pIndex->GetBlockHeight();
         uint32 nOffset = pIndex->nOffset + block.GetTxSerializedOffset();
+
+        if (!block.txMint.IsNull())
         {
             CTxIndex txIndex(block.txMint,CDestination(),0,nHeight,pIndex->nFile,nOffset);
             vTxNew.push_back(make_pair(block.txMint.GetHash(),txIndex));
-            nOffset += ss.GetSerializeSize(block.txMint);
         }
+        nOffset += ss.GetSerializeSize(block.txMint);
+
         CVarInt var(block.vtx.size());
         nOffset += ss.GetSerializeSize(var);
         for (int i = 0;i < block.vtx.size();i++)

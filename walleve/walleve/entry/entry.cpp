@@ -23,7 +23,7 @@ CWalleveEntry::CWalleveEntry()
 #endif // defined(SIGQUIT)
 #if defined(SIGHUP)
     ipcSignals.add(SIGHUP);
-#endif // defined(SIGQUIT)
+#endif // defined(SIGHUP)
 
     ipcSignals.async_wait(boost::bind(&CWalleveEntry::HandleSignal,this,_1,_2));
 }
@@ -60,6 +60,10 @@ void CWalleveEntry::Stop()
 
 void CWalleveEntry::HandleSignal(const boost::system::error_code& error,int signal_number)
 {
+    if (signal_number == SIGINT || signal_number == SIGTERM)
+    {
+        Stop();
+    }
 }
 
 

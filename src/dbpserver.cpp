@@ -168,8 +168,6 @@ void CDbpClient::SendResponse(CMvDbpReady& body)
     SendMessage(&readyMsgBase);
 }
 
-
-
 void CDbpClient::SendResponse(const std::string& client, CMvDbpAdded& body)
 {
     dbp::Base addedMsgBase;

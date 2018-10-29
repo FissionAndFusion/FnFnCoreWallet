@@ -504,6 +504,8 @@ bool CMvEntry::RunInBackground(const path& pathData)
 {
 #ifndef WIN32
     // Daemonize
+    ioService.notify_fork(boost::asio::io_service::fork_prepare);
+
     pid_t pid = fork();
     if (pid < 0)
     {
@@ -523,8 +525,13 @@ bool CMvEntry::RunInBackground(const path& pathData)
 
     pid_t sid = setsid();
     if (sid < 0)
+    {
         cerr << "Error: setsid) returned " << sid << " errno " << errno << "\n";
+        return false;
+    }
+    ioService.notify_fork(boost::asio::io_service::fork_child);
     return true;
+
 #else
     HWND hwnd = GetForegroundWindow();
     cout << "daemon running, window will run in background" << endl;
