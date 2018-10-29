@@ -91,6 +91,79 @@ bool CDbpService::HandleEvent(CMvEventDbpBroken& event)
     return true;
 }
 
+static std::string GetHex(std::string data)
+{
+    int n = 2 * data.length() + 1;
+    std::string ret;
+    const char c_map[16] = {'0', '1', '2', '3', '4', '5', '6', '7',
+                            '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+
+    ret.reserve(n);
+    for (const unsigned char &c : data)
+    {
+        ret.push_back(c_map[c >> 4]);
+        ret.push_back(c_map[c & 15]);
+    }
+
+    return ret;
+}
+
+static void print_block(CMvDbpBlock &block)
+{
+    std::string hash(block.hash.begin(), block.hash.end());
+    reverse(hash.begin(), hash.end());
+
+    std::string prev_hash(block.hashPrev.begin(), block.hashPrev.end());
+    reverse(prev_hash.begin(), prev_hash.end());
+    std::cout << "[<]recived block" << std::endl;
+    std::cout << "   hash:" << GetHex(hash) << std::endl;
+    std::cout << "   height:" << block.nHeight << std::endl;
+    std::cout << "   prev hash:" << GetHex(prev_hash) << std::endl;
+
+    /*std::cout << "vtx size: " << block.vtx_size() << std::endl;
+    std::cout << "vtx v input size: " << block.vtx(0).vinput_size() << std::endl;
+    for (int i = 0; i < block.vtx(0).vinput_size(); ++i)
+    {
+        std::string txhash(block.vtx(0).vinput(i).hash());
+        reverse(txhash.begin(), txhash.end());
+        std::cout << "InputTxHash: " << GetHex(txhash) << std::endl;
+        std::cout << "InputTx n: " << block.vtx(0).vinput(i).n() << std::endl;
+    }*/
+}
+
+static void print_tx(CMvDbpTransaction &tx)
+{
+    std::string hash(tx.hash.begin(),tx.hash.end());
+    reverse(hash.begin(), hash.end());
+
+    std::string sig(tx.vchSig.begin(),tx.vchSig.end());
+    reverse(sig.begin(), sig.end());
+
+    std::cout << "[<]recived transaction" << std::endl;
+    std::cout << "   hash:" << GetHex(hash) << std::endl;
+    std::cout << "   sig:" << GetHex(sig) << std::endl;
+}
+
+bool CDbpService::HandleEvent(CMvEventDbpAdded& event)
+{
+    if(event.data.name == "primary-block")
+    {
+        CMvDbpBlock block = boost::any_cast<CMvDbpBlock>(event.data.anyAddedObj);
+        print_block(block);
+    }
+    else if(event.data.name == "all-tx")
+    {
+        CMvDbpTransaction tx = boost::any_cast<CMvDbpTransaction>(event.data.anyAddedObj);
+        print_tx(tx);
+    }
+    else
+    {
+        return false;
+    }
+    
+    return true;
+}
+
 bool CDbpService::HandleEvent(CMvEventDbpConnect& event)
 {
     bool isReconnect = event.data.isReconnect;
@@ -261,6 +334,9 @@ void CDbpService::SubTopic(const std::string& id, const std::string& session, co
         setSubedAllBlocksIds.insert(id);
     if (topic == "all-tx")
         setSubedAllTxIds.insert(id);
+    if (topic == "primary-block")
+        setSubedPrimaryBlockIds.insert(id);
+
 
     mapIdSubedSession.insert(std::make_pair(id, session));
 }
@@ -269,6 +345,7 @@ void CDbpService::UnSubTopic(const std::string& id)
 {
     setSubedAllBlocksIds.erase(id);
     setSubedAllTxIds.erase(id);
+    setSubedPrimaryBlockIds.erase(id);
 
     mapIdSubedTopic.erase(id);
     mapIdSubedSession.erase(id);
@@ -451,7 +528,6 @@ void CDbpService::HandleRegisterFork(CMvEventDbpMethod& event)
     ret.forkid = forkid;
     eventResult.data.anyResultObjs.push_back(ret);
     pDbpServer->DispatchEvent(&eventResult);
-
 
     // notify dbp client to send message to parent node
     CMvEventDbpRegisterForkID eventRegister("");

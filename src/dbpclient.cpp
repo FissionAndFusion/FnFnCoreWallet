@@ -357,6 +357,7 @@ CMvDbpClient::CMvDbpClient()
   : walleve::CIOProc("dbpclient")
 {
     pDbpCliService = NULL;
+    pDbpService = NULL;
 }
 
 CMvDbpClient::~CMvDbpClient(){}
@@ -565,7 +566,7 @@ void CMvDbpClient::HandleAdded(CMvDbpClientSocket* pClientSocket, google::protob
     dbp::Added added;
     any->UnpackTo(&added);
 
-    if (added.name() == "all-block")
+    if (added.name() == "primary-block")
     {
         sn::Block block;
         added.object().UnpackTo(&block);
@@ -578,7 +579,7 @@ void CMvDbpClient::HandleAdded(CMvDbpClientSocket* pClientSocket, google::protob
         pEventAdded->data.name = added.name();
         pEventAdded->data.anyAddedObj = dbpBlock;
 
-        pDbpCliService->PostEvent(pEventAdded);
+        pDbpService->PostEvent(pEventAdded);
         
     }
 
@@ -595,7 +596,7 @@ void CMvDbpClient::HandleAdded(CMvDbpClientSocket* pClientSocket, google::protob
         pEventAdded->data.name = added.name();
         pEventAdded->data.anyAddedObj = dbpTx;
 
-        pDbpCliService->PostEvent(pEventAdded);
+        pDbpService->PostEvent(pEventAdded);
     }
 }
 
@@ -630,12 +631,19 @@ bool CMvDbpClient::WalleveHandleInitialize()
         return false;
     }
 
+    if(!WalleveGetObject("dbpservice",pDbpService))
+    {
+        WalleveLog("request dbpservice failed in dbpclient.");
+        return false;
+    }
+
     return true;
 }
 
 void CMvDbpClient::WalleveHandleDeinitialize()
 {
     pDbpCliService = NULL;
+    pDbpService = NULL;
     // delete client config
     mapProfile.clear();
 }
@@ -812,7 +820,7 @@ void CMvDbpClient::RegisterDefaultForks(CMvDbpClientSocket* pClientSocket)
 
 void CMvDbpClient::SubscribeDefaultTopics(CMvDbpClientSocket* pClientSocket)
 {
-    std::vector<std::string> vTopics{"all-block","all-tx"};
+    std::vector<std::string> vTopics{"primary-block","all-tx"};
     pClientSocket->SendSubScribeTopics(vTopics);
 }
 

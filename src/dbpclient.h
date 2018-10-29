@@ -181,6 +181,7 @@ protected:
 
 private:
     IIOModule* pDbpCliService;
+    IIOModule* pDbpService;
 
 };
 
