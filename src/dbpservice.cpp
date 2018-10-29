@@ -697,7 +697,7 @@ void CDbpService::PushBlock(const std::string& forkid, const CMvDbpBlock& block)
             pDbpServer->DispatchEvent(&eventAdded);
         }
 
-        if(setSubedPrimaryBlockIds.find(id) != setSubedAllBlocksIds.end())
+        if(setSubedPrimaryBlockIds.find(id) != setSubedPrimaryBlockIds.end())
         {
             if(block.nType != CBlock::BLOCK_EXTENDED)
             {
