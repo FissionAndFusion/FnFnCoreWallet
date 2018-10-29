@@ -449,11 +449,10 @@ void CDbpService::CreateDbpBlock(const CBlockEx& blockDetail, const uint256& for
     block.vchSig = blockDetail.vchSig;
 
     // txMint
-    int k = 0;
-    int64 nTxMintValueIn = blockDetail.vTxContxt[k++].GetValueIn();
-    CreateDbpTransaction(blockDetail.txMint, blockDetail.txMint.GetChange(nTxMintValueIn), block.txMint);
+    CreateDbpTransaction(blockDetail.txMint, blockDetail.txMint.GetChange(0), block.txMint);
 
     // vtx
+    int k = 0;
     for (const auto& tx : blockDetail.vtx)
     {
         CMvDbpTransaction dbpTx;
