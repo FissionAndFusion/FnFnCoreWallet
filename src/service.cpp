@@ -142,6 +142,7 @@ void CService::NotifyWorldLineUpdate(const CWorldLineUpdate& update)
         status.nMoneySupply = update.nMoneySupply;
     }
 
+
     uint64 nNonce;
     CMvEventDbpUpdateNewBlock *pUpdateNewBlockEvent = new CMvEventDbpUpdateNewBlock(nNonce, update.hashFork, 0);
     pUpdateNewBlockEvent->data = update.hashLastBlock;

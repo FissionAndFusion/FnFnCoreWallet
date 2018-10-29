@@ -432,7 +432,7 @@ bool CDbpService::HandleEvent(CMvEventDbpMethod& event)
     return true;
 }
 
-void CDbpService::CreateDbpBlock(const CBlock& blockDetail, const uint256& forkHash,
+void CDbpService::CreateDbpBlock(const CBlockEx& blockDetail, const uint256& forkHash,
                                  int blockHeight, CMvDbpBlock& block)
 {
     block.nVersion = blockDetail.nVersion;
@@ -449,13 +449,16 @@ void CDbpService::CreateDbpBlock(const CBlock& blockDetail, const uint256& forkH
     block.vchSig = blockDetail.vchSig;
 
     // txMint
-    CreateDbpTransaction(blockDetail.txMint, 0, block.txMint);
+    int k = 0;
+    int64 nTxMintValueIn = blockDetail.vTxContxt[k++].GetValueIn();
+    CreateDbpTransaction(blockDetail.txMint, blockDetail.txMint.GetChange(nTxMintValueIn), block.txMint);
 
     // vtx
     for (const auto& tx : blockDetail.vtx)
     {
         CMvDbpTransaction dbpTx;
-        CreateDbpTransaction(tx, 0, dbpTx);
+        int64 nValueIn = blockDetail.vTxContxt[k++].GetValueIn();
+        CreateDbpTransaction(tx, tx.GetChange(nValueIn), dbpTx);
         block.vtx.push_back(dbpTx);
     }
 
@@ -543,7 +546,7 @@ bool CDbpService::HandleEvent(CMvEventDbpUpdateNewBlock& event)
 {
     // get details about new block
     uint256 blockHash = event.data;
-    CBlock newBlock;
+    CBlockEx newBlock;
     uint256 forkHash;
     int blockHeight;
 

@@ -38,7 +38,7 @@ protected:
     void WalleveHandleDeinitialize() override;
 
 private:
-    void CreateDbpBlock(const CBlock& blockDetail, const uint256& forkHash,
+    void CreateDbpBlock(const CBlockEx& blockDetail, const uint256& forkHash,
                       int blockHeight, CMvDbpBlock& block);
     void CreateDbpTransaction(const CTransaction& tx, int64 nChange, CMvDbpTransaction& dbptx);
     bool CalcForkPoints(const uint256& forkHash);
