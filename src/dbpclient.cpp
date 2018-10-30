@@ -657,6 +657,7 @@ void CMvDbpClient::EnterLoop()
          it != mapProfile.end(); ++it)
     {
         bool fEnableSSL = (*it).second.optSSL.fEnable;
+        if(it->first.address().is_loopback()) continue;
         if(!StartConnection(it->first,DBPCLIENT_CONNECT_TIMEOUT,fEnableSSL,it->second.optSSL))
         {
             WalleveLog("Start to connect parent node %s failed,  port = %d\n",
