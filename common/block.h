@@ -129,6 +129,15 @@ public:
     {
         return (txMint.nAmount - nValueIn); 
     }
+    int64 GetBlockMint() const
+    {
+        int64 nTotalTxFee = 0;
+        BOOST_FOREACH(const CTransaction& tx, vtx)
+        {
+            nTotalTxFee += tx.nTxFee;
+        }
+        return GetBlockMint(nTotalTxFee);
+    }
     uint256 BuildMerkleTree(std::vector<uint256>& vMerkleTree) const
     {
         vMerkleTree.clear();
