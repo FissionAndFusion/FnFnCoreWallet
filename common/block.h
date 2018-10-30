@@ -242,7 +242,7 @@ public:
         nFile = 0;
         nOffset = 0;
     }
-    CBlockIndex(CBlock& block,uint32 nFileIn,uint32 nOffsetIn)
+    CBlockIndex(const CBlock& block,uint32 nFileIn,uint32 nOffsetIn)
     {
         phashBlock = NULL;
         pOrigin = this;
