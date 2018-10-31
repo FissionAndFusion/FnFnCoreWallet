@@ -278,7 +278,11 @@ void CDispatcher::UpdatePrimaryBlock(const CBlock& block,const CWorldLineUpdate&
             CTemplateId tid;
             if (tx.sendTo.GetTemplateId(tid) && tid.GetType() == TEMPLATE_FORK && !tx.vchData.empty())
             {
-                ProcessForkTx(tx,updateWorldLine.nLastBlockHeight);
+                CForkContext ctxt;
+                if (pWorldLine->AddNewForkContext(tx,ctxt) == MV_OK)
+                {
+                    ProcessForkTx(tx,updateWorldLine.nLastBlockHeight);
+                }
             }
         }
     }

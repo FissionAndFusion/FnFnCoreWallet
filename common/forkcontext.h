@@ -74,7 +74,19 @@ public:
         nFlag |= (fPrivate  ? FORK_FLAG_PRIVATE  : 0);
         nFlag |= (fEnclosed ? FORK_FLAG_ENCLOSED : 0);
     }
-
+    const CProfile GetProfile() const
+    {
+        CProfile profile;
+        profile.strName      = strName;
+        profile.strSymbol    = strSymbol;
+        profile.hashParent   = hashParent;
+        profile.nVersion     = nVersion;
+        profile.nFlag        = nFlag;
+        profile.nMintReward  = nMintReward;
+        profile.nMinTxFee    = nMinTxFee;
+        profile.destOwner    = destOwner; 
+        return profile;
+    }
 };
 
 /*

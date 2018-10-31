@@ -769,7 +769,7 @@ bool CBlockDB::CreateTable()
                     "mintreward BIGINT UNSIGNED NOT NULL,"
                     "mintxfee BIGINT UNSIGNED NOT NULL,"
                     "owner BINARY(33) NOT NULL,"
-                    "INDEX(hash),INDEX(id)"
+                    "INDEX(hash),INDEX(id))"
                     "ENGINE=InnoDB")
            &&
         db->Query("CREATE TABLE IF NOT EXISTS fork ("

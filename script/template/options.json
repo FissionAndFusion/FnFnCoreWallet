@@ -25,6 +25,22 @@
             "desc": "Get multiverse version"
         }
     ],
+    "CMvForkConfigOption": [
+        {
+            "name": "vFork",
+            "type": "vector<string>",
+            "opt": "addfork",
+            "format": "-addfork=<forkid>",
+            "desc": "Add a supported fork"
+        },
+        {
+            "name": "vGroup",
+            "type": "vector<string>",
+            "opt": "addgroup",
+            "format": "-addgroup=<forkid of group leader>",
+            "desc": "Add a supported fork group"
+        }
+    ],
     "CMvMintConfigOption": [
         {
             "access": "protected",

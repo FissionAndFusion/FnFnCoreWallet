@@ -325,6 +325,70 @@ void CBlockBase::Clear()
     ClearCache();    
 }
 
+bool CBlockBase::Initiate(const uint256& hashGenesis,const CBlock& blockGenesis)
+{
+    if (!IsEmpty())
+    {
+        return false;
+    }
+    uint32 nFile,nOffset;
+    if (!tsBlock.Write(blockGenesis,nFile,nOffset))
+    {
+        return false;
+    }
+
+    uint32 nTxOffset = nOffset + blockGenesis.GetTxSerializedOffset();
+    uint256 txidMintTx = blockGenesis.txMint.GetHash();
+
+    vector<pair<uint256,CTxIndex> > vTxNew;
+    vTxNew.push_back(make_pair(txidMintTx,CTxIndex(blockGenesis.txMint,CDestination(),0,0,nFile,nTxOffset)));
+
+    vector<CTxUnspent> vAddNew;
+    vAddNew.push_back(CTxUnspent(CTxOutPoint(txidMintTx,0),CTxOutput(blockGenesis.txMint)));
+
+    { 
+        CWalleveWriteLock wlock(rwAccess);
+        CBlockIndex* pIndexNew = AddNewIndex(hashGenesis,blockGenesis,nFile,nOffset);
+        if (pIndexNew == NULL)
+        {
+            return false;
+        }
+
+        if (!dbBlock.AddNewBlock(CBlockOutline(pIndexNew)))
+        {
+            return false;
+        }
+
+        CProfile profile;
+        if (!profile.Load(blockGenesis.vchProof))
+        {
+            return false;
+        }
+
+        CForkContext ctxt(hashGenesis,0,0,profile);
+        if (!dbBlock.AddNewForkContext(ctxt))
+        {
+            return false;
+        }
+        
+        if (!dbBlock.AddNewFork(hashGenesis))
+        {
+            return false;
+        }
+        CBlockFork* pFork = AddNewFork(profile,pIndexNew);
+        pFork->UpdateNext();
+
+        if (!dbBlock.UpdateFork(hashGenesis,hashGenesis,0,vTxNew,vector<uint256>(),vAddNew,vector<CTxOutPoint>()))
+        {
+            return false;
+        }
+
+        pFork->UpdateLast(pIndexNew);
+        Log("B","Initiate genesis %s\n",hashGenesis.ToString().c_str());
+    }
+    return true;
+}
+
 bool CBlockBase::AddNew(const uint256& hash,CBlockEx& block,CBlockIndex** ppIndexNew)
 {
     if (Exists(hash))
@@ -367,6 +431,18 @@ bool CBlockBase::AddNew(const uint256& hash,CBlockEx& block,CBlockIndex** ppInde
     }
     
     Log("B","AddNew block,hash=%s\n",hash.ToString().c_str());
+    return true;
+}
+
+bool CBlockBase::AddNewForkContext(const CForkContext& ctxt)
+{
+    CWalleveWriteLock wlock(rwAccess);
+    if (!dbBlock.AddNewForkContext(ctxt))
+    {
+        Error("F","Failed to addnew forkcontext in %s",ctxt.hashFork.GetHex().c_str());
+        return false;
+    }
+    Log("F","AddNew forkcontext,hash=%s\n",ctxt.hashFork.GetHex().c_str());
     return true;
 }
 
@@ -470,6 +546,63 @@ bool CBlockBase::RetrieveProfile(const uint256& hash,CProfile& profile)
         return false;
     }
     profile = pFork->GetProfile();
+    return true;
+}
+
+bool CBlockBase::RetrieveForkContext(const uint256& hash,CForkContext& ctxt)
+{
+    CWalleveReadLock rlock(rwAccess);
+    return dbBlock.RetrieveForkContext(hash,ctxt);
+}
+
+bool CBlockBase::RetrieveAncestry(const uint256& hash,vector<pair<uint256,uint256> > vAncestry)
+{
+    CWalleveReadLock rlock(rwAccess);
+    CForkContext ctxt;
+    if (!dbBlock.RetrieveForkContext(hash,ctxt))
+    {
+        return false;
+    }
+    
+    while (ctxt.hashParent != 0)
+    {
+        vAncestry.push_back(make_pair(ctxt.hashParent,ctxt.hashJoint));
+        if (!dbBlock.RetrieveForkContext(ctxt.hashParent,ctxt))
+        {
+            return false;
+        }
+    }
+
+    std::reverse(vAncestry.begin(),vAncestry.end());
+    return true;
+}
+
+bool CBlockBase::RetrieveOrigin(const uint256& hash,CBlock& block)
+{
+    block.SetNull();
+
+    CForkContext ctxt;
+    if (!RetrieveForkContext(hash,ctxt))
+    {
+        return false;
+    }
+
+    CTransaction tx;
+    if (!RetrieveTx(ctxt.txidEmbedded,tx))
+    {
+        return false;
+    }
+
+    try
+    {
+        CWalleveBufStream ss;
+        ss.Write((const char*)&tx.vchData[0],tx.vchData.size());
+        ss >> block;
+    }
+    catch (...)
+    {
+        return false;
+    }
     return true;
 }
 
@@ -752,6 +885,12 @@ bool CBlockBase::FilterTx(CTxFilter& filter)
     return dbBlock.FilterTx(txFilter);
 }
 
+bool CBlockBase::FilterForkContext(CForkContextFilter& ctxtFilter)
+{
+    CWalleveReadLock rlock(rwAccess);
+    return dbBlock.FilterForkContext(ctxtFilter);
+}
+
 bool CBlockBase::GetForkBlockLocator(const uint256& hashFork,CBlockLocator& locator)
 {
     CWalleveReadLock rlock(rwAccess);
@@ -893,17 +1032,7 @@ CBlockIndex* CBlockBase::AddNewIndex(const uint256& hash,const CBlock& block,uin
         map<uint256, CBlockIndex*>::iterator mi = mapIndex.insert(make_pair(hash, pIndexNew)).first;
         pIndexNew->phashBlock = &((*mi).first);
     
-        auto lmd = [] (const vector<CTransaction>& vTX) -> int64 {
-            int64 nTotalTxFee = 0;
-            for(const auto& t : vTX)
-            {
-                nTotalTxFee += t.nTxFee;
-            }
-            return nTotalTxFee;
-        };
-        int64 nTxFee = 0;
-        nTxFee = lmd(block.vtx);
-        int64 nMoneySupply = block.txMint.nAmount - nTxFee;
+        int64 nMoneySupply = block.GetBlockMint();
         uint64 nChainTrust = block.GetBlockTrust();
         uint64 nRandBeacon = block.GetBlockBeacon();
         CBlockIndex* pIndexPrev = NULL;
