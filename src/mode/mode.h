@@ -181,10 +181,9 @@ public:
                     EModuleType::NETCHANNEL,
                     EModuleType::DELEGATEDCHANNEL,
                     EModuleType::SERVICE,
+                    EModuleType::DBPCLIENT,
                     EModuleType::DBPSERVER,
                     EModuleType::DBPSERVICE,
-                    EModuleType::DBPCLIENT,
-                    EModuleType::DBPCLISERVICE,
                     EModuleType::HTTPSERVER,
                     EModuleType::RPCMODE,
                     EModuleType::BLOCKMAKER

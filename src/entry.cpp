@@ -19,7 +19,6 @@
 #include "miner.h"
 #include "dbpservice.h"
 #include "dbpclient.h"
-#include "dbpcliservice.h"
 #include "dnseed.h"
 #include "version.h"
 
@@ -326,6 +325,14 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
             }
             break;
         }
+        case EModuleType::DBPCLIENT:
+        {
+            if(!AttachModule(new CMvDbpClient()))
+            {
+                return false;
+            }
+            break;
+        }
         case EModuleType::DBPSERVICE:
         {
             auto pBase = walleveDocker.GetObject("dbpserver");
@@ -335,34 +342,17 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
             }
             dynamic_cast<CDbpServer*>(pBase)->AddNewHost(GetDbpHostConfig());
 
+            auto pClientBase = walleveDocker.GetObject("dbpclient");
+            if(!pClientBase)
+            {
+                return false;
+            }
+            dynamic_cast<CMvDbpClient*>(pClientBase)->AddNewClient(GetDbpClientConfig());
+
             if (!AttachModule(new CDbpService()))
             {
                 return false;
             }
-            break;
-        }
-        case EModuleType::DBPCLIENT:
-        {
-            if(!AttachModule(new CMvDbpClient()))
-            {
-                return false;
-            }
-            break;
-        }
-        case EModuleType::DBPCLISERVICE:
-        {
-            auto pBase = walleveDocker.GetObject("dbpclient");
-            if(!pBase)
-            {
-                return false;
-            }
-            dynamic_cast<CMvDbpClient*>(pBase)->AddNewClient(GetDbpClientConfig());
-            
-            if(!AttachModule(new CDbpCliService()))
-            {
-                return false;
-            }
-            
             break;
         }
         case EModuleType::DNSEED:
@@ -423,7 +413,7 @@ CDbpClientConfig CMvEntry::GetDbpClientConfig()
                         config->strDbpCAFile, config->strDbpCertFile,
                         config->strDbpPKFile, config->strDbpCiphers);
     
-    return CDbpClientConfig(config->epParentHost,config->strSupportForks,sslDbp,"dbpcliservice");
+    return CDbpClientConfig(config->epParentHost,config->strSupportForks,sslDbp,"dbpservice");
 }
 
 bool CMvEntry::Run()

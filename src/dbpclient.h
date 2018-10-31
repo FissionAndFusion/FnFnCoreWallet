@@ -180,7 +180,6 @@ protected:
     std::map<std::string, CMvSessionProfile> mapSessionProfile; // session id => session profile
 
 private:
-    IIOModule* pDbpCliService;
     IIOModule* pDbpService;
 
 };

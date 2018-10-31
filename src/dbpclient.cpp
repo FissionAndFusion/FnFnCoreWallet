@@ -356,7 +356,6 @@ void CMvDbpClientSocket::HandleReadCompleted(uint32_t len)
 CMvDbpClient::CMvDbpClient()
   : walleve::CIOProc("dbpclient")
 {
-    pDbpCliService = NULL;
     pDbpService = NULL;
 }
 
@@ -625,12 +624,6 @@ bool CMvDbpClient::WalleveHandleInitialize()
         }
     }
 
-    if(!WalleveGetObject("dbpcliservice",pDbpCliService))
-    {
-        WalleveLog("request dbpcliservice failed in dbpclient.");
-        return false;
-    }
-
     if(!WalleveGetObject("dbpservice",pDbpService))
     {
         WalleveLog("request dbpservice failed in dbpclient.");
@@ -642,7 +635,6 @@ bool CMvDbpClient::WalleveHandleInitialize()
 
 void CMvDbpClient::WalleveHandleDeinitialize()
 {
-    pDbpCliService = NULL;
     pDbpService = NULL;
     // delete client config
     mapProfile.clear();
