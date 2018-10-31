@@ -715,9 +715,9 @@ void CMvDbpClient::ClientFailToConnect(const boost::asio::ip::tcp::endpoint& epR
                        epRemote.address().to_string().c_str(),
                        epRemote.port());
 
-    std::cerr << "Connect parent node" << 
-        epRemote.address().to_string() << "failed, " 
-        << "port " << epRemote.port() << std::endl;
+    std::cerr << "Connect parent node " << 
+        epRemote.address().to_string() << " failed, " 
+        << "port " << epRemote.port() << " and reconnectting." << std::endl;
     
     std::this_thread::sleep_for(std::chrono::seconds(5));
     
