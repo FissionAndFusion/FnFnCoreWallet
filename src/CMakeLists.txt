@@ -24,7 +24,6 @@ add_custom_command(OUTPUT ${auto_files}
 set(src
 	multiverse.cpp
 	address.cpp address.h
-	blockmaker.cpp blockmaker.h
 	config.cpp config.h
 	core.cpp core.h
 	dispatcher.cpp dispatcher.h

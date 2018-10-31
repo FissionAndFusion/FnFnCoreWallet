@@ -62,6 +62,7 @@
 #include "mode/mode_type.h"
 #include "mode/module_type.h"
 #include "mode/basic_config.h"
+#include "mode/fork_config.h"
 #include "mode/mint_config.h"
 #include "mode/network_config.h"
 #include "mode/rpc_config.h"
@@ -126,6 +127,7 @@ public:
             case EModeType::SERVER:
             {
                 return Create<
+                                EConfigType::FORK, 
                                 EConfigType::MINT, 
                                 EConfigType::NETWORK,
                                 EConfigType::RPCSERVER, 
@@ -173,6 +175,7 @@ public:
                     EModuleType::COREPROTOCOL,
                     EModuleType::WORLDLINE,
                     EModuleType::TXPOOL,
+                    EModuleType::FORKMANAGER,
                     EModuleType::CONSENSUS,
                     EModuleType::WALLET,
                     EModuleType::DISPATCHER,
