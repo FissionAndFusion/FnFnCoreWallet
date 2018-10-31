@@ -8,6 +8,9 @@ import os
 
 type_f = type
 
+if sys.version > '3':
+    unicode = str
+
 # copyright on .h file
 copyright = \
     '''\
@@ -70,7 +73,7 @@ def space(s, indent=None):
 
     indent_len = step(s, len(indent))
 
-    return ' ' * (indent_len - len(s))
+    return ' ' * int(indent_len - len(s))
 
 
 # split string to multiple line by indent and max_line_len
@@ -106,7 +109,7 @@ def split(s, indent=None, max_len=None):
             blank = s.find(' ', end - 1)
             comma = s.find(',', end - 1)
             colon = s.find(':', end - 1)
-            min_end = min(filter(lambda x: x >= 0, [blank, comma, colon]) + [len(s) - 1])
+            min_end = min(list(filter(lambda x: x >= 0, [blank, comma, colon])) + [len(s) - 1])
             end = min_end + 1
 
         line = s[begin:end]
@@ -226,7 +229,7 @@ def terminal_str_code(indent, prefix, name, split_list):
         return indent + prefix + quote(escape(name)) + ';\n'
 
     first = indent + prefix + quote(escape(name + split_list[0]))
-    new_list = [first] + map(lambda x: quote(escape(x)), split_list[1:])
+    new_list = [first] + list(map(lambda x: quote(escape(x)), split_list[1:]))
     line_space = '\n' + indent + (' ' * len(prefix))
     return line_space.join(new_list) + ';\n'
 
