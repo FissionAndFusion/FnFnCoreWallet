@@ -666,7 +666,7 @@ void CMvDbpClient::EnterLoop()
         }
         else
         {
-            WalleveLog("Start to connect parent node %s success,  port = %d\n",
+            WalleveLog("Start to connect parent node %s,  port = %d\n",
                        (*it).first.address().to_string().c_str(),
                        (*it).first.port());
         }  
@@ -711,7 +711,7 @@ bool CMvDbpClient::ClientConnected(CIOClient* pClient)
 
 void CMvDbpClient::ClientFailToConnect(const boost::asio::ip::tcp::endpoint& epRemote)
 {
-    WalleveLog("Connect parent node %s failed,  port = %d\n reconnectting",
+    WalleveLog("Connect parent node %s failed,  port = %d\n reconnectting\n",
                        epRemote.address().to_string().c_str(),
                        epRemote.port());
 
