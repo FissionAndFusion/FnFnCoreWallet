@@ -64,14 +64,6 @@ public:
 class CDbpClient
 {
 public:
-    enum SendType
-    {
-    ADDED = 0,
-    PING = 1,
-    OTHER = 100
-    };
-
-public:
     CDbpClient(CDbpServer* pServerIn, CDbpProfile* pProfileIn,
              CIOClient* pClientIn, uint64 nonce);
     ~CDbpClient();
@@ -92,9 +84,7 @@ public:
     void SendPong(const std::string& id);
     void SendPing(const std::string& id);
     void SendResponse(const std::string& reason, const std::string& description);
-    void SendMessage(dbp::Base* pBaseMsg);
-    void SendPingMessage(dbp::Base* pBaseMsg);
-    void SendAddedMessage(dbp::Base* pBaseMsg);
+    void SendMessage(dbp::Msg type, google::protobuf::Any* any);
 
 protected:
     void StartReadHeader();
@@ -103,14 +93,14 @@ protected:
     void HandleReadHeader(std::size_t nTransferred);
     void HandleReadPayload(std::size_t nTransferred, uint32_t len);
     void HandleReadCompleted(uint32_t len);
-    void HandleWritenResponse(std::size_t nTransferred, SendType type);
+    void HandleWritenResponse(std::size_t nTransferred, dbp::Msg type);
 
-    void WriteMessageToSendStream(dbp::Base *pBaseMsg);
     bool IsSentComplete();
 
 private:
     std::string strSessionId;
-    std::queue<dbp::Base> queueAddedSend;
+    std::queue<std::pair<dbp::Msg,std::string>> queueMessage;
+    bool IsReading;
 
 protected:
     CDbpServer* pServer;

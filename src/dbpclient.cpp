@@ -487,7 +487,7 @@ void CMvDbpClient::HandlePing(CMvDbpClientSocket* pClientSocket, google::protobu
 {
     dbp::Ping ping;
     any->UnpackTo(&ping);
-    std::cout << "[<]ping: " << ping.id() << "[dbpclient]" << std::endl;
+    std::cout << "[<]ping: " << ping.id() << " [dbpclient]" << std::endl;
     pClientSocket->SendPong(ping.id());
 }
     
@@ -495,7 +495,7 @@ void CMvDbpClient::HandlePong(CMvDbpClientSocket* pClientSocket, google::protobu
 {
     dbp::Pong pong;
     any->UnpackTo(&pong);
-    std::cout << "[<]pong: " << pong.id() << "[dbpclient]" << std::endl;
+    std::cout << "[<]pong: " << pong.id() << " [dbpclient]" << std::endl;
 
     std::string session = bimapSessionClientSocket.right.at(pClientSocket);
     if(IsSessionExist(session))
@@ -511,7 +511,7 @@ void CMvDbpClient::HandleResult(CMvDbpClientSocket* pClientSocket, google::proto
 
     if (!result.error().empty())
     {
-        std::cerr << "[<]method error:" << result.error()  <<  "[dbpclient]" << std::endl;    
+        std::cerr << "[<]method error:" << result.error()  <<  " [dbpclient]" << std::endl;    
         return;
     }
 
@@ -572,7 +572,7 @@ void CMvDbpClient::HandleReady(CMvDbpClientSocket* pClientSocket, google::protob
 {
     dbp::Ready ready;
     any->UnpackTo(&ready);
-    std::cout << "[<]ready: " << ready.id() << std::endl;
+    std::cout << "[<]ready: " << ready.id() << " [dbpclient]" << std::endl;
 }
 
 void CMvDbpClient::HandleNoSub(CMvDbpClientSocket* pClientSocket, google::protobuf::Any* any)

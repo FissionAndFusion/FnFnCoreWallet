@@ -53,73 +53,55 @@ void CDbpClient::SetSession(const std::string& session)
 
 void CDbpClient::Activate()
 {
-    ssRecv.Clear();
-
+   // ssRecv.Clear();
+    IsReading = true;
     StartReadHeader();
 }
 
-void CDbpClient::SendMessage(dbp::Base* pBaseMsg)
+void CDbpClient::SendMessage(dbp::Msg type, google::protobuf::Any* any)
 {
-    if (ssSend.GetSize() != 0)
+    dbp::Base base;
+    base.set_msg(type);
+    base.set_allocated_object(any);
+
+    std::string bytes;
+    base.SerializeToString(&bytes);
+
+    uint32_t len;
+    char len_buffer[4];
+    len = bytes.size();
+    len = htonl(len);
+    std::memcpy(&len_buffer[0], &len, 4);
+    bytes.insert(0, len_buffer, 4);
+
+    if(!IsSentComplete())
     {
+        std::cout << dbp::Msg_Name(type) << " not sent complete or reading [dbpserver]\n";
+        queueMessage.push(std::make_pair(type,bytes));
         return;
     }
 
-    WriteMessageToSendStream(pBaseMsg);
-
-    pClient->Write(ssSend, boost::bind(&CDbpClient::HandleWritenResponse, this, _1, OTHER));
+    std::cout << "write message type: " <<  dbp::Msg_Name(type)  << " message size: " << bytes.size() << "\n";
+    
+    ssSend.Write((char*)bytes.data(),bytes.size());
+    pClient->Write(ssSend, boost::bind(&CDbpClient::HandleWritenResponse, this, _1, type));
 }
 
-void CDbpClient::SendPingMessage(dbp::Base* pBaseMsg)
-{
-    if (!IsSentComplete())
-    {
-        //pClient->Write(ssSend, boost::bind(&CDbpClient::HandleWritenResponse, this, _1, OTHER));
-        return;
-    }
-
-    WriteMessageToSendStream(pBaseMsg);
-
-    pClient->Write(ssSend, boost::bind(&CDbpClient::HandleWritenResponse, this, _1, PING));
-}
-
-void CDbpClient::SendAddedMessage(dbp::Base* pBaseMsg)
-{
-    if (!IsSentComplete())
-    {
-        queueAddedSend.push(*pBaseMsg);
-        return;
-    }
-
-    WriteMessageToSendStream(pBaseMsg);
-
-    pClient->Write(ssSend, boost::bind(&CDbpClient::HandleWritenResponse, this, _1, ADDED));
-}
 
 void CDbpClient::SendResponse(CMvDbpConnected& body)
 {
-
-    dbp::Base connectedMsgBase;
-    connectedMsgBase.set_msg(dbp::Msg::CONNECTED);
-
     dbp::Connected connectedMsg;
     connectedMsg.set_session(body.session);
 
     google::protobuf::Any* any = new google::protobuf::Any();
     any->PackFrom(connectedMsg);
 
-    connectedMsgBase.set_allocated_object(any);
-
-    SendMessage(&connectedMsgBase);
+    SendMessage(dbp::Msg::CONNECTED,any);
 }
 
 void CDbpClient::SendResponse(CMvDbpFailed& body)
 {
-    dbp::Base failedMsgBase;
-    failedMsgBase.set_msg(dbp::Msg::FAILED);
-
     dbp::Failed failedMsg;
-
     for (const int32& version : body.versions)
     {
         failedMsg.add_version(version);
@@ -131,15 +113,11 @@ void CDbpClient::SendResponse(CMvDbpFailed& body)
     google::protobuf::Any* any = new google::protobuf::Any();
     any->PackFrom(failedMsg);
 
-    failedMsgBase.set_allocated_object(any);
-    SendMessage(&failedMsgBase);
+    SendMessage(dbp::Msg::FAILED,any);
 }
 
 void CDbpClient::SendResponse(CMvDbpNoSub& body)
 {
-    dbp::Base noSubMsgBase;
-    noSubMsgBase.set_msg(dbp::Msg::NOSUB);
-
     dbp::Nosub noSubMsg;
     noSubMsg.set_id(body.id);
     noSubMsg.set_error(body.error);
@@ -147,32 +125,22 @@ void CDbpClient::SendResponse(CMvDbpNoSub& body)
     google::protobuf::Any* any = new google::protobuf::Any();
     any->PackFrom(noSubMsg);
 
-    noSubMsgBase.set_allocated_object(any);
-
-    SendMessage(&noSubMsgBase);
+    SendMessage(dbp::Msg::NOSUB,any);
 }
 
 void CDbpClient::SendResponse(CMvDbpReady& body)
 {
-    dbp::Base readyMsgBase;
-    readyMsgBase.set_msg(dbp::Msg::READY);
-
     dbp::Ready readyMsg;
     readyMsg.set_id(body.id);
 
     google::protobuf::Any* any = new google::protobuf::Any();
     any->PackFrom(readyMsg);
 
-    readyMsgBase.set_allocated_object(any);
-
-    SendMessage(&readyMsgBase);
+    SendMessage(dbp::Msg::READY,any);
 }
 
 void CDbpClient::SendResponse(const std::string& client, CMvDbpAdded& body)
 {
-    dbp::Base addedMsgBase;
-    addedMsgBase.set_msg(dbp::Msg::ADDED);
-
     dbp::Added addedMsg;
     addedMsg.set_id(body.id);
     addedMsg.set_name(body.name);
@@ -226,15 +194,11 @@ void CDbpClient::SendResponse(const std::string& client, CMvDbpAdded& body)
     google::protobuf::Any* anyAdded = new google::protobuf::Any();
     anyAdded->PackFrom(addedMsg);
 
-    addedMsgBase.set_allocated_object(anyAdded);
-    SendAddedMessage(&addedMsgBase);
+    SendMessage(dbp::Msg::ADDED,anyAdded);
 }
 
 void CDbpClient::SendResponse(const std::string& client, CMvDbpMethodResult& body)
 {
-    dbp::Base resultMsgBase;
-    resultMsgBase.set_msg(dbp::Msg::RESULT);
-
     dbp::Result resultMsg;
     resultMsg.set_id(body.id);
     resultMsg.set_error(body.error);
@@ -312,47 +276,33 @@ void CDbpClient::SendResponse(const std::string& client, CMvDbpMethodResult& bod
     google::protobuf::Any* anyResult = new google::protobuf::Any();
     anyResult->PackFrom(resultMsg);
 
-    resultMsgBase.set_allocated_object(anyResult);
-
-    SendMessage(&resultMsgBase);
+    SendMessage(dbp::Msg::RESULT,anyResult);
 }
 
 void CDbpClient::SendPong(const std::string& id)
 {
-    dbp::Base pongMsgBase;
-    pongMsgBase.set_msg(dbp::Msg::PONG);
-
     dbp::Pong msg;
     msg.set_id(id);
 
     google::protobuf::Any *any = new google::protobuf::Any();
     any->PackFrom(msg);
 
-    pongMsgBase.set_allocated_object(any);
-    SendMessage(&pongMsgBase);
+    SendMessage(dbp::Msg::PONG,any);
 }
 
 void CDbpClient::SendPing(const std::string& id)
 {
-    dbp::Base pingMsgBase;
-    pingMsgBase.set_msg(dbp::Msg::PING);
-
     dbp::Ping msg;
     msg.set_id(id);
 
     google::protobuf::Any* any = new google::protobuf::Any();
     any->PackFrom(msg);
 
-    pingMsgBase.set_allocated_object(any);
-
-    SendPingMessage(&pingMsgBase);
+    SendMessage(dbp::Msg::PING,any);
 }
 
 void CDbpClient::SendResponse(const std::string& reason, const std::string& description)
 {
-    dbp::Base errorMsgBase;
-    errorMsgBase.set_msg(dbp::Msg::ERROR);
-
     dbp::Error errorMsg;
     errorMsg.set_reason(reason);
     errorMsg.set_explain(description);
@@ -360,9 +310,7 @@ void CDbpClient::SendResponse(const std::string& reason, const std::string& desc
     google::protobuf::Any* any = new google::protobuf::Any();
     any->PackFrom(errorMsg);
 
-    errorMsgBase.set_allocated_object(any);
-
-    SendMessage(&errorMsgBase);
+    SendMessage(dbp::Msg::ERROR,any);
 }
 
 void CDbpClient::StartReadHeader()
@@ -377,29 +325,16 @@ void CDbpClient::StartReadPayload(std::size_t nLength)
                   boost::bind(&CDbpClient::HandleReadPayload, this, _1, nLength));
 }
 
-void CDbpClient::WriteMessageToSendStream(dbp::Base* pBaseMsg)
-{
-    
-    std::string bytes;
-    pBaseMsg->SerializeToString(&bytes);
-
-    unsigned char msgLenBuf[MSG_HEADER_LEN];
-    std::cout << "[dbp server] header size: " << bytes.size() << "\n";
-    CDbpUtils::WriteLenToMsgHeader(bytes.size(), (char *)msgLenBuf, MSG_HEADER_LEN);
-    
-    ssSend.Write((char *)msgLenBuf, MSG_HEADER_LEN);
-    ssSend.Write((char *)bytes.data(), bytes.size());
-}
-
 bool CDbpClient::IsSentComplete()
 {
-    return (ssSend.GetSize() == 0 && queueAddedSend.empty());
+    return (ssSend.GetSize() == 0 && queueMessage.empty());
 }
 
 void CDbpClient::HandleReadHeader(std::size_t nTransferred)
 {
     if (nTransferred == MSG_HEADER_LEN)
     {
+        std::cout << "[<] read header: " << ssRecv.GetSize() << " [dbpserver]\n";
         std::string lenBuffer(MSG_HEADER_LEN, 0);
         ssRecv.Read(&lenBuffer[0], MSG_HEADER_LEN);
 
@@ -435,9 +370,11 @@ void CDbpClient::HandleReadPayload(std::size_t nTransferred, uint32_t len)
 
 void CDbpClient::HandleReadCompleted(uint32_t len)
 {
+    
+    std::cout << "[<] read complete: " << ssRecv.GetSize() << " [dbpserver]\n";
     std::string payloadBuffer(len, 0);
     ssRecv.Read(&payloadBuffer[0], len);
-
+    IsReading = false;
     dbp::Base msgBase;
     if (!msgBase.ParseFromString(payloadBuffer))
     {
@@ -477,7 +414,7 @@ void CDbpClient::HandleReadCompleted(uint32_t len)
     }
 }
 
-void CDbpClient::HandleWritenResponse(std::size_t nTransferred, CDbpClient::SendType type)
+void CDbpClient::HandleWritenResponse(std::size_t nTransferred, dbp::Msg type)
 {
     if (nTransferred != 0)
     {
@@ -488,23 +425,27 @@ void CDbpClient::HandleWritenResponse(std::size_t nTransferred, CDbpClient::Send
             return;
         }
 
-        std::cout << "[dbp server]transferred: " << nTransferred << " bytes\n";
+        std::cout << "sent message type: " <<  dbp::Msg_Name(type)  
+            << " message size: " << nTransferred << "\n";
 
-        if (ssSend.GetSize() == 0 && !queueAddedSend.empty())
+        if (ssSend.GetSize() == 0 && !queueMessage.empty())
         {
-            dbp::Base base;
-            base = queueAddedSend.front();
-            WriteMessageToSendStream(&base);
-            queueAddedSend.pop();
-
-            pClient->Write(ssSend, boost::bind(&CDbpClient::HandleWritenResponse, this, _1, ADDED));
+            
+            auto messagePair = queueMessage.front();
+            dbp::Msg messageType = messagePair.first;
+            std::string bytes = messagePair.second;
+            queueMessage.pop();
+            ssSend.Write((char*)bytes.data(),bytes.size());
+            pClient->Write(ssSend, boost::bind(&CDbpClient::HandleWritenResponse, this, _1, messageType));
             return;
         }
 
-        if (type == OTHER)
+        if(!IsReading)
         {
+            std::cout << "handle read[dbpserver]\n";
             pServer->HandleClientSent(this);
         }
+       
     }
     else
     {
@@ -539,6 +480,8 @@ void CDbpServer::HandleClientConnect(CDbpClient* pDbpClient, google::protobuf::A
     any->UnpackTo(&connectMsg);
 
     std::string session = connectMsg.session();
+
+    std::cout << "[<] connect " << session  << " [dbp server]\n";
 
     if (!IsSessionReconnect(session))
     {
@@ -606,6 +549,8 @@ void CDbpServer::HandleClientSub(CDbpClient* pDbpClient, google::protobuf::Any* 
     subBody.id = subMsg.id();
     subBody.name = subMsg.name();
 
+    std::cout << "[<] sub " << subBody.id << " "  << subBody.name << " [dbp server]\n";
+
     pDbpClient->GetProfile()->pIOModule->PostEvent(pEventDbpSub);
 }
 
@@ -639,6 +584,8 @@ void CDbpServer::HandleClientMethod(CDbpClient* pDbpClient, google::protobuf::An
 
     CMvDbpMethod& methodBody = pEventDbpMethod->data;
     methodBody.id = methodMsg.id();
+
+    std::cout << "[<] method " << methodMsg.method() << " [dbp server]\n";
 
     if (methodMsg.method() == "getblocks")
         methodBody.method = CMvDbpMethod::Method::GET_BLOCKS;
@@ -737,7 +684,7 @@ void CDbpServer::HandleClientPong(CDbpClient* pDbpClient, google::protobuf::Any*
         mapSessionProfile[session].nTimeStamp = CDbpUtils::CurrentUTC();
     }
 
-    this->HandleClientSent(pDbpClient);
+   // this->HandleClientSent(pDbpClient);
 }
 
 void CDbpServer::HandleClientRecv(CDbpClient* pDbpClient, const boost::any& anyObj)
