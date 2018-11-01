@@ -565,7 +565,7 @@ void CMvDbpClient::HandleAdded(CMvDbpClientSocket* pClientSocket, google::protob
     dbp::Added added;
     any->UnpackTo(&added);
 
-    if (added.name() == "primary-block")
+    if (added.name() == "all-block")
     {
         sn::Block block;
         added.object().UnpackTo(&block);
@@ -813,7 +813,7 @@ void CMvDbpClient::RegisterDefaultForks(CMvDbpClientSocket* pClientSocket)
 
 void CMvDbpClient::SubscribeDefaultTopics(CMvDbpClientSocket* pClientSocket)
 {
-    std::vector<std::string> vTopics{"primary-block","all-tx"};
+    std::vector<std::string> vTopics{"all-block","all-tx"};
     pClientSocket->SendSubScribeTopics(vTopics);
 }
 

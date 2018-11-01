@@ -334,9 +334,6 @@ void CDbpService::SubTopic(const std::string& id, const std::string& session, co
         setSubedAllBlocksIds.insert(id);
     if (topic == "all-tx")
         setSubedAllTxIds.insert(id);
-    if (topic == "primary-block")
-        setSubedPrimaryBlockIds.insert(id);
-
 
     mapIdSubedSession.insert(std::make_pair(id, session));
 }
@@ -345,7 +342,6 @@ void CDbpService::UnSubTopic(const std::string& id)
 {
     setSubedAllBlocksIds.erase(id);
     setSubedAllTxIds.erase(id);
-    setSubedPrimaryBlockIds.erase(id);
 
     mapIdSubedTopic.erase(id);
     mapIdSubedSession.erase(id);
@@ -695,19 +691,6 @@ void CDbpService::PushBlock(const std::string& forkid, const CMvDbpBlock& block)
             eventAdded.data.name = "all-block";
             eventAdded.data.anyAddedObj = block;
             pDbpServer->DispatchEvent(&eventAdded);
-        }
-
-        if(setSubedPrimaryBlockIds.find(id) != setSubedPrimaryBlockIds.end())
-        {
-            if(block.nType != CBlock::BLOCK_EXTENDED)
-            {
-                CMvEventDbpAdded eventAdded(session);
-                eventAdded.data.id = id;
-                eventAdded.data.forkid = forkid;
-                eventAdded.data.name = "primary-block";
-                eventAdded.data.anyAddedObj = block;
-                pDbpServer->DispatchEvent(&eventAdded);
-            }
         }
     }
 }

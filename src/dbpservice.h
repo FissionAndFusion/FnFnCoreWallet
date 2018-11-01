@@ -83,7 +83,6 @@ private:
 
     std::set<std::string> setSubedAllBlocksIds; // block ids
     std::set<std::string> setSubedAllTxIds;     // tx ids
-    std::set<std::string> setSubedPrimaryBlockIds; // primary-block ids
 
     typedef std::set<std::string> ForksType;
     std::map<std::string, ForksType> mapSessionChildNodeForks; // session => child node forks
