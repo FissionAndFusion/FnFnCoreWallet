@@ -168,8 +168,6 @@ void CDbpClient::SendResponse(CMvDbpReady& body)
     SendMessage(&readyMsgBase);
 }
 
-
-
 void CDbpClient::SendResponse(const std::string& client, CMvDbpAdded& body)
 {
     dbp::Base addedMsgBase;
@@ -684,6 +682,10 @@ void CDbpServer::HandleClientMethod(CDbpClient* pDbpClient, google::protobuf::An
     {
         sn::RegisterForkIDArg args;
         methodMsg.params().UnpackTo(&args);
+        
+        std::string session = pDbpClient->GetSession();
+        mapSessionProfile[session].setChildForks.insert(args.id());
+        
         std::cout << "super node fork id: " << args.id() << "\n";
         methodBody.params.insert(std::make_pair("forkid",args.id()));
     }
@@ -1127,8 +1129,17 @@ bool CDbpServer::HandleEvent(CMvEventDbpAdded& event)
         std::cerr << "cannot find session [Added] " << event.strSessionId << std::endl;
         return false;
     }
-    
-    if((*it).second.strForkId == event.data.forkid)
+
+    if(it->second.strClient != "supernode" && it->second.strForkId == event.data.forkid)
+    {
+        CDbpClient* pDbpClient = (*it).second.pDbpClient;
+        CMvDbpAdded& addedBody = event.data;
+
+        pDbpClient->SendResponse(it->second.strClient,addedBody);
+    }
+
+    auto& childForks = it->second.setChildForks;
+    if(it->second.strClient == "supernode" && childForks.find(event.data.forkid) != childForks.end())
     {
         CDbpClient* pDbpClient = (*it).second.pDbpClient;
         CMvDbpAdded& addedBody = event.data;

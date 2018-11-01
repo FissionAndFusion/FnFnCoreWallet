@@ -28,10 +28,9 @@ enum class EModuleType
     WORLDLINE,           // CWorldLine
     CONSENSUS,           // CConsensus
     FORKMANAGER,         // CConsensus
+    DBPCLIENT,           // CMvDbpClient
     DBPSERVER,           // CDbpServer
     DBPSERVICE,          // CDbpService
-    DBPCLIENT,           // CMvDbpClient
-    DBPCLISERVICE,       // CMvDbpClientService
     DNSEED,              // CDNSeed
 };
 

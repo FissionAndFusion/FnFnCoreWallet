@@ -45,7 +45,6 @@ set(src
 	dbpserver.cpp dbpserver.h
 	dbpservice.cpp dbpservice.h
 	dbpclient.cpp dbpclient.h
-	dbpcliservice.cpp dbpcliservice.h
 	dnseed.cpp dnseed.h
 	schedule.cpp schedule.h
 	service.cpp service.h

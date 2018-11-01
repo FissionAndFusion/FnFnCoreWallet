@@ -130,7 +130,8 @@ public:
     std::string strClient;
     uint64 nTimeStamp;
     std::shared_ptr<boost::asio::deadline_timer> ptrPingTimer;
-    std::string strForkId;
+    std::string strForkId; // for lws
+    std::set<std::string> setChildForks; // for super node
 };
 
 class CDbpServer : public CIOProc, virtual public CDBPEventListener, virtual public CMvDBPEventListener

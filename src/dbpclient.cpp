@@ -356,7 +356,7 @@ void CMvDbpClientSocket::HandleReadCompleted(uint32_t len)
 CMvDbpClient::CMvDbpClient()
   : walleve::CIOProc("dbpclient")
 {
-    pDbpCliService = NULL;
+    pDbpService = NULL;
 }
 
 CMvDbpClient::~CMvDbpClient(){}
@@ -565,7 +565,7 @@ void CMvDbpClient::HandleAdded(CMvDbpClientSocket* pClientSocket, google::protob
     dbp::Added added;
     any->UnpackTo(&added);
 
-    if (added.name() == "all-block")
+    if (added.name() == "primary-block")
     {
         sn::Block block;
         added.object().UnpackTo(&block);
@@ -578,7 +578,7 @@ void CMvDbpClient::HandleAdded(CMvDbpClientSocket* pClientSocket, google::protob
         pEventAdded->data.name = added.name();
         pEventAdded->data.anyAddedObj = dbpBlock;
 
-        pDbpCliService->PostEvent(pEventAdded);
+        pDbpService->PostEvent(pEventAdded);
         
     }
 
@@ -595,7 +595,7 @@ void CMvDbpClient::HandleAdded(CMvDbpClientSocket* pClientSocket, google::protob
         pEventAdded->data.name = added.name();
         pEventAdded->data.anyAddedObj = dbpTx;
 
-        pDbpCliService->PostEvent(pEventAdded);
+        pDbpService->PostEvent(pEventAdded);
     }
 }
 
@@ -624,9 +624,9 @@ bool CMvDbpClient::WalleveHandleInitialize()
         }
     }
 
-    if(!WalleveGetObject("dbpcliservice",pDbpCliService))
+    if(!WalleveGetObject("dbpservice",pDbpService))
     {
-        WalleveLog("request dbpcliservice failed in dbpclient.");
+        WalleveLog("request dbpservice failed in dbpclient.");
         return false;
     }
 
@@ -635,7 +635,7 @@ bool CMvDbpClient::WalleveHandleInitialize()
 
 void CMvDbpClient::WalleveHandleDeinitialize()
 {
-    pDbpCliService = NULL;
+    pDbpService = NULL;
     // delete client config
     mapProfile.clear();
 }
@@ -649,6 +649,7 @@ void CMvDbpClient::EnterLoop()
          it != mapProfile.end(); ++it)
     {
         bool fEnableSSL = (*it).second.optSSL.fEnable;
+        if(it->first.address().is_loopback()) continue;
         if(!StartConnection(it->first,DBPCLIENT_CONNECT_TIMEOUT,fEnableSSL,it->second.optSSL))
         {
             WalleveLog("Start to connect parent node %s failed,  port = %d\n",
@@ -657,7 +658,7 @@ void CMvDbpClient::EnterLoop()
         }
         else
         {
-            WalleveLog("Start to connect parent node %s success,  port = %d\n",
+            WalleveLog("Start to connect parent node %s,  port = %d\n",
                        (*it).first.address().to_string().c_str(),
                        (*it).first.port());
         }  
@@ -702,13 +703,13 @@ bool CMvDbpClient::ClientConnected(CIOClient* pClient)
 
 void CMvDbpClient::ClientFailToConnect(const boost::asio::ip::tcp::endpoint& epRemote)
 {
-    WalleveLog("Connect parent node %s failed,  port = %d\n reconnectting",
+    WalleveLog("Connect parent node %s failed,  port = %d\n reconnectting\n",
                        epRemote.address().to_string().c_str(),
                        epRemote.port());
 
-    std::cerr << "Connect parent node" << 
-        epRemote.address().to_string() << "failed, " 
-        << "port " << epRemote.port() << std::endl;
+    std::cerr << "Connect parent node " << 
+        epRemote.address().to_string() << " failed, " 
+        << "port " << epRemote.port() << " and reconnectting." << std::endl;
     
     std::this_thread::sleep_for(std::chrono::seconds(5));
     
@@ -812,7 +813,7 @@ void CMvDbpClient::RegisterDefaultForks(CMvDbpClientSocket* pClientSocket)
 
 void CMvDbpClient::SubscribeDefaultTopics(CMvDbpClientSocket* pClientSocket)
 {
-    std::vector<std::string> vTopics{"all-block","all-tx"};
+    std::vector<std::string> vTopics{"primary-block","all-tx"};
     pClientSocket->SendSubScribeTopics(vTopics);
 }
 
