@@ -84,7 +84,7 @@ protected:
     void StartReadHeader();
     void StartReadPayload(std::size_t nLength);
     
-    void HandleWritenRequest(std::size_t nTransferred, SendType type);
+    void HandleWritenRequest(std::size_t nTransferred);
     void HandleReadHeader(std::size_t nTransferred);
     void HandleReadPayload(std::size_t nTransferred,uint32_t len);
     void HandleReadCompleted(uint32_t len);

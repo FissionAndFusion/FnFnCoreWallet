@@ -182,42 +182,16 @@ void CMvDbpClientSocket::SendMessage(dbp::Msg type, google::protobuf::Any* any)
     std::memcpy(&len_buffer[0], &len, 4);
     bytes.insert(0, len_buffer, 4);
 
-    if(type == dbp::Msg::PING)
+    if(ssSend.GetSize() != 0 || !queueMessage.empty())
     {
-        if(ssSend.GetSize() != 0 || !queueMessage.empty())
-        {
-            std::cout << "not sent complete [PING]\n";
-            return;
-        }
-
-        ssSend.Write((char*)bytes.data(),bytes.size()); 
-        pClient->Write(ssSend,boost::bind(&CMvDbpClientSocket::HandleWritenRequest,this,_1,PING));
+        std::cout << "not sent complete\n";
+        queueMessage.push(bytes);
+        return;
     }
-    else if(type == dbp::Msg::METHOD)
-    {
-        if(ssSend.GetSize() != 0 || !queueMessage.empty())
-        {
-            std::cout << "not sent complete [METHOD]\n";
-            queueMessage.push(bytes);
-            return;
-        }
-        
-        ssSend.Write((char*)bytes.data(),bytes.size());
-        pClient->Write(ssSend,boost::bind(&CMvDbpClientSocket::HandleWritenRequest,this,_1,METHOD));
-    }
-    else
-    {
-        if(ssSend.GetSize() != 0 || !queueMessage.empty())
-        {
-            std::cout << "not sent complete [OTHER]\n";
-            queueMessage.push(bytes);
-            //pClient->Write(ssSend,boost::bind(&CMvDbpClientSocket::HandleWritenRequest,this,_1,OTHER));
-            return;
-        }
-        
-        ssSend.Write((char*)bytes.data(),bytes.size());
-        pClient->Write(ssSend,boost::bind(&CMvDbpClientSocket::HandleWritenRequest,this,_1,OTHER));
-    }
+    
+    ssSend.Write((char*)bytes.data(),bytes.size());
+    pClient->Write(ssSend,boost::bind(&CMvDbpClientSocket::HandleWritenRequest,this,_1));
+    
 }
 
 void CMvDbpClientSocket::StartReadHeader()
@@ -233,14 +207,13 @@ void CMvDbpClientSocket::StartReadPayload(std::size_t nLength)
                   boost::bind(&CMvDbpClientSocket::HandleReadPayload, this, _1, nLength));
 }
 
-void CMvDbpClientSocket::HandleWritenRequest(std::size_t nTransferred, SendType type)
+void CMvDbpClientSocket::HandleWritenRequest(std::size_t nTransferred)
 { 
-
     if(nTransferred != 0)
     {
         if(ssSend.GetSize() != 0)
         {
-            pClient->Write(ssSend,boost::bind(&CMvDbpClientSocket::HandleWritenRequest,this,_1,type));
+            pClient->Write(ssSend,boost::bind(&CMvDbpClientSocket::HandleWritenRequest,this,_1));
             return;
         } 
 
@@ -249,15 +222,11 @@ void CMvDbpClientSocket::HandleWritenRequest(std::size_t nTransferred, SendType 
             std::string bytes = queueMessage.front();
             queueMessage.pop();
             ssSend.Write((char*)bytes.data(),bytes.size());
-            pClient->Write(ssSend,boost::bind(&CMvDbpClientSocket::HandleWritenRequest,this,_1,METHOD));
+            pClient->Write(ssSend,boost::bind(&CMvDbpClientSocket::HandleWritenRequest,this,_1));
             return;
         }
-
-        //if(type == OTHER)
-        //{
-            pDbpClient->HandleClientSocketSent(this);
-        //}
         
+        pDbpClient->HandleClientSocketSent(this);
     }
     else
     {
@@ -492,7 +461,7 @@ void CMvDbpClient::HandleConnected(CMvDbpClientSocket* pClientSocket, google::pr
 }
 
 void CMvDbpClient::HandleFailed(CMvDbpClientSocket* pClientSocket, google::protobuf::Any* any)
-{
+{   
     dbp::Failed failed;
     any->UnpackTo(&failed);
     std::cout << "[<]connect session failed: " << failed.reason() << std::endl;
@@ -518,7 +487,7 @@ void CMvDbpClient::HandlePing(CMvDbpClientSocket* pClientSocket, google::protobu
 {
     dbp::Ping ping;
     any->UnpackTo(&ping);
-    std::cout << "[<]ping: " << ping.id() << std::endl;
+    std::cout << "[<]ping: " << ping.id() << "[dbpclient]" << std::endl;
     pClientSocket->SendPong(ping.id());
 }
     
@@ -526,7 +495,7 @@ void CMvDbpClient::HandlePong(CMvDbpClientSocket* pClientSocket, google::protobu
 {
     dbp::Pong pong;
     any->UnpackTo(&pong);
-    std::cout << "[<]pong: " << pong.id() << std::endl;
+    std::cout << "[<]pong: " << pong.id() << "[dbpclient]" << std::endl;
 
     std::string session = bimapSessionClientSocket.right.at(pClientSocket);
     if(IsSessionExist(session))
@@ -542,7 +511,7 @@ void CMvDbpClient::HandleResult(CMvDbpClientSocket* pClientSocket, google::proto
 
     if (!result.error().empty())
     {
-        std::cerr << "[-]method error:" << result.error() << std::endl;    
+        std::cerr << "[<]method error:" << result.error()  <<  "[dbpclient]" << std::endl;    
         return;
     }
 
@@ -783,7 +752,7 @@ void CMvDbpClient::SendPingHandler(const boost::system::error_code& err, const C
 
     std::string utc = std::to_string(CDbpUtils::CurrentUTC());
     sessionProfile.pClientSocket->SendPing(utc);
-    std::cout << "[>]ping " << utc << std::endl;
+    std::cout << "[>]ping " << utc << "[dbpclient]" <<std::endl;
     
     sessionProfile.ptrPingTimer->expires_at(sessionProfile.ptrPingTimer->expires_at() + boost::posix_time::seconds(3));
     sessionProfile.ptrPingTimer->async_wait(boost::bind(&CMvDbpClient::SendPingHandler,
