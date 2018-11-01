@@ -65,6 +65,12 @@ bool CMvDBConn::Query(const string& strQuery)
     return (!mysql_real_query(&dbConn,strQuery.c_str(),strQuery.size()));
 }
 
+std::string CMvDBConn::ToEscString(const std::string& str)
+{
+    char s[str.size() * 2 + 1];
+    return string(s, mysql_real_escape_string(&dbConn,s,str.c_str(),str.size())); 
+}
+
 string CMvDBConn::ToEscString(const void* pBinary,size_t nBytes)
 {
     char s[nBytes * 2 + 1];

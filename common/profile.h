@@ -18,6 +18,7 @@ enum
     PROFILE_MINTXFEE   = 4,
     PROFILE_MINTREWARD = 5,
     PROFILE_OWNER      = 6,
+    PROFILE_PARENT     = 7,
     PROFILE_MAX,
 };
 
@@ -31,6 +32,7 @@ public:
     int64 nMinTxFee;
     int64 nMintReward;
     CDestination destOwner;
+    uint256 hashParent;
 public:
     enum {PROFILE_FLAG_ISOLATED=1,PROFILE_FLAG_PRIVATE=2,PROFILE_FLAG_ENCLOSED=4};
     CProfile() { SetNull(); }
@@ -40,6 +42,8 @@ public:
         nFlag       = 0; 
         nMinTxFee   = 0;
         nMintReward = 0;
+        hashParent  = 0;
+        destOwner.SetNull(); 
         strName.clear();
         strSymbol.clear();
     }

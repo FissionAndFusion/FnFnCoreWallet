@@ -24,7 +24,6 @@ add_custom_command(OUTPUT ${auto_files}
 set(src
 	multiverse.cpp
 	address.cpp address.h
-	blockmaker.cpp blockmaker.h
 	config.cpp config.h
 	core.cpp core.h
 	dispatcher.cpp dispatcher.h
@@ -62,6 +61,7 @@ set(src
 )
 set(mode_src
 	mode/basic_config.cpp mode/basic_config.h
+	mode/fork_config.cpp mode/fork_config.h
 	mode/mint_config.cpp mode/mint_config.h
 	mode/network_config.cpp mode/network_config.h
 	mode/rpc_config.cpp mode/rpc_config.h

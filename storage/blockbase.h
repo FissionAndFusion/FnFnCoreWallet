@@ -8,6 +8,7 @@
 #include "timeseries.h"
 #include "blockdb.h"
 #include "block.h"
+#include "forkcontext.h"
 #include "profile.h"
 #include "walleve/walleve.h"
 
@@ -160,7 +161,9 @@ public:
     bool IsEmpty() const;
     bool Exists(const uint256& hash) const;
     bool ExistsTx(const uint256& txid);
+    bool Initiate(const uint256& hashGenesis,const CBlock& blockGenesis);
     bool AddNew(const uint256& hash,CBlockEx& block,CBlockIndex** ppIndexNew);
+    bool AddNewForkContext(const CForkContext& ctxt);
     bool Retrieve(const uint256& hash,CBlock& block);
     bool Retrieve(const CBlockIndex* pIndex,CBlock& block);
     bool Retrieve(const uint256& hash,CBlockEx& block);
@@ -169,6 +172,9 @@ public:
     bool RetrieveFork(const uint256& hash,CBlockIndex** ppIndex);
     bool RetrieveFork(const std::string& strName,CBlockIndex** ppIndex);
     bool RetrieveProfile(const uint256& hash,CProfile& profile);
+    bool RetrieveForkContext(const uint256& hash,CForkContext& ctxt);
+    bool RetrieveAncestry(const uint256& hash,std::vector<std::pair<uint256,uint256> > vAncestry);
+    bool RetrieveOrigin(const uint256& hash,CBlock& block);
     bool RetrieveTx(const uint256& txid,CTransaction& tx);
     bool RetrieveTxLocation(const uint256& txid,uint256& hashFork,int& nHeight);
     bool RetrieveDelegate(const uint256& hash,int64 nMinAmount,std::map<CDestination,int64>& mapDelegate);
@@ -182,6 +188,7 @@ public:
     bool LoadIndex(CBlockOutline& diskIndex);
     bool LoadTx(CTransaction& tx,uint32 nTxFile,uint32 nTxOffset,uint256& hashFork);
     bool FilterTx(CTxFilter& filter);
+    bool FilterForkContext(CForkContextFilter& ctxtFilter);
     bool GetForkBlockLocator(const uint256& hashFork,CBlockLocator& locator);
     bool GetForkBlockInv(const uint256& hashFork,const CBlockLocator& locator,std::vector<uint256>& vBlockHash,size_t nMaxCount);
 protected:
@@ -190,7 +197,7 @@ protected:
     CBlockFork* GetFork(const std::string& strName);
     CBlockIndex* GetBranch(CBlockIndex* pIndexRef,CBlockIndex* pIndex,std::vector<CBlockIndex*>& vPath);
     CBlockIndex* GetOriginIndex(const uint256& txidMint) const;
-    CBlockIndex* AddNewIndex(const uint256& hash,CBlock& block,uint32 nFile,uint32 nOffset);
+    CBlockIndex* AddNewIndex(const uint256& hash,const CBlock& block,uint32 nFile,uint32 nOffset);
     CBlockFork* AddNewFork(const CProfile& profileIn,CBlockIndex* pIndexLast);
     bool LoadForkProfile(const CBlockIndex* pIndexOrigin,CProfile& profile);
     bool UpdateDelegate(const uint256& hash,CBlockEx& block);

@@ -14,6 +14,7 @@ set(sources
 	proof.h
 	profile.h profile.cpp
 	block.h
+	forkcontext.h
 )
 
 add_library(common ${sources})
