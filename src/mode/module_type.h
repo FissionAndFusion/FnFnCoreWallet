@@ -27,6 +27,7 @@ enum class EModuleType
     WALLET,              // CWallet
     WORLDLINE,           // CWorldLine
     CONSENSUS,           // CConsensus
+    FORKMANAGER,         // CConsensus
     DBPCLIENT,           // CMvDbpClient
     DBPSERVER,           // CDbpServer
     DBPSERVICE,          // CDbpService
