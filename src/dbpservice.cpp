@@ -146,7 +146,7 @@ static void print_tx(CMvDbpTransaction &tx)
 
 bool CDbpService::HandleEvent(CMvEventDbpAdded& event)
 {
-    if(event.data.name == "primary-block")
+    if(event.data.name == "all-block")
     {
         CMvDbpBlock block = boost::any_cast<CMvDbpBlock>(event.data.anyAddedObj);
         print_block(block);
@@ -537,7 +537,7 @@ void CDbpService::HandleSendBlock(CMvEventDbpMethod& event)
     
     // TO DO
     
-
+    
 
     CMvEventDbpMethodResult eventResult(event.strSessionId);
     eventResult.data.id = event.data.id;
