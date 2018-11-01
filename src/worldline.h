@@ -19,6 +19,8 @@ public:
     ~CWorldLine();
     void GetForkStatus(std::map<uint256,CForkStatus>& mapForkStatus) override; 
     bool GetForkProfile(const uint256& hashFork,CProfile& profile) override;
+    bool GetForkContext(const uint256& hashFork,CForkContext& ctxt) override;
+    bool GetForkAncestry(const uint256& hashFork,std::vector<std::pair<uint256,uint256> > vAncestry) override;
     int  GetBlockCount(const uint256& hashFork) override;
     bool GetBlockLocation(const uint256& hashBlock,uint256& hashFork,int& nHeight) override;
     bool GetBlockHash(const uint256& hashFork,int nHeight,uint256& hashBlock) override;
@@ -26,6 +28,7 @@ public:
     bool GetLastBlock(const uint256& hashFork,uint256& hashBlock,int& nHeight,int64& nTime) override;
     bool GetLastBlockTime(const uint256& hashFork,int nDepth,std::vector<int64>& vTime) override;
     bool GetBlock(const uint256& hashBlock,CBlock& block) override;
+    bool GetOrigin(const uint256& hashFork,CBlock& block) override;
     bool Exists(const uint256& hashBlock) override;
     bool GetTransaction(const uint256& txid,CTransaction& tx) override;
     bool ExistsTx(const uint256& txid) override;
@@ -33,6 +36,7 @@ public:
     bool GetTxUnspent(const uint256& hashFork,const std::vector<CTxIn>& vInput,
                                                     std::vector<CTxOutput>& vOutput) override;
     bool FilterTx(CTxFilter& filter) override;
+    MvErr AddNewForkContext(const CTransaction& txFork,CForkContext& ctxt) override;
     MvErr AddNewBlock(const CBlock& block,CWorldLineUpdate& update) override;
     MvErr AddNewOrigin(const CBlock& block,CWorldLineUpdate& update) override;
     bool GetProofOfWorkTarget(const uint256& hashPrev,int nAlgo,int& nBits,int64& nReward) override;

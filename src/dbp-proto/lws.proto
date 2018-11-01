@@ -50,10 +50,11 @@ message Transaction
     }
     CDestination cDestination = 6; //输出地址
     int64 nAmount = 7; //输出金额
-    int64 nTxFee = 8; //网络交易费 
+    int64 nTxFee = 8; //网络交易费
     bytes vchData = 9; //输出参数(模板地址参数、跨分支交易共轭交易)
     bytes vchSig = 10; //交易签名
     bytes hash = 11; //当前tx hash
+    int64 nChange = 12; //余额 
 }
 
 message Block

@@ -43,6 +43,7 @@ public:
     void Reset();
     
     bool Query(const std::string& strQuery);
+    std::string ToEscString(const std::string& str);
     std::string ToEscString(const void* pBinary,std::size_t nBytes);
     std::string ToEscString(const uint256& hash)
     {
@@ -117,6 +118,15 @@ public:
             }
             catch (...) {}
         } 
+        return false;
+    }
+    bool GetField(int idx,std::string& str)
+    {
+        if (idx < nField && rowData[idx] != NULL)
+        {
+            str = std::string(rowData[idx],pLength[idx]);
+            return true;
+        }
         return false;
     }
     bool GetField(int idx,std::vector<unsigned char>& vch)

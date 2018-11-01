@@ -680,8 +680,9 @@ void CBlockMaker::BlockMakerThreadFunc()
                 }
             }
         }
-        catch (...)
+        catch (exception& e)
         {
+            WalleveLog("Block maker error: %s\n", e.what());
             break;
         }
     }

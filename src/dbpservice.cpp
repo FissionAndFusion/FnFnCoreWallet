@@ -148,7 +148,7 @@ void CDbpService::HandleGetTransaction(CMvEventDbpMethod& event)
     if (pService->GetTransaction(txHash, tx, forkHash, blockHeight))
     {
         CMvDbpTransaction dbpTx;
-        CreateDbpTransaction(tx, dbpTx);
+        CreateDbpTransaction(tx, 0, dbpTx);
 
         CMvEventDbpMethodResult eventResult(event.strSessionId);
         eventResult.data.id = id;
@@ -464,7 +464,7 @@ bool CDbpService::HandleEvent(CMvEventDbpMethod& event)
     return true;
 }
 
-void CDbpService::CreateDbpBlock(const CBlock& blockDetail, const uint256& forkHash,
+void CDbpService::CreateDbpBlock(const CBlockEx& blockDetail, const uint256& forkHash,
                                  int blockHeight, CMvDbpBlock& block)
 {
     block.nVersion = blockDetail.nVersion;
@@ -481,13 +481,15 @@ void CDbpService::CreateDbpBlock(const CBlock& blockDetail, const uint256& forkH
     block.vchSig = blockDetail.vchSig;
 
     // txMint
-    CreateDbpTransaction(blockDetail.txMint, block.txMint);
+    CreateDbpTransaction(blockDetail.txMint, blockDetail.txMint.GetChange(0), block.txMint);
 
     // vtx
+    int k = 0;
     for (const auto& tx : blockDetail.vtx)
     {
         CMvDbpTransaction dbpTx;
-        CreateDbpTransaction(tx, dbpTx);
+        int64 nValueIn = blockDetail.vTxContxt[k++].GetValueIn();
+        CreateDbpTransaction(tx, tx.GetChange(nValueIn), dbpTx);
         block.vtx.push_back(dbpTx);
     }
 
@@ -496,7 +498,7 @@ void CDbpService::CreateDbpBlock(const CBlock& blockDetail, const uint256& forkH
     blockDetail.GetHash().ToDataStream(hashStream);
 }
 
-void CDbpService::CreateDbpTransaction(const CTransaction& tx, CMvDbpTransaction& dbptx)
+void CDbpService::CreateDbpTransaction(const CTransaction& tx, int64 nChange, CMvDbpTransaction& dbptx)
 {
     dbptx.nVersion = tx.nVersion;
     dbptx.nType = tx.nType;
@@ -524,6 +526,7 @@ void CDbpService::CreateDbpTransaction(const CTransaction& tx, CMvDbpTransaction
 
     dbptx.nAmount = tx.nAmount;
     dbptx.nTxFee = tx.nTxFee;
+    dbptx.nChange = nChange;
 
     dbptx.vchData = tx.vchData;
     dbptx.vchSig = tx.vchSig;
@@ -573,12 +576,10 @@ void CDbpService::PushTx(const std::string& forkid, const CMvDbpTransaction& dbp
 bool CDbpService::HandleEvent(CMvEventDbpUpdateNewBlock& event)
 {
     // get details about new block
-    uint256 blockHash = event.data;
-    CBlock newBlock;
+    CBlockEx& newBlock = event.data;
     uint256 forkHash;
-    int blockHeight;
-
-    if (pService->GetBlock(blockHash, newBlock, forkHash, blockHeight))
+    int blockHeight = 0;
+    if (pService->GetBlockLocation(newBlock.GetHash(),forkHash,blockHeight))
     {
         CMvDbpBlock block;
         CreateDbpBlock(newBlock, forkHash, blockHeight, block);
@@ -592,9 +593,10 @@ bool CDbpService::HandleEvent(CMvEventDbpUpdateNewTx& event)
 {
     decltype(event.data)& newtx = event.data;
     std::string forkid = event.hashFork.ToString();
+    int64& change = event.nChange;
 
     CMvDbpTransaction dbpTx;
-    CreateDbpTransaction(newtx, dbpTx);
+    CreateDbpTransaction(newtx, change, dbpTx);
     PushTx(forkid,dbpTx);
 
     return true;

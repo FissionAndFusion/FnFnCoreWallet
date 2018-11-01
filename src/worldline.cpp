@@ -111,6 +111,16 @@ bool CWorldLine::GetForkProfile(const uint256& hashFork,CProfile& profile)
     return cntrBlock.RetrieveProfile(hashFork,profile);
 }
 
+bool CWorldLine::GetForkContext(const uint256& hashFork,CForkContext& ctxt)
+{
+    return cntrBlock.RetrieveForkContext(hashFork,ctxt);
+}
+
+bool CWorldLine::GetForkAncestry(const uint256& hashFork,vector<pair<uint256,uint256> > vAncestry)
+{
+    return cntrBlock.RetrieveAncestry(hashFork,vAncestry);
+}
+
 int  CWorldLine::GetBlockCount(const uint256& hashFork)
 {   
     int nCount = 0;
@@ -212,6 +222,11 @@ bool CWorldLine::GetBlock(const uint256& hashBlock,CBlock& block)
     return cntrBlock.Retrieve(hashBlock,block);
 }
 
+bool CWorldLine::GetOrigin(const uint256& hashFork,CBlock& block)
+{
+    return cntrBlock.RetrieveOrigin(hashFork,block);
+}
+
 bool CWorldLine::Exists(const uint256& hashBlock)
 {
     return cntrBlock.Exists(hashBlock);
@@ -251,6 +266,54 @@ bool CWorldLine::GetTxUnspent(const uint256& hashFork,const vector<CTxIn>& vInpu
 bool CWorldLine::FilterTx(CTxFilter& filter)
 {
     return cntrBlock.FilterTx(filter);
+}
+
+MvErr CWorldLine::AddNewForkContext(const CTransaction& txFork,CForkContext& ctxt)
+{
+    uint256 txid = txFork.GetHash();
+
+    CBlock block;
+    CProfile profile;
+    try
+    {
+        CWalleveBufStream ss;
+        ss.Write((const char*)&txFork.vchData[0],txFork.vchData.size());
+        ss >> block;
+        if (!block.IsOrigin() || block.IsPrimary())
+        {
+            throw std::runtime_error("invalid block");
+        }
+        if (!profile.Load(block.vchProof))
+        {
+            throw std::runtime_error("invalid profile");
+        }
+    }
+    catch (...)
+    {
+        WalleveLog("Invalid orign block found in tx (%s)\n",txid.GetHex().c_str());
+        return MV_ERR_BLOCK_INVALID_FORK;
+    }
+    uint256 hashFork = block.GetHash();
+
+    CForkContext ctxtParent;
+    if (!cntrBlock.RetrieveForkContext(profile.hashParent,ctxtParent))
+    {
+        return MV_ERR_MISSING_PREV;
+    }
+    
+    CProfile forkProfile;
+    MvErr err = pCoreProtocol->ValidateOrigin(block,ctxtParent.GetProfile(),forkProfile);
+    if (err != MV_OK)
+    {
+        return err;
+    }
+
+    ctxt = CForkContext(block.GetHash(),block.hashPrev,txid,profile);
+    if (!cntrBlock.AddNewForkContext(ctxt))
+    {
+        return MV_ERR_ALREADY_HAVE;
+    }
+    return MV_OK;
 }
 
 MvErr CWorldLine::AddNewBlock(const CBlock& block,CWorldLineUpdate& update)
@@ -573,21 +636,7 @@ bool CWorldLine::RebuildContainer()
 
 bool CWorldLine::InsertGenesisBlock(CBlock& block)
 {
-    CBlockIndex* pIndexNew = NULL;
-    CBlockEx blockex(block);
-    if (!cntrBlock.AddNew(block.GetHash(),blockex,&pIndexNew))
-    {
-        return false;
-    }
-    
-    storage::CBlockView view;
-    cntrBlock.GetBlockView(view);
-    view.AddTx(block.txMint.GetHash(),block.txMint);
-    if (!cntrBlock.CommitBlockView(view,pIndexNew))
-    {
-        return false;
-    }
-    return true;
+    return cntrBlock.Initiate(block.GetHash(),block);
 }
 
 MvErr CWorldLine::GetTxContxt(storage::CBlockView& view,const CTransaction& tx,CTxContxt& txContxt)

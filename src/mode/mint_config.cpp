@@ -39,6 +39,10 @@ std::string CMvMintConfig::ListConfig() const
 {
     std::ostringstream oss;
     oss << CMvMintConfigOption::ListConfigImpl();
+    oss << "destMPVss: " << destMPVss.GetHex() << "\n";
+    oss << "keyMPVss: " << keyMPVss.GetHex() << "\n";
+    oss << "destBlake512: " << destBlake512.GetHex() << "\n";
+    oss << "keyBlake512: " << keyBlake512.GetHex() << "\n";
     return oss.str();
 }
 

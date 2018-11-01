@@ -199,6 +199,7 @@ static void CreateLwsTransaction(const CMvDbpTransaction* dbptx, lws::Transactio
 
     tx->set_namount(dbptx->nAmount);
     tx->set_ntxfee(dbptx->nTxFee);
+    tx->set_nchange(dbptx->nChange);
 
     std::string mintVchData(dbptx->vchData.begin(), dbptx->vchData.end());
     tx->set_vchdata(mintVchData);

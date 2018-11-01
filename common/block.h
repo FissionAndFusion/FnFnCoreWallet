@@ -129,6 +129,15 @@ public:
     {
         return (txMint.nAmount - nValueIn); 
     }
+    int64 GetBlockMint() const
+    {
+        int64 nTotalTxFee = 0;
+        BOOST_FOREACH(const CTransaction& tx, vtx)
+        {
+            nTotalTxFee += tx.nTxFee;
+        }
+        return GetBlockMint(nTotalTxFee);
+    }
     uint256 BuildMerkleTree(std::vector<uint256>& vMerkleTree) const
     {
         vMerkleTree.clear();
@@ -242,7 +251,7 @@ public:
         nFile = 0;
         nOffset = 0;
     }
-    CBlockIndex(CBlock& block,uint32 nFileIn,uint32 nOffsetIn)
+    CBlockIndex(const CBlock& block,uint32 nFileIn,uint32 nOffsetIn)
     {
         phashBlock = NULL;
         pOrigin = this;
