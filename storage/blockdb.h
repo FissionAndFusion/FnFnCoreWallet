@@ -6,6 +6,7 @@
 #define  MULTIVERSE_BLOCKDB_H
 
 #include "dbpool.h"
+#include "forkcontext.h"
 #include "block.h"
 #include "transaction.h"
 
@@ -53,6 +54,9 @@ public:
     bool DBPoolInitialize(const CMvDBConfig& config,int nMaxDBConn);
     void Deinitialize();
     bool RemoveAll();
+    bool AddNewForkContext(const CForkContext& ctxt);
+    bool RetrieveForkContext(const uint256& hash,CForkContext& ctxt);
+    bool FilterForkContext(CForkContextFilter& filer);
     bool AddNewFork(const uint256& hash);
     bool RemoveFork(const uint256& hash);
     bool RetrieveFork(std::vector<uint256>& vFork);
