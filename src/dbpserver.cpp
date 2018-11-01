@@ -1138,8 +1138,7 @@ bool CDbpServer::HandleEvent(CMvEventDbpAdded& event)
         pDbpClient->SendResponse(it->second.strClient,addedBody);
     }
 
-    auto& childForks = it->second.setChildForks;
-    if(it->second.strClient == "supernode" && childForks.find(event.data.forkid) != childForks.end())
+    if(it->second.strClient == "supernode")
     {
         CDbpClient* pDbpClient = (*it).second.pDbpClient;
         CMvDbpAdded& addedBody = event.data;
