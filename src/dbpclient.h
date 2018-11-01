@@ -56,13 +56,6 @@ public:
 class CMvDbpClientSocket
 {
 public:
-    enum SendType
-    {
-        PING = 0,
-        METHOD = 1,
-        OTHER = 100
-    };
-public:
     CMvDbpClientSocket(IIOModule* pIOModuleIn,const uint64 nNonceIn,
                    CMvDbpClient* pDbpClientIn,CIOClient* pClientIn);
     ~CMvDbpClientSocket();
@@ -84,7 +77,7 @@ protected:
     void StartReadHeader();
     void StartReadPayload(std::size_t nLength);
     
-    void HandleWritenRequest(std::size_t nTransferred);
+    void HandleWritenRequest(std::size_t nTransferred, dbp::Msg type);
     void HandleReadHeader(std::size_t nTransferred);
     void HandleReadPayload(std::size_t nTransferred,uint32_t len);
     void HandleReadCompleted(uint32_t len);
@@ -92,6 +85,8 @@ protected:
     void SendForkId(const std::string& fork);
     void SendSubscribeTopic(const std::string& topic);
     void SendMessage(dbp::Msg type, google::protobuf::Any* any);
+
+    bool IsSentComplete();
 
 private:
     std::string strSessionId;
@@ -105,7 +100,8 @@ protected:
     CWalleveBufStream ssRecv;
     CWalleveBufStream ssSend;
 
-    std::queue<std::string> queueMessage;
+    std::queue<std::pair<dbp::Msg, std::string>> queueMessage;
+    bool IsReading;
 };
 
 class CMvSessionProfile

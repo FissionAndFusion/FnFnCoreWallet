@@ -67,7 +67,6 @@ void CMvDbpClientSocket::SetSession(const std::string& session)
 
 void CMvDbpClientSocket::ReadMessage()
 {
-    std::cout << "read stream size: " << ssRecv.GetSize() << "\n";
     StartReadHeader();
 }
 
@@ -89,7 +88,6 @@ void CMvDbpClientSocket::SendPing(const std::string& id)
 
     google::protobuf::Any *any = new google::protobuf::Any();
     any->PackFrom(ping);
-
 
     SendMessage(dbp::Msg::PING,any);
 }
@@ -166,6 +164,11 @@ void CMvDbpClientSocket::SendConnectSession(const std::string& session, const st
     SendMessage(dbp::Msg::CONNECT,any);
 }
 
+bool CMvDbpClientSocket::IsSentComplete()
+{
+    return (ssSend.GetSize() == 0 && queueMessage.empty());
+}
+
 void CMvDbpClientSocket::SendMessage(dbp::Msg type, google::protobuf::Any* any)
 {
     dbp::Base base;
@@ -182,51 +185,62 @@ void CMvDbpClientSocket::SendMessage(dbp::Msg type, google::protobuf::Any* any)
     std::memcpy(&len_buffer[0], &len, 4);
     bytes.insert(0, len_buffer, 4);
 
-    if(ssSend.GetSize() != 0 || !queueMessage.empty())
+    if(!IsSentComplete())
     {
-        std::cout << "not sent complete\n";
-        queueMessage.push(bytes);
+        std::cout << "not sent complete [dbpclient]\n";
+        queueMessage.push(std::make_pair(type,bytes));
         return;
     }
+
+    std::cout << "write message type: " <<  dbp::Msg_Name(type)  
+            << " message size: " << bytes.size() << " [dbpclient]" << "\n";
     
     ssSend.Write((char*)bytes.data(),bytes.size());
-    pClient->Write(ssSend,boost::bind(&CMvDbpClientSocket::HandleWritenRequest,this,_1));
+    pClient->Write(ssSend,boost::bind(&CMvDbpClientSocket::HandleWritenRequest,this,_1, type));
     
 }
 
 void CMvDbpClientSocket::StartReadHeader()
 {
+    IsReading = true;
     pClient->Read(ssRecv, MSG_HEADER_LEN,
                   boost::bind(&CMvDbpClientSocket::HandleReadHeader, this, _1));
 }
 
 void CMvDbpClientSocket::StartReadPayload(std::size_t nLength)
 {
-    std::cout << "start read payload [dbpclient] " << nLength << " bytes\n";
     pClient->Read(ssRecv, nLength,
                   boost::bind(&CMvDbpClientSocket::HandleReadPayload, this, _1, nLength));
 }
 
-void CMvDbpClientSocket::HandleWritenRequest(std::size_t nTransferred)
+void CMvDbpClientSocket::HandleWritenRequest(std::size_t nTransferred, dbp::Msg type)
 { 
     if(nTransferred != 0)
     {
         if(ssSend.GetSize() != 0)
         {
-            pClient->Write(ssSend,boost::bind(&CMvDbpClientSocket::HandleWritenRequest,this,_1));
+            pClient->Write(ssSend,boost::bind(&CMvDbpClientSocket::HandleWritenRequest,this,_1, type));
             return;
-        } 
+        }
+
+        std::cout << "sent message type: " <<  dbp::Msg_Name(type)  
+            << " message size: " << nTransferred << " [dbpclient]" << "\n"; 
 
         if(ssSend.GetSize() == 0 && !queueMessage.empty())
         {
-            std::string bytes = queueMessage.front();
+            auto messagePair = queueMessage.front();
+            dbp::Msg msgType = messagePair.first;
+            std::string bytes = messagePair.second;
             queueMessage.pop();
             ssSend.Write((char*)bytes.data(),bytes.size());
-            pClient->Write(ssSend,boost::bind(&CMvDbpClientSocket::HandleWritenRequest,this,_1));
+            pClient->Write(ssSend,boost::bind(&CMvDbpClientSocket::HandleWritenRequest,this,_1, msgType));
             return;
         }
-        
-        pDbpClient->HandleClientSocketSent(this);
+
+        if(!IsReading)
+        {
+            pDbpClient->HandleClientSocketSent(this);
+        }
     }
     else
     {
@@ -238,6 +252,7 @@ void CMvDbpClientSocket::HandleReadHeader(std::size_t nTransferred)
 {   
     if (nTransferred == MSG_HEADER_LEN)
     {
+        std::cout << "[<] read header: " << ssRecv.GetSize() << " [dbpclient]\n";
         std::string lenBuffer(MSG_HEADER_LEN, 0);
         ssRecv.Read(&lenBuffer[0], MSG_HEADER_LEN);
 
@@ -272,11 +287,11 @@ void CMvDbpClientSocket::HandleReadPayload(std::size_t nTransferred,uint32_t len
 }
 
 void CMvDbpClientSocket::HandleReadCompleted(uint32_t len)
-{
-    std::cout << "handle read compele [dbpclient]\n";
-    
+{ 
+    std::cout << "[<] read complete: " << ssRecv.GetSize() << " [dbpclient]\n";
     std::string payloadBuffer(len, 0);
     ssRecv.Read(&payloadBuffer[0], len);
+    IsReading = false;
 
     dbp::Base msgBase;
     if (!msgBase.ParseFromString(payloadBuffer))

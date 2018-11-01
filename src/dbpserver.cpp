@@ -76,12 +76,13 @@ void CDbpClient::SendMessage(dbp::Msg type, google::protobuf::Any* any)
 
     if(!IsSentComplete())
     {
-        std::cout << dbp::Msg_Name(type) << " not sent complete or reading [dbpserver]\n";
+        std::cout << dbp::Msg_Name(type) << " not sent complete [dbpserver]\n";
         queueMessage.push(std::make_pair(type,bytes));
         return;
     }
 
-    std::cout << "write message type: " <<  dbp::Msg_Name(type)  << " message size: " << bytes.size() << "\n";
+    std::cout << "write message type: " <<  dbp::Msg_Name(type)  
+        << " message size: " << bytes.size() << " [dbpserver]" << "\n";
     
     ssSend.Write((char*)bytes.data(),bytes.size());
     pClient->Write(ssSend, boost::bind(&CDbpClient::HandleWritenResponse, this, _1, type));
@@ -426,7 +427,7 @@ void CDbpClient::HandleWritenResponse(std::size_t nTransferred, dbp::Msg type)
         }
 
         std::cout << "sent message type: " <<  dbp::Msg_Name(type)  
-            << " message size: " << nTransferred << "\n";
+            << " message size: " << nTransferred << " [dbpserver]" << "\n";
 
         if (ssSend.GetSize() == 0 && !queueMessage.empty())
         {
