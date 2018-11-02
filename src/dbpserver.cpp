@@ -937,6 +937,8 @@ CDbpClient *CDbpServer::AddNewClient(CIOClient* pClient, CDbpProfile* pDbpProfil
         RAND_bytes((unsigned char *)&nNonce, sizeof(nNonce));
     }
 
+    std::cout << "Add New Client [dbpserver]\n";
+
     CDbpClient* pDbpClient = new CDbpClient(this, pDbpProfile, pClient, nNonce);
     if (pDbpClient)
     {

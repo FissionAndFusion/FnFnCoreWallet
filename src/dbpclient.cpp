@@ -162,6 +162,8 @@ void CMvDbpClientSocket::SendConnectSession(const std::string& session, const st
     google::protobuf::Any *any = new google::protobuf::Any();
     any->PackFrom(connect);
 
+    std::cout << "[>] connect session [dbpclient]\n";
+
     SendMessage(dbp::Msg::CONNECT,any);
 }
 
@@ -865,6 +867,7 @@ bool CMvDbpClient::ActivateConnect(CIOClient* pClient)
     CMvDbpClientSocket* pDbpClientSocket = new CMvDbpClientSocket(pIOModule,nNonce,this,pClient);
     if(!pDbpClientSocket)
     {
+        std::cerr << "Create Client Socket error\n";
         return false;
     }
 
