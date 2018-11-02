@@ -335,33 +335,65 @@ void CMvDbpClientSocket::HandleReadCompleted(uint32_t len)
     {
     case dbp::CONNECTED:
         pDbpClient->HandleClientSocketRecv(this,anyObj);
+        
+        if(!IsReading)
+        {
+            pDbpClient->HandleClientSocketSent(this);
+        }
+       
         break;
     case dbp::FAILED:
         pDbpClient->HandleClientSocketRecv(this,anyObj);
+        if(!IsReading)
+        {
+            pDbpClient->HandleClientSocketSent(this);
+        }
         break;
     case dbp::PING:
         pDbpClient->HandleClientSocketRecv(this,anyObj);
         break;
     case dbp::PONG:
         pDbpClient->HandleClientSocketRecv(this,anyObj);
+        if(!IsReading)
+        {
+            pDbpClient->HandleClientSocketSent(this);
+        }
         break;
     case dbp::RESULT:
         pDbpClient->HandleClientSocketRecv(this,anyObj);
+        if(!IsReading)
+        {
+            pDbpClient->HandleClientSocketSent(this);
+        }
         break;
     case dbp::NOSUB:
         pDbpClient->HandleClientSocketRecv(this,anyObj);
+        if(!IsReading)
+        {
+            pDbpClient->HandleClientSocketSent(this);
+        }
         break;
     case dbp::READY:
         pDbpClient->HandleClientSocketRecv(this,anyObj);
+        if(!IsReading)
+        {
+            pDbpClient->HandleClientSocketSent(this);
+        }
         break;
     case dbp::ADDED:
         pDbpClient->HandleClientSocketRecv(this,anyObj);
+        if(!IsReading)
+        {
+            pDbpClient->HandleClientSocketSent(this);
+        }
         break;
     default:
         std::cerr << "is not Message Base Type is unknown. [dbpclient]" << std::endl;
         pDbpClient->HandleClientSocketError(this);
         break;
     }
+
+    
 
 }
 
@@ -481,6 +513,7 @@ void CMvDbpClient::HandleClientSocketRecv(CMvDbpClientSocket* pClientSocket, con
     {
 
     }
+
 }
 
 void CMvDbpClient::AddNewClient(const CDbpClientConfig& confClient)
@@ -661,7 +694,7 @@ void CMvDbpClient::EnterLoop()
          it != mapProfile.end(); ++it)
     {
         bool fEnableSSL = (*it).second.optSSL.fEnable;
-        if(it->first.address().is_loopback()) continue;
+        //if(it->first.address().is_loopback()) continue;
         if(!StartConnection(it->first,DBPCLIENT_CONNECT_TIMEOUT,fEnableSSL,it->second.optSSL))
         {
             WalleveLog("Start to connect parent node %s failed,  port = %d\n",

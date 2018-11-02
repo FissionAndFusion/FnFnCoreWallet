@@ -413,6 +413,10 @@ void CDbpClient::HandleReadCompleted(uint32_t len)
         break;
     case dbp::PONG:
         pServer->HandleClientRecv(this, anyObj);
+        if(!IsReading)
+        {
+            pServer->HandleClientSent(this);
+        }  
         break;
     case dbp::PING:
         pServer->HandleClientRecv(this, anyObj);
@@ -716,8 +720,6 @@ void CDbpServer::HandleClientPong(CDbpClient* pDbpClient, google::protobuf::Any*
     {
         mapSessionProfile[session].nTimeStamp = CDbpUtils::CurrentUTC();
     }
-
-   // this->HandleClientSent(pDbpClient);
 }
 
 void CDbpServer::HandleClientRecv(CDbpClient* pDbpClient, const boost::any& anyObj)
