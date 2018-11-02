@@ -998,6 +998,7 @@ void CDbpServer::SendPingHandler(const boost::system::error_code& err, const CSe
     {
         std::cerr << "######### session time out ############\n";
         RemoveClient(sessionProfile.pDbpClient);
+        return;
     }
 
     sessionProfile.pDbpClient->SendPing(utc);
