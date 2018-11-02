@@ -100,6 +100,7 @@ protected:
 private:
     std::string strSessionId;
     std::queue<std::pair<dbp::Msg,std::string>> queueMessage;
+    std::queue<int> queueRead;
     bool IsReading;
 
 protected:

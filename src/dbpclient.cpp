@@ -27,7 +27,8 @@ CMvDbpClientSocket::CMvDbpClientSocket(IIOModule* pIOModuleIn,const uint64 nNonc
 : pIOModule(pIOModuleIn),
   nNonce(nNonceIn),
   pDbpClient(pDbpClientIn),
-  pClient(pClientIn)
+  pClient(pClientIn),
+  IsReading(false)
 {
 
 }
@@ -237,9 +238,25 @@ void CMvDbpClientSocket::HandleWritenRequest(std::size_t nTransferred, dbp::Msg 
             return;
         }
 
-        if(!IsReading)
+        if(IsReading)
         {
-            pDbpClient->HandleClientSocketSent(this);
+            std::cout << "Is reading not complete [dbpclient]\n";
+            queueRead.push(0);
+            return;
+        }
+        else
+        {
+            if(!queueRead.empty())
+            {
+                queueRead.pop();
+                std::cout << "pop handle read [dbpclient]\n";
+                pDbpClient->HandleClientSocketSent(this);
+            }
+            else
+            {
+                std::cout << "handle read [dbpclient]\n";
+                pDbpClient->HandleClientSocketSent(this);
+            }
         }
     }
     else

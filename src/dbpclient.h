@@ -101,6 +101,7 @@ protected:
     CWalleveBufStream ssSend;
 
     std::queue<std::pair<dbp::Msg, std::string>> queueMessage;
+    std::queue<int> queueRead;
     bool IsReading;
 };
 

@@ -19,6 +19,7 @@ static const std::size_t MSG_HEADER_LEN = 4;
 CDbpClient::CDbpClient(CDbpServer* pServerIn, CDbpProfile* pProfileIn,
                        CIOClient* pClientIn, uint64 nonce)
     : pServer(pServerIn), pProfile(pProfileIn), pClient(pClientIn), nNonce(nonce)
+    , IsReading(false)
 
 {
 }
@@ -288,6 +289,8 @@ void CDbpClient::SendPong(const std::string& id)
     google::protobuf::Any *any = new google::protobuf::Any();
     any->PackFrom(msg);
 
+    std::cout << "[>] pong " << id << " [dbp server]\n";
+
     SendMessage(dbp::Msg::PONG,any);
 }
 
@@ -298,6 +301,8 @@ void CDbpClient::SendPing(const std::string& id)
 
     google::protobuf::Any* any = new google::protobuf::Any();
     any->PackFrom(msg);
+
+    std::cout << "[>] ping " << id << " [dbp server]\n";
 
     SendMessage(dbp::Msg::PING,any);
 }
@@ -441,10 +446,25 @@ void CDbpClient::HandleWritenResponse(std::size_t nTransferred, dbp::Msg type)
             return;
         }
 
-        if(!IsReading)
+        if(IsReading)
         {
-            std::cout << "handle read[dbpserver]\n";
-            pServer->HandleClientSent(this);
+            std::cout << "is reading not complete [dbpserver]\n";
+            queueRead.push(0);
+            return;
+        }
+        else
+        {
+            if(!queueRead.empty())
+            {
+                queueRead.pop();
+                std::cout << "pop handle read [dbpserver]\n";
+                pServer->HandleClientSent(this);
+            }
+            else
+            {
+                std::cout << "handle read [dbpserver]\n";
+                pServer->HandleClientSent(this);
+            }
         }
        
     }
