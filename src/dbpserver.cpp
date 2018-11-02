@@ -22,6 +22,7 @@ CDbpClient::CDbpClient(CDbpServer* pServerIn, CDbpProfile* pProfileIn,
     , IsReading(false)
 
 {
+    ssRecv.Clear();
 }
 
 CDbpClient::~CDbpClient()
@@ -341,8 +342,10 @@ void CDbpClient::HandleReadHeader(std::size_t nTransferred)
     if (nTransferred == MSG_HEADER_LEN)
     {
         std::cout << "[<] read header: " << ssRecv.GetSize() << " [dbpserver]\n";
-        std::string lenBuffer(MSG_HEADER_LEN, 0);
-        ssRecv.Read(&lenBuffer[0], MSG_HEADER_LEN);
+       // std::string lenBuffer(MSG_HEADER_LEN, 0);
+       // ssRecv.Read(&lenBuffer[0], MSG_HEADER_LEN);
+        
+        std::string lenBuffer(ssRecv.GetData(), ssRecv.GetData() + MSG_HEADER_LEN);
 
         uint32_t nMsgHeaderLen = CDbpUtils::ParseLenFromMsgHeader(&lenBuffer[0], MSG_HEADER_LEN);
         if (nMsgHeaderLen == 0)
@@ -378,6 +381,8 @@ void CDbpClient::HandleReadCompleted(uint32_t len)
 {
     
     std::cout << "[<] read complete: " << ssRecv.GetSize() << " [dbpserver]\n";
+    char head[4];
+    ssRecv.Read(head,4);
     std::string payloadBuffer(len, 0);
     ssRecv.Read(&payloadBuffer[0], len);
     IsReading = false;
@@ -446,7 +451,7 @@ void CDbpClient::HandleWritenResponse(std::size_t nTransferred, dbp::Msg type)
             return;
         }
 
-        if(IsReading)
+       /* if(ssRecv.GetSize() > 0)
         {
             std::cout << "is reading not complete [dbpserver]\n";
             queueRead.push(0);
@@ -465,6 +470,13 @@ void CDbpClient::HandleWritenResponse(std::size_t nTransferred, dbp::Msg type)
                 std::cout << "handle read [dbpserver]\n";
                 pServer->HandleClientSent(this);
             }
+        }*/
+
+        if(!IsReading)
+        {
+            std::cout << "handle read [dbpserver]\n";
+            std::cout << "Recv Stream size: " << ssRecv.GetSize() << " [dbpserver]\n";
+            pServer->HandleClientSent(this);
         }
        
     }

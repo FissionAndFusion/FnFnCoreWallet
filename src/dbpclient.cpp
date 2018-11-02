@@ -30,7 +30,7 @@ CMvDbpClientSocket::CMvDbpClientSocket(IIOModule* pIOModuleIn,const uint64 nNonc
   pClient(pClientIn),
   IsReading(false)
 {
-
+    ssRecv.Clear();
 }
     
 CMvDbpClientSocket::~CMvDbpClientSocket()
@@ -238,7 +238,7 @@ void CMvDbpClientSocket::HandleWritenRequest(std::size_t nTransferred, dbp::Msg 
             return;
         }
 
-        if(IsReading)
+       /* if(ssRecv.GetSize() > 0)
         {
             std::cout << "Is reading not complete [dbpclient]\n";
             queueRead.push(0);
@@ -257,6 +257,14 @@ void CMvDbpClientSocket::HandleWritenRequest(std::size_t nTransferred, dbp::Msg 
                 std::cout << "handle read [dbpclient]\n";
                 pDbpClient->HandleClientSocketSent(this);
             }
+        }*/
+
+
+        if(!IsReading)
+        {
+            std::cout << "handle read [dbpclient]\n";
+            std::cout << "Recv Stream size: " << ssRecv.GetSize() << " [dbpclient]\n";
+            pDbpClient->HandleClientSocketSent(this);
         }
     }
     else
@@ -270,8 +278,9 @@ void CMvDbpClientSocket::HandleReadHeader(std::size_t nTransferred)
     if (nTransferred == MSG_HEADER_LEN)
     {
         std::cout << "[<] read header: " << ssRecv.GetSize() << " [dbpclient]\n";
-        std::string lenBuffer(MSG_HEADER_LEN, 0);
-        ssRecv.Read(&lenBuffer[0], MSG_HEADER_LEN);
+        //std::string lenBuffer(MSG_HEADER_LEN, 0);
+        //ssRecv.Read(&lenBuffer[0], MSG_HEADER_LEN);
+        std::string lenBuffer(ssRecv.GetData(), ssRecv.GetData() + MSG_HEADER_LEN);
 
         uint32_t nMsgHeaderLen = CDbpUtils::ParseLenFromMsgHeader(&lenBuffer[0], MSG_HEADER_LEN);
         if (nMsgHeaderLen == 0)
@@ -306,6 +315,8 @@ void CMvDbpClientSocket::HandleReadPayload(std::size_t nTransferred,uint32_t len
 void CMvDbpClientSocket::HandleReadCompleted(uint32_t len)
 { 
     std::cout << "[<] read complete: " << ssRecv.GetSize() << " [dbpclient]\n";
+    char head[4];
+    ssRecv.Read(head,4);
     std::string payloadBuffer(len, 0);
     ssRecv.Read(&payloadBuffer[0], len);
     IsReading = false;
