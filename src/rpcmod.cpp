@@ -4,6 +4,8 @@
 
 #include "rpcmod.h"
 
+#include <regex>
+
 #include <boost/assign/list_of.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
@@ -127,7 +129,30 @@ void CRPCMod::WalleveHandleDeinitialize()
 
 bool CRPCMod::HandleEvent(CWalleveEventHttpReq& eventHttpReq)
 {
-    WalleveLog("request : %s\n", eventHttpReq.data.strContent.c_str());
+    auto lmdMask = [] (bool fDebug, string& data) -> void {
+        //remove all sensible information such as private key
+        // or passphrass from log content
+/*        regex _pattern(R"rs(.*"method"[ \t\n]*:[ \t\n]*".+".*("params"[ \t\n]*:[ \t\n]*\{)(.*)(\}))rs");
+        bool fReq = regex_search(data, _pattern);*/
+        if(!fDebug)
+        {
+            regex _pattern(R"rs(("params"[ \t\n]*:[ \t\n]*\{)(.*)(\}))rs");
+            data = regex_replace(data, _pattern, R"rs($1"***"$3)rs");
+            return;
+        }
+
+        //log for debug mode
+        regex _pattern(R"rs((.*)("privkey"|"passphrase"|"oldpassphrase")([[:space:]]*:[[:s:]]*)(".*")(.*))rs");
+        bool fFound = regex_search(data, _pattern);
+        if(fFound)
+        {
+            data = regex_replace(data, _pattern, R"rs($1$2$3"***"$5)rs");
+        }
+    };
+
+    string sLog = eventHttpReq.data.strContent.c_str();
+    lmdMask(WalleveConfig()->fDebug, sLog);
+    WalleveLog("request : %s\n", sLog.c_str());
     uint64 nNonce = eventHttpReq.nNonce;
 
     string strResult;
@@ -214,7 +239,9 @@ bool CRPCMod::HandleEvent(CWalleveEventHttpReq& eventHttpReq)
 
     if (WalleveConfig()->fDebug)
     {
-        WalleveLog("response : %s\n", strResult.c_str());
+        string sLog = strResult.c_str();
+        lmdMask(WalleveConfig()->fDebug, sLog);
+        WalleveLog("response : %s\n", sLog.c_str());
     }
 
     // no result means no return
