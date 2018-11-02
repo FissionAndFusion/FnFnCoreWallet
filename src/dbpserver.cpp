@@ -83,8 +83,8 @@ void CDbpClient::SendMessage(dbp::Msg type, google::protobuf::Any* any)
         return;
     }
 
-    std::cout << "write message type: " <<  dbp::Msg_Name(type)  
-        << " message size: " << bytes.size() << " [dbpserver]" << "\n";
+    //std::cout << "write message type: " <<  dbp::Msg_Name(type)  
+      //  << " message size: " << bytes.size() << " [dbpserver]" << "\n";
     
     ssSend.Write((char*)bytes.data(),bytes.size());
     pClient->Write(ssSend, boost::bind(&CDbpClient::HandleWritenResponse, this, _1, type));
@@ -341,7 +341,7 @@ void CDbpClient::HandleReadHeader(std::size_t nTransferred)
 {
     if (nTransferred == MSG_HEADER_LEN)
     {
-        std::cout << "[<] read header: " << ssRecv.GetSize() << " [dbpserver]\n";
+        //std::cout << "[<] read header: " << ssRecv.GetSize() << " [dbpserver]\n";
        // std::string lenBuffer(MSG_HEADER_LEN, 0);
        // ssRecv.Read(&lenBuffer[0], MSG_HEADER_LEN);
         
@@ -380,7 +380,7 @@ void CDbpClient::HandleReadPayload(std::size_t nTransferred, uint32_t len)
 void CDbpClient::HandleReadCompleted(uint32_t len)
 {
     
-    std::cout << "[<] read complete: " << ssRecv.GetSize() << " [dbpserver]\n";
+   // std::cout << "[<] read complete: " << ssRecv.GetSize() << " [dbpserver]\n";
     char head[4];
     ssRecv.Read(head,4);
     std::string payloadBuffer(len, 0);
@@ -413,10 +413,7 @@ void CDbpClient::HandleReadCompleted(uint32_t len)
         break;
     case dbp::PONG:
         pServer->HandleClientRecv(this, anyObj);
-        if(!IsReading)
-        {
-            pServer->HandleClientSent(this);
-        }  
+        pServer->HandleClientSent(this);
         break;
     case dbp::PING:
         pServer->HandleClientRecv(this, anyObj);
@@ -440,8 +437,8 @@ void CDbpClient::HandleWritenResponse(std::size_t nTransferred, dbp::Msg type)
             return;
         }
 
-        std::cout << "sent message type: " <<  dbp::Msg_Name(type)  
-            << " message size: " << nTransferred << " [dbpserver]" << "\n";
+       // std::cout << "sent message type: " <<  dbp::Msg_Name(type)  
+         //   << " message size: " << nTransferred << " [dbpserver]" << "\n";
 
         if (ssSend.GetSize() == 0 && !queueMessage.empty())
         {
@@ -454,27 +451,6 @@ void CDbpClient::HandleWritenResponse(std::size_t nTransferred, dbp::Msg type)
             pClient->Write(ssSend, boost::bind(&CDbpClient::HandleWritenResponse, this, _1, messageType));
             return;
         }
-
-       /* if(ssRecv.GetSize() > 0)
-        {
-            std::cout << "is reading not complete [dbpserver]\n";
-            queueRead.push(0);
-            return;
-        }
-        else
-        {
-            if(!queueRead.empty())
-            {
-                queueRead.pop();
-                std::cout << "pop handle read [dbpserver]\n";
-                pServer->HandleClientSent(this);
-            }
-            else
-            {
-                std::cout << "handle read [dbpserver]\n";
-                pServer->HandleClientSent(this);
-            }
-        }*/
 
         if(!IsReading)
         {

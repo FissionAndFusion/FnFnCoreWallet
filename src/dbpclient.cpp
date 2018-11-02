@@ -193,8 +193,8 @@ void CMvDbpClientSocket::SendMessage(dbp::Msg type, google::protobuf::Any* any)
         return;
     }
 
-    std::cout << "write message type: " <<  dbp::Msg_Name(type)  
-            << " message size: " << bytes.size() << " [dbpclient]" << "\n";
+   // std::cout << "write message type: " <<  dbp::Msg_Name(type)  
+     //       << " message size: " << bytes.size() << " [dbpclient]" << "\n";
     
     ssSend.Write((char*)bytes.data(),bytes.size());
     pClient->Write(ssSend,boost::bind(&CMvDbpClientSocket::HandleWritenRequest,this,_1, type));
@@ -224,8 +224,8 @@ void CMvDbpClientSocket::HandleWritenRequest(std::size_t nTransferred, dbp::Msg 
             return;
         }
 
-        std::cout << "sent message type: " <<  dbp::Msg_Name(type)  
-            << " message size: " << nTransferred << " [dbpclient]" << "\n"; 
+       // std::cout << "sent message type: " <<  dbp::Msg_Name(type)  
+         //   << " message size: " << nTransferred << " [dbpclient]" << "\n"; 
 
         if(ssSend.GetSize() == 0 && !queueMessage.empty())
         {
@@ -238,34 +238,13 @@ void CMvDbpClientSocket::HandleWritenRequest(std::size_t nTransferred, dbp::Msg 
             return;
         }
 
-       /* if(ssRecv.GetSize() > 0)
-        {
-            std::cout << "Is reading not complete [dbpclient]\n";
-            queueRead.push(0);
-            return;
-        }
-        else
-        {
-            if(!queueRead.empty())
-            {
-                queueRead.pop();
-                std::cout << "pop handle read [dbpclient]\n";
-                pDbpClient->HandleClientSocketSent(this);
-            }
-            else
-            {
-                std::cout << "handle read [dbpclient]\n";
-                pDbpClient->HandleClientSocketSent(this);
-            }
-        }*/
-
-
         if(!IsReading)
         {
             std::cout << "handle read [dbpclient]\n";
             std::cout << "Recv Stream size: " << ssRecv.GetSize() << " [dbpclient]\n";
             pDbpClient->HandleClientSocketSent(this);
         }
+    
     }
     else
     {
@@ -277,7 +256,7 @@ void CMvDbpClientSocket::HandleReadHeader(std::size_t nTransferred)
 {   
     if (nTransferred == MSG_HEADER_LEN)
     {
-        std::cout << "[<] read header: " << ssRecv.GetSize() << " [dbpclient]\n";
+        //std::cout << "[<] read header: " << ssRecv.GetSize() << " [dbpclient]\n";
         //std::string lenBuffer(MSG_HEADER_LEN, 0);
         //ssRecv.Read(&lenBuffer[0], MSG_HEADER_LEN);
         std::string lenBuffer(ssRecv.GetData(), ssRecv.GetData() + MSG_HEADER_LEN);
@@ -314,7 +293,7 @@ void CMvDbpClientSocket::HandleReadPayload(std::size_t nTransferred,uint32_t len
 
 void CMvDbpClientSocket::HandleReadCompleted(uint32_t len)
 { 
-    std::cout << "[<] read complete: " << ssRecv.GetSize() << " [dbpclient]\n";
+    //std::cout << "[<] read complete: " << ssRecv.GetSize() << " [dbpclient]\n";
     char head[4];
     ssRecv.Read(head,4);
     std::string payloadBuffer(len, 0);
@@ -335,66 +314,37 @@ void CMvDbpClientSocket::HandleReadCompleted(uint32_t len)
     {
     case dbp::CONNECTED:
         pDbpClient->HandleClientSocketRecv(this,anyObj);
-        
-        if(!IsReading)
-        {
-            pDbpClient->HandleClientSocketSent(this);
-        }
-       
         break;
     case dbp::FAILED:
         pDbpClient->HandleClientSocketRecv(this,anyObj);
-        if(!IsReading)
-        {
-            pDbpClient->HandleClientSocketSent(this);
-        }
         break;
     case dbp::PING:
         pDbpClient->HandleClientSocketRecv(this,anyObj);
         break;
     case dbp::PONG:
         pDbpClient->HandleClientSocketRecv(this,anyObj);
-        if(!IsReading)
-        {
-            pDbpClient->HandleClientSocketSent(this);
-        }
+        pDbpClient->HandleClientSocketSent(this);
         break;
     case dbp::RESULT:
         pDbpClient->HandleClientSocketRecv(this,anyObj);
-        if(!IsReading)
-        {
-            pDbpClient->HandleClientSocketSent(this);
-        }
+        pDbpClient->HandleClientSocketSent(this);
         break;
     case dbp::NOSUB:
         pDbpClient->HandleClientSocketRecv(this,anyObj);
-        if(!IsReading)
-        {
-            pDbpClient->HandleClientSocketSent(this);
-        }
         break;
     case dbp::READY:
         pDbpClient->HandleClientSocketRecv(this,anyObj);
-        if(!IsReading)
-        {
-            pDbpClient->HandleClientSocketSent(this);
-        }
+        pDbpClient->HandleClientSocketSent(this);
         break;
     case dbp::ADDED:
         pDbpClient->HandleClientSocketRecv(this,anyObj);
-        if(!IsReading)
-        {
-            pDbpClient->HandleClientSocketSent(this);
-        }
+        pDbpClient->HandleClientSocketSent(this);
         break;
     default:
         std::cerr << "is not Message Base Type is unknown. [dbpclient]" << std::endl;
         pDbpClient->HandleClientSocketError(this);
         break;
     }
-
-    
-
 }
 
 CMvDbpClient::CMvDbpClient()
@@ -694,7 +644,7 @@ void CMvDbpClient::EnterLoop()
          it != mapProfile.end(); ++it)
     {
         bool fEnableSSL = (*it).second.optSSL.fEnable;
-        //if(it->first.address().is_loopback()) continue;
+        if(it->first.address().is_loopback()) continue;
         if(!StartConnection(it->first,DBPCLIENT_CONNECT_TIMEOUT,fEnableSSL,it->second.optSSL))
         {
             WalleveLog("Start to connect parent node %s failed,  port = %d\n",
