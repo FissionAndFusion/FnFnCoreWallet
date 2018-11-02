@@ -490,8 +490,13 @@ void CMvDbpClient::HandleFailed(CMvDbpClientSocket* pClientSocket, google::proto
 {   
     dbp::Failed failed;
     any->UnpackTo(&failed);
-    std::cout << "[<]connect session failed: " << failed.reason() << std::endl;
     
+    if(failed.reason() == "002")
+    {
+        std::cerr << "[<] session timeout: " << failed.reason() << std::endl;    
+    }
+    
+   
     auto epRemote = pClientSocket->GetHost().ToEndPoint();
     RemoveClientSocket(pClientSocket);
     

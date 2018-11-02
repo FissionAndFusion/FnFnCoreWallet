@@ -991,6 +991,13 @@ void CDbpServer::SendPingHandler(const boost::system::error_code& err, const CSe
     }
 
     std::string utc = std::to_string(CDbpUtils::CurrentUTC());
+
+    if(IsSessionTimeOut(sessionProfile.pDbpClient))
+    {
+        std::cerr << "######### session time out ############\n";
+        RemoveClient(sessionProfile.pDbpClient);
+    }
+
     sessionProfile.pDbpClient->SendPing(utc);
 
     sessionProfile.ptrPingTimer->expires_at(sessionProfile.ptrPingTimer->expires_at() + boost::posix_time::seconds(3));
