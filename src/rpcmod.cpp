@@ -132,21 +132,31 @@ bool CRPCMod::HandleEvent(CWalleveEventHttpReq& eventHttpReq)
     auto lmdMask = [] (bool fDebug, string& data) -> void {
         //remove all sensible information such as private key
         // or passphrass from log content
-/*        regex _pattern(R"rs(.*"method"[ \t\n]*:[ \t\n]*".+".*("params"[ \t\n]*:[ \t\n]*\{)(.*)(\}))rs");
-        bool fReq = regex_search(data, _pattern);*/
         if(!fDebug)
         {
-            regex _pattern(R"rs(("params"[ \t\n]*:[ \t\n]*\{)(.*)(\}))rs");
-            data = regex_replace(data, _pattern, R"rs($1"***"$3)rs");
-            return;
+            regex ptnReq(R"raw("method"[ \t\n]*:[ \t\n]*".*?")raw");
+            bool fFound = regex_search(data, ptnReq);
+            if(fFound)
+            {
+                regex _pattern(R"raw(("params"[[:space:]]*:[[:space:]]*\{)(.*)(\}))raw");
+                string sRes = regex_replace(data, _pattern, R"raw($1$3)raw");
+                data = sRes;
+                return;
+            }
+            else
+            {
+                //recording response is not allowed for non-debug mode
+                throw CRPCException(RPC_INVALID_REQUEST, "Method not found");
+            }
         }
 
         //log for debug mode
-        regex _pattern(R"rs((.*)("privkey"|"passphrase"|"oldpassphrase")([[:space:]]*:[[:s:]]*)(".*")(.*))rs");
-        bool fFound = regex_search(data, _pattern);
+        regex ptn(R"raw(("privkey"|"passphrase"|"oldpassphrase")([[:s:]]*:[[:s:]]*)(".*?"))raw");
+        bool fFound = regex_search(data, ptn);
         if(fFound)
         {
-            data = regex_replace(data, _pattern, R"rs($1$2$3"***"$5)rs");
+            string sRes = regex_replace(data, ptn, R"raw($1$2"***")raw");
+            data = sRes;
         }
     };
 
