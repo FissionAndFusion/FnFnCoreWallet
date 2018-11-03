@@ -138,8 +138,8 @@ bool CRPCMod::HandleEvent(CWalleveEventHttpReq& eventHttpReq)
             bool fFound = regex_search(data, ptnReq);
             if(fFound)
             {
-                regex _pattern(R"raw(("params"[[:space:]]*:[[:space:]]*\{)(.*)(\}))raw");
-                string sRes = regex_replace(data, _pattern, R"raw($1$3)raw");
+                regex ptnParam(R"raw(("params"[[:space:]]*:[[:space:]]*\{)(.*?)(\}))raw");
+                string sRes = regex_replace(data, ptnParam, R"raw($1$3)raw");
                 data = sRes;
                 return;
             }
@@ -151,11 +151,11 @@ bool CRPCMod::HandleEvent(CWalleveEventHttpReq& eventHttpReq)
         }
 
         //log for debug mode
-        regex ptn(R"raw(("privkey"|"passphrase"|"oldpassphrase")([[:s:]]*:[[:s:]]*)(".*?"))raw");
-        bool fFound = regex_search(data, ptn);
+        regex ptnSec(R"raw(("privkey"|"passphrase"|"oldpassphrase")([[:s:]]*:[[:s:]]*)(".*?"))raw");
+        bool fFound = regex_search(data, ptnSec);
         if(fFound)
         {
-            string sRes = regex_replace(data, ptn, R"raw($1$2"***")raw");
+            string sRes = regex_replace(data, ptnSec, R"raw($1$2"***")raw");
             data = sRes;
         }
     };
