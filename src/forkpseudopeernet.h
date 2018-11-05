@@ -22,6 +22,7 @@ public:
 protected:
     bool WalleveHandleInitialize() override;
     void WalleveHandleDeinitialize() override;
+    bool HandleEvent(CFkEventNodeMessage& eventMessage) override;
     bool HandleEvent(CFkEventNodeActive& eventActive) override;
     bool HandleEvent(CFkEventNodeDeactive& eventDeactive) override;
     bool HandleEvent(CFkEventNodeSubscribe& eventSubscribe) override;

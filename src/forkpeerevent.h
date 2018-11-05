@@ -12,9 +12,10 @@
 namespace multiverse
 {
 
-enum
+enum class ecForkEventType : int
 {
-    //FORK NODE EVENT
+    //FORK NODE PEER NET EVENT
+    FK_EVENT_NODE_MESSAGE, //messages received from Dbp client
     FK_EVENT_NODE_ACTIVE,
     FK_EVENT_NODE_DEACTIVE,
     FK_EVENT_NODE_SUBSCRIBE,
@@ -32,8 +33,8 @@ class CFkEventNodeData : public walleve::CWalleveEvent
 {
     friend class walleve::CWalleveStream;
 public:
-    CFkEventNodeData(uint64 nNonceIn,const uint256& hashForkIn)
-            : CWalleveEvent(nNonceIn,type), hashFork(hashForkIn) {}
+    CFkEventNodeData(uint64 nNonceIn, const uint256& hashForkIn)
+            : CWalleveEvent(nNonceIn, type), hashFork(hashForkIn) {}
     virtual ~CFkEventNodeData() {}
     virtual bool Handle(walleve::CWalleveEventListener& listener)
     {
@@ -50,35 +51,74 @@ public:
     }
 protected:
     template <typename O>
-    void WalleveSerialize(walleve::CWalleveStream& s,O& opt)
+    void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
     {
-        s.Serialize(hashFork,opt);
-        s.Serialize(data,opt);
+        s.Serialize(hashFork, opt);
+        s.Serialize(data, opt);
     }
 public:
     uint256 hashFork;
     D data;
 };
 
+template <int type, typename L, typename D>
+class CFkEventMessageData : public walleve::CWalleveEvent
+{
+    friend class walleve::CWalleveStream;
+public:
+    CFkEventMessageData(uint64 nNonceIn, const ecForkEventType& nMsgTypeIn)
+    : CWalleveEvent(nNonceIn, type), nMsgType(nMsgTypeIn) {}
+    virtual ~CFkEventMessageData() {}
+    virtual bool Handle(walleve::CWalleveEventListener& listener)
+    {
+        try
+        {
+            return (dynamic_cast<L&>(listener)).HandleEvent(*this);
+        }
+        catch (std::bad_cast&)
+        {
+            return listener.HandleEvent(*this);
+        }
+        catch (...) {}
+        return false;
+    }
+protected:
+    template <typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
+    {
+        s.Serialize(nMsgType, opt);
+        s.Serialize(msgIncome, opt);
+    }
+public:
+    ecForkEventType nMsgType;
+    D msgIncome; //CFkEventNodeData
+};
+
 class CMvPeerEventListener;
 
 #define TYPE_FORKNODEEVENT(type, body)       \
-        CFkEventNodeData<type, CMvPeerEventListener, body>
+        CFkEventNodeData<static_cast<int>(type), CMvPeerEventListener, body>
 
-typedef TYPE_FORKNODEEVENT(FK_EVENT_NODE_ACTIVE, network::CAddress) CFkEventNodeActive;
-typedef TYPE_FORKNODEEVENT(FK_EVENT_NODE_DEACTIVE, network::CAddress) CFkEventNodeDeactive;
-typedef TYPE_FORKNODEEVENT(FK_EVENT_NODE_SUBSCRIBE, std::vector<uint256>) CFkEventNodeSubscribe;
-typedef TYPE_FORKNODEEVENT(FK_EVENT_NODE_UNSUBSCRIBE, std::vector<uint256>) CFkEventNodeUnsubscribe;
-typedef TYPE_FORKNODEEVENT(FK_EVENT_NODE_GETBLOCKS, CBlockLocator) CFkEventNodeGetBlocks;
-typedef TYPE_FORKNODEEVENT(FK_EVENT_NODE_INV, std::vector<network::CInv>) CFkEventNodeInv;
-typedef TYPE_FORKNODEEVENT(FK_EVENT_NODE_GETDATA, std::vector<network::CInv>) CFkEventNodeGetData;
-typedef TYPE_FORKNODEEVENT(FK_EVENT_NODE_BLOCK, CBlock) CFkEventNodeBlock;
-typedef TYPE_FORKNODEEVENT(FK_EVENT_NODE_TX, CTransaction) CFkEventNodeTx;
+#define TYPE_FORKNODEMSGEVENT(type, body)       \
+        CFkEventMessageData<static_cast<int>(type), CMvPeerEventListener, body>
+
+typedef TYPE_FORKNODEMSGEVENT(ecForkEventType::FK_EVENT_NODE_MESSAGE, CFkEventNodeData) CFkEventNodeMessage;
+
+typedef TYPE_FORKNODEEVENT(ecForkEventType::FK_EVENT_NODE_ACTIVE, network::CAddress) CFkEventNodeActive;
+typedef TYPE_FORKNODEEVENT(ecForkEventType::FK_EVENT_NODE_DEACTIVE, network::CAddress) CFkEventNodeDeactive;
+typedef TYPE_FORKNODEEVENT(ecForkEventType::FK_EVENT_NODE_SUBSCRIBE, std::vector<uint256>) CFkEventNodeSubscribe;
+typedef TYPE_FORKNODEEVENT(ecForkEventType::FK_EVENT_NODE_UNSUBSCRIBE, std::vector<uint256>) CFkEventNodeUnsubscribe;
+typedef TYPE_FORKNODEEVENT(ecForkEventType::FK_EVENT_NODE_GETBLOCKS, CBlockLocator) CFkEventNodeGetBlocks;
+typedef TYPE_FORKNODEEVENT(ecForkEventType::FK_EVENT_NODE_INV, std::vector<network::CInv>) CFkEventNodeInv;
+typedef TYPE_FORKNODEEVENT(ecForkEventType::FK_EVENT_NODE_GETDATA, std::vector<network::CInv>) CFkEventNodeGetData;
+typedef TYPE_FORKNODEEVENT(ecForkEventType::FK_EVENT_NODE_BLOCK, CBlock) CFkEventNodeBlock;
+typedef TYPE_FORKNODEEVENT(ecForkEventType::FK_EVENT_NODE_TX, CTransaction) CFkEventNodeTx;
 
 class CMvPeerEventListener : virtual public walleve::CWalleveEventListener
 {
 public:
     virtual ~CMvPeerEventListener() {}
+    DECLARE_EVENTHANDLER(CFkEventNodeMessage);
     DECLARE_EVENTHANDLER(CFkEventNodeActive);
     DECLARE_EVENTHANDLER(CFkEventNodeDeactive);
     DECLARE_EVENTHANDLER(CFkEventNodeSubscribe);
