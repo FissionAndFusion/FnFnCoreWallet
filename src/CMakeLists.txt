@@ -58,7 +58,8 @@ set(src
 	param.h
 	storage.h
 	version.h
-)
+	forkpseudopeernet.cpp forkpseudopeernet.h
+		forkpeerevent.h)
 set(mode_src
 	mode/basic_config.cpp mode/basic_config.h
 	mode/fork_config.cpp mode/fork_config.h
