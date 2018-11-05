@@ -4,8 +4,10 @@
 
 #include "dbpservice.h"
 
+#include "dbputils.h"
 #include <boost/assign/list_of.hpp>
 #include <boost/lexical_cast.hpp>
+#include <algorithm>
 
 using namespace multiverse;
 
@@ -16,6 +18,7 @@ CDbpService::CDbpService()
     pCoreProtocol = NULL;
     pWallet = NULL;
     pDbpServer = NULL;
+    pNetChannel = NULL;
 
     std::unordered_map<std::string, bool> temp_map = boost::assign::map_list_of("all-block", true)("all-tx", true)("changed", true)("removed", true);
 
@@ -52,6 +55,18 @@ bool CDbpService::WalleveHandleInitialize()
         return false;
     }
 
+    if(!WalleveGetObject("dbpclient",pDbpClient))
+    {
+        WalleveLog("Failed to request dbpclient\n");
+        return false;
+    }
+
+    if (!WalleveGetObject("netchannel",pNetChannel))
+    {
+        WalleveLog("Failed to request peer net datachannel\n");
+        return false;
+    }
+
     return true;
 }
 
@@ -61,11 +76,91 @@ void CDbpService::WalleveHandleDeinitialize()
     pService = NULL;
     pCoreProtocol = NULL;
     pWallet = NULL;
+    pNetChannel = NULL;
 }
 
 bool CDbpService::HandleEvent(CMvEventDbpPong& event)
 {
     (void)event;
+    return true;
+}
+
+bool CDbpService::HandleEvent(CMvEventDbpBroken& event)
+{
+    mapSessionChildNodeForks.erase(event.strSessionId);
+    return true;
+}
+
+static std::string GetHex(std::string data)
+{
+    int n = 2 * data.length() + 1;
+    std::string ret;
+    const char c_map[16] = {'0', '1', '2', '3', '4', '5', '6', '7',
+                            '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+
+    ret.reserve(n);
+    for (const unsigned char &c : data)
+    {
+        ret.push_back(c_map[c >> 4]);
+        ret.push_back(c_map[c & 15]);
+    }
+
+    return ret;
+}
+
+static void print_block(CMvDbpBlock &block)
+{
+    std::string hash(block.hash.begin(), block.hash.end());
+    std::reverse(hash.begin(), hash.end());
+
+    std::string prev_hash(block.hashPrev.begin(), block.hashPrev.end());
+    std::reverse(prev_hash.begin(), prev_hash.end());
+    std::cout << "[<]recived block" << std::endl;
+    std::cout << "   hash:" << GetHex(hash) << std::endl;
+    std::cout << "   height:" << block.nHeight << std::endl;
+    std::cout << "   prev hash:" << GetHex(prev_hash) << std::endl;
+
+    /*std::cout << "vtx size: " << block.vtx_size() << std::endl;
+    std::cout << "vtx v input size: " << block.vtx(0).vinput_size() << std::endl;
+    for (int i = 0; i < block.vtx(0).vinput_size(); ++i)
+    {
+        std::string txhash(block.vtx(0).vinput(i).hash());
+        reverse(txhash.begin(), txhash.end());
+        std::cout << "InputTxHash: " << GetHex(txhash) << std::endl;
+        std::cout << "InputTx n: " << block.vtx(0).vinput(i).n() << std::endl;
+    }*/
+}
+
+static void print_tx(CMvDbpTransaction &tx)
+{
+    std::string hash(tx.hash.begin(),tx.hash.end());
+    std::reverse(hash.begin(), hash.end());
+
+    std::string sig(tx.vchSig.begin(),tx.vchSig.end());
+    std::reverse(sig.begin(), sig.end());
+
+    std::cout << "[<]recived transaction" << std::endl;
+    std::cout << "   hash:" << GetHex(hash) << std::endl;
+    std::cout << "   sig:" << GetHex(sig) << std::endl;
+}
+
+bool CDbpService::HandleEvent(CMvEventDbpAdded& event)
+{
+    if(event.data.name == "all-block")
+    {
+        CMvDbpBlock block = boost::any_cast<CMvDbpBlock>(event.data.anyAddedObj);
+        print_block(block);
+    }
+    else if(event.data.name == "all-tx")
+    {
+        CMvDbpTransaction tx = boost::any_cast<CMvDbpTransaction>(event.data.anyAddedObj);
+        print_tx(tx);
+    }
+    else
+    {
+        return false;
+    }
+    
     return true;
 }
 
@@ -75,6 +170,8 @@ bool CDbpService::HandleEvent(CMvEventDbpConnect& event)
     
     if (isReconnect)
     {
+        UpdateChildNodeForks(event.strSessionId,event.data.forks);
+        
         // reply normal
         CMvEventDbpConnected eventConnected(event.strSessionId);
         eventConnected.data.session = event.data.session;
@@ -94,6 +191,9 @@ bool CDbpService::HandleEvent(CMvEventDbpConnect& event)
         }
         else
         {
+            
+            UpdateChildNodeForks(event.strSessionId,event.data.forks);
+            
             // reply normal
             CMvEventDbpConnected eventConnected(event.strSessionId);
             eventConnected.data.session = event.data.session;
@@ -138,7 +238,8 @@ bool CDbpService::HandleEvent(CMvEventDbpUnSub& event)
 void CDbpService::HandleGetTransaction(CMvEventDbpMethod& event)
 {
     std::string id = event.data.id;
-    std::string txid = event.data.params["hash"];
+    std::string txid = boost::any_cast<std::string> 
+     (event.data.params["hash"]);
 
     uint256 txHash(txid);
     CTransaction tx;
@@ -166,7 +267,8 @@ void CDbpService::HandleGetTransaction(CMvEventDbpMethod& event)
 
 void CDbpService::HandleSendTransaction(CMvEventDbpMethod& event)
 {
-    std::string data = event.data.params["data"];
+    std::string data = boost::any_cast 
+        <std::string>(event.data.params["data"]);
 
     std::vector<unsigned char> txData(data.begin(), data.end());
     walleve::CWalleveBufStream ss;
@@ -196,7 +298,7 @@ void CDbpService::HandleSendTransaction(CMvEventDbpMethod& event)
         CMvEventDbpMethodResult eventResult(event.strSessionId);
         eventResult.data.id = event.data.id;
 
-        CMvDbpSendTxRet sendTxRet;
+        CMvDbpSendTransactionRet sendTxRet;
         sendTxRet.hash = data;
         sendTxRet.result = "succeed";
         eventResult.data.anyResultObjs.push_back(sendTxRet);
@@ -208,7 +310,7 @@ void CDbpService::HandleSendTransaction(CMvEventDbpMethod& event)
         CMvEventDbpMethodResult eventResult(event.strSessionId);
         eventResult.data.id = event.data.id;
 
-        CMvDbpSendTxRet sendTxRet;
+        CMvDbpSendTransactionRet sendTxRet;
         sendTxRet.hash = data;
         sendTxRet.result = "failed";
         sendTxRet.reason = std::string(MvErrString(err));
@@ -413,9 +515,10 @@ bool CDbpService::GetBlocks(const uint256& forkHash, const uint256& startHash, i
 
 void CDbpService::HandleGetBlocks(CMvEventDbpMethod& event)
 {
-    std::string forkid = event.data.params["forkid"];
-    std::string blockHash = event.data.params["hash"];
-    int32 blockNum = boost::lexical_cast<int32>(event.data.params["number"]);
+    std::string forkid = boost::any_cast<std::string>(event.data.params["forkid"]);
+    std::string blockHash = boost::any_cast<std::string>(event.data.params["hash"]);
+    std::string num = boost::any_cast<std::string>(event.data.params["number"]);
+    int32 blockNum = boost::lexical_cast<int32>(num);
     
     uint256 startBlockHash(std::vector<unsigned char>(blockHash.begin(), blockHash.end()));
     uint256 forkHash;
@@ -442,19 +545,96 @@ void CDbpService::HandleGetBlocks(CMvEventDbpMethod& event)
     }
 }
 
+bool CDbpService::HandleEvent(CMvEventDbpRegisterForkID& event)
+{
+    std::string& forkid = event.data.forkid;
+    setThisNodeForks.insert(forkid);
+    return true;
+}
+
+void CDbpService::HandleRegisterFork(CMvEventDbpMethod& event)
+{
+    std::string forkid = boost::any_cast<std::string>(event.data.params["forkid"]);
+    UpdateChildNodeForks(event.strSessionId,forkid);
+
+    CMvEventDbpMethodResult eventResult(event.strSessionId);
+    eventResult.data.id = event.data.id;
+    CMvDbpRegisterForkIDRet ret;
+    ret.forkid = forkid;
+    eventResult.data.anyResultObjs.push_back(ret);
+    pDbpServer->DispatchEvent(&eventResult);
+
+    // notify dbp client to send message to parent node
+    CMvEventDbpRegisterForkID eventRegister("");
+    eventRegister.data.forkid = forkid;
+    pDbpClient->DispatchEvent(&eventRegister);
+}
+
+void CDbpService::HandleSendBlock(CMvEventDbpMethod& event)
+{
+    CMvDbpBlock block = boost::any_cast<CMvDbpBlock>(event.data.params["data"]);
+    
+    // TO DO
+    
+    
+
+    CMvEventDbpMethodResult eventResult(event.strSessionId);
+    eventResult.data.id = event.data.id;
+    CMvDbpSendBlockRet ret;
+    ret.hash = std::string(block.hash.begin(), block.hash.end()); 
+    eventResult.data.anyResultObjs.push_back(ret);
+    pDbpServer->DispatchEvent(&eventResult);
+
+    CMvEventDbpSendBlock eventSendBlock("");
+    eventSendBlock.data.block = block;
+    pDbpClient->DispatchEvent(&eventSendBlock);
+}
+
+void CDbpService::HandleSendTx(CMvEventDbpMethod& event)
+{
+    CMvDbpTransaction tx = boost::any_cast<CMvDbpTransaction>(event.data.params["data"]);
+
+    // TODO
+
+
+
+    CMvEventDbpMethodResult eventResult(event.strSessionId);
+    eventResult.data.id = event.data.id;
+    CMvDbpSendTxRet ret;
+    ret.hash = std::string(tx.hash.begin(), tx.hash.end()); 
+    eventResult.data.anyResultObjs.push_back(ret);
+    pDbpServer->DispatchEvent(&eventResult);
+
+    CMvEventDbpSendTx eventSendTx("");
+    eventSendTx.data.tx = tx;
+    pDbpClient->DispatchEvent(&eventSendTx);
+}
+
 bool CDbpService::HandleEvent(CMvEventDbpMethod& event)
 {
     if (event.data.method == CMvDbpMethod::Method::GET_BLOCKS)
     {
         HandleGetBlocks(event);
     }
-    else if (event.data.method == CMvDbpMethod::Method::GET_TX)
+    else if (event.data.method == CMvDbpMethod::Method::GET_TRANSACTION)
     {
         HandleGetTransaction(event);
     }
-    else if (event.data.method == CMvDbpMethod::Method::SEND_TX)
+    else if (event.data.method == CMvDbpMethod::Method::SEND_TRANSACTION)
     {
         HandleSendTransaction(event);
+    }
+    else if(event.data.method == CMvDbpMethod::Method::REGISTER_FORK)
+    {
+        HandleRegisterFork(event);
+    }
+    else if(event.data.method == CMvDbpMethod::Method::SEND_BLOCK)
+    {
+        HandleSendBlock(event);
+    }
+    else if(event.data.method == CMvDbpMethod::Method::SEND_TX)
+    {
+
     }
     else
     {
@@ -570,6 +750,26 @@ void CDbpService::PushTx(const std::string& forkid, const CMvDbpTransaction& dbp
             eventAdded.data.anyAddedObj = dbptx;
             pDbpServer->DispatchEvent(&eventAdded);
         }
+    }
+}
+
+void CDbpService::UpdateChildNodeForks(const std::string& session, const std::string& forks)
+{
+    std::vector<std::string> vForks = CDbpUtils::Split(forks,';');
+    ForksType setForks;
+    for(const auto& fork : vForks)
+    {
+        setForks.insert(fork);
+    }
+    
+    if(mapSessionChildNodeForks.count(session) == 0)
+    {
+        mapSessionChildNodeForks[session] = setForks;
+    }
+    else
+    {
+        auto& forks = mapSessionChildNodeForks[session];
+        forks.insert(setForks.begin(),setForks.end());
     }
 }
 

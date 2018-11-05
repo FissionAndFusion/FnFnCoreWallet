@@ -42,6 +42,11 @@ enum
     MV_EVENT_DBP_METHOD,
     MV_EVENT_DBP_RESULT,
 
+    /*super node*/
+    MV_EVENT_DBP_REGISTER_FORKID,
+    MV_EVENT_DBP_SEND_BLOCK,
+    MV_EVENT_DBP_SEND_TX,
+
     MV_EVENT_DBP_PING,
     MV_EVENT_DBP_PONG,
 
@@ -127,6 +132,10 @@ typedef TYPE_DBP_EVENT(MV_EVENT_DBP_METHOD, CMvDbpMethod) CMvEventDbpMethod;
 typedef TYPE_DBP_EVENT(MV_EVENT_DBP_RESULT, CMvDbpMethodResult) CMvEventDbpMethodResult;
 typedef TYPE_DBP_EVENT(MV_EVENT_DBP_BROKEN, CMvDbpBroken) CMvEventDbpBroken;
 
+typedef TYPE_DBP_EVENT(MV_EVENT_DBP_REGISTER_FORKID, CMvDbpRegisterForkID) CMvEventDbpRegisterForkID;
+typedef TYPE_DBP_EVENT(MV_EVENT_DBP_SEND_BLOCK, CMvDbpSendBlock) CMvEventDbpSendBlock;
+typedef TYPE_DBP_EVENT(MV_EVENT_DBP_SEND_TX, CMvDbpSendTx) CMvEventDbpSendTx;
+
 // HeartBeats
 typedef TYPE_DBP_EVENT(MV_EVENT_DBP_PING, CMvDbpPing) CMvEventDbpPing;
 typedef TYPE_DBP_EVENT(MV_EVENT_DBP_PONG, CMvDbpPong) CMvEventDbpPong;
@@ -159,6 +168,10 @@ public:
 
     DECLARE_EVENTHANDLER(CMvEventDbpPing);
     DECLARE_EVENTHANDLER(CMvEventDbpPong);
+
+    DECLARE_EVENTHANDLER(CMvEventDbpRegisterForkID);
+    DECLARE_EVENTHANDLER(CMvEventDbpSendBlock);
+    DECLARE_EVENTHANDLER(CMvEventDbpSendTx);
 };
 
 } // namespace multiverse

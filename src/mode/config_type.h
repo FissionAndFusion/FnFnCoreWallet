@@ -10,13 +10,13 @@
 namespace multiverse
 {
 class CMvBasicConfig;
-class CMvForkConfig;
 class CMvMintConfig;
 class CMvNetworkConfig;
 class CMvRPCServerConfig;
 class CMvRPCClientConfig;
 class CMvStorageConfig;
 class CMvDbpServerConfig;
+class CMvDbpClientConfig;
 
 ///
 // When add new config, add type to EConfigType add class pointer to ___ConfigTypeTemplate
@@ -26,13 +26,13 @@ class CMvDbpServerConfig;
 enum class EConfigType
 {
     BASIC,      // CMvBasicConfig
-    FORK,       // CMvForkConfig
     MINT,       // CMvMintConfig
     NETWORK,    // CMvNetworkConfig
     RPCSERVER,  // CMvRPCServerConfig
     RPCCLIENT,  // CMvRPCClientConfig
     STORAGE,    // CMvStorageConfig
-    DBPSERVER   // CMvDbpServerConfig
+    DBPSERVER,  // CMvDbpServerConfig
+    DBPCLIENT   // CMvDbpClientConfig
 };
 
 namespace config_type
@@ -40,13 +40,13 @@ namespace config_type
 // config type class template
 static const auto ___ConfigTypeTemplate = std::make_tuple(
     (CMvBasicConfig*)NULL, 
-    (CMvForkConfig*)NULL, 
     (CMvMintConfig*)NULL, 
     (CMvNetworkConfig*)NULL,
     (CMvRPCServerConfig*)NULL, 
     (CMvRPCClientConfig*)NULL, 
     (CMvStorageConfig*)NULL,
-    (CMvDbpServerConfig*)NULL);
+    (CMvDbpServerConfig*)NULL,
+    (CMvDbpClientConfig*)NULL);
 }  // namespace config_type
 
 }  // namespace multiverse

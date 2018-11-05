@@ -62,7 +62,6 @@
 #include "mode/mode_type.h"
 #include "mode/module_type.h"
 #include "mode/basic_config.h"
-#include "mode/fork_config.h"
 #include "mode/mint_config.h"
 #include "mode/network_config.h"
 #include "mode/rpc_config.h"
@@ -127,12 +126,12 @@ public:
             case EModeType::SERVER:
             {
                 return Create<
-                                EConfigType::FORK, 
                                 EConfigType::MINT, 
                                 EConfigType::NETWORK,
                                 EConfigType::RPCSERVER, 
                                 EConfigType::STORAGE,
-                                EConfigType::DBPSERVER
+                                EConfigType::DBPSERVER,
+                                EConfigType::DBPCLIENT
                              >(cmd);
             }
             case EModeType::CONSOLE:
@@ -175,7 +174,6 @@ public:
                     EModuleType::COREPROTOCOL,
                     EModuleType::WORLDLINE,
                     EModuleType::TXPOOL,
-                    EModuleType::FORKMANAGER,
                     EModuleType::CONSENSUS,
                     EModuleType::WALLET,
                     EModuleType::DISPATCHER,
@@ -183,6 +181,7 @@ public:
                     EModuleType::NETCHANNEL,
                     EModuleType::DELEGATEDCHANNEL,
                     EModuleType::SERVICE,
+                    EModuleType::DBPCLIENT,
                     EModuleType::DBPSERVER,
                     EModuleType::DBPSERVICE,
                     EModuleType::HTTPSERVER,

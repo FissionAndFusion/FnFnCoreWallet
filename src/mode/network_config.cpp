@@ -53,7 +53,8 @@ bool CMvNetworkConfig::PostLoad()
 
     if (!fTestNet)
     {
-        vDNSeed.push_back("118.193.83.220");
+        vDNSeed.push_back("113.105.146.22");
+        //        vDNSeed.push_back("123.57.22.233");
     }
     return true;
 }

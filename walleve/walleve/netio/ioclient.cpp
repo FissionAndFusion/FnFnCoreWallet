@@ -117,7 +117,17 @@ void CIOClient::HandleCompleted(CallBackFunc fnCompleted,
 
 void CIOClient::HandleConnCompleted(CallBackConn fnCompleted, const boost::system::error_code& err)
 {
-    fnCompleted(IsSocketOpen() ? err : boost::asio::error::operation_aborted);
+
+    if(err == boost::system::errc::success)
+    {
+        fnCompleted(err);
+    }
+    else
+    {
+        fnCompleted(boost::asio::error::operation_aborted);
+    }
+    
+   // fnCompleted(IsSocketOpen() ? err : boost::asio::error::operation_aborted);
 
     if (!IsSocketOpen() && nRefCount)
     {

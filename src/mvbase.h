@@ -110,18 +110,6 @@ public:
     }
 };
 
-class IForkManager : public walleve::IWalleveBase
-{
-public:
-    IForkManager() : IWalleveBase("forkmanager") {}
-    virtual void AddNewForkContext(const CForkContext& ctxt) = 0;
-    virtual void ForkUpdate(const uint256& hashFork,const uint256& hashLastBlock) = 0;
-    const CMvForkConfig* ForkConfig()
-    {
-        return dynamic_cast<const CMvForkConfig*>(walleve::IWalleveBase::WalleveConfig());
-    }
-};
-
 class IConsensus : public walleve::IWalleveBase
 {
 public:

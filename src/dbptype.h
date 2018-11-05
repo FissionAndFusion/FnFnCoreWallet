@@ -32,6 +32,7 @@ public:
     std::string session;
     int32 version;
     std::string client;
+    std::string forks; // supre node child node fork ids
 };
 
 class CMvDbpSub : public CMvDbpRequest
@@ -59,6 +60,7 @@ class CMvDbpReady : public CMvDbpRespond
 public:
     std::string id;
 };
+
 
 class CMvDbpTxIn
 {
@@ -132,12 +134,15 @@ public:
     enum Method
     {
         GET_BLOCKS,
-        GET_TX,
-        SEND_TX
+        GET_TRANSACTION,
+        SEND_TRANSACTION,
+        SEND_TX, // supernode 
+        REGISTER_FORK,
+        SEND_BLOCK
     };
 
     // param name => param value
-    typedef std::map<std::string, std::string> ParamMap;
+    typedef std::map<std::string, boost::any> ParamMap;
 
 public:
     Method method;
@@ -145,12 +150,48 @@ public:
     ParamMap params;
 };
 
-class CMvDbpSendTxRet
+class CMvDbpSendTransactionRet
 {
 public:
     std::string hash;
     std::string result;
     std::string reason;
+};
+
+class CMvDbpRegisterForkIDRet
+{
+public:
+    std::string forkid;
+};
+
+class CMvDbpSendBlockRet
+{
+public:
+    std::string hash;
+};
+
+class CMvDbpSendTxRet
+{
+public:
+    std::string hash;
+};
+
+class CMvDbpRegisterForkID : public CMvDbpRequest
+{
+public:
+    std::string forkid;
+};
+
+class CMvDbpSendBlock : public CMvDbpRequest
+{
+public:
+    boost::any block;
+};
+
+class CMvDbpSendTx : public CMvDbpRequest
+{
+public:
+    boost::any tx;
 };
 
 class CMvDbpMethodResult : public CMvDbpRespond
@@ -195,7 +236,7 @@ public:
 class CMvDbpBroken
 {
 public:
-    bool fEventStream;
+    std::string session;
 };
 } // namespace multiverse
 #endif //MULTIVERSE_DBP_TYPE_H

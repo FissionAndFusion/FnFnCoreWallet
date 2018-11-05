@@ -166,6 +166,52 @@
             "desc": "Connection timeout <time> seconds (default: 120)"
         }
     ],
+
+    "CMvDbpServerConfigOption": [
+        {
+            "name": "nDbpMaxConnections",
+            "type": "unsigned int",
+            "opt": "dbpmaxconnections",
+            "default": "DEFAULT_DBP_MAX_CONNECTIONS",
+            "format": "-dbpmaxconnections=<num>",
+            "desc": "Set dbp max connections to <num> (default: 20)"
+        },
+        {
+            "name": "nDbpSessionTimeout",
+            "type": "unsigned int",
+            "opt": "dbpsessiontimeout",
+            "default": "DEFAULT_DBP_SESSION_TIMEOUT",
+            "format": "-dbpsessiontimeout=<num>",
+            "desc": "Set max timeout to <num>  seconds (default: 60*5)"
+        },
+        {
+            "name": "vDbpAllowIP",
+            "type": "vector<string>",
+            "opt": "dbpallowip",
+            "format": "-dbpallowip=<ip>",
+            "desc": "Allow DBP connections from specified <ip> address"
+        }
+    ],
+
+    "CMvDbpClientConfigOption": [
+        {
+            "name": "strParentHost",
+            "type": "string",
+            "opt": "dbpparentnodeip",
+            "default": "",
+            "format": "-dbpparentnodeip=<ip>",
+            "desc": "Set dbp parent node ip to <ip> for super node(default: empty)"
+        },
+        {
+            "name": "strSupportForks",
+            "type": "string",
+            "opt": "supernodeforks",
+            "default": "",
+            "format": "-supernodeforks=<forkids>",
+            "desc": "Set Support Fork List to <forkids> for super node(default: empty)"
+        }
+    ],
+
     "CMvRPCServerConfigOption": [
         {
             "name": "nRPCMaxConnections",
@@ -256,31 +302,7 @@
             "desc": "Acceptable ciphers (default: TLSv1+HIGH:!SSLv2:!aNULL:!eNULL:!AH:!3DES:@STRENGTH)"
         }
     ],
-    "CMvDbpServerConfigOption": [
-        {
-            "name": "nDbpMaxConnections",
-            "type": "unsigned int",
-            "opt": "dbpmaxconnections",
-            "default": "DEFAULT_DBP_MAX_CONNECTIONS",
-            "format": "-dbpmaxconnections=<num>",
-            "desc": "Set dbp max connections to <num> (default: 20)"
-        },
-        {
-            "name": "nDbpSessionTimeout",
-            "type": "unsigned int",
-            "opt": "dbpsessiontimeout",
-            "default": "DEFAULT_DBP_SESSION_TIMEOUT",
-            "format": "-dbpsessiontimeout=<num>",
-            "desc": "Set max timeout to <num>  seconds (default: 60*5)"
-        },
-        {
-            "name": "vDbpAllowIP",
-            "type": "vector<string>",
-            "opt": "dbpallowip",
-            "format": "-dbpallowip=<ip>",
-            "desc": "Allow DBP connections from specified <ip> address"
-        }
-    ],
+   
     "CMvStorageConfigOption": [
         {
             "name": "strDBHost",

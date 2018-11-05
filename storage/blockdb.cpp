@@ -120,7 +120,7 @@ bool CBlockDB::RetrieveForkContext(const uint256& hash,CForkContext& ctxt)
                 && res.GetField(2,ctxt.hashParent) && res.GetField(3,ctxt.hashJoint) 
                 && res.GetField(4,ctxt.txidEmbedded) && res.GetField(5,ctxt.nVersion) 
                 && res.GetField(6,ctxt.nFlag) && res.GetField(7,ctxt.nMintReward) 
-                && res.GetField(8,ctxt.nMinTxFee) && res.GetField(9,ctxt.destOwner));
+                && res.GetField(8,ctxt.nMinTxFee) && res.GetField(8,ctxt.destOwner));
     }
 
     return false;

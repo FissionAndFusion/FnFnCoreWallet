@@ -6,7 +6,6 @@ import json
 import re
 from collections import OrderedDict
 from tool import *
-from functools import cmp_to_key
 
 rpc_json, rpc_protocol_h, rpc_protocol_cpp = None, None, None
 
@@ -950,7 +949,7 @@ def parse_params(class_prefix, content, allow_empty):
         cpp_type, sub_key, sub_type, sub_desc, subclass, subclass_prefix = None, None, None, None, None, None
 
         sub_content = get_content(arr_prefix, arr_content, 'array')
-        sub_key, sub_value = list(sub_content.items())[0]
+        sub_key, sub_value = sub_content.items()[0]
         sub_prefix = join_prefix(arr_prefix, sub_key)
 
         # reference
@@ -1039,7 +1038,7 @@ def parse_params(class_prefix, content, allow_empty):
         else:
             return 0
 
-    ret_params.sort(key=cmp_to_key(cmp_params))
+    ret_params.sort(cmp=cmp_params)
 
     return ret_params, ret_subclass
 
