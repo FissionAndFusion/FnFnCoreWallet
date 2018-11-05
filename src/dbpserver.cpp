@@ -435,8 +435,8 @@ void CDbpClient::HandleWritenResponse(std::size_t nTransferred, dbp::Msg type)
             return;
         }
 
-       // std::cout << "sent message type: " <<  dbp::Msg_Name(type)  
-         //   << " message size: " << nTransferred << " [dbpserver]" << "\n";
+        std::cout << "sent message type: " <<  dbp::Msg_Name(type)  
+            << " message size: " << nTransferred << " [dbpserver]" << "\n";
 
         if (ssSend.GetSize() == 0 && !queueMessage.empty())
         {
