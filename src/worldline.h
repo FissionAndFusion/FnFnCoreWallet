@@ -28,6 +28,7 @@ public:
     bool GetLastBlock(const uint256& hashFork,uint256& hashBlock,int& nHeight,int64& nTime) override;
     bool GetLastBlockTime(const uint256& hashFork,int nDepth,std::vector<int64>& vTime) override;
     bool GetBlock(const uint256& hashBlock,CBlock& block) override;
+    bool GetBlockEx(const uint256& hashBlock,CBlockEx& block) override;
     bool GetOrigin(const uint256& hashFork,CBlock& block) override;
     bool Exists(const uint256& hashBlock) override;
     bool GetTransaction(const uint256& txid,CTransaction& tx) override;
