@@ -273,6 +273,7 @@ MvErr CWorldLine::AddNewForkContext(const CTransaction& txFork,CForkContext& ctx
     uint256 txid = txFork.GetHash();
 
     CBlock block;
+    CProfile profile;
     try
     {
         CWalleveBufStream ss;
@@ -281,6 +282,10 @@ MvErr CWorldLine::AddNewForkContext(const CTransaction& txFork,CForkContext& ctx
         if (!block.IsOrigin() || block.IsPrimary())
         {
             throw std::runtime_error("invalid block");
+        }
+        if (!profile.Load(block.vchProof))
+        {
+            throw std::runtime_error("invalid profile");
         }
         
     }
@@ -292,31 +297,17 @@ MvErr CWorldLine::AddNewForkContext(const CTransaction& txFork,CForkContext& ctx
     uint256 hashFork = block.GetHash();
 
     CForkContext ctxtParent;
-    uint256 hashParent;
+    if (!cntrBlock.RetrieveForkContext(profile.hashParent,ctxtParent))
     {
-        CBlockIndex* pIndex = NULL;
-        if (!cntrBlock.RetrieveIndex(block.hashPrev,&pIndex))
-        {
-            return MV_ERR_MISSING_PREV;
-        }
-        hashParent = pIndex->GetOriginHash();
-        if (!cntrBlock.RetrieveForkContext(hashParent,ctxtParent))
-        {
-            return MV_ERR_MISSING_PREV;
-        }
+        return MV_ERR_MISSING_PREV;
     }
     
-    CProfile profile;
     MvErr err = pCoreProtocol->ValidateOrigin(block,ctxtParent.GetProfile(),profile);
     if (err != MV_OK)
     {
         return err;
     }
 
-    if (profile.hashParent != hashParent)
-    {
-        return MV_ERR_BLOCK_INVALID_FORK;
-    }
     ctxt = CForkContext(block.GetHash(),block.hashPrev,txid,profile);
     if (!cntrBlock.AddNewForkContext(ctxt))
     {
