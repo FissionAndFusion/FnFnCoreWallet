@@ -302,7 +302,8 @@ MvErr CWorldLine::AddNewForkContext(const CTransaction& txFork,CForkContext& ctx
         return MV_ERR_MISSING_PREV;
     }
     
-    MvErr err = pCoreProtocol->ValidateOrigin(block,ctxtParent.GetProfile(),profile);
+    CProfile forkProfile;
+    MvErr err = pCoreProtocol->ValidateOrigin(block,ctxtParent.GetProfile(),forkProfile);
     if (err != MV_OK)
     {
         return err;
