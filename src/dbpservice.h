@@ -34,6 +34,7 @@ public:
     bool HandleEvent(CMvEventDbpPong& event) override;
     bool HandleEvent(CMvEventDbpBroken& event) override;
     bool HandleEvent(CMvEventDbpAdded& event) override;
+    bool HandleEvent(CMvEventDbpRemoveSession& event) override;
     // client post evnet register fork id
     bool HandleEvent(CMvEventDbpRegisterForkID& event) override;
 
@@ -66,6 +67,7 @@ private:
 
     void SubTopic(const std::string& id, const std::string& session, const std::string& topic);
     void UnSubTopic(const std::string& id);
+    void RemoveSession(const std::string& session);
 
     void PushBlock(const std::string& forkid, const CMvDbpBlock& block);
     void PushTx(const std::string& forkid, const CMvDbpTransaction& dbptx);
