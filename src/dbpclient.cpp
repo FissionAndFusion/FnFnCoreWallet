@@ -811,6 +811,13 @@ void CMvDbpClient::RegisterDefaultForks(CMvDbpClientSocket* pClientSocket)
 {
     std::vector<std::string> vSupportForks = mapProfile[pClientSocket->GetHost().ToEndPoint()].vSupportForks;
     pClientSocket->SendForkIds(vSupportForks);
+    
+    for(const auto& fork : vSupportForks)
+    {
+        CMvEventDbpRegisterForkID *pEvent = new CMvEventDbpRegisterForkID("");
+        pEvent->data.forkid = fork;
+        pDbpService->PostEvent(pEvent);
+    }
 }
 
 void CMvDbpClient::SubscribeDefaultTopics(CMvDbpClientSocket* pClientSocket)

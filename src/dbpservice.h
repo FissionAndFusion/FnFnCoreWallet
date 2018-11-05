@@ -34,6 +34,8 @@ public:
     bool HandleEvent(CMvEventDbpPong& event) override;
     bool HandleEvent(CMvEventDbpBroken& event) override;
     bool HandleEvent(CMvEventDbpAdded& event) override;
+    // client post evnet register fork id
+    bool HandleEvent(CMvEventDbpRegisterForkID& event) override;
 
     // notify add msg(block tx ...) to event handler
     bool HandleEvent(CMvEventDbpUpdateNewBlock& event) override;
@@ -86,6 +88,7 @@ private:
 
     typedef std::set<std::string> ForksType;
     std::map<std::string, ForksType> mapSessionChildNodeForks; // session => child node forks
+    ForksType setThisNodeForks;    // this node support forks
 
     std::map<std::string, std::string> mapIdSubedSession;       // id => session
     std::unordered_map<std::string, bool> mapCurrentTopicExist; // topic => enabled

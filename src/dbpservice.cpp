@@ -513,6 +513,13 @@ void CDbpService::HandleGetBlocks(CMvEventDbpMethod& event)
     }
 }
 
+bool CDbpService::HandleEvent(CMvEventDbpRegisterForkID& event)
+{
+    std::string& forkid = event.data.forkid;
+    setThisNodeForks.insert(forkid);
+    return true;
+}
+
 void CDbpService::HandleRegisterFork(CMvEventDbpMethod& event)
 {
     std::string forkid = boost::any_cast<std::string>(event.data.params["forkid"]);
