@@ -1,0 +1,94 @@
+// Copyright (c) 2017-2018 The Multiverse developers
+// Distributed under the MIT/X11 software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
+#ifndef MULTIVERSE_FORKPEEREVENT_H
+#define MULTIVERSE_FORKPEEREVENT_H
+
+#include "walleve/walleve.h"
+#include "mvproto.h"
+#include "block.h"
+
+namespace multiverse
+{
+
+enum
+{
+    //FORK NODE EVENT
+    FK_EVENT_NODE_ACTIVE,
+    FK_EVENT_NODE_DEACTIVE,
+    FK_EVENT_NODE_SUBSCRIBE,
+    FK_EVENT_NODE_UNSUBSCRIBE,
+    FK_EVENT_NODE_GETBLOCKS,
+    FK_EVENT_NODE_INV,
+    FK_EVENT_NODE_GETDATA,
+    FK_EVENT_NODE_BLOCK,
+    FK_EVENT_NODE_TX,
+    FK_EVENT_NODE_MAX,
+};
+
+template <int type, typename L, typename D>
+class CFkEventNodeData : public walleve::CWalleveEvent
+{
+    friend class walleve::CWalleveStream;
+public:
+    CFkEventNodeData(uint64 nNonceIn,const uint256& hashForkIn)
+            : CWalleveEvent(nNonceIn,type), hashFork(hashForkIn) {}
+    virtual ~CFkEventNodeData() {}
+    virtual bool Handle(walleve::CWalleveEventListener& listener)
+    {
+        try
+        {
+            return (dynamic_cast<L&>(listener)).HandleEvent(*this);
+        }
+        catch (std::bad_cast&)
+        {
+            return listener.HandleEvent(*this);
+        }
+        catch (...) {}
+        return false;
+    }
+protected:
+    template <typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s,O& opt)
+    {
+        s.Serialize(hashFork,opt);
+        s.Serialize(data,opt);
+    }
+public:
+    uint256 hashFork;
+    D data;
+};
+
+class CMvPeerEventListener;
+
+#define TYPE_FORKNODEEVENT(type, body)       \
+        CFkEventNodeData<type, CMvPeerEventListener, body>
+
+typedef TYPE_FORKNODEEVENT(FK_EVENT_NODE_ACTIVE, network::CAddress) CFkEventNodeActive;
+typedef TYPE_FORKNODEEVENT(FK_EVENT_NODE_DEACTIVE, network::CAddress) CFkEventNodeDeactive;
+typedef TYPE_FORKNODEEVENT(FK_EVENT_NODE_SUBSCRIBE, std::vector<uint256>) CFkEventNodeSubscribe;
+typedef TYPE_FORKNODEEVENT(FK_EVENT_NODE_UNSUBSCRIBE, std::vector<uint256>) CFkEventNodeUnsubscribe;
+typedef TYPE_FORKNODEEVENT(FK_EVENT_NODE_GETBLOCKS, CBlockLocator) CFkEventNodeGetBlocks;
+typedef TYPE_FORKNODEEVENT(FK_EVENT_NODE_INV, std::vector<network::CInv>) CFkEventNodeInv;
+typedef TYPE_FORKNODEEVENT(FK_EVENT_NODE_GETDATA, std::vector<network::CInv>) CFkEventNodeGetData;
+typedef TYPE_FORKNODEEVENT(FK_EVENT_NODE_BLOCK, CBlock) CFkEventNodeBlock;
+typedef TYPE_FORKNODEEVENT(FK_EVENT_NODE_TX, CTransaction) CFkEventNodeTx;
+
+class CMvPeerEventListener : virtual public walleve::CWalleveEventListener
+{
+public:
+    virtual ~CMvPeerEventListener() {}
+    DECLARE_EVENTHANDLER(CFkEventNodeActive);
+    DECLARE_EVENTHANDLER(CFkEventNodeDeactive);
+    DECLARE_EVENTHANDLER(CFkEventNodeSubscribe);
+    DECLARE_EVENTHANDLER(CFkEventNodeUnsubscribe);
+    DECLARE_EVENTHANDLER(CFkEventNodeGetBlocks);
+    DECLARE_EVENTHANDLER(CFkEventNodeInv);
+    DECLARE_EVENTHANDLER(CFkEventNodeGetData);
+    DECLARE_EVENTHANDLER(CFkEventNodeBlock);
+    DECLARE_EVENTHANDLER(CFkEventNodeTx);
+};
+
+}
+#endif //MULTIVERSE_FORKPEEREVENT_H
