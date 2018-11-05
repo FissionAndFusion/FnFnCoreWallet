@@ -91,6 +91,12 @@ bool CDbpService::HandleEvent(CMvEventDbpBroken& event)
     return true;
 }
 
+bool CDbpService::HandleEvent(CMvEventDbpRemoveSession& event)
+{
+    RemoveSession(event.data.session);
+    return true;
+}
+
 static std::string GetHex(std::string data)
 {
     int n = 2 * data.length() + 1;
@@ -345,6 +351,25 @@ void CDbpService::UnSubTopic(const std::string& id)
 
     mapIdSubedTopic.erase(id);
     mapIdSubedSession.erase(id);
+}
+
+void CDbpService::RemoveSession(const std::string& session)
+{
+    std::vector<std::string> vBeDeletedIds;
+    for(const auto& kv : mapIdSubedSession)
+    {
+        std::string id = kv.first;
+        std::string valueSession = kv.second;
+        if(valueSession == session)
+        {
+            vBeDeletedIds.push_back(id);
+        }
+    }
+
+    for(const auto& id : vBeDeletedIds)
+    {
+        UnSubTopic(id);
+    }
 }
 
 bool CDbpService::IsEmpty(const uint256& hash)

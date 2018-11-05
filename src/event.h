@@ -50,7 +50,8 @@ enum
     MV_EVENT_DBP_PING,
     MV_EVENT_DBP_PONG,
 
-    MV_EVENT_DBP_BROKEN
+    MV_EVENT_DBP_BROKEN,
+    MV_EVENT_DBP_REMOVE_SESSION
 };
 
 class CMvBlockMakerEventListener;
@@ -131,6 +132,7 @@ typedef TYPE_DBP_EVENT(MV_EVENT_DBP_ADDED, CMvDbpAdded) CMvEventDbpAdded;
 typedef TYPE_DBP_EVENT(MV_EVENT_DBP_METHOD, CMvDbpMethod) CMvEventDbpMethod;
 typedef TYPE_DBP_EVENT(MV_EVENT_DBP_RESULT, CMvDbpMethodResult) CMvEventDbpMethodResult;
 typedef TYPE_DBP_EVENT(MV_EVENT_DBP_BROKEN, CMvDbpBroken) CMvEventDbpBroken;
+typedef TYPE_DBP_EVENT(MV_EVENT_DBP_REMOVE_SESSION, CMvDbpRemoveSession) CMvEventDbpRemoveSession;
 
 typedef TYPE_DBP_EVENT(MV_EVENT_DBP_REGISTER_FORKID, CMvDbpRegisterForkID) CMvEventDbpRegisterForkID;
 typedef TYPE_DBP_EVENT(MV_EVENT_DBP_SEND_BLOCK, CMvDbpSendBlock) CMvEventDbpSendBlock;
@@ -165,6 +167,7 @@ public:
     DECLARE_EVENTHANDLER(CMvEventDbpMethod);
     DECLARE_EVENTHANDLER(CMvEventDbpMethodResult);
     DECLARE_EVENTHANDLER(CMvEventDbpBroken);
+    DECLARE_EVENTHANDLER(CMvEventDbpRemoveSession);
 
     DECLARE_EVENTHANDLER(CMvEventDbpPing);
     DECLARE_EVENTHANDLER(CMvEventDbpPong);
