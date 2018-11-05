@@ -484,7 +484,7 @@ bool CDbpService::GetBlocks(const uint256& forkHash, const uint256& startHash, i
         
         for(int i = 0; i < blocksHash.size(); ++i)
         {
-            CBlock block;
+            CBlockEx block;
             int height;
             pService->GetBlock(blocksHash[i], block, tempForkHash, height);
             std::cout << "block hash: "  << block.GetHash().ToString() << "\n";
@@ -665,6 +665,9 @@ void CDbpService::CreateDbpBlock(const CBlockEx& blockDetail, const uint256& for
 
     // vtx
     int k = 0;
+
+    std::cout << "vtx size: " << blockDetail.vtx.size() << "\n";
+    std::cout << "vTxContxt size: " << blockDetail.vTxContxt.size() << "\n";
     for (const auto& tx : blockDetail.vtx)
     {
         CMvDbpTransaction dbpTx;

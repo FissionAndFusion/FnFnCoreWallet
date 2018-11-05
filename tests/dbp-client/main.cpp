@@ -318,9 +318,9 @@ void method_func(ThreadCxt &cxt)
 
     lws::GetBlocksArg block_arg;
     uint256 hash;
-    hash.SetHex("ddfdd43a58336dcda17b6e15fee972a66d87071abe3e2b0a7f9c3bad363dce5f");
+    hash.SetHex("");
     block_arg.set_hash(std::string(hash.begin(), hash.end()));
-    block_arg.set_number(77);
+    block_arg.set_number(10);
     google::protobuf::Any *block_any = new google::protobuf::Any();
     block_any->PackFrom(block_arg);
 
