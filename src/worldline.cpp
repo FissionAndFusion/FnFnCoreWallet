@@ -222,6 +222,11 @@ bool CWorldLine::GetBlock(const uint256& hashBlock,CBlock& block)
     return cntrBlock.Retrieve(hashBlock,block);
 }
 
+bool CWorldLine::GetBlockEx(const uint256& hashBlock,CBlockEx& block)
+{
+    return cntrBlock.Retrieve(hashBlock,block);
+}
+
 bool CWorldLine::GetOrigin(const uint256& hashFork,CBlock& block)
 {
     return cntrBlock.RetrieveOrigin(hashFork,block);

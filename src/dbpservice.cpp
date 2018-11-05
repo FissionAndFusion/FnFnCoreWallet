@@ -460,9 +460,9 @@ bool CDbpService::GetBlocks(const uint256& forkHash, const uint256& startHash, i
     {
         for(int i = 0; i < blocksHash.size(); ++i)
         {
-            CBlock block;
+            CBlockEx block;
             int height;
-            pService->GetBlock(blocksHash[i], block, tempForkHash, height);
+            pService->GetBlockEx(blocksHash[i], block, tempForkHash, height);
             if (block.nType != CBlock::BLOCK_EXTENDED)
             {
                 nonExtendBlockCount++;

@@ -24,14 +24,14 @@ public:
     bool IsZero() const
     {
         uint64_t* u = (uint64_t*)value;
-        return ((u[3] == 0 && u[2] == 0 && u[1] == 0 && u[1] == 0)
+        return ((u[3] == 0 && u[2] == 0 && u[1] == 0 && u[0] == 0)
                 || (u[3] == 0x7FFFFFFFFFFFFFFFULL && u[2] == 0xFFFFFFFFFFFFFFFFULL 
                     && u[1] == 0xFFFFFFFFFFFFFFFFULL && u[0] == 0xFFFFFFFFFFFFFFEDULL));
     }
     bool IsOne() const
     {
         uint64_t* u = (uint64_t*)value;
-        return ((u[3] == 0 && u[2] == 0 && u[1] == 0 && u[1] == 1)
+        return ((u[3] == 0 && u[2] == 0 && u[1] == 0 && u[0] == 1)
                 || (u[3] == 0x7FFFFFFFFFFFFFFFULL && u[2] == 0xFFFFFFFFFFFFFFFFULL 
                     && u[1] == 0xFFFFFFFFFFFFFFFFULL && u[0] == 0xFFFFFFFFFFFFFFEEULL));
     }
