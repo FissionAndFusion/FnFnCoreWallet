@@ -193,10 +193,10 @@ void connect_session(ThreadCxt &cxt)
     // f77d0b574fe7c567db23d2ad2e7174181db6d7b227a7c8c26abc48d6a9fc9030
     // 0bd9068dc9d2fee08866bace68b072a9f476acfb0173842843c22017ad60e074
    
-   // forkidMsg.add_ids(std::string("c8f10736fb9b03a2d224c9d79b60ccc156b4bf9c28072fb332d0ea5fc104e085"));
+    forkidMsg.add_ids(std::string("c8f10736fb9b03a2d224c9d79b60ccc156b4bf9c28072fb332d0ea5fc104e085"));
    // forkidMsg.add_ids(std::string("f9b06c744e1629f5482759f3fbf92c333b72e58bb06a6097cef115bfcd0e98aa"));
    // forkidMsg.add_ids(std::string("f77d0b574fe7c567db23d2ad2e7174181db6d7b227a7c8c26abc48d6a9fc9030"));
-    forkidMsg.add_ids(std::string("0bd9068dc9d2fee08866bace68b072a9f476acfb0173842843c22017ad60e074"));
+   // forkidMsg.add_ids(std::string("0bd9068dc9d2fee08866bace68b072a9f476acfb0173842843c22017ad60e074"));
     anyFork.PackFrom(forkidMsg);
     (*connect.mutable_udata())["forkid"] = anyFork;
 
@@ -318,7 +318,7 @@ void method_func(ThreadCxt &cxt)
 
     lws::GetBlocksArg block_arg;
     uint256 hash;
-    hash.SetHex("93cb5e2c6e73d52cf755cf4fd050682d5744980e7a52de8148ff01860012d7cc");
+    hash.SetHex("ddfdd43a58336dcda17b6e15fee972a66d87071abe3e2b0a7f9c3bad363dce5f");
     block_arg.set_hash(std::string(hash.begin(), hash.end()));
     block_arg.set_number(77);
     google::protobuf::Any *block_any = new google::protobuf::Any();
