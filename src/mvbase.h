@@ -61,6 +61,7 @@ public:
     virtual bool GetLastBlock(const uint256& hashFork,uint256& hashBlock,int& nHeight,int64& nTime) = 0;
     virtual bool GetLastBlockTime(const uint256& hashFork,int nDepth,std::vector<int64>& vTime) = 0;
     virtual bool GetBlock(const uint256& hashBlock,CBlock& block) = 0;
+    virtual bool GetBlockEx(const uint256& hashBlock,CBlockEx& block) = 0;
     virtual bool GetOrigin(const uint256& hashFork,CBlock& block) = 0;
     virtual bool Exists(const uint256& hashBlock) = 0;
     virtual bool GetTransaction(const uint256& txid,CTransaction& tx) = 0;
@@ -218,6 +219,7 @@ public:
     virtual bool GetBlockHash(const uint256& hashFork,int nHeight,uint256& hashBlock) = 0;
     virtual bool GetBlockHash(const uint256& hashFork,int nHeight,std::vector<uint256>& vBlockHash) = 0;
     virtual bool GetBlock(const uint256& hashBlock,CBlock& block,uint256& hashFork,int& nHeight) = 0;
+    virtual bool GetBlockEx(const uint256& hashBlock, CBlockEx& block, uint256& hashFork, int& nHeight) = 0;
     virtual void GetTxPool(const uint256& hashFork,std::vector<std::pair<uint256,std::size_t> >& vTxPool) = 0;
     virtual bool GetTransaction(const uint256& txid,CTransaction& tx,uint256& hashFork,int& nHeight) = 0;
     virtual MvErr SendTransaction(CTransaction& tx) = 0;

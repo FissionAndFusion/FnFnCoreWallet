@@ -486,7 +486,7 @@ bool CDbpService::GetBlocks(const uint256& forkHash, const uint256& startHash, i
         {
             CBlockEx block;
             int height;
-            pService->GetBlock(blocksHash[i], block, tempForkHash, height);
+            pService->GetBlockEx(blocksHash[i], block, tempForkHash, height);
             std::cout << "block hash: "  << block.GetHash().ToString() << "\n";
             std::cout << "block height: " << height << "\n";
             std::cout << "block fork: " << tempForkHash.ToString() << "\n";
