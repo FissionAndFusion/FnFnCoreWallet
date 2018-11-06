@@ -27,9 +27,11 @@ public:
     CDbpClientConfig(){}
     CDbpClientConfig(const boost::asio::ip::tcp::endpoint& epParentHostIn,
                     const std::string&  SupportForksIn,
+                    const std::string& strPrivateKeyIn,
                     const CIOSSLOption& optSSLIn, 
                     const std::string& strIOModuleIn)
     : epParentHost(epParentHostIn),
+      strPrivateKey(strPrivateKeyIn),
       optSSL(optSSLIn),
       strIOModule(strIOModuleIn)
     {
@@ -38,6 +40,7 @@ public:
 public:
     boost::asio::ip::tcp::endpoint epParentHost;
     std::vector<std::string> vSupportForks;
+    std::string strPrivateKey;
     CIOSSLOption optSSL;
     std::string strIOModule;
 };
@@ -51,6 +54,7 @@ public:
     CIOSSLOption optSSL;
     boost::asio::ip::tcp::endpoint epParentHost;
     std::vector<std::string> vSupportForks;
+    std::string strPrivateKey;
 };
 
 class CMvDbpClientSocket
