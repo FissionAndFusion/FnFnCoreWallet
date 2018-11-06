@@ -598,7 +598,9 @@ void CDbpServer::HandleClientMethod(CDbpClient* pDbpClient, google::protobuf::An
     CMvDbpMethod& methodBody = pEventDbpMethod->data;
     methodBody.id = methodMsg.id();
 
-    std::cout << "[<] method " << methodMsg.method() << " [dbp server]\n";
+    auto t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+    std::cout << std::put_time(std::localtime(&t), "%Y-%m-%d %H.%M.%S") << 
+        " [<] method " << methodMsg.method() << " [dbp server]\n";
 
     if (methodMsg.method() == "getblocks")
         methodBody.method = CMvDbpMethod::Method::GET_BLOCKS;
