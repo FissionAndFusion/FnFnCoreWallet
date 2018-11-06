@@ -94,15 +94,15 @@ public:
     D msgIncome; //CFkEventNodeData
 };
 
-class CMvPeerEventListener;
+class CFkNodeEventListener;
 
 #define TYPE_FORKNODEEVENT(type, body)       \
-        CFkEventNodeData<static_cast<int>(type), CMvPeerEventListener, body>
+        CFkEventNodeData<static_cast<int>(type), CFkNodeEventListener, body>
 
 #define TYPE_FORKNODEMSGEVENT(type, body)       \
-        CFkEventMessageData<static_cast<int>(type), CMvPeerEventListener, body>
+        CFkEventMessageData<static_cast<int>(type), CFkNodeEventListener, body>
 
-typedef TYPE_FORKNODEMSGEVENT(ecForkEventType::FK_EVENT_NODE_MESSAGE, CFkEventNodeData) CFkEventNodeMessage;
+typedef TYPE_FORKNODEMSGEVENT(ecForkEventType::FK_EVENT_NODE_MESSAGE, CBlock) CFkEventNodeMessage;
 
 typedef TYPE_FORKNODEEVENT(ecForkEventType::FK_EVENT_NODE_ACTIVE, network::CAddress) CFkEventNodeActive;
 typedef TYPE_FORKNODEEVENT(ecForkEventType::FK_EVENT_NODE_DEACTIVE, network::CAddress) CFkEventNodeDeactive;
@@ -114,10 +114,10 @@ typedef TYPE_FORKNODEEVENT(ecForkEventType::FK_EVENT_NODE_GETDATA, std::vector<n
 typedef TYPE_FORKNODEEVENT(ecForkEventType::FK_EVENT_NODE_BLOCK, CBlock) CFkEventNodeBlock;
 typedef TYPE_FORKNODEEVENT(ecForkEventType::FK_EVENT_NODE_TX, CTransaction) CFkEventNodeTx;
 
-class CMvPeerEventListener : virtual public walleve::CWalleveEventListener
+class CFkNodeEventListener : virtual public walleve::CWalleveEventListener
 {
 public:
-    virtual ~CMvPeerEventListener() {}
+    virtual ~CFkNodeEventListener() {}
     DECLARE_EVENTHANDLER(CFkEventNodeMessage);
     DECLARE_EVENTHANDLER(CFkEventNodeActive);
     DECLARE_EVENTHANDLER(CFkEventNodeDeactive);

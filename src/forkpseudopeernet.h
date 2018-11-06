@@ -14,7 +14,7 @@ namespace multiverse
 
 class IDbpClient;
 
-class CForkPseudoPeerNet: public network::CMvPeerNet, virtual public CMvPeerEventListener
+class CForkPseudoPeerNet: public network::CMvPeerNet, virtual public CFkNodeEventListener
 {
 public:
     CForkPseudoPeerNet();
