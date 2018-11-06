@@ -6,6 +6,7 @@
 
 #include <memory>
 #include <algorithm>
+#include <chrono>
 #include <openssl/rand.h>
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string/trim.hpp>
@@ -435,7 +436,8 @@ void CDbpClient::HandleWritenResponse(std::size_t nTransferred, dbp::Msg type)
             return;
         }
 
-        std::cout << "sent message type: " <<  dbp::Msg_Name(type)  
+        auto t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+        std::cout << std::put_time(std::localtime(&t), "%Y-%m-%d %H.%M.%S") << " sent message type: " <<  dbp::Msg_Name(type)  
             << " message size: " << nTransferred << " [dbpserver]" << "\n";
 
         if (ssSend.GetSize() == 0 && !queueMessage.empty())
