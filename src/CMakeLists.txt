@@ -52,6 +52,7 @@ set(src
 	txpool.cpp txpool.h
 	wallet.cpp wallet.h
 	worldline.cpp worldline.h
+	forkmanager.cpp forkmanager.h
 	event.h
 	mvbase.h
 	mvtype.h

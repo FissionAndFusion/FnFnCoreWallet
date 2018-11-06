@@ -148,6 +148,8 @@ bool CBlockDB::FilterForkContext(CForkContextFilter& filter)
         strQuery += string(" WHERE symbol = \'") + db->ToEscString(filter.strSymbol) + "\'";
     }
 
+    strQuery += " ORDER BY id";
+
     {
         CMvDBRes res(*db,strQuery,true);
         while (res.GetRow())

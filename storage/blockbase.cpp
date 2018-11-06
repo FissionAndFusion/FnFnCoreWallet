@@ -885,10 +885,10 @@ bool CBlockBase::FilterTx(CTxFilter& filter)
     return dbBlock.FilterTx(txFilter);
 }
 
-bool CBlockBase::FilterForkContext(CForkContextFilter& ctxtFilter)
+bool CBlockBase::FilterForkContext(CForkContextFilter& filter)
 {
     CWalleveReadLock rlock(rwAccess);
-    return dbBlock.FilterForkContext(ctxtFilter);
+    return dbBlock.FilterForkContext(filter);
 }
 
 bool CBlockBase::GetForkBlockLocator(const uint256& hashFork,CBlockLocator& locator)
