@@ -208,7 +208,15 @@
             "opt": "supernodeforks",
             "default": "",
             "format": "-supernodeforks=<forkids>",
-            "desc": "Set Support Fork List to <forkids> for super node(default: empty)"
+            "desc": "Set Support Fork List to <forkids> for ForkNode of super node(default: empty)"
+        },
+        {
+            "name": "strPrivateKey",
+            "type": "string",
+            "opt": "supernodeprikey",
+            "default": "",
+            "format": "-supernodeprikey=<privatekey>",
+            "desc": "Set Private Key to <privatekey> for ForkNode of super node(default: empty)"
         }
     ],
 

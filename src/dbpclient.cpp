@@ -751,6 +751,7 @@ bool CMvDbpClient::CreateProfile(const CDbpClientConfig& confClient)
         profile.optSSL = confClient.optSSL;
     
     profile.vSupportForks = confClient.vSupportForks;
+    profile.strPrivateKey = confClient.strPrivateKey;
     profile.epParentHost = confClient.epParentHost;
     mapProfile[confClient.epParentHost] = profile;
 
