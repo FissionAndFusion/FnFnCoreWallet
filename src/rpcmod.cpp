@@ -4,6 +4,8 @@
 
 #include "rpcmod.h"
 
+#include <regex>
+
 #include <boost/assign/list_of.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
@@ -127,7 +129,19 @@ void CRPCMod::WalleveHandleDeinitialize()
 
 bool CRPCMod::HandleEvent(CWalleveEventHttpReq& eventHttpReq)
 {
-    WalleveLog("request : %s\n", eventHttpReq.data.strContent.c_str());
+    auto lmdMask = [] (string& data) -> void {
+        //remove all sensible information such as private key
+        // or passphrass from log content
+
+        //log for debug mode
+        regex ptnSec(R"raw(("privkey"|"passphrase"|"oldpassphrase")([[:s:]]*:[[:s:]]*)(".*?"))raw");
+        bool fFound = regex_search(data, ptnSec);
+        if(fFound)
+        {
+            data = regex_replace(data, ptnSec, R"raw($1$2"***")raw");
+        }
+    };
+
     uint64 nNonce = eventHttpReq.nNonce;
 
     string strResult;
@@ -159,7 +173,17 @@ bool CRPCMod::HandleEvent(CWalleveEventHttpReq& eventHttpReq)
                 {
                     throw CRPCException(RPC_METHOD_NOT_FOUND, "Method not found");
                 }
-                
+
+                if (WalleveConfig()->fDebug)
+                {
+                    string sLog = spReq->Serialize();
+                    lmdMask(sLog);
+                    WalleveLog("request : %s\n", sLog.c_str());
+                }
+                else
+                {
+                    WalleveLog("request : {\"method\" : \"%s\"}\n", spReq->strMethod.c_str());
+                }
                 spResult = (this->*(*it).second)(spReq->spParam);
             }
             catch (CRPCException& e)
@@ -214,7 +238,9 @@ bool CRPCMod::HandleEvent(CWalleveEventHttpReq& eventHttpReq)
 
     if (WalleveConfig()->fDebug)
     {
-        WalleveLog("response : %s\n", strResult.c_str());
+        string sLog = strResult.c_str();
+        lmdMask(sLog);
+        WalleveLog("response : %s\n", sLog.c_str());
     }
 
     // no result means no return
