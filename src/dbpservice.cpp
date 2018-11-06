@@ -690,9 +690,6 @@ void CDbpService::CreateDbpBlock(const CBlockEx& blockDetail, const uint256& for
 
     // vtx
     int k = 0;
-
-    std::cout << "vtx size: " << blockDetail.vtx.size() << "\n";
-    std::cout << "vTxContxt size: " << blockDetail.vTxContxt.size() << "\n";
     for (const auto& tx : blockDetail.vtx)
     {
         CMvDbpTransaction dbpTx;
