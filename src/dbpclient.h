@@ -10,6 +10,7 @@
 
 #include <boost/bimap.hpp>
 #include <boost/any.hpp>
+#include <boost/algorithm/string.hpp>
 #include <queue>
 
 #include "dbputils.h"
@@ -35,7 +36,10 @@ public:
       optSSL(optSSLIn),
       strIOModule(strIOModuleIn)
     {
-        vSupportForks = CDbpUtils::Split(SupportForksIn,';');
+        const auto forks = CDbpUtils::Split(SupportForksIn,';');
+        std::for_each(forks.begin(),forks.end(),[this](const std::string& fork) -> void {
+            vSupportForks.push_back(boost::algorithm::to_lower_copy(fork));
+        });
     }
 public:
     boost::asio::ip::tcp::endpoint epParentHost;
