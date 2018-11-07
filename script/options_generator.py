@@ -6,9 +6,9 @@ sys.dont_write_bytecode = True
 import json
 from collections import OrderedDict
 from tool import *
-
+import tool
+typ = type
 options_json, options_h = None, None
-
 
 class Param:
     def __init__(self, p_name, p_type, p_opt, p_format, p_desc, p_default):
@@ -26,6 +26,7 @@ def generate_options(options_json_path, options_h_path):
 
     with open(options_json, 'r') as r:
         content = json.loads(r.read(), object_pairs_hook=OrderedDict)
+        content = json_hook(content)
         check_value_type(options_json, content, dict)
 
         with open(options_h, 'w') as w:
@@ -61,10 +62,10 @@ namespace multiverse
 
                 # parse params
                 for param in detail:
-                    name = get_json_value(class_name, param, 'name', type=unicode)
-                    type = get_json_value(class_name, param, 'type', type=unicode)
-                    opt = get_json_value(class_name, param, 'opt', type=unicode)
-                    fmt = get_json_value(class_name, param, 'format', type=unicode)
+                    name = get_json_value(class_name, param, 'name', type=str)
+                    type = get_json_value(class_name, param, 'type', type=str)
+                    opt = get_json_value(class_name, param, 'opt', type=str)
+                    fmt = get_json_value(class_name, param, 'format', type=str)
                     desc = get_desc(class_name, param)
 
                     default = get_json_value(class_name, param, 'default', required=False)
@@ -74,7 +75,7 @@ namespace multiverse
                     p = Param(name, type, opt, fmt, desc, default)
                     params_list.append(p)
 
-                    access = get_json_value(class_name, param, 'format', type=unicode, default='public')
+                    access = get_json_value(class_name, param, 'format', type=str, default='public')
                     if access == "protected":
                         params_protected_list.append(p)
                     elif access == "private":

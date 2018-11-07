@@ -148,7 +148,7 @@ bool CWalleveConfig::TokenizeConfile(const char *pzConfile,vector<string>& token
         return false;
     }
     string line;
-    while(!getline(ifs,line).eof())
+    while(!getline(ifs,line).eof() || !line.empty())
     {
         string s = line.substr(0,line.find('#'));
         boost::trim(s);
@@ -156,6 +156,7 @@ bool CWalleveConfig::TokenizeConfile(const char *pzConfile,vector<string>& token
         {
             tokens.push_back(string("-") + s);
         }
+        line.clear();
     }
 
     return true;
