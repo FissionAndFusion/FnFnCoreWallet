@@ -34,6 +34,7 @@ protected:
     bool HandleEvent(CFkEventNodeTx& eventTx) override;
 protected:
     IDbpClient* pDbpClient;
+    network::IMvNetChannel* pNetChannel;
 };
 
 }

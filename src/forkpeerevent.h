@@ -5,6 +5,8 @@
 #ifndef MULTIVERSE_FORKPEEREVENT_H
 #define MULTIVERSE_FORKPEEREVENT_H
 
+#include <boost/variant.hpp>
+
 #include "walleve/walleve.h"
 #include "mvproto.h"
 #include "block.h"
@@ -61,13 +63,16 @@ public:
     D data;
 };
 
+typedef boost::variant<network::CAddress, std::vector<uint256>, CBlockLocator,
+        std::vector<network::CInv>, CBlock, CTransaction> ForkMsgData_type;
+
 template <int type, typename L, typename D>
 class CFkEventMessageData : public walleve::CWalleveEvent
 {
     friend class walleve::CWalleveStream;
 public:
     CFkEventMessageData(uint64 nNonceIn, const ecForkEventType& nMsgTypeIn)
-    : CWalleveEvent(nNonceIn, type), nMsgType(nMsgTypeIn) {}
+    : CWalleveEvent(nNonceIn, type), fkMsgType(nMsgTypeIn) {}
     virtual ~CFkEventMessageData() {}
     virtual bool Handle(walleve::CWalleveEventListener& listener)
     {
@@ -86,12 +91,12 @@ protected:
     template <typename O>
     void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
     {
-        s.Serialize(nMsgType, opt);
-        s.Serialize(msgIncome, opt);
+        s.Serialize(fkMsgType, opt);
+        s.Serialize(fkMsgData, opt);
     }
 public:
-    ecForkEventType nMsgType;
-    D msgIncome; //CFkEventNodeData
+    ecForkEventType fkMsgType;
+    D fkMsgData; //ForkMsgData_type
 };
 
 class CFkNodeEventListener;
@@ -102,7 +107,7 @@ class CFkNodeEventListener;
 #define TYPE_FORKNODEMSGEVENT(type, body)       \
         CFkEventMessageData<static_cast<int>(type), CFkNodeEventListener, body>
 
-typedef TYPE_FORKNODEMSGEVENT(ecForkEventType::FK_EVENT_NODE_MESSAGE, CBlock) CFkEventNodeMessage;
+typedef TYPE_FORKNODEMSGEVENT(ecForkEventType::FK_EVENT_NODE_MESSAGE, ForkMsgData_type) CFkEventNodeMessage;
 
 typedef TYPE_FORKNODEEVENT(ecForkEventType::FK_EVENT_NODE_ACTIVE, network::CAddress) CFkEventNodeActive;
 typedef TYPE_FORKNODEEVENT(ecForkEventType::FK_EVENT_NODE_DEACTIVE, network::CAddress) CFkEventNodeDeactive;
