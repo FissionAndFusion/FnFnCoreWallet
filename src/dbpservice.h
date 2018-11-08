@@ -21,7 +21,7 @@ class CDbpService : public walleve::IIOModule, virtual public CDBPEventListener,
 {
 public:
     CDbpService();
-    virtual ~CDbpService();
+    virtual ~CDbpService() noexcept;
 
     bool HandleEvent(CMvEventDbpConnect& event) override;
     bool HandleEvent(CMvEventDbpSub& event) override;
