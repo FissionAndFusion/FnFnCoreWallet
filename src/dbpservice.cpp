@@ -813,6 +813,13 @@ void CDbpService::UpdateChildNodeForksToParent()
             pDbpClient->DispatchEvent(&eventRegister);
         }
     }
+
+    for(const std::string& forkid : setThisNodeForks)
+    {
+        CMvEventDbpRegisterForkID eventRegister("");
+        eventRegister.data.forkid = forkid;
+        pDbpClient->DispatchEvent(&eventRegister);
+    }
 }
 
 bool CDbpService::HandleEvent(CMvEventDbpUpdateNewBlock& event)
