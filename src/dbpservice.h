@@ -76,6 +76,7 @@ private:
 
     ///////////  super node  ////////////
     void UpdateChildNodeForks(const std::string& session, const std::string& forks);
+    void UpdateChildNodeForksToParent();
 protected:
     walleve::IIOProc* pDbpServer;
     walleve::IIOProc* pDbpClient;

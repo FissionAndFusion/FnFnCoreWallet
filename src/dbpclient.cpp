@@ -810,15 +810,17 @@ void CMvDbpClient::StartPingTimer(const std::string& session)
 
 void CMvDbpClient::RegisterDefaultForks(CMvDbpClientSocket* pClientSocket)
 {
-    std::vector<std::string> vSupportForks = mapProfile[pClientSocket->GetHost().ToEndPoint()].vSupportForks;
-    pClientSocket->SendForkIds(vSupportForks);
-    
+    std::vector<std::string> vSupportForks = mapProfile[pClientSocket->GetHost().ToEndPoint()].vSupportForks;  
     for(const auto& fork : vSupportForks)
     {
         CMvEventDbpRegisterForkID *pEvent = new CMvEventDbpRegisterForkID("");
         pEvent->data.forkid = fork;
         pDbpService->PostEvent(pEvent);
     }
+
+    CMvEventDbpRegisterForkID *pEventEmpty = new CMvEventDbpRegisterForkID("");
+    pEventEmpty->data.forkid = std::string();
+    pDbpService->PostEvent(pEventEmpty);
 }
 
 void CMvDbpClient::SubscribeDefaultTopics(CMvDbpClientSocket* pClientSocket)
@@ -938,11 +940,8 @@ bool CMvDbpClient::HandleEvent(CMvEventDbpRegisterForkID& event)
         return false;
     }
 
-    // TODO
-
-
-    // std::vector<std::string> forks{event.data.forkid};
-    // pClientSocket->SendForkIds(forks);
+    std::vector<std::string> forks{event.data.forkid};
+    pClientSocket->SendForkIds(forks);
 
     return true;
 }

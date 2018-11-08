@@ -564,7 +564,15 @@ void CDbpService::HandleGetBlocks(CMvEventDbpMethod& event)
 bool CDbpService::HandleEvent(CMvEventDbpRegisterForkID& event)
 {
     std::string& forkid = event.data.forkid;
-    setThisNodeForks.insert(forkid);
+    if(!forkid.empty())
+    {
+        setThisNodeForks.insert(forkid);
+    }
+    else
+    {
+        UpdateChildNodeForksToParent();
+    }
+    
     return true;
 }
 
@@ -580,10 +588,7 @@ void CDbpService::HandleRegisterFork(CMvEventDbpMethod& event)
     eventResult.data.anyResultObjs.push_back(ret);
     pDbpServer->DispatchEvent(&eventResult);
 
-    // notify dbp client to send message to parent node
-    CMvEventDbpRegisterForkID eventRegister("");
-    eventRegister.data.forkid = forkid;
-    pDbpClient->DispatchEvent(&eventRegister);
+    UpdateChildNodeForksToParent();    
 }
 
 void CDbpService::HandleSendBlock(CMvEventDbpMethod& event)
@@ -792,6 +797,21 @@ void CDbpService::UpdateChildNodeForks(const std::string& session, const std::st
     {
         auto& forks = mapSessionChildNodeForks[session];
         forks.insert(setForks.begin(),setForks.end());
+    }
+}
+
+void CDbpService::UpdateChildNodeForksToParent()
+{
+    for(const auto& kv : mapSessionChildNodeForks)
+    {
+        std::string session = kv.first;
+        auto forks = kv.second;
+        for(const std::string& forkid : forks)
+        {
+            CMvEventDbpRegisterForkID eventRegister("");
+            eventRegister.data.forkid = forkid;
+            pDbpClient->DispatchEvent(&eventRegister);
+        }
     }
 }
 
