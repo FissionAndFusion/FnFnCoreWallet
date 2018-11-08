@@ -114,7 +114,7 @@ static std::string GetHex(std::string data)
     return ret;
 }
 
-static void print_block(CMvDbpBlock &block)
+static void print_block(const CMvDbpBlock &block)
 {
     uint256 hash(std::vector<unsigned char>(block.hash.begin(),block.hash.end()));
     uint256 prevHash(std::vector<unsigned char>(block.hashPrev.begin(),block.hashPrev.end()));
@@ -128,7 +128,7 @@ static void print_block(CMvDbpBlock &block)
 
 }
 
-static void print_tx(CMvDbpTransaction &tx)
+static void print_tx(const CMvDbpTransaction &tx)
 {
     uint256 hash(std::vector<unsigned char>(tx.hash.begin(),tx.hash.end()));
     uint256 sig(std::vector<unsigned char>(tx.vchSig.begin(),tx.vchSig.end()));
@@ -147,6 +147,7 @@ void CDbpService::HandleAddedBlock(const CMvDbpBlock& block)
     if(setThisNodeForks.find(forkHash.ToString()) != setThisNodeForks.end())
     {
         // THIS FORK NODE Handle this TODO
+        print_block(block);
     }
     else
     {
@@ -163,6 +164,7 @@ void CDbpService::HandleAddedTx(const CMvDbpTransaction& tx)
     if(setThisNodeForks.find(forkHash.ToString()) != setThisNodeForks.end())
     {
         // THIS FORK NODE Handle this TODO
+        print_tx(tx);
     }
     else
     {
