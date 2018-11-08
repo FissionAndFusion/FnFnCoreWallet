@@ -49,7 +49,7 @@ protected:
 private:
     void CreateDbpBlock(const CBlockEx& blockDetail, const uint256& forkHash,
                       int blockHeight, CMvDbpBlock& block);
-    void CreateDbpTransaction(const CTransaction& tx, int64 nChange, CMvDbpTransaction& dbptx);
+    void CreateDbpTransaction(const CTransaction& tx, const uint256& forkHash, int64 nChange, CMvDbpTransaction& dbptx);
     bool CalcForkPoints(const uint256& forkHash);
     void TrySwitchFork(const uint256& blockHash, uint256& forkHash);
     bool GetBlocks(const uint256& forkHash, const uint256& startHash, int32 n, std::vector<CMvDbpBlock>& blocks);
@@ -61,6 +61,8 @@ private:
     void HandleRegisterFork(CMvEventDbpMethod& event);
     void HandleSendBlock(CMvEventDbpMethod& event);
     void HandleSendTx(CMvEventDbpMethod& event);
+    void HandleAddedBlock(const CMvDbpBlock& block);
+    void HandleAddedTx(const CMvDbpTransaction& tx);
 
     bool IsTopicExist(const std::string& topic);
     bool IsHaveSubedTopicOf(const std::string& id);
@@ -74,6 +76,7 @@ private:
 
     ///////////  super node  ////////////
     void UpdateChildNodeForks(const std::string& session, const std::string& forks);
+    void UpdateChildNodeForksToParent();
 protected:
     walleve::IIOProc* pDbpServer;
     walleve::IIOProc* pDbpClient;
