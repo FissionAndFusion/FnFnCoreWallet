@@ -6,7 +6,7 @@
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 #------------------------------------------------------------------------------
 
-project(Multiverse)
+project(Multiverse LANGUAGES CXX)
 
 cmake_minimum_required(VERSION 3.5.1)
 
@@ -15,6 +15,8 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_DIR})
 
 # support c++14, c++14 is like a small patch for c++11
 set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED OFF)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 # packages
 set(Boost_USE_STATIC_LIBS ON)
