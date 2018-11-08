@@ -41,76 +41,114 @@ void CForkPseudoPeerNet::WalleveHandleDeinitialize()
 // and delivering to net channel
 bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeMessage& eventMessage)
 {
-    uint64 nNonce;
+    uint64 nNonce = eventMessage.nNonce;
     uint256 haskFork;
     ecForkEventType fkType = eventMessage.fkMsgType;
     switch (fkType)
     {
         case ecForkEventType::FK_EVENT_NODE_ACTIVE:
         {
-            CFkEventNodeActive* pEventActive = new CFkEventNodeActive(nNonce, haskFork);
-            pEventActive->data = boost::get<network::CAddress>(eventMessage.fkMsgData);
-            pNetChannel->PostEvent(pEventActive);
+            CFkEventNodeActive* pEvent = new CFkEventNodeActive(nNonce, haskFork);
+            if(NULL != pEvent)
+            {
+                pEvent->data = boost::get<network::CAddress>(eventMessage.fkMsgData);
+                pNetChannel->PostEvent(pEvent);
+                return true;
+            }
             break;
         }
         case ecForkEventType::FK_EVENT_NODE_DEACTIVE:
         {
-            CFkEventNodeDeactive* pEventDeactive = new CFkEventNodeDeactive(nNonce, haskFork);
-            pEventDeactive->data = boost::get<network::CAddress>(eventMessage.fkMsgData);
-            pNetChannel->PostEvent(pEventDeactive);
+            CFkEventNodeDeactive* pEvent = new CFkEventNodeDeactive(nNonce, haskFork);
+            if(NULL != pEvent)
+            {
+                pEvent->data = boost::get<network::CAddress>(eventMessage.fkMsgData);
+                pNetChannel->PostEvent(pEvent);
+                return true;
+            }
             break;
         }
         case ecForkEventType::FK_EVENT_NODE_SUBSCRIBE:
         {
-            CFkEventNodeSubscribe* pEventSubscribe = new CFkEventNodeSubscribe(nNonce, haskFork);
-            pEventSubscribe->data = boost::get<std::vector<uint256>>(eventMessage.fkMsgData);
-            pNetChannel->PostEvent(pEventSubscribe);
+            CFkEventNodeSubscribe* pEvent = new CFkEventNodeSubscribe(nNonce, haskFork);
+            if(NULL != pEvent)
+            {
+                pEvent->data = boost::get<std::vector<uint256>>(eventMessage.fkMsgData);
+                pNetChannel->PostEvent(pEvent);
+                return true;
+            }
             break;
         }
         case ecForkEventType::FK_EVENT_NODE_UNSUBSCRIBE:
         {
-            CFkEventNodeUnsubscribe* pEventUnsubscribe = new CFkEventNodeUnsubscribe(nNonce, haskFork);
-            pEventUnsubscribe->data = boost::get<std::vector<uint256>>(eventMessage.fkMsgData);
-            pNetChannel->PostEvent(pEventUnsubscribe);
+            CFkEventNodeUnsubscribe* pEvent = new CFkEventNodeUnsubscribe(nNonce, haskFork);
+            if(NULL != pEvent)
+            {
+                pEvent->data = boost::get<std::vector<uint256>>(eventMessage.fkMsgData);
+                pNetChannel->PostEvent(pEvent);
+                return true;
+            }
             break;
         }
         case ecForkEventType::FK_EVENT_NODE_GETBLOCKS:
         {
-            CFkEventNodeGetBlocks* pEventGetBlocks = new CFkEventNodeGetBlocks(nNonce, haskFork);
-            pEventGetBlocks->data = boost::get<CBlockLocator>(eventMessage.fkMsgData);
-            pNetChannel->PostEvent(pEventGetBlocks);
+            CFkEventNodeGetBlocks* pEvent = new CFkEventNodeGetBlocks(nNonce, haskFork);
+            if(NULL != pEvent)
+            {
+                pEvent->data = boost::get<CBlockLocator>(eventMessage.fkMsgData);
+                pNetChannel->PostEvent(pEvent);
+                return true;
+            }
             break;
         }
         case ecForkEventType::FK_EVENT_NODE_INV:
         {
-            CFkEventNodeInv* pEventInv = new CFkEventNodeInv(nNonce, haskFork);
-            pEventInv->data = boost::get<std::vector<network::CInv>>(eventMessage.fkMsgData);
-            pNetChannel->PostEvent(pEventInv);
+            CFkEventNodeInv* pEvent = new CFkEventNodeInv(nNonce, haskFork);
+            if(NULL != pEvent)
+            {
+                pEvent->data = boost::get<std::vector<network::CInv>>(eventMessage.fkMsgData);
+                pNetChannel->PostEvent(pEvent);
+                return true;
+            }
             break;
         }
         case ecForkEventType::FK_EVENT_NODE_GETDATA:
         {
-            CFkEventNodeGetData* pEventGetData = new CFkEventNodeGetData(nNonce, haskFork);
-            pEventGetData->data = boost::get<std::vector<network::CInv>>(eventMessage.fkMsgData);
-            pNetChannel->PostEvent(pEventGetData);
+            CFkEventNodeGetData* pEvent = new CFkEventNodeGetData(nNonce, haskFork);
+            if(NULL != pEvent)
+            {
+                pEvent->data = boost::get<std::vector<network::CInv>>(eventMessage.fkMsgData);
+                pNetChannel->PostEvent(pEvent);
+                return true;
+            }
             break;
         }
         case ecForkEventType::FK_EVENT_NODE_BLOCK:
         {
-            CFkEventNodeBlock* pEventBlock = new CFkEventNodeBlock(nNonce, haskFork);
-            pEventBlock->data = boost::get<CBlock>(eventMessage.fkMsgData);
-            pNetChannel->PostEvent(pEventBlock);
+            CFkEventNodeBlock* pEvent = new CFkEventNodeBlock(nNonce, haskFork);
+            if(NULL != pEvent)
+            {
+                pEvent->data = boost::get<CBlock>(eventMessage.fkMsgData);
+                pNetChannel->PostEvent(pEvent);
+                return true;
+            }
             break;
         }
         case ecForkEventType::FK_EVENT_NODE_TX:
         {
-            CFkEventNodeTx* pEventTx = new CFkEventNodeTx(nNonce, haskFork);
-            pEventTx->data = boost::get<CTransaction>(eventMessage.fkMsgData);
-            pNetChannel->PostEvent(pEventTx);
+            CFkEventNodeTx* pEvent = new CFkEventNodeTx(nNonce, haskFork);
+            if(NULL != pEvent)
+            {
+                pEvent->data = boost::get<CTransaction>(eventMessage.fkMsgData);
+                pNetChannel->PostEvent(pEvent);
+                return true;
+            }
             break;
         }
+        default:
+            break;
     }
-    return true;
+    return false;
 }
 
 //The following series of HandleEvent's is for responding to requests
