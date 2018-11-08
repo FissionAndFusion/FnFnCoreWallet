@@ -116,38 +116,59 @@ static std::string GetHex(std::string data)
 
 static void print_block(CMvDbpBlock &block)
 {
-    std::string hash(block.hash.begin(), block.hash.end());
-    std::reverse(hash.begin(), hash.end());
-
-    std::string prev_hash(block.hashPrev.begin(), block.hashPrev.end());
-    std::reverse(prev_hash.begin(), prev_hash.end());
+    uint256 hash(std::vector<unsigned char>(block.hash.begin(),block.hash.end()));
+    uint256 prevHash(std::vector<unsigned char>(block.hashPrev.begin(),block.hashPrev.end()));
+    uint256 forkHash(std::vector<unsigned char>(block.fork.begin(),block.fork.end()));
+    
     std::cout << "[<]recived block" << std::endl;
-    std::cout << "   hash:" << GetHex(hash) << std::endl;
-    std::cout << "   height:" << block.nHeight << std::endl;
-    std::cout << "   prev hash:" << GetHex(prev_hash) << std::endl;
+    std::cout << "   hash: " << hash.ToString() << std::endl;
+    std::cout << "   height: " << block.nHeight << std::endl;
+    std::cout << "   prev hash: " << prevHash.ToString() << std::endl;
+    std::cout << "   fork hash: " << forkHash.ToString() << std::endl;
 
-    /*std::cout << "vtx size: " << block.vtx_size() << std::endl;
-    std::cout << "vtx v input size: " << block.vtx(0).vinput_size() << std::endl;
-    for (int i = 0; i < block.vtx(0).vinput_size(); ++i)
-    {
-        std::string txhash(block.vtx(0).vinput(i).hash());
-        reverse(txhash.begin(), txhash.end());
-        std::cout << "InputTxHash: " << GetHex(txhash) << std::endl;
-        std::cout << "InputTx n: " << block.vtx(0).vinput(i).n() << std::endl;
-    }*/
 }
 
 static void print_tx(CMvDbpTransaction &tx)
 {
-    std::string hash(tx.hash.begin(),tx.hash.end());
-    std::reverse(hash.begin(), hash.end());
-
-    std::string sig(tx.vchSig.begin(),tx.vchSig.end());
-    std::reverse(sig.begin(), sig.end());
+    uint256 hash(std::vector<unsigned char>(tx.hash.begin(),tx.hash.end()));
+    uint256 sig(std::vector<unsigned char>(tx.vchSig.begin(),tx.vchSig.end()));
+    uint256 forkHash(std::vector<unsigned char>(tx.fork.begin(),tx.fork.end()));
 
     std::cout << "[<]recived transaction" << std::endl;
-    std::cout << "   hash:" << GetHex(hash) << std::endl;
-    std::cout << "   sig:" << GetHex(sig) << std::endl;
+    std::cout << "   hash:" << hash.ToString() << std::endl;
+    std::cout << "   sig:" << sig.ToString() << std::endl;
+    std::cout << "   fork hash:" << forkHash.ToString() << std::endl;
+}
+
+void CDbpService::HandleAddedBlock(const CMvDbpBlock& block)
+{
+    uint256 forkHash(std::vector<unsigned char>(block.fork.begin(),block.fork.end()));
+
+    if(setThisNodeForks.find(forkHash.ToString()) != setThisNodeForks.end())
+    {
+        // THIS FORK NODE Handle this TODO
+    }
+    else
+    {
+        // Push Block to child fork node
+        PushBlock(forkHash.ToString(),block);
+    }
+
+}
+
+void CDbpService::HandleAddedTx(const CMvDbpTransaction& tx)
+{
+    uint256 forkHash(std::vector<unsigned char>(tx.fork.begin(),tx.fork.end()));
+
+    if(setThisNodeForks.find(forkHash.ToString()) != setThisNodeForks.end())
+    {
+        // THIS FORK NODE Handle this TODO
+    }
+    else
+    {
+        // Dispatch Block to child fork node
+        PushTx(forkHash.ToString(),tx);
+    }
 }
 
 bool CDbpService::HandleEvent(CMvEventDbpAdded& event)
@@ -155,12 +176,12 @@ bool CDbpService::HandleEvent(CMvEventDbpAdded& event)
     if(event.data.name == "all-block")
     {
         CMvDbpBlock block = boost::any_cast<CMvDbpBlock>(event.data.anyAddedObj);
-        print_block(block);
+        HandleAddedBlock(block);
     }
     else if(event.data.name == "all-tx")
     {
         CMvDbpTransaction tx = boost::any_cast<CMvDbpTransaction>(event.data.anyAddedObj);
-        print_tx(tx);
+        HandleAddedTx(tx);
     }
     else
     {
@@ -255,7 +276,7 @@ void CDbpService::HandleGetTransaction(CMvEventDbpMethod& event)
     if (pService->GetTransaction(txHash, tx, forkHash, blockHeight))
     {
         CMvDbpTransaction dbpTx;
-        CreateDbpTransaction(tx, 0, dbpTx);
+        CreateDbpTransaction(tx, forkHash, 0, dbpTx);
 
         CMvEventDbpMethodResult eventResult(event.strSessionId);
         eventResult.data.id = id;
@@ -654,7 +675,7 @@ void CDbpService::CreateDbpBlock(const CBlockEx& blockDetail, const uint256& for
     block.vchSig = blockDetail.vchSig;
 
     // txMint
-    CreateDbpTransaction(blockDetail.txMint, blockDetail.txMint.GetChange(0), block.txMint);
+    CreateDbpTransaction(blockDetail.txMint, forkHash, blockDetail.txMint.GetChange(0), block.txMint);
 
     // vtx
     int k = 0;
@@ -662,16 +683,19 @@ void CDbpService::CreateDbpBlock(const CBlockEx& blockDetail, const uint256& for
     {
         CMvDbpTransaction dbpTx;
         int64 nValueIn = blockDetail.vTxContxt[k++].GetValueIn();
-        CreateDbpTransaction(tx, tx.GetChange(nValueIn), dbpTx);
+        CreateDbpTransaction(tx, forkHash, tx.GetChange(nValueIn), dbpTx);
         block.vtx.push_back(dbpTx);
     }
 
     block.nHeight = blockHeight;
     walleve::CWalleveODataStream hashStream(block.hash);
     blockDetail.GetHash().ToDataStream(hashStream);
+
+    walleve::CWalleveODataStream forkStream(block.fork);
+    forkHash.ToDataStream(forkStream);
 }
 
-void CDbpService::CreateDbpTransaction(const CTransaction& tx, int64 nChange, CMvDbpTransaction& dbptx)
+void CDbpService::CreateDbpTransaction(const CTransaction& tx, const uint256& forkHash, int64 nChange, CMvDbpTransaction& dbptx)
 {
     dbptx.nVersion = tx.nVersion;
     dbptx.nType = tx.nType;
@@ -706,6 +730,9 @@ void CDbpService::CreateDbpTransaction(const CTransaction& tx, int64 nChange, CM
 
     walleve::CWalleveODataStream hashStream(dbptx.hash);
     tx.GetHash().ToDataStream(hashStream);
+
+    walleve::CWalleveODataStream forkStream(dbptx.fork);
+    forkHash.ToDataStream(forkStream);
 }
 
 void CDbpService::PushBlock(const std::string& forkid, const CMvDbpBlock& block)
@@ -785,12 +812,12 @@ bool CDbpService::HandleEvent(CMvEventDbpUpdateNewBlock& event)
 bool CDbpService::HandleEvent(CMvEventDbpUpdateNewTx& event)
 {
     decltype(event.data)& newtx = event.data;
-    std::string forkid = event.hashFork.ToString();
+    uint256& hashFork = event.hashFork;
     int64& change = event.nChange;
 
     CMvDbpTransaction dbpTx;
-    CreateDbpTransaction(newtx, change, dbpTx);
-    PushTx(forkid,dbpTx);
+    CreateDbpTransaction(newtx, hashFork, change, dbpTx);
+    PushTx(hashFork.ToString(),dbpTx);
 
     return true;
 }

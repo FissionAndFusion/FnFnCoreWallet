@@ -245,6 +245,8 @@ public:
 
         std::string hash(dbptx->hash.begin(), dbptx->hash.end());
         tx->set_hash(hash);
+        std::string fork(dbptx->fork.begin(), dbptx->fork.end());
+        tx->set_fork(fork);
     }
 
     static void DbpToSnBlock(const CMvDbpBlock* pBlock, sn::Block& block)
@@ -279,6 +281,8 @@ public:
         block.set_nheight(pBlock->nHeight);
         std::string hash(pBlock->hash.begin(), pBlock->hash.end());
         block.set_hash(hash);
+        std::string fork(pBlock->fork.begin(), pBlock->fork.end());
+        block.set_fork(fork);
     }
 
     static void SnToDbpTransaction(const sn::Transaction* tx, CMvDbpTransaction* dbptx)
@@ -312,6 +316,7 @@ public:
         dbptx->vchSig = std::vector<unsigned char>(tx->vchsig().begin(), tx->vchsig().end());
 
         dbptx->hash = std::vector<unsigned char>(tx->hash().begin(), tx->hash().end());
+        dbptx->fork = std::vector<unsigned char>(tx->fork().begin(), tx->fork().end());
     }
 
     static void SnToDbpBlock(const sn::Block *pBlock, CMvDbpBlock& block)
@@ -339,6 +344,8 @@ public:
 
         block.nHeight = pBlock->nheight();
         block.hash = std::vector<unsigned char>(pBlock->hash().begin(), pBlock->hash().end());
+        block.fork = std::vector<unsigned char>(pBlock->fork().begin(), pBlock->fork().end());
+
     }
 
 };
