@@ -695,8 +695,7 @@ void CDbpService::CreateDbpBlock(const CBlockEx& blockDetail, const uint256& for
     {
         CMvDbpTransaction dbpTx;
         int64 nValueIn = blockDetail.vTxContxt[k++].GetValueIn();
-        std::cout << "block hash: " << blockDetail.GetHash().ToString() << "\n";
-        std::cout << "Change ValueIn: " << nValueIn << "\n";
+        std::cout << "vtx index: " << k <<" Change ValueIn: " << nValueIn << "\n";
         CreateDbpTransaction(tx, tx.GetChange(nValueIn), dbpTx);
         block.vtx.push_back(dbpTx);
     }
