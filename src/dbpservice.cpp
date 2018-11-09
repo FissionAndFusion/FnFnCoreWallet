@@ -515,7 +515,8 @@ bool CDbpService::GetBlocks(const uint256& forkHash, const uint256& startHash, i
             std::cout << "block hash: "  << block.GetHash().ToString() << "\n";
             std::cout << "block height: " << height << "\n";
             std::cout << "block fork: " << tempForkHash.ToString() << "\n";
-            std::cout << "block type: " << block.nType << "\n"; 
+            std::cout << "block type: " << block.nType << "\n";
+            std::cout << "block vtxcontxt size: " << block.vTxContxt.size() << "\n"; 
             if (block.nType != CBlock::BLOCK_EXTENDED)
             {
                 nonExtendBlockCount++;
@@ -694,6 +695,8 @@ void CDbpService::CreateDbpBlock(const CBlockEx& blockDetail, const uint256& for
     {
         CMvDbpTransaction dbpTx;
         int64 nValueIn = blockDetail.vTxContxt[k++].GetValueIn();
+        std::cout << "block hash: " << blockDetail.GetHash().ToString() << "\n";
+        std::cout << "Change ValueIn: " << nValueIn << "\n";
         CreateDbpTransaction(tx, tx.GetChange(nValueIn), dbpTx);
         block.vtx.push_back(dbpTx);
     }
