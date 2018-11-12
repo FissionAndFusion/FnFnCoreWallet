@@ -65,7 +65,6 @@ private:
     void HandleAddedTx(const CMvDbpTransaction& tx);
 
     bool IsTopicExist(const std::string& topic);
-    bool IsHaveSubedTopicOf(const std::string& id);
 
     void SubTopic(const std::string& id, const std::string& session, const std::string& topic);
     void UnSubTopic(const std::string& id);
@@ -86,17 +85,13 @@ protected:
     IMvNetChannel* pNetChannel;
 
 private:
-    std::map<std::string, std::string> mapIdSubedTopic; // id => subed topic
-
-    std::set<std::string> setSubedAllBlocksIds; // block ids
-    std::set<std::string> setSubedAllTxIds;     // tx ids
-
     typedef std::set<std::string> ForksType;
+    typedef std::set<std::string> IdsType; 
     std::map<std::string, ForksType> mapSessionChildNodeForks; // session => child node forks
     ForksType setThisNodeForks;    // this node support forks
 
     std::map<std::string, std::string> mapIdSubedSession;       // id => session
-    std::unordered_map<std::string, bool> mapCurrentTopicExist; // topic => enabled
+    std::unordered_map<std::string, IdsType> mapTopicIds;       // topic => ids
 
     std::unordered_map<std::string, std::pair<uint256,uint256>> mapForkPoint; // fork point hash => (fork hash, fork point hash)
 };

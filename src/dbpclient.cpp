@@ -825,7 +825,7 @@ void CMvDbpClient::RegisterDefaultForks(CMvDbpClientSocket* pClientSocket)
 
 void CMvDbpClient::SubscribeDefaultTopics(CMvDbpClientSocket* pClientSocket)
 {
-    std::vector<std::string> vTopics{"all-block","all-tx"};
+    std::vector<std::string> vTopics{"all-block","all-tx","sys-cmd","tx-cmd", "block-cmd"};
     pClientSocket->SendSubScribeTopics(vTopics);
 }
 

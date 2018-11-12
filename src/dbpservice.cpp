@@ -20,9 +20,16 @@ CDbpService::CDbpService()
     pDbpServer = NULL;
     pNetChannel = NULL;
 
-    std::unordered_map<std::string, bool> temp_map = boost::assign::map_list_of("all-block", true)("all-tx", true)("changed", true)("removed", true);
+    std::unordered_map<std::string, IdsType> temp_map = 
+        boost::assign::map_list_of("all-block", std::set<std::string>())
+                                  ("all-tx",    std::set<std::string>())
+                                  ("sys-cmd",   std::set<std::string>())
+                                  ("tx-cmd",    std::set<std::string>())
+                                  ("block-cmd", std::set<std::string>())
+                                  ("changed",   std::set<std::string>())
+                                  ("removed",   std::set<std::string>());
 
-    mapCurrentTopicExist = temp_map;
+    mapTopicIds = temp_map;
 }
 
 CDbpService::~CDbpService()
@@ -347,32 +354,21 @@ void CDbpService::HandleSendTransaction(CMvEventDbpMethod& event)
 
 bool CDbpService::IsTopicExist(const std::string& topic)
 {
-    return mapCurrentTopicExist.find(topic) != mapCurrentTopicExist.end();
-}
-
-bool CDbpService::IsHaveSubedTopicOf(const std::string& id)
-{
-    return mapIdSubedTopic.find(id) != mapIdSubedTopic.end();
+    return mapTopicIds.find(topic) != mapTopicIds.end();
 }
 
 void CDbpService::SubTopic(const std::string& id, const std::string& session, const std::string& topic)
 {
-    mapIdSubedTopic.insert(std::make_pair(id, topic));
-
-    if (topic == "all-block")
-        setSubedAllBlocksIds.insert(id);
-    if (topic == "all-tx")
-        setSubedAllTxIds.insert(id);
-
+    mapTopicIds[topic].insert(id);
     mapIdSubedSession.insert(std::make_pair(id, session));
 }
 
 void CDbpService::UnSubTopic(const std::string& id)
 {
-    setSubedAllBlocksIds.erase(id);
-    setSubedAllTxIds.erase(id);
-
-    mapIdSubedTopic.erase(id);
+    for(auto& kv : mapTopicIds)
+    {
+        kv.second.erase(id);
+    }
     mapIdSubedSession.erase(id);
 }
 
@@ -744,12 +740,13 @@ void CDbpService::CreateDbpTransaction(const CTransaction& tx, const uint256& fo
 
 void CDbpService::PushBlock(const std::string& forkid, const CMvDbpBlock& block)
 {
+    const auto& allBlockIds = mapTopicIds["all-block"];   
     for (const auto& kv : mapIdSubedSession)
     {
         std::string id = kv.first;
         std::string session = kv.second;
 
-        if (setSubedAllBlocksIds.find(id) != setSubedAllBlocksIds.end())
+        if (allBlockIds.find(id) != allBlockIds.end())
         {
             CMvEventDbpAdded eventAdded(session);
             eventAdded.data.id = id;
@@ -763,12 +760,13 @@ void CDbpService::PushBlock(const std::string& forkid, const CMvDbpBlock& block)
 
 void CDbpService::PushTx(const std::string& forkid, const CMvDbpTransaction& dbptx)
 {
+    const auto& allTxIds = mapTopicIds["all-tx"];
     for (const auto& kv : mapIdSubedSession)
     {
         std::string id = kv.first;
         std::string session = kv.second;
 
-        if (setSubedAllTxIds.find(id) != setSubedAllTxIds.end())
+        if (allTxIds.find(id) != allTxIds.end())
         {
             CMvEventDbpAdded eventAdded(session);
             eventAdded.data.id = id;
