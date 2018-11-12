@@ -7,6 +7,28 @@ message ForkID
     repeated string ids = 1;
 }
 
+message SysCmd 
+{
+	string id = 1; //随机字符串
+	bytes forkid = 2;
+	int32 cmd = 3;
+	repeated string arg = 4;
+}
+
+message TxCmd
+{
+	string id = 1; //随机字符串
+	bytes forkid = 2; //分支id
+	bytes hash = 3; //tx hashid
+}
+
+message BlockCmd
+{
+	string id = 1;  //随机字符串
+	bytes forkid = 2; //分支id
+	bytes hash = 3; //区块hash id
+}
+
 message Transaction 
 {
     uint32 nVersion = 1; //版本号,目前交易版本为 0x0001
