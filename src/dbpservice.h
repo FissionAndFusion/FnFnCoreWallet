@@ -72,6 +72,9 @@ private:
 
     void PushBlock(const std::string& forkid, const CMvDbpBlock& block);
     void PushTx(const std::string& forkid, const CMvDbpTransaction& dbptx);
+    void PushSysCmd(const std::string& forkid, const CMvDbpSysCmd& syscmd);
+    void PushTxCmd(const std::string& forkid, const CMvDbpTxCmd& txcmd);
+    void PushBlockCmd(const std::string& forkid, const CMvDbpBlockCmd& blockcmd);
 
     ///////////  super node  ////////////
     void UpdateChildNodeForks(const std::string& session, const std::string& forks);

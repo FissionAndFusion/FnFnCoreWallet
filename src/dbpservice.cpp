@@ -778,6 +778,66 @@ void CDbpService::PushTx(const std::string& forkid, const CMvDbpTransaction& dbp
     }
 }
 
+void CDbpService::PushSysCmd(const std::string& forkid, const CMvDbpSysCmd& syscmd)
+{
+    const auto& sysCmdIds = mapTopicIds["sys-cmd"];
+    for (const auto& kv : mapIdSubedSession)
+    {
+        std::string id = kv.first;
+        std::string session = kv.second;
+
+        if (sysCmdIds.find(id) != sysCmdIds.end())
+        {
+            CMvEventDbpAdded eventAdded(session);
+            eventAdded.data.id = id;
+            eventAdded.data.forkid = forkid;
+            eventAdded.data.name = "sys-cmd";
+            eventAdded.data.anyAddedObj = syscmd;
+            pDbpServer->DispatchEvent(&eventAdded);
+        }
+    }
+}
+
+void CDbpService::PushTxCmd(const std::string& forkid, const CMvDbpTxCmd& txcmd)
+{
+    const auto& txCmdIds = mapTopicIds["tx-cmd"];
+    for (const auto& kv : mapIdSubedSession)
+    {
+        std::string id = kv.first;
+        std::string session = kv.second;
+
+        if (txCmdIds.find(id) != txCmdIds.end())
+        {
+            CMvEventDbpAdded eventAdded(session);
+            eventAdded.data.id = id;
+            eventAdded.data.forkid = forkid;
+            eventAdded.data.name = "tx-cmd";
+            eventAdded.data.anyAddedObj = txcmd;
+            pDbpServer->DispatchEvent(&eventAdded);
+        }
+    }
+}
+
+void CDbpService::PushBlockCmd(const std::string& forkid, const CMvDbpBlockCmd& blockcmd)
+{
+    const auto& blockCmdIds = mapTopicIds["block-cmd"];
+    for (const auto& kv : mapIdSubedSession)
+    {
+        std::string id = kv.first;
+        std::string session = kv.second;
+
+        if (blockCmdIds.find(id) != blockCmdIds.end())
+        {
+            CMvEventDbpAdded eventAdded(session);
+            eventAdded.data.id = id;
+            eventAdded.data.forkid = forkid;
+            eventAdded.data.name = "block-cmd";
+            eventAdded.data.anyAddedObj = blockcmd;
+            pDbpServer->DispatchEvent(&eventAdded);
+        }
+    }
+}
+
 void CDbpService::UpdateChildNodeForks(const std::string& session, const std::string& forks)
 {
     std::vector<std::string> vForks = CDbpUtils::Split(forks,';');
