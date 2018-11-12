@@ -109,6 +109,7 @@ public:
 
         std::string hash(dbptx->hash.begin(), dbptx->hash.end());
         tx->set_hash(hash);
+        tx->set_nchange(dbptx->nChange);
     }
 
     static void LwsToDbpTransaction(const lws::Transaction* tx, CMvDbpTransaction* dbptx)
@@ -142,6 +143,8 @@ public:
         dbptx->vchSig = std::vector<unsigned char>(tx->vchsig().begin(), tx->vchsig().end());
 
         dbptx->hash = std::vector<unsigned char>(tx->hash().begin(), tx->hash().end());
+
+        dbptx->nChange = tx->nchange();
 
     }
 

@@ -517,6 +517,7 @@ bool CDbpService::GetBlocks(const uint256& forkHash, const uint256& startHash, i
             std::cout << "block fork: " << tempForkHash.ToString() << "\n";
             std::cout << "block type: " << block.nType << "\n";
             std::cout << "block vtxcontxt size: " << block.vTxContxt.size() << "\n"; 
+            std::cout << "block vtx size: " << block.vtx.size() << "\n";
             if (block.nType != CBlock::BLOCK_EXTENDED)
             {
                 nonExtendBlockCount++;
