@@ -207,6 +207,7 @@ static void CreateLwsTransaction(const CMvDbpTransaction* dbptx, lws::Transactio
 
     std::string hash(dbptx->hash.begin(), dbptx->hash.end());
     tx->set_hash(hash);
+    tx->set_nchange(dbptx->nChange);
 }
 
 static void CreateLwsBlock(CMvDbpBlock* pBlock, lws::Block& block)
