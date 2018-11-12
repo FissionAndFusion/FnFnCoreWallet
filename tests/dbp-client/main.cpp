@@ -373,15 +373,15 @@ static void print_block(lws::Block &block)
     std::cout << "   height:" << block.nheight() << std::endl;
     std::cout << "   prev hash:" << GetHex(prev_hash) << std::endl;
 
-    /*std::cout << "vtx size: " << block.vtx_size() << std::endl;
-    std::cout << "vtx v input size: " << block.vtx(0).vinput_size() << std::endl;
-    for (int i = 0; i < block.vtx(0).vinput_size(); ++i)
+    std::cout << "   tx mint change: " << block.txmint().nchange() << "\n";
+    
+    std::cout << "   vtx size: " << block.vtx_size() << std::endl;
+    for(int i = 0; i < block.vtx_size(); ++i)
     {
-        std::string txhash(block.vtx(0).vinput(i).hash());
-        reverse(txhash.begin(), txhash.end());
-        std::cout << "InputTxHash: " << GetHex(txhash) << std::endl;
-        std::cout << "InputTx n: " << block.vtx(0).vinput(i).n() << std::endl;
-    }*/
+        std::cout << "   vtx index " << i << "\n";
+        std::cout << "   tx change: " << block.vtx(i).nchange() << "\n";
+    }
+   
 }
 
 static void print_tx(lws::Transaction &tx)
@@ -395,6 +395,7 @@ static void print_tx(lws::Transaction &tx)
     std::cout << "[<]recived transaction" << std::endl;
     std::cout << "   hash:" << GetHex(hash) << std::endl;
     std::cout << "   sig:" << GetHex(sig) << std::endl;
+    std::cout << "   tx change: " << tx.nchange() << "\n";
 }
 
 void recv_func(ThreadCxt &cxt)
