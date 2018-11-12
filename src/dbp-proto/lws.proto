@@ -7,7 +7,6 @@ message ForkID
     repeated string ids = 1;
 }
 
-
 message GetBlocksArg 
 {
     bytes hash = 1; //起始块hash
