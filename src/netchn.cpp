@@ -447,7 +447,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerInv& eventInv)
             SchedulePeerInv(nNonce,hashFork,sched);
         }
     }
-    catch (const std::exception& e)
+    catch (...)
     {
         DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
     }
@@ -550,7 +550,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerTx& eventTx)
         } 
         PostAddNew(hashFork,sched,setSchedPeer,setMisbehavePeer);
     }
-    catch (const std::exception& e)
+    catch (...)
     {
         DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
     }
@@ -596,7 +596,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerBlock& eventBlock)
 
         PostAddNew(hashFork,sched,setSchedPeer,setMisbehavePeer);
     }
-    catch (const std::exception& e)
+    catch (...)
     {
         DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
     }

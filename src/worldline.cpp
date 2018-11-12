@@ -296,8 +296,7 @@ MvErr CWorldLine::AddNewForkContext(const CTransaction& txFork,CForkContext& ctx
         if (!profile.Load(block.vchProof))
         {
             throw std::runtime_error("invalid profile");
-        }
-        
+        }    
     }
     catch (...)
     {
