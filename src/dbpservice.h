@@ -8,14 +8,18 @@
 #include "mvbase.h"
 #include "dbpserver.h"
 #include "event.h"
+#include "mvpeernet.h"
 #include "walleve/walleve.h"
 
 #include <set>
 #include <utility>
 #include <unordered_map>
 
+
 namespace multiverse
 {
+
+using namespace network;
 
 class CDbpService : public walleve::IIOModule, virtual public CDBPEventListener, virtual public CMvDBPEventListener
 {
@@ -28,6 +32,11 @@ public:
     bool HandleEvent(CMvEventDbpUnSub& event) override;
     bool HandleEvent(CMvEventDbpMethod& event) override;
     bool HandleEvent(CMvEventDbpPong& event) override;
+    bool HandleEvent(CMvEventDbpBroken& event) override;
+    bool HandleEvent(CMvEventDbpAdded& event) override;
+    bool HandleEvent(CMvEventDbpRemoveSession& event) override;
+    // client post evnet register fork id
+    bool HandleEvent(CMvEventDbpRegisterForkID& event) override;
 
     // notify add msg(block tx ...) to event handler
     bool HandleEvent(CMvEventDbpUpdateNewBlock& event) override;
@@ -49,27 +58,39 @@ private:
     void HandleGetBlocks(CMvEventDbpMethod& event);
     void HandleGetTransaction(CMvEventDbpMethod& event);
     void HandleSendTransaction(CMvEventDbpMethod& event);
+    void HandleRegisterFork(CMvEventDbpMethod& event);
+    void HandleSendBlock(CMvEventDbpMethod& event);
+    void HandleSendTx(CMvEventDbpMethod& event);
 
     bool IsTopicExist(const std::string& topic);
     bool IsHaveSubedTopicOf(const std::string& id);
 
     void SubTopic(const std::string& id, const std::string& session, const std::string& topic);
     void UnSubTopic(const std::string& id);
+    void RemoveSession(const std::string& session);
 
     void PushBlock(const std::string& forkid, const CMvDbpBlock& block);
     void PushTx(const std::string& forkid, const CMvDbpTransaction& dbptx);
 
+    ///////////  super node  ////////////
+    void UpdateChildNodeForks(const std::string& session, const std::string& forks);
 protected:
     walleve::IIOProc* pDbpServer;
+    walleve::IIOProc* pDbpClient;
     IService* pService;
     ICoreProtocol* pCoreProtocol;
     IWallet* pWallet;
+    IMvNetChannel* pNetChannel;
 
 private:
     std::map<std::string, std::string> mapIdSubedTopic; // id => subed topic
 
     std::set<std::string> setSubedAllBlocksIds; // block ids
     std::set<std::string> setSubedAllTxIds;     // tx ids
+
+    typedef std::set<std::string> ForksType;
+    std::map<std::string, ForksType> mapSessionChildNodeForks; // session => child node forks
+    ForksType setThisNodeForks;    // this node support forks
 
     std::map<std::string, std::string> mapIdSubedSession;       // id => session
     std::unordered_map<std::string, bool> mapCurrentTopicExist; // topic => enabled

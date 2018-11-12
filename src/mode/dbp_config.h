@@ -36,6 +36,19 @@ public:
 public:
     boost::asio::ip::tcp::endpoint epDbp;
 };
+
+class CMvDbpClientConfig : virtual public CMvDbpBasicConfig,
+                           virtual public CMvDbpClientConfigOption
+{
+public:
+    CMvDbpClientConfig();
+    virtual ~CMvDbpClientConfig();
+    virtual bool PostLoad();
+    virtual std::string ListConfig() const;
+    virtual std::string Help() const;
+public:
+    boost::asio::ip::tcp::endpoint epParentHost;
+};
 } // namespace multiverse
 
 #endif  // MULTIVERSE_DBP_CONFIG_H

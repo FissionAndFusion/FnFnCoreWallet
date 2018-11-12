@@ -11,8 +11,7 @@
 #include <boost/bimap.hpp>
 #include <boost/any.hpp>
 
-#include "dbp.pb.h"
-#include "lws.pb.h"
+#include "dbputils.h"
 
 using namespace walleve;
 
@@ -65,14 +64,6 @@ public:
 class CDbpClient
 {
 public:
-    enum SendType
-    {
-    ADDED = 0,
-    PING = 1,
-    OTHER = 100
-    };
-
-public:
     CDbpClient(CDbpServer* pServerIn, CDbpProfile* pProfileIn,
              CIOClient* pClientIn, uint64 nonce);
     ~CDbpClient();
@@ -88,14 +79,12 @@ public:
     void SendResponse(CMvDbpFailed& body);
     void SendResponse(CMvDbpNoSub& body);
     void SendResponse(CMvDbpReady& body);
-    void SendResponse(CMvDbpAdded& body);
-    void SendResponse(CMvDbpMethodResult& body);
+    void SendResponse(const std::string& client, CMvDbpAdded& body);
+    void SendResponse(const std::string& client, CMvDbpMethodResult& body);
     void SendPong(const std::string& id);
     void SendPing(const std::string& id);
     void SendResponse(const std::string& reason, const std::string& description);
-    void SendMessage(dbp::Base* pBaseMsg);
-    void SendPingMessage(dbp::Base* pBaseMsg);
-    void SendAddedMessage(dbp::Base* pBaseMsg);
+    void SendMessage(dbp::Msg type, google::protobuf::Any* any);
 
 protected:
     void StartReadHeader();
@@ -104,14 +93,14 @@ protected:
     void HandleReadHeader(std::size_t nTransferred);
     void HandleReadPayload(std::size_t nTransferred, uint32_t len);
     void HandleReadCompleted(uint32_t len);
-    void HandleWritenResponse(std::size_t nTransferred, SendType type);
+    void HandleWritenResponse(std::size_t nTransferred, dbp::Msg type);
 
-    void WriteMessageToSendStream(dbp::Base *pBaseMsg);
     bool IsSentComplete();
 
 private:
     std::string strSessionId;
-    std::queue<dbp::Base> queueAddedSend;
+    std::queue<std::pair<dbp::Msg,std::string>> queueMessage;
+    bool IsReading;
 
 protected:
     CDbpServer* pServer;
@@ -128,9 +117,11 @@ class CSessionProfile
 public:
     CDbpClient* pDbpClient;
     std::string strSessionId;
+    std::string strClient;
     uint64 nTimeStamp;
     std::shared_ptr<boost::asio::deadline_timer> ptrPingTimer;
-    std::string strForkId;
+    std::string strForkId; // for lws
+    std::set<std::string> setChildForks; // for super node
 };
 
 class CDbpServer : public CIOProc, virtual public CDBPEventListener, virtual public CMvDBPEventListener
@@ -184,7 +175,7 @@ protected:
 
     std::string GetUdata(dbp::Connect* pConnect, const std::string& keyName);
     std::string GenerateSessionId();
-    void CreateSession(const std::string& session, const std::string& forkID, CDbpClient* pDbpClient);
+    void CreateSession(const std::string& session, const std::string& client, const std::string& forkID, CDbpClient* pDbpClient);
     void UpdateSession(const std::string& session, CDbpClient* pDbpClient);
 
     void SendPingHandler(const boost::system::error_code& err, const CSessionProfile& sessionProfile);
@@ -196,7 +187,7 @@ protected:
 
     typedef boost::bimap<std::string, CDbpClient*> SessionClientBimapType;
     typedef SessionClientBimapType::value_type position_pair;
-    SessionClientBimapType bimapSessionClient;                //session id <=> CDbpClient
+    SessionClientBimapType bimapSessionClient;                // session id <=> CDbpClient
     std::map<std::string, CSessionProfile> mapSessionProfile; // session id => session profile
 };
 } //namespace multiverse

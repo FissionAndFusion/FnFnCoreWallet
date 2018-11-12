@@ -132,7 +132,8 @@ public:
                                 EConfigType::NETWORK,
                                 EConfigType::RPCSERVER, 
                                 EConfigType::STORAGE,
-                                EConfigType::DBPSERVER
+                                EConfigType::DBPSERVER,
+                                EConfigType::DBPCLIENT
                              >(cmd);
             }
             case EModeType::CONSOLE:
@@ -183,6 +184,7 @@ public:
                     EModuleType::NETCHANNEL,
                     EModuleType::DELEGATEDCHANNEL,
                     EModuleType::SERVICE,
+                    EModuleType::DBPCLIENT,
                     EModuleType::DBPSERVER,
                     EModuleType::DBPSERVICE,
                     EModuleType::HTTPSERVER,
