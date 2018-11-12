@@ -20,9 +20,16 @@ CDbpService::CDbpService()
     pDbpServer = NULL;
     pNetChannel = NULL;
 
-    std::unordered_map<std::string, bool> temp_map = boost::assign::map_list_of("all-block", true)("all-tx", true)("changed", true)("removed", true);
+    std::unordered_map<std::string, IdsType> temp_map = 
+        boost::assign::map_list_of("all-block", std::set<std::string>())
+                                  ("all-tx",    std::set<std::string>())
+                                  ("sys-cmd",   std::set<std::string>())
+                                  ("tx-cmd",    std::set<std::string>())
+                                  ("block-cmd", std::set<std::string>())
+                                  ("changed",   std::set<std::string>())
+                                  ("removed",   std::set<std::string>());
 
-    mapCurrentTopicExist = temp_map;
+    mapTopicIds = temp_map;
 }
 
 CDbpService::~CDbpService()
@@ -140,6 +147,34 @@ static void print_tx(const CMvDbpTransaction &tx)
     std::cout << "   fork hash:" << forkHash.ToString() << std::endl;
 }
 
+static void print_syscmd(const CMvDbpSysCmd &cmd)
+{
+    uint256 forkHash(std::vector<unsigned char>(cmd.fork.begin(),cmd.fork.end()));
+
+    std::cout << "[<]recived sys cmd" << std::endl;
+    std::cout << "   fork hash:" << forkHash.ToString() << std::endl;
+}
+
+static void print_blockcmd(const CMvDbpBlockCmd &cmd)
+{
+    uint256 hash(std::vector<unsigned char>(cmd.hash.begin(),cmd.hash.end()));
+    uint256 forkHash(std::vector<unsigned char>(cmd.fork.begin(),cmd.fork.end()));
+
+    std::cout << "[<]recived block cmd" << std::endl;
+    std::cout << "   hash:" << hash.ToString() << std::endl;
+    std::cout << "   fork hash:" << forkHash.ToString() << std::endl;
+}
+
+static void print_txcmd(const CMvDbpTxCmd &cmd)
+{
+    uint256 hash(std::vector<unsigned char>(cmd.hash.begin(),cmd.hash.end()));
+    uint256 forkHash(std::vector<unsigned char>(cmd.fork.begin(),cmd.fork.end()));
+
+    std::cout << "[<]recived tx cmd" << std::endl;
+    std::cout << "   hash:" << hash.ToString() << std::endl;
+    std::cout << "   fork hash:" << forkHash.ToString() << std::endl;
+}
+
 void CDbpService::HandleAddedBlock(const CMvDbpBlock& block)
 {
     uint256 forkHash(std::vector<unsigned char>(block.fork.begin(),block.fork.end()));
@@ -168,8 +203,56 @@ void CDbpService::HandleAddedTx(const CMvDbpTransaction& tx)
     }
     else
     {
-        // Dispatch Block to child fork node
+        // Dispatch Tx to child fork node
         PushTx(forkHash.ToString(),tx);
+    }
+}
+
+void CDbpService::HandleAddedSysCmd(const CMvDbpSysCmd& cmd)
+{
+    uint256 forkHash(std::vector<unsigned char>(cmd.fork.begin(),cmd.fork.end()));
+
+    if(setThisNodeForks.find(forkHash.ToString()) != setThisNodeForks.end())
+    {
+        // THIS FORK NODE Handle this TODO
+        print_syscmd(cmd);
+    }
+    else
+    {
+        // Dispatch SysCmd to child fork node
+        PushSysCmd(forkHash.ToString(),cmd);
+    }
+}
+
+void CDbpService::HandleAddedBlockCmd(const CMvDbpBlockCmd& cmd)
+{
+    uint256 forkHash(std::vector<unsigned char>(cmd.fork.begin(),cmd.fork.end()));
+
+    if(setThisNodeForks.find(forkHash.ToString()) != setThisNodeForks.end())
+    {
+        // THIS FORK NODE Handle this TODO
+        print_blockcmd(cmd);
+    }
+    else
+    {
+        // Dispatch BlockCmd to child fork node
+        PushBlockCmd(forkHash.ToString(),cmd);
+    }
+}
+
+void CDbpService::HandleAddedTxCmd(const CMvDbpTxCmd& cmd)
+{
+    uint256 forkHash(std::vector<unsigned char>(cmd.fork.begin(),cmd.fork.end()));
+
+    if(setThisNodeForks.find(forkHash.ToString()) != setThisNodeForks.end())
+    {
+        // THIS FORK NODE Handle this TODO
+        print_txcmd(cmd);
+    }
+    else
+    {
+        // Dispatch TxCmd to child fork node
+        PushTxCmd(forkHash.ToString(),cmd);
     }
 }
 
@@ -184,6 +267,21 @@ bool CDbpService::HandleEvent(CMvEventDbpAdded& event)
     {
         CMvDbpTransaction tx = boost::any_cast<CMvDbpTransaction>(event.data.anyAddedObj);
         HandleAddedTx(tx);
+    }
+    else if(event.data.name == "sys-cmd")
+    {
+        CMvDbpSysCmd cmd = boost::any_cast<CMvDbpSysCmd>(event.data.anyAddedObj);
+        HandleAddedSysCmd(cmd);
+    }
+    else if(event.data.name == "block-cmd")
+    {
+        CMvDbpBlockCmd cmd = boost::any_cast<CMvDbpBlockCmd>(event.data.anyAddedObj);
+        HandleAddedBlockCmd(cmd);
+    }
+    else if(event.data.name == "tx-cmd")
+    {
+        CMvDbpTxCmd cmd = boost::any_cast<CMvDbpTxCmd>(event.data.anyAddedObj);
+        HandleAddedTxCmd(cmd);
     }
     else
     {
@@ -347,32 +445,21 @@ void CDbpService::HandleSendTransaction(CMvEventDbpMethod& event)
 
 bool CDbpService::IsTopicExist(const std::string& topic)
 {
-    return mapCurrentTopicExist.find(topic) != mapCurrentTopicExist.end();
-}
-
-bool CDbpService::IsHaveSubedTopicOf(const std::string& id)
-{
-    return mapIdSubedTopic.find(id) != mapIdSubedTopic.end();
+    return mapTopicIds.find(topic) != mapTopicIds.end();
 }
 
 void CDbpService::SubTopic(const std::string& id, const std::string& session, const std::string& topic)
 {
-    mapIdSubedTopic.insert(std::make_pair(id, topic));
-
-    if (topic == "all-block")
-        setSubedAllBlocksIds.insert(id);
-    if (topic == "all-tx")
-        setSubedAllTxIds.insert(id);
-
+    mapTopicIds[topic].insert(id);
     mapIdSubedSession.insert(std::make_pair(id, session));
 }
 
 void CDbpService::UnSubTopic(const std::string& id)
 {
-    setSubedAllBlocksIds.erase(id);
-    setSubedAllTxIds.erase(id);
-
-    mapIdSubedTopic.erase(id);
+    for(auto& kv : mapTopicIds)
+    {
+        kv.second.erase(id);
+    }
     mapIdSubedSession.erase(id);
 }
 
@@ -744,12 +831,13 @@ void CDbpService::CreateDbpTransaction(const CTransaction& tx, const uint256& fo
 
 void CDbpService::PushBlock(const std::string& forkid, const CMvDbpBlock& block)
 {
+    const auto& allBlockIds = mapTopicIds["all-block"];   
     for (const auto& kv : mapIdSubedSession)
     {
         std::string id = kv.first;
         std::string session = kv.second;
 
-        if (setSubedAllBlocksIds.find(id) != setSubedAllBlocksIds.end())
+        if (allBlockIds.find(id) != allBlockIds.end())
         {
             CMvEventDbpAdded eventAdded(session);
             eventAdded.data.id = id;
@@ -763,18 +851,79 @@ void CDbpService::PushBlock(const std::string& forkid, const CMvDbpBlock& block)
 
 void CDbpService::PushTx(const std::string& forkid, const CMvDbpTransaction& dbptx)
 {
+    const auto& allTxIds = mapTopicIds["all-tx"];
     for (const auto& kv : mapIdSubedSession)
     {
         std::string id = kv.first;
         std::string session = kv.second;
 
-        if (setSubedAllTxIds.find(id) != setSubedAllTxIds.end())
+        if (allTxIds.find(id) != allTxIds.end())
         {
             CMvEventDbpAdded eventAdded(session);
             eventAdded.data.id = id;
             eventAdded.data.forkid = forkid;
             eventAdded.data.name = "all-tx";
             eventAdded.data.anyAddedObj = dbptx;
+            pDbpServer->DispatchEvent(&eventAdded);
+        }
+    }
+}
+
+void CDbpService::PushSysCmd(const std::string& forkid, const CMvDbpSysCmd& syscmd)
+{
+    const auto& sysCmdIds = mapTopicIds["sys-cmd"];
+    for (const auto& kv : mapIdSubedSession)
+    {
+        std::string id = kv.first;
+        std::string session = kv.second;
+
+        if (sysCmdIds.find(id) != sysCmdIds.end())
+        {
+            CMvEventDbpAdded eventAdded(session);
+            eventAdded.data.id = id;
+            eventAdded.data.forkid = forkid;
+            eventAdded.data.name = "sys-cmd";
+            eventAdded.data.anyAddedObj = syscmd;
+            pDbpServer->DispatchEvent(&eventAdded);
+        }
+    }
+}
+
+void CDbpService::PushTxCmd(const std::string& forkid, const CMvDbpTxCmd& txcmd)
+{
+    const auto& txCmdIds = mapTopicIds["tx-cmd"];
+    for (const auto& kv : mapIdSubedSession)
+    {
+        std::string id = kv.first;
+        std::string session = kv.second;
+
+        if (txCmdIds.find(id) != txCmdIds.end())
+        {
+            CMvEventDbpAdded eventAdded(session);
+            eventAdded.data.id = id;
+            eventAdded.data.forkid = forkid;
+            eventAdded.data.name = "tx-cmd";
+            eventAdded.data.anyAddedObj = txcmd;
+            pDbpServer->DispatchEvent(&eventAdded);
+        }
+    }
+}
+
+void CDbpService::PushBlockCmd(const std::string& forkid, const CMvDbpBlockCmd& blockcmd)
+{
+    const auto& blockCmdIds = mapTopicIds["block-cmd"];
+    for (const auto& kv : mapIdSubedSession)
+    {
+        std::string id = kv.first;
+        std::string session = kv.second;
+
+        if (blockCmdIds.find(id) != blockCmdIds.end())
+        {
+            CMvEventDbpAdded eventAdded(session);
+            eventAdded.data.id = id;
+            eventAdded.data.forkid = forkid;
+            eventAdded.data.name = "block-cmd";
+            eventAdded.data.anyAddedObj = blockcmd;
             pDbpServer->DispatchEvent(&eventAdded);
         }
     }

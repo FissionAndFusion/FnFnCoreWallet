@@ -190,8 +190,56 @@ void CDbpClient::SendResponse(const std::string& client, CMvDbpAdded& body)
             addedMsg.set_allocated_object(anyTx);
         }
     }
+    else if(body.anyAddedObj.type() == typeid(CMvDbpSysCmd))
+    {
+        if(client != "supernode")
+        {
+            std::cerr << "client type is not supernode for SysCmd\n";
+            return; 
+        }
+
+        CMvDbpSysCmd tempSysCmd = boost::any_cast<CMvDbpSysCmd>(body.anyAddedObj);
+        sn::SysCmd cmd;
+        CDbpUtils::DbpToSnSysCmd(&tempSysCmd, cmd);
+        google::protobuf::Any* anyCmd = new google::protobuf::Any();
+        anyCmd->PackFrom(cmd);
+        addedMsg.set_allocated_object(anyCmd);
+    }
+    else if(body.anyAddedObj.type() == typeid(CMvDbpBlockCmd))
+    {
+        if(client != "supernode")
+        {
+            std::cerr << "client type is not supernode for BlockCmd\n";
+            return;
+        }
+
+        CMvDbpBlockCmd tempBlockCmd = boost::any_cast<CMvDbpBlockCmd>(body.anyAddedObj);
+        sn::BlockCmd cmd;
+        CDbpUtils::DbpToSnBlockCmd(&tempBlockCmd, cmd);
+        google::protobuf::Any* anyCmd = new google::protobuf::Any();
+        anyCmd->PackFrom(cmd);
+        addedMsg.set_allocated_object(anyCmd);
+
+    }
+    else if(body.anyAddedObj.type() == typeid(CMvDbpTxCmd))
+    {
+        if(client != "supernode")
+        {
+            std::cerr << "client type is not supernode for TxCmd\n";
+            return;
+        }
+
+        CMvDbpTxCmd tempTxCmd = boost::any_cast<CMvDbpTxCmd>(body.anyAddedObj);
+        sn::TxCmd cmd;
+        CDbpUtils::DbpToSnTxCmd(&tempTxCmd,cmd);
+        google::protobuf::Any* anyCmd = new google::protobuf::Any();
+        anyCmd->PackFrom(cmd);
+        addedMsg.set_allocated_object(anyCmd);
+    }
     else
     {
+        std::cerr << "Unknown added type.\n";
+        return;
     }
 
     google::protobuf::Any* anyAdded = new google::protobuf::Any();

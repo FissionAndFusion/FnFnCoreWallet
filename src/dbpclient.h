@@ -168,6 +168,12 @@ protected:
     void RemoveSession(CMvDbpClientSocket* pClientSocket);
     void RemoveClientSocket(CMvDbpClientSocket* pClientSocket);
 
+    void HandleAddedBlock(const dbp::Added& added, CMvDbpClientSocket* pClientSocket);
+    void HandleAddedTx(const dbp::Added& added, CMvDbpClientSocket* pClientSocket);
+    void HandleAddedSysCmd(const dbp::Added& added, CMvDbpClientSocket* pClientSocket);
+    void HandleAddedBlockCmd(const dbp::Added& added, CMvDbpClientSocket* pClientSocket);
+    void HandleAddedTxCmd(const dbp::Added& added, CMvDbpClientSocket* pClientSocket); 
+
 protected:
     bool HandleEvent(CMvEventDbpRegisterForkID& event) override;
     bool HandleEvent(CMvEventDbpSendBlock& event) override;

@@ -562,6 +562,86 @@ void CMvDbpClient::HandleResult(CMvDbpClientSocket* pClientSocket, google::proto
     }
 }
 
+void CMvDbpClient::HandleAddedBlock(const dbp::Added& added, CMvDbpClientSocket* pClientSocket)
+{
+    sn::Block block;
+    added.object().UnpackTo(&block);
+
+    CMvDbpBlock dbpBlock;
+    CDbpUtils::SnToDbpBlock(&block,dbpBlock);
+        
+    CMvEventDbpAdded* pEventAdded =  new CMvEventDbpAdded(pClientSocket->GetSession());
+    pEventAdded->data.id = added.id();
+    pEventAdded->data.name = added.name();
+    pEventAdded->data.anyAddedObj = dbpBlock;
+
+    pDbpService->PostEvent(pEventAdded);
+}
+
+void CMvDbpClient::HandleAddedTx(const dbp::Added& added, CMvDbpClientSocket* pClientSocket)
+{
+    sn::Transaction tx;
+    added.object().UnpackTo(&tx);
+
+    CMvDbpTransaction dbpTx;
+    CDbpUtils::SnToDbpTransaction(&tx,&dbpTx);
+
+    CMvEventDbpAdded* pEventAdded =  new CMvEventDbpAdded(pClientSocket->GetSession());
+    pEventAdded->data.id = added.id();
+    pEventAdded->data.name = added.name();
+    pEventAdded->data.anyAddedObj = dbpTx;
+
+    pDbpService->PostEvent(pEventAdded);
+}
+
+void CMvDbpClient::HandleAddedSysCmd(const dbp::Added& added, CMvDbpClientSocket* pClientSocket)
+{
+    sn::SysCmd cmd;
+    added.object().UnpackTo(&cmd);
+
+    CMvDbpSysCmd dbpCmd;
+    CDbpUtils::SnToDbpSysCmd(&cmd, dbpCmd);
+
+    CMvEventDbpAdded* pEventAdded =  new CMvEventDbpAdded(pClientSocket->GetSession());
+    pEventAdded->data.id = added.id();
+    pEventAdded->data.name = added.name();
+    pEventAdded->data.anyAddedObj = dbpCmd;
+
+    pDbpService->PostEvent(pEventAdded);
+}
+
+void CMvDbpClient::HandleAddedBlockCmd(const dbp::Added& added, CMvDbpClientSocket* pClientSocket)
+{
+    sn::BlockCmd cmd;
+    added.object().UnpackTo(&cmd);
+
+    CMvDbpBlockCmd dbpCmd;
+    CDbpUtils::SnToDbpBlockCmd(&cmd, dbpCmd);
+
+    CMvEventDbpAdded* pEventAdded =  new CMvEventDbpAdded(pClientSocket->GetSession());
+    pEventAdded->data.id = added.id();
+    pEventAdded->data.name = added.name();
+    pEventAdded->data.anyAddedObj = dbpCmd;
+
+    pDbpService->PostEvent(pEventAdded);
+}
+
+void CMvDbpClient::HandleAddedTxCmd(const dbp::Added& added, CMvDbpClientSocket* pClientSocket)
+{
+    sn::TxCmd cmd;
+    added.object().UnpackTo(&cmd);
+
+    CMvDbpTxCmd dbpCmd;
+    CDbpUtils::SnToDbpTxCmd(&cmd, dbpCmd);
+
+    CMvEventDbpAdded* pEventAdded =  new CMvEventDbpAdded(pClientSocket->GetSession());
+    pEventAdded->data.id = added.id();
+    pEventAdded->data.name = added.name();
+    pEventAdded->data.anyAddedObj = dbpCmd;
+
+    pDbpService->PostEvent(pEventAdded);
+}
+
 void CMvDbpClient::HandleAdded(CMvDbpClientSocket* pClientSocket, google::protobuf::Any* any)
 {
     dbp::Added added;
@@ -569,35 +649,27 @@ void CMvDbpClient::HandleAdded(CMvDbpClientSocket* pClientSocket, google::protob
 
     if (added.name() == "all-block")
     {
-        sn::Block block;
-        added.object().UnpackTo(&block);
-
-        CMvDbpBlock dbpBlock;
-        CDbpUtils::SnToDbpBlock(&block,dbpBlock);
-        
-        CMvEventDbpAdded* pEventAdded =  new CMvEventDbpAdded(pClientSocket->GetSession());
-        pEventAdded->data.id = added.id();
-        pEventAdded->data.name = added.name();
-        pEventAdded->data.anyAddedObj = dbpBlock;
-
-        pDbpService->PostEvent(pEventAdded);
-        
+        HandleAddedBlock(added, pClientSocket);
     }
 
     if (added.name() == "all-tx")
     {
-        sn::Transaction tx;
-        added.object().UnpackTo(&tx);
+        HandleAddedTx(added, pClientSocket);
+    }
 
-        CMvDbpTransaction dbpTx;
-        CDbpUtils::SnToDbpTransaction(&tx,&dbpTx);
+    if (added.name() == "sys-cmd")
+    {
+        HandleAddedSysCmd(added, pClientSocket);
+    }
 
-        CMvEventDbpAdded* pEventAdded =  new CMvEventDbpAdded(pClientSocket->GetSession());
-        pEventAdded->data.id = added.id();
-        pEventAdded->data.name = added.name();
-        pEventAdded->data.anyAddedObj = dbpTx;
+    if (added.name() == "block-cmd")
+    {
+       HandleAddedBlockCmd(added, pClientSocket);
+    }
 
-        pDbpService->PostEvent(pEventAdded);
+    if (added.name() == "tx-cmd")
+    {
+        HandleAddedTxCmd(added, pClientSocket);
     }
 }
 
@@ -825,7 +897,7 @@ void CMvDbpClient::RegisterDefaultForks(CMvDbpClientSocket* pClientSocket)
 
 void CMvDbpClient::SubscribeDefaultTopics(CMvDbpClientSocket* pClientSocket)
 {
-    std::vector<std::string> vTopics{"all-block","all-tx"};
+    std::vector<std::string> vTopics{"all-block","all-tx","sys-cmd","tx-cmd", "block-cmd"};
     pClientSocket->SendSubScribeTopics(vTopics);
 }
 

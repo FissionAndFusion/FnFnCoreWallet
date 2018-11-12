@@ -121,6 +121,31 @@ public:
     std::vector<uint8> fork;            // 当前区块的forkid
 };
 
+class CMvDbpSysCmd
+{
+public:
+    std::string id;
+    std::vector<uint8> fork;
+    int32 nCmd;
+    std::vector<std::string> args; 
+};
+
+class CMvDbpTxCmd
+{
+public:
+    std::string id;
+    std::vector<uint8> fork;
+    std::vector<uint8> hash;
+};
+
+class CMvDbpBlockCmd
+{
+public:
+    std::string id;
+    std::vector<uint8> fork;
+    std::vector<uint8> hash;
+};
+
 class CMvDbpAdded : public CMvDbpRespond
 {
 public:

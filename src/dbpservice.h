@@ -63,9 +63,11 @@ private:
     void HandleSendTx(CMvEventDbpMethod& event);
     void HandleAddedBlock(const CMvDbpBlock& block);
     void HandleAddedTx(const CMvDbpTransaction& tx);
+    void HandleAddedSysCmd(const CMvDbpSysCmd& cmd);
+    void HandleAddedBlockCmd(const CMvDbpBlockCmd& cmd);
+    void HandleAddedTxCmd(const CMvDbpTxCmd& cmd);
 
     bool IsTopicExist(const std::string& topic);
-    bool IsHaveSubedTopicOf(const std::string& id);
 
     void SubTopic(const std::string& id, const std::string& session, const std::string& topic);
     void UnSubTopic(const std::string& id);
@@ -73,6 +75,9 @@ private:
 
     void PushBlock(const std::string& forkid, const CMvDbpBlock& block);
     void PushTx(const std::string& forkid, const CMvDbpTransaction& dbptx);
+    void PushSysCmd(const std::string& forkid, const CMvDbpSysCmd& syscmd);
+    void PushTxCmd(const std::string& forkid, const CMvDbpTxCmd& txcmd);
+    void PushBlockCmd(const std::string& forkid, const CMvDbpBlockCmd& blockcmd);
 
     ///////////  super node  ////////////
     void UpdateChildNodeForks(const std::string& session, const std::string& forks);
@@ -86,17 +91,13 @@ protected:
     IMvNetChannel* pNetChannel;
 
 private:
-    std::map<std::string, std::string> mapIdSubedTopic; // id => subed topic
-
-    std::set<std::string> setSubedAllBlocksIds; // block ids
-    std::set<std::string> setSubedAllTxIds;     // tx ids
-
     typedef std::set<std::string> ForksType;
+    typedef std::set<std::string> IdsType; 
     std::map<std::string, ForksType> mapSessionChildNodeForks; // session => child node forks
     ForksType setThisNodeForks;    // this node support forks
 
     std::map<std::string, std::string> mapIdSubedSession;       // id => session
-    std::unordered_map<std::string, bool> mapCurrentTopicExist; // topic => enabled
+    std::unordered_map<std::string, IdsType> mapTopicIds;       // topic => ids
 
     std::unordered_map<std::string, std::pair<uint256,uint256>> mapForkPoint; // fork point hash => (fork hash, fork point hash)
 };

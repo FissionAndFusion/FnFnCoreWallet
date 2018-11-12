@@ -348,6 +348,63 @@ public:
 
     }
 
+    static void DbpToSnSysCmd(const CMvDbpSysCmd* pCmd, sn::SysCmd& cmd)
+    {
+        cmd.set_id(pCmd->id);
+        std::string fork(pCmd->fork.begin(), pCmd->fork.end());
+        cmd.set_forkid(fork);
+        cmd.set_cmd(pCmd->nCmd);
+
+        for(const auto& arg : pCmd->args)
+        {
+            cmd.add_arg(arg);
+        }
+    }
+    
+    static void SnToDbpSysCmd(const sn::SysCmd* pCmd, CMvDbpSysCmd& cmd)
+    {
+        cmd.id = pCmd->id();
+        cmd.fork = std::vector<uint8>(pCmd->forkid().begin(), pCmd->forkid().end());
+        cmd.nCmd = pCmd->cmd();
+
+        for(int i = 0; i < pCmd->arg_size(); ++i)
+        {
+            cmd.args.push_back(pCmd->arg(i));
+        }
+    }
+
+    static void DbpToSnBlockCmd(const CMvDbpBlockCmd* pCmd, sn::BlockCmd& cmd)
+    {
+        cmd.set_id(pCmd->id);
+        std::string fork(pCmd->fork.begin(), pCmd->fork.end());
+        cmd.set_forkid(fork);
+        std::string hash(pCmd->hash.begin(), pCmd->hash.end());
+        cmd.set_hash(hash);
+    }
+
+    static void SnToDbpBlockCmd(const sn::BlockCmd* pCmd, CMvDbpBlockCmd& cmd)
+    {
+        cmd.id = pCmd->id();
+        cmd.fork = std::vector<uint8>(pCmd->forkid().begin(), pCmd->forkid().end());
+        cmd.hash = std::vector<uint8>(pCmd->hash().begin(), pCmd->hash().end());
+    }
+    
+    static void DbpToSnTxCmd(const CMvDbpTxCmd* pCmd, sn::TxCmd& cmd)
+    {
+        cmd.set_id(pCmd->id);
+        std::string fork(pCmd->fork.begin(), pCmd->fork.end());
+        cmd.set_forkid(fork);
+        std::string hash(pCmd->hash.begin(), pCmd->hash.end());
+        cmd.set_hash(hash);
+    }
+
+    static void SnToDbpTxCmd(const sn::TxCmd* pCmd, CMvDbpTxCmd& cmd)
+    {
+        cmd.id = pCmd->id();
+        cmd.fork = std::vector<uint8>(pCmd->forkid().begin(), pCmd->forkid().end());
+        cmd.hash = std::vector<uint8>(pCmd->hash().begin(), pCmd->hash().end());
+    }
+
 };
 } // namespace multiverse
 #endif // MULTIVERSE_DBP_UTILS_H
