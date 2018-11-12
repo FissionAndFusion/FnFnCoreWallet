@@ -415,7 +415,6 @@ bool CPeerNet::HandleEvent(CWalleveEventPeerNetClose& eventClose)
     {
         return false;
     }
-    std::cout << "********* CPeerNet::HandleEvent NetClose ************\n"; 
     RemovePeer(pPeer,eventClose.data);
     return true;
 }

@@ -125,16 +125,6 @@ static void print_block(CMvDbpBlock &block)
     std::cout << "   hash:" << GetHex(hash) << std::endl;
     std::cout << "   height:" << block.nHeight << std::endl;
     std::cout << "   prev hash:" << GetHex(prev_hash) << std::endl;
-
-    /*std::cout << "vtx size: " << block.vtx_size() << std::endl;
-    std::cout << "vtx v input size: " << block.vtx(0).vinput_size() << std::endl;
-    for (int i = 0; i < block.vtx(0).vinput_size(); ++i)
-    {
-        std::string txhash(block.vtx(0).vinput(i).hash());
-        reverse(txhash.begin(), txhash.end());
-        std::cout << "InputTxHash: " << GetHex(txhash) << std::endl;
-        std::cout << "InputTx n: " << block.vtx(0).vinput(i).n() << std::endl;
-    }*/
 }
 
 static void print_tx(CMvDbpTransaction &tx)
@@ -279,10 +269,6 @@ void CDbpService::HandleSendTransaction(CMvEventDbpMethod& event)
     std::vector<unsigned char> txData(data.begin(), data.end());
     walleve::CWalleveBufStream ss;
     ss.Write((char *)&txData[0], txData.size());
-
-    std::cout << "dump txData: \n";
-    ss.Dump();
-    
 
     CTransaction rawTx;
     try
@@ -452,7 +438,6 @@ bool CDbpService::GetBlocks(const uint256& forkHash, const uint256& startHash, i
     if (IsEmpty(connectForkHash))
     {
         connectForkHash = pCoreProtocol->GetGenesisBlockHash();
-        std::cout << "fork hash is empty. default main fork\n";
     }
 
     if(!IsForkHash(connectForkHash))
@@ -464,7 +449,6 @@ bool CDbpService::GetBlocks(const uint256& forkHash, const uint256& startHash, i
     if (IsEmpty(blockHash))
     {
         blockHash = pCoreProtocol->GetGenesisBlockHash();
-        std::cout << "start block hash is empty, default value is main fork hash\n";
     }
 
     int blockHeight = 0;
@@ -475,49 +459,26 @@ bool CDbpService::GetBlocks(const uint256& forkHash, const uint256& startHash, i
         return false;
     }
 
-
-    std::cout << "GetBocks fork hash is: " << connectForkHash.ToString() << "\n";
-
     if(!CalcForkPoints(connectForkHash))
     {
         std::cerr << "CalcForkPoint failed.\n";
         return false;
     }
 
-    /*for(const auto& ss : path)
-    {
-        std::cout << "( " << ss.first.ToString().substr(0,5) << ", " 
-            << ss.second.ToString().substr(0,5) << " )\n";
-    }*/
-    
-   // return false;
-
     const std::size_t nonExtendBlockMaxNum = n;
     std::size_t nonExtendBlockCount = 0;
-    
     
     pService->GetBlockLocation(blockHash, tempForkHash, blockHeight);
     
     std::vector<uint256> blocksHash;
     while (nonExtendBlockCount < nonExtendBlockMaxNum && 
             pService->GetBlockHash(tempForkHash, blockHeight, blocksHash))
-    {
-        
-        
-        std::cout << "###############################\n";
-
-        
+    {  
         for(int i = 0; i < blocksHash.size(); ++i)
         {
             CBlockEx block;
             int height;
             pService->GetBlockEx(blocksHash[i], block, tempForkHash, height);
-            std::cout << "block hash: "  << block.GetHash().ToString() << "\n";
-            std::cout << "block height: " << height << "\n";
-            std::cout << "block fork: " << tempForkHash.ToString() << "\n";
-            std::cout << "block type: " << block.nType << "\n";
-            std::cout << "block vtxcontxt size: " << block.vTxContxt.size() << "\n"; 
-            std::cout << "block vtx size: " << block.vtx.size() << "\n";
             if (block.nType != CBlock::BLOCK_EXTENDED)
             {
                 nonExtendBlockCount++;
@@ -529,10 +490,7 @@ bool CDbpService::GetBlocks(const uint256& forkHash, const uint256& startHash, i
         }
         
         TrySwitchFork(blocksHash[0],tempForkHash);
-        std::cout << "try swicth: " << tempForkHash.ToString() << "\n";
         blockHeight++;
-        std::cout << "input block height: " << blockHeight << "\n";
-        std::cout << "blocksHash size: " << blocksHash.size() << "\n";
         blocksHash.clear(); blocksHash.shrink_to_fit();
        
     }
@@ -696,7 +654,6 @@ void CDbpService::CreateDbpBlock(const CBlockEx& blockDetail, const uint256& for
     {
         CMvDbpTransaction dbpTx;
         int64 nValueIn = blockDetail.vTxContxt[k++].GetValueIn();
-        std::cout << "vtx index: " << k <<" Change ValueIn: " << nValueIn << "\n";
         CreateDbpTransaction(tx, tx.GetChange(nValueIn), dbpTx);
         block.vtx.push_back(dbpTx);
     }

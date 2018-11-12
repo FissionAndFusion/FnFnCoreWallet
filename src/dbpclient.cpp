@@ -162,8 +162,6 @@ void CMvDbpClientSocket::SendConnectSession(const std::string& session, const st
     google::protobuf::Any *any = new google::protobuf::Any();
     any->PackFrom(connect);
 
-    std::cout << "[>] connect session [dbpclient]\n";
-
     SendMessage(dbp::Msg::CONNECT,any);
 }
 
@@ -190,13 +188,9 @@ void CMvDbpClientSocket::SendMessage(dbp::Msg type, google::protobuf::Any* any)
 
     if(!IsSentComplete())
     {
-        std::cout << "not sent complete [dbpclient]\n";
         queueMessage.push(std::make_pair(type,bytes));
         return;
     }
-
-   // std::cout << "write message type: " <<  dbp::Msg_Name(type)  
-     //       << " message size: " << bytes.size() << " [dbpclient]" << "\n";
     
     ssSend.Write((char*)bytes.data(),bytes.size());
     pClient->Write(ssSend,boost::bind(&CMvDbpClientSocket::HandleWritenRequest,this,_1, type));
@@ -226,9 +220,6 @@ void CMvDbpClientSocket::HandleWritenRequest(std::size_t nTransferred, dbp::Msg 
             return;
         }
 
-       // std::cout << "sent message type: " <<  dbp::Msg_Name(type)  
-         //   << " message size: " << nTransferred << " [dbpclient]" << "\n"; 
-
         if(ssSend.GetSize() == 0 && !queueMessage.empty())
         {
             auto messagePair = queueMessage.front();
@@ -242,8 +233,6 @@ void CMvDbpClientSocket::HandleWritenRequest(std::size_t nTransferred, dbp::Msg 
 
         if(!IsReading)
         {
-            std::cout << "handle read [dbpclient]\n";
-            std::cout << "Recv Stream size: " << ssRecv.GetSize() << " [dbpclient]\n";
             pDbpClient->HandleClientSocketSent(this);
         }
     
@@ -258,11 +247,7 @@ void CMvDbpClientSocket::HandleReadHeader(std::size_t nTransferred)
 {   
     if (nTransferred == MSG_HEADER_LEN)
     {
-        //std::cout << "[<] read header: " << ssRecv.GetSize() << " [dbpclient]\n";
-        //std::string lenBuffer(MSG_HEADER_LEN, 0);
-        //ssRecv.Read(&lenBuffer[0], MSG_HEADER_LEN);
         std::string lenBuffer(ssRecv.GetData(), ssRecv.GetData() + MSG_HEADER_LEN);
-
         uint32_t nMsgHeaderLen = CDbpUtils::ParseLenFromMsgHeader(&lenBuffer[0], MSG_HEADER_LEN);
         if (nMsgHeaderLen == 0)
         {
@@ -295,7 +280,6 @@ void CMvDbpClientSocket::HandleReadPayload(std::size_t nTransferred,uint32_t len
 
 void CMvDbpClientSocket::HandleReadCompleted(uint32_t len)
 { 
-    //std::cout << "[<] read complete: " << ssRecv.GetSize() << " [dbpclient]\n";
     char head[4];
     ssRecv.Read(head,4);
     std::string payloadBuffer(len, 0);
@@ -477,7 +461,6 @@ void CMvDbpClient::HandleConnected(CMvDbpClientSocket* pClientSocket, google::pr
 {
     dbp::Connected connected;
     any->UnpackTo(&connected);
-    std::cout << "[<]connected session is: " << connected.session() << std::endl;
     CreateSession(connected.session(),pClientSocket);
     
     if(IsSessionExist(connected.session()))
@@ -520,7 +503,6 @@ void CMvDbpClient::HandlePing(CMvDbpClientSocket* pClientSocket, google::protobu
 {
     dbp::Ping ping;
     any->UnpackTo(&ping);
-    std::cout << "[<]ping: " << ping.id() << " [dbpclient]" << std::endl;
     pClientSocket->SendPong(ping.id());
 }
     
@@ -528,7 +510,6 @@ void CMvDbpClient::HandlePong(CMvDbpClientSocket* pClientSocket, google::protobu
 {
     dbp::Pong pong;
     any->UnpackTo(&pong);
-    std::cout << "[<]pong: " << pong.id() << " [dbpclient]" << std::endl;
 
     std::string session = bimapSessionClientSocket.right.at(pClientSocket);
     if(IsSessionExist(session))
@@ -605,14 +586,12 @@ void CMvDbpClient::HandleReady(CMvDbpClientSocket* pClientSocket, google::protob
 {
     dbp::Ready ready;
     any->UnpackTo(&ready);
-    std::cout << "[<]ready: " << ready.id() << " [dbpclient]" << std::endl;
 }
 
 void CMvDbpClient::HandleNoSub(CMvDbpClientSocket* pClientSocket, google::protobuf::Any* any)
 {
     dbp::Nosub nosub;
     any->UnpackTo(&nosub);
-    std::cout << "[<]nosub: " << nosub.id() << "errorcode: " << nosub.error() << std::endl;
 }
 
 bool CMvDbpClient::WalleveHandleInitialize()
@@ -695,10 +674,6 @@ bool CMvDbpClient::ClientConnected(CIOClient* pClient)
     WalleveLog("Connect parent node %s success,  port = %d\n",
                        (*it).first.address().to_string().c_str(),
                        (*it).first.port());
-    
-    std::cout << "Connect parent node" << 
-        (*it).first.address().to_string() << "success, " 
-        << "port " << (*it).first.port() << std::endl;
 
     return ActivateConnect(pClient);
 }
@@ -779,13 +754,11 @@ void CMvDbpClient::SendPingHandler(const boost::system::error_code& err, const C
 
     if(!HaveAssociatedSessionOf(sessionProfile.pClientSocket))
     {
-        std::cout << "*****PIng handler session error\n"; 
         return;
     }
 
     std::string utc = std::to_string(CDbpUtils::CurrentUTC());
     sessionProfile.pClientSocket->SendPing(utc);
-    std::cout << "[>]ping " << utc << "[dbpclient]" <<std::endl;
     
     sessionProfile.ptrPingTimer->expires_at(sessionProfile.ptrPingTimer->expires_at() + boost::posix_time::seconds(3));
     sessionProfile.ptrPingTimer->async_wait(boost::bind(&CMvDbpClient::SendPingHandler,
