@@ -6,6 +6,7 @@ import json
 import re
 from collections import OrderedDict
 from tool import *
+from functools import cmp_to_key
 
 rpc_json, rpc_protocol_h, rpc_protocol_cpp = None, None, None
 
@@ -50,7 +51,7 @@ def get_content(prefix, json, type):
 
 
 def get_type(prefix, json):
-    type = get_json_value(prefix, json, 'type', unicode)
+    type = get_json_value(prefix, json, 'type', str)
     reference = not type in json_type_list
     ref_cls = None
     if reference:
@@ -75,12 +76,12 @@ def get_default(prefix, json, type, required):
 
 
 def get_opt(prefix, json):
-    opt = get_json_value(prefix, json, 'opt', unicode, required=False)
+    opt = get_json_value(prefix, json, 'opt', str, required=False)
     return opt
 
 
 def get_condition(prefix, json, content):
-    condition = get_json_value(prefix, json, 'condition', unicode, required=False)
+    condition = get_json_value(prefix, json, 'condition', str, required=False)
     cond_key, cond_value, cond_cpp_name = None, None, None
     if condition:
         matched = re.match('^([^=]*)=(.*)$', condition)
@@ -883,12 +884,12 @@ def Help_cpp(config, w, scope):
 
     # parse example
     if config.example:
-        if isinstance(config.example, unicode):
+        if isinstance(config.example, str):
             one_line(example, config.example, example_req_indent)
         elif isinstance(config.example, list):
             for eg in config.example:
                 enter = '' if eg == config.example[0] else '\n'
-                if isinstance(eg, unicode):
+                if isinstance(eg, str):
                     one_line(example, eg, enter + example_req_indent)
                 elif isinstance(eg, dict):
                     if 'request' in eg:
@@ -949,7 +950,7 @@ def parse_params(class_prefix, content, allow_empty):
         cpp_type, sub_key, sub_type, sub_desc, subclass, subclass_prefix = None, None, None, None, None, None
 
         sub_content = get_content(arr_prefix, arr_content, 'array')
-        sub_key, sub_value = sub_content.items()[0]
+        sub_key, sub_value = list(sub_content.items())[0]
         sub_prefix = join_prefix(arr_prefix, sub_key)
 
         # reference
@@ -1038,7 +1039,7 @@ def parse_params(class_prefix, content, allow_empty):
         else:
             return 0
 
-    ret_params.sort(cmp=cmp_params)
+    ret_params.sort(key=cmp_to_key(cmp_params))
 
     return ret_params, ret_subclass
 
@@ -1175,7 +1176,7 @@ class Request:
         if is_pod(self.type):
             raise Exception('request type should be object or array')
 
-        name = get_json_value(prefix, self.content, 'name', unicode, u'data', required=False)
+        name = get_json_value(prefix, self.content, 'name', str, 'data', required=False)
         parsed_content = None
         if self.type == 'object':
             parsed_content = get_content(prefix, self.content, self.type)
@@ -1212,7 +1213,7 @@ class Response:
 
         self.type, self.reference, self.ref_cls = get_type(prefix, self.content)
 
-        name = get_json_value(prefix, self.content, 'name', unicode)
+        name = get_json_value(prefix, self.content, 'name', str)
         parsed_content = None
         if self.type == 'object':
             parsed_content = get_content(prefix, self.content, self.type)
@@ -1272,13 +1273,14 @@ class Config:
 def parse():
     with open(rpc_json, 'r') as r:
         content = json.loads(r.read(), object_pairs_hook=OrderedDict)
+        content = json_hook(content)
         check_value_type(rpc_json, content, dict)
 
     for cmd, detail in content.items():
         check_value_type(cmd, detail, dict)
 
-        type = get_json_value(cmd, detail, 'type', type=unicode, default=u'command')
-        name = get_json_value(cmd, detail, 'name', type=unicode, default=cmd.title())
+        type = get_json_value(cmd, detail, 'type', type=str, default='command')
+        name = get_json_value(cmd, detail, 'name', type=str, default=cmd.title())
 
         # stand-alone class
         if type == 'class':

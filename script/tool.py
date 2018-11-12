@@ -5,6 +5,7 @@ sys.dont_write_bytecode = True
 import math
 import re
 import os
+from collections import OrderedDict
 
 type_f = type
 
@@ -46,7 +47,7 @@ error_indent = tab_to_space('* ')
 
 
 def is_str(s):
-    return isinstance(s, str) or isinstance(s, unicode)
+    return isinstance(s, str) or isinstance(s, str)
 
 
 # length of esacpe \t to space
@@ -70,7 +71,7 @@ def space(s, indent=None):
 
     indent_len = step(s, len(indent))
 
-    return ' ' * (indent_len - len(s))
+    return ' ' * int(indent_len - len(s))
 
 
 # split string to multiple line by indent and max_line_len
@@ -106,7 +107,7 @@ def split(s, indent=None, max_len=None):
             blank = s.find(' ', end - 1)
             comma = s.find(',', end - 1)
             colon = s.find(':', end - 1)
-            min_end = min(filter(lambda x: x >= 0, [blank, comma, colon]) + [len(s) - 1])
+            min_end = min(list(filter(lambda x: x >= 0, [blank, comma, colon])) + [len(s) - 1])
             end = min_end + 1
 
         line = s[begin:end]
@@ -193,10 +194,10 @@ def get_json_value(prefix, json, key, type=None, default=None, required=True):
 
 # get string text or array text. If it's an array, join them.
 def get_multiple_text(prefix, json, key):
-    desc = get_json_value(prefix, json, key, default=u'')
+    desc = get_json_value(prefix, json, key, default='')
     if isinstance(desc, list):
-        desc = u'\n'.join(desc)
-    check_value_type(join_prefix(prefix, key), desc, unicode)
+        desc = '\n'.join(desc)
+    check_value_type(join_prefix(prefix, key), desc, str)
     return desc
 
 
@@ -208,11 +209,11 @@ def get_desc(prefix, json):
 # string to "string", others to string type
 def quote(o, type='string'):
     if type == 'string':
-        return u'"%s"' % o
+        return '"%s"' % o
     elif type == 'bool':
-        return unicode(o).lower()
+        return str(o).lower()
     else:
-        return unicode(o)
+        return str(o)
 
 # indent + prefix + "name + desc";
 # or
@@ -226,7 +227,7 @@ def terminal_str_code(indent, prefix, name, split_list):
         return indent + prefix + quote(escape(name)) + ';\n'
 
     first = indent + prefix + quote(escape(name + split_list[0]))
-    new_list = [first] + map(lambda x: quote(escape(x)), split_list[1:])
+    new_list = [first] + list(map(lambda x: quote(escape(x)), split_list[1:]))
     line_space = '\n' + indent + (' ' * len(prefix))
     return line_space.join(new_list) + ';\n'
 
@@ -260,3 +261,16 @@ def write_chapter(infos, w, indent):
         w.write(indent + 'oss << "\\n";\n')
     else:
         w.write(indent + 'oss << "\\tnone\\n\\n";\n')
+
+def json_hook(data):
+    if sys.version < '3' and isinstance(data, unicode):
+        return data.encode('utf-8')
+    if isinstance(data, list):
+        return [ json_hook(item) for item in data ]
+    if isinstance(data, dict):
+        return OrderedDict([
+            (json_hook(key), json_hook(value))
+            for key, value in data.items()
+        ])
+        
+    return data
