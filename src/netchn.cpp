@@ -196,6 +196,20 @@ int CNetChannel::GetPrimaryChainHeight()
     return 0;
 }
 
+bool CNetChannel::IsForkSynchronized(const uint256& hashFork) const
+{
+    boost::shared_lock<boost::shared_mutex> rlock(rwNetPeer);
+    for (map<uint64,CNetChannelPeer>::const_iterator it = mapPeer.begin();it != mapPeer.end();++it)
+    {
+        const CNetChannelPeer& peer = (*it).second; 
+        if (peer.IsSubscribed(hashFork) && !peer.IsSynchronized(hashFork))
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
 void CNetChannel::BroadcastBlockInv(const uint256& hashFork,const uint256& hashBlock,const set<uint64>& setKnownPeer)
 {
     network::CMvEventPeerInv eventInv(0,hashFork);

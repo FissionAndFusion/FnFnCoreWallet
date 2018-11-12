@@ -188,7 +188,7 @@ public:
     bool LoadIndex(CBlockOutline& diskIndex);
     bool LoadTx(CTransaction& tx,uint32 nTxFile,uint32 nTxOffset,uint256& hashFork);
     bool FilterTx(CTxFilter& filter);
-    bool FilterForkContext(CForkContextFilter& ctxtFilter);
+    bool FilterForkContext(CForkContextFilter& filter);
     bool GetForkBlockLocator(const uint256& hashFork,CBlockLocator& locator);
     bool GetForkBlockInv(const uint256& hashFork,const CBlockLocator& locator,std::vector<uint256>& vBlockHash,size_t nMaxCount);
 protected:

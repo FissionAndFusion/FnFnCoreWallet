@@ -98,14 +98,15 @@ public:
 class CForkContextFilter
 {
 public:
-    CForkContextFilter(const uint256& hashParentIn = 0,const std::string& strSymbolIn = "")
+    CForkContextFilter() : hashParent(0) {}
+    CForkContextFilter(const uint256& hashParentIn, const std::string& strSymbolIn )
     : hashParent(hashParentIn),strSymbol(strSymbolIn)
     {
     }
-    virtual bool FoundForkContext(const CForkContext& ctxt);
+    virtual bool FoundForkContext(const CForkContext& ctxt) = 0;
 public:
-    const uint256& hashParent;
-    const std::string& strSymbol;
+    const uint256 hashParent;
+    const std::string strSymbol;
 };
 
 #endif //MULTIVERSE_FORKCONTEXT_H

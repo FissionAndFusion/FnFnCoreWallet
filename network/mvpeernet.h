@@ -20,10 +20,11 @@ class IMvNetChannel : public walleve::IIOModule, virtual public CMvPeerEventList
 public:
     IMvNetChannel() : IIOModule("netchannel") {}
     virtual int GetPrimaryChainHeight() = 0;
-    virtual void BroadcastBlockInv(const uint256& hashFork,const uint256& hashBlock,const std::set<uint64>& setKnownPeer=std::set<uint64>())=0;
-    virtual void BroadcastTxInv(const uint256& hashFork)=0;
-    virtual void SubscribeFork(const uint256& hashFork)=0;
-    virtual void UnsubscribeFork(const uint256& hashFork)=0;
+    virtual bool IsForkSynchronized(const uint256& hashFork) const = 0;
+    virtual void BroadcastBlockInv(const uint256& hashFork,const uint256& hashBlock,const std::set<uint64>& setKnownPeer=std::set<uint64>()) = 0;
+    virtual void BroadcastTxInv(const uint256& hashFork) = 0;
+    virtual void SubscribeFork(const uint256& hashFork) = 0;
+    virtual void UnsubscribeFork(const uint256& hashFork) = 0;
 };
 
 class IMvDelegatedChannel : public walleve::IIOModule, virtual public CMvPeerEventListener

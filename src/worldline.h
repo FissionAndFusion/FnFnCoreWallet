@@ -37,6 +37,7 @@ public:
     bool GetTxUnspent(const uint256& hashFork,const std::vector<CTxIn>& vInput,
                                                     std::vector<CTxOutput>& vOutput) override;
     bool FilterTx(CTxFilter& filter) override;
+    bool FilterForkContext(CForkContextFilter& filter) override;
     MvErr AddNewForkContext(const CTransaction& txFork,CForkContext& ctxt) override;
     MvErr AddNewBlock(const CBlock& block,CWorldLineUpdate& update) override;
     MvErr AddNewOrigin(const CBlock& block,CWorldLineUpdate& update) override;
