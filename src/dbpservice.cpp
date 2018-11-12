@@ -147,6 +147,34 @@ static void print_tx(const CMvDbpTransaction &tx)
     std::cout << "   fork hash:" << forkHash.ToString() << std::endl;
 }
 
+static void print_syscmd(const CMvDbpSysCmd &cmd)
+{
+    uint256 forkHash(std::vector<unsigned char>(cmd.fork.begin(),cmd.fork.end()));
+
+    std::cout << "[<]recived sys cmd" << std::endl;
+    std::cout << "   fork hash:" << forkHash.ToString() << std::endl;
+}
+
+static void print_blockcmd(const CMvDbpBlockCmd &cmd)
+{
+    uint256 hash(std::vector<unsigned char>(cmd.hash.begin(),cmd.hash.end()));
+    uint256 forkHash(std::vector<unsigned char>(cmd.fork.begin(),cmd.fork.end()));
+
+    std::cout << "[<]recived block cmd" << std::endl;
+    std::cout << "   hash:" << hash.ToString() << std::endl;
+    std::cout << "   fork hash:" << forkHash.ToString() << std::endl;
+}
+
+static void print_txcmd(const CMvDbpTxCmd &cmd)
+{
+    uint256 hash(std::vector<unsigned char>(cmd.hash.begin(),cmd.hash.end()));
+    uint256 forkHash(std::vector<unsigned char>(cmd.fork.begin(),cmd.fork.end()));
+
+    std::cout << "[<]recived tx cmd" << std::endl;
+    std::cout << "   hash:" << hash.ToString() << std::endl;
+    std::cout << "   fork hash:" << forkHash.ToString() << std::endl;
+}
+
 void CDbpService::HandleAddedBlock(const CMvDbpBlock& block)
 {
     uint256 forkHash(std::vector<unsigned char>(block.fork.begin(),block.fork.end()));
@@ -175,8 +203,56 @@ void CDbpService::HandleAddedTx(const CMvDbpTransaction& tx)
     }
     else
     {
-        // Dispatch Block to child fork node
+        // Dispatch Tx to child fork node
         PushTx(forkHash.ToString(),tx);
+    }
+}
+
+void CDbpService::HandleAddedSysCmd(const CMvDbpSysCmd& cmd)
+{
+    uint256 forkHash(std::vector<unsigned char>(cmd.fork.begin(),cmd.fork.end()));
+
+    if(setThisNodeForks.find(forkHash.ToString()) != setThisNodeForks.end())
+    {
+        // THIS FORK NODE Handle this TODO
+        print_syscmd(cmd);
+    }
+    else
+    {
+        // Dispatch SysCmd to child fork node
+        PushSysCmd(forkHash.ToString(),cmd);
+    }
+}
+
+void CDbpService::HandleAddedBlockCmd(const CMvDbpBlockCmd& cmd)
+{
+    uint256 forkHash(std::vector<unsigned char>(cmd.fork.begin(),cmd.fork.end()));
+
+    if(setThisNodeForks.find(forkHash.ToString()) != setThisNodeForks.end())
+    {
+        // THIS FORK NODE Handle this TODO
+        print_blockcmd(cmd);
+    }
+    else
+    {
+        // Dispatch BlockCmd to child fork node
+        PushBlockCmd(forkHash.ToString(),cmd);
+    }
+}
+
+void CDbpService::HandleAddedTxCmd(const CMvDbpTxCmd& cmd)
+{
+    uint256 forkHash(std::vector<unsigned char>(cmd.fork.begin(),cmd.fork.end()));
+
+    if(setThisNodeForks.find(forkHash.ToString()) != setThisNodeForks.end())
+    {
+        // THIS FORK NODE Handle this TODO
+        print_txcmd(cmd);
+    }
+    else
+    {
+        // Dispatch TxCmd to child fork node
+        PushTxCmd(forkHash.ToString(),cmd);
     }
 }
 
@@ -191,6 +267,21 @@ bool CDbpService::HandleEvent(CMvEventDbpAdded& event)
     {
         CMvDbpTransaction tx = boost::any_cast<CMvDbpTransaction>(event.data.anyAddedObj);
         HandleAddedTx(tx);
+    }
+    else if(event.data.name == "sys-cmd")
+    {
+        CMvDbpSysCmd cmd = boost::any_cast<CMvDbpSysCmd>(event.data.anyAddedObj);
+        HandleAddedSysCmd(cmd);
+    }
+    else if(event.data.name == "block-cmd")
+    {
+        CMvDbpBlockCmd cmd = boost::any_cast<CMvDbpBlockCmd>(event.data.anyAddedObj);
+        HandleAddedBlockCmd(cmd);
+    }
+    else if(event.data.name == "tx-cmd")
+    {
+        CMvDbpTxCmd cmd = boost::any_cast<CMvDbpTxCmd>(event.data.anyAddedObj);
+        HandleAddedTxCmd(cmd);
     }
     else
     {

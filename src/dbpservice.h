@@ -63,6 +63,9 @@ private:
     void HandleSendTx(CMvEventDbpMethod& event);
     void HandleAddedBlock(const CMvDbpBlock& block);
     void HandleAddedTx(const CMvDbpTransaction& tx);
+    void HandleAddedSysCmd(const CMvDbpSysCmd& cmd);
+    void HandleAddedBlockCmd(const CMvDbpBlockCmd& cmd);
+    void HandleAddedTxCmd(const CMvDbpTxCmd& cmd);
 
     bool IsTopicExist(const std::string& topic);
 
