@@ -96,7 +96,13 @@ void CMvDbpClientSocket::SendPing(const std::string& id)
 void CMvDbpClientSocket::SendForkId(const std::string& fork)
 {
     sn::RegisterForkIDArg forkArg;
-    forkArg.set_id(fork);
+    
+    uint256 forkid;
+    forkid.SetHex(fork);
+    std::vector<uint8> forkidBin;
+    walleve::CWalleveODataStream forkidSS(forkidBin);
+    forkid.ToDataStream(forkidSS);
+    forkArg.set_forkid(std::string(forkidBin.begin(), forkidBin.end()));
 
     google::protobuf::Any *fork_any = new google::protobuf::Any();
     fork_any->PackFrom(forkArg);

@@ -314,7 +314,12 @@ void CDbpClient::SendResponse(const std::string& client, CMvDbpMethodResult& bod
         {
             CMvDbpRegisterForkIDRet ret = boost::any_cast<CMvDbpRegisterForkIDRet>(obj);
             sn::RegisterForkIDRet forkRet;
-            forkRet.set_id(ret.forkid);
+            uint256 forkid;
+            std::vector<uint8> forkidBin;
+            forkid.SetHex(ret.forkid);
+            walleve::CWalleveODataStream forkidSS(forkidBin);
+            forkid.ToDataStream(forkidSS);
+            forkRet.set_forkid(std::string(forkidBin.begin(), forkidBin.end()));
             resultMsg.add_result()->PackFrom(forkRet);
         }
         else
@@ -696,10 +701,12 @@ void CDbpServer::HandleClientMethod(CDbpClient* pDbpClient, google::protobuf::An
         methodMsg.params().UnpackTo(&args);
         
         std::string session = pDbpClient->GetSession();
-        mapSessionProfile[session].setChildForks.insert(args.id());
+        std::vector<uint8> forkidBin(args.forkid().begin(), args.forkid().end());
+        uint256 forkid(forkidBin);
+        mapSessionProfile[session].setChildForks.insert(forkid.ToString());
         
-        std::cout << "super node fork id: " << args.id() << "\n";
-        methodBody.params.insert(std::make_pair("forkid",args.id()));
+        std::cout << "super node fork id: " << forkid.ToString() << "\n";
+        methodBody.params.insert(std::make_pair("forkid",forkid.ToString()));
     }
     else if(methodBody.method == CMvDbpMethod::Method::SEND_BLOCK)
     {

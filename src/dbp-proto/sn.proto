@@ -81,7 +81,20 @@ message Block
 
 message SendBlockArg 
 {
-    Block block = 1;
+    string id = 1; //DPOS生成的随机数
+    Block block = 2;
+}
+
+message SendBlockNoticeArg 
+{
+	bytes forkid = 1; //出块分支
+	string height = 2; //块高度
+	bytes hash = 3; //块hashid
+}
+
+message SendBlockNoticeRet 
+{
+	bytes hash = 1; //块hashid
 }
 
 message SendBlockRet
@@ -91,7 +104,14 @@ message SendBlockRet
 
 message SendTxArg
 {
-    Transaction tx = 1;
+    string id = 1; //DPOS生成的随机数
+    Transaction tx = 2;
+}
+
+message SendTxNoticeArg 
+{
+	bytes forkid = 1; //tx分支
+	bytes hash = 2; //tx的hashid
 }
 
 message SendTxRet
@@ -99,12 +119,28 @@ message SendTxRet
     bytes hash = 1;
 }
 
+message SendTxNoticeRet
+{
+	bytes hash = 1; //tx的hashid
+}
+
 message RegisterForkIDArg 
 {
-    string id = 1;
+    bytes forkid = 1;
 }
 
 message RegisterForkIDRet
 {
-    string id = 1;
+    bytes forkid = 1;
+}
+
+message GetBlocksArg
+{
+    bytes hash = 1; //起始块hash
+    int32 number = 2; //将要获取的最大块数
+}
+
+message GetBlocksRet
+{
+    bytes hash = 1;
 }
