@@ -157,22 +157,30 @@ public:
 
 class CMvDbpMethod : public CMvDbpRequest
 {
-public:
-    enum Method
+public: 
+    /*supernode*/
+    enum  SNMethod : uint32_t
     {
-        GET_BLOCKS,
-        GET_TRANSACTION,
-        SEND_TRANSACTION,
-        SEND_TX, // supernode 
-        REGISTER_FORK,
-        SEND_BLOCK
+        REGISTER_FORK = 0x03,
+        SEND_BLOCK = 0x04,
+        SEND_BLOCK_NOTICE = 0x05,
+        SEND_TX = 0x06,
+        SEND_TX_NOTICE = 0x07,
+        GET_BLOCKS_SN = 0x8
+    };
+
+    enum  LwsMethod : uint32_t
+    {
+        GET_BLOCKS = 0x00,
+        GET_TRANSACTION = 0x01,
+        SEND_TRANSACTION = 0x02
     };
 
     // param name => param value
     typedef std::map<std::string, boost::any> ParamMap;
 
 public:
-    Method method;
+    uint32_t method;
     std::string id;
     ParamMap params;
 };

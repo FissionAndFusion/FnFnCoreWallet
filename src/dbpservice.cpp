@@ -720,27 +720,39 @@ void CDbpService::HandleSendTx(CMvEventDbpMethod& event)
 
 bool CDbpService::HandleEvent(CMvEventDbpMethod& event)
 {
-    if (event.data.method == CMvDbpMethod::Method::GET_BLOCKS)
+    if (event.data.method == CMvDbpMethod::LwsMethod::GET_BLOCKS)
     {
         HandleGetBlocks(event);
     }
-    else if (event.data.method == CMvDbpMethod::Method::GET_TRANSACTION)
+    else if (event.data.method == CMvDbpMethod::LwsMethod::GET_TRANSACTION)
     {
         HandleGetTransaction(event);
     }
-    else if (event.data.method == CMvDbpMethod::Method::SEND_TRANSACTION)
+    else if (event.data.method == CMvDbpMethod::LwsMethod::SEND_TRANSACTION)
     {
         HandleSendTransaction(event);
     }
-    else if(event.data.method == CMvDbpMethod::Method::REGISTER_FORK)
+    else if(event.data.method == CMvDbpMethod::SNMethod::REGISTER_FORK)
     {
         HandleRegisterFork(event);
     }
-    else if(event.data.method == CMvDbpMethod::Method::SEND_BLOCK)
+    else if(event.data.method == CMvDbpMethod::SNMethod::SEND_BLOCK)
     {
         HandleSendBlock(event);
     }
-    else if(event.data.method == CMvDbpMethod::Method::SEND_TX)
+    else if(event.data.method == CMvDbpMethod::SNMethod::SEND_TX)
+    {
+
+    }
+    else if(event.data.method == CMvDbpMethod::SNMethod::SEND_BLOCK_NOTICE)
+    {
+
+    }
+    else if(event.data.method == CMvDbpMethod::SNMethod::SEND_TX_NOTICE)
+    {
+
+    }
+    else if(event.data.method == CMvDbpMethod::SNMethod::GET_BLOCKS_SN)
     {
 
     }
