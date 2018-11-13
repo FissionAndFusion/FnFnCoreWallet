@@ -136,8 +136,9 @@ message RegisterForkIDRet
 
 message GetBlocksArg
 {
-    bytes hash = 1; //起始块hash
-    int32 number = 2; //将要获取的最大块数
+    bytes forkid = 1; // 要关联的fork
+    bytes hash = 2; //起始块hash
+    int32 number = 3; //将要获取的最大块数
 }
 
 message GetBlocksRet

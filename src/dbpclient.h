@@ -81,6 +81,12 @@ public:
     void SendForkIds(const std::vector<std::string>& forks);
     void SendSubScribeTopics(const std::vector<std::string>& topics);
     void SendConnectSession(const std::string& session, const std::vector<std::string>& forks);
+
+    void SendBlockNotice(const std::string& fork, const std::string& height, const std::string& hash);
+    void SendTxNotice(const std::string& fork, const std::string& hash);
+    void SendBlock(const std::string& id, const CMvDbpBlock& block);
+    void SendTx(const std::string& id, const CMvDbpTransaction& tx);
+    void GetBlocks(const std::string& fork, const std::string& startHash, int32 num);
 protected:
     void StartReadHeader();
     void StartReadPayload(std::size_t nLength);

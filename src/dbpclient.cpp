@@ -93,30 +93,171 @@ void CMvDbpClientSocket::SendPing(const std::string& id)
     SendMessage(dbp::Msg::PING,any);
 }
 
+void CMvDbpClientSocket::SendBlockNotice(const std::string& fork, const std::string& height, const std::string& hash)
+{
+    sn::SendBlockNoticeArg arg;
+    
+    uint256 forkid, blockHash;
+    std::vector<uint8> forkidBin, hashBin;
+    walleve::CWalleveODataStream forkidSS(forkidBin);
+    walleve::CWalleveODataStream hashSS(hashBin);
+    
+    forkid.SetHex(fork);
+    blockHash.SetHex(hash);
+    forkid.ToDataStream(forkidSS);
+    blockHash.ToDataStream(hashSS);
+    
+    arg.set_forkid(std::string(forkidBin.begin(), forkidBin.end()));
+    arg.set_hash(std::string(hashBin.begin(), hashBin.end()));
+    arg.set_height(height);
+
+    google::protobuf::Any *argAny = new google::protobuf::Any();
+    argAny->PackFrom(arg);
+    
+    dbp::Method method;
+    method.set_method("sendblocknotice");
+    std::string id(CDbpUtils::RandomString());
+    method.set_id(id);
+    method.set_allocated_params(argAny);
+
+    google::protobuf::Any *any = new google::protobuf::Any();
+    any->PackFrom(method);
+
+    SendMessage(dbp::Msg::METHOD,any);
+}
+
+void CMvDbpClientSocket::SendTxNotice(const std::string& fork, const std::string& hash)
+{
+    sn::SendTxNoticeArg arg;
+    
+    uint256 forkid, txHash;
+    std::vector<uint8> forkidBin, hashBin;
+    walleve::CWalleveODataStream forkidSS(forkidBin);
+    walleve::CWalleveODataStream hashSS(hashBin);
+    
+    forkid.SetHex(fork);
+    txHash.SetHex(hash);
+    forkid.ToDataStream(forkidSS);
+    txHash.ToDataStream(hashSS);
+    
+    arg.set_forkid(std::string(forkidBin.begin(), forkidBin.end()));
+    arg.set_hash(std::string(hashBin.begin(), hashBin.end()));
+
+    google::protobuf::Any *argAny = new google::protobuf::Any();
+    argAny->PackFrom(arg);
+    
+    dbp::Method method;
+    method.set_method("sendtxnotice");
+    std::string id(CDbpUtils::RandomString());
+    method.set_id(id);
+    method.set_allocated_params(argAny);
+
+    google::protobuf::Any *any = new google::protobuf::Any();
+    any->PackFrom(method);
+
+    SendMessage(dbp::Msg::METHOD,any);
+}
+
+void CMvDbpClientSocket::SendBlock(const std::string& id, const CMvDbpBlock& block)
+{
+    sn::SendBlockArg arg;
+    arg.set_id(id);
+    sn::Block *pBlock = new sn::Block();
+    CDbpUtils::DbpToSnBlock(&block, (*pBlock));
+    arg.set_allocated_block(pBlock);
+
+    google::protobuf::Any *argAny = new google::protobuf::Any();
+    argAny->PackFrom(arg);
+    
+    dbp::Method method;
+    method.set_method("sendblock");
+    method.set_id(CDbpUtils::RandomString());
+    method.set_allocated_params(argAny);
+
+    google::protobuf::Any *any = new google::protobuf::Any();
+    any->PackFrom(method);
+
+    SendMessage(dbp::Msg::METHOD,any);
+}
+
+void CMvDbpClientSocket::SendTx(const std::string& id, const CMvDbpTransaction& tx)
+{
+    sn::SendTxArg arg;
+    arg.set_id(id);
+    sn::Transaction *pTx = new sn::Transaction();
+    CDbpUtils::DbpToSnTransaction(&tx, pTx);
+    arg.set_allocated_tx(pTx);
+
+    google::protobuf::Any *argAny = new google::protobuf::Any();
+    argAny->PackFrom(arg);
+    
+    dbp::Method method;
+    method.set_method("sendtx");
+    method.set_id(CDbpUtils::RandomString());
+    method.set_allocated_params(argAny);
+
+    google::protobuf::Any *any = new google::protobuf::Any();
+    any->PackFrom(method);
+
+    SendMessage(dbp::Msg::METHOD,any);
+}
+
+void CMvDbpClientSocket::GetBlocks(const std::string& fork, const std::string& startHash, int32 num)
+{
+    sn::GetBlocksArg arg;
+    uint256 forkid, blockHash;
+    std::vector<uint8> forkidBin, hashBin;
+    walleve::CWalleveODataStream forkidSS(forkidBin);
+    walleve::CWalleveODataStream hashSS(hashBin);
+    
+    forkid.SetHex(fork);
+    blockHash.SetHex(startHash);
+    forkid.ToDataStream(forkidSS);
+    blockHash.ToDataStream(hashSS);
+
+    arg.set_forkid(std::string(forkidBin.begin(), forkidBin.end()));
+    arg.set_hash(std::string(hashBin.begin(), hashBin.end()));
+    arg.set_number(num);
+
+    google::protobuf::Any *argAny = new google::protobuf::Any();
+    argAny->PackFrom(arg);
+    
+    dbp::Method method;
+    method.set_method("getblocks");
+    method.set_id(CDbpUtils::RandomString());
+    method.set_allocated_params(argAny);
+
+    google::protobuf::Any *any = new google::protobuf::Any();
+    any->PackFrom(method);
+
+    SendMessage(dbp::Msg::METHOD,any);
+}
+
 void CMvDbpClientSocket::SendForkId(const std::string& fork)
 {
-    sn::RegisterForkIDArg forkArg;
+    sn::RegisterForkIDArg arg;
     
     uint256 forkid;
     forkid.SetHex(fork);
     std::vector<uint8> forkidBin;
     walleve::CWalleveODataStream forkidSS(forkidBin);
     forkid.ToDataStream(forkidSS);
-    forkArg.set_forkid(std::string(forkidBin.begin(), forkidBin.end()));
+    arg.set_forkid(std::string(forkidBin.begin(), forkidBin.end()));
 
-    google::protobuf::Any *fork_any = new google::protobuf::Any();
-    fork_any->PackFrom(forkArg);
+    google::protobuf::Any *argAny = new google::protobuf::Any();
+    argAny->PackFrom(arg);
     
     dbp::Method method;
     method.set_method("registerforkid");
     std::string id(CDbpUtils::RandomString());  
     method.set_id(id);
-    method.set_allocated_params(fork_any);
+    method.set_allocated_params(argAny);
 
     google::protobuf::Any *any = new google::protobuf::Any();
     any->PackFrom(method);
 
     SendMessage(dbp::Msg::METHOD,any);
+
 }
 
 void CMvDbpClientSocket::SendSubscribeTopic(const std::string& topic)
