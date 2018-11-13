@@ -289,6 +289,7 @@ bool CWalletDB::CheckWalletTx()
 {
     //check if wallettx table only contains Tx's
     //which occurred on addresses owned by the wallet
+    int rows = -1;
     string sql = R"(
                     select count(distinct txid)
                     from wallettx
@@ -300,18 +301,22 @@ bool CWalletDB::CheckWalletTx()
         CMvDBRes res(dbConn, sql, true);
         if(res.GetRow())
         {
-            int rows = -1;
             if(!res.GetField<int>(0, rows) || rows != 0)
             {
                 return false;
             }
         }
+        else
+        {
+            return false;
+        }
     }
 
     //check if wallet tx set is equal to transaction one
     //which belong to the wallet
+    rows = -1;
     sql = R"(
-            select txid from
+            select count(txid) from
             (
             select distinct transaction.txid as txid from transaction
             where
@@ -327,8 +332,14 @@ bool CWalletDB::CheckWalletTx()
             )diffset group by txid having count(txid) = 1)";
     {
         CMvDBRes res(dbConn, sql, true);
-        int ret = res.GetCount();
-        if(-1 != ret || 0 == ret)
+        if(res.GetRow())
+        {
+            if(!res.GetField<int>(0, rows) || rows != 0)
+            {
+                return false;
+            }
+        }
+        else
         {
             return false;
         }
@@ -336,6 +347,7 @@ bool CWalletDB::CheckWalletTx()
 
     //validate detailed fields between tables of wallettx
     //and transaction row by row
+    //TODO
     ;
     return true;
 }
