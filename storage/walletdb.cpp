@@ -285,6 +285,61 @@ bool CWalletDB::ClearTx()
     return dbConn.Query("TRUNCATE TABLE wallettx");
 }
 
+bool CWalletDB::CheckWalletTx()
+{
+    //check if wallettx table only contains Tx's
+    //which occurred on addresses owned by the wallet
+    string sql = R"(
+                    select count(distinct txid)
+                    from wallettx
+                    where
+                    right(sendto, 32) not in (select pubkey from walletkey union select tid from wallettemplate)
+                    and
+                    right(destin, 32) not in (select pubkey from walletkey union select tid from wallettemplate))";
+    {
+        CMvDBRes res(dbConn, sql, true);
+        if(res.GetRow())
+        {
+            int rows = -1;
+            if(!res.GetField<int>(0, rows) || rows != 0)
+            {
+                return false;
+            }
+        }
+    }
+
+    //check if wallet tx set is equal to transaction one
+    //which belong to the wallet
+    sql = R"(
+            select txid from
+            (
+            select distinct transaction.txid as txid from transaction
+            where
+            right(sendto, 32) in (select pubkey from walletkey union select tid from wallettemplate)
+            or
+            right(destin, 32) in (select pubkey from walletkey union select tid from wallettemplate)
+            union all
+            select distinct wallettx.txid as txid from wallettx
+            where
+            right(sendto, 32) in (select pubkey from walletkey union select tid from wallettemplate)
+            or
+            right(destin, 32) in (select pubkey from walletkey union select tid from wallettemplate)
+            )diffset group by txid having count(txid) = 1)";
+    {
+        CMvDBRes res(dbConn, sql, true);
+        int ret = res.GetCount();
+        if(-1 != ret || 0 == ret)
+        {
+            return false;
+        }
+    }
+
+    //validate detailed fields between tables of wallettx
+    //and transaction row by row
+    ;
+    return true;
+}
+
 bool CWalletDB::ParseTxIn(const std::vector<unsigned char>& vchTxIn,CWalletTx& wtx)
 {
     walleve::CWalleveBufStream ss;

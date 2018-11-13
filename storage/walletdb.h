@@ -55,6 +55,7 @@ public:
     bool ListForkTx(const uint256& hashFork,int nMinHeight,std::vector<uint256>& vForkTx);
     bool WalkThroughTx(CWalletDBTxWalker& walker);
     bool ClearTx();
+    bool CheckWalletTx();
 protected:
     bool ParseTxIn(const std::vector<unsigned char>& vchTxIn,CWalletTx& wtx);
     bool CreateTable();

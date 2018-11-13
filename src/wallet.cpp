@@ -109,6 +109,12 @@ bool CWallet::WalleveHandleInvoke()
         return false;
     }
 
+    if (!dbWallet.CheckWalletTx())
+    {
+        WalleveLog("Failed to check wallet transactions\n");
+        return false;
+    }
+
     if (!LoadDB())
     {
         WalleveLog("Failed to load wallet database\n");
