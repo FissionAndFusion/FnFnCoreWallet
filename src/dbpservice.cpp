@@ -21,13 +21,13 @@ CDbpService::CDbpService()
     pNetChannel = NULL;
 
     std::unordered_map<std::string, IdsType> temp_map = 
-        boost::assign::map_list_of("all-block", std::set<std::string>())
-                                  ("all-tx",    std::set<std::string>())
-                                  ("sys-cmd",   std::set<std::string>())
-                                  ("tx-cmd",    std::set<std::string>())
-                                  ("block-cmd", std::set<std::string>())
-                                  ("changed",   std::set<std::string>())
-                                  ("removed",   std::set<std::string>());
+        boost::assign::map_list_of(ALL_BLOCK_TOPIC, std::set<std::string>())
+                                  (ALL_TX_TOPIC,    std::set<std::string>())
+                                  (SYS_CMD_TOPIC,   std::set<std::string>())
+                                  (TX_CMD_TOPIC,    std::set<std::string>())
+                                  (BLOCK_CMD_TOPIC, std::set<std::string>())
+                                  (CHANGED_TOPIC,   std::set<std::string>())
+                                  (REMOVED_TOPIC,   std::set<std::string>());
 
     mapTopicIds = temp_map;
 }
@@ -258,27 +258,27 @@ void CDbpService::HandleAddedTxCmd(const CMvDbpTxCmd& cmd)
 
 bool CDbpService::HandleEvent(CMvEventDbpAdded& event)
 {
-    if(event.data.name == "all-block")
+    if(event.data.name == ALL_BLOCK_TOPIC)
     {
         CMvDbpBlock block = boost::any_cast<CMvDbpBlock>(event.data.anyAddedObj);
         HandleAddedBlock(block);
     }
-    else if(event.data.name == "all-tx")
+    else if(event.data.name == ALL_TX_TOPIC)
     {
         CMvDbpTransaction tx = boost::any_cast<CMvDbpTransaction>(event.data.anyAddedObj);
         HandleAddedTx(tx);
     }
-    else if(event.data.name == "sys-cmd")
+    else if(event.data.name == SYS_CMD_TOPIC)
     {
         CMvDbpSysCmd cmd = boost::any_cast<CMvDbpSysCmd>(event.data.anyAddedObj);
         HandleAddedSysCmd(cmd);
     }
-    else if(event.data.name == "block-cmd")
+    else if(event.data.name == BLOCK_CMD_TOPIC)
     {
         CMvDbpBlockCmd cmd = boost::any_cast<CMvDbpBlockCmd>(event.data.anyAddedObj);
         HandleAddedBlockCmd(cmd);
     }
-    else if(event.data.name == "tx-cmd")
+    else if(event.data.name == TX_CMD_TOPIC)
     {
         CMvDbpTxCmd cmd = boost::any_cast<CMvDbpTxCmd>(event.data.anyAddedObj);
         HandleAddedTxCmd(cmd);
@@ -894,7 +894,7 @@ void CDbpService::CreateDbpTransaction(const CTransaction& tx, const uint256& fo
 
 void CDbpService::PushBlock(const std::string& forkid, const CMvDbpBlock& block)
 {
-    const auto& allBlockIds = mapTopicIds["all-block"];   
+    const auto& allBlockIds = mapTopicIds[ALL_BLOCK_TOPIC];   
     for (const auto& kv : mapIdSubedSession)
     {
         std::string id = kv.first;
@@ -905,7 +905,7 @@ void CDbpService::PushBlock(const std::string& forkid, const CMvDbpBlock& block)
             CMvEventDbpAdded eventAdded(session);
             eventAdded.data.id = id;
             eventAdded.data.forkid = forkid;
-            eventAdded.data.name = "all-block";
+            eventAdded.data.name = ALL_BLOCK_TOPIC;
             eventAdded.data.anyAddedObj = block;
             pDbpServer->DispatchEvent(&eventAdded);
         }
@@ -914,7 +914,7 @@ void CDbpService::PushBlock(const std::string& forkid, const CMvDbpBlock& block)
 
 void CDbpService::PushTx(const std::string& forkid, const CMvDbpTransaction& dbptx)
 {
-    const auto& allTxIds = mapTopicIds["all-tx"];
+    const auto& allTxIds = mapTopicIds[ALL_TX_TOPIC];
     for (const auto& kv : mapIdSubedSession)
     {
         std::string id = kv.first;
@@ -925,7 +925,7 @@ void CDbpService::PushTx(const std::string& forkid, const CMvDbpTransaction& dbp
             CMvEventDbpAdded eventAdded(session);
             eventAdded.data.id = id;
             eventAdded.data.forkid = forkid;
-            eventAdded.data.name = "all-tx";
+            eventAdded.data.name = ALL_TX_TOPIC;
             eventAdded.data.anyAddedObj = dbptx;
             pDbpServer->DispatchEvent(&eventAdded);
         }
@@ -934,7 +934,7 @@ void CDbpService::PushTx(const std::string& forkid, const CMvDbpTransaction& dbp
 
 void CDbpService::PushSysCmd(const std::string& forkid, const CMvDbpSysCmd& syscmd)
 {
-    const auto& sysCmdIds = mapTopicIds["sys-cmd"];
+    const auto& sysCmdIds = mapTopicIds[SYS_CMD_TOPIC];
     for (const auto& kv : mapIdSubedSession)
     {
         std::string id = kv.first;
@@ -945,7 +945,7 @@ void CDbpService::PushSysCmd(const std::string& forkid, const CMvDbpSysCmd& sysc
             CMvEventDbpAdded eventAdded(session);
             eventAdded.data.id = id;
             eventAdded.data.forkid = forkid;
-            eventAdded.data.name = "sys-cmd";
+            eventAdded.data.name = SYS_CMD_TOPIC;
             eventAdded.data.anyAddedObj = syscmd;
             pDbpServer->DispatchEvent(&eventAdded);
         }
@@ -954,7 +954,7 @@ void CDbpService::PushSysCmd(const std::string& forkid, const CMvDbpSysCmd& sysc
 
 void CDbpService::PushTxCmd(const std::string& forkid, const CMvDbpTxCmd& txcmd)
 {
-    const auto& txCmdIds = mapTopicIds["tx-cmd"];
+    const auto& txCmdIds = mapTopicIds[TX_CMD_TOPIC];
     for (const auto& kv : mapIdSubedSession)
     {
         std::string id = kv.first;
@@ -965,7 +965,7 @@ void CDbpService::PushTxCmd(const std::string& forkid, const CMvDbpTxCmd& txcmd)
             CMvEventDbpAdded eventAdded(session);
             eventAdded.data.id = id;
             eventAdded.data.forkid = forkid;
-            eventAdded.data.name = "tx-cmd";
+            eventAdded.data.name = TX_CMD_TOPIC;
             eventAdded.data.anyAddedObj = txcmd;
             pDbpServer->DispatchEvent(&eventAdded);
         }
@@ -974,7 +974,7 @@ void CDbpService::PushTxCmd(const std::string& forkid, const CMvDbpTxCmd& txcmd)
 
 void CDbpService::PushBlockCmd(const std::string& forkid, const CMvDbpBlockCmd& blockcmd)
 {
-    const auto& blockCmdIds = mapTopicIds["block-cmd"];
+    const auto& blockCmdIds = mapTopicIds[BLOCK_CMD_TOPIC];
     for (const auto& kv : mapIdSubedSession)
     {
         std::string id = kv.first;
@@ -985,7 +985,7 @@ void CDbpService::PushBlockCmd(const std::string& forkid, const CMvDbpBlockCmd& 
             CMvEventDbpAdded eventAdded(session);
             eventAdded.data.id = id;
             eventAdded.data.forkid = forkid;
-            eventAdded.data.name = "block-cmd";
+            eventAdded.data.name = BLOCK_CMD_TOPIC;
             eventAdded.data.anyAddedObj = blockcmd;
             pDbpServer->DispatchEvent(&eventAdded);
         }

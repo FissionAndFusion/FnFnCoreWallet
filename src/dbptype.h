@@ -10,6 +10,14 @@
 namespace multiverse
 {
 
+static const std::string ALL_BLOCK_TOPIC("all-block");
+static const std::string ALL_TX_TOPIC("all-tx");
+static const std::string SYS_CMD_TOPIC("sys-cmd");
+static const std::string BLOCK_CMD_TOPIC("block-cmd");
+static const std::string TX_CMD_TOPIC("tx-cmd");
+static const std::string CHANGED_TOPIC("changed");
+static const std::string REMOVED_TOPIC("removed");
+
 class CMvDbpContent
 {
 public:
