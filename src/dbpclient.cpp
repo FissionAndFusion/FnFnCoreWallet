@@ -794,27 +794,27 @@ void CMvDbpClient::HandleAdded(CMvDbpClientSocket* pClientSocket, google::protob
     dbp::Added added;
     any->UnpackTo(&added);
 
-    if (added.name() == "all-block")
+    if (added.name() == ALL_BLOCK_TOPIC)
     {
         HandleAddedBlock(added, pClientSocket);
     }
 
-    if (added.name() == "all-tx")
+    if (added.name() == ALL_TX_TOPIC)
     {
         HandleAddedTx(added, pClientSocket);
     }
 
-    if (added.name() == "sys-cmd")
+    if (added.name() == SYS_CMD_TOPIC)
     {
         HandleAddedSysCmd(added, pClientSocket);
     }
 
-    if (added.name() == "block-cmd")
+    if (added.name() == BLOCK_CMD_TOPIC)
     {
        HandleAddedBlockCmd(added, pClientSocket);
     }
 
-    if (added.name() == "tx-cmd")
+    if (added.name() == TX_CMD_TOPIC)
     {
         HandleAddedTxCmd(added, pClientSocket);
     }
@@ -1044,7 +1044,7 @@ void CMvDbpClient::RegisterDefaultForks(CMvDbpClientSocket* pClientSocket)
 
 void CMvDbpClient::SubscribeDefaultTopics(CMvDbpClientSocket* pClientSocket)
 {
-    std::vector<std::string> vTopics{"all-block","all-tx","sys-cmd","tx-cmd", "block-cmd"};
+    std::vector<std::string> vTopics{ALL_BLOCK_TOPIC,ALL_TX_TOPIC,SYS_CMD_TOPIC,TX_CMD_TOPIC, BLOCK_CMD_TOPIC};
     pClientSocket->SendSubScribeTopics(vTopics);
 }
 
