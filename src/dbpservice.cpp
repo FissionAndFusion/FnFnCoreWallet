@@ -693,10 +693,7 @@ void CDbpService::HandleSendBlock(CMvEventDbpMethod& event)
 
     // TO DO
 
-    CMvEventDbpSendBlock eventSendBlock("");
-    eventSendBlock.data.id = id;
-    eventSendBlock.data.block = block;
-    pDbpClient->DispatchEvent(&eventSendBlock);
+    SendBlockToParent(id, block);
 }
 
 void CDbpService::HandleSendTx(CMvEventDbpMethod& event)
@@ -714,10 +711,8 @@ void CDbpService::HandleSendTx(CMvEventDbpMethod& event)
 
     // TODO
 
-    CMvEventDbpSendTx eventSendTx("");
-    eventSendTx.data.id = id;
-    eventSendTx.data.tx = tx;
-    pDbpClient->DispatchEvent(&eventSendTx);
+    SendTxToParent(id, tx);
+    
 }
 
 void CDbpService::HandleSendBlockNotice(CMvEventDbpMethod& event)
@@ -735,15 +730,7 @@ void CDbpService::HandleSendBlockNotice(CMvEventDbpMethod& event)
 
     // TO DO
 
-    
-    uint256 forkid256(std::vector<uint8>(forkid.begin(), forkid.end()));
-    uint256 hash256(std::vector<uint8>(hash.begin(), hash.end()));
-    
-    CMvEventDbpSendBlockNotice eventSendBlockNotice("");
-    eventSendBlockNotice.data.forkid = forkid256.ToString();
-    eventSendBlockNotice.data.height = height;
-    eventSendBlockNotice.data.hash = hash256.ToString();
-    pDbpClient->DispatchEvent(&eventSendBlockNotice);
+    SendBlockNoticeToParent(forkid,height,hash);
 }
 
 void CDbpService::HandleSendTxNotice(CMvEventDbpMethod& event)
@@ -760,13 +747,7 @@ void CDbpService::HandleSendTxNotice(CMvEventDbpMethod& event)
 
     // TO DO
 
-    uint256 forkid256(std::vector<uint8>(forkid.begin(), forkid.end()));
-    uint256 hash256(std::vector<uint8>(hash.begin(), hash.end()));
-
-    CMvEventDbpSendTxNotice eventSendTxNotice("");
-    eventSendTxNotice.data.forkid = forkid256.ToString();
-    eventSendTxNotice.data.hash = hash256.ToString();
-    pDbpClient->DispatchEvent(&eventSendTxNotice);
+    SendTxNoticeToParent(forkid,hash);
 }
 
 void CDbpService::HandleGetSNBlocks(CMvEventDbpMethod& event)
@@ -785,14 +766,7 @@ void CDbpService::HandleGetSNBlocks(CMvEventDbpMethod& event)
 
     // TO DO
 
-    uint256 forkid256(std::vector<uint8>(forkid.begin(), forkid.end()));
-    uint256 hash256(std::vector<uint8>(hash.begin(), hash.end()));
-    
-    CMvEventDbpGetBlocks eventGetBlocks("");
-    eventGetBlocks.data.forkid = forkid256.ToString();
-    eventGetBlocks.data.hash = hash256.ToString();
-    eventGetBlocks.data.number = blockNum;
-    pDbpClient->DispatchEvent(&eventGetBlocks);
+    GetBlocksFromParent(forkid,hash,blockNum);
 }
 
 bool CDbpService::HandleEvent(CMvEventDbpMethod& event)
@@ -1059,6 +1033,58 @@ void CDbpService::UpdateChildNodeForksToParent()
         pDbpClient->DispatchEvent(&eventRegister);
     }
 }
+
+void CDbpService::SendBlockToParent(const std::string& id, const CMvDbpBlock& block)
+{
+    CMvEventDbpSendBlock eventSendBlock("");
+    eventSendBlock.data.id = id;
+    eventSendBlock.data.block = block;
+    pDbpClient->DispatchEvent(&eventSendBlock);
+}
+
+void CDbpService::SendTxToParent(const std::string& id, const CMvDbpTransaction& tx)
+{
+    CMvEventDbpSendTx eventSendTx("");
+    eventSendTx.data.id = id;
+    eventSendTx.data.tx = tx;
+    pDbpClient->DispatchEvent(&eventSendTx);
+}
+
+void CDbpService::SendBlockNoticeToParent(const std::string& forkid, const std::string& height, const std::string& hash)
+{
+    uint256 forkid256(std::vector<uint8>(forkid.begin(), forkid.end()));
+    uint256 hash256(std::vector<uint8>(hash.begin(), hash.end()));
+    
+    CMvEventDbpSendBlockNotice eventSendBlockNotice("");
+    eventSendBlockNotice.data.forkid = forkid256.ToString();
+    eventSendBlockNotice.data.height = height;
+    eventSendBlockNotice.data.hash = hash256.ToString();
+    pDbpClient->DispatchEvent(&eventSendBlockNotice);
+}
+
+void CDbpService::SendTxNoticeToParent(const std::string& forkid, const std::string& hash)
+{
+    uint256 forkid256(std::vector<uint8>(forkid.begin(), forkid.end()));
+    uint256 hash256(std::vector<uint8>(hash.begin(), hash.end()));
+
+    CMvEventDbpSendTxNotice eventSendTxNotice("");
+    eventSendTxNotice.data.forkid = forkid256.ToString();
+    eventSendTxNotice.data.hash = hash256.ToString();
+    pDbpClient->DispatchEvent(&eventSendTxNotice);
+}
+
+void CDbpService::GetBlocksFromParent(const std::string& forkid, const std::string& hash, int32 num)
+{
+    uint256 forkid256(std::vector<uint8>(forkid.begin(), forkid.end()));
+    uint256 hash256(std::vector<uint8>(hash.begin(), hash.end()));
+    
+    CMvEventDbpGetBlocks eventGetBlocks("");
+    eventGetBlocks.data.forkid = forkid256.ToString();
+    eventGetBlocks.data.hash = hash256.ToString();
+    eventGetBlocks.data.number = num;
+    pDbpClient->DispatchEvent(&eventGetBlocks);
+}
+
 
 bool CDbpService::HandleEvent(CMvEventDbpUpdateNewBlock& event)
 {
