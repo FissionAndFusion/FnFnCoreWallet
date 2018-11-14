@@ -61,6 +61,9 @@ private:
     void HandleRegisterFork(CMvEventDbpMethod& event);
     void HandleSendBlock(CMvEventDbpMethod& event);
     void HandleSendTx(CMvEventDbpMethod& event);
+    void HandleSendBlockNotice(CMvEventDbpMethod& event);
+    void HandleSendTxNotice(CMvEventDbpMethod& event);
+    void HandleGetSNBlocks(CMvEventDbpMethod& event);
     void HandleAddedBlock(const CMvDbpBlock& block);
     void HandleAddedTx(const CMvDbpTransaction& tx);
     void HandleAddedSysCmd(const CMvDbpSysCmd& cmd);

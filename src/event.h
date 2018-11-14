@@ -46,6 +46,9 @@ enum
     MV_EVENT_DBP_REGISTER_FORKID,
     MV_EVENT_DBP_SEND_BLOCK,
     MV_EVENT_DBP_SEND_TX,
+    MV_EVENT_DBP_SEND_BLOCK_NOTICE,
+    MV_EVENT_DBP_SEND_TX_NOTICE,
+    MV_EVENT_DBP_GET_BLOCKS,
 
     MV_EVENT_DBP_PING,
     MV_EVENT_DBP_PONG,
@@ -137,6 +140,9 @@ typedef TYPE_DBP_EVENT(MV_EVENT_DBP_REMOVE_SESSION, CMvDbpRemoveSession) CMvEven
 typedef TYPE_DBP_EVENT(MV_EVENT_DBP_REGISTER_FORKID, CMvDbpRegisterForkID) CMvEventDbpRegisterForkID;
 typedef TYPE_DBP_EVENT(MV_EVENT_DBP_SEND_BLOCK, CMvDbpSendBlock) CMvEventDbpSendBlock;
 typedef TYPE_DBP_EVENT(MV_EVENT_DBP_SEND_TX, CMvDbpSendTx) CMvEventDbpSendTx;
+typedef TYPE_DBP_EVENT(MV_EVENT_DBP_SEND_BLOCK_NOTICE, CMvDbpSendBlockNotice) CMvEventDbpSendBlockNotice;
+typedef TYPE_DBP_EVENT(MV_EVENT_DBP_SEND_TX_NOTICE, CMvDbpSendTxNotice) CMvEventDbpSendTxNotice;
+typedef TYPE_DBP_EVENT(MV_EVENT_DBP_GET_BLOCKS, CMvDbpGetBlocks) CMvEventDbpGetBlocks;
 
 // HeartBeats
 typedef TYPE_DBP_EVENT(MV_EVENT_DBP_PING, CMvDbpPing) CMvEventDbpPing;
@@ -175,6 +181,9 @@ public:
     DECLARE_EVENTHANDLER(CMvEventDbpRegisterForkID);
     DECLARE_EVENTHANDLER(CMvEventDbpSendBlock);
     DECLARE_EVENTHANDLER(CMvEventDbpSendTx);
+    DECLARE_EVENTHANDLER(CMvEventDbpSendBlockNotice);
+    DECLARE_EVENTHANDLER(CMvEventDbpSendTxNotice);
+    DECLARE_EVENTHANDLER(CMvEventDbpGetBlocks);
 };
 
 } // namespace multiverse

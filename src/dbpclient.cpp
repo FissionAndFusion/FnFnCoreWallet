@@ -1133,15 +1133,8 @@ void CMvDbpClient::RemoveClientSocket(CMvDbpClientSocket* pClientSocket)
     CloseConnect(pClientSocket);
 }
 
-bool CMvDbpClient::HandleEvent(CMvEventDbpRegisterForkID& event)
+CMvDbpClientSocket* CMvDbpClient::PickOneSessionSocket() const
 {
-    if(!event.strSessionId.empty() || event.data.forkid.empty() || !IsForkNode())
-    {
-        std::cerr << "cannot handle Register fork event." << std::endl;
-        return false;
-    }
-
-    // pick one session to sendforks
     CMvDbpClientSocket* pClientSocket = nullptr;
     if(mapSessionProfile.size() > 0)
     {
@@ -1150,9 +1143,20 @@ bool CMvDbpClient::HandleEvent(CMvEventDbpRegisterForkID& event)
     else
     {
         std::cerr << "mapSessionProfile is empty\n";
+    }
+
+    return pClientSocket;
+}
+
+bool CMvDbpClient::HandleEvent(CMvEventDbpRegisterForkID& event)
+{
+    if(!event.strSessionId.empty() || event.data.forkid.empty() || !IsForkNode())
+    {
+        std::cerr << "cannot handle Register fork event." << std::endl;
         return false;
     }
 
+    CMvDbpClientSocket* pClientSocket = PickOneSessionSocket();
     if(!pClientSocket)
     {
         std::cerr << "Client Socket is invalid\n";
@@ -1167,68 +1171,108 @@ bool CMvDbpClient::HandleEvent(CMvEventDbpRegisterForkID& event)
 
 bool CMvDbpClient::HandleEvent(CMvEventDbpSendBlock& event)
 {
-    if(!event.strSessionId.empty() || event.data.block.type() != typeid(CMvDbpBlock)
+    if(!event.strSessionId.empty() || event.data.id.empty() || event.data.block.type() != typeid(CMvDbpBlock)
         || !IsForkNode())
     {
         std::cerr << "cannot handle SendBlock event." << std::endl;
         return false;
     }
 
-    // pick one session to sendblock
-    CMvDbpClientSocket* pClientSocket = nullptr;
-    if(mapSessionProfile.size() > 0)
-    {
-        pClientSocket = mapSessionProfile.begin()->second.pClientSocket;
-    }
-    else
-    {
-        std::cerr << "mapSessionProfile is empty\n";
-        return false;
-    }
-
+    CMvDbpClientSocket* pClientSocket = PickOneSessionSocket();
     if(!pClientSocket)
     {
         std::cerr << "Client Socket is invalid\n";
         return false;
     }
 
-    
-
-    // TODO
+    CMvDbpBlock block = boost::any_cast<CMvDbpBlock>(event.data.block);
+    pClientSocket->SendBlock(event.data.id, block);
     
     return true;
 }
 
 bool CMvDbpClient::HandleEvent(CMvEventDbpSendTx& event)
 {
-    if(!event.strSessionId.empty() || event.data.tx.type() != typeid(CMvDbpTransaction)
+    if(!event.strSessionId.empty() || event.data.id.empty() || event.data.tx.type() != typeid(CMvDbpTransaction)
         || !IsForkNode())
     {
         std::cerr << "cannot handle SendTx event." << std::endl;
         return false;
     }
     
-    // pick one session to sendtx
-    CMvDbpClientSocket* pClientSocket = nullptr;
-    if(mapSessionProfile.size() > 0)
+    CMvDbpClientSocket* pClientSocket = PickOneSessionSocket();
+    if(!pClientSocket)
     {
-        pClientSocket = mapSessionProfile.begin()->second.pClientSocket;
-    }
-    else
-    {
-        std::cerr << "mapSessionProfile is empty\n";
+        std::cerr << "Client Socket is invalid\n";
         return false;
     }
+    
+    CMvDbpTransaction tx = boost::any_cast<CMvDbpTransaction>(event.data.tx);
+    pClientSocket->SendTx(event.data.id, tx);
+    
+    return true;
+}
 
+bool CMvDbpClient::HandleEvent(CMvEventDbpSendBlockNotice& event)
+{
+    if(!event.strSessionId.empty() || event.data.forkid.empty() 
+        || event.data.hash.empty() || !IsForkNode())
+    {
+        std::cerr << "cannot handle SendBlockNotice event." << std::endl;
+        return false;
+    }
+    
+    CMvDbpClientSocket* pClientSocket = PickOneSessionSocket();
     if(!pClientSocket)
     {
         std::cerr << "Client Socket is invalid\n";
         return false;
     }
 
-    // TODO
+    pClientSocket->SendBlockNotice(event.data.forkid,event.data.height, event.data.height);
+
+    return true;
+}
+
+bool CMvDbpClient::HandleEvent(CMvEventDbpSendTxNotice& event)
+{
+    if(!event.strSessionId.empty() || event.data.forkid.empty() 
+        || event.data.hash.empty() || !IsForkNode())
+    {
+        std::cerr << "cannot handle SendTxNotice event." << std::endl;
+        return false;
+    }
     
-    return false;
+    CMvDbpClientSocket* pClientSocket = PickOneSessionSocket();
+    if(!pClientSocket)
+    {
+        std::cerr << "Client Socket is invalid\n";
+        return false;
+    }
+
+    pClientSocket->SendTxNotice(event.data.forkid,event.data.hash);
+
+    return true;
+}
+
+bool CMvDbpClient::HandleEvent(CMvEventDbpGetBlocks& event)
+{
+    if(!event.strSessionId.empty() || !IsForkNode())
+    {
+        std::cerr << "cannot handle GetBlocks event for supernode." << std::endl;
+        return false;
+    }
+    
+    CMvDbpClientSocket* pClientSocket = PickOneSessionSocket();
+    if(!pClientSocket)
+    {
+        std::cerr << "Client Socket is invalid\n";
+        return false;
+    }
+
+    pClientSocket->GetBlocks(event.data.forkid,event.data.hash,event.data.number);
+
+    return true;
 }
 
 

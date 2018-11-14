@@ -211,6 +211,25 @@ public:
     std::string hash;
 };
 
+class CMvDbpSendBlockNoticeRet
+{
+public:
+    std::string hash;
+};
+
+class CMvDbpSendTxNoticeRet
+{
+public:
+    std::string hash;
+};
+
+// for supernode getblocks ret
+class CMvDbpGetBlocksRet
+{
+public:
+    std::string hash;
+};
+
 class CMvDbpRegisterForkID : public CMvDbpRequest
 {
 public:
@@ -220,13 +239,38 @@ public:
 class CMvDbpSendBlock : public CMvDbpRequest
 {
 public:
+    std::string id;
     boost::any block;
 };
 
 class CMvDbpSendTx : public CMvDbpRequest
 {
 public:
+    std::string id;
     boost::any tx;
+};
+
+class CMvDbpSendBlockNotice : public CMvDbpRequest
+{
+public:
+    std::string forkid;
+    std::string height;
+    std::string hash;
+};
+
+class CMvDbpSendTxNotice : public CMvDbpRequest
+{
+public:
+    std::string forkid;
+    std::string hash;
+};
+
+class CMvDbpGetBlocks : public CMvDbpRequest
+{
+public:
+    std::string forkid;
+    std::string hash;
+    int32 number;
 };
 
 class CMvDbpMethodResult : public CMvDbpRespond

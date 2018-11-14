@@ -173,6 +173,7 @@ protected:
     void CloseConnect(CMvDbpClientSocket* pClientSocket);
     void RemoveSession(CMvDbpClientSocket* pClientSocket);
     void RemoveClientSocket(CMvDbpClientSocket* pClientSocket);
+    CMvDbpClientSocket* PickOneSessionSocket() const;
 
     void HandleAddedBlock(const dbp::Added& added, CMvDbpClientSocket* pClientSocket);
     void HandleAddedTx(const dbp::Added& added, CMvDbpClientSocket* pClientSocket);
@@ -184,6 +185,9 @@ protected:
     bool HandleEvent(CMvEventDbpRegisterForkID& event) override;
     bool HandleEvent(CMvEventDbpSendBlock& event) override;
     bool HandleEvent(CMvEventDbpSendTx& event) override;
+    bool HandleEvent(CMvEventDbpSendBlockNotice& event) override;
+    bool HandleEvent(CMvEventDbpSendTxNotice& event) override;
+    bool HandleEvent(CMvEventDbpGetBlocks& event) override;
 
 protected:
     std::vector<CDbpClientConfig> vecClientConfig;
