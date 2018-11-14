@@ -704,6 +704,60 @@ void CMvDbpClient::HandleResult(CMvDbpClientSocket* pClientSocket, google::proto
         {
             sn::RegisterForkIDRet ret;
             any.UnpackTo(&ret);
+
+            std::cout << "[<] register forkid method return : \n";
+            uint256 forkid(std::vector<uint8>(ret.forkid().begin(), ret.forkid().end()));
+            std::cout << forkid.ToString() << "\n";
+        }
+
+        if(any.Is<sn::SendBlockRet>())
+        {
+            sn::SendBlockRet ret;
+            any.UnpackTo(&ret);
+
+            std::cout << "[<] send block method return : \n";
+            uint256 hash(std::vector<uint8>(ret.hash().begin(), ret.hash().end()));
+            std::cout << hash.ToString() << "\n";
+        }
+
+        if(any.Is<sn::SendTxRet>())
+        {
+            sn::SendTxRet ret;
+            any.UnpackTo(&ret);
+
+            std::cout << "[<] send tx method return : \n";
+            uint256 hash(std::vector<uint8>(ret.hash().begin(), ret.hash().end()));
+            std::cout << hash.ToString() << "\n";
+        }
+
+        if(any.Is<sn::SendBlockNoticeRet>())
+        {
+            sn::SendBlockNoticeRet ret;
+            any.UnpackTo(&ret);
+
+            std::cout << "[<] send block notice method return : \n";
+            uint256 hash(std::vector<uint8>(ret.hash().begin(), ret.hash().end()));
+            std::cout << hash.ToString() << "\n";
+        }
+
+        if(any.Is<sn::SendTxNoticeRet>())
+        {
+            sn::SendTxNoticeRet ret;
+            any.UnpackTo(&ret);
+
+            std::cout << "[<] send tx notice method return : \n";
+            uint256 hash(std::vector<uint8>(ret.hash().begin(), ret.hash().end()));
+            std::cout << hash.ToString() << "\n";
+        }
+
+        if(any.Is<sn::GetBlocksRet>())
+        {
+            sn::GetBlocksRet ret;
+            any.UnpackTo(&ret);
+
+            std::cout << "[<] get blocks  method return : \n";
+            uint256 hash(std::vector<uint8>(ret.hash().begin(), ret.hash().end()));
+            std::cout << hash.ToString() << "\n";
         }
         
     }
@@ -1068,7 +1122,7 @@ bool CMvDbpClient::HaveAssociatedSessionOf(CMvDbpClientSocket* pClientSocket)
 
 bool CMvDbpClient::IsSessionExist(const std::string& session)
 {
-  return mapSessionProfile.find(session) != mapSessionProfile.end();
+    return mapSessionProfile.find(session) != mapSessionProfile.end();
 }
 
 bool CMvDbpClient::IsForkNode()
