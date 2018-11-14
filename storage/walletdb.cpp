@@ -327,7 +327,7 @@ bool CWalletDB::CheckWalletTx()
         CMvDBRes res(dbConn, sql, true);
         if(!res.GetRow() || !res.GetField<int>(0, rows) || rows != 0)
         {
-//            return false;
+            return false;
         }
     }
 
@@ -336,72 +336,54 @@ bool CWalletDB::CheckWalletTx()
     //between tables of wallettx and transaction row by row
     sql = R"(
             SELECT
-                txid,
-                version,
-                type,
-                lockuntil,
-                sendto,
-                amount,
-                destin,
-                valuein,
-                height
+                t.version,
+                t.type,
+                t.lockuntil,
+                t.sendto,
+                t.amount,
+                t.destin,
+                t.valuein,
+                t.height,
+                w.version,
+                w.type,
+                w.lockuntil,
+                w.sendto,
+                w.amount,
+                w.destin,
+                w.valuein,
+                w.height
             FROM
-                transaction
-            WHERE
-                txid IN (SELECT
-                        txid
-                    FROM
-                        wallettx)
+                transaction t
+                    INNER JOIN
+                wallettx w ON t.txid = w.txid
             )";
     {
         CMvDBRes res(dbConn, sql, true);
         while(res.GetRow())
         {
-            CTxIndex txOuter;
-            uint256 txidOuter;
-            if (!(res.GetField(0, txidOuter) && res.GetField(1, txOuter.nVersion)
-                && res.GetField(2, txOuter.nType) && res.GetField(3, txOuter.nLockUntil)
-                && res.GetField(4, txOuter.sendTo) && res.GetField(5, txOuter.nAmount)
-                && res.GetField(6, txOuter.destIn) && res.GetField(7, txOuter.nValueIn)
-                && res.GetField(8, txOuter.nBlockHeight)))
-            {
-                return false;
-            }
-
-            string sqlInner = R"(
-                                SELECT
-                                    version,
-                                    type,
-                                    lockuntil,
-                                    sendto,
-                                    amount,
-                                    destin,
-                                    valuein,
-                                    height
-                                FROM
-                                    wallettx
-                                WHERE
-                                    txid = )" + dbConn.ToEscString(txidOuter);
-            CMvDBRes resInner(dbConn, sqlInner, true);
+            CTxIndex tx;
             CWalletTx wtx;
-            if(!(resInner.GetRow()
-               && resInner.GetField(0, wtx.nVersion) && res.GetField(1, wtx.nType)
-               && res.GetField(2, wtx.nLockUntil) && res.GetField(3, wtx.sendTo)
-               && res.GetField(4, wtx.nAmount) && res.GetField(5, wtx.destIn)
-               && res.GetField(6, wtx.nValueIn) && res.GetField(7, wtx.nBlockHeight)
-               ))
+            if ( !(res.GetField(0, tx.nVersion) && res.GetField(1, tx.nType)
+                && res.GetField(2, tx.nLockUntil) && res.GetField(3, tx.sendTo)
+                && res.GetField(4, tx.nAmount) && res.GetField(5, tx.destIn)
+                && res.GetField(6, tx.nValueIn) && res.GetField(7, tx.nBlockHeight)
+
+                && res.GetField(8, wtx.nVersion) && res.GetField(9, wtx.nType)
+                && res.GetField(10, wtx.nLockUntil) && res.GetField(11, wtx.sendTo)
+                && res.GetField(12, wtx.nAmount) && res.GetField(13, wtx.destIn)
+                && res.GetField(14, wtx.nValueIn) && res.GetField(15, wtx.nBlockHeight)) )
             {
                 return false;
             }
 
-            if(txOuter.nVersion != wtx.nVersion
-               || txOuter.nType != wtx.nType
-               || txOuter.nLockUntil != wtx.nLockUntil
-               || txOuter.sendTo != wtx.sendTo
-               || txOuter.nAmount != wtx.nAmount
-               || txOuter.destIn != wtx.destIn
-               || txOuter.nValueIn != wtx.nValueIn
-               || txOuter.nBlockHeight != wtx.nBlockHeight)
+            if(tx.nVersion != wtx.nVersion
+               || tx.nType != wtx.nType
+               || tx.nLockUntil != wtx.nLockUntil
+               || tx.sendTo != wtx.sendTo
+               || tx.nAmount != wtx.nAmount
+               || tx.destIn != wtx.destIn
+               || tx.nValueIn != wtx.nValueIn
+               || tx.nBlockHeight != wtx.nBlockHeight)
             {
                 return false;
             }
