@@ -291,12 +291,33 @@ bool CWalletDB::CheckWalletTx()
     //which occurred on addresses owned by the wallet
     int rows = -1;
     string sql = R"(
-                    select count(distinct txid)
-                    from wallettx
-                    where
-                    right(sendto, 32) not in (select pubkey from walletkey union select tid from wallettemplate)
-                    and
-                    right(destin, 32) not in (select pubkey from walletkey union select tid from wallettemplate))";
+                    SELECT
+                        COUNT(DISTINCT txid)
+                    FROM
+                        wallettx
+                    WHERE
+                        RIGHT(sendto, 32) NOT IN
+                            (SELECT
+                                pubkey
+                            FROM
+                                walletkey
+                            UNION
+                            SELECT
+                                tid
+                            FROM
+                                wallettemplate)
+                        AND
+                        RIGHT(destin, 32) NOT IN
+                            (SELECT
+                                pubkey
+                            FROM
+                                walletkey
+                            UNION
+                            SELECT
+                                tid
+                            FROM
+                                wallettemplate)
+                    )";
     {
         CMvDBRes res(dbConn, sql, true);
         if(!res.GetRow() || !res.GetField<int>(0, rows) || rows != 0)
@@ -309,20 +330,63 @@ bool CWalletDB::CheckWalletTx()
     //which belong to the wallet
     rows = -1;
     sql = R"(
-            select count(txid) from
-            (
-            select distinct transaction.txid as txid from transaction
-            where
-            right(sendto, 32) in (select pubkey from walletkey union select tid from wallettemplate)
-            or
-            right(destin, 32) in (select pubkey from walletkey union select tid from wallettemplate)
-            union all
-            select distinct wallettx.txid as txid from wallettx
-            where
-            right(sendto, 32) in (select pubkey from walletkey union select tid from wallettemplate)
-            or
-            right(destin, 32) in (select pubkey from walletkey union select tid from wallettemplate)
-            )diffset group by txid having count(txid) = 1)";
+            SELECT
+                COUNT(txid)
+            FROM
+                (SELECT DISTINCT
+                    transaction.txid AS txid
+                FROM
+                    transaction
+                WHERE
+                    RIGHT(sendto, 32) IN
+                        (SELECT
+                            pubkey
+                        FROM
+                            walletkey
+                        UNION
+                        SELECT
+                            tid
+                        FROM
+                            wallettemplate)
+                    OR
+                    RIGHT(destin, 32) IN
+                        (SELECT
+                            pubkey
+                        FROM
+                            walletkey
+                        UNION
+                        SELECT
+                            tid
+                        FROM
+                            wallettemplate)
+                UNION ALL
+                SELECT DISTINCT
+                    wallettx.txid AS txid
+                FROM
+                    wallettx
+                WHERE
+                    RIGHT(sendto, 32) IN
+                        (SELECT
+                            pubkey
+                        FROM
+                            walletkey
+                        UNION
+                        SELECT
+                            tid
+                        FROM
+                            wallettemplate)
+                    OR
+                    RIGHT(destin, 32) IN
+                        (SELECT
+                            pubkey
+                        FROM
+                            walletkey UNION SELECT
+                            tid
+                        FROM
+                            wallettemplate)) diffset
+            GROUP BY txid
+            HAVING COUNT(txid) = 1
+            )";
     {
         CMvDBRes res(dbConn, sql, true);
         if(!res.GetRow() || !res.GetField<int>(0, rows) || rows != 0)
