@@ -314,7 +314,12 @@ void CDbpClient::SendResponse(const std::string& client, CMvDbpMethodResult& bod
         {
             CMvDbpRegisterForkIDRet ret = boost::any_cast<CMvDbpRegisterForkIDRet>(obj);
             sn::RegisterForkIDRet forkRet;
-            forkRet.set_id(ret.forkid);
+            uint256 forkid;
+            std::vector<uint8> forkidBin;
+            forkid.SetHex(ret.forkid);
+            walleve::CWalleveODataStream forkidSS(forkidBin);
+            forkid.ToDataStream(forkidSS);
+            forkRet.set_forkid(std::string(forkidBin.begin(), forkidBin.end()));
             resultMsg.add_result()->PackFrom(forkRet);
         }
         else
@@ -651,22 +656,9 @@ void CDbpServer::HandleClientMethod(CDbpClient* pDbpClient, google::protobuf::An
     methodBody.id = methodMsg.id();
 
     std::cout << "[<] method " << methodMsg.method() << " [dbp server]\n";
-
-    if (methodMsg.method() == "getblocks")
-        methodBody.method = CMvDbpMethod::Method::GET_BLOCKS;
-    if (methodMsg.method() == "gettransaction")
-        methodBody.method = CMvDbpMethod::Method::GET_TRANSACTION;
-    if (methodMsg.method() == "sendtransaction")
-        methodBody.method = CMvDbpMethod::Method::SEND_TRANSACTION;
-    if (methodMsg.method() == "registerforkid")
-        methodBody.method = CMvDbpMethod::Method::REGISTER_FORK;
-    if (methodMsg.method() == "sendblock")
-        methodBody.method = CMvDbpMethod::Method::SEND_BLOCK;
-    if (methodMsg.method() == "sendtx")
-        methodBody.method = CMvDbpMethod::Method::SEND_TX;
-
-
-    if (methodBody.method == CMvDbpMethod::Method::GET_BLOCKS && methodMsg.params().Is<lws::GetBlocksArg>())
+    
+    if (methodMsg.method() == "getblocks" && 
+        methodMsg.params().Is<lws::GetBlocksArg>())
     {
         lws::GetBlocksArg args;
         methodMsg.params().UnpackTo(&args);
@@ -674,34 +666,56 @@ void CDbpServer::HandleClientMethod(CDbpClient* pDbpClient, google::protobuf::An
         std::string forkid;
         GetSessionForkId(pDbpClient, forkid);
 
+        methodBody.method = CMvDbpMethod::LwsMethod::GET_BLOCKS;
         methodBody.params.insert(std::make_pair("forkid", forkid));
         methodBody.params.insert(std::make_pair("hash", args.hash()));
         methodBody.params.insert(std::make_pair("number", boost::lexical_cast<std::string>(args.number())));
     }
-    else if (methodBody.method == CMvDbpMethod::Method::GET_TRANSACTION && methodMsg.params().Is<lws::GetTxArg>())
+    else if(methodMsg.method() == "getblocks" && 
+        methodMsg.params().Is<sn::GetBlocksArg>())
+    {
+        sn::GetBlocksArg args;
+        methodMsg.params().UnpackTo(&args);
+
+        methodBody.method = CMvDbpMethod::SNMethod::GET_BLOCKS_SN;
+        methodBody.params.insert(std::make_pair("forkid", args.forkid()));
+        methodBody.params.insert(std::make_pair("hash", args.hash()));
+        methodBody.params.insert(std::make_pair("number", boost::lexical_cast<std::string>(args.number())));
+    }
+    else if (methodMsg.method() == "gettransaction" && 
+        methodMsg.params().Is<lws::GetTxArg>())
     {
         lws::GetTxArg args;
         methodMsg.params().UnpackTo(&args);
+        
+        methodBody.method = CMvDbpMethod::LwsMethod::GET_TRANSACTION;
         methodBody.params.insert(std::make_pair("hash", args.hash()));
     }
-    else if (methodBody.method == CMvDbpMethod::Method::SEND_TRANSACTION && methodMsg.params().Is<lws::SendTxArg>())
+    else if (methodMsg.method() == "sendtransaction" && 
+        methodMsg.params().Is<lws::SendTxArg>())
     {
         lws::SendTxArg args;
         methodMsg.params().UnpackTo(&args);
+        
+        methodBody.method = CMvDbpMethod::LwsMethod::SEND_TRANSACTION;
         methodBody.params.insert(std::make_pair("data", args.data()));
     }
-    else if(methodBody.method == CMvDbpMethod::Method::REGISTER_FORK)
+    else if(methodMsg.method() == "registerforkid" && 
+        methodMsg.params().Is<sn::RegisterForkIDArg>())
     {
         sn::RegisterForkIDArg args;
         methodMsg.params().UnpackTo(&args);
         
         std::string session = pDbpClient->GetSession();
-        mapSessionProfile[session].setChildForks.insert(args.id());
+        std::vector<uint8> forkidBin(args.forkid().begin(), args.forkid().end());
+        uint256 forkid(forkidBin);
+        mapSessionProfile[session].setChildForks.insert(forkid.ToString());
         
-        std::cout << "super node fork id: " << args.id() << "\n";
-        methodBody.params.insert(std::make_pair("forkid",args.id()));
+        methodBody.method = CMvDbpMethod::SNMethod::REGISTER_FORK;
+        methodBody.params.insert(std::make_pair("forkid",forkid.ToString()));
     }
-    else if(methodBody.method == CMvDbpMethod::Method::SEND_BLOCK)
+    else if(methodMsg.method() == "sendblock" && 
+        methodMsg.params().Is<sn::SendBlockArg>())
     {
         sn::SendBlockArg args;
         methodMsg.params().UnpackTo(&args);
@@ -709,9 +723,12 @@ void CDbpServer::HandleClientMethod(CDbpClient* pDbpClient, google::protobuf::An
         CMvDbpBlock dbpBlock;
         CDbpUtils::SnToDbpBlock(&(args.block()),dbpBlock);
 
+        methodBody.method = CMvDbpMethod::SNMethod::SEND_BLOCK;
+        methodBody.params.insert(std::make_pair("id", args.id()));
         methodBody.params.insert(std::make_pair("data", dbpBlock));
     }
-    else if(methodBody.method == CMvDbpMethod::Method::SEND_TX)
+    else if(methodMsg.method() == "sendtx" && 
+        methodMsg.params().Is<sn::SendTxArg>())
     {
         sn::SendTxArg args;
         methodMsg.params().UnpackTo(&args);
@@ -719,7 +736,30 @@ void CDbpServer::HandleClientMethod(CDbpClient* pDbpClient, google::protobuf::An
         CMvDbpTransaction dbptx;
         CDbpUtils::SnToDbpTransaction(&(args.tx()),&dbptx);
 
+        methodBody.method = CMvDbpMethod::SNMethod::SEND_TX;
+        methodBody.params.insert(std::make_pair("id", args.id()));
         methodBody.params.insert(std::make_pair("data", dbptx));
+    }
+    else if(methodMsg.method() == "sendblocknotice" &&
+        methodMsg.params().Is<sn::SendBlockNoticeArg>())
+    {
+        sn::SendBlockNoticeArg args;
+        methodMsg.params().UnpackTo(&args);
+
+        methodBody.method = CMvDbpMethod::SNMethod::SEND_BLOCK_NOTICE;
+        methodBody.params.insert(std::make_pair("forkid", args.forkid()));
+        methodBody.params.insert(std::make_pair("height", args.height()));
+        methodBody.params.insert(std::make_pair("hash", args.hash()));
+    }
+    else if(methodMsg.method() == "sendtxnotice" &&
+        methodMsg.params().Is<sn::SendTxNoticeArg>())
+    {
+        sn::SendTxNoticeArg args;
+        methodMsg.params().UnpackTo(&args);
+
+        methodBody.method = CMvDbpMethod::SNMethod::SEND_TX_NOTICE;
+        methodBody.params.insert(std::make_pair("forkid", args.forkid()));
+        methodBody.params.insert(std::make_pair("hash", args.hash()));
     }
     else
     {

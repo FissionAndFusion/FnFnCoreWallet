@@ -93,24 +93,171 @@ void CMvDbpClientSocket::SendPing(const std::string& id)
     SendMessage(dbp::Msg::PING,any);
 }
 
-void CMvDbpClientSocket::SendForkId(const std::string& fork)
+void CMvDbpClientSocket::SendBlockNotice(const std::string& fork, const std::string& height, const std::string& hash)
 {
-    sn::RegisterForkIDArg forkArg;
-    forkArg.set_id(fork);
+    sn::SendBlockNoticeArg arg;
+    
+    uint256 forkid, blockHash;
+    std::vector<uint8> forkidBin, hashBin;
+    walleve::CWalleveODataStream forkidSS(forkidBin);
+    walleve::CWalleveODataStream hashSS(hashBin);
+    
+    forkid.SetHex(fork);
+    blockHash.SetHex(hash);
+    forkid.ToDataStream(forkidSS);
+    blockHash.ToDataStream(hashSS);
+    
+    arg.set_forkid(std::string(forkidBin.begin(), forkidBin.end()));
+    arg.set_hash(std::string(hashBin.begin(), hashBin.end()));
+    arg.set_height(height);
 
-    google::protobuf::Any *fork_any = new google::protobuf::Any();
-    fork_any->PackFrom(forkArg);
+    google::protobuf::Any *argAny = new google::protobuf::Any();
+    argAny->PackFrom(arg);
     
     dbp::Method method;
-    method.set_method("registerforkid");
-    std::string id(CDbpUtils::RandomString());  
+    method.set_method("sendblocknotice");
+    std::string id(CDbpUtils::RandomString());
     method.set_id(id);
-    method.set_allocated_params(fork_any);
+    method.set_allocated_params(argAny);
 
     google::protobuf::Any *any = new google::protobuf::Any();
     any->PackFrom(method);
 
     SendMessage(dbp::Msg::METHOD,any);
+}
+
+void CMvDbpClientSocket::SendTxNotice(const std::string& fork, const std::string& hash)
+{
+    sn::SendTxNoticeArg arg;
+    
+    uint256 forkid, txHash;
+    std::vector<uint8> forkidBin, hashBin;
+    walleve::CWalleveODataStream forkidSS(forkidBin);
+    walleve::CWalleveODataStream hashSS(hashBin);
+    
+    forkid.SetHex(fork);
+    txHash.SetHex(hash);
+    forkid.ToDataStream(forkidSS);
+    txHash.ToDataStream(hashSS);
+    
+    arg.set_forkid(std::string(forkidBin.begin(), forkidBin.end()));
+    arg.set_hash(std::string(hashBin.begin(), hashBin.end()));
+
+    google::protobuf::Any *argAny = new google::protobuf::Any();
+    argAny->PackFrom(arg);
+    
+    dbp::Method method;
+    method.set_method("sendtxnotice");
+    std::string id(CDbpUtils::RandomString());
+    method.set_id(id);
+    method.set_allocated_params(argAny);
+
+    google::protobuf::Any *any = new google::protobuf::Any();
+    any->PackFrom(method);
+
+    SendMessage(dbp::Msg::METHOD,any);
+}
+
+void CMvDbpClientSocket::SendBlock(const std::string& id, const CMvDbpBlock& block)
+{
+    sn::SendBlockArg arg;
+    arg.set_id(id);
+    sn::Block *pBlock = new sn::Block();
+    CDbpUtils::DbpToSnBlock(&block, (*pBlock));
+    arg.set_allocated_block(pBlock);
+
+    google::protobuf::Any *argAny = new google::protobuf::Any();
+    argAny->PackFrom(arg);
+    
+    dbp::Method method;
+    method.set_method("sendblock");
+    method.set_id(CDbpUtils::RandomString());
+    method.set_allocated_params(argAny);
+
+    google::protobuf::Any *any = new google::protobuf::Any();
+    any->PackFrom(method);
+
+    SendMessage(dbp::Msg::METHOD,any);
+}
+
+void CMvDbpClientSocket::SendTx(const std::string& id, const CMvDbpTransaction& tx)
+{
+    sn::SendTxArg arg;
+    arg.set_id(id);
+    sn::Transaction *pTx = new sn::Transaction();
+    CDbpUtils::DbpToSnTransaction(&tx, pTx);
+    arg.set_allocated_tx(pTx);
+
+    google::protobuf::Any *argAny = new google::protobuf::Any();
+    argAny->PackFrom(arg);
+    
+    dbp::Method method;
+    method.set_method("sendtx");
+    method.set_id(CDbpUtils::RandomString());
+    method.set_allocated_params(argAny);
+
+    google::protobuf::Any *any = new google::protobuf::Any();
+    any->PackFrom(method);
+
+    SendMessage(dbp::Msg::METHOD,any);
+}
+
+void CMvDbpClientSocket::GetBlocks(const std::string& fork, const std::string& startHash, int32 num)
+{
+    sn::GetBlocksArg arg;
+    uint256 forkid, blockHash;
+    std::vector<uint8> forkidBin, hashBin;
+    walleve::CWalleveODataStream forkidSS(forkidBin);
+    walleve::CWalleveODataStream hashSS(hashBin);
+    
+    forkid.SetHex(fork);
+    blockHash.SetHex(startHash);
+    forkid.ToDataStream(forkidSS);
+    blockHash.ToDataStream(hashSS);
+
+    arg.set_forkid(std::string(forkidBin.begin(), forkidBin.end()));
+    arg.set_hash(std::string(hashBin.begin(), hashBin.end()));
+    arg.set_number(num);
+
+    google::protobuf::Any *argAny = new google::protobuf::Any();
+    argAny->PackFrom(arg);
+    
+    dbp::Method method;
+    method.set_method("getblocks");
+    method.set_id(CDbpUtils::RandomString());
+    method.set_allocated_params(argAny);
+
+    google::protobuf::Any *any = new google::protobuf::Any();
+    any->PackFrom(method);
+
+    SendMessage(dbp::Msg::METHOD,any);
+}
+
+void CMvDbpClientSocket::SendForkId(const std::string& fork)
+{
+    sn::RegisterForkIDArg arg;
+    
+    uint256 forkid;
+    forkid.SetHex(fork);
+    std::vector<uint8> forkidBin;
+    walleve::CWalleveODataStream forkidSS(forkidBin);
+    forkid.ToDataStream(forkidSS);
+    arg.set_forkid(std::string(forkidBin.begin(), forkidBin.end()));
+
+    google::protobuf::Any *argAny = new google::protobuf::Any();
+    argAny->PackFrom(arg);
+    
+    dbp::Method method;
+    method.set_method("registerforkid");
+    std::string id(CDbpUtils::RandomString());  
+    method.set_id(id);
+    method.set_allocated_params(argAny);
+
+    google::protobuf::Any *any = new google::protobuf::Any();
+    any->PackFrom(method);
+
+    SendMessage(dbp::Msg::METHOD,any);
+
 }
 
 void CMvDbpClientSocket::SendSubscribeTopic(const std::string& topic)
@@ -986,15 +1133,8 @@ void CMvDbpClient::RemoveClientSocket(CMvDbpClientSocket* pClientSocket)
     CloseConnect(pClientSocket);
 }
 
-bool CMvDbpClient::HandleEvent(CMvEventDbpRegisterForkID& event)
+CMvDbpClientSocket* CMvDbpClient::PickOneSessionSocket() const
 {
-    if(!event.strSessionId.empty() || event.data.forkid.empty() || !IsForkNode())
-    {
-        std::cerr << "cannot handle Register fork event." << std::endl;
-        return false;
-    }
-
-    // pick one session to sendforks
     CMvDbpClientSocket* pClientSocket = nullptr;
     if(mapSessionProfile.size() > 0)
     {
@@ -1003,9 +1143,20 @@ bool CMvDbpClient::HandleEvent(CMvEventDbpRegisterForkID& event)
     else
     {
         std::cerr << "mapSessionProfile is empty\n";
+    }
+
+    return pClientSocket;
+}
+
+bool CMvDbpClient::HandleEvent(CMvEventDbpRegisterForkID& event)
+{
+    if(!event.strSessionId.empty() || event.data.forkid.empty() || !IsForkNode())
+    {
+        std::cerr << "cannot handle Register fork event." << std::endl;
         return false;
     }
 
+    CMvDbpClientSocket* pClientSocket = PickOneSessionSocket();
     if(!pClientSocket)
     {
         std::cerr << "Client Socket is invalid\n";
@@ -1020,68 +1171,108 @@ bool CMvDbpClient::HandleEvent(CMvEventDbpRegisterForkID& event)
 
 bool CMvDbpClient::HandleEvent(CMvEventDbpSendBlock& event)
 {
-    if(!event.strSessionId.empty() || event.data.block.type() != typeid(CMvDbpBlock)
+    if(!event.strSessionId.empty() || event.data.id.empty() || event.data.block.type() != typeid(CMvDbpBlock)
         || !IsForkNode())
     {
         std::cerr << "cannot handle SendBlock event." << std::endl;
         return false;
     }
 
-    // pick one session to sendblock
-    CMvDbpClientSocket* pClientSocket = nullptr;
-    if(mapSessionProfile.size() > 0)
-    {
-        pClientSocket = mapSessionProfile.begin()->second.pClientSocket;
-    }
-    else
-    {
-        std::cerr << "mapSessionProfile is empty\n";
-        return false;
-    }
-
+    CMvDbpClientSocket* pClientSocket = PickOneSessionSocket();
     if(!pClientSocket)
     {
         std::cerr << "Client Socket is invalid\n";
         return false;
     }
 
-    
-
-    // TODO
+    CMvDbpBlock block = boost::any_cast<CMvDbpBlock>(event.data.block);
+    pClientSocket->SendBlock(event.data.id, block);
     
     return true;
 }
 
 bool CMvDbpClient::HandleEvent(CMvEventDbpSendTx& event)
 {
-    if(!event.strSessionId.empty() || event.data.tx.type() != typeid(CMvDbpTransaction)
+    if(!event.strSessionId.empty() || event.data.id.empty() || event.data.tx.type() != typeid(CMvDbpTransaction)
         || !IsForkNode())
     {
         std::cerr << "cannot handle SendTx event." << std::endl;
         return false;
     }
     
-    // pick one session to sendtx
-    CMvDbpClientSocket* pClientSocket = nullptr;
-    if(mapSessionProfile.size() > 0)
+    CMvDbpClientSocket* pClientSocket = PickOneSessionSocket();
+    if(!pClientSocket)
     {
-        pClientSocket = mapSessionProfile.begin()->second.pClientSocket;
-    }
-    else
-    {
-        std::cerr << "mapSessionProfile is empty\n";
+        std::cerr << "Client Socket is invalid\n";
         return false;
     }
+    
+    CMvDbpTransaction tx = boost::any_cast<CMvDbpTransaction>(event.data.tx);
+    pClientSocket->SendTx(event.data.id, tx);
+    
+    return true;
+}
 
+bool CMvDbpClient::HandleEvent(CMvEventDbpSendBlockNotice& event)
+{
+    if(!event.strSessionId.empty() || event.data.forkid.empty() 
+        || event.data.hash.empty() || !IsForkNode())
+    {
+        std::cerr << "cannot handle SendBlockNotice event." << std::endl;
+        return false;
+    }
+    
+    CMvDbpClientSocket* pClientSocket = PickOneSessionSocket();
     if(!pClientSocket)
     {
         std::cerr << "Client Socket is invalid\n";
         return false;
     }
 
-    // TODO
+    pClientSocket->SendBlockNotice(event.data.forkid,event.data.height, event.data.height);
+
+    return true;
+}
+
+bool CMvDbpClient::HandleEvent(CMvEventDbpSendTxNotice& event)
+{
+    if(!event.strSessionId.empty() || event.data.forkid.empty() 
+        || event.data.hash.empty() || !IsForkNode())
+    {
+        std::cerr << "cannot handle SendTxNotice event." << std::endl;
+        return false;
+    }
     
-    return false;
+    CMvDbpClientSocket* pClientSocket = PickOneSessionSocket();
+    if(!pClientSocket)
+    {
+        std::cerr << "Client Socket is invalid\n";
+        return false;
+    }
+
+    pClientSocket->SendTxNotice(event.data.forkid,event.data.hash);
+
+    return true;
+}
+
+bool CMvDbpClient::HandleEvent(CMvEventDbpGetBlocks& event)
+{
+    if(!event.strSessionId.empty() || !IsForkNode())
+    {
+        std::cerr << "cannot handle GetBlocks event for supernode." << std::endl;
+        return false;
+    }
+    
+    CMvDbpClientSocket* pClientSocket = PickOneSessionSocket();
+    if(!pClientSocket)
+    {
+        std::cerr << "Client Socket is invalid\n";
+        return false;
+    }
+
+    pClientSocket->GetBlocks(event.data.forkid,event.data.hash,event.data.number);
+
+    return true;
 }
 
 

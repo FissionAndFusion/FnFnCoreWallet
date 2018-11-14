@@ -680,12 +680,9 @@ void CDbpService::HandleRegisterFork(CMvEventDbpMethod& event)
 
 void CDbpService::HandleSendBlock(CMvEventDbpMethod& event)
 {
+    std::string id = boost::any_cast<std::string>(event.data.params["id"]);
     CMvDbpBlock block = boost::any_cast<CMvDbpBlock>(event.data.params["data"]);
     
-    // TO DO
-    
-    
-
     CMvEventDbpMethodResult eventResult(event.strSessionId);
     eventResult.data.id = event.data.id;
     CMvDbpSendBlockRet ret;
@@ -693,18 +690,19 @@ void CDbpService::HandleSendBlock(CMvEventDbpMethod& event)
     eventResult.data.anyResultObjs.push_back(ret);
     pDbpServer->DispatchEvent(&eventResult);
 
+
+    // TO DO
+
     CMvEventDbpSendBlock eventSendBlock("");
+    eventSendBlock.data.id = id;
     eventSendBlock.data.block = block;
     pDbpClient->DispatchEvent(&eventSendBlock);
 }
 
 void CDbpService::HandleSendTx(CMvEventDbpMethod& event)
 {
+    std::string id = boost::any_cast<std::string>(event.data.params["id"]);
     CMvDbpTransaction tx = boost::any_cast<CMvDbpTransaction>(event.data.params["data"]);
-
-    // TODO
-
-
 
     CMvEventDbpMethodResult eventResult(event.strSessionId);
     eventResult.data.id = event.data.id;
@@ -713,36 +711,127 @@ void CDbpService::HandleSendTx(CMvEventDbpMethod& event)
     eventResult.data.anyResultObjs.push_back(ret);
     pDbpServer->DispatchEvent(&eventResult);
 
+
+    // TODO
+
     CMvEventDbpSendTx eventSendTx("");
+    eventSendTx.data.id = id;
     eventSendTx.data.tx = tx;
     pDbpClient->DispatchEvent(&eventSendTx);
 }
 
+void CDbpService::HandleSendBlockNotice(CMvEventDbpMethod& event)
+{
+    std::string forkid = boost::any_cast<std::string>(event.data.params["forkid"]);
+    std::string height = boost::any_cast<std::string>(event.data.params["height"]);
+    std::string hash = boost::any_cast<std::string>(event.data.params["hash"]);
+    
+    CMvEventDbpMethodResult eventResult(event.strSessionId);
+    eventResult.data.id = event.data.id;
+    CMvDbpSendBlockNoticeRet ret;
+    ret.hash = hash;
+    eventResult.data.anyResultObjs.push_back(ret);
+    pDbpServer->DispatchEvent(&eventResult);
+
+    // TO DO
+
+    
+    uint256 forkid256(std::vector<uint8>(forkid.begin(), forkid.end()));
+    uint256 hash256(std::vector<uint8>(hash.begin(), hash.end()));
+    
+    CMvEventDbpSendBlockNotice eventSendBlockNotice("");
+    eventSendBlockNotice.data.forkid = forkid256.ToString();
+    eventSendBlockNotice.data.height = height;
+    eventSendBlockNotice.data.hash = hash256.ToString();
+    pDbpClient->DispatchEvent(&eventSendBlockNotice);
+}
+
+void CDbpService::HandleSendTxNotice(CMvEventDbpMethod& event)
+{
+    std::string forkid = boost::any_cast<std::string>(event.data.params["forkid"]);
+    std::string hash = boost::any_cast<std::string>(event.data.params["hash"]);
+
+    CMvEventDbpMethodResult eventResult(event.strSessionId);
+    eventResult.data.id = event.data.id;
+    CMvDbpSendTxNoticeRet ret;
+    ret.hash = hash;
+    eventResult.data.anyResultObjs.push_back(ret);
+    pDbpServer->DispatchEvent(&eventResult);
+
+    // TO DO
+
+    uint256 forkid256(std::vector<uint8>(forkid.begin(), forkid.end()));
+    uint256 hash256(std::vector<uint8>(hash.begin(), hash.end()));
+
+    CMvEventDbpSendTxNotice eventSendTxNotice("");
+    eventSendTxNotice.data.forkid = forkid256.ToString();
+    eventSendTxNotice.data.hash = hash256.ToString();
+    pDbpClient->DispatchEvent(&eventSendTxNotice);
+}
+
+void CDbpService::HandleGetSNBlocks(CMvEventDbpMethod& event)
+{
+    std::string forkid = boost::any_cast<std::string>(event.data.params["forkid"]);
+    std::string hash = boost::any_cast<std::string>(event.data.params["hash"]);
+    std::string number = boost::any_cast<std::string>(event.data.params["number"]);
+    int32 blockNum = boost::lexical_cast<int32>(number);
+
+    CMvEventDbpMethodResult eventResult(event.strSessionId);
+    eventResult.data.id = event.data.id;
+    CMvDbpGetBlocksRet ret;
+    ret.hash = hash;
+    eventResult.data.anyResultObjs.push_back(ret);
+    pDbpServer->DispatchEvent(&eventResult);
+
+    // TO DO
+
+    uint256 forkid256(std::vector<uint8>(forkid.begin(), forkid.end()));
+    uint256 hash256(std::vector<uint8>(hash.begin(), hash.end()));
+    
+    CMvEventDbpGetBlocks eventGetBlocks("");
+    eventGetBlocks.data.forkid = forkid256.ToString();
+    eventGetBlocks.data.hash = hash256.ToString();
+    eventGetBlocks.data.number = blockNum;
+    pDbpClient->DispatchEvent(&eventGetBlocks);
+}
+
 bool CDbpService::HandleEvent(CMvEventDbpMethod& event)
 {
-    if (event.data.method == CMvDbpMethod::Method::GET_BLOCKS)
+    if (event.data.method == CMvDbpMethod::LwsMethod::GET_BLOCKS)
     {
         HandleGetBlocks(event);
     }
-    else if (event.data.method == CMvDbpMethod::Method::GET_TRANSACTION)
+    else if (event.data.method == CMvDbpMethod::LwsMethod::GET_TRANSACTION)
     {
         HandleGetTransaction(event);
     }
-    else if (event.data.method == CMvDbpMethod::Method::SEND_TRANSACTION)
+    else if (event.data.method == CMvDbpMethod::LwsMethod::SEND_TRANSACTION)
     {
         HandleSendTransaction(event);
     }
-    else if(event.data.method == CMvDbpMethod::Method::REGISTER_FORK)
+    else if(event.data.method == CMvDbpMethod::SNMethod::REGISTER_FORK)
     {
         HandleRegisterFork(event);
     }
-    else if(event.data.method == CMvDbpMethod::Method::SEND_BLOCK)
+    else if(event.data.method == CMvDbpMethod::SNMethod::SEND_BLOCK)
     {
         HandleSendBlock(event);
     }
-    else if(event.data.method == CMvDbpMethod::Method::SEND_TX)
+    else if(event.data.method == CMvDbpMethod::SNMethod::SEND_TX)
     {
-
+        HandleSendTx(event);
+    }
+    else if(event.data.method == CMvDbpMethod::SNMethod::SEND_BLOCK_NOTICE)
+    {
+        HandleSendBlockNotice(event);
+    }
+    else if(event.data.method == CMvDbpMethod::SNMethod::SEND_TX_NOTICE)
+    {
+        HandleSendTxNotice(event);
+    }
+    else if(event.data.method == CMvDbpMethod::SNMethod::GET_BLOCKS_SN)
+    {
+        HandleGetSNBlocks(event);
     }
     else
     {
