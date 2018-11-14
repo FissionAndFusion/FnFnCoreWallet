@@ -398,59 +398,29 @@ bool CWalletDB::CheckWalletTx()
     //at this point, both of transaction sets for wallet
     //are equal, then we should validate detailed fields
     //between tables of wallettx and transaction row by row
+    rows = -1;
     sql = R"(
             SELECT
-                t.version,
-                t.type,
-                t.lockuntil,
-                t.sendto,
-                t.amount,
-                t.destin,
-                t.valuein,
-                t.height,
-                w.version,
-                w.type,
-                w.lockuntil,
-                w.sendto,
-                w.amount,
-                w.destin,
-                w.valuein,
-                w.height
+                COUNT(*)
             FROM
                 transaction t
                     INNER JOIN
                 wallettx w ON t.txid = w.txid
+            WHERE
+                t.version <> w.version
+                OR t.type <> w.type
+                OR t.lockuntil <> w.lockuntil
+                OR t.sendto <> w.sendto
+                OR t.amount <> w.amount
+                OR t.destin <> w.destin
+                OR t.valuein <> w.valuein
+                OR t.height <> w.height
             )";
     {
         CMvDBRes res(dbConn, sql, true);
-        while(res.GetRow())
+        if(!res.GetRow() || !res.GetField<int>(0, rows) || rows != 0)
         {
-            CTxIndex tx;
-            CWalletTx wtx;
-            if ( !(res.GetField(0, tx.nVersion) && res.GetField(1, tx.nType)
-                && res.GetField(2, tx.nLockUntil) && res.GetField(3, tx.sendTo)
-                && res.GetField(4, tx.nAmount) && res.GetField(5, tx.destIn)
-                && res.GetField(6, tx.nValueIn) && res.GetField(7, tx.nBlockHeight)
-
-                && res.GetField(8, wtx.nVersion) && res.GetField(9, wtx.nType)
-                && res.GetField(10, wtx.nLockUntil) && res.GetField(11, wtx.sendTo)
-                && res.GetField(12, wtx.nAmount) && res.GetField(13, wtx.destIn)
-                && res.GetField(14, wtx.nValueIn) && res.GetField(15, wtx.nBlockHeight)) )
-            {
-                return false;
-            }
-
-            if(tx.nVersion != wtx.nVersion
-               || tx.nType != wtx.nType
-               || tx.nLockUntil != wtx.nLockUntil
-               || tx.sendTo != wtx.sendTo
-               || tx.nAmount != wtx.nAmount
-               || tx.destIn != wtx.destIn
-               || tx.nValueIn != wtx.nValueIn
-               || tx.nBlockHeight != wtx.nBlockHeight)
-            {
-                return false;
-            }
+            return false;
         }
     }
     return true;
