@@ -17,7 +17,7 @@ namespace multiverse
 enum class ecForkEventType : int
 {
     //FORK NODE PEER NET EVENT
-    FK_EVENT_NODE_MESSAGE, //messages received from Dbp client
+    FK_EVENT_NODE_MESSAGE, //messages received from Dbp service
     FK_EVENT_NODE_ACTIVE,
     FK_EVENT_NODE_DEACTIVE,
     FK_EVENT_NODE_SUBSCRIBE,
@@ -73,7 +73,7 @@ class CFkEventMessageData : public walleve::CWalleveEvent
 public:
     CFkEventMessageData(uint64 nNonceIn, const ecForkEventType& nMsgTypeIn)
     : CWalleveEvent(nNonceIn, type), fkMsgType(nMsgTypeIn) {}
-    virtual ~CFkEventMessageData() {}
+    virtual ~CFkEventMessageData() noexcept {}
     virtual bool Handle(walleve::CWalleveEventListener& listener)
     {
         try
