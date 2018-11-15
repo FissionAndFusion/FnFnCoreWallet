@@ -116,6 +116,7 @@ class IForkManager : public walleve::IWalleveBase
 {
 public:
     IForkManager() : IWalleveBase("forkmanager") {}
+    virtual bool LoadForkContext(std::vector<uint256>& vActive) = 0;
     virtual bool AddNewForkContext(const CForkContext& ctxt,std::vector<uint256>& vActive) = 0;
     virtual void ForkUpdate(const uint256& hashFork,const uint256& hashLastBlock,
                             std::vector<uint256>& vActive,std::vector<uint256>& vDeactive) = 0;

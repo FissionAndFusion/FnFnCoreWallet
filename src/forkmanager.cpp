@@ -89,22 +89,22 @@ bool CForkManager::WalleveHandleInvoke()
         }
     }
     
-    vector<uint256> vActive;
-    CForkManagerFilter filter(this,vActive);
-    if (!pWorldLine->FilterForkContext(filter))
-    {
-        return false;
-    }
-    mapForkSched.insert(make_pair(pCoreProtocol->GetGenesisBlockHash(),CForkSchedule(true)));
     return true;
 }
 
 void CForkManager::WalleveHandleHalt()
 {
+    setForkIndex.clear();
     mapForkSched.clear();
     setForkAllowed.clear(); 
     setGroupAllowed.clear(); 
     fAllowAnyFork = false; 
+}
+
+bool CForkManager::LoadForkContext(vector<uint256>& vActive)
+{
+    CForkManagerFilter filter(this,vActive);
+    return pWorldLine->FilterForkContext(filter);
 }
 
 bool CForkManager::AddNewForkContext(const CForkContext& ctxt,vector<uint256>& vActive)
@@ -112,6 +112,12 @@ bool CForkManager::AddNewForkContext(const CForkContext& ctxt,vector<uint256>& v
     if (IsAllowedFork(ctxt.hashFork,ctxt.hashParent))
     {
         mapForkSched.insert(make_pair(ctxt.hashFork,CForkSchedule(true)));
+
+        if (ctxt.hashFork == pCoreProtocol->GetGenesisBlockHash())
+        {
+            vActive.push_back(ctxt.hashFork);
+            return true;
+        }
 
         uint256 hashParent = ctxt.hashParent;
         uint256 hashJoint  = ctxt.hashJoint;
@@ -152,11 +158,27 @@ void CForkManager::ForkUpdate(const uint256& hashFork,const uint256& hashLastBlo
     CForkSchedule& sched = mapForkSched[hashFork];
     bool fHalted = sched.IsHalted();
     vector<uint256> vFork;
-    sched.RemoveJoint(hashFork,vActive);
+    sched.RemoveJoint(hashLastBlock,vActive);
     if (sched.IsHalted() && !fHalted)
     {
         vDeactive.push_back(hashFork);
     }
+}
+
+bool CForkManager::LoadForkContext(const CForkContext& ctxt)
+{
+    CForkIndex index(ctxt);
+    if (ctxt.hashFork != pCoreProtocol->GetGenesisBlockHash())
+    {
+        uint256 hash;
+        if (!pWorldLine->GetTxLocation(ctxt.txidEmbedded,hash,index.nEmbeddedHeight)
+            || hash != pCoreProtocol->GetGenesisBlockHash())
+        {
+            return false;
+        }
+    }
+    setForkIndex.insert(CForkIndex(ctxt));
+    return true;
 }
 
 bool CForkManager::IsAllowedFork(const uint256& hashFork,const uint256& hashParent) const
