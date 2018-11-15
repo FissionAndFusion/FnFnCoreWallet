@@ -83,6 +83,8 @@ private:
     void PushBlockCmd(const std::string& forkid, const CMvDbpBlockCmd& blockcmd);
 
     ///////////  super node  ////////////
+    bool IsForkNode();
+
     void UpdateChildNodeForks(const std::string& session, const std::string& forks);
     void UpdateChildNodeForksToParent();
 

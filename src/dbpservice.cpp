@@ -648,6 +648,11 @@ void CDbpService::HandleGetBlocks(CMvEventDbpMethod& event)
     }
 }
 
+bool CDbpService::IsForkNode()
+{
+    return setThisNodeForks.empty() ? false : true;
+}
+
 bool CDbpService::HandleEvent(CMvEventDbpRegisterForkID& event)
 {
     std::string& forkid = event.data.forkid;
@@ -690,10 +695,14 @@ void CDbpService::HandleSendBlock(CMvEventDbpMethod& event)
     eventResult.data.anyResultObjs.push_back(ret);
     pDbpServer->DispatchEvent(&eventResult);
 
-
-    // TO DO
-
-    SendBlockToParent(id, block);
+    if(!IsForkNode())
+    {
+        // notify virtual peer net
+    }
+    else
+    {
+        SendBlockToParent(id, block);
+    }
 }
 
 void CDbpService::HandleSendTx(CMvEventDbpMethod& event)
@@ -708,10 +717,14 @@ void CDbpService::HandleSendTx(CMvEventDbpMethod& event)
     eventResult.data.anyResultObjs.push_back(ret);
     pDbpServer->DispatchEvent(&eventResult);
 
-
-    // TODO
-
-    SendTxToParent(id, tx);
+    if(!IsForkNode())
+    {
+        // notify virtual peer net 
+    }
+    else
+    {
+        SendTxToParent(id, tx);
+    }
     
 }
 
@@ -728,9 +741,14 @@ void CDbpService::HandleSendBlockNotice(CMvEventDbpMethod& event)
     eventResult.data.anyResultObjs.push_back(ret);
     pDbpServer->DispatchEvent(&eventResult);
 
-    // TO DO
-
-    SendBlockNoticeToParent(forkid,height,hash);
+    if(!IsForkNode())
+    {
+        // notify virtual peer net
+    }
+    else
+    {
+        SendBlockNoticeToParent(forkid,height,hash);
+    }
 }
 
 void CDbpService::HandleSendTxNotice(CMvEventDbpMethod& event)
@@ -745,9 +763,14 @@ void CDbpService::HandleSendTxNotice(CMvEventDbpMethod& event)
     eventResult.data.anyResultObjs.push_back(ret);
     pDbpServer->DispatchEvent(&eventResult);
 
-    // TO DO
-
-    SendTxNoticeToParent(forkid,hash);
+    if(!IsForkNode())
+    {
+        // notify virtual peer net 
+    }
+    else
+    {
+        SendTxNoticeToParent(forkid,hash);
+    }
 }
 
 void CDbpService::HandleGetSNBlocks(CMvEventDbpMethod& event)
