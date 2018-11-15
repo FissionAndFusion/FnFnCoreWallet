@@ -19,6 +19,7 @@ CDbpService::CDbpService()
     pWallet = NULL;
     pDbpServer = NULL;
     pNetChannel = NULL;
+    pVirtualPeerNet = NULL;
 
     std::unordered_map<std::string, IdsType> temp_map = 
         boost::assign::map_list_of(ALL_BLOCK_TOPIC, std::set<std::string>())
@@ -74,6 +75,13 @@ bool CDbpService::WalleveHandleInitialize()
         return false;
     }
 
+    if (!WalleveGetObject("forkpseudopeernet",pVirtualPeerNet))
+    {
+        WalleveLog("Failed to request virtual peer net\n");
+        return false;
+    }
+
+
     return true;
 }
 
@@ -84,6 +92,7 @@ void CDbpService::WalleveHandleDeinitialize()
     pCoreProtocol = NULL;
     pWallet = NULL;
     pNetChannel = NULL;
+    pVirtualPeerNet = NULL;
 }
 
 bool CDbpService::HandleEvent(CMvEventDbpPong& event)

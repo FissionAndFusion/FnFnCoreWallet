@@ -12,8 +12,6 @@
 namespace multiverse
 {
 
-class IDbpClient;
-
 class CForkPseudoPeerNet: public network::CMvPeerNet, virtual public CFkNodeEventListener
 {
 public:
@@ -33,7 +31,7 @@ protected:
     bool HandleEvent(CFkEventNodeBlock& eventBlock) override;
     bool HandleEvent(CFkEventNodeTx& eventTx) override;
 protected:
-    IDbpClient* pDbpClient;
+    walleve::IIOModule* pDbpService;
     network::IMvNetChannel* pNetChannel;
 };
 

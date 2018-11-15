@@ -97,6 +97,7 @@ private:
 protected:
     walleve::IIOProc* pDbpServer;
     walleve::IIOProc* pDbpClient;
+    walleve::IIOProc* pVirtualPeerNet;
     IService* pService;
     ICoreProtocol* pCoreProtocol;
     IWallet* pWallet;
