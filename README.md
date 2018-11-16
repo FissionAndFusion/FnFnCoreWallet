@@ -10,7 +10,7 @@ Fission And Fusion Network Official Development Repo
 * Source:
 [Source Code](https://github.com/FissionAndFusion/FnFnCoreWallet)
 * Documentation: 
-[FnFn Whitepaper](http://fnfn.io/doc/whitepaper.pdf),
+[FnFn Whitepaper](https://github.com/FissionAndFusion/FnFnWhitePaper)
 [FnFn Wiki](https://github.com/FissionAndFusion/FnFnCoreWallet/wiki)
 
 ## License
