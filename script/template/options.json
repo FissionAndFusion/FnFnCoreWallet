@@ -329,6 +329,14 @@
             "default": "DEFAULT_DB_CONNECTION",
             "format": "-dbconn=<n>",
             "desc": "Set mysql connections count (default: 8)"
+        },
+        {
+            "name": "nCheckLevel",
+            "type": "int",
+            "opt": "chklvl",
+            "default": "0",
+            "format": "-chklvl=<n>",
+            "desc": "Set storage check level (default: 0, range=0-3)"
         }
     ],
     "CMvNetworkConfigOption": [

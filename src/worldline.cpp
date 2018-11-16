@@ -48,6 +48,12 @@ bool CWorldLine::WalleveHandleInvoke()
         return false;
     }
 
+    if(!CheckDataConsistency(StorageConfig()->nCheckLevel))
+    {
+        WalleveLog("Checking for data in database and files failed\n");
+        return false;
+    }
+
     if (!CheckContainer())
     {
         cntrBlock.Clear();
@@ -613,6 +619,30 @@ bool CWorldLine::GetBlockDelegateEnrolled(const uint256& hashBlock,map<CDestinat
         }
     }
 
+    return true;
+}
+
+bool CWorldLine::CheckDataConsistency(int nCheckLevel)
+{
+    if(nCheckLevel < 0 || nCheckLevel > 3)
+    {
+        WalleveLog("Option is invalid: must be between 0 through 3.\n");
+        return false;
+    }
+    switch(nCheckLevel)
+    {
+        case 3:
+            ;
+        case 2:
+            ;
+        case 1:
+            ;
+        case 0:
+            ;
+            break;
+        default:
+            break;
+    }
     return true;
 }
 
