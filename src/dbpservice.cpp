@@ -19,6 +19,7 @@ CDbpService::CDbpService()
     pWallet = NULL;
     pDbpServer = NULL;
     pNetChannel = NULL;
+    pVirtualPeerNet = NULL;
 
     std::unordered_map<std::string, IdsType> temp_map = 
         boost::assign::map_list_of(ALL_BLOCK_TOPIC, std::set<std::string>())
@@ -74,6 +75,13 @@ bool CDbpService::WalleveHandleInitialize()
         return false;
     }
 
+    if (!WalleveGetObject("forkpseudopeernet",pVirtualPeerNet))
+    {
+        WalleveLog("Failed to request virtual peer net\n");
+        return false;
+    }
+
+
     return true;
 }
 
@@ -84,6 +92,7 @@ void CDbpService::WalleveHandleDeinitialize()
     pCoreProtocol = NULL;
     pWallet = NULL;
     pNetChannel = NULL;
+    pVirtualPeerNet = NULL;
 }
 
 bool CDbpService::HandleEvent(CMvEventDbpPong& event)
@@ -673,14 +682,32 @@ void CDbpService::HandleRegisterFork(CMvEventDbpMethod& event)
     std::string forkid = boost::any_cast<std::string>(event.data.params["forkid"]);
     UpdateChildNodeForks(event.strSessionId,forkid);
 
+    uint256 forkHashRet;
+    forkHashRet.SetHex(forkid);
+    std::vector<uint8> forkHashBin;
+    walleve::CWalleveODataStream forkHashSs(forkHashBin);
+    forkHashRet.ToDataStream(forkHashSs);
+    
     CMvEventDbpMethodResult eventResult(event.strSessionId);
     eventResult.data.id = event.data.id;
     CMvDbpRegisterForkIDRet ret;
-    ret.forkid = forkid;
+    ret.forkid = std::string(forkHashBin.begin(), forkHashBin.end());
     eventResult.data.anyResultObjs.push_back(ret);
     pDbpServer->DispatchEvent(&eventResult);
 
-    UpdateChildNodeForksToParent();    
+    if(!IsForkNode())
+    {
+        // notify to virtual peer net
+        uint256 forkHash;
+        CFkEventNodeSubscribe eventSubscribe(0,forkHash);
+        forkHash.SetHex(forkid);
+        eventSubscribe.data.push_back(forkHash);
+        pVirtualPeerNet->DispatchEvent(&eventSubscribe);
+    }
+    else
+    {
+        UpdateChildNodeForksToParent();  
+    }
 }
 
 void CDbpService::HandleSendBlock(CMvEventDbpMethod& event)

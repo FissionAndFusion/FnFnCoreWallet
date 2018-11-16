@@ -8,7 +8,7 @@ using namespace multiverse;
 
 CForkPseudoPeerNet::CForkPseudoPeerNet()
 {
-    WalleveSetOwnKey("forknode");
+    WalleveSetOwnKey("forkpseudopeernet");
 }
 
 CForkPseudoPeerNet::~CForkPseudoPeerNet()
@@ -16,12 +16,13 @@ CForkPseudoPeerNet::~CForkPseudoPeerNet()
 }
 
 bool CForkPseudoPeerNet::WalleveHandleInitialize()
-{/*
-    if (!WalleveGetObject("dbpclient", pDbpClient))
+{
+    if (!WalleveGetObject("dbpservice", pDbpService))
     {
-        WalleveLog("Failed to request DBP client\n");
+        WalleveLog("Failed to request DBP service\n");
         return false;
-    }*/
+    }
+
     if (!WalleveGetObject("netchannel", pNetChannel))
     {
         WalleveLog("Failed to request net channel\n");
@@ -33,7 +34,7 @@ bool CForkPseudoPeerNet::WalleveHandleInitialize()
 
 void CForkPseudoPeerNet::WalleveHandleDeinitialize()
 {
-    pDbpClient = NULL;
+    pDbpService = NULL;
     pNetChannel = NULL;
 }
 
@@ -156,62 +157,62 @@ bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeMessage& eventMessage)
 bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeActive& eventActive)
 {
     CFkEventNodeActive* pEventActive = new CFkEventNodeActive(eventActive);
-    //pDbpClient->PostEvent(pEventActive);
+    pDbpService->PostEvent(pEventActive);
     return true;
 }
 
 bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeDeactive& eventDeactive)
 {
     CFkEventNodeDeactive* pEventDeactive = new CFkEventNodeDeactive(eventDeactive);
-    //pDbpClient->PostEvent(pEventDeactive);
+    pDbpService->PostEvent(pEventDeactive);
     return true;
 }
 
 bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeSubscribe& eventSubscribe)
 {
     CFkEventNodeSubscribe* pEventSubscribe = new CFkEventNodeSubscribe(eventSubscribe);
-    //pDbpClient->PostEvent(pEventSubscribe);
+    pDbpService->PostEvent(pEventSubscribe);
     return true;
 }
 
 bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeUnsubscribe& eventUnsubscribe)
 {
     CFkEventNodeUnsubscribe* pEventUnsubscribe = new CFkEventNodeUnsubscribe(eventUnsubscribe);
-    //pDbpClient->PostEvent(pEventUnsubscribe);
+    pDbpService->PostEvent(pEventUnsubscribe);
     return true;
 }
 
 bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeGetBlocks& eventGetBlocks)
 {
     CFkEventNodeGetBlocks* pEventGetBlocks = new CFkEventNodeGetBlocks(eventGetBlocks);
-    //pDbpClient->PostEvent(pEventGetBlocks);
+    pDbpService->PostEvent(pEventGetBlocks);
     return true;
 }
 
 bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeInv& eventInv)
 {
     CFkEventNodeInv* pEventInv = new CFkEventNodeInv(eventInv);
-    //pDbpClient->PostEvent(pEventInv);
+    pDbpService->PostEvent(pEventInv);
     return true;
 }
 
 bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeGetData& eventGetData)
 {
     CFkEventNodeGetData* pEventGetData = new CFkEventNodeGetData(eventGetData);
-    //pDbpClient->PostEvent(pEventGetData);
+    pDbpService->PostEvent(pEventGetData);
     return true;
 }
 
 bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeBlock& eventBlock)
 {
     CFkEventNodeBlock *pEventBlock = new CFkEventNodeBlock(eventBlock);
-    //pDbpClient->PostEvent(pEventBlock);
+    pDbpService->PostEvent(pEventBlock);
     return true;
 }
 
 bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeTx& eventTx)
 {
     CFkEventNodeTx *pEventTx = new CFkEventNodeTx(eventTx);
-    //pDbpClient->PostEvent(pEventTx);
+    pDbpService->PostEvent(pEventTx);
     return true;
 }

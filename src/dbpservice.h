@@ -8,6 +8,7 @@
 #include "mvbase.h"
 #include "dbpserver.h"
 #include "event.h"
+#include "forkpeerevent.h"
 #include "mvpeernet.h"
 #include "walleve/walleve.h"
 
@@ -21,7 +22,8 @@ namespace multiverse
 
 using namespace network;
 
-class CDbpService : public walleve::IIOModule, virtual public CDBPEventListener, virtual public CMvDBPEventListener
+class CDbpService : public walleve::IIOModule, virtual public CDBPEventListener, 
+                    virtual public CMvDBPEventListener, virtual public CFkNodeEventListener
 {
 public:
     CDbpService();
@@ -97,6 +99,7 @@ private:
 protected:
     walleve::IIOProc* pDbpServer;
     walleve::IIOProc* pDbpClient;
+    walleve::IIOProc* pVirtualPeerNet;
     IService* pService;
     ICoreProtocol* pCoreProtocol;
     IWallet* pWallet;
