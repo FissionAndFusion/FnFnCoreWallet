@@ -1006,8 +1006,27 @@ bool CBlockBase::CheckConsistency(int nCheckLevel)
             {
                 return false;
             }
-            CBlockIndex index(block, outline.nFile, outline.nOffset);
-            if(!outline.IsEquivalent(&index))
+/*            CBlockIndex index(block, outline.nFile, outline.nOffset);
+            static auto lmdEqual = [] (const CBlockOutline& lh, const CBlockIndex& rh, const CBlock& rh_extra) -> bool {
+                return (lh.hashBlock == rh_extra.GetHash() && lh.hashPrev == rh_extra.hashPrev
+                        && lh.txidMint == rh.txidMint && lh.nMintType == rh.nMintType
+                        && lh.nVersion == rh.nVersion && lh.nType == rh.nType
+                        && lh.nTimeStamp == rh.nTimeStamp && lh.nHeight == rh.nHeight
+                        && lh.nRandBeacon == rh.nRandBeacon && lh.nChainTrust == rh.nChainTrust
+                        && lh.nMoneySupply == rh.nMoneySupply && lh.nProofAlgo == rh.nProofAlgo
+                        && lh.nProofBits == rh.nProofBits && lh.nFile == rh.nFile
+                        && lh.nOffset == rh.nOffset);
+            };*/
+            static auto lmdEqual = [] (const CBlockOutline& lh, const CBlock& rh) -> bool {
+                CBlockIndex index(rh, lh.nFile, lh.nOffset);
+                return (lh.hashBlock == rh.GetHash() && lh.hashPrev == rh.hashPrev
+                        && lh.txidMint == rh.txMint.GetHash() && lh.nMintType == rh.txMint.nType
+                        && lh.nVersion == rh.nVersion && lh.nType == rh.nType
+                        && lh.nTimeStamp == rh.nTimeStamp
+                        && lh.nRandBeacon == rh.GetBlockBeacon() && lh.nChainTrust == rh.GetBlockTrust()
+                        && lh.nProofAlgo == index.nProofAlgo && lh.nProofBits == index.nProofBits);
+            };
+            if(!lmdEqual(outline, block))
             {
                 return false;
             }
