@@ -961,6 +961,86 @@ bool CBlockBase::GetForkBlockInv(const uint256& hashFork,const CBlockLocator& lo
     return true;
 }
 
+bool CBlockBase::CheckConsistency(int nCheckLevel)
+{
+    int nLevel = nCheckLevel;
+    if(nCheckLevel < 0)
+    {
+        nLevel = 0;
+    }
+    if(nCheckLevel > 3)
+    {
+        nLevel = 3;
+    }
+
+    //retrieve all forks from db
+    vector<CBlockDBFork> vFork;
+    if(!dbBlock.FetchFork(vFork))
+    {
+        return false;
+    }
+
+    for(const auto& f : vFork)
+    {
+        //check at level 0
+        //step 1, integration of rows in table fork with table block
+        //step 2, consistency of block structures in both table block and block files
+
+        //step 1 of level 0
+        if(!dbBlock.ExistBlock(f.hashRef))
+        {
+            return false;
+        }
+
+        //step 2 of level 0
+        uint256 posBlk = f.hashRef;
+        while(uint256() != posBlk)
+        {//go through the whole blocks on the fork chain
+            CBlockOutline outline;
+            if(!dbBlock.GetBlock(posBlk, outline))
+            {
+                return false;
+            }
+            CBlock block;
+            if(!tsBlock.ReadDirect(block, outline.nFile, outline.nOffset))
+            {
+                return false;
+            }
+            CBlockIndex index(block, outline.nFile, outline.nOffset);
+            if(!outline.IsEquivalent(&index))
+            {
+                return false;
+            }
+
+            //check at level 1
+            if(1 == nLevel)
+            {
+                ;
+            }
+
+            //check at level 2
+            if(2 == nLevel)
+            {
+                ;
+            }
+
+            //check at level 3
+            if(3 == nLevel)
+            {
+                ;
+            }
+
+            posBlk = outline.hashPrev;
+        }
+
+    }
+
+
+
+
+    return true;
+}
+
 CBlockIndex* CBlockBase::GetIndex(const uint256& hash) const
 {
     map<uint256,CBlockIndex*>::const_iterator mi = mapIndex.find(hash);

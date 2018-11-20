@@ -624,26 +624,7 @@ bool CWorldLine::GetBlockDelegateEnrolled(const uint256& hashBlock,map<CDestinat
 
 bool CWorldLine::CheckDataConsistency(int nCheckLevel)
 {
-    if(nCheckLevel < 0 || nCheckLevel > 3)
-    {
-        WalleveLog("Option is invalid: must be between 0 through 3.\n");
-        return false;
-    }
-    switch(nCheckLevel)
-    {
-        case 3:
-            ;
-        case 2:
-            ;
-        case 1:
-            ;
-        case 0:
-            ;
-            break;
-        default:
-            break;
-    }
-    return true;
+    return cntrBlock.CheckConsistency(nCheckLevel);
 }
 
 bool CWorldLine::CheckContainer()

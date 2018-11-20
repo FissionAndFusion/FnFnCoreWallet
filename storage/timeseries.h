@@ -155,6 +155,27 @@ public:
         nLastPos = nOffset;
         return fRet;
     }
+    template <typename T>
+    bool ReadDirect(T& t,uint32 nFile,uint32 nOffset)
+    {
+        std::string pathFile;
+        if (!GetFilePath(nFile,pathFile))
+        {
+            return false;
+        }
+        try
+        {
+            walleve::CWalleveFileStream fs(pathFile.c_str());
+            fs.Seek(nOffset);
+            fs >> t;
+        }
+        catch(...)
+        {
+            return false;
+        }
+
+        return true;
+    }
 protected:
     bool CheckDiskSpace();
     const std::string FileName(uint32 nFile);

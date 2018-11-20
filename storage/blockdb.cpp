@@ -407,6 +407,32 @@ bool CBlockDB::UpdateFork(const uint256& hash,const uint256& hashRefBlock,const 
     return true;
 }
 
+bool CBlockDB::FetchFork(std::vector<CBlockDBFork>& vFork)
+{
+    vFork.clear();
+
+    CMvDBInst db(&dbPool);
+    if (!db.Available())
+    {
+        return false;
+    }
+
+    {
+        CMvDBRes res(*db, "SELECT * FROM fork ORDER BY id ASC", true);
+        while (res.GetRow())
+        {
+            CBlockDBFork fk;
+            if (!res.GetField(0, fk.nIndex) || !res.GetField(1, fk.hashFork) || !res.GetField(2, fk.hashRef))
+            {
+                return false;
+            }
+            vFork.push_back(fk);
+        }
+    }
+
+    return true;
+}
+
 bool CBlockDB::AddNewBlock(const CBlockOutline& outline)
 {
     CMvDBInst db(&dbPool);
@@ -447,6 +473,54 @@ bool CBlockDB::RemoveBlock(const uint256& hash)
     ostringstream oss;
     oss << "DELETE FROM block" << " WHERE hash = \'" << db->ToEscString(hash) << "\'";
     return db->Query(oss.str());
+}
+
+bool CBlockDB::ExistBlock(const uint256& hash)
+{
+    CMvDBInst db(&dbPool);
+    if (!db.Available())
+    {
+        return false;
+    }
+    {
+        CMvDBRes res(*db, "SELECT id FROM block WHERE hash=\'" + db->ToEscString(hash) + "\'", true);
+        if (!res.GetRow())
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool CBlockDB::GetBlock(const uint256& hash, CBlockOutline& outline)
+{
+    CMvDBInst db(&dbPool);
+    if (!db.Available())
+    {
+        return false;
+    }
+
+    {
+        CMvDBRes res(*db, "SELECT hash, prev, txid, minttype, version, type, time, height, "
+                          "beacon, trust, supply, algo, bits, file, offset "
+                          "FROM block WHERE hash=\'" + db.operator->()->ToEscString(hash) + "\'", true);
+        if (res.GetRow())
+        {
+            if (!res.GetField(0,outline.hashBlock)       || !res.GetField(1,outline.hashPrev)
+               || !res.GetField(2,outline.txidMint)      || !res.GetField(3,outline.nMintType)
+               || !res.GetField(4,outline.nVersion)      || !res.GetField(5,outline.nType)
+               || !res.GetField(6,outline.nTimeStamp)    || !res.GetField(7,outline.nHeight)
+               || !res.GetField(8,outline.nRandBeacon)   || !res.GetField(9,outline.nChainTrust)
+               || !res.GetField(10,outline.nMoneySupply) || !res.GetField(11,outline.nProofAlgo)
+               || !res.GetField(12,outline.nProofBits)   || !res.GetField(13,outline.nFile)
+               || !res.GetField(14,outline.nOffset))
+            {
+                return false;
+            }
+        }
+    }
+
+    return true;
 }
 
 bool CBlockDB::UpdateDelegate(const uint256& hash,const map<CDestination,int64>& mapDelegate)

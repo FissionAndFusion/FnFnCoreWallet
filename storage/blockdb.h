@@ -63,8 +63,11 @@ public:
     bool UpdateFork(const uint256& hash,const uint256& hashRefBlock,const uint256& hashForkBased,
                     const std::vector<std::pair<uint256,CTxIndex> >& vTxNew,const std::vector<uint256>& vTxDel,
                     const std::vector<CTxUnspent>& vAddNew,const std::vector<CTxOutPoint>& vRemove);
+    bool FetchFork(std::vector<CBlockDBFork>& vFork);
     bool AddNewBlock(const CBlockOutline& outline);
     bool RemoveBlock(const uint256& hash);
+    bool ExistBlock(const uint256& hash);
+    bool GetBlock(const uint256& hash, CBlockOutline& outline);
     bool UpdateDelegate(const uint256& hash,const std::map<CDestination,int64>& mapDelegate);
     bool UpdateEnroll(std::vector<std::pair<CTxIndex,uint256> >& vEnroll);
     bool WalkThroughBlock(CBlockDBWalker& walker);

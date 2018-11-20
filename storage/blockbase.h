@@ -191,6 +191,7 @@ public:
     bool FilterForkContext(CForkContextFilter& ctxtFilter);
     bool GetForkBlockLocator(const uint256& hashFork,CBlockLocator& locator);
     bool GetForkBlockInv(const uint256& hashFork,const CBlockLocator& locator,std::vector<uint256>& vBlockHash,size_t nMaxCount);
+    bool CheckConsistency(int nCheckLevel);
 protected:
     CBlockIndex* GetIndex(const uint256& hash) const;
     CBlockFork* GetFork(const uint256& hash);
