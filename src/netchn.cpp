@@ -355,6 +355,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerDeactive& eventDeactive)
     return true;
 }
 
+// TODO
 bool CNetChannel::HandleEvent(network::CMvEventPeerSubscribe& eventSubscribe)
 {
     uint64 nNonce = eventSubscribe.nNonce;
@@ -387,6 +388,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerSubscribe& eventSubscribe)
     return true;
 }
 
+// TODO
 bool CNetChannel::HandleEvent(network::CMvEventPeerUnsubscribe& eventUnsubscribe)
 {
     uint64 nNonce = eventUnsubscribe.nNonce;
@@ -499,6 +501,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerGetBlocks& eventGetBlocks)
     return true;
 }
 
+// TODO
 bool CNetChannel::HandleEvent(network::CMvEventPeerTx& eventTx)
 {
     uint64 nNonce = eventTx.nNonce;
@@ -557,6 +560,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerTx& eventTx)
     return true;
 }
 
+//TODO
 bool CNetChannel::HandleEvent(network::CMvEventPeerBlock& eventBlock)
 {
     uint64 nNonce = eventBlock.nNonce;
