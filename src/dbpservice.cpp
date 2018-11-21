@@ -81,7 +81,6 @@ bool CDbpService::WalleveHandleInitialize()
         return false;
     }
 
-
     return true;
 }
 
@@ -668,6 +667,7 @@ bool CDbpService::HandleEvent(CMvEventDbpRegisterForkID& event)
     if(!forkid.empty())
     {
         setThisNodeForks.insert(forkid);
+        pNetChannel->SetForkFilterInfo(IsForkNode(), setThisNodeForks);
     }
     else
     {
@@ -698,8 +698,8 @@ void CDbpService::HandleRegisterFork(CMvEventDbpMethod& event)
     if(!IsForkNode())
     {
         // notify to virtual peer net
+        CFkEventNodeSubscribe eventSubscribe(0,pCoreProtocol->GetGenesisBlockHash());
         uint256 forkHash;
-        CFkEventNodeSubscribe eventSubscribe(0,forkHash);
         forkHash.SetHex(forkid);
         eventSubscribe.data.push_back(forkHash);
         pVirtualPeerNet->DispatchEvent(&eventSubscribe);

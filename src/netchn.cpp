@@ -100,6 +100,7 @@ CNetChannel::CNetChannel()
     pTxPool = NULL;
     pService = NULL;
     pDispatcher = NULL;
+    fIsForkNode = false;
 }
 
 CNetChannel::~CNetChannel()
@@ -296,6 +297,13 @@ void CNetChannel::UnsubscribeFork(const uint256& hashFork)
             pPeerNet->DispatchEvent(&eventUnsubscribe);
         }
     }
+}
+
+void CNetChannel::SetForkFilterInfo(bool fIsForkNodeIn, const std::set<std::string>& thisNodeForksIn)
+{
+    boost::unique_lock<boost::shared_mutex> wlock(rwForkFilter);
+    fIsForkNode = fIsForkNodeIn;
+    setThisNodeForks = thisNodeForksIn;
 }
 
 bool CNetChannel::HandleEvent(network::CMvEventPeerActive& eventActive)
