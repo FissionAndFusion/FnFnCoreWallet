@@ -1006,24 +1006,39 @@ bool CBlockBase::CheckConsistency(int nCheckLevel)
             {
                 return false;
             }
-/*            CBlockIndex index(block, outline.nFile, outline.nOffset);
-            static auto lmdEqual = [] (const CBlockOutline& lh, const CBlockIndex& rh, const CBlock& rh_extra) -> bool {
-                return (lh.hashBlock == rh_extra.GetHash() && lh.hashPrev == rh_extra.hashPrev
-                        && lh.txidMint == rh.txidMint && lh.nMintType == rh.nMintType
-                        && lh.nVersion == rh.nVersion && lh.nType == rh.nType
-                        && lh.nTimeStamp == rh.nTimeStamp && lh.nHeight == rh.nHeight
-                        && lh.nRandBeacon == rh.nRandBeacon && lh.nChainTrust == rh.nChainTrust
-                        && lh.nMoneySupply == rh.nMoneySupply && lh.nProofAlgo == rh.nProofAlgo
-                        && lh.nProofBits == rh.nProofBits && lh.nFile == rh.nFile
-                        && lh.nOffset == rh.nOffset);
-            };*/
+            //exclude the following calculated fields:
+            //nHeight, nMoneySupply, nChainTrust, nFile, nOffset
             static auto lmdEqual = [] (const CBlockOutline& lh, const CBlock& rh) -> bool {
                 CBlockIndex index(rh, lh.nFile, lh.nOffset);
-                return (lh.hashBlock == rh.GetHash() && lh.hashPrev == rh.hashPrev
-                        && lh.txidMint == rh.txMint.GetHash() && lh.nMintType == rh.txMint.nType
+                bool b1 = lh.hashBlock == rh.GetHash();
+                bool b2 = lh.hashPrev == rh.hashPrev;
+                bool b3 = lh.txidMint == rh.txMint.GetHash();
+                bool b4 = lh.nMintType == rh.txMint.nType;
+                bool b5 = lh.nVersion == rh.nVersion;
+                bool b6 = lh.nType == rh.nType;
+                bool b7 = lh.nTimeStamp == rh.nTimeStamp;
+                bool b8 = lh.nRandBeacon == rh.GetBlockBeacon();
+                //uint64 trust = rh.GetBlockTrust();
+                //b = lh.nChainTrust == rh.GetBlockTrust();
+                bool b9 = lh.nProofAlgo == index.nProofAlgo;
+                bool ba = lh.nProofBits == index.nProofBits;
+                bool b = (lh.hashBlock == rh.GetHash() && lh.hashPrev == rh.hashPrev
+                        && (lh.nMintType == 0 && lh.nType == CBlock::BLOCK_VACANT ? true : lh.txidMint == rh.txMint.GetHash())
+                        && lh.nMintType == rh.txMint.nType
                         && lh.nVersion == rh.nVersion && lh.nType == rh.nType
-                        && lh.nTimeStamp == rh.nTimeStamp
-                        && lh.nRandBeacon == rh.GetBlockBeacon() && lh.nChainTrust == rh.GetBlockTrust()
+                        && lh.nTimeStamp == rh.nTimeStamp && lh.nRandBeacon == rh.GetBlockBeacon()
+                        && lh.nProofAlgo == index.nProofAlgo && lh.nProofBits == index.nProofBits);
+                if (!b)
+                {
+                    assert(b);
+                }
+                return (lh.hashBlock == rh.GetHash() && lh.hashPrev == rh.hashPrev
+                        //vacant block has no transaction
+                        && (lh.nMintType == 0 && lh.nType == CBlock::BLOCK_VACANT ?
+                            true : lh.txidMint == rh.txMint.GetHash())
+                        && lh.nMintType == rh.txMint.nType
+                        && lh.nVersion == rh.nVersion && lh.nType == rh.nType
+                        && lh.nTimeStamp == rh.nTimeStamp && lh.nRandBeacon == rh.GetBlockBeacon()
                         && lh.nProofAlgo == index.nProofAlgo && lh.nProofBits == index.nProofBits);
             };
             if(!lmdEqual(outline, block))
@@ -1038,7 +1053,7 @@ bool CBlockBase::CheckConsistency(int nCheckLevel)
             }
 
             //check at level 2
-            if(2 == nLevel)
+            if(2 == nLevel && 1 == f.nIndex)
             {
                 ;
             }
@@ -1051,7 +1066,7 @@ bool CBlockBase::CheckConsistency(int nCheckLevel)
 
             posBlk = outline.hashPrev;
         }
-
+        static int nIdx = f.nIndex;
     }
 
 
