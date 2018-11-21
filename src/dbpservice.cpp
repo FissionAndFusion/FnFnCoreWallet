@@ -306,33 +306,18 @@ bool CDbpService::HandleEvent(CMvEventDbpConnect& event)
     if (isReconnect)
     {
         UpdateChildNodeForks(event.strSessionId,event.data.forks);
-        
-        // reply normal
-        CMvEventDbpConnected eventConnected(event.strSessionId);
-        eventConnected.data.session = event.data.session;
-        pDbpServer->DispatchEvent(&eventConnected);
+        RespondConnected(event);
     }
     else
     {
         if (event.data.version != 1)
         {
-            // reply failed
-            std::vector<int> versions{1};
-            CMvEventDbpFailed eventFailed(event.strSessionId);
-            eventFailed.data.reason = "001";
-            eventFailed.data.versions = versions;
-            eventFailed.data.session = event.data.session;
-            pDbpServer->DispatchEvent(&eventFailed);
+            RespondFailed(event);
         }
         else
         {
-            
             UpdateChildNodeForks(event.strSessionId,event.data.forks);
-            
-            // reply normal
-            CMvEventDbpConnected eventConnected(event.strSessionId);
-            eventConnected.data.session = event.data.session;
-            pDbpServer->DispatchEvent(&eventConnected);
+            RespondConnected(event);
         }
     }
 
@@ -346,19 +331,12 @@ bool CDbpService::HandleEvent(CMvEventDbpSub& event)
 
     if (!IsTopicExist(topicName))
     {
-        // reply nosub
-        CMvEventDbpNoSub eventNoSub(event.strSessionId);
-        eventNoSub.data.id = event.data.id;
-        pDbpServer->DispatchEvent(&eventNoSub);
+        RespondNoSub(event);
     }
     else
     {
         SubTopic(id, event.strSessionId, topicName);
-
-        // reply ready
-        CMvEventDbpReady eventReady(event.strSessionId);
-        eventReady.data.id = id;
-        pDbpServer->DispatchEvent(&eventReady);
+        RespondReady(event);
     }
 
     return true;
@@ -1040,6 +1018,37 @@ void CDbpService::PushBlockCmd(const std::string& forkid, const CMvDbpBlockCmd& 
             pDbpServer->DispatchEvent(&eventAdded);
         }
     }
+}
+
+void CDbpService::RespondFailed(CMvEventDbpConnect& event)
+{
+    std::vector<int> versions{1};
+    CMvEventDbpFailed eventFailed(event.strSessionId);
+    eventFailed.data.reason = "001";
+    eventFailed.data.versions = versions;
+    eventFailed.data.session = event.data.session;
+    pDbpServer->DispatchEvent(&eventFailed);
+}
+
+void CDbpService::RespondConnected(CMvEventDbpConnect& event)
+{
+    CMvEventDbpConnected eventConnected(event.strSessionId);
+    eventConnected.data.session = event.data.session;
+    pDbpServer->DispatchEvent(&eventConnected);
+}
+
+void CDbpService::RespondNoSub(CMvEventDbpSub& event)
+{
+    CMvEventDbpNoSub eventNoSub(event.strSessionId);
+    eventNoSub.data.id = event.data.id;
+    pDbpServer->DispatchEvent(&eventNoSub);
+}
+
+void CDbpService::RespondReady(CMvEventDbpSub& event)
+{
+    CMvEventDbpReady eventReady(event.strSessionId);
+    eventReady.data.id = event.data.id;
+    pDbpServer->DispatchEvent(&eventReady);
 }
 
 void CDbpService::UpdateChildNodeForks(const std::string& session, const std::string& forks)

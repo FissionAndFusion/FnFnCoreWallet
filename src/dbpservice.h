@@ -84,6 +84,11 @@ private:
     void PushTxCmd(const std::string& forkid, const CMvDbpTxCmd& txcmd);
     void PushBlockCmd(const std::string& forkid, const CMvDbpBlockCmd& blockcmd);
 
+    void RespondFailed(CMvEventDbpConnect& event);
+    void RespondConnected(CMvEventDbpConnect& event);
+    void RespondNoSub(CMvEventDbpSub& event);
+    void RespondReady(CMvEventDbpSub& event);
+
     ///////////  super node  ////////////
     bool IsForkNode();
 
