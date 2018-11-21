@@ -667,10 +667,10 @@ bool CDbpService::HandleEvent(CMvEventDbpRegisterForkID& event)
     if(!forkid.empty())
     {
         setThisNodeForks.insert(forkid);
-        pNetChannel->SetForkFilterInfo(IsForkNode(), setThisNodeForks);
     }
     else
     {
+        pNetChannel->SetForkFilterInfo(IsForkNode(), setThisNodeForks);
         UpdateChildNodeForksToParent();
     }
     
