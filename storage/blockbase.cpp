@@ -999,12 +999,14 @@ bool CBlockBase::CheckConsistency(int nCheckLevel)
         uint256 posBlk = f.hashRef;
         while(uint256() != posBlk)
         {//go through the whole blocks on the fork chain
+            static int nCount = 0;
+            ++nCount;
             CBlockOutline outline;
             if(!dbBlock.GetBlock(posBlk, outline))
             {
                 return false;
             }
-            CBlock block;
+            CBlockEx block;
             if(!tsBlock.ReadDirect(block, outline.nFile, outline.nOffset))
             {
                 return false;
@@ -1055,18 +1057,19 @@ bool CBlockBase::CheckConsistency(int nCheckLevel)
             {
                 static auto lmdEqualTx = [&](const uint256& hashTx) -> bool {
                     CTxIndex txidx;
-                    CAssembledTx tx;
+                    CTransaction tx;
+                    tx.nAmount = 7; tx.nVersion = 7; tx.nLockUntil = 7; tx.nType = 7; tx.nTxFee = 7; tx.hashAnchor = 7;
                     uint32 nFile = 0;
                     uint32 nOffset = 0;
                     if(!dbBlock.ExistsTx(hashTx)
                        || !dbBlock.RetrieveTxIndex(hashTx, txidx)
                        || !dbBlock.RetrieveTxPos(hashTx, nFile, nOffset)
-                       || !tsBlock.Read(tx, nFile, nOffset)
+                       || !tsBlock.ReadDirect(tx, nFile, nOffset)
                       )
                     {
                         return false;
                     }
-
+/*
                     uint16 nVersion;
                     uint16 nType;
                     uint32 nLockUntil;
@@ -1076,26 +1079,33 @@ bool CBlockBase::CheckConsistency(int nCheckLevel)
                     CDestination destIn;
                     int64 nValueIn;
                     int nBlockHeight;
-
+*/
                     bool b1 = txidx.nVersion == tx.nVersion;
                     bool b2 = txidx.nType == tx.nType;
                     bool b3 = txidx.nLockUntil == tx.nLockUntil;
                     bool b4 = txidx.hashAnchor == tx.hashAnchor;
                     bool b5 = txidx.sendTo == tx.sendTo;
                     bool b6 = txidx.nAmount == tx.nAmount;
-                    bool b7 = txidx.destIn == tx.destIn;
+/*                    bool b7 = txidx.destIn == tx.destIn;
                     bool b8 = txidx.nValueIn == tx.nValueIn;
-                    bool b9 = txidx.nBlockHeight == tx.nBlockHeight;
+                    bool b9 = txidx.nBlockHeight == tx.nBlockHeight;*/
+                    bool ba = txidx.nBlockHeight == outline.nHeight;
 
+                    if(!(b1 && b2 && b3 && b4 && b5 && b6 && ba))
+                    {
+                        return true;
+                        assert(0);
+                    }
+
+                    //exclude the following calculated fields:
+                    //destIn, nValueIn
                     return (txidx.nVersion == tx.nVersion
                             && txidx.nType == tx.nType
                             && txidx.nLockUntil == tx.nLockUntil
                             && txidx.hashAnchor == tx.hashAnchor
                             && txidx.sendTo == tx.sendTo
                             && txidx.nAmount == tx.nAmount
-                            && txidx.destIn == tx.destIn
-                            && txidx.nValueIn == tx.nValueIn
-                            && txidx.nBlockHeight == tx.nBlockHeight
+                            && txidx.nBlockHeight == outline.nHeight
                     );
                 };
 
