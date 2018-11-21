@@ -973,6 +973,9 @@ bool CBlockBase::CheckConsistency(int nCheckLevel)
         nLevel = 3;
     }
 
+    //TODO - remove it after done
+    nLevel = 1;
+
     //retrieve all forks from db
     vector<CBlockDBFork> vFork;
     if(!dbBlock.FetchFork(vFork))
@@ -1008,40 +1011,41 @@ bool CBlockBase::CheckConsistency(int nCheckLevel)
             }
             //exclude the following calculated fields:
             //nHeight, nMoneySupply, nChainTrust, nFile, nOffset
-            static auto lmdEqual = [] (const CBlockOutline& lh, const CBlock& rh) -> bool {
-                CBlockIndex index(rh, lh.nFile, lh.nOffset);
-                bool b1 = lh.hashBlock == rh.GetHash();
-                bool b2 = lh.hashPrev == rh.hashPrev;
-                bool b3 = lh.txidMint == rh.txMint.GetHash();
-                bool b4 = lh.nMintType == rh.txMint.nType;
-                bool b5 = lh.nVersion == rh.nVersion;
-                bool b6 = lh.nType == rh.nType;
-                bool b7 = lh.nTimeStamp == rh.nTimeStamp;
-                bool b8 = lh.nRandBeacon == rh.GetBlockBeacon();
-                //uint64 trust = rh.GetBlockTrust();
-                //b = lh.nChainTrust == rh.GetBlockTrust();
-                bool b9 = lh.nProofAlgo == index.nProofAlgo;
-                bool ba = lh.nProofBits == index.nProofBits;
-                bool b = (lh.hashBlock == rh.GetHash() && lh.hashPrev == rh.hashPrev
-                        && (lh.nMintType == 0 && lh.nType == CBlock::BLOCK_VACANT ? true : lh.txidMint == rh.txMint.GetHash())
-                        && lh.nMintType == rh.txMint.nType
-                        && lh.nVersion == rh.nVersion && lh.nType == rh.nType
-                        && lh.nTimeStamp == rh.nTimeStamp && lh.nRandBeacon == rh.GetBlockBeacon()
-                        && lh.nProofAlgo == index.nProofAlgo && lh.nProofBits == index.nProofBits);
-                if (!b)
+            static auto lmdEqualBlock = [] (const CBlockOutline& lhs, const CBlock& rhs) -> bool {
+                CBlockIndex index(rhs, lhs.nFile, lhs.nOffset);
+/*                bool b1 = lhs.hashBlock == rhs.GetHash();
+                bool b2 = lhs.hashPrev == rhs.hashPrev;
+                bool b3 = lhs.txidMint == rhs.txMint.GetHash();
+                bool b4 = lhs.nMintType == rhs.txMint.nType;
+                bool b5 = lhs.nVersion == rhs.nVersion;
+                bool b6 = lhs.nType == rhs.nType;
+                bool b7 = lhs.nTimeStamp == rhs.nTimeStamp;
+                bool b8 = lhs.nRandBeacon == rhs.GetBlockBeacon();
+                //uint64 trust = rhs.GetBlockTrust();
+                //b = lhs.nChainTrust == rhs.GetBlockTrust();
+                bool b9 = lhs.nProofAlgo == index.nProofAlgo;
+                bool ba = lhs.nProofBits == index.nProofBits;
+                bool b = (lhs.hashBlock == rhs.GetHash() && lhs.hashPrev == rhs.hashPrev
+                        && (lhs.nMintType == 0 && lhs.nType == CBlock::BLOCK_VACANT ? true : lhs.txidMint == rhs.txMint.GetHash())
+                        && lhs.nMintType == rhs.txMint.nType
+                        && lhs.nVersion == rhs.nVersion && lhs.nType == rhs.nType
+                        && lhs.nTimeStamp == rhs.nTimeStamp && lhs.nRandBeacon == rhs.GetBlockBeacon()
+                        && lhs.nProofAlgo == index.nProofAlgo && lhs.nProofBits == index.nProofBits);
+                if (!b3)
                 {
                     assert(b);
-                }
-                return (lh.hashBlock == rh.GetHash() && lh.hashPrev == rh.hashPrev
+                }*/
+                return (lhs.hashBlock == rhs.GetHash() && lhs.hashPrev == rhs.hashPrev
                         //vacant block has no transaction
-                        && (lh.nMintType == 0 && lh.nType == CBlock::BLOCK_VACANT ?
-                            true : lh.txidMint == rh.txMint.GetHash())
-                        && lh.nMintType == rh.txMint.nType
-                        && lh.nVersion == rh.nVersion && lh.nType == rh.nType
-                        && lh.nTimeStamp == rh.nTimeStamp && lh.nRandBeacon == rh.GetBlockBeacon()
-                        && lh.nProofAlgo == index.nProofAlgo && lh.nProofBits == index.nProofBits);
+                        && (lhs.nMintType == 0 && lhs.nType == CBlock::BLOCK_VACANT ?
+                            true : lhs.txidMint == rhs.txMint.GetHash())
+                        && lhs.nMintType == rhs.txMint.nType
+                        && lhs.nVersion == rhs.nVersion && lhs.nType == rhs.nType
+                        && lhs.nTimeStamp == rhs.nTimeStamp && lhs.nRandBeacon == rhs.GetBlockBeacon()
+                        && lhs.nProofAlgo == index.nProofAlgo && lhs.nProofBits == index.nProofBits
+                );
             };
-            if(!lmdEqual(outline, block))
+            if(!lmdEqualBlock(outline, block))
             {
                 return false;
             }
@@ -1049,7 +1053,76 @@ bool CBlockBase::CheckConsistency(int nCheckLevel)
             //check at level 1
             if(1 == nLevel)
             {
-                ;
+                static auto lmdEqualTx = [&](const uint256& hashTx) -> bool {
+                    CTxIndex txidx;
+                    CAssembledTx tx;
+                    uint32 nFile = 0;
+                    uint32 nOffset = 0;
+                    if(!dbBlock.ExistsTx(hashTx)
+                       || !dbBlock.RetrieveTxIndex(hashTx, txidx)
+                       || !dbBlock.RetrieveTxPos(hashTx, nFile, nOffset)
+                       || !tsBlock.Read(tx, nFile, nOffset)
+                      )
+                    {
+                        return false;
+                    }
+
+                    uint16 nVersion;
+                    uint16 nType;
+                    uint32 nLockUntil;
+                    uint256 hashAnchor;
+                    CDestination sendTo;
+                    int64 nAmount;
+                    CDestination destIn;
+                    int64 nValueIn;
+                    int nBlockHeight;
+
+                    bool b1 = txidx.nVersion == tx.nVersion;
+                    bool b2 = txidx.nType == tx.nType;
+                    bool b3 = txidx.nLockUntil == tx.nLockUntil;
+                    bool b4 = txidx.hashAnchor == tx.hashAnchor;
+                    bool b5 = txidx.sendTo == tx.sendTo;
+                    bool b6 = txidx.nAmount == tx.nAmount;
+                    bool b7 = txidx.destIn == tx.destIn;
+                    bool b8 = txidx.nValueIn == tx.nValueIn;
+                    bool b9 = txidx.nBlockHeight == tx.nBlockHeight;
+
+                    return (txidx.nVersion == tx.nVersion
+                            && txidx.nType == tx.nType
+                            && txidx.nLockUntil == tx.nLockUntil
+                            && txidx.hashAnchor == tx.hashAnchor
+                            && txidx.sendTo == tx.sendTo
+                            && txidx.nAmount == tx.nAmount
+                            && txidx.destIn == tx.destIn
+                            && txidx.nValueIn == tx.nValueIn
+                            && txidx.nBlockHeight == tx.nBlockHeight
+                    );
+                };
+
+                do
+                {
+                    //bypass check for vacant block without any transaction
+                    if(outline.nMintType == 0 && outline.nType == CBlock::BLOCK_VACANT)
+                    {
+                        break;
+                    }
+
+                    //check mint transaction
+                    if(!lmdEqualTx(block.txMint.GetHash()))
+                    {
+                        return false;
+                    }
+
+                    //check other transactions following mint tx
+                    for(const auto& tx : block.vtx)
+                    {
+                        if(!lmdEqualTx(tx.GetHash()))
+                        {
+                            return false;
+                        }
+                    }
+                }
+                while(false);
             }
 
             //check at level 2
