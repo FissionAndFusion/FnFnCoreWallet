@@ -64,6 +64,7 @@ public:
     void BroadcastTxInv(const uint256& hashFork) override;
     void SubscribeFork(const uint256& hashFork) override;
     void UnsubscribeFork(const uint256& hashFork) override;
+    void SetForkFilterInfo(bool fIsForkNodeIn, const std::set<std::string>& thisNodeForksIn) override;
 protected:
     enum {MAX_GETBLOCKS_COUNT = 128};
     enum {MAX_PEER_SCHED_COUNT = 8};
@@ -108,6 +109,10 @@ protected:
     mutable boost::recursive_mutex mtxSched; 
     std::map<uint256,CSchedule> mapSched; 
     std::map<uint64,CNetChannelPeer> mapPeer;
+    
+    mutable boost::shared_mutex rwForkFilter;
+    bool fIsForkNode;
+    std::set<std::string> setThisNodeForks;
 };
 
 } // namespace multiverse

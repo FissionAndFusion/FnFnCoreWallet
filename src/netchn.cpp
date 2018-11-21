@@ -100,6 +100,7 @@ CNetChannel::CNetChannel()
     pTxPool = NULL;
     pService = NULL;
     pDispatcher = NULL;
+    fIsForkNode = false;
 }
 
 CNetChannel::~CNetChannel()
@@ -298,6 +299,13 @@ void CNetChannel::UnsubscribeFork(const uint256& hashFork)
     }
 }
 
+void CNetChannel::SetForkFilterInfo(bool fIsForkNodeIn, const std::set<std::string>& thisNodeForksIn)
+{
+    boost::unique_lock<boost::shared_mutex> wlock(rwForkFilter);
+    fIsForkNode = fIsForkNodeIn;
+    setThisNodeForks = thisNodeForksIn;
+}
+
 bool CNetChannel::HandleEvent(network::CMvEventPeerActive& eventActive)
 {
     uint64 nNonce = eventActive.nNonce;
@@ -355,6 +363,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerDeactive& eventDeactive)
     return true;
 }
 
+// TODO
 bool CNetChannel::HandleEvent(network::CMvEventPeerSubscribe& eventSubscribe)
 {
     uint64 nNonce = eventSubscribe.nNonce;
@@ -387,6 +396,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerSubscribe& eventSubscribe)
     return true;
 }
 
+// TODO
 bool CNetChannel::HandleEvent(network::CMvEventPeerUnsubscribe& eventUnsubscribe)
 {
     uint64 nNonce = eventUnsubscribe.nNonce;
@@ -499,6 +509,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerGetBlocks& eventGetBlocks)
     return true;
 }
 
+// TODO
 bool CNetChannel::HandleEvent(network::CMvEventPeerTx& eventTx)
 {
     uint64 nNonce = eventTx.nNonce;
@@ -557,6 +568,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerTx& eventTx)
     return true;
 }
 
+//TODO
 bool CNetChannel::HandleEvent(network::CMvEventPeerBlock& eventBlock)
 {
     uint64 nNonce = eventBlock.nNonce;
