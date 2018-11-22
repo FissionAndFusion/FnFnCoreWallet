@@ -985,7 +985,7 @@ bool CBlockBase::CheckConsistency(int nCheckLevel)
 
     for(const auto& f : vFork)
     {
-        //check at level 0
+        //check at level 0 - block integration
         //step 1, integration of rows in table fork with table block
         //step 2, consistency of block structures in both table block and block files
 
@@ -1052,8 +1052,8 @@ bool CBlockBase::CheckConsistency(int nCheckLevel)
                 return false;
             }
 
-            //check at level 1
-            if(1 == nLevel)
+            //check at level 1 - transaction integration
+            if(1 == nLevel && !(outline.nMintType == 0 && outline.nType == CBlock::BLOCK_VACANT))   //vacant block has no transaction
             {
                 static auto lmdEqualTx = [&](const uint256& hashTx) -> bool {
                     CTxIndex txidx;
@@ -1135,13 +1135,13 @@ bool CBlockBase::CheckConsistency(int nCheckLevel)
                 while(false);
             }
 
-            //check at level 2
+            //check at level 2 - integration of delegate/enroll on main chain
             if(2 == nLevel && 1 == f.nIndex)
             {
                 ;
             }
 
-            //check at level 3
+            //check at level 3 - unspent against transaction
             if(3 == nLevel)
             {
                 ;
