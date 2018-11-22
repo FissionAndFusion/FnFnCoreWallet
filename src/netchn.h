@@ -6,6 +6,8 @@
 #define  MULTIVERSE_NETCHN_H
 
 #include "mvpeernet.h"
+#include "event.h"
+#include "forkpeerevent.h"
 #include "mvbase.h"
 #include "schedule.h"
 
@@ -53,7 +55,8 @@ public:
     std::map<uint256,CNetChannelPeerFork> mapSubscribedFork;
 };
 
-class CNetChannel : public network::IMvNetChannel
+class CNetChannel : public network::IMvNetChannel, virtual public CMvDBPEventListener
+                    , virtual public CFkNodeEventListener
 {
 public:
     CNetChannel();
@@ -84,6 +87,9 @@ protected:
     bool HandleEvent(network::CMvEventPeerTx& eventTx) override;
     bool HandleEvent(network::CMvEventPeerBlock& eventBlock) override;
 
+    bool HandleEventForOrigin(network::CMvEventPeerTx& eventTx);
+    bool HandleEventForOrigin(network::CMvEventPeerBlock& eventBlock);
+
     CSchedule& GetSchedule(const uint256& hashFork);
     void NotifyPeerUpdate(uint64 nNonce,bool fActive,const network::CAddress& addrPeer);
     void DispatchGetBlocksEvent(uint64 nNonce,const uint256& hashFork);
@@ -98,6 +104,9 @@ protected:
     void PostAddNew(const uint256& hashFork,CSchedule& sched,
                     std::set<uint64>& setSchedPeer,std::set<uint64>& setMisbehavePeer);
     void SetPeerSyncStatus(uint64 nNonce,const uint256& hashFork,bool fSync);
+
+    bool IsMainFork(const uint256& hash);
+    bool IsMyFork(const uint256& hash);
 protected:
     network::CMvPeerNet* pPeerNet;
     ICoreProtocol* pCoreProtocol;
@@ -105,6 +114,7 @@ protected:
     ITxPool* pTxPool;
     IDispatcher* pDispatcher;
     IService *pService;
+    IIOModule *pDbpService;
     mutable boost::shared_mutex rwNetPeer; 
     mutable boost::recursive_mutex mtxSched; 
     std::map<uint256,CSchedule> mapSched; 
