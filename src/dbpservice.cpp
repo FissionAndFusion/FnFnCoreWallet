@@ -235,11 +235,23 @@ void CDbpService::HandleAddedSysCmd(const CMvDbpSysCmd& cmd)
 void CDbpService::HandleAddedBlockCmd(const CMvDbpBlockCmd& cmd)
 {
     uint256 forkHash(std::vector<unsigned char>(cmd.fork.begin(),cmd.fork.end()));
+    uint256 hash(std::vector<unsigned char>(cmd.hash.begin(), cmd.hash.end()));
 
     if(setThisNodeForks.find(forkHash.ToString()) != setThisNodeForks.end())
     {
         // THIS FORK NODE Handle this TODO
         print_blockcmd(cmd);
+     
+        CBlockEx block;
+        uint256 tempForkHash;
+        int nHeight = 0;
+        if(pService->GetBlockEx(hash, block, tempForkHash, nHeight))
+        {
+            CMvDbpBlock dbpBlock;
+            CreateDbpBlock(block, tempForkHash, nHeight, dbpBlock);
+            SendBlockToParent(cmd.id, dbpBlock);
+        }
+        
     }
     else
     {
@@ -251,11 +263,22 @@ void CDbpService::HandleAddedBlockCmd(const CMvDbpBlockCmd& cmd)
 void CDbpService::HandleAddedTxCmd(const CMvDbpTxCmd& cmd)
 {
     uint256 forkHash(std::vector<unsigned char>(cmd.fork.begin(),cmd.fork.end()));
+    uint256 hash(std::vector<unsigned char>(cmd.hash.begin(),cmd.hash.end()));
 
     if(setThisNodeForks.find(forkHash.ToString()) != setThisNodeForks.end())
     {
         // THIS FORK NODE Handle this TODO
         print_txcmd(cmd);
+
+        CTransaction tx;
+        uint256 tempForkHash;
+        int blockHeight;
+        if (pService->GetTransaction(hash, tx, tempForkHash, blockHeight))
+        {
+            CMvDbpTransaction dbpTx;
+            CreateDbpTransaction(tx, tempForkHash, 0, dbpTx);
+            SendTxToParent(cmd.id, dbpTx);
+        }
     }
     else
     {
