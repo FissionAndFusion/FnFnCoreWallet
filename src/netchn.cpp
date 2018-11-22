@@ -681,6 +681,8 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerBlock& eventBlock)
     {
         HandleEventForOrigin(eventBlock);
     }
+
+    return true;
 }
 
 CSchedule& CNetChannel::GetSchedule(const uint256& hashFork)
