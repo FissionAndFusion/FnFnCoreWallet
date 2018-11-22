@@ -91,6 +91,7 @@ private:
 
     ///////////  super node  ////////////
     bool IsForkNode();
+    bool IsMainFork(const uint256& hash);
 
     void UpdateChildNodeForks(const std::string& session, const std::string& forks);
     void UpdateChildNodeForksToParent();
