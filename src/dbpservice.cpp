@@ -306,33 +306,18 @@ bool CDbpService::HandleEvent(CMvEventDbpConnect& event)
     if (isReconnect)
     {
         UpdateChildNodeForks(event.strSessionId,event.data.forks);
-        
-        // reply normal
-        CMvEventDbpConnected eventConnected(event.strSessionId);
-        eventConnected.data.session = event.data.session;
-        pDbpServer->DispatchEvent(&eventConnected);
+        RespondConnected(event);
     }
     else
     {
         if (event.data.version != 1)
         {
-            // reply failed
-            std::vector<int> versions{1};
-            CMvEventDbpFailed eventFailed(event.strSessionId);
-            eventFailed.data.reason = "001";
-            eventFailed.data.versions = versions;
-            eventFailed.data.session = event.data.session;
-            pDbpServer->DispatchEvent(&eventFailed);
+            RespondFailed(event);
         }
         else
         {
-            
             UpdateChildNodeForks(event.strSessionId,event.data.forks);
-            
-            // reply normal
-            CMvEventDbpConnected eventConnected(event.strSessionId);
-            eventConnected.data.session = event.data.session;
-            pDbpServer->DispatchEvent(&eventConnected);
+            RespondConnected(event);
         }
     }
 
@@ -346,19 +331,12 @@ bool CDbpService::HandleEvent(CMvEventDbpSub& event)
 
     if (!IsTopicExist(topicName))
     {
-        // reply nosub
-        CMvEventDbpNoSub eventNoSub(event.strSessionId);
-        eventNoSub.data.id = event.data.id;
-        pDbpServer->DispatchEvent(&eventNoSub);
+        RespondNoSub(event);
     }
     else
     {
         SubTopic(id, event.strSessionId, topicName);
-
-        // reply ready
-        CMvEventDbpReady eventReady(event.strSessionId);
-        eventReady.data.id = id;
-        pDbpServer->DispatchEvent(&eventReady);
+        RespondReady(event);
     }
 
     return true;
@@ -667,10 +645,10 @@ bool CDbpService::HandleEvent(CMvEventDbpRegisterForkID& event)
     if(!forkid.empty())
     {
         setThisNodeForks.insert(forkid);
-        pNetChannel->SetForkFilterInfo(IsForkNode(), setThisNodeForks);
     }
     else
     {
+        pNetChannel->SetForkFilterInfo(IsForkNode(), setThisNodeForks);
         UpdateChildNodeForksToParent();
     }
     
@@ -1042,6 +1020,37 @@ void CDbpService::PushBlockCmd(const std::string& forkid, const CMvDbpBlockCmd& 
     }
 }
 
+void CDbpService::RespondFailed(CMvEventDbpConnect& event)
+{
+    std::vector<int> versions{1};
+    CMvEventDbpFailed eventFailed(event.strSessionId);
+    eventFailed.data.reason = "001";
+    eventFailed.data.versions = versions;
+    eventFailed.data.session = event.data.session;
+    pDbpServer->DispatchEvent(&eventFailed);
+}
+
+void CDbpService::RespondConnected(CMvEventDbpConnect& event)
+{
+    CMvEventDbpConnected eventConnected(event.strSessionId);
+    eventConnected.data.session = event.data.session;
+    pDbpServer->DispatchEvent(&eventConnected);
+}
+
+void CDbpService::RespondNoSub(CMvEventDbpSub& event)
+{
+    CMvEventDbpNoSub eventNoSub(event.strSessionId);
+    eventNoSub.data.id = event.data.id;
+    pDbpServer->DispatchEvent(&eventNoSub);
+}
+
+void CDbpService::RespondReady(CMvEventDbpSub& event)
+{
+    CMvEventDbpReady eventReady(event.strSessionId);
+    eventReady.data.id = event.data.id;
+    pDbpServer->DispatchEvent(&eventReady);
+}
+
 void CDbpService::UpdateChildNodeForks(const std::string& session, const std::string& forks)
 {
     std::vector<std::string> vForks = CDbpUtils::Split(forks,';');
@@ -1102,24 +1111,18 @@ void CDbpService::SendTxToParent(const std::string& id, const CMvDbpTransaction&
 
 void CDbpService::SendBlockNoticeToParent(const std::string& forkid, const std::string& height, const std::string& hash)
 {
-    uint256 forkid256(std::vector<uint8>(forkid.begin(), forkid.end()));
-    uint256 hash256(std::vector<uint8>(hash.begin(), hash.end()));
-    
     CMvEventDbpSendBlockNotice eventSendBlockNotice("");
-    eventSendBlockNotice.data.forkid = forkid256.ToString();
+    eventSendBlockNotice.data.forkid = forkid;
     eventSendBlockNotice.data.height = height;
-    eventSendBlockNotice.data.hash = hash256.ToString();
+    eventSendBlockNotice.data.hash = hash;
     pDbpClient->DispatchEvent(&eventSendBlockNotice);
 }
 
 void CDbpService::SendTxNoticeToParent(const std::string& forkid, const std::string& hash)
 {
-    uint256 forkid256(std::vector<uint8>(forkid.begin(), forkid.end()));
-    uint256 hash256(std::vector<uint8>(hash.begin(), hash.end()));
-
     CMvEventDbpSendTxNotice eventSendTxNotice("");
-    eventSendTxNotice.data.forkid = forkid256.ToString();
-    eventSendTxNotice.data.hash = hash256.ToString();
+    eventSendTxNotice.data.forkid = forkid;
+    eventSendTxNotice.data.hash = hash;
     pDbpClient->DispatchEvent(&eventSendTxNotice);
 }
 
@@ -1147,6 +1150,8 @@ bool CDbpService::HandleEvent(CMvEventDbpUpdateNewBlock& event)
         CMvDbpBlock block;
         CreateDbpBlock(newBlock, forkHash, blockHeight, block);
         PushBlock(forkHash.ToString(),block);
+        SendBlockNoticeToParent(forkHash.ToString(), std::to_string(blockHeight), 
+            newBlock.GetHash().ToString());
     }
 
     return true;
@@ -1161,6 +1166,7 @@ bool CDbpService::HandleEvent(CMvEventDbpUpdateNewTx& event)
     CMvDbpTransaction dbpTx;
     CreateDbpTransaction(newtx, hashFork, change, dbpTx);
     PushTx(hashFork.ToString(),dbpTx);
+    SendTxNoticeToParent(hashFork.ToString(), newtx.GetHash().ToString());
 
     return true;
 }
