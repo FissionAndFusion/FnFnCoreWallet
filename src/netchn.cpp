@@ -100,6 +100,7 @@ CNetChannel::CNetChannel()
     pTxPool = NULL;
     pService = NULL;
     pDispatcher = NULL;
+    pDbpService = NULL;
     fIsForkNode = false;
 }
 
@@ -144,6 +145,13 @@ bool CNetChannel::WalleveHandleInitialize()
         WalleveLog("Failed to request dispatcher\n");
         return false;
     }
+
+    if (!WalleveGetObject("dbpservice",pDbpService))
+    {
+        WalleveLog("Failed to request dbpservice\n");
+        return false;
+    }
+
     return true;
 }
 
@@ -155,6 +163,7 @@ void CNetChannel::WalleveHandleDeinitialize()
     pTxPool = NULL;
     pService = NULL;
     pDispatcher = NULL;
+    pDbpService = NULL;
 }
 
 bool CNetChannel::WalleveHandleInvoke()
@@ -509,8 +518,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerGetBlocks& eventGetBlocks)
     return true;
 }
 
-// TODO
-bool CNetChannel::HandleEvent(network::CMvEventPeerTx& eventTx)
+bool CNetChannel::HandleEventForOrigin(network::CMvEventPeerTx& eventTx)
 {
     uint64 nNonce = eventTx.nNonce;
     uint256& hashFork = eventTx.hashFork;
@@ -537,7 +545,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerTx& eventTx)
             set<uint256> setMissingPrevTx;
             if (!GetMissingPrevTx(tx,setMissingPrevTx))
             {
-                AddNewTx(hashFork,txid,sched,setSchedPeer,setMisbehavePeer);
+                AddNewTx(hashFork,txid,sched,setSchedPeer,setMisbehavePeer);   
             }
             else
             {
@@ -568,8 +576,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerTx& eventTx)
     return true;
 }
 
-//TODO
-bool CNetChannel::HandleEvent(network::CMvEventPeerBlock& eventBlock)
+bool CNetChannel::HandleEventForOrigin(network::CMvEventPeerBlock& eventBlock)
 {
     uint64 nNonce = eventBlock.nNonce;
     uint256& hashFork = eventBlock.hashFork; 
@@ -594,7 +601,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerBlock& eventBlock)
         {
             if (hashForkPrev == hashFork)
             {
-                AddNewBlock(hashFork,hash,sched,setSchedPeer,setMisbehavePeer);
+               AddNewBlock(hashFork,hash,sched,setSchedPeer,setMisbehavePeer);
             }
             else
             {
@@ -613,6 +620,67 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerBlock& eventBlock)
         DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
     }
     return true;
+}
+
+// TODO
+bool CNetChannel::HandleEvent(network::CMvEventPeerTx& eventTx)
+{
+    uint256& hashFork = eventTx.hashFork;
+    boost::shared_lock<boost::shared_mutex> rblock(rwForkFilter);
+    
+    // if this node is root node, it only process tx on main fork
+    if(!fIsForkNode && IsMainFork(hashFork))
+    {
+        HandleEventForOrigin(eventTx);
+    }
+
+    // if this node is root node and tx not on main fork , it send tx to dbpservice push to fork node
+    if(!fIsForkNode && !IsMainFork(hashFork))
+    {
+        CTransaction& tx = eventTx.data;
+        uint64 nNonce;
+        CMvEventDbpUpdateNewTx *pUpdateNewTxEvent = new CMvEventDbpUpdateNewTx(nNonce, hashFork, 0);
+        pUpdateNewTxEvent->data = tx;
+        pDbpService->PostEvent(pUpdateNewTxEvent);
+    }
+
+    // if this node is fork node, it need process tx on main fork and fork tx for myself
+    if(fIsForkNode && (IsMyFork(hashFork) || IsMainFork(hashFork)))
+    {
+        HandleEventForOrigin(eventTx);
+    }
+    
+    return true;
+    
+}
+
+//TODO
+bool CNetChannel::HandleEvent(network::CMvEventPeerBlock& eventBlock)
+{
+    uint256& hashFork = eventBlock.hashFork;
+    boost::shared_lock<boost::shared_mutex> rblock(rwForkFilter);
+    
+    // if this node is root node, it only process block on main fork
+    if(!fIsForkNode && IsMainFork(hashFork))
+    {
+        HandleEventForOrigin(eventBlock);
+    }
+
+    // if this node is root node and block not on main fork , it send block to dbpservice push to fork node
+    if(!fIsForkNode && !IsMainFork(hashFork))
+    {
+        CBlock& block = eventBlock.data;
+        uint64 nNonce;
+        CMvEventDbpUpdateNewBlock *pUpdateNewBlockEvent = new CMvEventDbpUpdateNewBlock(nNonce, hashFork, 0);
+        pUpdateNewBlockEvent->data = CBlockEx(block);
+        pDbpService->PostEvent(pUpdateNewBlockEvent);
+    }
+
+    // if this node is fork node, it need process block on main fork and fork block for myself
+    if(fIsForkNode && (IsMyFork(hashFork) || IsMainFork(hashFork)))
+    {
+        HandleEventForOrigin(eventBlock);
+    }
 }
 
 CSchedule& CNetChannel::GetSchedule(const uint256& hashFork)
@@ -823,4 +891,14 @@ void CNetChannel::SetPeerSyncStatus(uint64 nNonce,const uint256& hashFork,bool f
             }
         } 
     }
+}
+
+bool CNetChannel::IsMainFork(const uint256& hash)
+{
+    return pCoreProtocol->GetGenesisBlockHash().ToString() == hash.ToString();
+}
+
+bool CNetChannel::IsMyFork(const uint256& hash)
+{
+    return setThisNodeForks.find(hash.ToString()) != setThisNodeForks.end();
 }
