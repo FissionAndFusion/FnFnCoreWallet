@@ -187,15 +187,21 @@ void CDbpService::HandleAddedBlock(const CMvDbpBlock& block)
 {
     uint256 forkHash(std::vector<unsigned char>(block.fork.begin(),block.fork.end()));
 
-    if(setThisNodeForks.find(forkHash.ToString()) != setThisNodeForks.end())
+    if(setThisNodeForks.find(forkHash.ToString()) != setThisNodeForks.end()
+        || IsMainFork(forkHash))
     {
         // THIS FORK NODE Handle this TODO
         print_block(block);
+
+        if(IsMainFork(forkHash))
+        {
+            PushBlock(forkHash.ToString(), block);
+        }
     }
     else
     {
         // Push Block to child fork node
-        PushBlock(forkHash.ToString(),block);
+        PushBlock(forkHash.ToString(), block);
     }
 
 }
@@ -204,10 +210,16 @@ void CDbpService::HandleAddedTx(const CMvDbpTransaction& tx)
 {
     uint256 forkHash(std::vector<unsigned char>(tx.fork.begin(),tx.fork.end()));
 
-    if(setThisNodeForks.find(forkHash.ToString()) != setThisNodeForks.end())
+    if(setThisNodeForks.find(forkHash.ToString()) != setThisNodeForks.end()
+        || IsMainFork(forkHash))
     {
         // THIS FORK NODE Handle this TODO
         print_tx(tx);
+
+        if(IsMainFork(forkHash))
+        {
+            PushTx(forkHash.ToString(), tx);
+        }
     }
     else
     {
@@ -222,7 +234,7 @@ void CDbpService::HandleAddedSysCmd(const CMvDbpSysCmd& cmd)
 
     if(setThisNodeForks.find(forkHash.ToString()) != setThisNodeForks.end())
     {
-        // THIS FORK NODE Handle this TODO
+        // RESERVED sys-cmd nothing to do
         print_syscmd(cmd);
     }
     else
@@ -239,7 +251,6 @@ void CDbpService::HandleAddedBlockCmd(const CMvDbpBlockCmd& cmd)
 
     if(setThisNodeForks.find(forkHash.ToString()) != setThisNodeForks.end())
     {
-        // THIS FORK NODE Handle this TODO
         print_blockcmd(cmd);
      
         CBlockEx block;
@@ -267,7 +278,6 @@ void CDbpService::HandleAddedTxCmd(const CMvDbpTxCmd& cmd)
 
     if(setThisNodeForks.find(forkHash.ToString()) != setThisNodeForks.end())
     {
-        // THIS FORK NODE Handle this TODO
         print_txcmd(cmd);
 
         CTransaction tx;
@@ -660,6 +670,11 @@ void CDbpService::HandleGetBlocks(CMvEventDbpMethod& event)
 bool CDbpService::IsForkNode()
 {
     return setThisNodeForks.empty() ? false : true;
+}
+
+bool CDbpService::IsMainFork(const uint256& hash)
+{
+    return pCoreProtocol->GetGenesisBlockHash().ToString() == hash.ToString();
 }
 
 bool CDbpService::HandleEvent(CMvEventDbpRegisterForkID& event)
