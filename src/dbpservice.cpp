@@ -187,8 +187,7 @@ void CDbpService::HandleAddedBlock(const CMvDbpBlock& block)
 {
     uint256 forkHash(std::vector<unsigned char>(block.fork.begin(),block.fork.end()));
 
-    if(setThisNodeForks.find(forkHash.ToString()) != setThisNodeForks.end()
-        || IsMainFork(forkHash))
+    if(IsMyFork(forkHash) || IsMainFork(forkHash))
     {
         // THIS FORK NODE Handle this TODO
         print_block(block);
@@ -210,8 +209,7 @@ void CDbpService::HandleAddedTx(const CMvDbpTransaction& tx)
 {
     uint256 forkHash(std::vector<unsigned char>(tx.fork.begin(),tx.fork.end()));
 
-    if(setThisNodeForks.find(forkHash.ToString()) != setThisNodeForks.end()
-        || IsMainFork(forkHash))
+    if(IsMyFork(forkHash) || IsMainFork(forkHash))
     {
         // THIS FORK NODE Handle this TODO
         print_tx(tx);
@@ -232,7 +230,7 @@ void CDbpService::HandleAddedSysCmd(const CMvDbpSysCmd& cmd)
 {
     uint256 forkHash(std::vector<unsigned char>(cmd.fork.begin(),cmd.fork.end()));
 
-    if(setThisNodeForks.find(forkHash.ToString()) != setThisNodeForks.end())
+    if(IsMyFork(forkHash))
     {
         // RESERVED sys-cmd nothing to do
         print_syscmd(cmd);
@@ -249,7 +247,7 @@ void CDbpService::HandleAddedBlockCmd(const CMvDbpBlockCmd& cmd)
     uint256 forkHash(std::vector<unsigned char>(cmd.fork.begin(),cmd.fork.end()));
     uint256 hash(std::vector<unsigned char>(cmd.hash.begin(), cmd.hash.end()));
 
-    if(setThisNodeForks.find(forkHash.ToString()) != setThisNodeForks.end())
+    if(IsMyFork(forkHash))
     {
         print_blockcmd(cmd);
      
@@ -276,7 +274,7 @@ void CDbpService::HandleAddedTxCmd(const CMvDbpTxCmd& cmd)
     uint256 forkHash(std::vector<unsigned char>(cmd.fork.begin(),cmd.fork.end()));
     uint256 hash(std::vector<unsigned char>(cmd.hash.begin(),cmd.hash.end()));
 
-    if(setThisNodeForks.find(forkHash.ToString()) != setThisNodeForks.end())
+    if(IsMyFork(forkHash))
     {
         print_txcmd(cmd);
 
@@ -675,6 +673,11 @@ bool CDbpService::IsForkNode()
 bool CDbpService::IsMainFork(const uint256& hash)
 {
     return pCoreProtocol->GetGenesisBlockHash().ToString() == hash.ToString();
+}
+
+bool CDbpService::IsMyFork(const uint256& hash)
+{
+    return setThisNodeForks.find(hash.ToString()) != setThisNodeForks.end();
 }
 
 bool CDbpService::HandleEvent(CMvEventDbpRegisterForkID& event)
