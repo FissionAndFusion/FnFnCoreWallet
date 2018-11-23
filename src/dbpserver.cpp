@@ -761,6 +761,17 @@ void CDbpServer::HandleClientMethod(CDbpClient* pDbpClient, google::protobuf::An
         methodBody.params.insert(std::make_pair("forkid", args.forkid()));
         methodBody.params.insert(std::make_pair("hash", args.hash()));
     }
+    else if(methodMsg.method() == "updateforkstate" &&
+        methodMsg.params().Is<sn::UpdateForkStateArg>())
+    {
+        sn::UpdateForkStateArg args;
+        methodMsg.params().UnpackTo(&args);
+
+        methodBody.method = CMvDbpMethod::SNMethod::UPDATE_FORK_STATE;
+        methodBody.params.insert(std::make_pair("forkid", args.forkid()));
+        methodBody.params.insert(std::make_pair("currentheight", args.currentheight()));
+        methodBody.params.insert(std::make_pair("lastblockhash", args.lastblockhash()));
+    }
     else
     {
         delete pEventDbpMethod;

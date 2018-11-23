@@ -7,6 +7,7 @@
 
 #include "walleve/walleve.h"
 #include "event.h"
+#include "mvbase.h"
 
 #include <boost/bimap.hpp>
 #include <boost/any.hpp>
@@ -87,6 +88,7 @@ public:
     void SendBlock(const std::string& id, const CMvDbpBlock& block);
     void SendTx(const std::string& id, const CMvDbpTransaction& tx);
     void GetBlocks(const std::string& fork, const std::string& startHash, int32 num);
+    void SendForkStateUpdate(const std::string& fork, const std::string& currentHeight, const std::string& lastBlockHash);
 protected:
     void StartReadHeader();
     void StartReadPayload(std::size_t nLength);
@@ -161,6 +163,7 @@ protected:
     bool StartConnection(const boost::asio::ip::tcp::endpoint& epRemote, int64 nTimeout, bool fEnableSSL,
             const CIOSSLOption& optSSL);
     void RegisterDefaultForks(CMvDbpClientSocket* pClientSocket);
+    void UpdateDefaultForksState(CMvDbpClientSocket* pClientSocket);
     void SubscribeDefaultTopics(CMvDbpClientSocket* pClientSocket);
     void StartPingTimer(const std::string& session);
     void SendPingHandler(const boost::system::error_code& err, const CMvSessionProfile& sessionProfile);
@@ -188,6 +191,7 @@ protected:
     bool HandleEvent(CMvEventDbpSendBlockNotice& event) override;
     bool HandleEvent(CMvEventDbpSendTxNotice& event) override;
     bool HandleEvent(CMvEventDbpGetBlocks& event) override;
+    bool HandleEvent(CMvEventDbpUpdateForkState& event) override;
 
 protected:
     std::vector<CDbpClientConfig> vecClientConfig;
@@ -201,7 +205,6 @@ protected:
 
 private:
     IIOModule* pDbpService;
-
 };
 
 } // namespace multiverse

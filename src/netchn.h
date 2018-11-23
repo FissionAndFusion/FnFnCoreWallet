@@ -67,7 +67,7 @@ public:
     void BroadcastTxInv(const uint256& hashFork) override;
     void SubscribeFork(const uint256& hashFork) override;
     void UnsubscribeFork(const uint256& hashFork) override;
-    void SetForkFilterInfo(bool fIsForkNodeIn, const std::set<std::string>& thisNodeForksIn) override;
+    void SetForkFilterInfo(bool fIsForkNodeIn, const std::map<std::string, std::tuple<std::string, std::string>>& thisNodeForksStateIn) override;
 protected:
     enum {MAX_GETBLOCKS_COUNT = 128};
     enum {MAX_PEER_SCHED_COUNT = 8};
@@ -122,7 +122,7 @@ protected:
     
     mutable boost::shared_mutex rwForkFilter;
     bool fIsForkNode;
-    std::set<std::string> setThisNodeForks;
+    std::map<std::string, std::tuple<std::string, std::string>> mapThisNodeForkStates;
 };
 
 } // namespace multiverse

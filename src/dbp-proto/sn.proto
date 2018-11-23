@@ -134,6 +134,18 @@ message RegisterForkIDRet
     bytes forkid = 1;
 }
 
+message UpdateForkStateArg
+{
+    bytes forkid = 1;              // 分支ID
+    string currentHeight = 2;  //  当前分支高度
+    bytes lastBlockHash = 3;        // 最后一个块的Hash
+}
+
+message UpdateForkStateRet
+{
+    bytes forkid = 1; 
+}
+
 message GetBlocksArg
 {
     bytes forkid = 1; // 要关联的fork

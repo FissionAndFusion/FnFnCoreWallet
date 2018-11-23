@@ -37,8 +37,10 @@ public:
     bool HandleEvent(CMvEventDbpBroken& event) override;
     bool HandleEvent(CMvEventDbpAdded& event) override;
     bool HandleEvent(CMvEventDbpRemoveSession& event) override;
-    // client post evnet register fork id
+    // client post event register fork id
     bool HandleEvent(CMvEventDbpRegisterForkID& event) override;
+    // client post event update fork state
+    bool HandleEvent(CMvEventDbpUpdateForkState& event) override;
 
     // notify add msg(block tx ...) to event handler
     bool HandleEvent(CMvEventDbpUpdateNewBlock& event) override;
@@ -66,6 +68,7 @@ private:
     void HandleSendBlockNotice(CMvEventDbpMethod& event);
     void HandleSendTxNotice(CMvEventDbpMethod& event);
     void HandleGetSNBlocks(CMvEventDbpMethod& event);
+    void HandleUpdateForkState(CMvEventDbpMethod& event);
     void HandleAddedBlock(const CMvDbpBlock& block);
     void HandleAddedTx(const CMvDbpTransaction& tx);
     void HandleAddedSysCmd(const CMvDbpSysCmd& cmd);
@@ -96,6 +99,7 @@ private:
 
     void UpdateChildNodeForks(const std::string& session, const std::string& forks);
     void UpdateChildNodeForksToParent();
+    void UpdateChildNodeForksStatesToParent();
 
     void SendBlockToParent(const std::string& id, const CMvDbpBlock& block);
     void SendTxToParent(const std::string& id, const CMvDbpTransaction& tx);
@@ -115,9 +119,11 @@ protected:
 
 private:
     typedef std::set<std::string> ForksType;
-    typedef std::set<std::string> IdsType; 
+    typedef std::set<std::string> IdsType;
+    typedef std::tuple<std::string, std::string> ForkStates; // (lastHeight, lastBlockHash)
     std::map<std::string, ForksType> mapSessionChildNodeForks; // session => child node forks
-    ForksType setThisNodeForks;    // this node support forks
+    std::map<std::string, ForkStates> mapThisNodeForkStates; // fork id => fork states
+    ForkStates tupleMainForkStates;
 
     std::map<std::string, std::string> mapIdSubedSession;       // id => session
     std::unordered_map<std::string, IdsType> mapTopicIds;       // topic => ids

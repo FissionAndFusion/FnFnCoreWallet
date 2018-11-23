@@ -25,7 +25,7 @@ public:
     virtual void BroadcastTxInv(const uint256& hashFork) = 0;
     virtual void SubscribeFork(const uint256& hashFork) = 0;
     virtual void UnsubscribeFork(const uint256& hashFork) = 0;
-    virtual void SetForkFilterInfo(bool fIsForkNodeIn, const std::set<std::string>& thisNodeForksIn) = 0;
+    virtual void SetForkFilterInfo(bool fIsForkNodeIn, const std::map<std::string, std::tuple<std::string, std::string>>& thisNodeForksStateIn) = 0;
 };
 
 class IMvDelegatedChannel : public walleve::IIOModule, virtual public CMvPeerEventListener
