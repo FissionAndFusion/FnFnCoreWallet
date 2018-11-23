@@ -716,12 +716,8 @@ void CDbpService::HandleRegisterFork(CMvEventDbpMethod& event)
 
     if(!IsForkNode())
     {
-        // notify to virtual peer net
-        CFkEventNodeSubscribe eventSubscribe(0,pCoreProtocol->GetGenesisBlockHash());
-        uint256 forkHash;
-        forkHash.SetHex(forkid);
-        eventSubscribe.data.push_back(forkHash);
-        pVirtualPeerNet->DispatchEvent(&eventSubscribe);
+        // register fork to virtual peer net TODO
+    
     }
     else
     {
@@ -743,7 +739,7 @@ void CDbpService::HandleSendBlock(CMvEventDbpMethod& event)
 
     if(!IsForkNode())
     {
-        // notify virtual peer net
+        // send block to virtual peer net TODO
     }
     else
     {
@@ -765,10 +761,10 @@ void CDbpService::HandleSendTx(CMvEventDbpMethod& event)
 
     if(!IsForkNode())
     {
-        // notify virtual peer net 
+        // send tx to virtual peer net TODO
     }
     else
-    {
+    { 
         SendTxToParent(id, tx);
     }
     
@@ -789,11 +785,13 @@ void CDbpService::HandleSendBlockNotice(CMvEventDbpMethod& event)
 
     if(!IsForkNode())
     {
-        // notify virtual peer net
+        // send block notice to virtual peer net TODO
     }
     else
     {
-        SendBlockNoticeToParent(forkid,height,hash);
+        uint256 forkid256(std::vector<unsigned char>(forkid.begin(), forkid.end()));
+        uint256 hash256(std::vector<unsigned char>(hash.begin(), hash.end()));
+        SendBlockNoticeToParent(forkid256.ToString(),height,hash256.ToString());
     }
 }
 
@@ -811,11 +809,13 @@ void CDbpService::HandleSendTxNotice(CMvEventDbpMethod& event)
 
     if(!IsForkNode())
     {
-        // notify virtual peer net 
+        // send tx notice to virtual peer net TODO
     }
     else
     {
-        SendTxNoticeToParent(forkid,hash);
+        uint256 forkid256(std::vector<unsigned char>(forkid.begin(), forkid.end()));
+        uint256 hash256(std::vector<unsigned char>(hash.begin(), hash.end()));
+        SendTxNoticeToParent(forkid256.ToString(), hash256.ToString());
     }
 }
 
@@ -833,9 +833,15 @@ void CDbpService::HandleGetSNBlocks(CMvEventDbpMethod& event)
     eventResult.data.anyResultObjs.push_back(ret);
     pDbpServer->DispatchEvent(&eventResult);
 
-    // TO DO
+    if(!IsForkNode())
+    {
+        // get sn blocks to virtual peer net TODO
+    }
+    else
+    {
+        GetBlocksToParent(forkid,hash,blockNum);
+    }
 
-    GetBlocksFromParent(forkid,hash,blockNum);
 }
 
 bool CDbpService::HandleEvent(CMvEventDbpMethod& event)
@@ -1151,7 +1157,7 @@ void CDbpService::SendTxToParent(const std::string& id, const CMvDbpTransaction&
 }
 
 void CDbpService::SendBlockNoticeToParent(const std::string& forkid, const std::string& height, const std::string& hash)
-{
+{ 
     CMvEventDbpSendBlockNotice eventSendBlockNotice("");
     eventSendBlockNotice.data.forkid = forkid;
     eventSendBlockNotice.data.height = height;
@@ -1167,7 +1173,7 @@ void CDbpService::SendTxNoticeToParent(const std::string& forkid, const std::str
     pDbpClient->DispatchEvent(&eventSendTxNotice);
 }
 
-void CDbpService::GetBlocksFromParent(const std::string& forkid, const std::string& hash, int32 num)
+void CDbpService::GetBlocksToParent(const std::string& forkid, const std::string& hash, int32 num)
 {
     uint256 forkid256(std::vector<uint8>(forkid.begin(), forkid.end()));
     uint256 hash256(std::vector<uint8>(hash.begin(), hash.end()));

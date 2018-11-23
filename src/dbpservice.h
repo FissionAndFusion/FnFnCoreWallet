@@ -101,7 +101,7 @@ private:
     void SendTxToParent(const std::string& id, const CMvDbpTransaction& tx);
     void SendBlockNoticeToParent(const std::string& forkid, const std::string& height, const std::string& hash);
     void SendTxNoticeToParent(const std::string& forkid, const std::string& hash);
-    void GetBlocksFromParent(const std::string& forkid, const std::string& hash, int32 num);
+    void GetBlocksToParent(const std::string& forkid, const std::string& hash, int32 num);
 
 protected:
     walleve::IIOProc* pDbpServer;
