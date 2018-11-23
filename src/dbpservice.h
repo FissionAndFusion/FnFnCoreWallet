@@ -111,6 +111,7 @@ protected:
     ICoreProtocol* pCoreProtocol;
     IWallet* pWallet;
     IMvNetChannel* pNetChannel;
+    IForkManager* pForkManager;
 
 private:
     typedef std::set<std::string> ForksType;
