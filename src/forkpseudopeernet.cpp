@@ -38,7 +38,7 @@ void CForkPseudoPeerNet::WalleveHandleDeinitialize()
     pNetChannel = NULL;
 }
 
-//This handler is responsible for receiving from dbp client
+//This handler is responsible for receiving from dbp service
 // and delivering to net channel
 bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeMessage& eventMessage)
 {

@@ -372,7 +372,6 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerDeactive& eventDeactive)
     return true;
 }
 
-// TODO
 bool CNetChannel::HandleEvent(network::CMvEventPeerSubscribe& eventSubscribe)
 {
     uint64 nNonce = eventSubscribe.nNonce;
@@ -405,7 +404,6 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerSubscribe& eventSubscribe)
     return true;
 }
 
-// TODO
 bool CNetChannel::HandleEvent(network::CMvEventPeerUnsubscribe& eventUnsubscribe)
 {
     uint64 nNonce = eventUnsubscribe.nNonce;
@@ -622,7 +620,6 @@ bool CNetChannel::HandleEventForOrigin(network::CMvEventPeerBlock& eventBlock)
     return true;
 }
 
-// TODO
 bool CNetChannel::HandleEvent(network::CMvEventPeerTx& eventTx)
 {
     uint256& hashFork = eventTx.hashFork;
@@ -654,7 +651,6 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerTx& eventTx)
     
 }
 
-//TODO
 bool CNetChannel::HandleEvent(network::CMvEventPeerBlock& eventBlock)
 {
     uint256& hashFork = eventBlock.hashFork;
