@@ -308,11 +308,11 @@ void CNetChannel::UnsubscribeFork(const uint256& hashFork)
     }
 }
 
-void CNetChannel::SetForkFilterInfo(bool fIsForkNodeIn, const std::set<std::string>& thisNodeForksIn)
+void CNetChannel::SetForkFilterInfo(bool fIsForkNodeIn, const std::map<std::string, std::tuple<std::string, std::string>>& thisNodeForksStateIn)
 {
     boost::unique_lock<boost::shared_mutex> wlock(rwForkFilter);
     fIsForkNode = fIsForkNodeIn;
-    setThisNodeForks = thisNodeForksIn;
+    mapThisNodeForkStates = thisNodeForksStateIn;
 }
 
 bool CNetChannel::HandleEvent(network::CMvEventPeerActive& eventActive)
@@ -898,5 +898,5 @@ bool CNetChannel::IsMainFork(const uint256& hash)
 
 bool CNetChannel::IsMyFork(const uint256& hash)
 {
-    return setThisNodeForks.find(hash.ToString()) != setThisNodeForks.end();
+    return mapThisNodeForkStates.find(hash.ToString()) != mapThisNodeForkStates.end();
 }

@@ -7,6 +7,7 @@
 
 #include "walleve/walleve.h"
 #include "event.h"
+#include "mvbase.h"
 
 #include <boost/bimap.hpp>
 #include <boost/any.hpp>
@@ -162,6 +163,7 @@ protected:
     bool StartConnection(const boost::asio::ip::tcp::endpoint& epRemote, int64 nTimeout, bool fEnableSSL,
             const CIOSSLOption& optSSL);
     void RegisterDefaultForks(CMvDbpClientSocket* pClientSocket);
+    void UpdateDefaultForksState(CMvDbpClientSocket* pClientSocket);
     void SubscribeDefaultTopics(CMvDbpClientSocket* pClientSocket);
     void StartPingTimer(const std::string& session);
     void SendPingHandler(const boost::system::error_code& err, const CMvSessionProfile& sessionProfile);
@@ -202,7 +204,6 @@ protected:
 
 private:
     IIOModule* pDbpService;
-
 };
 
 } // namespace multiverse

@@ -665,6 +665,7 @@ void CMvDbpClient::HandleConnected(CMvDbpClientSocket* pClientSocket, google::pr
         StartPingTimer(connected.session());
         RegisterDefaultForks(pClientSocket);
         SubscribeDefaultTopics(pClientSocket);
+        UpdateDefaultForksState(pClientSocket);
     }
 }
 
@@ -1125,6 +1126,21 @@ void CMvDbpClient::RegisterDefaultForks(CMvDbpClientSocket* pClientSocket)
     }
 
     CMvEventDbpRegisterForkID *pEventEmpty = new CMvEventDbpRegisterForkID("");
+    pEventEmpty->data.forkid = std::string();
+    pDbpService->PostEvent(pEventEmpty);
+}
+
+void CMvDbpClient::UpdateDefaultForksState(CMvDbpClientSocket* pClientSocket)
+{
+    std::vector<std::string> vSupportForks = mapProfile[pClientSocket->GetHost().ToEndPoint()].vSupportForks;
+    for(const auto& fork : vSupportForks)
+    {
+        CMvEventDbpUpdateForkState *pEvent = new CMvEventDbpUpdateForkState("");
+        pEvent->data.forkid = fork;
+        pDbpService->PostEvent(pEvent);
+    }
+
+    CMvEventDbpUpdateForkState *pEventEmpty = new CMvEventDbpUpdateForkState("");
     pEventEmpty->data.forkid = std::string();
     pDbpService->PostEvent(pEventEmpty);
 }

@@ -251,6 +251,14 @@ public:
     std::string forkid;
 };
 
+class CMvDbpUpdateForkState : public CMvDbpRequest
+{
+public:
+    std::string forkid;
+    std::string currentHeight;
+    std::string lastBlockHash;
+};
+
 class CMvDbpSendBlock : public CMvDbpRequest
 {
 public:

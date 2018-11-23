@@ -49,6 +49,7 @@ enum
     MV_EVENT_DBP_SEND_BLOCK_NOTICE,
     MV_EVENT_DBP_SEND_TX_NOTICE,
     MV_EVENT_DBP_GET_BLOCKS,
+    MV_EVENT_DBP_UPDATE_FORK_STATE,
 
     MV_EVENT_DBP_PING,
     MV_EVENT_DBP_PONG,
@@ -143,6 +144,7 @@ typedef TYPE_DBP_EVENT(MV_EVENT_DBP_SEND_TX, CMvDbpSendTx) CMvEventDbpSendTx;
 typedef TYPE_DBP_EVENT(MV_EVENT_DBP_SEND_BLOCK_NOTICE, CMvDbpSendBlockNotice) CMvEventDbpSendBlockNotice;
 typedef TYPE_DBP_EVENT(MV_EVENT_DBP_SEND_TX_NOTICE, CMvDbpSendTxNotice) CMvEventDbpSendTxNotice;
 typedef TYPE_DBP_EVENT(MV_EVENT_DBP_GET_BLOCKS, CMvDbpGetBlocks) CMvEventDbpGetBlocks;
+typedef TYPE_DBP_EVENT(MV_EVENT_DBP_UPDATE_FORK_STATE, CMvDbpUpdateForkState) CMvEventDbpUpdateForkState;
 
 // HeartBeats
 typedef TYPE_DBP_EVENT(MV_EVENT_DBP_PING, CMvDbpPing) CMvEventDbpPing;
@@ -184,6 +186,7 @@ public:
     DECLARE_EVENTHANDLER(CMvEventDbpSendBlockNotice);
     DECLARE_EVENTHANDLER(CMvEventDbpSendTxNotice);
     DECLARE_EVENTHANDLER(CMvEventDbpGetBlocks);
+    DECLARE_EVENTHANDLER(CMvEventDbpUpdateForkState);
 };
 
 } // namespace multiverse
