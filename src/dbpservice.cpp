@@ -852,6 +852,31 @@ void CDbpService::HandleGetSNBlocks(CMvEventDbpMethod& event)
 
 }
 
+void CDbpService::HandleUpdateForkState(CMvEventDbpMethod& event)
+{
+    std::string forkid = boost::any_cast<std::string>(event.data.params["forkid"]);
+    std::string lastBlockHash = boost::any_cast<std::string>(event.data.params["lastblockhash"]);
+    std::string currentHeight = boost::any_cast<std::string>(event.data.params["currentheight"]);
+    int64 nCurrentHeight = boost::lexical_cast<int64>(currentHeight);
+
+    CMvEventDbpMethodResult eventResult(event.strSessionId);
+    eventResult.data.id = event.data.id;
+    CMvDbpUpdateForkStateRet ret;
+    ret.forkid = forkid;
+    eventResult.data.anyResultObjs.push_back(ret);
+    pDbpServer->DispatchEvent(&eventResult);
+
+    if(!IsForkNode())
+    {
+        
+    }
+    else
+    {
+
+    }
+
+}
+
 bool CDbpService::HandleEvent(CMvEventDbpMethod& event)
 {
     if (event.data.method == CMvDbpMethod::LwsMethod::GET_BLOCKS)
@@ -889,6 +914,10 @@ bool CDbpService::HandleEvent(CMvEventDbpMethod& event)
     else if(event.data.method == CMvDbpMethod::SNMethod::GET_BLOCKS_SN)
     {
         HandleGetSNBlocks(event);
+    }
+    else if(event.data.method == CMvDbpMethod::SNMethod::UPDATE_FORK_STATE)
+    {
+
     }
     else
     {

@@ -174,7 +174,8 @@ public:
         SEND_BLOCK_NOTICE = 0x05,
         SEND_TX = 0x06,
         SEND_TX_NOTICE = 0x07,
-        GET_BLOCKS_SN = 0x8
+        GET_BLOCKS_SN = 0x08,
+        UPDATE_FORK_STATE = 0x09
     };
 
     enum  LwsMethod : uint32_t
@@ -236,6 +237,12 @@ class CMvDbpGetBlocksRet
 {
 public:
     std::string hash;
+};
+
+class CMvDbpUpdateForkStateRet
+{
+public:
+    std::string forkid;
 };
 
 class CMvDbpRegisterForkID : public CMvDbpRequest

@@ -87,6 +87,7 @@ public:
     void SendBlock(const std::string& id, const CMvDbpBlock& block);
     void SendTx(const std::string& id, const CMvDbpTransaction& tx);
     void GetBlocks(const std::string& fork, const std::string& startHash, int32 num);
+    void SendForkStateUpdate(const std::string& fork, const std::string& currentHeight, const std::string& lastBlockHash);
 protected:
     void StartReadHeader();
     void StartReadPayload(std::size_t nLength);

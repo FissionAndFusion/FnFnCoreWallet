@@ -233,6 +233,39 @@ void CMvDbpClientSocket::GetBlocks(const std::string& fork, const std::string& s
     SendMessage(dbp::Msg::METHOD,any);
 }
 
+void CMvDbpClientSocket::SendForkStateUpdate(const std::string& fork, const std::string& currentHeight, 
+    const std::string& lastBlockHash)
+{
+    sn::UpdateForkStateArg arg;
+    uint256 forkid, blockHash;
+    std::vector<uint8> forkidBin, hashBin;
+    walleve::CWalleveODataStream forkidSS(forkidBin);
+    walleve::CWalleveODataStream hashSS(hashBin);
+
+    forkid.SetHex(fork);
+    blockHash.SetHex(lastBlockHash);
+    forkid.ToDataStream(forkidSS);
+    blockHash.ToDataStream(hashSS);
+
+    arg.set_forkid(std::string(forkidBin.begin(), forkidBin.end()));
+    arg.set_lastblockhash(std::string(hashBin.begin(), hashBin.end()));
+    arg.set_currentheight(currentHeight);
+
+    google::protobuf::Any *argAny = new google::protobuf::Any();
+    argAny->PackFrom(arg);
+    
+    dbp::Method method;
+    method.set_method("updateforkstate");
+    method.set_id(CDbpUtils::RandomString());
+    method.set_allocated_params(argAny);
+
+    google::protobuf::Any *any = new google::protobuf::Any();
+    any->PackFrom(method);
+
+    SendMessage(dbp::Msg::METHOD,any);
+
+}
+
 void CMvDbpClientSocket::SendForkId(const std::string& fork)
 {
     sn::RegisterForkIDArg arg;
