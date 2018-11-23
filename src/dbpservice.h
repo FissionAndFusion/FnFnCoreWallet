@@ -99,6 +99,7 @@ private:
 
     void UpdateChildNodeForks(const std::string& session, const std::string& forks);
     void UpdateChildNodeForksToParent();
+    void UpdateChildNodeForksStatesToParent();
 
     void SendBlockToParent(const std::string& id, const CMvDbpBlock& block);
     void SendTxToParent(const std::string& id, const CMvDbpTransaction& tx);

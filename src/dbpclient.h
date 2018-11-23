@@ -191,6 +191,7 @@ protected:
     bool HandleEvent(CMvEventDbpSendBlockNotice& event) override;
     bool HandleEvent(CMvEventDbpSendTxNotice& event) override;
     bool HandleEvent(CMvEventDbpGetBlocks& event) override;
+    bool HandleEvent(CMvEventDbpUpdateForkState& event) override;
 
 protected:
     std::vector<CDbpClientConfig> vecClientConfig;

@@ -1378,5 +1378,25 @@ bool CMvDbpClient::HandleEvent(CMvEventDbpGetBlocks& event)
     return true;
 }
 
+bool CMvDbpClient::HandleEvent(CMvEventDbpUpdateForkState& event)
+{
+    if(!event.strSessionId.empty() || !IsForkNode())
+    {
+        std::cerr << "cannot handle UpdateForkState event for supernode." << std::endl;
+        return false;
+    }
+    
+    CMvDbpClientSocket* pClientSocket = PickOneSessionSocket();
+    if(!pClientSocket)
+    {
+        std::cerr << "Client Socket is invalid\n";
+        return false;
+    }
+
+    pClientSocket->SendForkStateUpdate(event.data.forkid, event.data.currentHeight, event.data.lastBlockHash);
+
+    return true;
+}
+
 
 } // namespace multiverse
