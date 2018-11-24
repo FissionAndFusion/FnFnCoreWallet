@@ -308,7 +308,7 @@ void CNetChannel::UnsubscribeFork(const uint256& hashFork)
     }
 }
 
-void CNetChannel::SetForkFilterInfo(bool fIsForkNodeIn, const std::map<std::string, std::tuple<std::string, std::string>>& thisNodeForksStateIn)
+void CNetChannel::SetForkFilterInfo(bool fIsForkNodeIn, const std::map<std::string, std::tuple<int, std::string>>& thisNodeForksStateIn)
 {
     boost::unique_lock<boost::shared_mutex> wlock(rwForkFilter);
     fIsForkNode = fIsForkNodeIn;

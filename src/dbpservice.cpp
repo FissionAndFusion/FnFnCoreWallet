@@ -575,7 +575,7 @@ bool CDbpService::CalcForkPoints(const uint256& forkHash)
     return true;
 }
 
-bool CDbpService::GetBlocks(const uint256& forkHash, const uint256& startHash, int32 n, std::vector<CMvDbpBlock>& blocks)
+bool CDbpService::GetLwsBlocks(const uint256& forkHash, const uint256& startHash, int32 n, std::vector<CMvDbpBlock>& blocks)
 {
     uint256 connectForkHash = forkHash;
     uint256 blockHash = startHash;
@@ -641,6 +641,61 @@ bool CDbpService::GetBlocks(const uint256& forkHash, const uint256& startHash, i
     return true;
 }
 
+bool CDbpService::GetSnBlocks(const uint256& forkHash, const uint256& startHash, int32 n, std::vector<CMvDbpBlock>& blocks)
+{
+    uint256 blockHash = startHash;
+
+    if(!IsForkHash(forkHash))
+    {
+        std::cerr << "invalid fork hash.\n";
+        return false;
+    }
+
+    if (IsEmpty(blockHash))
+    {
+        std::cerr << "start hash is invalid.\n";
+        return false;
+    }
+
+    int blockHeight = 0;
+    uint256 tempForkHash;
+    if (!pService->GetBlockLocation(blockHash, tempForkHash, blockHeight))
+    {
+        return false;
+    }
+
+    const std::size_t nonExtendBlockMaxNum = n;
+    std::size_t nonExtendBlockCount = 0;
+    
+    pService->GetBlockLocation(blockHash, tempForkHash, blockHeight);
+    
+    std::vector<uint256> blocksHash;
+    while (nonExtendBlockCount < nonExtendBlockMaxNum && 
+            pService->GetBlockHash(tempForkHash, blockHeight, blocksHash))
+    {
+        for(int i = 0; i < blocksHash.size(); ++i)
+        {
+            CBlockEx block;
+            int height;
+            pService->GetBlockEx(blocksHash[i], block, tempForkHash, height);
+            if (block.nType != CBlock::BLOCK_EXTENDED)
+            {
+                nonExtendBlockCount++;
+            }
+
+            CMvDbpBlock DbpBlock;
+            CreateDbpBlock(block, tempForkHash, height, DbpBlock);
+            blocks.push_back(DbpBlock);
+        }
+        
+        blockHeight++;
+        blocksHash.clear(); blocksHash.shrink_to_fit();
+    }
+
+    return true;
+
+}
+
 void CDbpService::HandleGetBlocks(CMvEventDbpMethod& event)
 {
     std::string forkid = boost::any_cast<std::string>(event.data.params["forkid"]);
@@ -652,7 +707,7 @@ void CDbpService::HandleGetBlocks(CMvEventDbpMethod& event)
     uint256 forkHash;
     forkHash.SetHex(forkid);
     std::vector<CMvDbpBlock> blocks;
-    if (GetBlocks(forkHash, startBlockHash, blockNum, blocks))
+    if (GetLwsBlocks(forkHash, startBlockHash, blockNum, blocks))
     {
         CMvEventDbpMethodResult eventResult(event.strSessionId);
         eventResult.data.id = event.data.id;
@@ -693,7 +748,7 @@ bool CDbpService::HandleEvent(CMvEventDbpRegisterForkID& event)
     std::string& forkid = event.data.forkid;
     if(!forkid.empty())
     {
-        mapThisNodeForkStates[forkid] = std::make_tuple("","");
+        mapThisNodeForkStates[forkid] = std::make_tuple(-1,"");
     }
     else
     {
@@ -718,7 +773,7 @@ bool CDbpService::HandleEvent(CMvEventDbpUpdateForkState& event)
             lastBlockHash = pCoreProtocol->GetGenesisBlockHash();
         }
         mapThisNodeForkStates[forkid] = 
-            std::make_tuple(std::to_string(currentHeight), lastBlockHash.ToString());
+            std::make_tuple(currentHeight, lastBlockHash.ToString());
     }
     else
     {
@@ -732,7 +787,7 @@ bool CDbpService::HandleEvent(CMvEventDbpUpdateForkState& event)
             lastBlockHash = pCoreProtocol->GetGenesisBlockHash();
         }
         
-        tupleMainForkStates = std::make_tuple(std::to_string(currentHeight), lastBlockHash.ToString());
+        tupleMainForkStates = std::make_tuple(currentHeight, lastBlockHash.ToString());
 
         UpdateChildNodeForksStatesToParent();
     }
@@ -893,7 +948,7 @@ void CDbpService::HandleUpdateForkState(CMvEventDbpMethod& event)
     std::string forkid = boost::any_cast<std::string>(event.data.params["forkid"]);
     std::string lastBlockHash = boost::any_cast<std::string>(event.data.params["lastblockhash"]);
     std::string currentHeight = boost::any_cast<std::string>(event.data.params["currentheight"]);
-    int64 nCurrentHeight = boost::lexical_cast<int64>(currentHeight);
+    int nCurrentHeight = boost::lexical_cast<int>(currentHeight);
 
     CMvEventDbpMethodResult eventResult(event.strSessionId);
     eventResult.data.id = event.data.id;
@@ -902,11 +957,33 @@ void CDbpService::HandleUpdateForkState(CMvEventDbpMethod& event)
     eventResult.data.anyResultObjs.push_back(ret);
     pDbpServer->DispatchEvent(&eventResult);
 
-    if(!IsForkNode())
-    {
+    uint256 forkHash(std::vector<unsigned char>(forkid.begin(), forkid.end())); 
+    uint256 blockHash(std::vector<unsigned char>(lastBlockHash.begin(), lastBlockHash.end()));
 
+    UpdateChildNodeForksStates(forkHash.ToString(), nCurrentHeight, lastBlockHash);
+    
+    if(!IsForkNode() && IsMainFork(forkHash))
+    {
+        if(nCurrentHeight < pService->GetForkHeight(forkHash))
+        {
+            int num = pService->GetForkHeight(forkHash) - nCurrentHeight;
+            std::vector<CMvDbpBlock> blocks;
+            if(GetSnBlocks(forkHash, blockHash, num + 1, blocks))
+            {
+                for(const auto& block : blocks)
+                {
+                    PushBlock(forkHash.ToString(), block);
+                }
+            }
+        }
     }
-    else
+
+    if(!IsForkNode() && !IsMainFork(forkHash))
+    {
+        
+    }
+    
+    if(IsForkNode())
     {
 
     }
@@ -1191,6 +1268,12 @@ void CDbpService::UpdateChildNodeForks(const std::string& session, const std::st
     }
 }
 
+void CDbpService::UpdateChildNodeForksStates(const std::string& forkid, int currentHeight, 
+    const std::string& lastBlockHash)
+{
+    mapChildNodeForksStates[forkid] = std::make_tuple(currentHeight, lastBlockHash);
+}
+
 void CDbpService::UpdateChildNodeForksToParent()
 {
     for(const auto& kv : mapSessionChildNodeForks)
@@ -1219,13 +1302,13 @@ void CDbpService::UpdateChildNodeForksStatesToParent()
     for(const auto& kv : mapThisNodeForkStates)
     {
         std::string forkid = kv.first;
-        std::string currentHeight;
+        int currentHeight;
         std::string lastBlockHash;
         const auto& tupleStates = kv.second;
         std::tie(currentHeight, lastBlockHash) = tupleStates;
         CMvEventDbpUpdateForkState eventUpdate("");
         eventUpdate.data.forkid = forkid;
-        eventUpdate.data.currentHeight = currentHeight;
+        eventUpdate.data.currentHeight = std::to_string(currentHeight);
         eventUpdate.data.lastBlockHash = lastBlockHash;
         pDbpClient->DispatchEvent(&eventUpdate);
     }
