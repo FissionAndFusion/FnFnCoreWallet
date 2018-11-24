@@ -194,11 +194,23 @@ static void print_txcmd(const CMvDbpTxCmd &cmd)
 void CDbpService::HandleAddedBlock(const CMvDbpBlock& block)
 {
     uint256 forkHash(std::vector<unsigned char>(block.fork.begin(),block.fork.end()));
+    uint256 blockHash(std::vector<unsigned char>(block.hash.begin(), block.hash.end()));
+    uint256 blockPreHash(std::vector<unsigned char>(block.hashPrev.begin(), block.hashPrev.end()));
 
-    if(IsMyFork(forkHash) || IsMainFork(forkHash))
+    if(IsMyFork(forkHash) || IsMainFork(forkHash) || IsInMyForkPath(forkHash, blockHash))
     {
         // THIS FORK NODE Handle this TODO
         print_block(block);
+
+        if(!IsBlockExist(blockHash) && IsBlockExist(blockPreHash))
+        {
+            // process normal
+        }
+        else
+        {
+            UpdateThisNodeForkState(forkHash);
+            UpdateChildNodeForksStatesToParent();
+        }
 
         if(IsMainFork(forkHash))
         {
@@ -529,6 +541,29 @@ bool CDbpService::IsForkHash(const uint256& hash)
     return false;
 }
 
+bool CDbpService::IsInMyForkPath(const uint256& forkHash, const uint256& blockHash)
+{
+    // TODO
+    return false;
+}
+
+bool CDbpService::IsBlockExist(const uint256& hash)
+{
+    uint256 forkHash;
+    int nHeight = 0;
+    return pService->GetBlockLocation(hash, forkHash, nHeight);
+}
+
+void CDbpService::GetForkState(const uint256& forkHash, int& lastHeight, uint256& lastBlockHash)
+{
+    lastHeight = pService->GetForkHeight(forkHash);
+    if(!pService->GetBlockHash(forkHash, lastHeight,lastBlockHash))
+    {
+        lastHeight = 0;
+        lastBlockHash = pCoreProtocol->GetGenesisBlockHash();
+    }
+}
+
 void CDbpService::TrySwitchFork(const uint256& blockHash,uint256& forkHash)
 {
     auto it = mapForkPoint.find(blockHash.ToString());
@@ -766,29 +801,12 @@ bool CDbpService::HandleEvent(CMvEventDbpUpdateForkState& event)
     {
         uint256 forkHash, lastBlockHash;
         forkHash.SetHex(forkid);
-        int currentHeight = pService->GetForkHeight(forkHash);
-        if(!pService->GetBlockHash(forkHash, currentHeight,lastBlockHash))
-        {
-            currentHeight = 0;
-            lastBlockHash = pCoreProtocol->GetGenesisBlockHash();
-        }
-        mapThisNodeForkStates[forkid] = 
-            std::make_tuple(currentHeight, lastBlockHash.ToString());
+        UpdateThisNodeForkState(forkHash);
     }
     else
     {
         uint256 mainForkHash = pCoreProtocol->GetGenesisBlockHash();
-        std::string mainForkId = mainForkHash.ToString();
-        uint256 lastBlockHash;
-        int currentHeight = pService->GetForkHeight(mainForkHash);
-        if(!pService->GetBlockHash(mainForkHash, currentHeight,lastBlockHash))
-        {
-            currentHeight = 0;
-            lastBlockHash = pCoreProtocol->GetGenesisBlockHash();
-        }
-        
-        tupleMainForkStates = std::make_tuple(currentHeight, lastBlockHash.ToString());
-
+        UpdateThisNodeForkState(mainForkHash);
         UpdateChildNodeForksStatesToParent();
     }
     
@@ -962,7 +980,7 @@ void CDbpService::HandleUpdateForkState(CMvEventDbpMethod& event)
 
     UpdateChildNodeForksStates(forkHash.ToString(), nCurrentHeight, lastBlockHash);
     
-    if(!IsForkNode() && IsMainFork(forkHash))
+    if(IsMainFork(forkHash))
     {
         if(nCurrentHeight < pService->GetForkHeight(forkHash))
         {
@@ -975,19 +993,27 @@ void CDbpService::HandleUpdateForkState(CMvEventDbpMethod& event)
                     PushBlock(forkHash.ToString(), block);
                 }
             }
+            else
+            {
+                UpdateChildNodeForksStatesToParent();      
+            }
+        }
+        else
+        {
+            UpdateChildNodeForksStatesToParent();    
         }
     }
-
-    if(!IsForkNode() && !IsMainFork(forkHash))
+    else
     {
-        
+        if(!IsForkNode())
+        {
+            // notify peer net TODO
+        }
+        else
+        {
+            UpdateChildNodeForksStatesToParent();
+        }
     }
-    
-    if(IsForkNode())
-    {
-
-    }
-
 }
 
 bool CDbpService::HandleEvent(CMvEventDbpMethod& event)
@@ -1274,6 +1300,22 @@ void CDbpService::UpdateChildNodeForksStates(const std::string& forkid, int curr
     mapChildNodeForksStates[forkid] = std::make_tuple(currentHeight, lastBlockHash);
 }
 
+void CDbpService::UpdateThisNodeForkState(const uint256& forkHash)
+{
+    int lastHeight;
+    uint256 lastBlockHash;
+    GetForkState(forkHash, lastHeight, lastBlockHash);
+    if(IsMainFork(forkHash))
+    {
+        tupleMainForkStates = std::make_tuple(lastHeight, lastBlockHash.ToString());
+    }
+    else
+    {
+        mapThisNodeForkStates[forkHash.ToString()] =
+            std::make_tuple(lastHeight, lastBlockHash.ToString());
+    }
+}
+
 void CDbpService::UpdateChildNodeForksToParent()
 {
     for(const auto& kv : mapSessionChildNodeForks)
@@ -1313,14 +1355,19 @@ void CDbpService::UpdateChildNodeForksStatesToParent()
         pDbpClient->DispatchEvent(&eventUpdate);
     }
 
-    CMvEventDbpUpdateForkState eventMainUpdate("");
-    std::string mainForkCurrentHeight;
-    std::string mainForkLastBlockHash;
-    std::tie(mainForkCurrentHeight, mainForkLastBlockHash) = tupleMainForkStates;
-    eventMainUpdate.data.forkid = pCoreProtocol->GetGenesisBlockHash().ToString();
-    eventMainUpdate.data.currentHeight = mainForkCurrentHeight;
-    eventMainUpdate.data.lastBlockHash = mainForkLastBlockHash;
-    pDbpClient->DispatchEvent(&eventMainUpdate);
+    for(const auto& kv : mapChildNodeForksStates)
+    {
+        std::string forkid = kv.first;
+        int currentHeight;
+        std::string lastBlockHash;
+        const auto& tupleStates = kv.second;
+        std::tie(currentHeight, lastBlockHash) = tupleStates;
+        CMvEventDbpUpdateForkState eventUpdate("");
+        eventUpdate.data.forkid = forkid;
+        eventUpdate.data.currentHeight = std::to_string(currentHeight);
+        eventUpdate.data.lastBlockHash = lastBlockHash;
+        pDbpClient->DispatchEvent(&eventUpdate);
+    }
 
 }
 
@@ -1383,6 +1430,10 @@ bool CDbpService::HandleEvent(CMvEventDbpUpdateNewBlock& event)
         PushBlock(forkHash.ToString(),block);
         SendBlockNoticeToParent(forkHash.ToString(), std::to_string(blockHeight), 
             newBlock.GetHash().ToString());
+         
+
+        UpdateThisNodeForkState(forkHash);
+        UpdateChildNodeForksStatesToParent();
     }
 
     return true;
