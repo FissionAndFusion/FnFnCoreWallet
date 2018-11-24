@@ -56,7 +56,8 @@ private:
     void CreateDbpTransaction(const CTransaction& tx, const uint256& forkHash, int64 nChange, CMvDbpTransaction& dbptx);
     bool CalcForkPoints(const uint256& forkHash);
     void TrySwitchFork(const uint256& blockHash, uint256& forkHash);
-    bool GetBlocks(const uint256& forkHash, const uint256& startHash, int32 n, std::vector<CMvDbpBlock>& blocks);
+    bool GetLwsBlocks(const uint256& forkHash, const uint256& startHash, int32 n, std::vector<CMvDbpBlock>& blocks);
+    bool GetSnBlocks(const uint256& forkHash, const uint256& startHash, int32 n, std::vector<CMvDbpBlock>& blocks);
     bool IsEmpty(const uint256& hash);
     bool IsForkHash(const uint256& hash);
     void HandleGetBlocks(CMvEventDbpMethod& event);
@@ -98,6 +99,7 @@ private:
     bool IsMyFork(const uint256& hash);
 
     void UpdateChildNodeForks(const std::string& session, const std::string& forks);
+    void UpdateChildNodeForksStates(const std::string& forkid, int currentHeight, const std::string& lastBlockHash);
     void UpdateChildNodeForksToParent();
     void UpdateChildNodeForksStatesToParent();
 
@@ -120,9 +122,10 @@ protected:
 private:
     typedef std::set<std::string> ForksType;
     typedef std::set<std::string> IdsType;
-    typedef std::tuple<std::string, std::string> ForkStates; // (lastHeight, lastBlockHash)
+    typedef std::tuple<int, std::string> ForkStates; // (lastHeight, lastBlockHash)
     std::map<std::string, ForksType> mapSessionChildNodeForks; // session => child node forks
     std::map<std::string, ForkStates> mapThisNodeForkStates; // fork id => fork states
+    std::map<std::string, ForkStates> mapChildNodeForksStates; // fork id => fork states
     ForkStates tupleMainForkStates;
 
     std::map<std::string, std::string> mapIdSubedSession;       // id => session
