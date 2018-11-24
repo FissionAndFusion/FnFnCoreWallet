@@ -543,6 +543,7 @@ bool CDbpService::IsForkHash(const uint256& hash)
 
 bool CDbpService::IsInMyForkPath(const uint256& forkHash, const uint256& blockHash)
 {
+    // TODO
     return false;
 }
 
