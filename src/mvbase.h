@@ -61,6 +61,7 @@ public:
     virtual bool GetLastBlock(const uint256& hashFork,uint256& hashBlock,int& nHeight,int64& nTime) = 0;
     virtual bool GetLastBlockTime(const uint256& hashFork,int nDepth,std::vector<int64>& vTime) = 0;
     virtual bool GetBlock(const uint256& hashBlock,CBlock& block) = 0;
+    virtual bool GetBlockEx(const uint256& hashBlock,CBlockEx& block) = 0;
     virtual bool GetOrigin(const uint256& hashFork,CBlock& block) = 0;
     virtual bool Exists(const uint256& hashBlock) = 0;
     virtual bool GetTransaction(const uint256& txid,CTransaction& tx) = 0;
@@ -69,6 +70,7 @@ public:
                                                       std::vector<CTxOutput>& vOutput) = 0;
     virtual bool ExistsTx(const uint256& txid) = 0;
     virtual bool FilterTx(CTxFilter& filter) = 0;
+    virtual bool FilterForkContext(CForkContextFilter& filter) = 0;
     virtual MvErr AddNewForkContext(const CTransaction& txFork,CForkContext& ctxt) = 0;
     virtual MvErr AddNewBlock(const CBlock& block,CWorldLineUpdate& update) = 0;    
     virtual MvErr AddNewOrigin(const CBlock& block,CWorldLineUpdate& update) = 0;    
@@ -114,8 +116,9 @@ class IForkManager : public walleve::IWalleveBase
 {
 public:
     IForkManager() : IWalleveBase("forkmanager") {}
-    virtual void AddNewForkContext(const CForkContext& ctxt) = 0;
-    virtual void ForkUpdate(const uint256& hashFork,const uint256& hashLastBlock) = 0;
+    virtual bool AddNewForkContext(const CForkContext& ctxt,std::vector<uint256>& vActive) = 0;
+    virtual void ForkUpdate(const uint256& hashFork,const uint256& hashLastBlock,
+                            std::vector<uint256>& vActive,std::vector<uint256>& vDeactive) = 0;
     const CMvForkConfig* ForkConfig()
     {
         return dynamic_cast<const CMvForkConfig*>(walleve::IWalleveBase::WalleveConfig());
@@ -230,6 +233,7 @@ public:
     virtual bool GetBlockHash(const uint256& hashFork,int nHeight,uint256& hashBlock) = 0;
     virtual bool GetBlockHash(const uint256& hashFork,int nHeight,std::vector<uint256>& vBlockHash) = 0;
     virtual bool GetBlock(const uint256& hashBlock,CBlock& block,uint256& hashFork,int& nHeight) = 0;
+    virtual bool GetBlockEx(const uint256& hashBlock, CBlockEx& block, uint256& hashFork, int& nHeight) = 0;
     virtual void GetTxPool(const uint256& hashFork,std::vector<std::pair<uint256,std::size_t> >& vTxPool) = 0;
     virtual bool GetTransaction(const uint256& txid,CTransaction& tx,uint256& hashFork,int& nHeight) = 0;
     virtual MvErr SendTransaction(CTransaction& tx) = 0;

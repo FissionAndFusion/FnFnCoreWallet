@@ -24,6 +24,7 @@ add_custom_command(OUTPUT ${auto_files}
 set(src
 	multiverse.cpp
 	address.cpp address.h
+	blockmaker.cpp blockmaker.h
 	config.cpp config.h
 	core.cpp core.h
 	dispatcher.cpp dispatcher.h
@@ -40,18 +41,18 @@ set(src
 	blockmaker.cpp blockmaker.h
 	rpcclient.cpp rpcclient.h
 	miner.cpp miner.h
-
-	dbpservice.cpp dbpservice.h
 	dbptype.h
-	dbpserver.h
-	dbpserver.cpp
 	dbputils.h
+	dbpserver.cpp dbpserver.h
+	dbpservice.cpp dbpservice.h
+	dbpclient.cpp dbpclient.h
 	dnseed.cpp dnseed.h
 	schedule.cpp schedule.h
 	service.cpp service.h
 	txpool.cpp txpool.h
 	wallet.cpp wallet.h
 	worldline.cpp worldline.h
+	forkmanager.cpp forkmanager.h
 	event.h
 	mvbase.h
 	mvtype.h
@@ -91,7 +92,8 @@ set(sources
 
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS 
 dbp-proto/dbp.proto 
-dbp-proto/lws.proto)
+dbp-proto/lws.proto
+dbp-proto/sn.proto)
 
 add_executable(multiverse ${sources} ${PROTO_SRCS} ${PROTO_HDRS})
 

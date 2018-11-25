@@ -222,6 +222,11 @@ bool CWorldLine::GetBlock(const uint256& hashBlock,CBlock& block)
     return cntrBlock.Retrieve(hashBlock,block);
 }
 
+bool CWorldLine::GetBlockEx(const uint256& hashBlock,CBlockEx& block)
+{
+    return cntrBlock.Retrieve(hashBlock,block);
+}
+
 bool CWorldLine::GetOrigin(const uint256& hashFork,CBlock& block)
 {
     return cntrBlock.RetrieveOrigin(hashFork,block);
@@ -268,6 +273,11 @@ bool CWorldLine::FilterTx(CTxFilter& filter)
     return cntrBlock.FilterTx(filter);
 }
 
+bool CWorldLine::FilterForkContext(CForkContextFilter& filter)
+{
+    return cntrBlock.FilterForkContext(filter);
+}
+
 MvErr CWorldLine::AddNewForkContext(const CTransaction& txFork,CForkContext& ctxt)
 {
     uint256 txid = txFork.GetHash();
@@ -298,6 +308,7 @@ MvErr CWorldLine::AddNewForkContext(const CTransaction& txFork,CForkContext& ctx
     CForkContext ctxtParent;
     if (!cntrBlock.RetrieveForkContext(profile.hashParent,ctxtParent))
     {
+        WalleveLog("AddNewForkContext Retrieve parent context Error: %s \n",profile.hashParent.ToString().c_str());
         return MV_ERR_MISSING_PREV;
     }
     
@@ -305,14 +316,17 @@ MvErr CWorldLine::AddNewForkContext(const CTransaction& txFork,CForkContext& ctx
     MvErr err = pCoreProtocol->ValidateOrigin(block,ctxtParent.GetProfile(),forkProfile);
     if (err != MV_OK)
     {
+        WalleveLog("AddNewForkContext Validate Block Error(%s) : %s \n",MvErrString(err),hashFork.ToString().c_str());
         return err;
     }
 
     ctxt = CForkContext(block.GetHash(),block.hashPrev,txid,profile);
     if (!cntrBlock.AddNewForkContext(ctxt))
     {
+        WalleveLog("AddNewForkContext Already Exists : %s \n",hashFork.ToString().c_str());
         return MV_ERR_ALREADY_HAVE;
     }
+
     return MV_OK;
 }
 

@@ -6,7 +6,7 @@
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 #------------------------------------------------------------------------------
 
-project(Multiverse)
+project(Multiverse LANGUAGES CXX)
 
 cmake_minimum_required(VERSION 3.5.1)
 
@@ -14,6 +14,8 @@ set(CMAKE_DIR "${CMAKE_CURRENT_LIST_DIR}/cmake" CACHE PATH "The path to the cmak
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_DIR})
 
 set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED OFF)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 # packages
 set(Boost_USE_STATIC_LIBS ON)

@@ -18,6 +18,7 @@
 #include "rpcclient.h"
 #include "miner.h"
 #include "dbpservice.h"
+#include "dbpclient.h"
 #include "dnseed.h"
 #include "version.h"
 
@@ -324,6 +325,14 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
             }
             break;
         }
+        case EModuleType::DBPCLIENT:
+        {
+            if(!AttachModule(new CMvDbpClient()))
+            {
+                return false;
+            }
+            break;
+        }
         case EModuleType::DBPSERVICE:
         {
             auto pBase = walleveDocker.GetObject("dbpserver");
@@ -332,6 +341,13 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
                 return false;
             }
             dynamic_cast<CDbpServer*>(pBase)->AddNewHost(GetDbpHostConfig());
+
+            auto pClientBase = walleveDocker.GetObject("dbpclient");
+            if(!pClientBase)
+            {
+                return false;
+            }
+            dynamic_cast<CMvDbpClient*>(pClientBase)->AddNewClient(GetDbpClientConfig());
 
             if (!AttachModule(new CDbpService()))
             {
@@ -388,6 +404,16 @@ CDbpHostConfig CMvEntry::GetDbpHostConfig()
 
     return CDbpHostConfig(config->epDbp, config->nDbpMaxConnections, config->nDbpSessionTimeout,
                           sslDbp, mapUsrDbp, config->vDbpAllowIP, "dbpservice");
+}
+
+CDbpClientConfig CMvEntry::GetDbpClientConfig()
+{
+    const CMvDbpClientConfig* config =  CastConfigPtr<CMvDbpClientConfig*>(mvConfig.GetConfig());
+    CIOSSLOption sslDbp(config->fDbpSSLEnable, config->fDbpSSLVerify,
+                        config->strDbpCAFile, config->strDbpCertFile,
+                        config->strDbpPKFile, config->strDbpCiphers);
+    
+    return CDbpClientConfig(config->epParentHost,config->strSupportForks,sslDbp,"dbpservice");
 }
 
 bool CMvEntry::Run()

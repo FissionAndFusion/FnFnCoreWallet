@@ -200,7 +200,6 @@ std::string SerializeCRPCResp(const CRPCRespVec& resp, bool indent)
     }
 
     return json_spirit::write_string<json_spirit::Value>(arr, indent);
-    ;
 }
 
 }  // namespace rpc

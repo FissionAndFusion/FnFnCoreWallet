@@ -8,9 +8,123 @@
 #include "mpvss.h"
 #include "mpinterpolation.h"
 
+using curve25519::Print32;
+
 BOOST_FIXTURE_TEST_SUITE(mpvss_tests, BasicUtfSetup)
 
-using curve25519::Print32;
+BOOST_AUTO_TEST_CASE( mpvss )
+{
+    static const uint256 result[] = 
+    {
+        uint256("0x0000000000000000000000000000000000000000000000000000000000000000"),
+        uint256("0x08e5ca2a675ab49ca214b884813935024b0c61edc8d1305fe5230df341623348"),
+        uint256("0x015a6298dc519251907a630636210b877ed8750e381a4c1502b61af3036b2c0b"),
+        uint256("0x00bf4dd5327ff4380fa7372c59e2772dc383e14477854ce8cdb8acd6fcaaf6f4"),
+        uint256("0x006e12df05ab7557f1b2570aa374fbb815844a5255b6a5303756efe6b2b327bc"),
+        uint256("0x012810bdb58b6496d8a18b10c4c88fc01fa06d3d392a04227baf10656c5e0954"),
+        uint256("0x04c06d5ba11d3188fb878df41b20610b47d521e87609073faf8dc2deeb72d648"),
+        uint256("0x03079b264bee124aa17b8eda1ae40d9286369d1eae71d5cadf1307b3495c69a1"),
+        uint256("0x0bf9e80ab2390e3ac157d9ceffb34999767e10c20ededf0b4fa20d4714c68427"),
+        uint256("0x00d980510126359ad259afcbe4f903d06043b76c1c8687a19792ef62216a6156"),
+        uint256("0x0331febebdf139382c471bddc16dbf1ea38aff5e0a1b7a9e6d5b579dc73bb8d8"),
+    };
+
+    for (size_t count = 1; count <= 10; count++)
+    {
+        uint256 nInitValue;
+        std::vector<uint256> vID;
+        std::map<uint256,CMPSecretShare> mapSS;
+        std::vector<CMPSealedBox> vSBox;
+        std::vector<CMPCandidate> vCandidate;
+
+        CMPSecretShare ssWitness;
+
+        boost::posix_time::ptime t0;
+        std::cout << "Test mpvss begin: count " << count << "\n{\n";
+        vID.resize(count); vSBox.resize(count); vCandidate.resize(count);
+        //Setup
+        t0 = boost::posix_time::microsec_clock::universal_time();
+        for (int i = 0;i < count;i++)
+        {
+            vID[i] = uint256(i + 1);
+            mapSS[vID[i]] = CMPSecretShare(vID[i]);
+
+            mapSS[vID[i]].Setup(count + 1,vSBox[i]);
+            vCandidate[i] = CMPCandidate(vID[i],1,vSBox[i]);
+
+            nInitValue = nInitValue ^ mapSS[vID[i]].myBox.PrivKey();
+        }
+        std::cout << "\tSetup : " << ((boost::posix_time::microsec_clock::universal_time() - t0).ticks() / count) <<"\n";
+        std::cout << "\tInit value = " << nInitValue.GetHex() << "\n";
+        {
+            CMPSealedBox box;
+            ssWitness.Setup(count + 1,box);
+        }
+
+        //Enroll
+        t0 = boost::posix_time::microsec_clock::universal_time();
+        for (int i = 0;i < count;i++)
+        {   
+            mapSS[vID[i]].Enroll(vCandidate);
+        }
+        std::cout << "\tEnroll : " << ((boost::posix_time::microsec_clock::universal_time() - t0).ticks() / count) <<"\n";
+        ssWitness.Enroll(vCandidate);
+
+        // Distribute
+        t0 = boost::posix_time::microsec_clock::universal_time();
+        for (int i = 0;i < count;i++)
+        {
+            std::map<uint256,std::vector<uint256> > mapShare;
+            mapSS[vID[i]].Distribute(mapShare);
+            for (int j = 0;j < count;j++)
+            {
+                if (i != j)
+                {
+                    mapSS[vID[j]].Accept(vID[i],mapShare[vID[j]]);
+                }
+            }
+        }
+        std::cout << "\tDistribute : " << ((boost::posix_time::microsec_clock::universal_time() - t0).ticks() / count) <<"\n";
+
+        // Publish
+        t0 = boost::posix_time::microsec_clock::universal_time();
+        bool fComplete;
+        for (int i = 0;i < count;i++)
+        {
+            std::map<uint256,std::vector<uint256> > mapShare;
+            mapSS[vID[i]].Publish(mapShare);
+            for (int j = 0;j < count;j++)
+            {
+                fComplete = false;
+                mapSS[vID[j]].Collect(vID[i],mapShare,fComplete);
+            }
+            fComplete = false;
+            ssWitness.Collect(vID[i],mapShare,fComplete);
+        }
+        std::cout << "\tPublish : " << ((boost::posix_time::microsec_clock::universal_time() - t0).ticks() / count) <<"\n";
+
+        // Reconstruct 
+        t0 = boost::posix_time::microsec_clock::universal_time();
+        for (int i = 0;i < count;i++)
+        {
+            std::map<uint256,std::pair<uint256,std::size_t> > mapSecret;
+            mapSS[vID[i]].Reconstruct(mapSecret);
+        }
+        std::cout << "\tReconstruct : " << ((boost::posix_time::microsec_clock::universal_time() - t0).ticks() / count) <<"\n";;
+
+        uint256 nRecValue;
+        std::map<uint256,std::pair<uint256,std::size_t> > mapSecret;
+        ssWitness.Reconstruct(mapSecret);
+        for (std::map<uint256,std::pair<uint256,std::size_t> >::iterator it = mapSecret.begin();it != mapSecret.end();++it)
+        {
+            nRecValue = nRecValue ^ (*it).second.first;
+        }
+        std::cout << "\tReconstruct value = " << nRecValue.GetHex() << "\n";
+        std::cout << "}\n";
+
+        BOOST_CHECK( nRecValue == result[count] );
+    }
+}
 
 void RandGeneretor(uint8_t* p)
 {
@@ -184,118 +298,5 @@ BOOST_AUTO_TEST_CASE( interpolation )
     }
 }
 
-BOOST_AUTO_TEST_CASE( mpvss )
-{
-    static const uint256 result[] = 
-    {
-        uint256("0x0000000000000000000000000000000000000000000000000000000000000000"),
-        uint256("0x08e5ca2a675ab49ca214b884813935024b0c61edc8d1305fe5230df341623348"),
-        uint256("0x015a6298dc519251907a630636210b877ed8750e381a4c1502b61af3036b2c0b"),
-        uint256("0x00bf4dd5327ff4380fa7372c59e2772dc383e14477854ce8cdb8acd6fcaaf6f4"),
-        uint256("0x006e12df05ab7557f1b2570aa374fbb815844a5255b6a5303756efe6b2b327bc"),
-        uint256("0x012810bdb58b6496d8a18b10c4c88fc01fa06d3d392a04227baf10656c5e0954"),
-        uint256("0x04c06d5ba11d3188fb878df41b20610b47d521e87609073faf8dc2deeb72d648"),
-        uint256("0x03079b264bee124aa17b8eda1ae40d9286369d1eae71d5cadf1307b3495c69a1"),
-        uint256("0x0bf9e80ab2390e3ac157d9ceffb34999767e10c20ededf0b4fa20d4714c68427"),
-        uint256("0x00d980510126359ad259afcbe4f903d06043b76c1c8687a19792ef62216a6156"),
-        uint256("0x0331febebdf139382c471bddc16dbf1ea38aff5e0a1b7a9e6d5b579dc73bb8d8"),
-    };
-
-    for (size_t count = 1; count <= 10; count++)
-    {
-        uint256 nInitValue;
-        std::vector<uint256> vID;
-        std::map<uint256,CMPSecretShare> mapSS;
-        std::vector<CMPSealedBox> vSBox;
-        std::vector<CMPCandidate> vCandidate;
-
-        CMPSecretShare ssWitness;
-
-        boost::posix_time::ptime t0;
-        // std::cout << "Test mpvss begin: count " << count << "\n{\n";
-        vID.resize(count); vSBox.resize(count); vCandidate.resize(count);
-        //Setup
-        t0 = boost::posix_time::microsec_clock::universal_time();
-        for (int i = 0;i < count;i++)
-        {
-            vID[i] = uint256(i + 1);
-            mapSS[vID[i]] = CMPSecretShare(vID[i]);
-
-            mapSS[vID[i]].Setup(count + 1,vSBox[i]);
-            vCandidate[i] = CMPCandidate(vID[i],1,vSBox[i]);
-
-            nInitValue = nInitValue ^ mapSS[vID[i]].myBox.PrivKey();
-        }
-        // std::cout << "\tSetup : " << ((boost::posix_time::microsec_clock::universal_time() - t0).ticks() / count) <<"\n";
-        // std::cout << "\tInit value = " << nInitValue.GetHex() << "\n";
-        {
-            CMPSealedBox box;
-            ssWitness.Setup(count + 1,box);
-        }
-
-        //Enroll
-        t0 = boost::posix_time::microsec_clock::universal_time();
-        for (int i = 0;i < count;i++)
-        {   
-            mapSS[vID[i]].Enroll(vCandidate);
-        }
-        // std::cout << "\tEnroll : " << ((boost::posix_time::microsec_clock::universal_time() - t0).ticks() / count) <<"\n";
-        ssWitness.Enroll(vCandidate);
-
-        // Distribute
-        t0 = boost::posix_time::microsec_clock::universal_time();
-        for (int i = 0;i < count;i++)
-        {
-            std::map<uint256,std::vector<uint256> > mapShare;
-            mapSS[vID[i]].Distribute(mapShare);
-            for (int j = 0;j < count;j++)
-            {
-                if (i != j)
-                {
-                    mapSS[vID[j]].Accept(vID[i],mapShare[vID[j]]);
-                }
-            }
-        }
-        // std::cout << "\tDistribute : " << ((boost::posix_time::microsec_clock::universal_time() - t0).ticks() / count) <<"\n";
-
-        // Publish
-        t0 = boost::posix_time::microsec_clock::universal_time();
-        bool fComplete;
-        for (int i = 0;i < count;i++)
-        {
-            std::map<uint256,std::vector<uint256> > mapShare;
-            mapSS[vID[i]].Publish(mapShare);
-            for (int j = 0;j < count;j++)
-            {
-                fComplete = false;
-                mapSS[vID[j]].Collect(vID[i],mapShare,fComplete);
-            }
-            fComplete = false;
-            ssWitness.Collect(vID[i],mapShare,fComplete);
-        }
-        // std::cout << "\tPublish : " << ((boost::posix_time::microsec_clock::universal_time() - t0).ticks() / count) <<"\n";
-
-        // Reconstruct 
-        t0 = boost::posix_time::microsec_clock::universal_time();
-        for (int i = 0;i < count;i++)
-        {
-            std::map<uint256,std::pair<uint256,std::size_t> > mapSecret;
-            mapSS[vID[i]].Reconstruct(mapSecret);
-        }
-        // std::cout << "\tReconstruct : " << ((boost::posix_time::microsec_clock::universal_time() - t0).ticks() / count) <<"\n";;
-
-        uint256 nRecValue;
-        std::map<uint256,std::pair<uint256,std::size_t> > mapSecret;
-        ssWitness.Reconstruct(mapSecret);
-        for (std::map<uint256,std::pair<uint256,std::size_t> >::iterator it = mapSecret.begin();it != mapSecret.end();++it)
-        {
-            nRecValue = nRecValue ^ (*it).second.first;
-        }
-        std::cout << "\tReconstruct value = " << nRecValue.GetHex() << "\n";
-        // std::cout << "}\n";
-
-        BOOST_CHECK( nRecValue == result[count] );
-    }
-}
 
 BOOST_AUTO_TEST_SUITE_END()
