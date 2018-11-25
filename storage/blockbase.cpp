@@ -53,7 +53,7 @@ public:
 // CBlockView
  
 CBlockView::CBlockView()
-: pBlockBase(NULL),pBlockFork(NULL),hashFork(0),fCommittable(false) 
+: pBlockBase(NULL),pBlockFork(NULL),hashFork(uint64(0)),fCommittable(false) 
 {
 }
 
@@ -365,7 +365,7 @@ bool CBlockBase::Initiate(const uint256& hashGenesis,const CBlock& blockGenesis)
             return false;
         }
 
-        CForkContext ctxt(hashGenesis,0,0,profile);
+        CForkContext ctxt(hashGenesis,uint64(0),uint64(0),profile);
         if (!dbBlock.AddNewForkContext(ctxt))
         {
             return false;
@@ -378,7 +378,7 @@ bool CBlockBase::Initiate(const uint256& hashGenesis,const CBlock& blockGenesis)
         CBlockFork* pFork = AddNewFork(profile,pIndexNew);
         pFork->UpdateNext();
 
-        if (!dbBlock.UpdateFork(hashGenesis,hashGenesis,0,vTxNew,vector<uint256>(),vAddNew,vector<CTxOutPoint>()))
+        if (!dbBlock.UpdateFork(hashGenesis,hashGenesis,uint64(0),vTxNew,vector<uint256>(),vAddNew,vector<CTxOutPoint>()))
         {
             return false;
         }
@@ -698,7 +698,7 @@ void CBlockBase::ListForkIndex(multimap<int,CBlockIndex*>& mapForkIndex)
 
 bool CBlockBase::GetBlockView(CBlockView& view)
 {
-    view.Initialize(this,NULL,0,false);
+    view.Initialize(this,NULL,uint64(0),false);
     return true;
 }
 

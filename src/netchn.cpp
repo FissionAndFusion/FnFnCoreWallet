@@ -186,7 +186,7 @@ void CNetChannel::WalleveHandleHalt()
 
 int CNetChannel::GetPrimaryChainHeight()
 {
-    uint256 hashBlock = 0;
+    uint256 hashBlock = uint64(0);
     int nHeight = 0;
     int64 nTime = 0;
     if (pWorldLine->GetLastBlock(pCoreProtocol->GetGenesisBlockHash(),hashBlock,nHeight,nTime))

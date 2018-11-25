@@ -85,7 +85,7 @@ public:
 class CWalletFork
 {
 public:
-    CWalletFork(const uint256& hashParentIn=0,int nOriginHeightIn=-1,bool fIsolatedIn=true)
+    CWalletFork(const uint256& hashParentIn=uint64(0),int nOriginHeightIn=-1,bool fIsolatedIn=true)
     : hashParent(hashParentIn),nOriginHeight(nOriginHeightIn),fIsolated(fIsolatedIn)
     {
     }

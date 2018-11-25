@@ -182,7 +182,7 @@ bool CBlockDB::AddNewFork(const uint256& hash)
         oss << "INSERT INTO fork(hash,refblock) "
             <<   "VALUE("
             <<          "\'" << strEscHash << "\',"
-            <<          "\'" << db->ToEscString(uint256(0)) << "\')";
+            <<          "\'" << db->ToEscString(uint64(0)) << "\')";
         if (!db->Query(oss.str()))
         {
             return false;

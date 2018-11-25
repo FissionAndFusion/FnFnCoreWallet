@@ -98,7 +98,7 @@ public:
 class CForkContextFilter
 {
 public:
-    CForkContextFilter(const uint256& hashParentIn = 0,const std::string& strSymbolIn = "")
+    CForkContextFilter(const uint256& hashParentIn = uint64(0),const std::string& strSymbolIn = "")
     : hashParent(hashParentIn),strSymbol(strSymbolIn)
     {
     }
