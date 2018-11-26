@@ -23,6 +23,7 @@ public:
     uint16  nFlag;
     int64   nMintReward;
     int64   nMinTxFee;
+    int     nJointHeight;
     CDestination destOwner;
 public:
     enum 
@@ -45,7 +46,8 @@ public:
         nFlag        = profile.nFlag;
         nMintReward  = profile.nMintReward;
         nMinTxFee    = profile.nMinTxFee;
-        destOwner    = profile.destOwner; 
+        destOwner    = profile.destOwner;
+        nJointHeight = profile.nJointHeight;
     }
     virtual void SetNull()
     {
@@ -57,6 +59,7 @@ public:
         nFlag        = 0;
         nMintReward  = 0;
         nMinTxFee    = 0;
+        nJointHeight = -1;
         strName.clear();
         strSymbol.clear();
         destOwner.SetNull();
@@ -85,6 +88,7 @@ public:
         profile.nMintReward  = nMintReward;
         profile.nMinTxFee    = nMinTxFee;
         profile.destOwner    = destOwner; 
+        profile.nJointHeight = nJointHeight;
         return profile;
     }
 };
@@ -98,7 +102,7 @@ public:
 class CForkContextFilter
 {
 public:
-    CForkContextFilter() : hashParent(0) {}
+    CForkContextFilter() : hashParent(uint64(0)) {}
     CForkContextFilter(const uint256& hashParentIn, const std::string& strSymbolIn )
     : hashParent(hashParentIn),strSymbol(strSymbolIn)
     {

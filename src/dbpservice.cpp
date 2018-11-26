@@ -635,6 +635,7 @@ bool CDbpService::GetLwsBlocks(const uint256& forkHash, const uint256& startHash
     uint256 tempForkHash;
     if (!pService->GetBlockLocation(blockHash, tempForkHash, blockHeight))
     {
+        std::cerr << "GetBlockLocation failed\n";
         return false;
     }
 
@@ -652,7 +653,7 @@ bool CDbpService::GetLwsBlocks(const uint256& forkHash, const uint256& startHash
     std::vector<uint256> blocksHash;
     while (nonExtendBlockCount < nonExtendBlockMaxNum && 
             pService->GetBlockHash(tempForkHash, blockHeight, blocksHash))
-    {
+    {  
         for(int i = 0; i < blocksHash.size(); ++i)
         {
             CBlockEx block;
@@ -671,6 +672,7 @@ bool CDbpService::GetLwsBlocks(const uint256& forkHash, const uint256& startHash
         TrySwitchFork(blocksHash[0],tempForkHash);
         blockHeight++;
         blocksHash.clear(); blocksHash.shrink_to_fit();
+       
     }
 
     return true;

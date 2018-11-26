@@ -32,6 +32,7 @@ bool CProfile::Save(std::vector<unsigned char>& vchProfile)
         if (hashParent != 0)
         {
             encoder.Push(PROFILE_PARENT,hashParent);
+            encoder.Push(PROFILE_JOINTHEIGHT,nJointHeight);
         }
 
         encoder.Encode(vchProfile);
@@ -83,6 +84,15 @@ bool CProfile::Load(const vector<unsigned char>& vchProfile)
         if (!decoder.Get(PROFILE_PARENT,hashParent))
         {
             hashParent = 0;
+        }
+
+        if (!decoder.Get(PROFILE_JOINTHEIGHT,nJointHeight))
+        {
+            if (hashParent != 0)
+            {
+                return false;
+            }
+            nJointHeight = -1;
         }
 
         vector<unsigned char> vchDestOwner;

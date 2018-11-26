@@ -166,7 +166,7 @@ BOOST_AUTO_TEST_CASE( methods ) // GetHex SetHex begin() end() size() GetLow64 G
     uint256 TmpL(R1L);
     BOOST_CHECK(TmpL == R1L);
     TmpL.SetHex(R2L.ToString());   BOOST_CHECK(TmpL == R2L);
-    TmpL.SetHex(ZeroL.ToString()); BOOST_CHECK(TmpL == uint256());
+    TmpL.SetHex(ZeroL.ToString()); BOOST_CHECK(TmpL == uint256(uint64(0)));
 
     TmpL.SetHex(R1L.ToString());
     BOOST_CHECK(memcmp(R1L.begin(), R1Array, 32)==0);

@@ -53,7 +53,8 @@ bool CBlockMakerProfile::BuildTemplate()
 
 CBlockMaker::CBlockMaker()
 : thrMaker("blockmaker",boost::bind(&CBlockMaker::BlockMakerThreadFunc,this)), 
-  nMakerStatus(MAKER_HOLD),hashLastBlock(0),nLastBlockTime(0),nLastBlockHeight(0),nLastAgreement(0),nLastWeight(0)
+  nMakerStatus(MAKER_HOLD),hashLastBlock(uint64(0)),nLastBlockTime(0),
+  nLastBlockHeight(uint64(0)),nLastAgreement(uint64(0)),nLastWeight(0)
 {
     pCoreProtocol = NULL;
     pWorldLine = NULL;
@@ -293,7 +294,7 @@ bool CBlockMaker::DispatchBlock(CBlock& block)
     MvErr err = pDispatcher->AddNewBlock(block);
     if (err != MV_OK)
     {
-        WalleveLog("Dispatch new block failed (%s) : %s\n",err,MvErrString(err));
+        WalleveLog("Dispatch new block failed (%d) : %s\n", err, MvErrString(err));
         return false;
     }
     return true;
@@ -356,7 +357,7 @@ bool CBlockMaker::ProcessDelegatedProofOfStake(CBlock& block,const CBlockMakerAg
             }
         }
     }
-    uint256 hashNewBlock = 0;
+    uint256 hashNewBlock = uint64(0);
     int64 nNewBlockTime  = 0;
     int nNewBlockHeight  = 0;
     if (WaitDelegatedBlock(block.nTimeStamp + WAIT_NEWBLOCK_TIME,agreement.nAgreement,
@@ -510,7 +511,7 @@ bool CBlockMaker::CreateProofOfWork(CBlock& block,CBlockMakerHashAlgo* pHashAlgo
 
     int nBits = proof.nBits;
 
-    uint256 hashTarget = (~uint256(0) >> nBits);
+    uint256 hashTarget = (~uint256(uint64(0)) >> nBits);
 
     vector<unsigned char> vchProofOfWork;
     block.GetSerializedProofOfWorkData(vchProofOfWork);
@@ -522,7 +523,7 @@ bool CBlockMaker::CreateProofOfWork(CBlock& block,CBlockMakerHashAlgo* pHashAlgo
 
     while (!Interrupted())
     {
-        hashTarget = (~uint256(0) >> pCoreProtocol->GetProofOfWorkRunTimeBits(nBits,nTime,nTimePrev));
+        hashTarget = (~uint256(uint64(0)) >> pCoreProtocol->GetProofOfWorkRunTimeBits(nBits,nTime,nTimePrev));
         for (int i = 0;i < nHashRate;i++)
         {
             uint256 hash = pHashAlgo->Hash(vchProofOfWork);

@@ -11,14 +11,15 @@
 
 enum 
 {
-    PROFILE_VERSION    = 0,
-    PROFILE_NAME       = 1,
-    PROFILE_SYMBOL     = 2,
-    PROFILE_FLAG       = 3,
-    PROFILE_MINTXFEE   = 4,
-    PROFILE_MINTREWARD = 5,
-    PROFILE_OWNER      = 6,
-    PROFILE_PARENT     = 7,
+    PROFILE_VERSION     = 0,
+    PROFILE_NAME        = 1,
+    PROFILE_SYMBOL      = 2,
+    PROFILE_FLAG        = 3,
+    PROFILE_MINTXFEE    = 4,
+    PROFILE_MINTREWARD  = 5,
+    PROFILE_OWNER       = 6,
+    PROFILE_PARENT      = 7,
+    PROFILE_JOINTHEIGHT = 8,
     PROFILE_MAX,
 };
 
@@ -33,16 +34,18 @@ public:
     int64 nMintReward;
     CDestination destOwner;
     uint256 hashParent;
+    int nJointHeight;
 public:
     enum {PROFILE_FLAG_ISOLATED=1,PROFILE_FLAG_PRIVATE=2,PROFILE_FLAG_ENCLOSED=4};
     CProfile() { SetNull(); }
     virtual void SetNull()
     {
-        nVersion    = 1;
-        nFlag       = 0; 
-        nMinTxFee   = 0;
-        nMintReward = 0;
-        hashParent  = 0;
+        nVersion     = 1;
+        nFlag        = 0; 
+        nMinTxFee    = 0;
+        nMintReward  = 0;
+        hashParent   = 0;
+        nJointHeight = -1;
         destOwner.SetNull(); 
         strName.clear();
         strSymbol.clear();
