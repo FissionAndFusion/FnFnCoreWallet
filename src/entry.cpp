@@ -6,6 +6,7 @@
 #include "core.h"
 #include "worldline.h"
 #include "txpool.h"
+#include "forkmanager.h"
 #include "consensus.h"
 #include "wallet.h"
 #include "dispatcher.h"
@@ -304,6 +305,14 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
         case EModuleType::WORLDLINE:
         {
             if (!AttachModule(new CWorldLine()))
+            {
+                return false;
+            }
+            break;
+        }
+        case EModuleType::FORKMANAGER:
+        {
+            if (!AttachModule(new CForkManager()))
             {
                 return false;
             }

@@ -117,8 +117,6 @@ target_link_libraries(multiverse
 	network
 	${Protobuf_LIBRARIES}
 	delegate	
-	${WS2_32_LIB}
-	${WSSOCK32_LIB}
 	${Readline_LIBRARY}
 )
 

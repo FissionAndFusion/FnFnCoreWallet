@@ -116,9 +116,10 @@ class IForkManager : public walleve::IWalleveBase
 {
 public:
     IForkManager() : IWalleveBase("forkmanager") {}
-    virtual bool AddNewForkContext(const CForkContext& ctxt,std::vector<uint256>& vActive) = 0;
-    virtual void ForkUpdate(const uint256& hashFork,const uint256& hashLastBlock,
-                            std::vector<uint256>& vActive,std::vector<uint256>& vDeactive) = 0;
+    virtual bool IsAllowed(const uint256& hashFork) const = 0;
+    virtual bool GetJoint(const uint256& hashFork,uint256& hashParent,uint256& hashJoint,int& nHeight) const = 0; 
+    virtual bool LoadForkContext(std::vector<uint256>& vActive) = 0;
+    virtual void ForkUpdate(const CWorldLineUpdate& update,std::vector<uint256>& vActive,std::vector<uint256>& vDeactive) = 0;
     const CMvForkConfig* ForkConfig()
     {
         return dynamic_cast<const CMvForkConfig*>(walleve::IWalleveBase::WalleveConfig());

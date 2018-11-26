@@ -242,6 +242,10 @@ public:
     {
         return s.empty();
     }
+    std::size_t size() const
+    {
+        return s.size();
+    }
 protected:
     std::string s;
 };

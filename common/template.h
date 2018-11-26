@@ -30,7 +30,7 @@ typedef boost::shared_ptr<CTemplateGeneric> CTemplatePtr;
 class CTemplateGeneric
 {
 public:
-    CTemplateGeneric(uint16 nTemplateTypeIn) : nTemplateType(nTemplateTypeIn),nTemplateId(0) {}
+    CTemplateGeneric(uint16 nTemplateTypeIn) : nTemplateType(nTemplateTypeIn),nTemplateId(uint64(0)) {}
     CTemplateGeneric(uint16 nTemplateTypeIn,const std::vector<unsigned char>& vchDataIn)
     : nTemplateType(nTemplateTypeIn)
     {

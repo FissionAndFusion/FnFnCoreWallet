@@ -109,7 +109,7 @@ public:
     class CDelegatedBitmap
     {
     public:
-        CDelegatedBitmap(const uint256& hashAnchorIn = 0, uint64 bitmapIn = 0)
+        CDelegatedBitmap(const uint256& hashAnchorIn = uint64(0), uint64 bitmapIn = 0)
         : hashAnchor(hashAnchorIn),bitmap(bitmapIn)
         {
         }

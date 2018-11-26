@@ -163,7 +163,7 @@ bool CWorldLine::GetBlockHash(const uint256& hashFork,int nHeight,uint256& hashB
     {
         pIndex = pIndex->pPrev;
     }
-    hashBlock = !pIndex ? 0 : pIndex->GetBlockHash();
+    hashBlock = !pIndex ? uint64(0) : pIndex->GetBlockHash();
     return (pIndex != NULL);
 }
 
