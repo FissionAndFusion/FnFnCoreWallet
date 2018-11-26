@@ -211,14 +211,14 @@ void CIOProc::CancelClientTimers(uint64 nNonce)
     }
 }
 
-bool CIOProc::StartService(const tcp::endpoint& epLocal,size_t nMaxConnections)
+bool CIOProc::StartService(const tcp::endpoint& epLocal,size_t nMaxConnections,const vector<string>& vAllowMask)
 {
     map<tcp::endpoint,CIOInBound*>::iterator it = mapService.find(epLocal);
     if (it == mapService.end())
     {
         it = mapService.insert(make_pair(epLocal,new CIOInBound(this))).first;        
     }
-    return ((*it).second->Invoke(epLocal,nMaxConnections));
+    return ((*it).second->Invoke(epLocal,nMaxConnections,vAllowMask));
 }
 
 void CIOProc::StopService(const tcp::endpoint& epLocal)
