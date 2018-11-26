@@ -60,7 +60,7 @@ private:
     bool GetSnBlocks(const uint256& forkHash, const uint256& startHash, int32 n, std::vector<CMvDbpBlock>& blocks);
     bool IsEmpty(const uint256& hash);
     bool IsForkHash(const uint256& hash);
-    bool IsInMyForkPath(const uint256& forkHash, const uint256& blockHash);
+    bool IsInMyForkPath(const uint256& forkHash, int blockHeight);
     void HandleGetBlocks(CMvEventDbpMethod& event);
     void HandleGetTransaction(CMvEventDbpMethod& event);
     void HandleSendTransaction(CMvEventDbpMethod& event);
@@ -100,12 +100,14 @@ private:
     bool IsMyFork(const uint256& hash);
     bool IsBlockExist(const uint256& hash);
     void GetForkState(const uint256& forkHash, int& lastHeight, uint256& lastBlockHash);
+    void CalcForkToplogy(const uint256& forkHash);
 
     void UpdateThisNodeForkState(const uint256& forkHash);
     void UpdateChildNodeForks(const std::string& session, const std::string& forks);
     void UpdateChildNodeForksStates(const std::string& forkid, int currentHeight, const std::string& lastBlockHash);
     void UpdateChildNodeForksToParent();
     void UpdateChildNodeForksStatesToParent();
+    void UpdateThisNodeForkToplogy();
 
     void SendBlockToParent(const std::string& id, const CMvDbpBlock& block);
     void SendTxToParent(const std::string& id, const CMvDbpTransaction& tx);
@@ -127,9 +129,12 @@ private:
     typedef std::set<std::string> ForksType;
     typedef std::set<std::string> IdsType;
     typedef std::tuple<int, std::string> ForkStates; // (lastHeight, lastBlockHash)
+    typedef std::tuple<std::string, std::string, int> ParentForkInfo;  // (parentForkHash, parentJointHash, parentJointPointHeight)
+    typedef std::vector<ParentForkInfo>  ForkTopology;
     std::map<std::string, ForksType> mapSessionChildNodeForks; // session => child node forks
     std::map<std::string, ForkStates> mapThisNodeForkStates; // fork id => fork states
     std::map<std::string, ForkStates> mapChildNodeForksStates; // fork id => fork states
+    std::map<std::string, ForkTopology> mapThisNodeForkToplogy;       // fork id => fork topology
     ForkStates tupleMainForkStates;
 
     std::map<std::string, std::string> mapIdSubedSession;       // id => session

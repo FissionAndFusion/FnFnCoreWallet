@@ -191,16 +191,34 @@ static void print_txcmd(const CMvDbpTxCmd &cmd)
     std::cout << "   fork hash:" << forkHash.ToString() << std::endl;
 }
 
+void CDbpService::UpdateThisNodeForkToplogy()
+{
+    for(const auto& kv : mapThisNodeForkStates)
+    {
+        std::string forkid = kv.first;
+        uint256 thisNodeForkid;
+        thisNodeForkid.SetHex(forkid);
+        CalcForkToplogy(thisNodeForkid);
+    }
+}
+
 void CDbpService::HandleAddedBlock(const CMvDbpBlock& block)
 {
     uint256 forkHash(std::vector<unsigned char>(block.fork.begin(),block.fork.end()));
     uint256 blockHash(std::vector<unsigned char>(block.hash.begin(), block.hash.end()));
     uint256 blockPreHash(std::vector<unsigned char>(block.hashPrev.begin(), block.hashPrev.end()));
+    int blockHeight = block.nHeight;
 
-    if(IsMyFork(forkHash) || IsMainFork(forkHash) || IsInMyForkPath(forkHash, blockHash))
+    if(IsMainFork(forkHash))
+    {
+       UpdateThisNodeForkToplogy();
+    }
+
+    if(IsMyFork(forkHash) || IsMainFork(forkHash) || IsInMyForkPath(forkHash, blockHeight))
     {
         // THIS FORK NODE Handle this TODO
         print_block(block);
+
 
         if(!IsBlockExist(blockHash) && IsBlockExist(blockPreHash))
         {
@@ -541,9 +559,40 @@ bool CDbpService::IsForkHash(const uint256& hash)
     return false;
 }
 
-bool CDbpService::IsInMyForkPath(const uint256& forkHash, const uint256& blockHash)
+void CDbpService::CalcForkToplogy(const uint256& forkHash)
 {
-    // TODO
+    const uint256 startForkHash = forkHash;
+    uint256 tempForkHash = forkHash;
+    uint256 parentForkHash;
+    uint256 hashJoint;
+    int parentJointHeight = 0;
+    while(pForkManager->GetJoint(tempForkHash,parentForkHash,hashJoint,parentJointHeight))
+    {
+        mapThisNodeForkToplogy[startForkHash.ToString()].push_back(
+            std::make_tuple(parentForkHash.ToString(), hashJoint.ToString(), parentJointHeight));
+        tempForkHash = parentForkHash;
+    }
+}
+
+bool CDbpService::IsInMyForkPath(const uint256& forkHash, int blockHeight)
+{
+    for(const auto& kv : mapThisNodeForkToplogy)
+    {
+        const auto& vecToplogy = kv.second;
+        for(const auto& tuple : vecToplogy)
+        {
+            std::string parentForkHash;
+            std::string hashJoint;
+            int parentJointHeight;
+            std::tie(parentForkHash, hashJoint, parentJointHeight) = tuple;
+            if(parentForkHash == forkHash.ToString() && blockHeight <= parentJointHeight)
+            {
+                return true;
+            }
+        }
+
+    }
+    
     return false;
 }
 
