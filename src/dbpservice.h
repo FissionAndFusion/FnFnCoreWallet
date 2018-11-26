@@ -41,6 +41,8 @@ public:
     bool HandleEvent(CMvEventDbpRegisterForkID& event) override;
     // client post event update fork state
     bool HandleEvent(CMvEventDbpUpdateForkState& event) override;
+    // client post event is forknode
+    bool HandleEvent(CMvEventDbpIsForkNode& event) override;
 
     // notify add msg(block tx ...) to event handler
     bool HandleEvent(CMvEventDbpUpdateNewBlock& event) override;
@@ -141,6 +143,8 @@ private:
     std::unordered_map<std::string, IdsType> mapTopicIds;       // topic => ids
 
     std::unordered_map<std::string, std::pair<uint256,uint256>> mapForkPoint; // fork point hash => (fork hash, fork point hash)
+
+    bool fIsForkNode;
 };
 
 } // namespace multiverse

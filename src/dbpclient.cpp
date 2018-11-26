@@ -937,19 +937,32 @@ void CMvDbpClient::EnterLoop()
          it != mapProfile.end(); ++it)
     {
         bool fEnableSSL = (*it).second.optSSL.fEnable;
-        if(it->first.address().is_loopback()) continue;
-        if(!StartConnection(it->first,DBPCLIENT_CONNECT_TIMEOUT,fEnableSSL,it->second.optSSL))
+        if(it->first.address().is_loopback())
         {
-            WalleveLog("Start to connect parent node %s failed,  port = %d\n",
-                       (*it).first.address().to_string().c_str(),
-                       (*it).first.port());
+            CMvEventDbpIsForkNode* pEvent = new CMvEventDbpIsForkNode("");
+            pEvent->data.IsForkNode = false;
+            pDbpService->PostEvent(pEvent);
+            continue;
         }
         else
         {
-            WalleveLog("Start to connect parent node %s,  port = %d\n",
+            CMvEventDbpIsForkNode* pEvent = new CMvEventDbpIsForkNode("");
+            pEvent->data.IsForkNode = true;
+            pDbpService->PostEvent(pEvent);
+            
+            if(!StartConnection(it->first,DBPCLIENT_CONNECT_TIMEOUT,fEnableSSL,it->second.optSSL))
+            {
+                WalleveLog("Start to connect parent node %s failed,  port = %d\n",
                        (*it).first.address().to_string().c_str(),
                        (*it).first.port());
-        }  
+            }
+            else
+            {
+                WalleveLog("Start to connect parent node %s,  port = %d\n",
+                       (*it).first.address().to_string().c_str(),
+                       (*it).first.port());
+            } 
+        } 
     }
 }
 

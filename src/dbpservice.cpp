@@ -32,6 +32,7 @@ CDbpService::CDbpService()
                                   (REMOVED_TOPIC,   std::set<std::string>());
 
     mapTopicIds = temp_map;
+    fIsForkNode = true;
 }
 
 CDbpService::~CDbpService()
@@ -816,7 +817,7 @@ void CDbpService::HandleGetBlocks(CMvEventDbpMethod& event)
 
 bool CDbpService::IsForkNode()
 {
-    return mapThisNodeForkStates.empty() ? false : true;
+    return fIsForkNode;
 }
 
 bool CDbpService::IsMainFork(const uint256& hash)
@@ -843,6 +844,11 @@ bool CDbpService::HandleEvent(CMvEventDbpRegisterForkID& event)
     }
     
     return true;
+}
+
+bool CDbpService::HandleEvent(CMvEventDbpIsForkNode& event)
+{
+    fIsForkNode = event.data.IsForkNode;
 }
 
 bool CDbpService::HandleEvent(CMvEventDbpUpdateForkState& event)
