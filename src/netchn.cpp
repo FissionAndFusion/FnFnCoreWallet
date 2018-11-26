@@ -158,20 +158,6 @@ void CNetChannel::WalleveHandleDeinitialize()
 
 bool CNetChannel::WalleveHandleInvoke()
 {
-    map<uint256,CForkStatus> mapForkStatus;
-    pWorldLine->GetForkStatus(mapForkStatus);
-    if (mapForkStatus.empty())
-    {
-        WalleveLog("Failed to get fork status from worldline\n");
-        return false;
-    }
-    {
-        boost::recursive_mutex::scoped_lock scoped_lock(mtxSched);
-        for (map<uint256,CForkStatus>::iterator it = mapForkStatus.begin();it != mapForkStatus.end();++it)
-        {
-            mapSched.insert(make_pair((*it).first,CSchedule()));
-        }
-    }
     return network::IMvNetChannel::WalleveHandleInvoke(); 
 }
 

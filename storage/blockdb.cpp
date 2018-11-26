@@ -85,7 +85,7 @@ bool CBlockDB::AddNewForkContext(const CForkContext& ctxt)
         return false;
     }
     ostringstream oss;
-    oss << "INSERT INTO forkcontext (name,symbol,hash,parent,joint,txid,version,flag,mintreward,mintxfee,owner) "
+    oss << "INSERT INTO forkcontext (name,symbol,hash,parent,joint,txid,version,flag,mintreward,mintxfee,owner,jointheight) "
         <<    "VALUE("
         <<           "\'" << db->ToEscString(ctxt.strName) << "\',"
         <<           "\'" << db->ToEscString(ctxt.strSymbol) << "\',"
@@ -93,11 +93,12 @@ bool CBlockDB::AddNewForkContext(const CForkContext& ctxt)
         <<           "\'" << db->ToEscString(ctxt.hashParent) << "\',"
         <<           "\'" << db->ToEscString(ctxt.hashJoint) << "\',"
         <<           "\'" << db->ToEscString(ctxt.txidEmbedded) << "\',"
-        <<           "\'" << ctxt.nVersion << "\',"
-        <<           "\'" << ctxt.nFlag << "\',"
-        <<           "\'" << ctxt.nMintReward << "\',"
-        <<           "\'" << ctxt.nMinTxFee << "\',"
-        <<           "\'" << db->ToEscString(ctxt.destOwner) << "\')";
+        <<           ctxt.nVersion << ","
+        <<           ctxt.nFlag << ","
+        <<           ctxt.nMintReward << ","
+        <<           ctxt.nMinTxFee << ","
+        <<           "\'" << db->ToEscString(ctxt.destOwner) << "\',"
+        <<           ctxt.nJointHeight << ")";
 
     return db->Query(oss.str());
 }
@@ -112,7 +113,7 @@ bool CBlockDB::RetrieveForkContext(const uint256& hash,CForkContext& ctxt)
         ctxt.hashFork = hash;
 
         ostringstream oss;
-        oss << "SELECT name,symbol,parent,joint,txid,version,flag,mintreward,mintxfee,owner FROM forkcontext WHERE hash = "
+        oss << "SELECT name,symbol,parent,joint,txid,version,flag,mintreward,mintxfee,owner,jointheight FROM forkcontext WHERE hash = "
             <<            "\'" << db->ToEscString(hash) << "\'";
         CMvDBRes res(*db,oss.str());
         return (res.GetRow()
@@ -120,7 +121,8 @@ bool CBlockDB::RetrieveForkContext(const uint256& hash,CForkContext& ctxt)
                 && res.GetField(2,ctxt.hashParent) && res.GetField(3,ctxt.hashJoint) 
                 && res.GetField(4,ctxt.txidEmbedded) && res.GetField(5,ctxt.nVersion) 
                 && res.GetField(6,ctxt.nFlag) && res.GetField(7,ctxt.nMintReward) 
-                && res.GetField(8,ctxt.nMinTxFee) && res.GetField(9,ctxt.destOwner));
+                && res.GetField(8,ctxt.nMinTxFee) && res.GetField(9,ctxt.destOwner)
+                && res.GetField(10,ctxt.nJointHeight));
     }
 
     return false;
@@ -134,7 +136,7 @@ bool CBlockDB::FilterForkContext(CForkContextFilter& filter)
         return false;
     }
 
-    string strQuery = "SELECT name,symbol,hash,parent,joint,txid,version,flag,mintreward,mintxfee,owner FROM forkcontext";
+    string strQuery = "SELECT name,symbol,hash,parent,joint,txid,version,flag,mintreward,mintxfee,owner,jointheight FROM forkcontext";
     if (filter.hashParent != 0)
     {
         strQuery += string(" WHERE parent = \'") + db->ToEscString(filter.hashParent) + "\'";
@@ -156,11 +158,12 @@ bool CBlockDB::FilterForkContext(CForkContextFilter& filter)
         {
             CForkContext ctxt;
             if (   !res.GetField(0,ctxt.strName)     || !res.GetField(1,ctxt.strSymbol)
-                || !res.GetField(2,ctxt.hashFork)     || !res.GetField(3,ctxt.hashParent) 
+                || !res.GetField(2,ctxt.hashFork)    || !res.GetField(3,ctxt.hashParent) 
                 || !res.GetField(4,ctxt.hashJoint)   || !res.GetField(5,ctxt.txidEmbedded) 
                 || !res.GetField(6,ctxt.nVersion)    || !res.GetField(7,ctxt.nFlag) 
                 || !res.GetField(8,ctxt.nMintReward) || !res.GetField(9,ctxt.nMinTxFee) 
-                || !res.GetField(10,ctxt.destOwner)  || !filter.FoundForkContext(ctxt) )
+                || !res.GetField(10,ctxt.destOwner)  || !res.GetField(11,ctxt.nJointHeight)
+                || !filter.FoundForkContext(ctxt) )
             {
                 return false;
             }
@@ -771,6 +774,7 @@ bool CBlockDB::CreateTable()
                     "mintreward BIGINT UNSIGNED NOT NULL,"
                     "mintxfee BIGINT UNSIGNED NOT NULL,"
                     "owner BINARY(33) NOT NULL,"
+                    "jointheight INT NOT NULL,"
                     "INDEX(hash),INDEX(id))"
                     "ENGINE=InnoDB")
            &&

@@ -16,30 +16,32 @@
 namespace multiverse
 {
 
-class CForkIndex
+class CForkLink
 {
 public:
-    CForkIndex() : nEmbeddedHeight(-1) {}
-    CForkIndex(const CForkContext& ctxt) 
-    : hashFork(ctxt.hashFork),hashParent(ctxt.hashParent),hashJoint(ctxt.hashJoint),nEmbeddedHeight(-1)
+    CForkLink() : nJointHeight(-1) {}
+    CForkLink(const CForkContext& ctxt) 
+    : hashFork(ctxt.hashFork),hashParent(ctxt.hashParent),hashJoint(ctxt.hashJoint),nJointHeight(ctxt.nJointHeight)
     {
     }
 public:
     uint256 hashFork;
     uint256 hashParent;
     uint256 hashJoint;
-    int nEmbeddedHeight;
+    int nJointHeight;
 };
 
 typedef boost::multi_index_container<
-  CForkIndex,
+  CForkLink,
   boost::multi_index::indexed_by<
-    boost::multi_index::ordered_unique<boost::multi_index::member<CForkIndex,uint256,&CForkIndex::hashFork> >,
-    boost::multi_index::ordered_non_unique<boost::multi_index::member<CForkIndex,int,&CForkIndex::nEmbeddedHeight> >
+    boost::multi_index::ordered_unique<boost::multi_index::member<CForkLink,uint256,&CForkLink::hashFork> >,
+    boost::multi_index::ordered_non_unique<boost::multi_index::member<CForkLink,uint256,&CForkLink::hashJoint> >,
+    boost::multi_index::ordered_non_unique<boost::multi_index::member<CForkLink,int,&CForkLink::nJointHeight> >
   >
-> CForkIndexSet;
-typedef CForkIndexSet::nth_index<0>::type CForkIndexSetByFork;
-typedef CForkIndexSet::nth_index<1>::type CForkIndexSetByHeight;
+> CForkLinkSet;
+typedef CForkLinkSet::nth_index<0>::type CForkLinkSetByFork;
+typedef CForkLinkSet::nth_index<1>::type CForkLinkSetByJoint;
+typedef CForkLinkSet::nth_index<2>::type CForkLinkSetByHeight;
 
 
 class CForkSchedule
@@ -49,6 +51,8 @@ public:
     : fAllowed(fAllowedIn), fSynchronized(false)
     {
     }
+    bool IsAllowed() const { return fAllowed; }
+    bool IsJointEmpty() const { return mapJoint.empty(); } 
     bool IsHalted() const { return (!fAllowed && mapJoint.empty()); }
     void AddNewJoint(const uint256& hashJoint,const uint256& hashFork) 
     { 
@@ -63,6 +67,7 @@ public:
             mapJoint.erase(it++);
         }
     }
+    
     void SetSyncStatus(bool fSync) { fSynchronized = fSync; }
     bool IsSynchronized() const { return fSynchronized; }
 public:
@@ -76,30 +81,26 @@ class CForkManager : public IForkManager
 public:
     CForkManager();
     ~CForkManager();
+    bool IsAllowed(const uint256& hashFork) const override;
+    bool GetJoint(const uint256& hashFork,uint256& hashParent,uint256& hashJoint,int& nHeight) const;
     bool LoadForkContext(std::vector<uint256>& vActive) override;
-    bool AddNewForkContext(const CForkContext& ctxt,std::vector<uint256>& vActive) override;
-    void ForkUpdate(const uint256& hashFork,const uint256& hashLastBlock,
-                    std::vector<uint256>& vActive,std::vector<uint256>& vDeactive) override;
-    bool LoadForkContext(const CForkContext& ctxt);
-
+    void ForkUpdate(const CWorldLineUpdate& update,std::vector<uint256>& vActive,std::vector<uint256>& vDeactive) override;
+    bool AddNewForkContext(const CForkContext& ctxt,std::vector<uint256>& vActive);
 protected:
     bool WalleveHandleInitialize() override;
     void WalleveHandleDeinitialize() override;
     bool WalleveHandleInvoke() override;
     void WalleveHandleHalt() override;
     bool IsAllowedFork(const uint256& hashFork,const uint256& hashParent) const;
-    bool LoadForkIndex();
-    bool AddNewForkContext(const CForkContext& ctxt);
-    void RemoveForkContext(const uint256& hashFork);
 protected:
-    boost::shared_mutex rwAccess;
+    mutable boost::shared_mutex rwAccess;
     ICoreProtocol* pCoreProtocol;
     IWorldLine* pWorldLine;
     bool fAllowAnyFork;
     std::set<uint256> setForkAllowed;
     std::set<uint256> setGroupAllowed;
     std::map<uint256,CForkSchedule> mapForkSched; 
-    CForkIndexSet setForkIndex;
+    CForkLinkSet setForkIndex;
 };
 
 } // namespace multiverse
