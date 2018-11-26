@@ -1661,21 +1661,33 @@ CRPCResultPtr CRPCMod::RPCMakeOrigin(CRPCParamPtr param)
     int64 nAmount = AmountFromValue(spParam->fAmount);
     int64 nMintReward = AmountFromValue(spParam->fReward);
 
+    if (spParam->strName.empty() || spParam->strName.size() > 128
+        || spParam->strSymbol.empty() || spParam->strSymbol.size() > 16)
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Invalid name or symbol");
+    }
+ 
     CBlock blockPrev;
     uint256 hashParent;
-    int nPrevHeight;
-    if (!pService->GetBlock(hashPrev,blockPrev,hashParent,nPrevHeight))
+    int nJointHeight;
+    if (!pService->GetBlock(hashPrev,blockPrev,hashParent,nJointHeight))
     {
         throw CRPCException(RPC_INVALID_PARAMETER, "Unknown prev block");
     }
 
+    if (blockPrev.IsExtended() || blockPrev.IsVacant())
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Prev block should not be extended/vacant block");
+    }
+
     CProfile profile;
-    profile.strName     = spParam->strName;
-    profile.strSymbol   = spParam->strSymbol;
-    profile.destOwner   = destOwner;
-    profile.hashParent  = hashParent; 
-    profile.nMintReward = nMintReward;
-    profile.nMinTxFee   = MIN_TX_FEE;
+    profile.strName      = spParam->strName;
+    profile.strSymbol    = spParam->strSymbol;
+    profile.destOwner    = destOwner;
+    profile.hashParent   = hashParent; 
+    profile.nJointHeight = nJointHeight; 
+    profile.nMintReward  = nMintReward;
+    profile.nMinTxFee    = MIN_TX_FEE;
     profile.SetFlag(spParam->fIsolated,spParam->fPrivate,spParam->fEnclosed);
 
     CBlock block;

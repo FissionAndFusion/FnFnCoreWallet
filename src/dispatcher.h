@@ -29,7 +29,8 @@ protected:
     bool WalleveHandleInvoke() override;
     void WalleveHandleHalt() override;
     void UpdatePrimaryBlock(const CBlock& block,const CWorldLineUpdate& updateWorldLine,const CTxSetChange& changeTxSet);
-    void ProcessForkTx(const CTransaction& tx, int nPrimaryHeight);
+    void ActivateFork(const uint256& hashFork);
+    bool ProcessForkTx(const uint256& txid,const CTransaction& tx);
     void SyncForkHeight(int nPrimaryHeight);
 
 protected:
@@ -37,6 +38,7 @@ protected:
     ICoreProtocol* pCoreProtocol;
     IWorldLine* pWorldLine;
     ITxPool* pTxPool;
+    IForkManager* pForkManager;
     IConsensus* pConsensus;
     IWallet* pWallet;
     IService* pService;
