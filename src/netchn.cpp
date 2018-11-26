@@ -617,8 +617,8 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerTx& eventTx)
         HandleEventForOrigin(eventTx);
     }
 
-    // if this node is root node and tx not on main fork , it send tx to dbpservice push to fork node
-    if(!fIsForkNode && !IsMainFork(hashFork))
+    // if this node is root node, it send all tx to dbpservice push to fork node
+    if(!fIsForkNode)
     {
         CTransaction& tx = eventTx.data;
         uint64 nNonce;
@@ -627,8 +627,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerTx& eventTx)
         pDbpService->PostEvent(pUpdateNewTxEvent);
     }
 
-    // if this node is fork node, it need process tx on main fork and fork tx for myself
-    if(fIsForkNode && (IsMyFork(hashFork) || IsMainFork(hashFork)))
+    if(fIsForkNode)
     {
         HandleEventForOrigin(eventTx);
     }
@@ -648,8 +647,8 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerBlock& eventBlock)
         HandleEventForOrigin(eventBlock);
     }
 
-    // if this node is root node and block not on main fork , it send block to dbpservice push to fork node
-    if(!fIsForkNode && !IsMainFork(hashFork))
+    // if this node is root node, it send all block to dbpservice push to fork node
+    if(!fIsForkNode)
     {
         CBlock& block = eventBlock.data;
         uint64 nNonce;
@@ -658,8 +657,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerBlock& eventBlock)
         pDbpService->PostEvent(pUpdateNewBlockEvent);
     }
 
-    // if this node is fork node, it need process block on main fork and fork block for myself
-    if(fIsForkNode && (IsMyFork(hashFork) || IsMainFork(hashFork)))
+    if(fIsForkNode)
     {
         HandleEventForOrigin(eventBlock);
     }
