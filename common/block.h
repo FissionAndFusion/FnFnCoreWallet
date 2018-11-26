@@ -153,7 +153,7 @@ public:
             } 
             j += nSize;
         }
-        return (vMerkleTree.empty() ? 0 : vMerkleTree.back());
+        return (vMerkleTree.empty() ? uint64(0) : vMerkleTree.back());
     }
     uint256 CalcMerkleTreeRoot() const
     {
@@ -257,7 +257,7 @@ public:
         pOrigin = this;
         pPrev = NULL;
         pNext = NULL;
-        txidMint = (block.IsVacant() ? 0 : block.txMint.GetHash());
+        txidMint = (block.IsVacant() ? uint64(0) : block.txMint.GetHash());
         nMintType = block.txMint.nType;
         nVersion = block.nVersion;
         nType = block.nType;
@@ -299,7 +299,7 @@ public:
     }
     uint256 GetParentHash() const
     {
-        return (!pOrigin->pPrev ? 0 : pOrigin->pPrev->GetOriginHash());
+        return (!pOrigin->pPrev ? uint64(0) : pOrigin->pPrev->GetOriginHash());
     }
     int64 GetMoneySupply() const
     {
@@ -375,7 +375,7 @@ public:
     CBlockOutline(const CBlockIndex* pIndex) : CBlockIndex(*pIndex)
     {
         hashBlock = pIndex->GetBlockHash();
-        hashPrev = (pPrev ? pPrev->GetBlockHash() : 0);
+        hashPrev = (pPrev ? pPrev->GetBlockHash() : uint64(0));
     }
     uint256 GetBlockHash() const
     {

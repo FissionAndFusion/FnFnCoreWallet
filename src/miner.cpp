@@ -327,7 +327,7 @@ uint256 CMiner::GetHashTarget(const CMinerWork& work,int64 nTime)
     {
         nBits = 16;
     } 
-    return ((~uint256(0) >> nBits));
+    return ((~uint256(uint64(0)) >> nBits));
 }
 
 void CMiner::LaunchFetcher()
