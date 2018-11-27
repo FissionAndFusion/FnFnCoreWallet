@@ -25,7 +25,7 @@ CDbpService::CDbpService()
     mapCurrentTopicExist = temp_map;
 }
 
-CDbpService::~CDbpService()
+CDbpService::~CDbpService() noexcept
 {
 }
 

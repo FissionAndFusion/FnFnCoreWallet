@@ -16,6 +16,7 @@ alone_classes = OrderedDict()
 all_classes = {}
 json_type_list = ('int', 'uint', 'double', 'bool', 'string', 'array', 'object')
 
+RPC_DOUBLE_PRECISION = '6'
 
 # help function
 def subclass_name(name, named=False):
@@ -647,16 +648,22 @@ def PostLoad_cpp(name, params, sub_params, w, scope):
         w.write(indent + 'if (next(it, 1) != vecCommand.end())\n')
         indent = brace_begin(w, indent)
         if is_pod(p.type):
-            w.write(indent + 'istringstream iss(*++it);\n')
-            if p.type == 'bool':
-                w.write(indent + 'iss >> boolalpha >> ' + param_name + ';\n')
+            if p.type == 'string':
+                w.write(indent + param_name + ' = *++it;\n')
             else:
-                w.write(indent + 'iss >> ' + param_name + ';\n')
-            w.write(indent + 'if (!iss.eof() || iss.fail())\n')
-            indent = brace_begin(w, indent)
-            w.write(
-                indent + 'throw CRPCException(RPC_PARSE_ERROR, "[' + p.key + '] type error, needs ' + p.type + '");\n')
-            indent = brace_end(w, indent)
+                w.write(indent + 'istringstream iss(*++it);\n')
+                if p.type == 'bool':
+                    w.write(indent + 'iss >> boolalpha >> ' + param_name + ';\n')
+                else:
+                    w.write(indent + 'iss >> ' + param_name + ';\n')
+                w.write(indent + 'if (!iss.eof() || iss.fail())\n')
+                w.write(indent + '\tthrow CRPCException(RPC_PARSE_ERROR, "[' + p.key + '] type error, needs ' + p.type + '");\n')
+
+                if p.type == 'double':
+                    w.write(indent + 'ostringstream oss;\n')
+                    w.write(indent + 'oss << std::setprecision(' + RPC_DOUBLE_PRECISION + ') << ' + param_name + ';\n')
+                    w.write(indent + 'if (oss.str() != iss.str())\n')
+                    w.write(indent + '\tthrow CRPCException(RPC_PARSE_ERROR, "[' + p.key + '] double precision error, max ' + RPC_DOUBLE_PRECISION + '");\n')
         else:
             w.write(indent + container_str + ' = *++it;\n')
         indent = brace_end(w, indent)
@@ -1332,38 +1339,38 @@ def generate_h():
         w.write(copyright)
         # file top
         w.write('''
-# ifndef MULTIVERSE_RPC_AUTO_PROTOCOL_H
-# define MULTIVERSE_RPC_AUTO_PROTOCOL_H
+#ifndef MULTIVERSE_RPC_AUTO_PROTOCOL_H
+#define MULTIVERSE_RPC_AUTO_PROTOCOL_H
 
-# include <cfloat>
-# include <climits>
+#include <cfloat>
+#include <climits>
 
-# include "json/json_spirit_utils.h"
-# include "walleve/type.h"
+#include "json/json_spirit_utils.h"
+#include "walleve/type.h"
 
-# include "mode/basic_config.h"
-# include "rpc/rpc_type.h"
-# include "rpc/rpc_req.h"
-# include "rpc/rpc_resp.h"
+#include "mode/basic_config.h"
+#include "rpc/rpc_type.h"
+#include "rpc/rpc_req.h"
+#include "rpc/rpc_resp.h"
 
 namespace multiverse
 {
 namespace rpc
 {
 
-# ifdef __required__
-# pragma push_macro("__required__")
-# define PUSHED_MACRO_REQUIRED
-# undef __required__
-# endif
-# define __required__
+#ifdef __required__
+#pragma push_macro("__required__")
+#define PUSHED_MACRO_REQUIRED
+#undef __required__
+#endif
+#define __required__
 
-# ifdef __optional__
-# pragma push_macro("__optional__")
-# define PUSHED_MACRO_OPTIONAL
-# undef __optional__
-# endif
-# define __optional__
+#ifdef __optional__
+#pragma push_macro("__optional__")
+#define PUSHED_MACRO_OPTIONAL
+#undef __optional__
+#endif
+#define __optional__
 
 ''')
         # alone_classes
@@ -1465,22 +1472,22 @@ namespace rpc
 
         # file bottom
         w.write('''
-# undef __required__
-# undef __optional__
+#undef __required__
+#undef __optional__
 
-# ifdef PUSHED_MACRO_REQUIRED
-# pragma pop_macro("__required__")
-# endif
+#ifdef PUSHED_MACRO_REQUIRED
+#pragma pop_macro("__required__")
+#endif
 
-# ifdef PUSHED_MACRO_OPTIONAL
-# pragma pop_macro("__optional__")
-# endif
+#ifdef PUSHED_MACRO_OPTIONAL
+#pragma pop_macro("__optional__")
+#endif
 
 }  // namespace rpc
 
 }  // namespace multiverse
 
-# endif  // MULTIVERSE_RPC_AUTO_PROTOCOL_H
+#endif  // MULTIVERSE_RPC_AUTO_PROTOCOL_H
 ''')
 
 
@@ -1490,12 +1497,13 @@ def generate_cpp():
         w.write(copyright)
         # file top
         w.write('''\
-# include "auto_protocol.h"
+#include "auto_protocol.h"
 
-# include <sstream>
+#include <sstream>
+#include <limits>
 
-# include "json/json_spirit_reader_template.h"
-# include "json/json_spirit_utils.h"
+#include "json/json_spirit_reader_template.h"
+#include "json/json_spirit_utils.h"
 
 using namespace std;
 using namespace json_spirit;

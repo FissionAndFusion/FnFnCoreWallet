@@ -80,7 +80,7 @@ class CompJsonValue
 public:
     bool operator()(const json_spirit::Value& lhs, const json_spirit::Value& rhs) const
     {
-        return json_spirit::write_string(lhs, false) < json_spirit::write_string(rhs, false);
+        return json_spirit::write_string(lhs, false, RPC_DOUBLE_PRECISION) < json_spirit::write_string(rhs, false, RPC_DOUBLE_PRECISION);
     }
 };
 typedef std::map<json_spirit::Value, CRPCReqPtr, CompJsonValue> CRPCReqMap;
