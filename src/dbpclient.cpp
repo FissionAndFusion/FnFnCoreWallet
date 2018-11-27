@@ -339,7 +339,9 @@ CMvDbpClient::CMvDbpClient()
     pDbpService = NULL;
 }
 
-CMvDbpClient::~CMvDbpClient(){}
+CMvDbpClient::~CMvDbpClient() noexcept
+{
+}
 
 
 void CMvDbpClient::HandleClientSocketError(CMvDbpClientSocket* pClientSocket)

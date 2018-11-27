@@ -27,9 +27,14 @@ public:
     std::string Serialize(bool indent = false)
     {
         auto val = ToJSON();
-        return (val.type() == json_spirit::str_type)
-               ? val.get_str()
-               : json_spirit::write_string<json_spirit::Value>(val, indent);
+        if (val.type() == json_spirit::str_type)
+        {
+            return val.get_str();
+        }
+        else
+        {
+            return json_spirit::write_string<json_spirit::Value>(val, indent, RPC_DOUBLE_PRECISION);
+        }
     }
 };
 
