@@ -39,7 +39,7 @@ class CHttpProfile
 public:
     CHttpProfile() : pIOModule(NULL),pSSLContext(NULL) {}
 public:
-    IIOModule *pIOModule;
+    IIOModule* pIOModule;
     boost::asio::ssl::context* pSSLContext;
     std::map<std::string,std::string> mapAuthrizeUser;
     std::vector<std::string> vAllowMask;

@@ -612,19 +612,15 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerTx& eventTx)
     boost::shared_lock<boost::shared_mutex> rblock(rwForkFilter);
     
     // if this node is root node, it only process tx on main fork
-    if(!fIsForkNode && IsMainFork(hashFork))
+    if(!fIsForkNode && IsMainFork(hashFork)) 
     {
         HandleEventForOrigin(eventTx);
     }
 
-    // if this node is root node, it send all tx to dbpservice push to fork node
+    // if this node is root node, it send all tx to virtual peer net and push to dbpservice
     if(!fIsForkNode)
     {
-        CTransaction& tx = eventTx.data;
-        uint64 nNonce;
-        CMvEventDbpUpdateNewTx *pUpdateNewTxEvent = new CMvEventDbpUpdateNewTx(nNonce, hashFork, 0);
-        pUpdateNewTxEvent->data = tx;
-        pDbpService->PostEvent(pUpdateNewTxEvent);
+       
     }
 
     if(fIsForkNode)
@@ -647,14 +643,10 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerBlock& eventBlock)
         HandleEventForOrigin(eventBlock);
     }
 
-    // if this node is root node, it send all block to dbpservice push to fork node
+    // if this node is root node, it send all block to virtual peernet push to dbpservice
     if(!fIsForkNode)
     {
-        CBlock& block = eventBlock.data;
-        uint64 nNonce;
-        CMvEventDbpUpdateNewBlock *pUpdateNewBlockEvent = new CMvEventDbpUpdateNewBlock(nNonce, hashFork, 0);
-        pUpdateNewBlockEvent->data = CBlockEx(block);
-        pDbpService->PostEvent(pUpdateNewBlockEvent);
+        
     }
 
     if(fIsForkNode)

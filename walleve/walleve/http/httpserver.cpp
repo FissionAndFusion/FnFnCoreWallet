@@ -203,6 +203,7 @@ bool CHttpServer::CreateProfile(const CHttpHostConfig& confHost)
 
     profile.nMaxConnections = confHost.nMaxConnections;
     profile.vAllowMask = confHost.vAllowMask;
+
     mapProfile[confHost.epHost] = profile;
 
     return true;
@@ -236,7 +237,7 @@ void CHttpServer::EnterLoop()
     for (map<tcp::endpoint,CHttpProfile>::iterator it = mapProfile.begin();
          it != mapProfile.end(); ++it)
     {
-        StartService((*it).first,(*it).second.nMaxConnections);
+        StartService((*it).first,(*it).second.nMaxConnections,(*it).second.vAllowMask);
         WalleveLog("Setup service %s, listen port = %d, connection limit %d\n",
                     (*it).second.pIOModule->WalleveGetOwnKey().c_str(),
                     (*it).first.port(),(*it).second.nMaxConnections);
