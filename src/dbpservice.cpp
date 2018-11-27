@@ -547,8 +547,8 @@ void CDbpService::RemoveSession(const std::string& session)
 
 bool CDbpService::IsEmpty(const uint256& hash)
 {
-    static const std::string EMPTY_HASH("0000000000000000000000000000000000000000000000000000000000000000");
-    return hash.ToString() == EMPTY_HASH;
+    static const uint256 EMPTY_HASH;
+    return hash == EMPTY_HASH;
 }
 
 bool CDbpService::IsForkHash(const uint256& hash)
