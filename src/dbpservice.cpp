@@ -32,6 +32,7 @@ CDbpService::CDbpService()
                                   (REMOVED_TOPIC,   std::set<std::string>());
 
     mapTopicIds = temp_map;
+    fIsForkNode = true;
 }
 
 CDbpService::~CDbpService()
@@ -198,7 +199,18 @@ void CDbpService::UpdateThisNodeForkToplogy()
         std::string forkid = kv.first;
         uint256 thisNodeForkid;
         thisNodeForkid.SetHex(forkid);
-        CalcForkToplogy(thisNodeForkid);
+        mapThisNodeForkToplogy[forkid] = CalcForkToplogy(thisNodeForkid);
+    }
+}
+
+void CDbpService::UpdateChildNodesForkToplogy()
+{
+    for(const auto& kv : mapChildNodeForksStates)
+    {
+        std::string forkid = kv.first;
+        uint256 childNodeForkid;
+        childNodeForkid.SetHex(forkid);
+        mapChildNodesForkToplogy[forkid] = CalcForkToplogy(childNodeForkid);
     }
 }
 
@@ -212,6 +224,7 @@ void CDbpService::HandleAddedBlock(const CMvDbpBlock& block)
     if(IsMainFork(forkHash))
     {
        UpdateThisNodeForkToplogy();
+       UpdateChildNodesForkToplogy();
     }
 
     if(IsMyFork(forkHash) || IsMainFork(forkHash) || IsInMyForkPath(forkHash, blockHeight))
@@ -229,15 +242,10 @@ void CDbpService::HandleAddedBlock(const CMvDbpBlock& block)
             UpdateThisNodeForkState(forkHash);
             UpdateChildNodeForksStatesToParent();
         }
-
-        if(IsMainFork(forkHash))
-        {
-            PushBlock(forkHash.ToString(), block);
-        }
     }
-    else
+
+    if(IsChildNodeFork(forkHash) || IsMainFork(forkHash) || IsInChildNodeForkPath(forkHash, blockHeight))
     {
-        // Push Block to child fork node
         PushBlock(forkHash.ToString(), block);
     }
 
@@ -559,24 +567,48 @@ bool CDbpService::IsForkHash(const uint256& hash)
     return false;
 }
 
-void CDbpService::CalcForkToplogy(const uint256& forkHash)
+CDbpService::ForkTopology CDbpService::CalcForkToplogy(const uint256& forkHash)
 {
     const uint256 startForkHash = forkHash;
     uint256 tempForkHash = forkHash;
     uint256 parentForkHash;
     uint256 hashJoint;
     int parentJointHeight = 0;
+    ForkTopology toplogy;
     while(pForkManager->GetJoint(tempForkHash,parentForkHash,hashJoint,parentJointHeight))
     {
-        mapThisNodeForkToplogy[startForkHash.ToString()].push_back(
-            std::make_tuple(parentForkHash.ToString(), hashJoint.ToString(), parentJointHeight));
+        toplogy.push_back(std::make_tuple(parentForkHash.ToString(), hashJoint.ToString(), parentJointHeight));
         tempForkHash = parentForkHash;
     }
+
+    return toplogy;
 }
 
 bool CDbpService::IsInMyForkPath(const uint256& forkHash, int blockHeight)
 {
     for(const auto& kv : mapThisNodeForkToplogy)
+    {
+        const auto& vecToplogy = kv.second;
+        for(const auto& tuple : vecToplogy)
+        {
+            std::string parentForkHash;
+            std::string hashJoint;
+            int parentJointHeight;
+            std::tie(parentForkHash, hashJoint, parentJointHeight) = tuple;
+            if(parentForkHash == forkHash.ToString() && blockHeight <= parentJointHeight)
+            {
+                return true;
+            }
+        }
+
+    }
+    
+    return false;
+}
+
+bool CDbpService::IsInChildNodeForkPath(const uint256& forkHash, int blockHeight)
+{
+    for(const auto& kv : mapChildNodesForkToplogy)
     {
         const auto& vecToplogy = kv.second;
         for(const auto& tuple : vecToplogy)
@@ -816,7 +848,7 @@ void CDbpService::HandleGetBlocks(CMvEventDbpMethod& event)
 
 bool CDbpService::IsForkNode()
 {
-    return mapThisNodeForkStates.empty() ? false : true;
+    return fIsForkNode;
 }
 
 bool CDbpService::IsMainFork(const uint256& hash)
@@ -827,6 +859,11 @@ bool CDbpService::IsMainFork(const uint256& hash)
 bool CDbpService::IsMyFork(const uint256& hash)
 {
     return mapThisNodeForkStates.find(hash.ToString()) != mapThisNodeForkStates.end();
+}
+
+bool CDbpService::IsChildNodeFork(const uint256& hash)
+{
+    return mapChildNodeForksStates.find(hash.ToString()) != mapChildNodeForksStates.end();
 }
 
 bool CDbpService::HandleEvent(CMvEventDbpRegisterForkID& event)
@@ -843,6 +880,11 @@ bool CDbpService::HandleEvent(CMvEventDbpRegisterForkID& event)
     }
     
     return true;
+}
+
+bool CDbpService::HandleEvent(CMvEventDbpIsForkNode& event)
+{
+    fIsForkNode = event.data.IsForkNode;
 }
 
 bool CDbpService::HandleEvent(CMvEventDbpUpdateForkState& event)

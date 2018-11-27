@@ -245,6 +245,12 @@ public:
     std::string forkid;
 };
 
+class CMvDbpIsForkNode
+{
+public:
+    bool IsForkNode;
+};
+
 class CMvDbpRegisterForkID : public CMvDbpRequest
 {
 public:
