@@ -1383,7 +1383,9 @@ CRPCResultPtr CRPCMod::RPCListAddress(CRPCParamPtr param)
         if(des.IsPubKey())
         {
             addressData.strType = "pubkey";
-            addressData.strPubkey = des.GetHex();
+            crypto::CPubKey pubkey;
+            des.GetPubKey(pubkey);
+            addressData.strPubkey = pubkey.GetHex();
         }
         else if(des.IsTemplate())
         {
