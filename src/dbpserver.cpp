@@ -821,7 +821,7 @@ void CDbpServer::EnterLoop()
     for (std::map<boost::asio::ip::tcp::endpoint, CDbpProfile>::iterator it = mapProfile.begin();
          it != mapProfile.end(); ++it)
     {
-        if (!StartService((*it).first, (*it).second.nMaxConnections))
+        if (!StartService((*it).first, (*it).second.nMaxConnections, (*it).second.vAllowMask))
         {
             WalleveLog("Setup service %s failed, listen port = %d, connection limit %d\n",
                        (*it).second.pIOModule->WalleveGetOwnKey().c_str(),
