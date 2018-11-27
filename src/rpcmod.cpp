@@ -138,7 +138,7 @@ bool CRPCMod::HandleEvent(CWalleveEventHttpReq& eventHttpReq)
         bool fFound = regex_search(data, ptnSec);
         if(fFound)
         {
-            data = regex_replace(data, ptnSec, R"raw($1$2"***")raw");
+            data = regex_replace(data, ptnSec, string(R"raw($1$2"***")raw"));
         }
     };
 
