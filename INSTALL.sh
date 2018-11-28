@@ -43,4 +43,7 @@ else
     sudo make install -j${cores}
 fi
 
+pwd
+cp src/multiverse* ../docker/apps
+
 cd $origin_path
