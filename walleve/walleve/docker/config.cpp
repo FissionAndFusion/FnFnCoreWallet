@@ -102,11 +102,11 @@ string CWalleveConfig::ListConfig() const
 string CWalleveConfig::Help() const
 {
     return string()
-        + "  -help                         Get more information\n"
-        + "  -daemon                       Run server in background\n"
-        + "  -debug                        Run in debug mode\n"
-        + "  -datadir                      Root directory of resources\n"
-        + "  -conf                         Configuration file name\n";
+        + "  -help                                 Get more information\n"
+        + "  -daemon                               Run server in background\n"
+        + "  -debug                                Run in debug mode\n"
+        + "  -datadir                              Root directory of resources\n"
+        + "  -conf                                 Configuration file name\n";
 }
 
 pair<string,string> CWalleveConfig::ExtraParser(const string& s)

@@ -503,7 +503,7 @@ path CMvEntry::GetDefaultDataDir()
     {
         pathRet = path(pszHome);
     }
-#ifdef MAC_OSX
+#ifdef __APPLE__
     // Mac
     pathRet /= "Library/Application Support";
     create_directory(pathRet);

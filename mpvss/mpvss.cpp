@@ -68,7 +68,6 @@ void CMPParticipant::PrepareVerification(std::size_t nThresh,std::size_t nLastIn
 // CMPSecretShare
 
 CMPSecretShare::CMPSecretShare()
-: computer(1)
 {
     nIndex = 0;
     nThresh = 0;
@@ -76,7 +75,7 @@ CMPSecretShare::CMPSecretShare()
 }
 
 CMPSecretShare::CMPSecretShare(const uint256& nIdentIn)
-: nIdent(nIdentIn), computer(1)
+: nIdent(nIdentIn)
 {
     nIndex = 0;
     nThresh = 0;
