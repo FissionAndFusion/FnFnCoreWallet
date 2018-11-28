@@ -34,6 +34,11 @@ void CTxPoolDB::Deinitialize()
     dbConn.Disconnect();
 }
 
+bool CTxPoolDB::RemoveAll()
+{
+    return dbConn.Query("TRUNCATE TABLE txpool");
+}
+
 bool CTxPoolDB::UpdateTx(const uint256& hashFork,const vector<pair<uint256,CAssembledTx> >& vAddNew,
                                                  const vector<uint256>& vRemove)
 {

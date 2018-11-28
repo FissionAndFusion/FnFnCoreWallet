@@ -27,6 +27,7 @@ public:
     ~CTxPoolDB();
     bool Initialize(const CMvDBConfig& config);
     void Deinitialize();
+    bool RemoveAll();
     bool UpdateTx(const uint256& hashFork,const std::vector<std::pair<uint256,CAssembledTx> >& vAddNew,
                                           const std::vector<uint256>& vRemove=std::vector<uint256>());
     bool WalkThroughTx(CTxPoolDBTxWalker& walker); 

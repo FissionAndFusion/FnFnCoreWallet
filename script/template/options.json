@@ -23,6 +23,14 @@
             "default": false,
             "format": "-version",
             "desc": "Get multiverse version"
+        },
+        {
+            "name": "fPurge",
+            "type": "bool",
+            "opt": "purge",
+            "default": false,
+            "format": "-purge",
+            "desc": "Purge database and blockfile"
         }
     ],
     "CMvForkConfigOption": [

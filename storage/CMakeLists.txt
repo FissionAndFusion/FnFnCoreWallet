@@ -15,6 +15,7 @@ set(sources
 	walletdb.cpp walletdb.h
 	txpooldb.cpp txpooldb.h
 	dnseeddb.cpp dnseeddb.h
+	purger.cpp purger.h
 )
 
 add_library(storage ${sources})
