@@ -236,6 +236,7 @@ void CDbpService::HandleAddedBlock(const CMvDbpBlock& block)
         if(!IsBlockExist(blockHash) && IsBlockExist(blockPreHash))
         {
             // process normal
+            pVirtualPeerNet->DispatchEvent(NULL);
         }
         else
         {
@@ -259,6 +260,8 @@ void CDbpService::HandleAddedTx(const CMvDbpTransaction& tx)
     {
         // THIS FORK NODE Handle this TODO
         print_tx(tx);
+
+        pVirtualPeerNet->DispatchEvent(NULL);
 
         if(IsMainFork(forkHash))
         {
@@ -927,7 +930,7 @@ void CDbpService::HandleRegisterFork(CMvEventDbpMethod& event)
     if(!IsForkNode())
     {
         // register fork to virtual peer net TODO
-    
+        pVirtualPeerNet->DispatchEvent(NULL);
     }
     else
     {
@@ -949,7 +952,8 @@ void CDbpService::HandleSendBlock(CMvEventDbpMethod& event)
 
     if(!IsForkNode())
     {
-        // send block to virtual peer net TODO
+        // send block to virtual peer net 
+        pVirtualPeerNet->DispatchEvent(NULL);
     }
     else
     {
@@ -972,6 +976,7 @@ void CDbpService::HandleSendTx(CMvEventDbpMethod& event)
     if(!IsForkNode())
     {
         // send tx to virtual peer net TODO
+        pVirtualPeerNet->DispatchEvent(NULL);
     }
     else
     { 
@@ -995,7 +1000,8 @@ void CDbpService::HandleSendBlockNotice(CMvEventDbpMethod& event)
 
     if(!IsForkNode())
     {
-        // send block notice to virtual peer net TODO
+        // send block notice to virtual peer net 
+        pVirtualPeerNet->DispatchEvent(NULL);
     }
     else
     {
@@ -1020,6 +1026,7 @@ void CDbpService::HandleSendTxNotice(CMvEventDbpMethod& event)
     if(!IsForkNode())
     {
         // send tx notice to virtual peer net TODO
+        pVirtualPeerNet->DispatchEvent(NULL);
     }
     else
     {
@@ -1046,6 +1053,7 @@ void CDbpService::HandleGetSNBlocks(CMvEventDbpMethod& event)
     if(!IsForkNode())
     {
         // get sn blocks to virtual peer net TODO
+        pVirtualPeerNet->DispatchEvent(NULL);
     }
     else
     {
@@ -1101,6 +1109,7 @@ void CDbpService::HandleUpdateForkState(CMvEventDbpMethod& event)
         if(!IsForkNode())
         {
             // notify peer net TODO
+            pVirtualPeerNet->DispatchEvent(NULL);
         }
         else
         {
