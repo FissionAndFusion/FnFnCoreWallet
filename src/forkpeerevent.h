@@ -14,6 +14,31 @@
 namespace multiverse
 {
 
+class ForkState
+{
+public:
+    uint256 forkHash;
+    int nHeight;
+    uint256 lastBlockHash;
+};
+
+class TxNotice
+{
+public:
+    uint256 forkHash;
+    uint256 txHash;
+};
+
+class BlockNotice
+{
+public:
+    uint256 forkHash;
+    int nHeight;
+    uint256 blockHash;
+};
+
+
+
 enum class ecForkEventType : int
 {
     //FORK NODE PEER NET EVENT
@@ -27,7 +52,14 @@ enum class ecForkEventType : int
     FK_EVENT_NODE_GETDATA,
     FK_EVENT_NODE_BLOCK,
     FK_EVENT_NODE_TX,
-    FK_EVENT_NODE_MAX,
+
+    FK_EVENT_NODE_UPDATE_FORK_STATE,
+    FK_EVENT_NODE_SEND_TX_NOTICE,
+    FK_EVENT_NODE_SEND_BLOCK_NOTICE,
+    FK_EVENT_NODE_SEND_TX,
+    FK_EVENT_NODE_SEND_BLOCK,
+
+    FK_EVENT_NODE_MAX
 };
 
 template <int type, typename L, typename D>
@@ -119,6 +151,16 @@ typedef TYPE_FORKNODEEVENT(ecForkEventType::FK_EVENT_NODE_GETDATA, std::vector<n
 typedef TYPE_FORKNODEEVENT(ecForkEventType::FK_EVENT_NODE_BLOCK, CBlock) CFkEventNodeBlock;
 typedef TYPE_FORKNODEEVENT(ecForkEventType::FK_EVENT_NODE_TX, CTransaction) CFkEventNodeTx;
 
+typedef TYPE_FORKNODEEVENT(ecForkEventType::FK_EVENT_NODE_UPDATE_FORK_STATE, ForkState) CFkEventUpdateForkState;
+typedef TYPE_FORKNODEEVENT(ecForkEventType::FK_EVENT_NODE_SEND_TX_NOTICE, TxNotice) CFkEventSendTxNotice;
+typedef TYPE_FORKNODEEVENT(ecForkEventType::FK_EVENT_NODE_SEND_BLOCK_NOTICE, BlockNotice) CFkEventSendBlockNotice;
+typedef TYPE_FORKNODEEVENT(ecForkEventType::FK_EVENT_NODE_SEND_TX, CTransaction) CFkEventSendTx;
+typedef TYPE_FORKNODEEVENT(ecForkEventType::FK_EVENT_NODE_SEND_BLOCK, CBlockEx) CFkEventSendBlock;
+
+
+
+
+
 class CFkNodeEventListener : virtual public walleve::CWalleveEventListener
 {
 public:
@@ -133,6 +175,12 @@ public:
     DECLARE_EVENTHANDLER(CFkEventNodeGetData);
     DECLARE_EVENTHANDLER(CFkEventNodeBlock);
     DECLARE_EVENTHANDLER(CFkEventNodeTx);
+
+    DECLARE_EVENTHANDLER(CFkEventUpdateForkState);
+    DECLARE_EVENTHANDLER(CFkEventSendBlockNotice);
+    DECLARE_EVENTHANDLER(CFkEventSendTxNotice);
+    DECLARE_EVENTHANDLER(CFkEventSendTx);
+    DECLARE_EVENTHANDLER(CFkEventSendBlock);
 };
 
 }
