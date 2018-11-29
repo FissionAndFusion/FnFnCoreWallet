@@ -48,6 +48,10 @@ public:
     bool HandleEvent(CMvEventDbpUpdateNewBlock& event) override;
     bool HandleEvent(CMvEventDbpUpdateNewTx& event) override;
 
+    // notify block and tx from virtual peer net
+    bool HandleEvent(CFkEventNodeBlock& event) override;
+    bool HandleEvent(CFkEventNodeTx& event) override;
+
 protected:
     bool WalleveHandleInitialize() override;
     void WalleveHandleDeinitialize() override;
