@@ -951,6 +951,7 @@ void CDbpService::HandleSendBlock(CMvEventDbpMethod& event)
         std::memcpy(&nNonce,CDbpUtils::RandomString().data(),4);
         uint256 forkHash(block.fork);
         CFkEventSendBlock eventBlock(nNonce, forkHash);
+        CDbpUtils::DbpToRawBlock(block, eventBlock.data);
         pVirtualPeerNet->DispatchEvent(&eventBlock);
     }
     else
@@ -977,6 +978,7 @@ void CDbpService::HandleSendTx(CMvEventDbpMethod& event)
         std::memcpy(&nNonce,CDbpUtils::RandomString().data(),4);
         uint256 forkHash(tx.fork);
         CFkEventSendTx eventTx(nNonce, forkHash);
+        CDbpUtils::DbpToRawTransaction(tx,eventTx.data);
         pVirtualPeerNet->DispatchEvent(&eventTx);
     }
     else
