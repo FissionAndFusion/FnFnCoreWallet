@@ -351,7 +351,7 @@ class CFkEventNodeData : public walleve::CWalleveEvent
 public:
     CFkEventNodeData(uint64 nNonceIn, const uint256& hashForkIn)
             : CWalleveEvent(nNonceIn, type), hashFork(hashForkIn) {}
-    virtual ~CFkEventNodeData() {}
+    virtual ~CFkEventNodeData() noexcept {}
     virtual bool Handle(walleve::CWalleveEventListener& listener)
     {
         try
@@ -374,6 +374,7 @@ protected:
     }
 public:
     uint256 hashFork;
+    int nBlockHeight;
     D data;
 };
 

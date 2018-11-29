@@ -1491,3 +1491,28 @@ bool CDbpService::HandleEvent(CMvEventDbpUpdateNewTx& event)
 
     return true;
 }
+
+bool CDbpService::HandleEvent(CFkEventNodeBlock& event)
+{
+    if(!IsForkNode())
+    {
+        CMvDbpBlock block;
+        CBlockEx blockEx(event.data);
+        CDbpUtils::RawToDbpBlock(blockEx, event.hashFork, event.nBlockHeight, block);
+        PushBlock(event.hashFork.ToString(), block);
+    }
+
+    return true;
+}
+
+bool CDbpService::HandleEvent(CFkEventNodeTx& event)
+{
+    if(!IsForkNode())
+    {
+        CMvDbpTransaction tx;
+        CDbpUtils::RawToDbpTransaction(event.data, event.hashFork, 0, tx);
+        PushTx(event.hashFork.ToString(), tx);
+    }
+    
+    return true;
+}
