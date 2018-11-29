@@ -469,12 +469,24 @@ public:
 
         // vtx
         int k = 0;
-        for (const auto& tx : blockDetail.vtx)
+        if(blockDetail.vTxContxt.size() >= blockDetail.vtx.size())
         {
-            CMvDbpTransaction dbpTx;
-            int64 nValueIn = blockDetail.vTxContxt[k++].GetValueIn();
-            RawToDbpTransaction(tx, forkHash, tx.GetChange(nValueIn), dbpTx);
-            block.vtx.push_back(dbpTx);
+            for (const auto& tx : blockDetail.vtx)
+            {
+                CMvDbpTransaction dbpTx;
+                int64 nValueIn = blockDetail.vTxContxt[k++].GetValueIn();
+                RawToDbpTransaction(tx, forkHash, tx.GetChange(nValueIn), dbpTx);
+                block.vtx.push_back(dbpTx);
+            }
+        }
+        else
+        {
+            for (const auto& tx : blockDetail.vtx)
+            {
+                CMvDbpTransaction dbpTx;
+                RawToDbpTransaction(tx, forkHash, 0, dbpTx);
+                block.vtx.push_back(dbpTx);
+            }
         }
 
         block.nHeight = blockHeight;
