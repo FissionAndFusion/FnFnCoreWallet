@@ -950,7 +950,7 @@ void CDbpService::HandleSendBlock(CMvEventDbpMethod& event)
         int nNonce = 0;
         std::memcpy(&nNonce,CDbpUtils::RandomString().data(),4);
         uint256 forkHash(block.fork);
-        CFkEventSendBlock eventBlock(nNonce, forkHash);
+        CFkEventNodeSendBlock eventBlock(nNonce, forkHash);
         CDbpUtils::DbpToRawBlock(block, eventBlock.data);
         pVirtualPeerNet->DispatchEvent(&eventBlock);
     }
@@ -977,7 +977,7 @@ void CDbpService::HandleSendTx(CMvEventDbpMethod& event)
         int nNonce = 0;
         std::memcpy(&nNonce,CDbpUtils::RandomString().data(),4);
         uint256 forkHash(tx.fork);
-        CFkEventSendTx eventTx(nNonce, forkHash);
+        CFkEventNodeSendTx eventTx(nNonce, forkHash);
         CDbpUtils::DbpToRawTransaction(tx,eventTx.data);
         pVirtualPeerNet->DispatchEvent(&eventTx);
     }
@@ -1007,10 +1007,9 @@ void CDbpService::HandleSendBlockNotice(CMvEventDbpMethod& event)
         std::memcpy(&nNonce,CDbpUtils::RandomString().data(),4);
         uint256 forkHash(std::vector<unsigned char>(forkid.begin(), forkid.end()));
         uint256 blockHash(std::vector<unsigned char>(hash.begin(), hash.end()));
-        CFkEventSendBlockNotice eventBlockNotice(nNonce, forkHash);
-        eventBlockNotice.data.forkHash = forkHash;
-        eventBlockNotice.data.blockHash = blockHash;
-        eventBlockNotice.data.nHeight = boost::lexical_cast<int>(height);
+        CFkEventNodeSendBlockNotice eventBlockNotice(nNonce, forkHash);
+        eventBlockNotice.hashFork = forkHash;
+        eventBlockNotice.hashBlock = blockHash;
         pVirtualPeerNet->DispatchEvent(&eventBlockNotice);
     }
     else
@@ -1039,9 +1038,9 @@ void CDbpService::HandleSendTxNotice(CMvEventDbpMethod& event)
         std::memcpy(&nNonce,CDbpUtils::RandomString().data(),4);
         uint256 forkHash(std::vector<unsigned char>(forkid.begin(), forkid.end()));
         uint256 txHash(std::vector<unsigned char>(hash.begin(), hash.end()));
-        CFkEventSendTxNotice eventTxNotice(nNonce, forkHash);
-        eventTxNotice.data.forkHash = forkHash;
-        eventTxNotice.data.txHash = txHash;
+        CFkEventNodeSendTxNotice eventTxNotice(nNonce, forkHash);
+        eventTxNotice.hashFork = forkHash;
+        eventTxNotice.hashTx = txHash;
         pVirtualPeerNet->DispatchEvent(&eventTxNotice);
     }
     else
@@ -1120,10 +1119,10 @@ void CDbpService::HandleUpdateForkState(CMvEventDbpMethod& event)
         {
             int nNonce = 0;
             std::memcpy(&nNonce,CDbpUtils::RandomString().data(),4);
-            CFkEventUpdateForkState eventForkState(nNonce, forkHash);
-            eventForkState.data.forkHash = forkHash;
-            eventForkState.data.lastBlockHash = blockHash;
-            eventForkState.data.nHeight = nCurrentHeight;
+            CFkEventNodeUpdateForkState eventForkState(nNonce, forkHash);
+            eventForkState.hashFork = forkHash;
+            eventForkState.hashBlock = blockHash;
+            eventForkState.height = nCurrentHeight;
             pVirtualPeerNet->DispatchEvent(&eventForkState);
         }
         else

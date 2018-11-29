@@ -23,263 +23,143 @@ bool CForkPseudoPeerNet::WalleveHandleInitialize()
         return false;
     }
 
-    if (!WalleveGetObject("netchannel", pNetChannel))
-    {
-        WalleveLog("Failed to request net channel\n");
-        return false;
-    }
-
     return true;
 }
 
 void CForkPseudoPeerNet::WalleveHandleDeinitialize()
 {
-    pDbpService = NULL;
-    pNetChannel = NULL;
+    pDbpService = nullptr;
 }
 
-//This handler is responsible for receiving from dbp service
-// and delivering to net channel
-bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeMessage& eventMessage)
-{
-    uint64 nNonce = eventMessage.nNonce;
-    uint256 haskFork;
-    ecForkEventType fkType = eventMessage.fkMsgType;
-    switch (fkType)
-    {
-        case ecForkEventType::FK_EVENT_NODE_ACTIVE:
-        {
-            CFkEventNodeActive* pEvent = new CFkEventNodeActive(nNonce, haskFork);
-            if(NULL != pEvent)
-            {
-                pEvent->data = boost::get<network::CAddress>(eventMessage.fkMsgData);
-                pNetChannel->PostEvent(pEvent);
-                return true;
-            }
-            break;
-        }
-        case ecForkEventType::FK_EVENT_NODE_DEACTIVE:
-        {
-            CFkEventNodeDeactive* pEvent = new CFkEventNodeDeactive(nNonce, haskFork);
-            if(NULL != pEvent)
-            {
-                pEvent->data = boost::get<network::CAddress>(eventMessage.fkMsgData);
-                pNetChannel->PostEvent(pEvent);
-                return true;
-            }
-            break;
-        }
-        case ecForkEventType::FK_EVENT_NODE_SUBSCRIBE:
-        {
-            CFkEventNodeSubscribe* pEvent = new CFkEventNodeSubscribe(nNonce, haskFork);
-            if(NULL != pEvent)
-            {
-                pEvent->data = boost::get<std::vector<uint256>>(eventMessage.fkMsgData);
-                pNetChannel->PostEvent(pEvent);
-                return true;
-            }
-            break;
-        }
-        case ecForkEventType::FK_EVENT_NODE_UNSUBSCRIBE:
-        {
-            CFkEventNodeUnsubscribe* pEvent = new CFkEventNodeUnsubscribe(nNonce, haskFork);
-            if(NULL != pEvent)
-            {
-                pEvent->data = boost::get<std::vector<uint256>>(eventMessage.fkMsgData);
-                pNetChannel->PostEvent(pEvent);
-                return true;
-            }
-            break;
-        }
-        case ecForkEventType::FK_EVENT_NODE_GETBLOCKS:
-        {
-            CFkEventNodeGetBlocks* pEvent = new CFkEventNodeGetBlocks(nNonce, haskFork);
-            if(NULL != pEvent)
-            {
-                pEvent->data = boost::get<CBlockLocator>(eventMessage.fkMsgData);
-                pNetChannel->PostEvent(pEvent);
-                return true;
-            }
-            break;
-        }
-        case ecForkEventType::FK_EVENT_NODE_INV:
-        {
-            CFkEventNodeInv* pEvent = new CFkEventNodeInv(nNonce, haskFork);
-            if(NULL != pEvent)
-            {
-                pEvent->data = boost::get<std::vector<network::CInv>>(eventMessage.fkMsgData);
-                pNetChannel->PostEvent(pEvent);
-                return true;
-            }
-            break;
-        }
-        case ecForkEventType::FK_EVENT_NODE_GETDATA:
-        {
-            CFkEventNodeGetData* pEvent = new CFkEventNodeGetData(nNonce, haskFork);
-            if(NULL != pEvent)
-            {
-                pEvent->data = boost::get<std::vector<network::CInv>>(eventMessage.fkMsgData);
-                pNetChannel->PostEvent(pEvent);
-                return true;
-            }
-            break;
-        }
-        case ecForkEventType::FK_EVENT_NODE_BLOCK:
-        {
-            CFkEventNodeBlock* pEvent = new CFkEventNodeBlock(nNonce, haskFork);
-            if(NULL != pEvent)
-            {
-                pEvent->data = boost::get<CBlock>(eventMessage.fkMsgData);
-                pNetChannel->PostEvent(pEvent);
-                return true;
-            }
-            break;
-        }
-        case ecForkEventType::FK_EVENT_NODE_TX:
-        {
-            CFkEventNodeTx* pEvent = new CFkEventNodeTx(nNonce, haskFork);
-            if(NULL != pEvent)
-            {
-                pEvent->data = boost::get<CTransaction>(eventMessage.fkMsgData);
-                pNetChannel->PostEvent(pEvent);
-                return true;
-            }
-            break;
-        }
-        default:
-            break;
-    }
-    return false;
-}
-
-//The following series of HandleEvent's is for responding to requests
-// from CNetChannel object invoking Dispatch() of itself
-bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeActive& eventActive)
-{
-    CFkEventNodeActive* pEventActive = new CFkEventNodeActive(eventActive);
-    pDbpService->PostEvent(pEventActive);
-    return true;
-}
-
-bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeDeactive& eventDeactive)
-{
-    CFkEventNodeDeactive* pEventDeactive = new CFkEventNodeDeactive(eventDeactive);
-    pDbpService->PostEvent(pEventDeactive);
-    return true;
-}
-
-bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeSubscribe& eventSubscribe)
-{
-    CFkEventNodeSubscribe* pEventSubscribe = new CFkEventNodeSubscribe(eventSubscribe);
-    pDbpService->PostEvent(pEventSubscribe);
-    return true;
-}
-
-bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeUnsubscribe& eventUnsubscribe)
-{
-    CFkEventNodeUnsubscribe* pEventUnsubscribe = new CFkEventNodeUnsubscribe(eventUnsubscribe);
-    pDbpService->PostEvent(pEventUnsubscribe);
-    return true;
-}
-
-bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeGetBlocks& eventGetBlocks)
-{
-    CFkEventNodeGetBlocks* pEventGetBlocks = new CFkEventNodeGetBlocks(eventGetBlocks);
-    pDbpService->PostEvent(pEventGetBlocks);
-    return true;
-}
-
-bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeInv& eventInv)
-{
-    CFkEventNodeInv* pEventInv = new CFkEventNodeInv(eventInv);
-    pDbpService->PostEvent(pEventInv);
-    return true;
-}
-
-bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeGetData& eventGetData)
-{
-    CFkEventNodeGetData* pEventGetData = new CFkEventNodeGetData(eventGetData);
-    pDbpService->PostEvent(pEventGetData);
-    return true;
-}
-
-bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeBlock& eventBlock)
-{
-    CFkEventNodeBlock *pEventBlock = new CFkEventNodeBlock(eventBlock);
-    pDbpService->PostEvent(pEventBlock);
-    return true;
-}
-
-bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeTx& eventTx)
-{
-    CFkEventNodeTx *pEventTx = new CFkEventNodeTx(eventTx);
-    pDbpService->PostEvent(pEventTx);
-    return true;
-}
-
-
-
-
-
+//messages come from p2p network - stem from real peer net and relayed by netchannel
 bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeBlockArrive& event)
 {
+    if(!ExistForkID(event.hashFork))
+    {
+        return true;
+    }
     CFkEventNodeBlockArrive *pEvent = new CFkEventNodeBlockArrive(event);
-    pDbpService->PostEvent(pEvent);
+    if(nullptr != pEvent)
+    {
+        pEvent->height += 1;
+        pDbpService->PostEvent(pEvent);
+    }
     return true;
 }
 
 bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeTxArrive& event)
 {
+    if(!ExistForkID(event.hashFork))
+    {
+        return true;
+    }
     CFkEventNodeTxArrive *pEvent = new CFkEventNodeTxArrive(event);
-    pDbpService->PostEvent(pEvent);
+    if(nullptr != pEvent)
+    {
+        pDbpService->PostEvent(pEvent);
+    }
     return true;
 }
 
 bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeBlockRequest& event)
 {
+    if(!ExistForkID(event.hashFork))
+    {
+        return true;
+    }
     CFkEventNodeBlockRequest *pEvent = new CFkEventNodeBlockRequest(event);
-    pDbpService->PostEvent(pEvent);
+    if(nullptr != pEvent)
+    {
+        pDbpService->PostEvent(pEvent);
+    }
     return true;
 }
 
 bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeTxRequest& event)
 {
+    if(!ExistForkID(event.hashFork))
+    {
+        return true;
+    }
     CFkEventNodeTxRequest *pEvent = new CFkEventNodeTxRequest(event);
-    pDbpService->PostEvent(pEvent);
+    if(nullptr != pEvent)
+    {
+        pDbpService->PostEvent(pEvent);
+    }
     return true;
 }
 
+//messages come from fork node cluster
 bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeUpdateForkState& event)
 {
-    CFkEventNodeUpdateForkState *pEvent = new CFkEventNodeUpdateForkState(event);
-    pDbpService->PostEvent(pEvent);
+    if(!ExistForkID(event.hashFork) && event.height > 0)
+    {
+        return false;
+    }
+    if(!ExistForkID(event.hashFork) && event.height == 0)
+    {
+        mapForkNodeHeight[event.hashFork] = std::make_pair(0, event.hashBlock);
+    }
+    else
+    {
+        mapForkNodeHeight[event.hashFork] = std::make_pair(event.height, event.hashBlock);
+    }
     return true;
 }
 
 bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeSendBlockNotice& event)
 {
+    if(!ExistForkID(event.hashFork))
+    {
+        return false;
+    }
     CFkEventNodeSendBlockNotice *pEvent = new CFkEventNodeSendBlockNotice(event);
-    pDbpService->PostEvent(pEvent);
+    if(nullptr != pEvent)
+    {
+        pNetChannel->PostEvent(pEvent);
+    }
     return true;
 }
 
 bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeSendTxNotice& event)
 {
+    if(!ExistForkID(event.hashFork))
+    {
+        return false;
+    }
     CFkEventNodeSendTxNotice *pEvent = new CFkEventNodeSendTxNotice(event);
-    pDbpService->PostEvent(pEvent);
+    if(nullptr != pEvent)
+    {
+        pNetChannel->PostEvent(pEvent);
+    }
     return true;
 }
 
 bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeSendBlock& event)
 {
+    if(!ExistForkID(event.hashFork))
+    {
+        return false;
+    }
     CFkEventNodeSendBlock *pEvent = new CFkEventNodeSendBlock(event);
-    pDbpService->PostEvent(pEvent);
+    if(nullptr != pEvent)
+    {
+        pNetChannel->PostEvent(pEvent);
+    }
     return true;
 }
 
 bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeSendTx& event)
 {
+    if(!ExistForkID(event.hashFork))
+    {
+        return false;
+    }
     CFkEventNodeSendTx *pEvent = new CFkEventNodeSendTx(event);
-    pDbpService->PostEvent(pEvent);
+    if(nullptr != pEvent)
+    {
+        pNetChannel->PostEvent(pEvent);
+    }
     return true;
 }
+

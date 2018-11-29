@@ -20,16 +20,6 @@ public:
 protected:
     bool WalleveHandleInitialize() override;
     void WalleveHandleDeinitialize() override;
-    bool HandleEvent(CFkEventNodeMessage& eventMessage) override;
-    bool HandleEvent(CFkEventNodeActive& eventActive) override;
-    bool HandleEvent(CFkEventNodeDeactive& eventDeactive) override;
-    bool HandleEvent(CFkEventNodeSubscribe& eventSubscribe) override;
-    bool HandleEvent(CFkEventNodeUnsubscribe& eventUnsubscribe) override;
-    bool HandleEvent(CFkEventNodeGetBlocks& eventGetBlocks) override;
-    bool HandleEvent(CFkEventNodeInv& eventInv) override;
-    bool HandleEvent(CFkEventNodeGetData& eventGetData) override;
-    bool HandleEvent(CFkEventNodeBlock& eventBlock) override;
-    bool HandleEvent(CFkEventNodeTx& eventTx) override;
 
     bool HandleEvent(CFkEventNodeBlockArrive& event) override;
     bool HandleEvent(CFkEventNodeTxArrive& event) override;
@@ -40,9 +30,14 @@ protected:
     bool HandleEvent(CFkEventNodeSendTxNotice& event) override;
     bool HandleEvent(CFkEventNodeSendBlock& event) override;
     bool HandleEvent(CFkEventNodeSendTx& event) override;
+
+    bool ExistForkID(const uint256& forkid) {
+        return (mapForkNodeHeight.find(forkid) != mapForkNodeHeight.end());
+    }
+
 protected:
     walleve::IIOModule* pDbpService;
-    network::IMvNetChannel* pNetChannel;
+    std::map<uint256, std::pair<int, uint256>> mapForkNodeHeight;   //ForkID-(LastHeight-BlockHash)
 };
 
 }
