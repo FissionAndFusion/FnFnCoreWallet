@@ -30,6 +30,16 @@ protected:
     bool HandleEvent(CFkEventNodeGetData& eventGetData) override;
     bool HandleEvent(CFkEventNodeBlock& eventBlock) override;
     bool HandleEvent(CFkEventNodeTx& eventTx) override;
+
+    bool HandleEvent(CFkEventNodeBlockArrive& event) override;
+    bool HandleEvent(CFkEventNodeTxArrive& event) override;
+    bool HandleEvent(CFkEventNodeBlockRequest& event) override;
+    bool HandleEvent(CFkEventNodeTxRequest& event) override;
+    bool HandleEvent(CFkEventNodeUpdateForkState& event) override;
+    bool HandleEvent(CFkEventNodeSendBlockNotice& event) override;
+    bool HandleEvent(CFkEventNodeSendTxNotice& event) override;
+    bool HandleEvent(CFkEventNodeSendBlock& event) override;
+    bool HandleEvent(CFkEventNodeSendTx& event) override;
 protected:
     walleve::IIOModule* pDbpService;
     network::IMvNetChannel* pNetChannel;

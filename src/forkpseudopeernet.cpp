@@ -216,3 +216,70 @@ bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeTx& eventTx)
     pDbpService->PostEvent(pEventTx);
     return true;
 }
+
+
+
+
+
+bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeBlockArrive& event)
+{
+    CFkEventNodeBlockArrive *pEvent = new CFkEventNodeBlockArrive(event);
+    pDbpService->PostEvent(pEvent);
+    return true;
+}
+
+bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeTxArrive& event)
+{
+    CFkEventNodeTxArrive *pEvent = new CFkEventNodeTxArrive(event);
+    pDbpService->PostEvent(pEvent);
+    return true;
+}
+
+bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeBlockRequest& event)
+{
+    CFkEventNodeBlockRequest *pEvent = new CFkEventNodeBlockRequest(event);
+    pDbpService->PostEvent(pEvent);
+    return true;
+}
+
+bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeTxRequest& event)
+{
+    CFkEventNodeTxRequest *pEvent = new CFkEventNodeTxRequest(event);
+    pDbpService->PostEvent(pEvent);
+    return true;
+}
+
+bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeUpdateForkState& event)
+{
+    CFkEventNodeUpdateForkState *pEvent = new CFkEventNodeUpdateForkState(event);
+    pDbpService->PostEvent(pEvent);
+    return true;
+}
+
+bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeSendBlockNotice& event)
+{
+    CFkEventNodeSendBlockNotice *pEvent = new CFkEventNodeSendBlockNotice(event);
+    pDbpService->PostEvent(pEvent);
+    return true;
+}
+
+bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeSendTxNotice& event)
+{
+    CFkEventNodeSendTxNotice *pEvent = new CFkEventNodeSendTxNotice(event);
+    pDbpService->PostEvent(pEvent);
+    return true;
+}
+
+bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeSendBlock& event)
+{
+    CFkEventNodeSendBlock *pEvent = new CFkEventNodeSendBlock(event);
+    pDbpService->PostEvent(pEvent);
+    return true;
+}
+
+bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeSendTx& event)
+{
+    CFkEventNodeSendTx *pEvent = new CFkEventNodeSendTx(event);
+    pDbpService->PostEvent(pEvent);
+    return true;
+}
