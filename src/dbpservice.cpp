@@ -306,7 +306,7 @@ void CDbpService::HandleAddedBlockCmd(const CMvDbpBlockCmd& cmd)
         if(pService->GetBlockEx(hash, block, tempForkHash, nHeight))
         {
             CMvDbpBlock dbpBlock;
-            CreateDbpBlock(block, tempForkHash, nHeight, dbpBlock);
+            CDbpUtils::RawToDbpBlock(block, tempForkHash, nHeight, dbpBlock);
             SendBlockToParent(cmd.id, dbpBlock);
         }
         
@@ -333,7 +333,7 @@ void CDbpService::HandleAddedTxCmd(const CMvDbpTxCmd& cmd)
         if (pService->GetTransaction(hash, tx, tempForkHash, blockHeight))
         {
             CMvDbpTransaction dbpTx;
-            CreateDbpTransaction(tx, tempForkHash, 0, dbpTx);
+            CDbpUtils::RawToDbpTransaction(tx, tempForkHash, 0, dbpTx);
             SendTxToParent(cmd.id, dbpTx);
         }
     }
@@ -442,7 +442,7 @@ void CDbpService::HandleGetTransaction(CMvEventDbpMethod& event)
     if (pService->GetTransaction(txHash, tx, forkHash, blockHeight))
     {
         CMvDbpTransaction dbpTx;
-        CreateDbpTransaction(tx, forkHash, 0, dbpTx);
+        CDbpUtils::RawToDbpTransaction(tx, forkHash, 0, dbpTx);
 
         CMvEventDbpMethodResult eventResult(event.strSessionId);
         eventResult.data.id = id;
@@ -749,7 +749,7 @@ bool CDbpService::GetLwsBlocks(const uint256& forkHash, const uint256& startHash
             }
 
             CMvDbpBlock DbpBlock;
-            CreateDbpBlock(block, tempForkHash, height, DbpBlock);
+            CDbpUtils::RawToDbpBlock(block, tempForkHash, height, DbpBlock);
             blocks.push_back(DbpBlock);
         }
         
@@ -805,7 +805,7 @@ bool CDbpService::GetSnBlocks(const uint256& forkHash, const uint256& startHash,
             }
 
             CMvDbpBlock DbpBlock;
-            CreateDbpBlock(block, tempForkHash, height, DbpBlock);
+            CDbpUtils::RawToDbpBlock(block, tempForkHash, height, DbpBlock);
             blocks.push_back(DbpBlock);
         }
         
@@ -1181,83 +1181,6 @@ bool CDbpService::HandleEvent(CMvEventDbpMethod& event)
     return true;
 }
 
-void CDbpService::CreateDbpBlock(const CBlockEx& blockDetail, const uint256& forkHash,
-                                 int blockHeight, CMvDbpBlock& block)
-{
-    block.nVersion = blockDetail.nVersion;
-    block.nType = blockDetail.nType;
-    block.nTimeStamp = blockDetail.nTimeStamp;
-
-    walleve::CWalleveODataStream hashPrevStream(block.hashPrev);
-    blockDetail.hashPrev.ToDataStream(hashPrevStream);
-
-    walleve::CWalleveODataStream hashMerkleStream(block.hashMerkle);
-    blockDetail.hashMerkle.ToDataStream(hashMerkleStream);
-
-    block.vchProof = blockDetail.vchProof;
-    block.vchSig = blockDetail.vchSig;
-
-    // txMint
-    CreateDbpTransaction(blockDetail.txMint, forkHash, blockDetail.txMint.GetChange(0), block.txMint);
-
-    // vtx
-    int k = 0;
-    for (const auto& tx : blockDetail.vtx)
-    {
-        CMvDbpTransaction dbpTx;
-        int64 nValueIn = blockDetail.vTxContxt[k++].GetValueIn();
-        CreateDbpTransaction(tx, forkHash, tx.GetChange(nValueIn), dbpTx);
-        block.vtx.push_back(dbpTx);
-    }
-
-    block.nHeight = blockHeight;
-    walleve::CWalleveODataStream hashStream(block.hash);
-    blockDetail.GetHash().ToDataStream(hashStream);
-
-    walleve::CWalleveODataStream forkStream(block.fork);
-    forkHash.ToDataStream(forkStream);
-}
-
-void CDbpService::CreateDbpTransaction(const CTransaction& tx, const uint256& forkHash, int64 nChange, CMvDbpTransaction& dbptx)
-{
-    dbptx.nVersion = tx.nVersion;
-    dbptx.nType = tx.nType;
-    dbptx.nLockUntil = tx.nLockUntil;
-
-    walleve::CWalleveODataStream hashAnchorStream(dbptx.hashAnchor);
-    tx.hashAnchor.ToDataStream(hashAnchorStream);
-
-    for (const auto& input : tx.vInput)
-    {
-        CMvDbpTxIn txin;
-        txin.n = input.prevout.n;
-
-        walleve::CWalleveODataStream txInHashStream(txin.hash);
-        input.prevout.hash.ToDataStream(txInHashStream);
-
-        dbptx.vInput.push_back(txin);
-    }
-
-    dbptx.cDestination.prefix = tx.sendTo.prefix;
-    dbptx.cDestination.size = tx.sendTo.DESTINATION_SIZE;
-
-    walleve::CWalleveODataStream sendtoStream(dbptx.cDestination.data);
-    tx.sendTo.data.ToDataStream(sendtoStream);
-
-    dbptx.nAmount = tx.nAmount;
-    dbptx.nTxFee = tx.nTxFee;
-    dbptx.nChange = nChange;
-
-    dbptx.vchData = tx.vchData;
-    dbptx.vchSig = tx.vchSig;
-
-    walleve::CWalleveODataStream hashStream(dbptx.hash);
-    tx.GetHash().ToDataStream(hashStream);
-
-    walleve::CWalleveODataStream forkStream(dbptx.fork);
-    forkHash.ToDataStream(forkStream);
-}
-
 void CDbpService::PushBlock(const std::string& forkid, const CMvDbpBlock& block)
 {
     const auto& allBlockIds = mapTopicIds[ALL_BLOCK_TOPIC];   
@@ -1541,7 +1464,7 @@ bool CDbpService::HandleEvent(CMvEventDbpUpdateNewBlock& event)
     if (pService->GetBlockLocation(newBlock.GetHash(),forkHash,blockHeight))
     {
         CMvDbpBlock block;
-        CreateDbpBlock(newBlock, forkHash, blockHeight, block);
+        CDbpUtils::RawToDbpBlock(newBlock, forkHash, blockHeight, block);
         PushBlock(forkHash.ToString(),block);
         SendBlockNoticeToParent(forkHash.ToString(), std::to_string(blockHeight), 
             newBlock.GetHash().ToString());
@@ -1561,7 +1484,7 @@ bool CDbpService::HandleEvent(CMvEventDbpUpdateNewTx& event)
     int64& change = event.nChange;
 
     CMvDbpTransaction dbpTx;
-    CreateDbpTransaction(newtx, hashFork, change, dbpTx);
+    CDbpUtils::RawToDbpTransaction(newtx, hashFork, change, dbpTx);
     PushTx(hashFork.ToString(),dbpTx);
     SendTxNoticeToParent(hashFork.ToString(), newtx.GetHash().ToString());
 

@@ -59,10 +59,6 @@ private:
     typedef std::tuple<std::string, std::string, int> ParentForkInfo;  // (parentForkHash, parentJointHash, parentJointPointHeight)
     typedef std::vector<ParentForkInfo>  ForkTopology;
     
-    
-    void CreateDbpBlock(const CBlockEx& blockDetail, const uint256& forkHash,
-                      int blockHeight, CMvDbpBlock& block);
-    void CreateDbpTransaction(const CTransaction& tx, const uint256& forkHash, int64 nChange, CMvDbpTransaction& dbptx);
     bool CalcForkPoints(const uint256& forkHash);
     void TrySwitchFork(const uint256& blockHash, uint256& forkHash);
     bool GetLwsBlocks(const uint256& forkHash, const uint256& startHash, int32 n, std::vector<CMvDbpBlock>& blocks);
@@ -71,6 +67,7 @@ private:
     bool IsForkHash(const uint256& hash);
     bool IsInMyForkPath(const uint256& forkHash, int blockHeight);
     bool IsInChildNodeForkPath(const uint256& forkHash, int blockHeight);
+    
     void HandleGetBlocks(CMvEventDbpMethod& event);
     void HandleGetTransaction(CMvEventDbpMethod& event);
     void HandleSendTransaction(CMvEventDbpMethod& event);
