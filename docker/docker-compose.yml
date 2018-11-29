@@ -28,7 +28,7 @@ services:
       DB_NAME: 'sn_root'
     volumes:
       - './apps:/home/apps'
-      - './root:/home/fnfn'
+      - './nodes/root:/home/fnfn'
     networks:
       - sn
     ports:
@@ -42,7 +42,7 @@ services:
       HOME: '/home/fnfn'
     volumes:
       - './apps:/home/apps'
-      - './fork1:/home/fnfn'
+      - './nodes/fork1:/home/fnfn'
     ports:
       - 8151:6815
       - 8121:6812
@@ -54,7 +54,7 @@ services:
       HOME: '/home/fnfn'
     volumes:
       - './apps:/home/apps'
-      - './fork2:/home/fnfn'
+      - './nodes/fork2:/home/fnfn'
     ports:
       - 8152:6815
       - 8122:6812

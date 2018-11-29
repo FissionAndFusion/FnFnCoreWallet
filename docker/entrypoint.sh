@@ -7,6 +7,8 @@ cp ${APPS_DIR}/multiverse-miner /usr/local/bin/
 cp ${APPS_DIR}/multiverse-server /usr/local/bin/
 chmod 755 /usr/local/bin/multiverse
 
+mysql -u root -P ${DB_PORT} -h ${DB_HOST} -e "grant all privileges on *.* to 'multiverse'@'%' identified by 'multiverse';"
+mysql -u root -P ${DB_PORT} -h ${DB_HOST} -e "flush privileges;"
 mysql -u root -P ${DB_PORT} -h ${DB_HOST} -e "create database if not exists ${DB_NAME};"
 
 if [ -f "${HOME}/.multiverse/multiverse.conf" ]; then
