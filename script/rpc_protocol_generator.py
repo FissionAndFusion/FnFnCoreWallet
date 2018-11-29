@@ -1515,7 +1515,7 @@ namespace rpc
 {
 ''')
         # const variable
-        w.write('static const double MAX_DOUBLE = 1000000000;\n')
+        w.write('static const int64_t MAX_DOUBLE = 1000000000;\n')
         w.write('static const double MIN_DOUBLE = std::numeric_limits<double>::epsilon();\n')
         w.write('static const double DOUBLE_UNIT = 0.000001;\n')
         # inner function
