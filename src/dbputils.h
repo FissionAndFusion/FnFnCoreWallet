@@ -485,6 +485,59 @@ public:
         forkHash.ToDataStream(forkStream);
     }
 
+    static void DbpToRawTransaction(const CMvDbpTransaction& dbpTx, CTransaction& tx)
+    {
+        tx.nVersion = dbpTx.nVersion;
+        tx.nType = dbpTx.nType;
+        tx.nLockUntil = dbpTx.nLockUntil;
+
+        tx.hashAnchor = uint256(dbpTx.hashAnchor);
+
+        for (const auto& input : dbpTx.vInput)
+        {
+            CTxIn txin;
+            txin.prevout.n = input.n;
+            txin.prevout.hash = uint256(input.hash);
+        
+            tx.vInput.push_back(txin);
+        }
+
+        tx.sendTo.prefix = dbpTx.cDestination.prefix;
+        tx.sendTo.data = uint256(dbpTx.cDestination.data);
+
+        tx.nAmount = dbpTx.nAmount;
+        tx.nTxFee = dbpTx.nTxFee;
+
+        tx.vchData  = dbpTx.vchData;
+        tx.vchSig = dbpTx.vchSig;
+
+    }
+    
+    static void DbpToRawBlock(const CMvDbpBlock& dbpBlock, CBlockEx& block)
+    {
+        block.nVersion = dbpBlock.nVersion;
+        block.nType = dbpBlock.nType;
+        block.nTimeStamp = dbpBlock.nTimeStamp;
+
+        block.hashPrev = uint256(dbpBlock.hashPrev);
+        block.hashMerkle = uint256(dbpBlock.hashMerkle);
+
+        block.vchProof = dbpBlock.vchProof;
+        block.vchSig = dbpBlock.vchSig;
+
+        // txMint
+        DbpToRawTransaction(dbpBlock.txMint, block.txMint);
+
+        // vtx
+        for(const auto& dbptx : dbpBlock.vtx)
+        {
+            CTransaction tx;
+            DbpToRawTransaction(dbptx,tx);
+            block.vtx.push_back(tx);
+        }
+
+    }
+
 };
 } // namespace multiverse
 #endif // MULTIVERSE_DBP_UTILS_H
