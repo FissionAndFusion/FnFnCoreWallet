@@ -200,6 +200,173 @@ public:
     uint256 hashBlock;  //hash of requested block
 };
 
+template <int type, typename L>
+class CFkEventUpdateForkState : public walleve::CWalleveEvent
+{
+    friend class walleve::CWalleveStream;
+public:
+    CFkEventUpdateForkState(uint64 nNonceIn, const uint256& hashForkIn)
+            : CWalleveEvent(nNonceIn, type), hashFork(hashForkIn) {}
+    virtual ~CFkEventUpdateForkState() {}
+    virtual bool Handle(walleve::CWalleveEventListener& listener)
+    {
+        try
+        {
+            return (dynamic_cast<L&>(listener)).HandleEvent(*this);
+        }
+        catch (std::bad_cast&)
+        {
+            return listener.HandleEvent(*this);
+        }
+        catch (...) {}
+        return false;
+    }
+protected:
+    template <typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
+    {
+        s.Serialize(hashFork, opt);
+        s.Serialize(height, opt);
+        s.Serialize(hashBlock, opt);
+    }
+public:
+    uint256 hashFork;   //fork id
+    int     height;     //last height plus one
+    uint256 hashBlock;  //last hash of CBlockEx
+};
+
+template <int type, typename L>
+class CFkEventSendTxNotice : public walleve::CWalleveEvent
+{
+    friend class walleve::CWalleveStream;
+public:
+    CFkEventSendTxNotice(uint64 nNonceIn, const uint256& hashForkIn)
+            : CWalleveEvent(nNonceIn, type), hashFork(hashForkIn) {}
+    virtual ~CFkEventSendTxNotice() {}
+    virtual bool Handle(walleve::CWalleveEventListener& listener)
+    {
+        try
+        {
+            return (dynamic_cast<L&>(listener)).HandleEvent(*this);
+        }
+        catch (std::bad_cast&)
+        {
+            return listener.HandleEvent(*this);
+        }
+        catch (...) {}
+        return false;
+    }
+protected:
+    template <typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
+    {
+        s.Serialize(hashFork, opt);
+        s.Serialize(hashTx, opt);
+    }
+public:
+    uint256 hashFork;   //fork id
+    uint256 hashTx;     //Tx hash
+};
+
+template <int type, typename L>
+class CFkEventSendBlockNotice : public walleve::CWalleveEvent
+{
+    friend class walleve::CWalleveStream;
+public:
+    CFkEventSendBlockNotice(uint64 nNonceIn, const uint256& hashForkIn)
+            : CWalleveEvent(nNonceIn, type), hashFork(hashForkIn) {}
+    virtual ~CFkEventSendBlockNotice() {}
+    virtual bool Handle(walleve::CWalleveEventListener& listener)
+    {
+        try
+        {
+            return (dynamic_cast<L&>(listener)).HandleEvent(*this);
+        }
+        catch (std::bad_cast&)
+        {
+            return listener.HandleEvent(*this);
+        }
+        catch (...) {}
+        return false;
+    }
+protected:
+    template <typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
+    {
+        s.Serialize(hashFork, opt);
+        s.Serialize(hashBlock, opt);
+    }
+public:
+    uint256 hashFork;   //fork id
+    uint256 hashBlock;  //hash of new block mint by fork node
+};
+
+template <int type, typename L, typename D>
+class CFkEventSendTx : public walleve::CWalleveEvent
+{
+    friend class walleve::CWalleveStream;
+public:
+    CFkEventSendTx(uint64 nNonceIn, const uint256& hashForkIn)
+            : CWalleveEvent(nNonceIn, type), hashFork(hashForkIn) {}
+    virtual ~CFkEventSendTx() {}
+    virtual bool Handle(walleve::CWalleveEventListener& listener)
+    {
+        try
+        {
+            return (dynamic_cast<L&>(listener)).HandleEvent(*this);
+        }
+        catch (std::bad_cast&)
+        {
+            return listener.HandleEvent(*this);
+        }
+        catch (...) {}
+        return false;
+    }
+protected:
+    template <typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
+    {
+        s.Serialize(hashFork, opt);
+        s.Serialize(data, opt);
+    }
+public:
+    uint256 hashFork;   //fork id
+    D data;             //object of CTransaction
+};
+
+template <int type, typename L, typename D>
+class CFkEventSendBlock : public walleve::CWalleveEvent
+{   //used when a block filtered arrives from p2p network
+    friend class walleve::CWalleveStream;
+public:
+    CFkEventSendBlock(uint64 nNonceIn, const uint256& hashForkIn)
+            : CWalleveEvent(nNonceIn, type), hashFork(hashForkIn) {}
+    virtual ~CFkEventSendBlock() {}
+    virtual bool Handle(walleve::CWalleveEventListener& listener)
+    {
+        try
+        {
+            return (dynamic_cast<L&>(listener)).HandleEvent(*this);
+        }
+        catch (std::bad_cast&)
+        {
+            return listener.HandleEvent(*this);
+        }
+        catch (...) {}
+        return false;
+    }
+protected:
+    template <typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
+    {
+        s.Serialize(hashFork, opt);
+        s.Serialize(data, opt);
+    }
+public:
+    uint256 hashFork;   //fork id
+    D data;             //object of CBlockEx
+};
+
 template <int type, typename L, typename D>
 class CFkEventNodeData : public walleve::CWalleveEvent
 {
