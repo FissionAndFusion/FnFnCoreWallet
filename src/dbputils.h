@@ -408,6 +408,83 @@ public:
         cmd.hash = std::vector<uint8>(pCmd->hash().begin(), pCmd->hash().end());
     }
 
+    static void RawToDbpTransaction(const CTransaction& tx, const uint256& forkHash, int64 nChange, CMvDbpTransaction& dbptx)
+    {
+        dbptx.nVersion = tx.nVersion;
+        dbptx.nType = tx.nType;
+        dbptx.nLockUntil = tx.nLockUntil;
+
+        walleve::CWalleveODataStream hashAnchorStream(dbptx.hashAnchor);
+        tx.hashAnchor.ToDataStream(hashAnchorStream);
+
+        for (const auto& input : tx.vInput)
+        {
+            CMvDbpTxIn txin;
+            txin.n = input.prevout.n;
+
+            walleve::CWalleveODataStream txInHashStream(txin.hash);
+            input.prevout.hash.ToDataStream(txInHashStream);
+
+            dbptx.vInput.push_back(txin);
+        }
+
+        dbptx.cDestination.prefix = tx.sendTo.prefix;
+        dbptx.cDestination.size = tx.sendTo.DESTINATION_SIZE;
+
+        walleve::CWalleveODataStream sendtoStream(dbptx.cDestination.data);
+        tx.sendTo.data.ToDataStream(sendtoStream);
+
+        dbptx.nAmount = tx.nAmount;
+        dbptx.nTxFee = tx.nTxFee;
+        dbptx.nChange = nChange;
+
+        dbptx.vchData = tx.vchData;
+        dbptx.vchSig = tx.vchSig;
+
+        walleve::CWalleveODataStream hashStream(dbptx.hash);
+        tx.GetHash().ToDataStream(hashStream);
+
+        walleve::CWalleveODataStream forkStream(dbptx.fork);
+        forkHash.ToDataStream(forkStream);
+    }
+
+    static void RawToDbpBlock(const CBlockEx& blockDetail, const uint256& forkHash,
+                                 int blockHeight, CMvDbpBlock& block)
+    {
+        block.nVersion = blockDetail.nVersion;
+        block.nType = blockDetail.nType;
+        block.nTimeStamp = blockDetail.nTimeStamp;
+
+        walleve::CWalleveODataStream hashPrevStream(block.hashPrev);
+        blockDetail.hashPrev.ToDataStream(hashPrevStream);
+
+        walleve::CWalleveODataStream hashMerkleStream(block.hashMerkle);
+        blockDetail.hashMerkle.ToDataStream(hashMerkleStream);
+
+        block.vchProof = blockDetail.vchProof;
+        block.vchSig = blockDetail.vchSig;
+
+        // txMint
+        RawToDbpTransaction(blockDetail.txMint, forkHash, blockDetail.txMint.GetChange(0), block.txMint);
+
+        // vtx
+        int k = 0;
+        for (const auto& tx : blockDetail.vtx)
+        {
+            CMvDbpTransaction dbpTx;
+            int64 nValueIn = blockDetail.vTxContxt[k++].GetValueIn();
+            RawToDbpTransaction(tx, forkHash, tx.GetChange(nValueIn), dbpTx);
+            block.vtx.push_back(dbpTx);
+        }
+
+        block.nHeight = blockHeight;
+        walleve::CWalleveODataStream hashStream(block.hash);
+        blockDetail.GetHash().ToDataStream(hashStream);
+
+        walleve::CWalleveODataStream forkStream(block.fork);
+        forkHash.ToDataStream(forkStream);
+    }
+
 };
 } // namespace multiverse
 #endif // MULTIVERSE_DBP_UTILS_H
