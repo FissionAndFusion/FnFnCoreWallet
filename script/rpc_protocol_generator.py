@@ -660,9 +660,10 @@ def PostLoad_cpp(name, params, sub_params, w, scope):
                 w.write(indent + '\tthrow CRPCException(RPC_PARSE_ERROR, "[' + p.key + '] type error, needs ' + p.type + '");\n')
 
                 if p.type == 'double':
-                    w.write(indent + 'ostringstream oss;\n')
-                    w.write(indent + 'oss << std::setprecision(' + RPC_DOUBLE_PRECISION + ') << ' + param_name + ';\n')
-                    w.write(indent + 'if (oss.str() != iss.str())\n')
+                    w.write(indent + 'if (' + param_name + ' > MAX_DOUBLE || ' + param_name + ' < -MAX_DOUBLE)\n')
+                    w.write(indent + '\tthrow CRPCException(RPC_PARSE_ERROR, std::string("[' + p.key + '] double value error, max " + std::to_string(MAX_DOUBLE)));\n')
+                    w.write(indent + 'double remainder = ' + param_name + ' - int64_t(' + param_name + ' / DOUBLE_UNIT) * DOUBLE_UNIT;\n')
+                    w.write(indent + 'if (remainder > MIN_DOUBLE || remainder < -MIN_DOUBLE)\n')
                     w.write(indent + '\tthrow CRPCException(RPC_PARSE_ERROR, "[' + p.key + '] double precision error, max ' + RPC_DOUBLE_PRECISION + '");\n')
         else:
             w.write(indent + container_str + ' = *++it;\n')
@@ -1513,6 +1514,10 @@ namespace multiverse
 namespace rpc
 {
 ''')
+        # const variable
+        w.write('static const double MAX_DOUBLE = 1000000000;\n')
+        w.write('static const double MIN_DOUBLE = std::numeric_limits<double>::epsilon();\n')
+        w.write('static const double DOUBLE_UNIT = 0.000001;\n')
         # inner function
         check_json_type_fun(w)
         check_is_valid_fun(w)
