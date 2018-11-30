@@ -1492,20 +1492,20 @@ bool CDbpService::HandleEvent(CMvEventDbpUpdateNewTx& event)
     return true;
 }
 
-bool CDbpService::HandleEvent(CFkEventNodeBlock& event)
+bool CDbpService::HandleEvent(CFkEventNodeBlockArrive& event)
 {
     if(!IsForkNode())
     {
         CMvDbpBlock block;
         CBlockEx blockEx(event.data);
-        CDbpUtils::RawToDbpBlock(blockEx, event.hashFork, event.nBlockHeight, block);
+        CDbpUtils::RawToDbpBlock(blockEx, event.hashFork, event.height, block);
         PushBlock(event.hashFork.ToString(), block);
     }
 
     return true;
 }
 
-bool CDbpService::HandleEvent(CFkEventNodeTx& event)
+bool CDbpService::HandleEvent(CFkEventNodeTxArrive& event)
 {
     if(!IsForkNode())
     {

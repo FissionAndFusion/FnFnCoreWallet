@@ -34,10 +34,16 @@ void CForkPseudoPeerNet::WalleveHandleDeinitialize()
 //messages come from p2p network - stem from real peer net and relayed by netchannel
 bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeBlockArrive& event)
 {
-    if(!ExistForkID(event.hashFork))
+    auto it = mapForkNodeHeight.find(event.hashFork);
+    if(it == mapForkNodeHeight.end())
     {
         return true;
     }
+    if((*it).second.second != event.data.GetHash())
+    {//discard this block directly if it does not match the last block
+        return true;
+    }
+
     CFkEventNodeBlockArrive *pEvent = new CFkEventNodeBlockArrive(event);
     if(nullptr != pEvent)
     {
