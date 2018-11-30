@@ -88,8 +88,9 @@ public:
         {
             return listener.HandleEvent(*this);
         }
-        catch (...)
+        catch (std::exception& e)
         {
+            StdError(__PRETTY_FUNCTION__, e.what());
         }
         return false;
     }

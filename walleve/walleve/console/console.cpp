@@ -48,8 +48,9 @@ bool CConsole::DispatchEvent(CWalleveEvent* pEvent)
         ioStrand.dispatch(boost::bind(&CConsole::ConsoleHandleEvent,this,pEvent,boost::ref(complt)));
         complt.WaitForComplete(fResult);
     }
-    catch (...)
+    catch (exception& e)
     {
+        StdError(__PRETTY_FUNCTION__, e.what());
         return false;
     }
     return fResult;
@@ -69,7 +70,7 @@ bool CConsole::WalleveHandleInvoke()
 {
     if (!InstallReadline(strPrompt))
     {
-        WalleveLog("Failed to setup readline\n");
+        WalleveError("Failed to setup readline\n");
         return false;
     }
 
@@ -77,7 +78,7 @@ bool CConsole::WalleveHandleInvoke()
 
     if (!WalleveThreadDelayStart(thrConsole))
     {
-        WalleveLog("Failed to start console thread\n");
+        WalleveError("Failed to start console thread\n");
         return false;
     }
     return true;

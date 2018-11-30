@@ -183,19 +183,19 @@ bool CConsensus::WalleveHandleInitialize()
 {
     if (!WalleveGetObject("coreprotocol",pCoreProtocol))
     {
-        WalleveLog("Failed to request coreprotocol\n");
+        WalleveError("Failed to request coreprotocol\n");
         return false;
     }
 
     if (!WalleveGetObject("worldline",pWorldLine))
     {
-        WalleveLog("Failed to request worldline\n");
+        WalleveError("Failed to request worldline\n");
         return false;
     }
 
     if (!WalleveGetObject("txpool",pTxPool))
     {
-        WalleveLog("Failed to request txpool\n");
+        WalleveError("Failed to request txpool\n");
         return false;
     }
 
@@ -230,13 +230,13 @@ bool CConsensus::WalleveHandleInvoke()
 
     if (!mvDelegate.Initialize())
     {
-        WalleveLog("Failed to initialize delegate\n");
+        WalleveError("Failed to initialize delegate\n");
         return false;
     }
 
     if (!LoadDelegateTx())
     {
-        WalleveLog("Failed to load delegate tx\n");
+        WalleveError("Failed to load delegate tx\n");
         return false;
     }
     

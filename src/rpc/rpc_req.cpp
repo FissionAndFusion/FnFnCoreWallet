@@ -139,7 +139,6 @@ CRPCReqVec DeserializeCRPCReq(const std::string& str, bool& fArray)
                     json_spirit::value_type_to_string(valMethod.type()), req->valID);
         }
         req->strMethod = valMethod.get_str();
-        // WalleveLog("RPC command : %s\n", strMethod.c_str());
 
         // Parse params
         json_spirit::Value valParams = find_value(request, "params");

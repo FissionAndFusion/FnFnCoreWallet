@@ -49,6 +49,8 @@ protected:
     void WalleveLog(const char *pszFormat,...);
     void WalleveDebug(const char *pszFormat,...);
     void WalleveVDebug(const char *pszFormat,va_list ap);
+    void WalleveWarn(const char *pszFormat,...);
+    void WalleveError(const char *pszFormat,...);
     bool WalleveThreadStart(CWalleveThread& thr);
     bool WalleveThreadDelayStart(CWalleveThread& thr);
     void WalleveThreadExit(CWalleveThread& thr);

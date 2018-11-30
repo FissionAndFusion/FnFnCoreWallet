@@ -62,7 +62,7 @@ void CPeerNet::EnterLoop()
         }
         else
         {
-            WalleveLog("Failed to listen port %s:%u, disable in-bound connection\n",
+            WalleveError("Failed to listen port %s:%u, disable in-bound connection\n",
                        service.epListen.address().to_string().c_str(),service.epListen.port());
         }
     }
@@ -191,7 +191,7 @@ CPeer* CPeerNet::AddNewPeer(CIOClient *pClient,bool fInBound)
 
 void CPeerNet::RemovePeer(CPeer *pPeer,const CEndpointManager::CloseReason& reason)
 {
-    WalleveLog("Remove Peer (%d) : %s\n",reason,
+    WalleveWarn("Remove Peer (%d) : %s\n",reason,
                 pPeer->GetRemote().address().to_string().c_str());
 
     epMngr.CloseEndpoint(pPeer->GetRemote(),reason);

@@ -99,8 +99,9 @@ bool CIOProc::DispatchEvent(CWalleveEvent * pEvent)
         ioStrand.dispatch(boost::bind(&CIOProc::IOProcHandleEvent,this,pEvent,boost::ref(complt)));
         complt.WaitForComplete(fResult);
     }
-    catch (...)
+    catch (exception& e)
     {
+        StdError(__PRETTY_FUNCTION__, e.what());
         return false;
     }
     return fResult;    
@@ -115,7 +116,7 @@ bool CIOProc::WalleveHandleInvoke()
 {
     if (!ioOutBound.Invoke(GetMaxOutBoundCount()))
     {
-        WalleveLog("Failed to invoke IOOutBound\n");
+        WalleveError("Failed to invoke IOOutBound\n");
         return false;
     }
     
@@ -123,7 +124,7 @@ bool CIOProc::WalleveHandleInvoke()
 
     if (!WalleveThreadStart(thrIOProc))
     {
-        WalleveLog("Failed to start iothread\n");
+        WalleveError("Failed to start iothread\n");
         return false;
     }
 

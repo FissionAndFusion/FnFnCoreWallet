@@ -101,19 +101,19 @@ bool CRPCMod::WalleveHandleInitialize()
 {
     if (!WalleveGetObject("httpserver",pHttpServer))
     {
-        WalleveLog("Failed to request httpserver\n");
+        WalleveError("Failed to request httpserver\n");
         return false;
     }
 
     if (!WalleveGetObject("coreprotocol",pCoreProtocol))
     {
-        WalleveLog("Failed to request coreprotocol\n");
+        WalleveError("Failed to request coreprotocol\n");
         return false;
     }
     
     if (!WalleveGetObject("service",pService))
     {
-        WalleveLog("Failed to request service\n");
+        WalleveError("Failed to request service\n");
         return false;
     }
 
@@ -129,7 +129,7 @@ void CRPCMod::WalleveHandleDeinitialize()
 
 bool CRPCMod::HandleEvent(CWalleveEventHttpReq& eventHttpReq)
 {
-    auto lmdMask = [] (string& data) -> void {
+    auto lmdMask = [] (const string& data) -> string {
         //remove all sensible information such as private key
         // or passphrass from log content
 
@@ -138,8 +138,9 @@ bool CRPCMod::HandleEvent(CWalleveEventHttpReq& eventHttpReq)
         bool fFound = regex_search(data, ptnSec);
         if(fFound)
         {
-            data = regex_replace(data, ptnSec, string(R"raw($1$2"***")raw"));
+            return regex_replace(data, ptnSec, string(R"raw($1$2"***")raw"));
         }
+        return data;
     };
 
     uint64 nNonce = eventHttpReq.nNonce;
@@ -174,16 +175,8 @@ bool CRPCMod::HandleEvent(CWalleveEventHttpReq& eventHttpReq)
                     throw CRPCException(RPC_METHOD_NOT_FOUND, "Method not found");
                 }
 
-                if (WalleveConfig()->fDebug)
-                {
-                    string sLog = spReq->Serialize();
-                    lmdMask(sLog);
-                    WalleveLog("request : %s\n", sLog.c_str());
-                }
-                else
-                {
-                    WalleveLog("request : {\"method\" : \"%s\"}\n", spReq->strMethod.c_str());
-                }
+                WalleveDebug("request : %s\n", lmdMask(spReq->Serialize()).c_str());
+
                 spResult = (this->*(*it).second)(spReq->spParam);
             }
             catch (CRPCException& e)
@@ -236,12 +229,7 @@ bool CRPCMod::HandleEvent(CWalleveEventHttpReq& eventHttpReq)
         strResult = resp.Serialize();
     }
 
-    if (WalleveConfig()->fDebug)
-    {
-        string sLog = strResult.c_str();
-        lmdMask(sLog);
-        WalleveLog("response : %s\n", sLog.c_str());
-    }
+    WalleveDebug("response : %s\n", lmdMask(strResult).c_str());
 
     // no result means no return
     if (!strResult.empty())

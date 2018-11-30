@@ -5,7 +5,9 @@
 #include "txpooldb.h"
 #include "walleve/stream/stream.h"
 #include <boost/foreach.hpp>    
+
 using namespace std;
+using namespace walleve;
 using namespace multiverse::storage;
     
 //////////////////////////////
@@ -91,8 +93,9 @@ bool CTxPoolDB::WalkThroughTx(CTxPoolDBTxWalker& walker)
                 return false;
             }
         }
-        catch (...)
+        catch (exception& e)
         {
+            StdError(__PRETTY_FUNCTION__, e.what());
             return false;
         }
     }

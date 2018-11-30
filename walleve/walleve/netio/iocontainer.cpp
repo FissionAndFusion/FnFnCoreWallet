@@ -146,7 +146,10 @@ bool CIOInBound::Invoke(const tcp::endpoint& epListen,size_t nMaxConnection,cons
                         boost::bind(&CIOInBound::HandleAccept,this,pClient,_1));
         return true;
     }
-    catch (...) {}
+    catch (exception& e)
+    {
+        StdError(__PRETTY_FUNCTION__, e.what());
+    }
 
     acceptorService.close();
 
@@ -179,8 +182,9 @@ bool CIOInBound::BuildWhiteList(const vector<string>& vAllowMask)
             vWhiteList.push_back(boost::regex(strRegex));
         }        
     }
-    catch (...)
+    catch (exception& e)
     {
+        StdError(__PRETTY_FUNCTION__, e.what());
         return false;
     }
     return true;
@@ -199,8 +203,9 @@ bool CIOInBound::IsAllowedRemote(const tcp::endpoint& ep)
             }
         }
     }
-    catch (...)
+    catch (exception& e)
     {
+        StdError(__PRETTY_FUNCTION__, e.what());
     }
     return (vWhiteList.empty());
 }
@@ -342,8 +347,9 @@ bool CIOSSLOption::SetupSSLContext(boost::asio::ssl::context& ctx) const
             SSL_CTX_set_cipher_list(ctx.native_handle(),strCiphers.c_str());
         }
     }
-    catch (...)
+    catch (exception& e)
     {
+        StdError(__PRETTY_FUNCTION__, e.what());
         return false;
     }
     return true;
@@ -401,8 +407,9 @@ CIOClient* CIOSSLOutBound::ClientAlloc(const CIOSSLOption& optSSL)
             }
             return new CSSLClient(this,ioService,ctx,optSSL.fVerifyPeer ? optSSL.strPeerName : ""); 
         }
-        catch (...)
+        catch (exception& e)
         {
+            StdError(__PRETTY_FUNCTION__, e.what());
             return NULL;
         }
     }

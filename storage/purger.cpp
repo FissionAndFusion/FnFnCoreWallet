@@ -10,6 +10,7 @@
 using namespace std;
 using namespace boost::filesystem;
 using namespace multiverse::storage;
+using namespace walleve;
     
 //////////////////////////////
 // CPurger
@@ -65,8 +66,9 @@ bool CPurger::RemoveBlockFile(const path& pathDataLocation) const
             remove_all(pathBlock);
         }
     }
-    catch (...)
+    catch (exception& e)
     {
+        StdError(__PRETTY_FUNCTION__, e.what());
         return false;
     }
     return true;

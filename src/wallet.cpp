@@ -80,13 +80,13 @@ bool CWallet::WalleveHandleInitialize()
 {
     if (!WalleveGetObject("coreprotocol",pCoreProtocol))
     {
-        WalleveLog("Failed to request coreprotocol\n");
+        WalleveError("Failed to request coreprotocol\n");
         return false;
     }
 
     if (!WalleveGetObject("worldline",pWorldLine))
     {
-        WalleveLog("Failed to request worldline\n");
+        WalleveError("Failed to request worldline\n");
         return false;
     }
 
@@ -105,13 +105,13 @@ bool CWallet::WalleveHandleInvoke()
                                   StorageConfig()->strDBName,StorageConfig()->strDBUser,StorageConfig()->strDBPass);
     if (!dbWallet.Initialize(dbConfig))
     {
-        WalleveLog("Failed to initialize wallet database\n");
+        WalleveError("Failed to initialize wallet database\n");
         return false;
     }
 
     if (!LoadDB())
     {
-        WalleveLog("Failed to load wallet database\n");
+        WalleveError("Failed to load wallet database\n");
         return false;
     }
     
@@ -144,14 +144,14 @@ bool CWallet::AddKey(const crypto::CKey& key)
     boost::unique_lock<boost::shared_mutex> wlock(rwKeyStore);
     if (!InsertKey(key))
     {
-        WalleveLog("AddKey : invalid or duplicated key\n");
+        WalleveWarn("AddKey : invalid or duplicated key\n");
         return false;
     }
 
     if (!dbWallet.AddNewKey(key.GetPubKey(),key.GetVersion(),key.GetCipher()))
     {
         mapKeyStore.erase(key.GetPubKey());
-        WalleveLog("AddKey : failed to save key\n");
+        WalleveWarn("AddKey : failed to save key\n");
         return false;
     }
     return true;
@@ -161,7 +161,7 @@ bool CWallet::LoadKey(const crypto::CKey& key)
 {
     if (!InsertKey(key))
     {
-        WalleveLog("LoadKey : invalid or duplicated key\n");
+        WalleveError("LoadKey : invalid or duplicated key\n");
         return false;
     }
     return true;
@@ -222,7 +222,7 @@ bool CWallet::Encrypt(const crypto::CPubKey& pubkey,const crypto::CCryptoString&
         }
         if (!dbWallet.UpdateKey(key.GetPubKey(),keyTemp.GetVersion(),keyTemp.GetCipher()))
         {
-            WalleveLog("AddKey : failed to update key\n");
+            WalleveError("AddKey : failed to update key\n");
             return false;
         }
         key.Encrypt(strPassphrase,strCurrentPassphrase);

@@ -130,7 +130,7 @@ void IWalleveBase::WalleveLog(const char *pszFormat,...)
     {
         va_list ap;
         va_start(ap, pszFormat);
-        pWalleveDocker->LogOutput(walleveOwnKey.c_str(),"", pszFormat, ap);
+        pWalleveDocker->LogOutput(walleveOwnKey.c_str(),"[INFO]", pszFormat, ap);
         va_end(ap);
     }
 }
@@ -141,7 +141,7 @@ void IWalleveBase::WalleveDebug(const char *pszFormat,...)
     {
         va_list ap;
         va_start(ap, pszFormat);
-        pWalleveDocker->LogOutput(walleveOwnKey.c_str(),"DEBUG: ", pszFormat, ap);
+        pWalleveDocker->LogOutput(walleveOwnKey.c_str(),"[DEBUG]", pszFormat, ap);
         va_end(ap);
     }
 }
@@ -150,7 +150,29 @@ void IWalleveBase::WalleveVDebug(const char *pszFormat,va_list ap)
 {
     if (pWalleveDocker != NULL && pWalleveDocker->GetConfig()->fDebug)
     {
-        pWalleveDocker->LogOutput(walleveOwnKey.c_str(),"DEBUG: ", pszFormat, ap);
+        pWalleveDocker->LogOutput(walleveOwnKey.c_str(),"[DEBUG]", pszFormat, ap);
+    }
+}
+
+void IWalleveBase::WalleveWarn(const char *pszFormat,...)
+{
+    if (pWalleveDocker != NULL)
+    {
+        va_list ap;
+        va_start(ap, pszFormat);
+        pWalleveDocker->LogOutput(walleveOwnKey.c_str(),"[WARN]", pszFormat, ap);
+        va_end(ap);
+    }
+}
+
+void IWalleveBase::WalleveError(const char *pszFormat,...)
+{
+    if (pWalleveDocker != NULL)
+    {
+        va_list ap;
+        va_start(ap, pszFormat);
+        pWalleveDocker->LogOutput(walleveOwnKey.c_str(),"[ERROR]", pszFormat, ap);
+        va_end(ap);
     }
 }
 

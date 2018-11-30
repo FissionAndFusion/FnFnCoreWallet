@@ -134,7 +134,10 @@ bool CMvPeer::ParseMessageHeader()
         ReadStream() >> hdrRecv;
         return (hdrRecv.nMagic == nMsgMagic || hdrRecv.Verify());
     }
-    catch (...) {}
+    catch (exception& e)
+    {
+        StdError(__PRETTY_FUNCTION__, e.what());
+    }
     return false;
 }
 
@@ -207,7 +210,10 @@ bool CMvPeer::HandshakeReadCompleted()
                 return HandshakeCompleted();
             }
         }
-        catch (...) {}
+        catch (exception& e)
+        {
+            StdError(__PRETTY_FUNCTION__, e.what());
+        }
     }
     return false;
 }
@@ -237,8 +243,10 @@ bool CMvPeer::HandleReadCompleted()
                 return true;
             }
         }
-        catch (...)
-        {}
+        catch (exception& e)
+        {
+            StdError(__PRETTY_FUNCTION__, e.what());
+        }
     }
     return false;
 }

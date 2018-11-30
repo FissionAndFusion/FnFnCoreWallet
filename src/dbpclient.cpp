@@ -609,7 +609,7 @@ bool CMvDbpClient::WalleveHandleInitialize()
 
     if(!WalleveGetObject("dbpservice",pDbpService))
     {
-        WalleveLog("request dbpservice failed in dbpclient.");
+        WalleveError("request dbpservice failed in dbpclient.");
         return false;
     }
 
@@ -635,7 +635,7 @@ void CMvDbpClient::EnterLoop()
         if(it->first.address().is_loopback()) continue;
         if(!StartConnection(it->first,DBPCLIENT_CONNECT_TIMEOUT,fEnableSSL,it->second.optSSL))
         {
-            WalleveLog("Start to connect parent node %s failed,  port = %d\n",
+            WalleveWarn("Start to connect parent node %s failed,  port = %d\n",
                        (*it).first.address().to_string().c_str(),
                        (*it).first.port());
         }
@@ -682,7 +682,7 @@ bool CMvDbpClient::ClientConnected(CIOClient* pClient)
 
 void CMvDbpClient::ClientFailToConnect(const boost::asio::ip::tcp::endpoint& epRemote)
 {
-    WalleveLog("Connect parent node %s failed,  port = %d\n reconnectting\n",
+    WalleveWarn("Connect parent node %s failed,  port = %d\n reconnectting\n",
                        epRemote.address().to_string().c_str(),
                        epRemote.port());
 
@@ -710,7 +710,7 @@ void CMvDbpClient::Timeout(uint64 nNonce,uint32 nTimerId)
 {
     std::cerr << "time out" << std::endl;
 
-    WalleveLog("Connect parent node %s timeout,  nonce = %d  timerid = %d\n",
+    WalleveWarn("Connect parent node %s timeout,  nonce = %d  timerid = %d\n",
                        nNonce,
                        nTimerId);
 }
@@ -720,7 +720,7 @@ bool CMvDbpClient::CreateProfile(const CDbpClientConfig& confClient)
     CDbpClientProfile profile;
     if(!WalleveGetObject(confClient.strIOModule,profile.pIOModule))
     {
-        WalleveLog("Failed to request %s\n", confClient.strIOModule.c_str());
+        WalleveError("Failed to request %s\n", confClient.strIOModule.c_str());
         return false;
     }
 

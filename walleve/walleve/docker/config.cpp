@@ -9,8 +9,9 @@
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
-
 #include <iostream>
+
+#include "walleve/util.h"
 
 using namespace std;
 using namespace walleve;
@@ -79,7 +80,7 @@ bool CWalleveConfig::Load(int argc,char *argv[],const fs::path& pathDefault,cons
     }
     catch (exception& e)
     {
-        cout << e.what() << std::endl;
+        StdError(__PRETTY_FUNCTION__, e.what());
         return false;
     }
     return true;

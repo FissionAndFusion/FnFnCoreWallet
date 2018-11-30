@@ -5,6 +5,7 @@
 #ifndef  WALLEVE_KVDB_H
 #define  WALLEVE_KVDB_H
 
+#include "walleve/util.h"
 #include "walleve/stream/stream.h"
 #include <boost/thread.hpp>
 #include <boost/function.hpp>
@@ -156,8 +157,9 @@ protected:
         {
             throw;
         }
-        catch (...)
+        catch (std::exception& e)
         {
+            StdError(__PRETTY_FUNCTION__, e.what());
         }
 
         return false;
@@ -182,8 +184,9 @@ protected:
         {
             throw;
         }
-        catch (...)
+        catch (std::exception& e)
         {
+            StdError(__PRETTY_FUNCTION__, e.what());
         }
 
         return false;
@@ -207,8 +210,9 @@ protected:
         {
             throw;
         }
-        catch (...)
+        catch (std::exception& e)
         {
+            StdError(__PRETTY_FUNCTION__, e.what());
         }
 
         return false;
@@ -237,8 +241,9 @@ protected:
             }
             return true;
         }
-        catch (...)
+        catch (std::exception& e)
         {
+            StdError(__PRETTY_FUNCTION__, e.what());
         }
 
         return false;
@@ -267,8 +272,9 @@ protected:
             }
             return true;
         }
-        catch (...)
+        catch (std::exception& e)
         {
+            StdError(__PRETTY_FUNCTION__, e.what());
         }
 
         return false;
