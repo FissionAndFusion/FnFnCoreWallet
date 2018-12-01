@@ -1,5 +1,5 @@
 FROM ubuntu:18.04
-MAINTAINER gaochun@fnfn.io
+# MAINTAINER gaochun@fnfn.io
 
 ENV HOME=/home/fnfn
 ENV APPS_DIR=/home/apps
