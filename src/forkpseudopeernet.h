@@ -15,6 +15,14 @@ namespace multiverse
 class CForkPseudoPeerNet: public network::CMvPeerNet, virtual public CFkNodeEventListener
 {
 public:
+    enum class SUPER_NODE_TYPE : int
+    {
+        SUPER_NODE_TYPE_FNFN = 0,
+        SUPER_NODE_TYPE_ROOT,
+        SUPER_NODE_TYPE_FORK
+    };
+
+public:
     CForkPseudoPeerNet();
     ~CForkPseudoPeerNet();
 protected:
