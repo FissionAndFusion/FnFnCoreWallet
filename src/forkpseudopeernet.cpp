@@ -10,6 +10,7 @@ CForkPseudoPeerNet::CForkPseudoPeerNet()
 : CMvPeerNet("forkpseudopeernet")
 {
     pDbpService = nullptr;
+    typeNode = SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN;
 }
 
 CForkPseudoPeerNet::~CForkPseudoPeerNet()
@@ -39,6 +40,11 @@ void CForkPseudoPeerNet::WalleveHandleDeinitialize()
 //messages come from p2p network - stem from real peer net and relayed by netchannel
 bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeBlockArrive& event)
 {
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN)
+    {
+        return true;
+    }
+
     auto it = mapForkNodeHeight.find(event.hashFork);
     if(it == mapForkNodeHeight.end())
     {
@@ -60,6 +66,11 @@ bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeBlockArrive& event)
 
 bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeTxArrive& event)
 {
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN)
+    {
+        return true;
+    }
+
     if(!ExistForkID(event.hashFork))
     {
         return true;
@@ -74,6 +85,11 @@ bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeTxArrive& event)
 
 bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeBlockRequest& event)
 {
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN)
+    {
+        return true;
+    }
+
     if(!ExistForkID(event.hashFork))
     {
         return true;
@@ -88,6 +104,11 @@ bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeBlockRequest& event)
 
 bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeTxRequest& event)
 {
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN)
+    {
+        return true;
+    }
+
     if(!ExistForkID(event.hashFork))
     {
         return true;
@@ -103,6 +124,11 @@ bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeTxRequest& event)
 //messages come from fork node cluster
 bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeUpdateForkState& event)
 {
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN)
+    {
+        return true;
+    }
+
     if(!ExistForkID(event.hashFork) && event.height > 0)
     {
         return false;
@@ -120,6 +146,11 @@ bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeUpdateForkState& event)
 
 bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeSendBlockNotice& event)
 {
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN)
+    {
+        return true;
+    }
+
     if(!ExistForkID(event.hashFork))
     {
         return false;
@@ -134,6 +165,11 @@ bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeSendBlockNotice& event)
 
 bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeSendTxNotice& event)
 {
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN)
+    {
+        return true;
+    }
+
     if(!ExistForkID(event.hashFork))
     {
         return false;
@@ -148,6 +184,11 @@ bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeSendTxNotice& event)
 
 bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeSendBlock& event)
 {
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN)
+    {
+        return true;
+    }
+
     if(!ExistForkID(event.hashFork))
     {
         return false;
@@ -162,6 +203,11 @@ bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeSendBlock& event)
 
 bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeSendTx& event)
 {
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN)
+    {
+        return true;
+    }
+
     if(!ExistForkID(event.hashFork))
     {
         return false;
