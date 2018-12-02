@@ -25,6 +25,8 @@ public:
 public:
     CForkPseudoPeerNet();
     ~CForkPseudoPeerNet();
+
+    SUPER_NODE_TYPE GetSuperNodeType() {return typeNode;};
 protected:
     bool WalleveHandleInitialize() override;
     void WalleveHandleDeinitialize() override;

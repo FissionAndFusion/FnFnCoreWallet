@@ -4,6 +4,7 @@
 
 #include "netchn.h"
 #include "schedule.h"
+#include "forkpseudopeernet.h"
 #include <boost/bind.hpp>
 
 using namespace std;
@@ -459,24 +460,59 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerInv& eventInv)
 
 bool CNetChannel::HandleEvent(network::CMvEventPeerGetData& eventGetData)
 {
+    CForkPseudoPeerNet::SUPER_NODE_TYPE catNode = dynamic_cast<CForkPseudoPeerNet*>(pPeerNet)->GetSuperNodeType();
     uint64 nNonce = eventGetData.nNonce;
     uint256& hashFork = eventGetData.hashFork;
     BOOST_FOREACH(const network::CInv& inv,eventGetData.data)
     {
         if (inv.nType == network::CInv::MSG_TX)
         {
-            network::CMvEventPeerTx eventTx(nNonce,hashFork);
-            if (pTxPool->Get(inv.nHash,eventTx.data))
-            {   
-                pPeerNet->DispatchEvent(&eventTx);
+            switch(catNode)
+            {
+                case CForkPseudoPeerNet::SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN:
+                {
+                    network::CMvEventPeerTx eventTx(nNonce,hashFork);
+                    if (pTxPool->Get(inv.nHash,eventTx.data))
+                    {
+                        pPeerNet->DispatchEvent(&eventTx);
+                    }
+                    break;
+                }
+                case CForkPseudoPeerNet::SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT:
+                {
+                    CFkEventNodeTxArrive event(nNonce, hashFork);
+                    pPeerNet->DispatchEvent(&event);
+                    break;
+                }
+                case CForkPseudoPeerNet::SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK:
+                {
+                    break;
+                }
             }
         }
         else if (inv.nType == network::CInv::MSG_BLOCK)
         {
-            network::CMvEventPeerBlock eventBlock(nNonce,hashFork);
-            if (pWorldLine->GetBlock(inv.nHash,eventBlock.data))
+            switch(catNode)
             {
-                pPeerNet->DispatchEvent(&eventBlock);
+                case CForkPseudoPeerNet::SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN:
+                {
+                    network::CMvEventPeerBlock eventBlock(nNonce,hashFork);
+                    if (pWorldLine->GetBlock(inv.nHash,eventBlock.data))
+                    {
+                        pPeerNet->DispatchEvent(&eventBlock);
+                    }
+                    break;
+                }
+                case CForkPseudoPeerNet::SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT:
+                {
+                    CFkEventNodeBlockArrive event(nNonce, hashFork);
+                    pPeerNet->DispatchEvent(&event);
+                    break;
+                }
+                case CForkPseudoPeerNet::SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK:
+                {
+                    break;
+                }
             }
         }
     }
