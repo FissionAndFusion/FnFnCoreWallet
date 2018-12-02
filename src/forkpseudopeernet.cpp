@@ -7,8 +7,9 @@
 using namespace multiverse;
 
 CForkPseudoPeerNet::CForkPseudoPeerNet()
+: CMvPeerNet("forkpseudopeernet")
 {
-    WalleveSetOwnKey("forkpseudopeernet");
+    pDbpService = nullptr;
 }
 
 CForkPseudoPeerNet::~CForkPseudoPeerNet()
@@ -17,6 +18,8 @@ CForkPseudoPeerNet::~CForkPseudoPeerNet()
 
 bool CForkPseudoPeerNet::WalleveHandleInitialize()
 {
+    CMvPeerNet::WalleveHandleInitialize();
+
     if (!WalleveGetObject("dbpservice", pDbpService))
     {
         WalleveLog("Failed to request DBP service\n");
@@ -28,6 +31,8 @@ bool CForkPseudoPeerNet::WalleveHandleInitialize()
 
 void CForkPseudoPeerNet::WalleveHandleDeinitialize()
 {
+    CMvPeerNet::WalleveHandleDeinitialize();
+
     pDbpService = nullptr;
 }
 
