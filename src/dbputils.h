@@ -9,6 +9,9 @@
 #include <cstring>
 #include <random>
 #include <vector>
+#include <climits>
+#include <algorithm>
+#include <functional>
 
 #include "dbp.pb.h"
 #include "lws.pb.h"
@@ -16,6 +19,10 @@
 
 namespace multiverse
 {
+
+using random_bytes_engine = std::independent_bits_engine<
+    std::default_random_engine, CHAR_BIT, unsigned char>;
+
 class CDbpUtils
 {
 public:
@@ -59,6 +66,16 @@ public:
             s += chrs[pick(rg)];
 
         return s;
+    }
+
+    static uint32_t RandomBits()
+    {
+        random_bytes_engine rbe;
+        std::vector<uint8_t> data(4);
+        std::generate(begin(data), end(data), std::ref(rbe));
+        uint32_t random32Bits;
+        std::memcpy(&random32Bits, data.data(), 4);
+        return random32Bits;
     }
 
     static std::vector<std::string> Split(const std::string& str, char delim)
