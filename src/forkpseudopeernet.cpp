@@ -10,7 +10,8 @@ CForkPseudoPeerNet::CForkPseudoPeerNet()
 : CMvPeerNet("forkpseudopeernet")
 {
     pDbpService = nullptr;
-    typeNode = SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN;
+    //typeNode = SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN;
+    typeNode = SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT;
 }
 
 CForkPseudoPeerNet::~CForkPseudoPeerNet()
@@ -45,6 +46,17 @@ bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeBlockArrive& event)
         return true;
     }
 
+    //fork node
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
+    {
+        CFkEventNodeBlockArrive *pEvent = new CFkEventNodeBlockArrive(event);
+        if(nullptr != pEvent)
+        {
+            pNetChannel->PostEvent(pEvent);
+        }
+        return true;
+    }
+
     auto it = mapForkNodeHeight.find(event.hashFork);
     if(it == mapForkNodeHeight.end())
     {
@@ -71,6 +83,18 @@ bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeTxArrive& event)
         return true;
     }
 
+     //fork node
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
+    {
+        CFkEventNodeTxArrive *pEvent = new CFkEventNodeTxArrive(event);
+        if(nullptr != pEvent)
+        {
+            pNetChannel->PostEvent(pEvent);
+        }
+        return true;
+    }
+
+
     if(!ExistForkID(event.hashFork))
     {
         return true;
@@ -90,6 +114,17 @@ bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeBlockRequest& event)
         return true;
     }
 
+      //fork node
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
+    {
+        CFkEventNodeBlockRequest *pEvent = new CFkEventNodeBlockRequest(event);
+        if(nullptr != pEvent)
+        {
+            pNetChannel->PostEvent(pEvent);
+        }
+        return true;
+    }
+
     if(!ExistForkID(event.hashFork))
     {
         return true;
@@ -106,6 +141,17 @@ bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeTxRequest& event)
 {
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN)
     {
+        return true;
+    }
+
+      //fork node
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
+    {
+        CFkEventNodeTxRequest *pEvent = new CFkEventNodeTxRequest(event);
+        if(nullptr != pEvent)
+        {
+            pNetChannel->PostEvent(pEvent);
+        }
         return true;
     }
 
@@ -129,6 +175,8 @@ bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeUpdateForkState& event)
         return true;
     }
 
+    
+
     if(!ExistForkID(event.hashFork) && event.height > 0)
     {
         return false;
@@ -151,6 +199,17 @@ bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeSendBlockNotice& event)
         return true;
     }
 
+     //fork node
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
+    {
+        CFkEventNodeSendBlockNotice *pEvent = new CFkEventNodeSendBlockNotice(event);
+        if(nullptr != pEvent)
+        {
+            pDbpService->PostEvent(pEvent);
+        }
+        return true;
+    }
+
     if(!ExistForkID(event.hashFork))
     {
         return false;
@@ -167,6 +226,17 @@ bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeSendTxNotice& event)
 {
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN)
     {
+        return true;
+    }
+
+     //fork node
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
+    {
+        CFkEventNodeSendTxNotice *pEvent = new CFkEventNodeSendTxNotice(event);
+        if(nullptr != pEvent)
+        {
+            pDbpService->PostEvent(pEvent);
+        }
         return true;
     }
 
@@ -189,6 +259,18 @@ bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeSendBlock& event)
         return true;
     }
 
+     //fork node
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
+    {
+        CFkEventNodeSendBlock *pEvent = new CFkEventNodeSendBlock(event);
+        if(nullptr != pEvent)
+        {
+            pDbpService->PostEvent(pEvent);
+        }
+        return true;
+    }
+
+
     if(!ExistForkID(event.hashFork))
     {
         return false;
@@ -208,6 +290,17 @@ bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeSendTx& event)
         return true;
     }
 
+     //fork node
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
+    {
+        CFkEventNodeSendTx *pEvent = new CFkEventNodeSendTx(event);
+        if(nullptr != pEvent)
+        {
+            pDbpService->PostEvent(pEvent);
+        }
+        return true;
+    }
+
     if(!ExistForkID(event.hashFork))
     {
         return false;
@@ -219,4 +312,10 @@ bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeSendTx& event)
     }
     return true;
 }
+
+bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeIsForkNode& event)
+{
+    typeNode = event.fIsForkNode ? SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK
+                                 : SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT;
+} 
 

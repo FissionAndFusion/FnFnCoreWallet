@@ -878,6 +878,13 @@ bool CDbpService::HandleEvent(CMvEventDbpRegisterForkID& event)
     }
     else
     {
+        int nNonce = 0;
+        uint32_t ramdom32 = CDbpUtils::RandomBits();
+        std::memcpy(&nNonce, &ramdom32, 4);
+        CFkEventNodeIsForkNode eventIsForkNode(nNonce);
+        eventIsForkNode.fIsForkNode = IsForkNode();
+        pVirtualPeerNet->DispatchEvent(&eventIsForkNode);
+        
         pNetChannel->SetForkFilterInfo(IsForkNode(), mapThisNodeForkStates);
         
         UpdateChildNodeForksToParent();

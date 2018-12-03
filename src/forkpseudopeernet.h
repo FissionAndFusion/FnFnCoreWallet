@@ -41,6 +41,8 @@ protected:
     bool HandleEvent(CFkEventNodeSendBlock& event) override;
     bool HandleEvent(CFkEventNodeSendTx& event) override;
 
+    bool HandleEvent(CFkEventNodeIsForkNode& event) override;
+
     bool ExistForkID(const uint256& forkid) {
         return (mapForkNodeHeight.find(forkid) != mapForkNodeHeight.end());
     }

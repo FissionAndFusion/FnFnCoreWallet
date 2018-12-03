@@ -658,7 +658,10 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerTx& eventTx)
     // if this node is root node, it send all tx to virtual peer net and push to dbpservice
     if(!fIsForkNode)
     {
-       
+        int nNonce = 0;
+        CFkEventNodeTxArrive eventTxArrive(nNonce, hashFork);
+        eventTxArrive.data = eventTx.data;
+        pPeerNet->DispatchEvent(&eventTxArrive);
     }
 
     if(fIsForkNode)
@@ -684,7 +687,11 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerBlock& eventBlock)
     // if this node is root node, it send all block to virtual peernet push to dbpservice
     if(!fIsForkNode)
     {
-        
+        int nNonce = 0;
+        CFkEventNodeBlockArrive eventBlockArrive(nNonce, hashFork);
+        CBlockEx blockEx(eventBlock.data);
+        eventBlockArrive.data = blockEx;
+        pPeerNet->DispatchEvent(&eventBlockArrive);
     }
 
     if(fIsForkNode)
