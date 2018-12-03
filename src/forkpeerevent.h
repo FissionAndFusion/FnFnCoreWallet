@@ -18,22 +18,10 @@ namespace multiverse
 enum class ecForkEventType : int
 {
     //FORK NODE PEER NET EVENT
-    FK_EVENT_NODE_MESSAGE, //messages received from Dbp service
-    FK_EVENT_NODE_ACTIVE,
-    FK_EVENT_NODE_DEACTIVE,
-    FK_EVENT_NODE_SUBSCRIBE,
-    FK_EVENT_NODE_UNSUBSCRIBE,
-    FK_EVENT_NODE_GETBLOCKS,
-    FK_EVENT_NODE_INV,
-    FK_EVENT_NODE_GETDATA,
-    FK_EVENT_NODE_BLOCK,
-    FK_EVENT_NODE_TX,
-
     FK_EVENT_NODE_BLOCK_ARRIVE,
     FK_EVENT_NODE_TX_ARRIVE,
     FK_EVENT_NODE_BLOCK_REQUEST,
     FK_EVENT_NODE_TX_REQUEST,
-
     FK_EVENT_NODE_UPDATE_FORK_STATE,
     FK_EVENT_NODE_SEND_TX_NOTICE,
     FK_EVENT_NODE_SEND_BLOCK_NOTICE,
@@ -172,11 +160,11 @@ protected:
     void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
     {
         s.Serialize(hashFork, opt);
-        s.Serialize(hashBlock, opt);
+        s.Serialize(hashTx, opt);
     }
 public:
     uint256 hashFork;   //fork id
-    uint256 hashBlock;  //hash of requested block
+    uint256 hashTx;  //hash of requested block
 };
 
 template <int type, typename L>
@@ -449,37 +437,23 @@ public:
 
 class CFkNodeEventListener;
 
-#define TYPE_FORKNODEEVENT(type, body)       \
-        CFkEventNodeData<static_cast<int>(type), CFkNodeEventListener, body>
-
-#define TYPE_FORKNODEMSGEVENT(type, body)       \
-        CFkEventMessageData<static_cast<int>(type), CFkNodeEventListener, body>
-
-typedef TYPE_FORKNODEMSGEVENT(ecForkEventType::FK_EVENT_NODE_MESSAGE, ForkMsgData_type) CFkEventNodeMessage;
-
-typedef TYPE_FORKNODEEVENT(ecForkEventType::FK_EVENT_NODE_ACTIVE, network::CAddress) CFkEventNodeActive;
-typedef TYPE_FORKNODEEVENT(ecForkEventType::FK_EVENT_NODE_DEACTIVE, network::CAddress) CFkEventNodeDeactive;
-typedef TYPE_FORKNODEEVENT(ecForkEventType::FK_EVENT_NODE_SUBSCRIBE, std::vector<uint256>) CFkEventNodeSubscribe;
-typedef TYPE_FORKNODEEVENT(ecForkEventType::FK_EVENT_NODE_UNSUBSCRIBE, std::vector<uint256>) CFkEventNodeUnsubscribe;
-typedef TYPE_FORKNODEEVENT(ecForkEventType::FK_EVENT_NODE_GETBLOCKS, CBlockLocator) CFkEventNodeGetBlocks;
-typedef TYPE_FORKNODEEVENT(ecForkEventType::FK_EVENT_NODE_INV, std::vector<network::CInv>) CFkEventNodeInv;
-typedef TYPE_FORKNODEEVENT(ecForkEventType::FK_EVENT_NODE_GETDATA, std::vector<network::CInv>) CFkEventNodeGetData;
-typedef TYPE_FORKNODEEVENT(ecForkEventType::FK_EVENT_NODE_BLOCK, CBlock) CFkEventNodeBlock;
-typedef TYPE_FORKNODEEVENT(ecForkEventType::FK_EVENT_NODE_TX, CTransaction) CFkEventNodeTx;
-
+#define TYPE_FORK_NODE_BLOCK_ARRIVE_EVENT(type, body)       \
+        CFkEventBlockArrive<static_cast<int>(type), CFkNodeEventListener, body>
+#define TYPE_FORK_NODE_TX_ARRIVE_EVENT(type, body)       \
+        CFkEventTxArrive<static_cast<int>(type), CFkNodeEventListener, body>
+#define TYPE_FORK_NODE_BLOCK_REQUEST_EVENT(type)       \
+        CFkEventBlockRequest<static_cast<int>(type), CFkNodeEventListener>
+#define TYPE_FORK_NODE_TX_REQUEST_EVENT(type)       \
+        CFkEventTxRequest<static_cast<int>(type), CFkNodeEventListener>
 
 #define TYPE_FORK_NODE_UPDATE_FORK_STATE_EVENT(type)       \
         CFkEventUpdateForkState<static_cast<int>(type), CFkNodeEventListener>
-
 #define TYPE_FORK_NODE_SEND_BLOCK_NOTICE_ARRIVE_EVENT(type)       \
         CFkEventSendBlockNotice<static_cast<int>(type), CFkNodeEventListener>
-
 #define TYPE_FORK_NODE_SEND_TX_NOTICE_ARRIVE_EVENT(type)       \
         CFkEventSendTxNotice<static_cast<int>(type), CFkNodeEventListener>
-
 #define TYPE_FORK_NODE_SEND_BLOCK_EVENT(type, body)       \
         CFkEventSendBlock<static_cast<int>(type), CFkNodeEventListener, body>
-
 #define TYPE_FORK_NODE_SEND_TX_EVENT(type, body)       \
         CFkEventSendTx<static_cast<int>(type), CFkNodeEventListener, body>
 
@@ -513,22 +487,16 @@ typedef TYPE_FORK_NODE_TX_ARRIVE_EVENT(ecForkEventType::FK_EVENT_NODE_TX_ARRIVE,
 typedef TYPE_FORK_NODE_BLOCK_REQUEST_EVENT(ecForkEventType::FK_EVENT_NODE_BLOCK_REQUEST) CFkEventNodeBlockRequest;
 typedef TYPE_FORK_NODE_TX_REQUEST_EVENT(ecForkEventType::FK_EVENT_NODE_TX_REQUEST) CFkEventNodeTxRequest;
 
+typedef TYPE_FORK_NODE_UPDATE_FORK_STATE_EVENT(ecForkEventType::FK_EVENT_NODE_UPDATE_FORK_STATE) CFkEventNodeUpdateForkState;
+typedef TYPE_FORK_NODE_SEND_BLOCK_NOTICE_ARRIVE_EVENT(ecForkEventType::FK_EVENT_NODE_SEND_BLOCK_NOTICE) CFkEventNodeSendBlockNotice;
+typedef TYPE_FORK_NODE_SEND_TX_NOTICE_ARRIVE_EVENT(ecForkEventType::FK_EVENT_NODE_SEND_TX_NOTICE) CFkEventNodeSendTxNotice;
+typedef TYPE_FORK_NODE_SEND_BLOCK_EVENT(ecForkEventType::FK_EVENT_NODE_SEND_BLOCK, CBlockEx) CFkEventNodeSendBlock;
+typedef TYPE_FORK_NODE_SEND_TX_EVENT(ecForkEventType::FK_EVENT_NODE_SEND_TX, CTransaction) CFkEventNodeSendTx;
 
 class CFkNodeEventListener : virtual public walleve::CWalleveEventListener
 {
 public:
     virtual ~CFkNodeEventListener() {}
-    DECLARE_EVENTHANDLER(CFkEventNodeMessage);
-    DECLARE_EVENTHANDLER(CFkEventNodeActive);
-    DECLARE_EVENTHANDLER(CFkEventNodeDeactive);
-    DECLARE_EVENTHANDLER(CFkEventNodeSubscribe);
-    DECLARE_EVENTHANDLER(CFkEventNodeUnsubscribe);
-    DECLARE_EVENTHANDLER(CFkEventNodeGetBlocks);
-    DECLARE_EVENTHANDLER(CFkEventNodeInv);
-    DECLARE_EVENTHANDLER(CFkEventNodeGetData);
-    DECLARE_EVENTHANDLER(CFkEventNodeBlock);
-    DECLARE_EVENTHANDLER(CFkEventNodeTx);
-
     //subscribe/publish(p2p to fork node)
     DECLARE_EVENTHANDLER(CFkEventNodeBlockArrive);
     DECLARE_EVENTHANDLER(CFkEventNodeTxArrive);

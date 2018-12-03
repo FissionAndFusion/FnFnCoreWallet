@@ -78,7 +78,7 @@ bool CService::WalleveHandleInitialize()
         return false;
     }
 
-    if (!WalleveGetObject("peernet",pNetwork))
+    if (!WalleveGetObject("forkpseudopeernet",pNetwork))
     {
         WalleveLog("Failed to request network\n");
         return false;

@@ -42,6 +42,7 @@ class CMvPeerNet : public walleve::CPeerNet, virtual public CMvPeerEventListener
 {
 public:
     CMvPeerNet();
+    CMvPeerNet(const std::string& walleveOwnKeyIn);
     ~CMvPeerNet();
     virtual void BuildHello(walleve::CPeer *pPeer,walleve::CWalleveBufStream& ssPayload);
     void HandlePeerWriten(walleve::CPeer *pPeer) override;

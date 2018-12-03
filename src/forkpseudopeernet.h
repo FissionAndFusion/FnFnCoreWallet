@@ -15,8 +15,18 @@ namespace multiverse
 class CForkPseudoPeerNet: public network::CMvPeerNet, virtual public CFkNodeEventListener
 {
 public:
+    enum class SUPER_NODE_TYPE : int
+    {
+        SUPER_NODE_TYPE_FNFN = 0,
+        SUPER_NODE_TYPE_ROOT,
+        SUPER_NODE_TYPE_FORK
+    };
+
+public:
     CForkPseudoPeerNet();
     ~CForkPseudoPeerNet();
+
+    SUPER_NODE_TYPE GetSuperNodeType() {return typeNode;};
 protected:
     bool WalleveHandleInitialize() override;
     void WalleveHandleDeinitialize() override;
@@ -37,7 +47,9 @@ protected:
 
 protected:
     walleve::IIOModule* pDbpService;
-    std::map<uint256, std::pair<int, uint256>> mapForkNodeHeight;   //ForkID-(LastHeight-BlockHash)
+    std::map<uint256, std::pair<int, uint256>> mapForkNodeHeight;          //ForkID-(LastHeight-BlockHash) for offspring node
+    std::map<uint256, std::pair<int, uint256>> mapForkNodeHeightCurrent;   //ForkID-(LastHeight-BlockHash) for current node
+    SUPER_NODE_TYPE typeNode;
 };
 
 }

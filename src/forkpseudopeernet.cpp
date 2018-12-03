@@ -7,8 +7,10 @@
 using namespace multiverse;
 
 CForkPseudoPeerNet::CForkPseudoPeerNet()
+: CMvPeerNet("forkpseudopeernet")
 {
-    WalleveSetOwnKey("forkpseudopeernet");
+    pDbpService = nullptr;
+    typeNode = SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN;
 }
 
 CForkPseudoPeerNet::~CForkPseudoPeerNet()
@@ -17,6 +19,8 @@ CForkPseudoPeerNet::~CForkPseudoPeerNet()
 
 bool CForkPseudoPeerNet::WalleveHandleInitialize()
 {
+    CMvPeerNet::WalleveHandleInitialize();
+
     if (!WalleveGetObject("dbpservice", pDbpService))
     {
         WalleveLog("Failed to request DBP service\n");
@@ -28,16 +32,29 @@ bool CForkPseudoPeerNet::WalleveHandleInitialize()
 
 void CForkPseudoPeerNet::WalleveHandleDeinitialize()
 {
+    CMvPeerNet::WalleveHandleDeinitialize();
+
     pDbpService = nullptr;
 }
 
 //messages come from p2p network - stem from real peer net and relayed by netchannel
 bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeBlockArrive& event)
 {
-    if(!ExistForkID(event.hashFork))
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN)
     {
         return true;
     }
+
+    auto it = mapForkNodeHeight.find(event.hashFork);
+    if(it == mapForkNodeHeight.end())
+    {
+        return true;
+    }
+    if((*it).second.second != event.data.GetHash())
+    {//discard this block directly if it does not match the last block
+        return true;
+    }
+
     CFkEventNodeBlockArrive *pEvent = new CFkEventNodeBlockArrive(event);
     if(nullptr != pEvent)
     {
@@ -49,6 +66,11 @@ bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeBlockArrive& event)
 
 bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeTxArrive& event)
 {
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN)
+    {
+        return true;
+    }
+
     if(!ExistForkID(event.hashFork))
     {
         return true;
@@ -63,6 +85,11 @@ bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeTxArrive& event)
 
 bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeBlockRequest& event)
 {
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN)
+    {
+        return true;
+    }
+
     if(!ExistForkID(event.hashFork))
     {
         return true;
@@ -77,6 +104,11 @@ bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeBlockRequest& event)
 
 bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeTxRequest& event)
 {
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN)
+    {
+        return true;
+    }
+
     if(!ExistForkID(event.hashFork))
     {
         return true;
@@ -92,6 +124,11 @@ bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeTxRequest& event)
 //messages come from fork node cluster
 bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeUpdateForkState& event)
 {
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN)
+    {
+        return true;
+    }
+
     if(!ExistForkID(event.hashFork) && event.height > 0)
     {
         return false;
@@ -109,6 +146,11 @@ bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeUpdateForkState& event)
 
 bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeSendBlockNotice& event)
 {
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN)
+    {
+        return true;
+    }
+
     if(!ExistForkID(event.hashFork))
     {
         return false;
@@ -123,6 +165,11 @@ bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeSendBlockNotice& event)
 
 bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeSendTxNotice& event)
 {
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN)
+    {
+        return true;
+    }
+
     if(!ExistForkID(event.hashFork))
     {
         return false;
@@ -137,6 +184,11 @@ bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeSendTxNotice& event)
 
 bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeSendBlock& event)
 {
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN)
+    {
+        return true;
+    }
+
     if(!ExistForkID(event.hashFork))
     {
         return false;
@@ -151,6 +203,11 @@ bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeSendBlock& event)
 
 bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeSendTx& event)
 {
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN)
+    {
+        return true;
+    }
+
     if(!ExistForkID(event.hashFork))
     {
         return false;
