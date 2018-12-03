@@ -891,7 +891,8 @@ bool CDbpService::HandleEvent(CMvEventDbpIsForkNode& event)
     fIsForkNode = event.data.IsForkNode;
 
     int nNonce = 0;
-    std::memcpy(&nNonce,CDbpUtils::RandomString().data(),4);
+    uint32_t ramdom32 = CDbpUtils::RandomBits();
+    std::memcpy(&nNonce, &ramdom32, 4);
     CFkEventNodeIsForkNode eventIsForkNode(nNonce);
     eventIsForkNode.fIsForkNode = fIsForkNode;
     pVirtualPeerNet->DispatchEvent(&eventIsForkNode);
@@ -957,7 +958,8 @@ void CDbpService::HandleSendBlock(CMvEventDbpMethod& event)
     if(!IsForkNode())
     {
         int nNonce = 0;
-        std::memcpy(&nNonce,CDbpUtils::RandomString().data(),4);
+        uint32_t ramdom32 = CDbpUtils::RandomBits();
+        std::memcpy(&nNonce, &ramdom32, 4);
         uint256 forkHash(block.fork);
         CFkEventNodeSendBlock eventBlock(nNonce, forkHash);
         CDbpUtils::DbpToRawBlock(block, eventBlock.data);
@@ -984,7 +986,8 @@ void CDbpService::HandleSendTx(CMvEventDbpMethod& event)
     if(!IsForkNode())
     {
         int nNonce = 0;
-        std::memcpy(&nNonce,CDbpUtils::RandomString().data(),4);
+        uint32_t ramdom32 = CDbpUtils::RandomBits();
+        std::memcpy(&nNonce, &ramdom32, 4);
         uint256 forkHash(tx.fork);
         CFkEventNodeSendTx eventTx(nNonce, forkHash);
         CDbpUtils::DbpToRawTransaction(tx,eventTx.data);
@@ -1013,7 +1016,8 @@ void CDbpService::HandleSendBlockNotice(CMvEventDbpMethod& event)
     if(!IsForkNode())
     {
         int nNonce = 0;
-        std::memcpy(&nNonce,CDbpUtils::RandomString().data(),4);
+        uint32_t ramdom32 = CDbpUtils::RandomBits();
+        std::memcpy(&nNonce, &ramdom32, 4);
         uint256 forkHash(std::vector<unsigned char>(forkid.begin(), forkid.end()));
         uint256 blockHash(std::vector<unsigned char>(hash.begin(), hash.end()));
         CFkEventNodeSendBlockNotice eventBlockNotice(nNonce, forkHash);
@@ -1044,7 +1048,8 @@ void CDbpService::HandleSendTxNotice(CMvEventDbpMethod& event)
     if(!IsForkNode())
     {
         int nNonce = 0;
-        std::memcpy(&nNonce,CDbpUtils::RandomString().data(),4);
+        uint32_t ramdom32 = CDbpUtils::RandomBits();
+        std::memcpy(&nNonce, &ramdom32, 4);
         uint256 forkHash(std::vector<unsigned char>(forkid.begin(), forkid.end()));
         uint256 txHash(std::vector<unsigned char>(hash.begin(), hash.end()));
         CFkEventNodeSendTxNotice eventTxNotice(nNonce, forkHash);
@@ -1127,7 +1132,8 @@ void CDbpService::HandleUpdateForkState(CMvEventDbpMethod& event)
         if(!IsForkNode())
         {
             int nNonce = 0;
-            std::memcpy(&nNonce,CDbpUtils::RandomString().data(),4);
+            uint32_t ramdom32 = CDbpUtils::RandomBits();
+            std::memcpy(&nNonce, &ramdom32, 4);
             CFkEventNodeUpdateForkState eventForkState(nNonce, forkHash);
             eventForkState.hashFork = forkHash;
             eventForkState.hashBlock = blockHash;
