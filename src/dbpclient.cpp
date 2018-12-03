@@ -647,6 +647,11 @@ void CMvDbpClient::HandleConnected(CMvDbpClientSocket* pClientSocket, google::pr
     if(IsSessionExist(connected.session()))
     {
         StartPingTimer(connected.session());
+        
+        CMvEventDbpIsForkNode* pEvent = new CMvEventDbpIsForkNode("");
+        pEvent->data.IsForkNode = true;
+        pDbpService->PostEvent(pEvent);
+        
         RegisterDefaultForks(pClientSocket);
         SubscribeDefaultTopics(pClientSocket);
         UpdateDefaultForksState(pClientSocket);
@@ -940,17 +945,10 @@ void CMvDbpClient::EnterLoop()
         bool fEnableSSL = (*it).second.optSSL.fEnable;
         if(it->first.address().is_loopback())
         {
-            CMvEventDbpIsForkNode* pEvent = new CMvEventDbpIsForkNode("");
-            pEvent->data.IsForkNode = false;
-            pDbpService->PostEvent(pEvent);
             continue;
         }
         else
-        {
-            CMvEventDbpIsForkNode* pEvent = new CMvEventDbpIsForkNode("");
-            pEvent->data.IsForkNode = true;
-            pDbpService->PostEvent(pEvent);
-            
+        {   
             if(!StartConnection(it->first,DBPCLIENT_CONNECT_TIMEOUT,fEnableSSL,it->second.optSSL))
             {
                 WalleveLog("Start to connect parent node %s failed,  port = %d\n",
