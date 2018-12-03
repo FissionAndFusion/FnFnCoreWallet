@@ -365,76 +365,6 @@ public:
     bool fIsForkNode;           
 };
 
-template <int type, typename L, typename D>
-class CFkEventNodeData : public walleve::CWalleveEvent
-{
-    friend class walleve::CWalleveStream;
-public:
-    CFkEventNodeData(uint64 nNonceIn, const uint256& hashForkIn)
-            : CWalleveEvent(nNonceIn, type), hashFork(hashForkIn) {}
-    virtual ~CFkEventNodeData() noexcept {}
-    virtual bool Handle(walleve::CWalleveEventListener& listener)
-    {
-        try
-        {
-            return (dynamic_cast<L&>(listener)).HandleEvent(*this);
-        }
-        catch (std::bad_cast&)
-        {
-            return listener.HandleEvent(*this);
-        }
-        catch (...) {}
-        return false;
-    }
-protected:
-    template <typename O>
-    void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
-    {
-        s.Serialize(hashFork, opt);
-        s.Serialize(data, opt);
-    }
-public:
-    uint256 hashFork;
-    int nBlockHeight;
-    D data;
-};
-
-typedef boost::variant<network::CAddress, std::vector<uint256>, CBlockLocator,
-        std::vector<network::CInv>, CBlock, CTransaction> ForkMsgData_type;
-
-template <int type, typename L, typename D>
-class CFkEventMessageData : public walleve::CWalleveEvent
-{
-    friend class walleve::CWalleveStream;
-public:
-    CFkEventMessageData(uint64 nNonceIn, const ecForkEventType& nMsgTypeIn)
-    : CWalleveEvent(nNonceIn, type), fkMsgType(nMsgTypeIn) {}
-    virtual ~CFkEventMessageData() noexcept {}
-    virtual bool Handle(walleve::CWalleveEventListener& listener)
-    {
-        try
-        {
-            return (dynamic_cast<L&>(listener)).HandleEvent(*this);
-        }
-        catch (std::bad_cast&)
-        {
-            return listener.HandleEvent(*this);
-        }
-        catch (...) {}
-        return false;
-    }
-protected:
-    template <typename O>
-    void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
-    {
-        s.Serialize(fkMsgType, opt);
-        s.Serialize(fkMsgData, opt);
-    }
-public:
-    ecForkEventType fkMsgType;
-    D fkMsgData; //ForkMsgData_type
-};
-
 class CFkNodeEventListener;
 
 #define TYPE_FORK_NODE_BLOCK_ARRIVE_EVENT(type, body)       \
@@ -460,16 +390,6 @@ class CFkNodeEventListener;
 #define TYPE_FORK_NODE_IS_FORK_NODE_EVENT(type)       \
         CFkEventIsForkNode<static_cast<int>(type), CFkNodeEventListener>
 
-typedef TYPE_FORK_NODE_UPDATE_FORK_STATE_EVENT(ecForkEventType::FK_EVENT_NODE_UPDATE_FORK_STATE) CFkEventNodeUpdateForkState;
-typedef TYPE_FORK_NODE_SEND_BLOCK_NOTICE_ARRIVE_EVENT(ecForkEventType::FK_EVENT_NODE_SEND_BLOCK_NOTICE) CFkEventNodeSendBlockNotice;
-typedef TYPE_FORK_NODE_SEND_TX_NOTICE_ARRIVE_EVENT(ecForkEventType::FK_EVENT_NODE_SEND_TX_NOTICE) CFkEventNodeSendTxNotice;
-typedef TYPE_FORK_NODE_SEND_BLOCK_EVENT(ecForkEventType::FK_EVENT_NODE_SEND_BLOCK, CBlockEx) CFkEventNodeSendBlock;
-typedef TYPE_FORK_NODE_SEND_TX_EVENT(ecForkEventType::FK_EVENT_NODE_SEND_TX, CTransaction) CFkEventNodeSendTx;
-typedef TYPE_FORK_NODE_IS_FORK_NODE_EVENT(ecForkEventType::FK_EVENT_NODE_IS_FORKNODE) CFkEventNodeIsForkNode;
-
-
-
-
 #define TYPE_FORK_NODE_BLOCK_ARRIVE_EVENT(type, body)       \
         CFkEventBlockArrive<static_cast<int>(type), CFkNodeEventListener, body>
 
@@ -492,6 +412,7 @@ typedef TYPE_FORK_NODE_SEND_BLOCK_NOTICE_ARRIVE_EVENT(ecForkEventType::FK_EVENT_
 typedef TYPE_FORK_NODE_SEND_TX_NOTICE_ARRIVE_EVENT(ecForkEventType::FK_EVENT_NODE_SEND_TX_NOTICE) CFkEventNodeSendTxNotice;
 typedef TYPE_FORK_NODE_SEND_BLOCK_EVENT(ecForkEventType::FK_EVENT_NODE_SEND_BLOCK, CBlockEx) CFkEventNodeSendBlock;
 typedef TYPE_FORK_NODE_SEND_TX_EVENT(ecForkEventType::FK_EVENT_NODE_SEND_TX, CTransaction) CFkEventNodeSendTx;
+typedef TYPE_FORK_NODE_IS_FORK_NODE_EVENT(ecForkEventType::FK_EVENT_NODE_IS_FORKNODE) CFkEventNodeIsForkNode;
 
 class CFkNodeEventListener : virtual public walleve::CWalleveEventListener
 {
