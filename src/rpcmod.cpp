@@ -9,6 +9,7 @@
 #include <boost/assign/list_of.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
+#include <boost/regex.hpp>
 
 #include "address.h"
 #include "template.h"
@@ -134,13 +135,8 @@ bool CRPCMod::HandleEvent(CWalleveEventHttpReq& eventHttpReq)
         // or passphrass from log content
 
         //log for debug mode
-        regex ptnSec(R"raw(("privkey"|"passphrase"|"oldpassphrase")([\t\n]*:[\t\n]*)(".*?"))raw");
-        bool fFound = regex_search(data, ptnSec);
-        if(fFound)
-        {
-            return regex_replace(data, ptnSec, string(R"raw($1$2"***")raw"));
-        }
-        return data;
+        boost::regex ptnSec(R"raw(("privkey"|"passphrase"|"oldpassphrase")(\s*:\s*)(".*?"))raw", boost::regex::perl);
+        return boost::regex_replace(data, ptnSec, string(R"raw($1$2"***")raw"));
     };
 
     uint64 nNonce = eventHttpReq.nNonce;
