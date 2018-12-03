@@ -880,11 +880,6 @@ bool CDbpService::HandleEvent(CMvEventDbpRegisterForkID& event)
     {
         pNetChannel->SetForkFilterInfo(IsForkNode(), mapThisNodeForkStates);
         
-        int nNonce = 0;
-        std::memcpy(&nNonce,CDbpUtils::RandomString().data(),4);
-        CFkEventNodeIsForkNode eventIsForkNode(nNonce);
-        eventIsForkNode.fIsForkNode = IsForkNode();
-        pVirtualPeerNet->DispatchEvent(&eventIsForkNode);
         UpdateChildNodeForksToParent();
     }
     
@@ -894,6 +889,14 @@ bool CDbpService::HandleEvent(CMvEventDbpRegisterForkID& event)
 bool CDbpService::HandleEvent(CMvEventDbpIsForkNode& event)
 {
     fIsForkNode = event.data.IsForkNode;
+
+    int nNonce = 0;
+    std::memcpy(&nNonce,CDbpUtils::RandomString().data(),4);
+    CFkEventNodeIsForkNode eventIsForkNode(nNonce);
+    eventIsForkNode.fIsForkNode = fIsForkNode;
+    pVirtualPeerNet->DispatchEvent(&eventIsForkNode);
+
+    return true;
 }
 
 bool CDbpService::HandleEvent(CMvEventDbpUpdateForkState& event)
