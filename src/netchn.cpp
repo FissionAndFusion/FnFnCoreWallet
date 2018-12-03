@@ -480,7 +480,8 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerGetData& eventGetData)
                 }
                 case CForkPseudoPeerNet::SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT:
                 {
-                    CFkEventNodeTxArrive event(nNonce, hashFork);
+                    CFkEventNodeTxRequest event(nNonce, hashFork);
+                    event.hashTx = inv.nHash;
                     pPeerNet->DispatchEvent(&event);
                     break;
                 }
@@ -505,7 +506,8 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerGetData& eventGetData)
                 }
                 case CForkPseudoPeerNet::SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT:
                 {
-                    CFkEventNodeBlockArrive event(nNonce, hashFork);
+                    CFkEventNodeBlockRequest event(nNonce, hashFork);
+                    event.hashBlock = inv.nHash;
                     pPeerNet->DispatchEvent(&event);
                     break;
                 }

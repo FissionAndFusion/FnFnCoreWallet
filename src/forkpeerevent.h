@@ -157,11 +157,11 @@ protected:
     void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
     {
         s.Serialize(hashFork, opt);
-        s.Serialize(hashBlock, opt);
+        s.Serialize(hashTx, opt);
     }
 public:
     uint256 hashFork;   //fork id
-    uint256 hashBlock;  //hash of requested block
+    uint256 hashTx;  //hash of requested block
 };
 
 template <int type, typename L>
