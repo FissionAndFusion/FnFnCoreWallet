@@ -897,6 +897,12 @@ bool CDbpService::HandleEvent(CMvEventDbpIsForkNode& event)
     eventIsForkNode.fIsForkNode = fIsForkNode;
     pVirtualPeerNet->DispatchEvent(&eventIsForkNode);
 
+    pNetChannel->SetForkFilterInfo(fIsForkNode, mapThisNodeForkStates);
+
+    CMvEventDbpIsForkNode eventDbpIsForkNode("");
+    eventDbpIsForkNode.data.IsForkNode = fIsForkNode;
+    pDbpClient->DispatchEvent(&eventDbpIsForkNode);
+
     return true;
 }
 

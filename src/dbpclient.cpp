@@ -517,6 +517,7 @@ CMvDbpClient::CMvDbpClient()
   : walleve::CIOProc("dbpclient")
 {
     pDbpService = NULL;
+    fIsForkNode = false;
 }
 
 CMvDbpClient::~CMvDbpClient(){}
@@ -1162,14 +1163,7 @@ bool CMvDbpClient::IsSessionExist(const std::string& session)
 
 bool CMvDbpClient::IsForkNode()
 {
-    if(mapProfile.size() > 0)
-    {
-        return mapProfile.begin()->second.epParentHost.address().to_string().empty() ? false : true; 
-    }
-    else
-    {
-        return false;
-    }
+    return fIsForkNode;
 }
 
 bool CMvDbpClient::ActivateConnect(CIOClient* pClient)
@@ -1341,6 +1335,12 @@ bool CMvDbpClient::HandleEvent(CMvEventDbpSendTxNotice& event)
 
     pClientSocket->SendTxNotice(event.data.forkid,event.data.hash);
 
+    return true;
+}
+
+bool CMvDbpClient::HandleEvent(CMvEventDbpIsForkNode& event)
+{
+    fIsForkNode = event.data.IsForkNode;
     return true;
 }
 
