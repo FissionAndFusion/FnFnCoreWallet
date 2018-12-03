@@ -390,16 +390,6 @@ class CFkNodeEventListener;
 #define TYPE_FORK_NODE_IS_FORK_NODE_EVENT(type)       \
         CFkEventIsForkNode<static_cast<int>(type), CFkNodeEventListener>
 
-typedef TYPE_FORK_NODE_UPDATE_FORK_STATE_EVENT(ecForkEventType::FK_EVENT_NODE_UPDATE_FORK_STATE) CFkEventNodeUpdateForkState;
-typedef TYPE_FORK_NODE_SEND_BLOCK_NOTICE_ARRIVE_EVENT(ecForkEventType::FK_EVENT_NODE_SEND_BLOCK_NOTICE) CFkEventNodeSendBlockNotice;
-typedef TYPE_FORK_NODE_SEND_TX_NOTICE_ARRIVE_EVENT(ecForkEventType::FK_EVENT_NODE_SEND_TX_NOTICE) CFkEventNodeSendTxNotice;
-typedef TYPE_FORK_NODE_SEND_BLOCK_EVENT(ecForkEventType::FK_EVENT_NODE_SEND_BLOCK, CBlockEx) CFkEventNodeSendBlock;
-typedef TYPE_FORK_NODE_SEND_TX_EVENT(ecForkEventType::FK_EVENT_NODE_SEND_TX, CTransaction) CFkEventNodeSendTx;
-typedef TYPE_FORK_NODE_IS_FORK_NODE_EVENT(ecForkEventType::FK_EVENT_NODE_IS_FORKNODE) CFkEventNodeIsForkNode;
-
-
-
-
 #define TYPE_FORK_NODE_BLOCK_ARRIVE_EVENT(type, body)       \
         CFkEventBlockArrive<static_cast<int>(type), CFkNodeEventListener, body>
 
@@ -422,6 +412,7 @@ typedef TYPE_FORK_NODE_SEND_BLOCK_NOTICE_ARRIVE_EVENT(ecForkEventType::FK_EVENT_
 typedef TYPE_FORK_NODE_SEND_TX_NOTICE_ARRIVE_EVENT(ecForkEventType::FK_EVENT_NODE_SEND_TX_NOTICE) CFkEventNodeSendTxNotice;
 typedef TYPE_FORK_NODE_SEND_BLOCK_EVENT(ecForkEventType::FK_EVENT_NODE_SEND_BLOCK, CBlockEx) CFkEventNodeSendBlock;
 typedef TYPE_FORK_NODE_SEND_TX_EVENT(ecForkEventType::FK_EVENT_NODE_SEND_TX, CTransaction) CFkEventNodeSendTx;
+typedef TYPE_FORK_NODE_IS_FORK_NODE_EVENT(ecForkEventType::FK_EVENT_NODE_IS_FORKNODE) CFkEventNodeIsForkNode;
 
 class CFkNodeEventListener : virtual public walleve::CWalleveEventListener
 {
