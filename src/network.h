@@ -5,13 +5,13 @@
 #ifndef  MULTIVERSE_NETWORK_H
 #define  MULTIVERSE_NETWORK_H
 
-#include "mvpeernet.h"
+#include "forkpseudopeernet.h"
 #include "config.h"
 
 namespace multiverse
 {
 
-class CNetwork : public network::CMvPeerNet
+class CNetwork : public CForkPseudoPeerNet
 {
 public:
     CNetwork();

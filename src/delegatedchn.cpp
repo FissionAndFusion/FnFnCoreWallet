@@ -214,7 +214,7 @@ CDelegatedChannel::~CDelegatedChannel()
 
 bool CDelegatedChannel::WalleveHandleInitialize()
 {
-    if (!WalleveGetObject("peernet",pPeerNet))
+    if (!WalleveGetObject("forkpseudopeernet",pPeerNet))
     {
         WalleveLog("Failed to request peer net\n");
         return false;

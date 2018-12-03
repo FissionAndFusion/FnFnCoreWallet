@@ -31,7 +31,18 @@ CMvPeerNet::CMvPeerNet()
     fEnclosed = false;
     pNetChannel = NULL;
     pDelegatedChannel = NULL;
-}   
+}
+
+CMvPeerNet::CMvPeerNet(const std::string& walleveOwnKeyIn)
+: CPeerNet(walleveOwnKeyIn)
+{
+    nMagicNum = 0;
+    nVersion  = 0;
+    nService  = 0;
+    fEnclosed = false;
+    pNetChannel = NULL;
+    pDelegatedChannel = NULL;
+}
 
 CMvPeerNet::~CMvPeerNet()
 {   
