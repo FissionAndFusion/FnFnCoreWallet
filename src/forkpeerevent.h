@@ -40,6 +40,8 @@ enum class ecForkEventType : int
     FK_EVENT_NODE_SEND_TX,
     FK_EVENT_NODE_SEND_BLOCK,
 
+    FK_EVENT_NODE_IS_FORKNODE,
+
     FK_EVENT_NODE_MAX
 };
 
@@ -344,6 +346,37 @@ public:
     D data;             //object of CTransaction
 };
 
+template <int type, typename L>
+class CFkEventIsForkNode : public walleve::CWalleveEvent
+{
+    friend class walleve::CWalleveStream;
+public:
+    CFkEventIsForkNode(uint64 nNonceIn)
+            : CWalleveEvent(nNonceIn, type) {}
+    virtual ~CFkEventIsForkNode() {}
+    virtual bool Handle(walleve::CWalleveEventListener& listener)
+    {
+        try
+        {
+            return (dynamic_cast<L&>(listener)).HandleEvent(*this);
+        }
+        catch (std::bad_cast&)
+        {
+            return listener.HandleEvent(*this);
+        }
+        catch (...) {}
+        return false;
+    }
+protected:
+    template <typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
+    {
+        s.Serialize(fIsForkNode, opt);
+    }
+public:
+    bool fIsForkNode;           
+};
+
 template <int type, typename L, typename D>
 class CFkEventNodeData : public walleve::CWalleveEvent
 {
@@ -450,12 +483,15 @@ typedef TYPE_FORKNODEEVENT(ecForkEventType::FK_EVENT_NODE_TX, CTransaction) CFkE
 #define TYPE_FORK_NODE_SEND_TX_EVENT(type, body)       \
         CFkEventSendTx<static_cast<int>(type), CFkNodeEventListener, body>
 
+#define TYPE_FORK_NODE_IS_FORK_NODE_EVENT(type)       \
+        CFkEventIsForkNode<static_cast<int>(type), CFkNodeEventListener>
+
 typedef TYPE_FORK_NODE_UPDATE_FORK_STATE_EVENT(ecForkEventType::FK_EVENT_NODE_UPDATE_FORK_STATE) CFkEventNodeUpdateForkState;
 typedef TYPE_FORK_NODE_SEND_BLOCK_NOTICE_ARRIVE_EVENT(ecForkEventType::FK_EVENT_NODE_SEND_BLOCK_NOTICE) CFkEventNodeSendBlockNotice;
 typedef TYPE_FORK_NODE_SEND_TX_NOTICE_ARRIVE_EVENT(ecForkEventType::FK_EVENT_NODE_SEND_TX_NOTICE) CFkEventNodeSendTxNotice;
 typedef TYPE_FORK_NODE_SEND_BLOCK_EVENT(ecForkEventType::FK_EVENT_NODE_SEND_BLOCK, CBlockEx) CFkEventNodeSendBlock;
 typedef TYPE_FORK_NODE_SEND_TX_EVENT(ecForkEventType::FK_EVENT_NODE_SEND_TX, CTransaction) CFkEventNodeSendTx;
-
+typedef TYPE_FORK_NODE_IS_FORK_NODE_EVENT(ecForkEventType::FK_EVENT_NODE_IS_FORKNODE) CFkEventNodeIsForkNode;
 
 
 
@@ -504,6 +540,7 @@ public:
     DECLARE_EVENTHANDLER(CFkEventNodeSendTxNotice);
     DECLARE_EVENTHANDLER(CFkEventNodeSendBlock);
     DECLARE_EVENTHANDLER(CFkEventNodeSendTx);
+    DECLARE_EVENTHANDLER(CFkEventNodeIsForkNode);
 
 };
 
