@@ -236,7 +236,12 @@ void CDbpService::HandleAddedBlock(const CMvDbpBlock& block)
         if(!IsBlockExist(blockHash) && IsBlockExist(blockPreHash))
         {
             // process normal
-            pVirtualPeerNet->DispatchEvent(NULL);
+            int nNonce = 0;
+            CBlockEx blockEx;
+            CDbpUtils::DbpToRawBlock(block, blockEx);
+            CFkEventNodeBlockArrive eventBlockArrive(nNonce, forkHash);
+            eventBlockArrive.data = blockEx;
+            pVirtualPeerNet->DispatchEvent(&eventBlockArrive);
         }
         else
         {
@@ -261,7 +266,13 @@ void CDbpService::HandleAddedTx(const CMvDbpTransaction& tx)
         // THIS FORK NODE Handle this TODO
         print_tx(tx);
 
-        pVirtualPeerNet->DispatchEvent(NULL);
+        CTransaction rawTx;
+        CDbpUtils::DbpToRawTransaction(tx, rawTx);
+        
+        int nNonce = 0;
+        CFkEventNodeTxArrive eventTxArrive(nNonce, forkHash);
+        eventTxArrive.data = rawTx;
+        pVirtualPeerNet->DispatchEvent(&eventTxArrive);
 
         if(IsMainFork(forkHash))
         {
