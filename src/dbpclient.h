@@ -192,6 +192,7 @@ protected:
     bool HandleEvent(CMvEventDbpSendTxNotice& event) override;
     bool HandleEvent(CMvEventDbpGetBlocks& event) override;
     bool HandleEvent(CMvEventDbpUpdateForkState& event) override;
+    bool HandleEvent(CMvEventDbpIsForkNode& event) override;
 
 protected:
     std::vector<CDbpClientConfig> vecClientConfig;
@@ -202,6 +203,8 @@ protected:
     typedef SessionClientSocketBimapType::value_type position_pair;
     SessionClientSocketBimapType bimapSessionClientSocket;      // session id <=> CMvDbpClientSocket
     std::map<std::string, CMvSessionProfile> mapSessionProfile; // session id => session profile
+
+    bool fIsForkNode;
 
 private:
     IIOModule* pDbpService;
