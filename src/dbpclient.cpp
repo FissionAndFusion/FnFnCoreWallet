@@ -989,10 +989,16 @@ bool CMvDbpClient::ClientConnected(CIOClient* pClient)
     {
         WalleveLog("Connect parent node is loopback, Default is Root Node.\n");
         CMvEventDbpIsForkNode* pEvent = new CMvEventDbpIsForkNode("");
-        pEvent->data.IsForkNode = true;
+        pEvent->data.IsForkNode = false;
         pDbpService->PostEvent(pEvent);
         pClient->Close();
         return false;
+    }
+    else
+    {
+        CMvEventDbpIsForkNode* pEvent = new CMvEventDbpIsForkNode("");
+        pEvent->data.IsForkNode = true;
+        pDbpService->PostEvent(pEvent);
     }
 
     WalleveLog("Connect parent node %s success,  port = %d\n",
@@ -1009,11 +1015,14 @@ void CMvDbpClient::ClientFailToConnect(const boost::asio::ip::tcp::endpoint& epR
     {
         WalleveLog("Connect parent node is loopback, Default is Root Node.\n");
         CMvEventDbpIsForkNode* pEvent = new CMvEventDbpIsForkNode("");
-        pEvent->data.IsForkNode = true;
+        pEvent->data.IsForkNode = false;
         pDbpService->PostEvent(pEvent);
         return;
     }
-    
+   
+    CMvEventDbpIsForkNode* pEvent = new CMvEventDbpIsForkNode("");
+    pEvent->data.IsForkNode = true;
+    pDbpService->PostEvent(pEvent);
     
     WalleveLog("Connect parent node %s failed,  port = %d\n reconnectting\n",
                        epRemote.address().to_string().c_str(),
