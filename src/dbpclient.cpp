@@ -1004,6 +1004,17 @@ bool CMvDbpClient::ClientConnected(CIOClient* pClient)
 
 void CMvDbpClient::ClientFailToConnect(const boost::asio::ip::tcp::endpoint& epRemote)
 {
+    
+    if(epRemote.address().is_loopback())
+    {
+        WalleveLog("Connect parent node is loopback, Default is Root Node.\n");
+        CMvEventDbpIsForkNode* pEvent = new CMvEventDbpIsForkNode("");
+        pEvent->data.IsForkNode = true;
+        pDbpService->PostEvent(pEvent);
+        return;
+    }
+    
+    
     WalleveLog("Connect parent node %s failed,  port = %d\n reconnectting\n",
                        epRemote.address().to_string().c_str(),
                        epRemote.port());
