@@ -87,6 +87,8 @@ protected:
     bool HandleEvent(network::CMvEventPeerTx& eventTx) override;
     bool HandleEvent(network::CMvEventPeerBlock& eventBlock) override;
 
+    bool HandleEvent(CFkEventNodeMainBlockRequest& eventRequestMainBlock) override;
+
     bool HandleEventForOrigin(network::CMvEventPeerTx& eventTx);
     bool HandleEventForOrigin(network::CMvEventPeerBlock& eventBlock);
 

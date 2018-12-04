@@ -40,6 +40,7 @@ protected:
     bool HandleEvent(CFkEventNodeSendTxNotice& event) override;
     bool HandleEvent(CFkEventNodeSendBlock& event) override;
     bool HandleEvent(CFkEventNodeSendTx& event) override;
+    bool HandleEvent(CFkEventNodeIsForkNode& event) override;
 
     bool HandleEvent(CFkEventNodeIsForkNode& event) override;
 
