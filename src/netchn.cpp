@@ -695,6 +695,13 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerBlock& eventBlock)
     return true;
 }
 
+bool CNetChannel::HandleEvent(CFkEventNodeMainBlockRequest& eventRequestMainBlock)
+{
+    //this handler is triggered when fork node connect to super node cluster
+
+    return true;
+}
+
 CSchedule& CNetChannel::GetSchedule(const uint256& hashFork)
 {
     map<uint256,CSchedule>::iterator it = mapSched.find(hashFork);

@@ -49,9 +49,11 @@ bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeBlockArrive& event)
     //fork node
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
     {
-        CFkEventNodeBlockArrive *pEvent = new CFkEventNodeBlockArrive(event);
+        uint64 nonce = 0;
+        network::CMvEventPeerBlock *pEvent = new network::CMvEventPeerBlock(nonce, event.hashFork);
         if(nullptr != pEvent)
         {
+            pEvent->data = event.data;
             pNetChannel->PostEvent(pEvent);
         }
         return true;
@@ -195,6 +197,18 @@ bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeUpdateForkState& event)
     {
         mapForkNodeHeight[event.hashFork] = std::make_pair(event.height, event.hashBlock);
     }
+
+    //request for blocks of main chain if this is a root node
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
+    {
+        CFkEventNodeMainBlockRequest *pEvent = new CFkEventNodeMainBlockRequest(0);
+        if(nullptr != pEvent)
+        {
+            pEvent->height = event.height;
+            pNetChannel->PostEvent(pEvent);
+        }
+    }
+
     return true;
 }
 
