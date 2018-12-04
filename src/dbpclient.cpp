@@ -647,11 +647,6 @@ void CMvDbpClient::HandleConnected(CMvDbpClientSocket* pClientSocket, google::pr
     if(IsSessionExist(connected.session()))
     {
         StartPingTimer(connected.session());
-        
-        CMvEventDbpIsForkNode* pEvent = new CMvEventDbpIsForkNode("");
-        pEvent->data.IsForkNode = true;
-        pDbpService->PostEvent(pEvent);
-        
         RegisterDefaultForks(pClientSocket);
         SubscribeDefaultTopics(pClientSocket);
         UpdateDefaultForksState(pClientSocket);
@@ -943,12 +938,12 @@ void CMvDbpClient::EnterLoop()
          it != mapProfile.end(); ++it)
     {
         bool fEnableSSL = (*it).second.optSSL.fEnable;
-        if(it->first.address().is_loopback())
-        {
-            continue;
-        }
-        else
-        {   
+       // if(it->first.address().is_loopback())
+        //{
+          //  continue;
+       // }
+        //else
+       // {   
             if(!StartConnection(it->first,DBPCLIENT_CONNECT_TIMEOUT,fEnableSSL,it->second.optSSL))
             {
                 WalleveLog("Start to connect parent node %s failed,  port = %d\n",
@@ -961,7 +956,7 @@ void CMvDbpClient::EnterLoop()
                        (*it).first.address().to_string().c_str(),
                        (*it).first.port());
             } 
-        } 
+       // } 
     }
 }
 
@@ -990,6 +985,22 @@ bool CMvDbpClient::ClientConnected(CIOClient* pClient)
         return false;
     }
 
+    if(pClient->GetRemote().address().is_loopback())
+    {
+        WalleveLog("Connect parent node is loopback, Default is Root Node.\n");
+        CMvEventDbpIsForkNode* pEvent = new CMvEventDbpIsForkNode("");
+        pEvent->data.IsForkNode = false;
+        pDbpService->PostEvent(pEvent);
+        pClient->Close();
+        return false;
+    }
+    else
+    {
+        CMvEventDbpIsForkNode* pEvent = new CMvEventDbpIsForkNode("");
+        pEvent->data.IsForkNode = true;
+        pDbpService->PostEvent(pEvent);
+    }
+
     WalleveLog("Connect parent node %s success,  port = %d\n",
                        (*it).first.address().to_string().c_str(),
                        (*it).first.port());
@@ -999,6 +1010,20 @@ bool CMvDbpClient::ClientConnected(CIOClient* pClient)
 
 void CMvDbpClient::ClientFailToConnect(const boost::asio::ip::tcp::endpoint& epRemote)
 {
+    
+    if(epRemote.address().is_loopback())
+    {
+        WalleveLog("Connect parent node is loopback, Default is Root Node.\n");
+        CMvEventDbpIsForkNode* pEvent = new CMvEventDbpIsForkNode("");
+        pEvent->data.IsForkNode = false;
+        pDbpService->PostEvent(pEvent);
+        return;
+    }
+   
+    CMvEventDbpIsForkNode* pEvent = new CMvEventDbpIsForkNode("");
+    pEvent->data.IsForkNode = true;
+    pDbpService->PostEvent(pEvent);
+    
     WalleveLog("Connect parent node %s failed,  port = %d\n reconnectting\n",
                        epRemote.address().to_string().c_str(),
                        epRemote.port());
@@ -1055,7 +1080,7 @@ bool CMvDbpClient::CreateProfile(const CDbpClientConfig& confClient)
 bool CMvDbpClient::StartConnection(const boost::asio::ip::tcp::endpoint& epRemote, int64 nTimeout,bool fEnableSSL,
     const CIOSSLOption& optSSL)
 {
-    if(fEnableSSL)
+    if(!fEnableSSL)
     {
         return Connect(epRemote,nTimeout) ? true : false;
     }
@@ -1166,6 +1191,7 @@ bool CMvDbpClient::IsForkNode()
 
 bool CMvDbpClient::ActivateConnect(CIOClient* pClient)
 {
+  
     uint64 nNonce = 0;
     RAND_bytes((unsigned char *)&nNonce, sizeof(nNonce));
     while (mapClientSocket.count(nNonce))
@@ -1186,6 +1212,7 @@ bool CMvDbpClient::ActivateConnect(CIOClient* pClient)
     std::vector<std::string> vSupportForks = mapProfile[pClient->GetRemote()].vSupportForks;
     
     pDbpClientSocket->SendConnectSession("",vSupportForks);
+    
     
     return true;
 }

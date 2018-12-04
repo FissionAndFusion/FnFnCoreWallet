@@ -10,8 +10,7 @@ CForkPseudoPeerNet::CForkPseudoPeerNet()
 : CMvPeerNet("forkpseudopeernet")
 {
     pDbpService = nullptr;
-    //typeNode = SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN;
-    typeNode = SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT;
+    typeNode = SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN;
 }
 
 CForkPseudoPeerNet::~CForkPseudoPeerNet()
