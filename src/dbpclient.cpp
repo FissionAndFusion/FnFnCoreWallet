@@ -938,25 +938,20 @@ void CMvDbpClient::EnterLoop()
          it != mapProfile.end(); ++it)
     {
         bool fEnableSSL = (*it).second.optSSL.fEnable;
-       // if(it->first.address().is_loopback())
-        //{
-          //  continue;
-       // }
-        //else
-       // {   
-            if(!StartConnection(it->first,DBPCLIENT_CONNECT_TIMEOUT,fEnableSSL,it->second.optSSL))
-            {
-                WalleveLog("Start to connect parent node %s failed,  port = %d\n",
-                       (*it).first.address().to_string().c_str(),
-                       (*it).first.port());
-            }
-            else
-            {
-                WalleveLog("Start to connect parent node %s,  port = %d\n",
-                       (*it).first.address().to_string().c_str(),
-                       (*it).first.port());
-            } 
-       // } 
+       
+        if(!StartConnection(it->first,DBPCLIENT_CONNECT_TIMEOUT,fEnableSSL,it->second.optSSL))
+        {
+            WalleveLog("Start to connect parent node %s failed,  port = %d\n",
+                    (*it).first.address().to_string().c_str(),
+                    (*it).first.port());
+        }
+        else
+        {
+            WalleveLog("Start to connect parent node %s,  port = %d\n",
+                    (*it).first.address().to_string().c_str(),
+                    (*it).first.port());
+        } 
+       
     }
 }
 
@@ -992,6 +987,7 @@ bool CMvDbpClient::ClientConnected(CIOClient* pClient)
         pEvent->data.IsForkNode = false;
         pDbpService->PostEvent(pEvent);
         pClient->Close();
+        fIsForkNode = false;
         return false;
     }
     else
@@ -999,6 +995,7 @@ bool CMvDbpClient::ClientConnected(CIOClient* pClient)
         CMvEventDbpIsForkNode* pEvent = new CMvEventDbpIsForkNode("");
         pEvent->data.IsForkNode = true;
         pDbpService->PostEvent(pEvent);
+        fIsForkNode = true;
     }
 
     WalleveLog("Connect parent node %s success,  port = %d\n",

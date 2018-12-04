@@ -911,10 +911,6 @@ bool CDbpService::HandleEvent(CMvEventDbpIsForkNode& event)
 
     pNetChannel->SetForkFilterInfo(fIsForkNode, mapThisNodeForkStates);
 
-    CMvEventDbpIsForkNode eventDbpIsForkNode("");
-    eventDbpIsForkNode.data.IsForkNode = fIsForkNode;
-    pDbpClient->DispatchEvent(&eventDbpIsForkNode);
-
     return true;
 }
 
