@@ -706,6 +706,48 @@ bool CNetChannel::HandleEvent(CFkEventNodeMainBlockRequest& eventRequestMainBloc
 {
     //this handler is triggered when fork node connect to super node cluster
 
+    CFkEventNodeMainBlockRequest& event = eventRequestMainBlock;
+    //ignore if height of requested block is great than one root node owns
+    if(event.height >= pService->GetForkHeight(pCoreProtocol->GetGenesisBlockHash()))
+    {
+        return true;
+    }
+
+    CBlockLocator locator;
+    if(!pWorldLine->GetBlockLocator(pCoreProtocol->GetGenesisBlockHash(), locator))
+    {
+        return false;
+    }
+
+    int height = 0;
+    for(const auto& b : locator.vBlockHash)
+    {
+        if(height <= event.height)
+        {
+            ++height;
+            continue;
+        }
+
+        CBlockEx block;
+        uint256 hash;
+        int nHeight;
+        if(!pService->GetBlockEx(pCoreProtocol->GetGenesisBlockHash(), block, hash, nHeight))
+        {
+            return false;
+        }
+        {
+            CFkEventNodeBlockArrive evt(0, pCoreProtocol->GetGenesisBlockHash());
+            evt.height += 1;
+            pPeerNet->DispatchEvent(&evt);
+        }
+        ++height;
+    }
+
+
+
+
+
+
     return true;
 }
 
