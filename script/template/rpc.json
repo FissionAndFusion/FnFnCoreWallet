@@ -1150,14 +1150,14 @@
         },
         "example": [
             {
-                "request": "multiverse-cli getblockcount",
+                "request": "multiverse-cli getforkheight",
                 "response": "32081"
             },
             {
-                "request": "curl -d '{\"id\":4,\"method\":\"getblockcount\",\"jsonrpc\":\"2.0\",\"params\":{}}' http://127.0.0.1:6812",
+                "request": "curl -d '{\"id\":4,\"method\":\"getforkheight\",\"jsonrpc\":\"2.0\",\"params\":{}}' http://127.0.0.1:6812",
                 "response": "{\"id\":4,\"jsonrpc\":\"2.0\",\"result\":32081}"
             },
-            "multiverse-cli getblockcount -f=a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0"
+            "multiverse-cli getforkheight -f=a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0"
         ]
     },
     "listkey": {

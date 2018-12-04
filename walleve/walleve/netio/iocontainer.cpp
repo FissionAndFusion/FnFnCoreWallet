@@ -217,6 +217,10 @@ void CIOInBound::HandleAccept(CIOClient *pClient, const boost::system::error_cod
         if (queIdleClient.size() <= 1 || !IsAllowedRemote(pClient->GetRemote()) 
             || !pIOProc->ClientAccepted(acceptorService.local_endpoint(),pClient))
         {
+            StdError(__PRETTY_FUNCTION__, (string("Accept error ") + epService.address().to_string()
+                + ". Idle client size: " + to_string(queIdleClient.size())
+                + ". Is allowed: " + to_string(IsAllowedRemote(pClient->GetRemote()))
+                + ". Accepted: " + to_string(pIOProc->ClientAccepted(acceptorService.local_endpoint(),pClient))).c_str());
             pClient->Close();
         }
         
@@ -233,6 +237,7 @@ void CIOInBound::HandleAccept(CIOClient *pClient, const boost::system::error_cod
     }
     else
     {
+        StdError(__PRETTY_FUNCTION__, (string("Other error ") + epService.address().to_string() + ". " + err.message()).c_str());
         if (err != boost::asio::error::operation_aborted)
         {
             acceptorService.close();
