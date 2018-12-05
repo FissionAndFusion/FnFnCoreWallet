@@ -32,6 +32,8 @@ enum class ecForkEventType : int
 
     FK_EVENT_NODE_MAIN_BLOCK_REQUEST,
 
+    FK_EVENT_NODE_ADD_NEW_FORK_NODE,
+
     FK_EVENT_NODE_MAX
 };
 
@@ -398,6 +400,37 @@ public:
     int height;         //last height of main chain block
 };
 
+template <int type, typename L, typename D>
+class CFkEventNewForkNodeConnected : public walleve::CWalleveEvent
+{   //used when a block filtered arrives from p2p network
+    friend class walleve::CWalleveStream;
+public:
+    CFkEventNewForkNodeConnected(uint64 nNonceIn)
+            : CWalleveEvent(nNonceIn, type) {}
+    virtual ~CFkEventNewForkNodeConnected() {}
+    virtual bool Handle(walleve::CWalleveEventListener& listener)
+    {
+        try
+        {
+            return (dynamic_cast<L&>(listener)).HandleEvent(*this);
+        }
+        catch (std::bad_cast&)
+        {
+            return listener.HandleEvent(*this);
+        }
+        catch (...) {}
+        return false;
+    }
+protected:
+    template <typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
+    {
+        s.Serialize(data, opt);
+    }
+public:
+    D data;             //set of nonce
+};
+
 class CFkNodeEventListener;
 
 #define TYPE_FORK_NODE_BLOCK_ARRIVE_EVENT(type, body)       \
@@ -426,6 +459,9 @@ class CFkNodeEventListener;
 #define TYPE_FORK_NODE_MAIN_BLOCK_REQUEST_EVENT(type)       \
         CFkEventMainBlockRequest<static_cast<int>(type), CFkNodeEventListener>
 
+#define TYPE_FORK_NODE_NEW_FORK_NODE_CONNECTED_EVENT(type, body)       \
+        CFkEventNewForkNodeConnected<static_cast<int>(type), CFkNodeEventListener, body>
+
 typedef TYPE_FORK_NODE_BLOCK_ARRIVE_EVENT(ecForkEventType::FK_EVENT_NODE_BLOCK_ARRIVE, CBlockEx) CFkEventNodeBlockArrive;
 typedef TYPE_FORK_NODE_TX_ARRIVE_EVENT(ecForkEventType::FK_EVENT_NODE_TX_ARRIVE, CTransaction) CFkEventNodeTxArrive;
 typedef TYPE_FORK_NODE_BLOCK_REQUEST_EVENT(ecForkEventType::FK_EVENT_NODE_BLOCK_REQUEST) CFkEventNodeBlockRequest;
@@ -439,6 +475,8 @@ typedef TYPE_FORK_NODE_SEND_TX_EVENT(ecForkEventType::FK_EVENT_NODE_SEND_TX, CTr
 typedef TYPE_FORK_NODE_IS_FORK_NODE_EVENT(ecForkEventType::FK_EVENT_NODE_IS_FORKNODE) CFkEventNodeIsForkNode;
 
 typedef TYPE_FORK_NODE_MAIN_BLOCK_REQUEST_EVENT(ecForkEventType::FK_EVENT_NODE_MAIN_BLOCK_REQUEST) CFkEventNodeMainBlockRequest;
+
+typedef TYPE_FORK_NODE_NEW_FORK_NODE_CONNECTED_EVENT(ecForkEventType::FK_EVENT_NODE_ADD_NEW_FORK_NODE, std::set<uint64>) CFkEventNodeNewForkNodeConnected;
 
 class CFkNodeEventListener : virtual public walleve::CWalleveEventListener
 {
@@ -458,6 +496,8 @@ public:
     DECLARE_EVENTHANDLER(CFkEventNodeIsForkNode);
 
     DECLARE_EVENTHANDLER(CFkEventNodeMainBlockRequest);
+
+    DECLARE_EVENTHANDLER(CFkEventNodeNewForkNodeConnected);
 };
 
 }
