@@ -3,8 +3,10 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "forkpseudopeernet.h"
+#include "walleve/peernet/peer.h"
 
 using namespace multiverse;
+using namespace walleve;
 
 CForkPseudoPeerNet::CForkPseudoPeerNet()
 : CMvPeerNet("forkpseudopeernet")
@@ -344,4 +346,21 @@ bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeIsForkNode& event)
 {
     typeNode = event.fIsForkNode ? SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK
                                  : SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT;
+}
+
+bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeNewForkNodeConnected& event)
+{
+    CPeer* pPeer = AddNewPeer(nullptr, true);
+    if(!pPeer)
+    {
+        return false;
+    }
+    CFkEventNodeNewForkNodeConnected* pEvent = new CFkEventNodeNewForkNodeConnected(0);
+    if(nullptr != pEvent)
+    {
+        std::set<uint64>& setNonce = pEvent->data;
+        setNonce.insert(pPeer->GetNonce());
+        pDbpService->PostEvent(pEvent);
+    }
+    return true;
 }
