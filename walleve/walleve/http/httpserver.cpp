@@ -401,7 +401,7 @@ void CHttpServer::RespondError(CHttpClient *pHttpClient,int nStatusCode,const st
     
     MAPIKeyValue mapHeader;
     MAPCookie mapCookie;
-    mapHeader["connection"] = "close";
+    mapHeader["connection"] = "Close";
     if (!strContent.empty())
     {
         mapHeader["content-type"] = "text/html"; 

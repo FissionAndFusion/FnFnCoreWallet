@@ -1638,7 +1638,7 @@
                         "templatedata": {
                             "type": "templateresponse",
                             "desc": "template data",
-                            "condition": "ismine=true"
+                            "condition": "type=template && ismine=true"
                         }
                     }
                 }

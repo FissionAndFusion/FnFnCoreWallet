@@ -82,20 +82,41 @@ def get_opt(prefix, json):
 
 
 def get_condition(prefix, json, content):
-    condition = get_json_value(prefix, json, 'condition', str, required=False)
-    cond_key, cond_value, cond_cpp_name = None, None, None
-    if condition:
-        matched = re.match('^([^=]*)=(.*)$', condition)
-        if matched:
-            cond_key, cond_value = matched.groups()
+    condstr = get_json_value(prefix, json, 'condition', str, required=False)
+    condition = None
+    if condstr:
+        condition = re.findall('(\&\&|\|\||^)[\s]*([^=\s\&\|]*)=([^=\s\&\|]*)', condstr)
+        for i in range(len(condition)):
+            op, cond_key, cond_value = condition[i]
+
             # if cond_key is not in content, cond_cpp_name = None, and only used in help.
+            cond_cpp_name = None
             if cond_key in content:
                 cond_type = get_json_value(prefix, content[cond_key], 'type')
                 if not is_pod(cond_type):
                     raise Exception('condition type can not be [%s]' % cond_type)
                 cond_value = quote(cond_value, cond_type)
                 cond_cpp_name = param_name(cond_key, cond_type)
-    return cond_key, cond_value, cond_cpp_name
+
+            condition[i] = (op, cond_key, cond_value, cond_cpp_name)
+    return condition
+
+
+def if_condition_code(cls_name, condition):
+    s = ''
+    for v in condition:
+        op, _, cond_value, cond_cpp_name = v
+        if cond_cpp_name:
+            if s != '' and op:
+                op = ' ' + op + ' '
+            else:
+                op = ''
+            s = s + op + cls_name + cond_cpp_name + ' == ' + cond_value
+    
+    if s == '':
+        return None
+    else:
+        return 'if (' + s + ')\n'
 
 
 def convert_cpp_type(type, sub=None):
@@ -412,8 +433,9 @@ def FromJSON_cpp(key, name, params, container, w, scope):
         call_check_json_type('v', key, 'object', w, indent)
         w.write(indent + 'auto obj = v.get_obj();\n')
         for p in params:
-            if p.cond_cpp_name:
-                w.write(indent + 'if (' + p.cond_cpp_name + ' == ' + p.cond_value + ')\n')
+            condstr = if_condition_code('', p.condition) if p.condition else None
+            if condstr:
+                w.write(indent + condstr)
                 indent = brace_begin(w, indent)
 
             val = 'val' + p.key.title()
@@ -428,7 +450,7 @@ def FromJSON_cpp(key, name, params, container, w, scope):
             if not p.required:
                 indent = brace_end(w, indent)
 
-            if p.cond_cpp_name:
+            if condstr:
                 indent = brace_end(w, indent)
     else:
         one_param(params[0], 'v', indent)
@@ -467,8 +489,9 @@ def ToJSON_cpp(name, params, container, w, scope):
     elif container == 'object':
         w.write(indent + 'Object ret;\n')
         for p in params:
-            if p.cond_cpp_name:
-                w.write(indent + 'if (' + p.cond_cpp_name + ' == ' + p.cond_value + ')\n')
+            condstr = if_condition_code('', p.condition) if p.condition else None
+            if condstr:
+                w.write(indent + condstr)
                 indent = brace_begin(w, indent)
 
             if p.required:
@@ -482,7 +505,7 @@ def ToJSON_cpp(name, params, container, w, scope):
             if not p.required:
                 indent = brace_end(w, indent)
 
-            if p.cond_cpp_name:
+            if condstr:
                 indent = brace_end(w, indent)
         empty_line(w)
         w.write(indent + 'return ret;\n')
@@ -526,13 +549,14 @@ def IsValid_cpp(name, params, w, scope):
 
     for p in params:
         if p.required:
-            if p.cond_cpp_name:
-                w.write(indent + 'if (' + p.cond_cpp_name + ' == ' + p.cond_value + ')\n')
+            condstr = if_condition_code('', p.condition) if p.condition else None
+            if condstr:
+                w.write(indent + condstr)
                 indent = brace_begin(w, indent)
 
             w.write(indent + 'if (!' + p.cpp_name + '.IsValid()) { return false; }\n')
 
-            if p.cond_cpp_name:
+            if condstr:
                 indent = brace_end(w, indent)
 
     w.write(indent + 'return true;\n')
@@ -623,8 +647,9 @@ def PostLoad_cpp(name, params, sub_params, w, scope):
         param_name = origin_param + p.cpp_name
 
         # condition
-        if p.cond_cpp_name:
-            w.write(indent + 'if (' + origin_param + p.cond_cpp_name + ' == ' + p.cond_value + ')\n')
+        condstr = if_condition_code(origin_param, p.condition) if p.condition else None
+        if condstr:
+            w.write(indent + condstr)
             indent = brace_begin(w, indent)
 
         container_str = 'strOrigin' + p.key.title()
@@ -697,7 +722,7 @@ def PostLoad_cpp(name, params, sub_params, w, scope):
             indent = brace_end(w, indent)
 
         # condition
-        if p.cond_cpp_name:
+        if condstr:
             indent = brace_end(w, indent)
 
     w.write(indent + 'return true;\n')
@@ -721,15 +746,31 @@ def Help_h(w, indent):
 
 
 def Help_cpp(config, w, scope):
+
+    def if_condition(condition):
+        s = ''
+        for v in condition:
+            op, cond_key, cond_value, _ = v
+            if s != '' and op:
+                op = ' ' + op + ' '
+            else:
+                op = ''
+            s = s + op + quote(cond_key) + " is " + cond_value
+
+        if s == '':
+            return ''
+        else:
+            return '(if ' + s + ')\n'
+
     # one line content
     def one_line(container, content, indent, max_length=None):
         l = split(content, ' ' * len(indent), max_length)
         container.append((indent, l))
 
     # deal one command line argument
-    def one_argument(container, format, type, desc, required, default, cond_key, cond_value, indent):
-        if cond_key != None:
-            cond_statement = indent + '(if ' + cond_key + ' is ' + cond_value + ')\n'
+    def one_argument(container, format, type, desc, required, default, condition, indent):
+        if condition:
+            cond_statement = indent + if_condition(condition)
             container.append((indent + cond_statement, None))
 
         arg_format = indent + format
@@ -744,9 +785,9 @@ def Help_cpp(config, w, scope):
 
     # deal one json-rpc param
     def one_param(container, key, type, desc, required, indent, default=None,
-                  cond_key=None, cond_value=None, has_dot=True, place_holder=None):
-        if cond_key != None:
-            cond_statement = '(if ' + quote(cond_key) + ' is ' + cond_value + ')\n'
+                  condition=None, has_dot=True, place_holder=None):
+        if condition:
+            cond_statement = if_condition(condition)
             container.append((indent + cond_statement, None))
 
         if type == 'array':
@@ -793,7 +834,7 @@ def Help_cpp(config, w, scope):
             for p in subclass.params:
                 if p.type != 'array':
                     one_param(container, p.key, p.type, p.desc, p.required, next_indent,
-                              p.default, p.cond_key, p.cond_value, p != subclass.params[-1])
+                              p.default, p.condition, p != subclass.params[-1])
                 if not is_pod(p):
                     sub_params(container, p.type, p.cpp_type, p, find_subclass(p, subclass.subclass), next_indent)
 
@@ -832,15 +873,15 @@ def Help_cpp(config, w, scope):
         required_begin, required_end = ('<', '>') if p.required else ('(', ')')
         required_fmt = required_begin + format + required_end
 
-        if p.cond_key and condition:
+        if p.condition and condition:
             usage = usage + '|' + required_fmt
         else:
             usage = usage + ' ' + required_fmt
-        condition = True if p.cond_key else False
+        condition = True if p.condition else False
 
         # parse one argument
         one_argument(arguments, format, p.type, p.desc, p.required,
-                     p.default, p.cond_key, p.cond_value, argument_indent)
+                     p.default, p.condition, argument_indent)
 
         # index keep same when condition
         if not condition:
@@ -857,7 +898,7 @@ def Help_cpp(config, w, scope):
         next_indent = argument_indent + sub_argument_indent
         for p in req_params:
             one_param(request, p.key, p.type, p.desc, p.required, next_indent,
-                      p.default, p.cond_key, p.cond_value, p != req_params[-1])
+                      p.default, p.condition, p != req_params[-1])
             sub_params(request, p.type, p.cpp_type, p, find_subclass(p, config.req_subclass), next_indent)
 
         if config.req_type != 'array':
@@ -868,7 +909,7 @@ def Help_cpp(config, w, scope):
         if is_pod(config.resp_type):
             p = resp_params[0]
             one_param(response, "result", p.type, p.desc, p.required, argument_indent,
-                      p.default, p.cond_key, p.cond_value, False, p.key)
+                      p.default, p.condition, False, p.key)
         else:
             response.append((argument_indent + '"result" :\n', None))
             if config.resp_type != 'array':
@@ -877,7 +918,7 @@ def Help_cpp(config, w, scope):
             next_indent = argument_indent + sub_argument_indent
             for p in resp_params:
                 one_param(response, p.key, p.type, p.desc, p.required, next_indent,
-                          p.default, p.cond_key, p.cond_value, p != resp_params[-1])
+                          p.default, p.condition, p != resp_params[-1])
                 sub_params(response, p.type, p.cpp_type, p, find_subclass(p, config.resp_subclass), next_indent)
 
             if config.resp_type != 'array':
@@ -1008,7 +1049,7 @@ def parse_params(class_prefix, content, allow_empty):
         # default
         default = get_default(prefix, detail, type, required)
         # condition
-        cond_key, cond_value, cond_cpp_name = get_condition(prefix, detail, content)
+        condition = get_condition(prefix, detail, content)
 
         if is_pod(type):
             cpp_type = convert_cpp_type(type)
@@ -1029,7 +1070,7 @@ def parse_params(class_prefix, content, allow_empty):
 
         cpp_name = param_name(key, type)
         ret_params.append(Param(key, type, desc, required, default, opt, cpp_type, cpp_name,
-                                cond_key, cond_value, cond_cpp_name, sub_key, sub_type, sub_desc, subclass_prefix))
+                                condition, sub_key, sub_type, sub_desc, subclass_prefix))
 
     # sort params, optional behind required
     def cmp_params(l, r):
@@ -1049,7 +1090,7 @@ def parse_params(class_prefix, content, allow_empty):
 # one param
 class Param:
     def __init__(self, key, type, desc, required, default, opt, cpp_type, cpp_name,
-                 cond_key, cond_value, cond_cpp_name, sub_key, sub_type, sub_desc, subclass_prefix):
+                 condition, sub_key, sub_type, sub_desc, subclass_prefix):
         # key in json
         self.key = key
         # int, bool, array...
@@ -1066,12 +1107,8 @@ class Param:
         self.default = default
         # value of 'opt' in json
         self.opt = opt
-        # key of 'condition'
-        self.cond_key = cond_key
-        # value of 'condition'
-        self.cond_value = cond_value
-        # key param name of 'condition'. Likes self.cpp_name
-        self.cond_cpp_name = cond_cpp_name
+        # (key, value, op, cppname)
+        self.condition = condition
         # When type == 'array', it's not None. Array element key likes self.key
         self.sub_key = sub_key
         # When type == 'array', it's not None. Array element type likes self.type
