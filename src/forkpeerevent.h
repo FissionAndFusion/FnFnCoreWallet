@@ -500,10 +500,10 @@ class CFkNodeEventListener;
         CFkEventNewForkNodeConnected<static_cast<int>(type), CFkNodeEventListener, body>
 
 #define TYPE_FORK_NODE_PEER_ACTIVE_EVENT(type, body)       \
-        walleve::CWalleveEventCategory<type, CFkNodeEventListener, body, bool>
+        walleve::CWalleveEventCategory<static_cast<int>(type), CFkNodeEventListener, body, bool>
 
 #define TYPE_FORK_NODE_PEER_DATA_EVENT(type, body)       \
-        CFkEventPeerData<type, CFkNodeEventListener, body>
+        CFkEventPeerData<static_cast<int>(type), CFkNodeEventListener, body>
 
 typedef TYPE_FORK_NODE_BLOCK_ARRIVE_EVENT(ecForkEventType::FK_EVENT_NODE_BLOCK_ARRIVE, CBlockEx) CFkEventNodeBlockArrive;
 typedef TYPE_FORK_NODE_TX_ARRIVE_EVENT(ecForkEventType::FK_EVENT_NODE_TX_ARRIVE, CTransaction) CFkEventNodeTxArrive;

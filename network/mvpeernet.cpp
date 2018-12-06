@@ -337,6 +337,20 @@ bool CMvPeerNet::HandlePeerHandshaked(CPeer *pPeer,uint32 nTimerId)
     return true;
 }
 
+bool CMvPeerNet::HandleForkPeerActive(const uint64& nNonce, const CAddress& addr)
+{
+    CMvEventPeerActive* pEventActive = new CMvEventPeerActive(nNonce);
+    if (pEventActive == NULL)
+    {
+        return false;
+    }
+
+    pEventActive->data = addr;
+
+    pNetChannel->PostEvent(pEventActive);
+    return true;
+}
+
 bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CWalleveBufStream& ssPayload)
 {
     CMvPeer *pMvPeer = static_cast<CMvPeer *>(pPeer);
