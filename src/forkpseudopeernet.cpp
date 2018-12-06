@@ -364,3 +364,30 @@ bool CForkPseudoPeerNet::HandleEvent(CFkEventNodeNewForkNodeConnected& event)
     }
     return true;
 }
+
+bool CForkPseudoPeerNet::HandleEvent(CFkEventNodePeerActive& event)
+{
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
+    {
+        uint64 nNonce = event.nNonce;
+        network::CAddress addr = event.data;
+        if(!HandleForkPeerActive(nNonce, addr))
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+void CForkPseudoPeerNet::HandlePeerHandshakedForForkNode(network::CMvEventPeerActive& peerActive)
+{
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
+    {
+        CFkEventNodePeerActive* pEvent = new CFkEventNodePeerActive(peerActive.nNonce);
+        if(nullptr != pEvent)
+        {
+            pEvent->data = peerActive.data;
+            pDbpService->PostEvent(pEvent);
+        }
+    }
+}
