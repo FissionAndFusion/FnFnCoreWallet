@@ -522,8 +522,8 @@ typedef TYPE_FORK_NODE_MAIN_BLOCK_REQUEST_EVENT(ecForkEventType::FK_EVENT_NODE_M
 typedef TYPE_FORK_NODE_NEW_FORK_NODE_CONNECTED_EVENT(ecForkEventType::FK_EVENT_NODE_ADD_NEW_FORK_NODE, std::set<uint64>) CFkEventNodeNewForkNodeConnected;
 
 typedef TYPE_FORK_NODE_PEER_ACTIVE_EVENT(ecForkEventType::FK_EVENT_NODE_PEER_ACTIVE, network::CAddress) CFkEventNodePeerActive;
-typedef TYPE_FORK_NODE_PEER_DATA_EVENT(ecForkEventType::FK_EVENT_NODE_SUBSCRIBE, std::vector<uint256>) CFkEventPeerSubscribe;
-typedef TYPE_FORK_NODE_PEER_DATA_EVENT(ecForkEventType::FK_EVENT_NODE_INV, std::vector<network::CInv>) CFkEventPeerInv;
+typedef TYPE_FORK_NODE_PEER_DATA_EVENT(ecForkEventType::FK_EVENT_NODE_SUBSCRIBE, std::vector<uint256>) CFkEventNodeSubscribe;
+typedef TYPE_FORK_NODE_PEER_DATA_EVENT(ecForkEventType::FK_EVENT_NODE_INV, std::vector<network::CInv>) CFkEventNodeInv;
 
 class CFkNodeEventListener : virtual public walleve::CWalleveEventListener
 {
@@ -547,8 +547,8 @@ public:
     DECLARE_EVENTHANDLER(CFkEventNodeNewForkNodeConnected);
 
     DECLARE_EVENTHANDLER(CFkEventNodePeerActive);
-    DECLARE_EVENTHANDLER(CFkEventPeerSubscribe);
-    DECLARE_EVENTHANDLER(CFkEventPeerInv);
+    DECLARE_EVENTHANDLER(CFkEventNodeSubscribe);
+    DECLARE_EVENTHANDLER(CFkEventNodeInv);
 };
 
 }
