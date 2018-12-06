@@ -18,6 +18,10 @@ namespace multiverse
 enum class ecForkEventType : int
 {
     //FORK NODE PEER NET EVENT
+    FK_EVENT_NODE_PEER_ACTIVE,
+    FK_EVENT_NODE_SUBSCRIBE,
+    FK_EVENT_NODE_INV,
+
     FK_EVENT_NODE_BLOCK_ARRIVE,
     FK_EVENT_NODE_TX_ARRIVE,
     FK_EVENT_NODE_BLOCK_REQUEST,
@@ -35,6 +39,70 @@ enum class ecForkEventType : int
     FK_EVENT_NODE_ADD_NEW_FORK_NODE,
 
     FK_EVENT_NODE_MAX
+};
+
+template <int type, typename L>
+class CFkEventPeerActive : public walleve::CWalleveEvent
+{
+    friend class walleve::CWalleveStream;
+public:
+    CFkEventPeerActive(uint64 nNonceIn, const uint256& hashForkIn)
+            : CWalleveEvent(nNonceIn, type) {}
+    virtual ~CFkEventPeerActive() {}
+    virtual bool Handle(walleve::CWalleveEventListener& listener)
+    {
+        try
+        {
+            return (dynamic_cast<L&>(listener)).HandleEvent(*this);
+        }
+        catch (std::bad_cast&)
+        {
+            return listener.HandleEvent(*this);
+        }
+        catch (...) {}
+        return false;
+    }
+protected:
+    template <typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
+    {
+        s.Serialize(nNonce, opt);
+    }
+public:
+    uint64 nNonce;   //nonce of real peer
+};
+
+template <int type,typename L,typename D>
+class CFkEventPeerData : public walleve::CWalleveEvent
+{
+    friend class walleve::CWalleveStream;
+public:
+    CFkEventPeerData(uint64 nNonceIn,const uint256& hashForkIn)
+            : CWalleveEvent(nNonceIn,type), hashFork(hashForkIn) {}
+    virtual ~CFkEventPeerData() {}
+    virtual bool Handle(walleve::CWalleveEventListener& listener)
+    {
+        try
+        {
+            return (dynamic_cast<L&>(listener)).HandleEvent(*this);
+        }
+        catch (std::bad_cast&)
+        {
+            return listener.HandleEvent(*this);
+        }
+        catch (...) {}
+        return false;
+    }
+protected:
+    template <typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s,O& opt)
+    {
+        s.Serialize(hashFork,opt);
+        s.Serialize(data,opt);
+    }
+public:
+    uint256 hashFork;
+    D data;
 };
 
 template <int type, typename L, typename D>
@@ -462,6 +530,12 @@ class CFkNodeEventListener;
 #define TYPE_FORK_NODE_NEW_FORK_NODE_CONNECTED_EVENT(type, body)       \
         CFkEventNewForkNodeConnected<static_cast<int>(type), CFkNodeEventListener, body>
 
+#define TYPE_FORK_NODE_PEER_ACTIVE_EVENT(type)       \
+        CFkEventPeerActive<static_cast<int>(type), CFkNodeEventListener>
+
+#define TYPE_FORK_NODE_PEER_DATA_EVENT(type, body)       \
+        CFkEventPeerData<type, CFkNodeEventListener, body>
+
 typedef TYPE_FORK_NODE_BLOCK_ARRIVE_EVENT(ecForkEventType::FK_EVENT_NODE_BLOCK_ARRIVE, CBlockEx) CFkEventNodeBlockArrive;
 typedef TYPE_FORK_NODE_TX_ARRIVE_EVENT(ecForkEventType::FK_EVENT_NODE_TX_ARRIVE, CTransaction) CFkEventNodeTxArrive;
 typedef TYPE_FORK_NODE_BLOCK_REQUEST_EVENT(ecForkEventType::FK_EVENT_NODE_BLOCK_REQUEST) CFkEventNodeBlockRequest;
@@ -477,6 +551,10 @@ typedef TYPE_FORK_NODE_IS_FORK_NODE_EVENT(ecForkEventType::FK_EVENT_NODE_IS_FORK
 typedef TYPE_FORK_NODE_MAIN_BLOCK_REQUEST_EVENT(ecForkEventType::FK_EVENT_NODE_MAIN_BLOCK_REQUEST) CFkEventNodeMainBlockRequest;
 
 typedef TYPE_FORK_NODE_NEW_FORK_NODE_CONNECTED_EVENT(ecForkEventType::FK_EVENT_NODE_ADD_NEW_FORK_NODE, std::set<uint64>) CFkEventNodeNewForkNodeConnected;
+
+typedef TYPE_FORK_NODE_PEER_ACTIVE_EVENT(ecForkEventType::FK_EVENT_NODE_MAIN_BLOCK_REQUEST) CFkEventNodePeerActive;
+typedef TYPE_FORK_NODE_PEER_DATA_EVENT(ecForkEventType::FK_EVENT_NODE_SUBSCRIBE, std::vector<uint256>) CFkEventPeerSubscribe;
+typedef TYPE_FORK_NODE_PEER_DATA_EVENT(ecForkEventType::FK_EVENT_NODE_INV, std::vector<network::CInv>) CFkEventPeerInv;
 
 class CFkNodeEventListener : virtual public walleve::CWalleveEventListener
 {
@@ -498,6 +576,10 @@ public:
     DECLARE_EVENTHANDLER(CFkEventNodeMainBlockRequest);
 
     DECLARE_EVENTHANDLER(CFkEventNodeNewForkNodeConnected);
+
+    DECLARE_EVENTHANDLER(CFkEventNodePeerActive);
+    DECLARE_EVENTHANDLER(CFkEventPeerSubscribe);
+    DECLARE_EVENTHANDLER(CFkEventPeerInv);
 };
 
 }
