@@ -99,7 +99,7 @@ def get_condition(prefix, json, content):
                 cond_cpp_name = param_name(cond_key, cond_type)
 
             condition[i] = (op, cond_key, cond_value, cond_cpp_name)
-    return condition
+    return condstr, condition
 
 
 def if_condition_code(cls_name, condition):
@@ -747,30 +747,15 @@ def Help_h(w, indent):
 
 def Help_cpp(config, w, scope):
 
-    def if_condition(condition):
-        s = ''
-        for v in condition:
-            op, cond_key, cond_value, _ = v
-            if s != '' and op:
-                op = ' ' + op + ' '
-            else:
-                op = ''
-            s = s + op + quote(cond_key) + " is " + cond_value
-
-        if s == '':
-            return ''
-        else:
-            return '(if ' + s + ')\n'
-
     # one line content
     def one_line(container, content, indent, max_length=None):
         l = split(content, ' ' * len(indent), max_length)
         container.append((indent, l))
 
     # deal one command line argument
-    def one_argument(container, format, type, desc, required, default, condition, indent):
-        if condition:
-            cond_statement = indent + if_condition(condition)
+    def one_argument(container, format, type, desc, required, default, condstr, indent):
+        if condstr:
+            cond_statement = indent + '(if ' + condstr + ')\n'
             container.append((indent + cond_statement, None))
 
         arg_format = indent + format
@@ -785,9 +770,9 @@ def Help_cpp(config, w, scope):
 
     # deal one json-rpc param
     def one_param(container, key, type, desc, required, indent, default=None,
-                  condition=None, has_dot=True, place_holder=None):
-        if condition:
-            cond_statement = if_condition(condition)
+                  condstr=None, has_dot=True, place_holder=None):
+        if condstr:
+            cond_statement = '(if ' + condstr + ')\n'
             container.append((indent + cond_statement, None))
 
         if type == 'array':
@@ -834,7 +819,7 @@ def Help_cpp(config, w, scope):
             for p in subclass.params:
                 if p.type != 'array':
                     one_param(container, p.key, p.type, p.desc, p.required, next_indent,
-                              p.default, p.condition, p != subclass.params[-1])
+                              p.default, p.condstr, p != subclass.params[-1])
                 if not is_pod(p):
                     sub_params(container, p.type, p.cpp_type, p, find_subclass(p, subclass.subclass), next_indent)
 
@@ -881,7 +866,7 @@ def Help_cpp(config, w, scope):
 
         # parse one argument
         one_argument(arguments, format, p.type, p.desc, p.required,
-                     p.default, p.condition, argument_indent)
+                     p.default, p.condstr, argument_indent)
 
         # index keep same when condition
         if not condition:
@@ -898,7 +883,7 @@ def Help_cpp(config, w, scope):
         next_indent = argument_indent + sub_argument_indent
         for p in req_params:
             one_param(request, p.key, p.type, p.desc, p.required, next_indent,
-                      p.default, p.condition, p != req_params[-1])
+                      p.default, p.condstr, p != req_params[-1])
             sub_params(request, p.type, p.cpp_type, p, find_subclass(p, config.req_subclass), next_indent)
 
         if config.req_type != 'array':
@@ -909,7 +894,7 @@ def Help_cpp(config, w, scope):
         if is_pod(config.resp_type):
             p = resp_params[0]
             one_param(response, "result", p.type, p.desc, p.required, argument_indent,
-                      p.default, p.condition, False, p.key)
+                      p.default, p.condstr, False, p.key)
         else:
             response.append((argument_indent + '"result" :\n', None))
             if config.resp_type != 'array':
@@ -918,7 +903,7 @@ def Help_cpp(config, w, scope):
             next_indent = argument_indent + sub_argument_indent
             for p in resp_params:
                 one_param(response, p.key, p.type, p.desc, p.required, next_indent,
-                          p.default, p.condition, p != resp_params[-1])
+                          p.default, p.condstr, p != resp_params[-1])
                 sub_params(response, p.type, p.cpp_type, p, find_subclass(p, config.resp_subclass), next_indent)
 
             if config.resp_type != 'array':
@@ -1049,7 +1034,7 @@ def parse_params(class_prefix, content, allow_empty):
         # default
         default = get_default(prefix, detail, type, required)
         # condition
-        condition = get_condition(prefix, detail, content)
+        condstr, condition = get_condition(prefix, detail, content)
 
         if is_pod(type):
             cpp_type = convert_cpp_type(type)
@@ -1070,7 +1055,7 @@ def parse_params(class_prefix, content, allow_empty):
 
         cpp_name = param_name(key, type)
         ret_params.append(Param(key, type, desc, required, default, opt, cpp_type, cpp_name,
-                                condition, sub_key, sub_type, sub_desc, subclass_prefix))
+                                condstr, condition, sub_key, sub_type, sub_desc, subclass_prefix))
 
     # sort params, optional behind required
     def cmp_params(l, r):
@@ -1090,7 +1075,7 @@ def parse_params(class_prefix, content, allow_empty):
 # one param
 class Param:
     def __init__(self, key, type, desc, required, default, opt, cpp_type, cpp_name,
-                 condition, sub_key, sub_type, sub_desc, subclass_prefix):
+                 condstr, condition, sub_key, sub_type, sub_desc, subclass_prefix):
         # key in json
         self.key = key
         # int, bool, array...
@@ -1107,6 +1092,8 @@ class Param:
         self.default = default
         # value of 'opt' in json
         self.opt = opt
+        # (condition origin string)
+        self.condstr = condstr
         # (key, value, op, cppname)
         self.condition = condition
         # When type == 'array', it's not None. Array element key likes self.key

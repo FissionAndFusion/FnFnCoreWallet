@@ -106,8 +106,8 @@ string CWalleveConfig::Help() const
         + "  -help                                 Get more information\n"
         + "  -daemon                               Run server in background\n"
         + "  -debug                                Run in debug mode\n"
-        + "  -datadir                              Root directory of resources\n"
-        + "  -conf                                 Configuration file name\n";
+        + "  -datadir=<path>                       Root directory of resources\n"
+        + "  -conf=<file>                          Configuration file name\n";
 }
 
 pair<string,string> CWalleveConfig::ExtraParser(const string& s)
