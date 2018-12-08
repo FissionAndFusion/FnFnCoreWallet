@@ -474,7 +474,15 @@ void CMvDbpClient::HandleAdded(CMvDbpClientSocket* pClientSocket, google::protob
     dbp::Added added;
     any->UnpackTo(&added);
 
-
+    if(added.name() == "event")
+    {
+        sn::VPeerNetEvent event;
+        added.object().UnpackTo(&event);
+        CMvEventDbpVirtualPeerNet* dbpEvent = new CMvEventDbpVirtualPeerNet("");
+        dbpEvent->data.type = event.type();
+        dbpEvent->data.data = std::vector<uint8>(event.data().begin(), event.data().end());
+        pDbpService->PostEvent(dbpEvent);
+    }
 }
 
 void CMvDbpClient::HandleReady(CMvDbpClientSocket* pClientSocket, google::protobuf::Any* any)

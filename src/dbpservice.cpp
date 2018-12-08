@@ -560,6 +560,15 @@ void CDbpService::PushTx(const std::string& forkid, const CMvDbpTransaction& dbp
     }
 }
 
+void CDbpService::PushEvent(const CMvDbpVirtualPeerNetEvent& event)
+{
+    std::string session;
+    CMvEventDbpAdded eventAdd(session);
+    eventAdd.data.name = "event";
+    eventAdd.data.anyAddedObj = event;
+    pDbpServer->DispatchEvent(&eventAdd);
+}
+
 void CDbpService::RespondFailed(CMvEventDbpConnect& event)
 {
     std::vector<int> versions{1};
@@ -617,6 +626,11 @@ bool CDbpService::HandleEvent(CMvEventDbpUpdateNewTx& event)
     CDbpUtils::RawToDbpTransaction(newtx, hashFork, change, dbpTx);
     PushTx(hashFork.ToString(),dbpTx);
 
+    return true;
+}
+
+bool CDbpService::HandleEvent(CMvEventDbpVirtualPeerNet& event)
+{
     return true;
 }
 

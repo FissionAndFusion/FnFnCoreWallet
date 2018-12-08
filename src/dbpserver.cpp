@@ -169,6 +169,19 @@ void CDbpClient::SendResponse(const std::string& client, CMvDbpAdded& body)
             addedMsg.set_allocated_object(anyTx);
         }
     }
+    else if(body.anyAddedObj.type() == typeid(CMvDbpVirtualPeerNetEvent))
+    {
+        CMvDbpVirtualPeerNetEvent tempEvent = boost::any_cast<CMvDbpVirtualPeerNetEvent>(body.anyAddedObj);
+        if(client == "supernode")
+        {
+            std::unique_ptr<sn::VPeerNetEvent> event(new sn::VPeerNetEvent());
+            event.get()->set_type(tempEvent.type); 
+            event.get()->set_data(std::string(tempEvent.data.begin(), tempEvent.data.end()));
+            google::protobuf::Any* anyEvent = new google::protobuf::Any();
+            anyEvent->PackFrom(*event);
+            addedMsg.set_allocated_object(anyEvent);
+        }
+    }
     else
     {
         std::cerr << "Unknown added type.\n";

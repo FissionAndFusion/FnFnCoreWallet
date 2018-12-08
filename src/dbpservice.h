@@ -41,6 +41,8 @@ public:
     bool HandleEvent(CMvEventDbpUpdateNewBlock& event) override;
     bool HandleEvent(CMvEventDbpUpdateNewTx& event) override;
 
+    bool HandleEvent(CMvEventDbpVirtualPeerNet& event) override;
+
 protected:
     bool WalleveHandleInitialize() override;
     void WalleveHandleDeinitialize() override;
@@ -72,7 +74,7 @@ private:
 
     void PushBlock(const std::string& forkid, const CMvDbpBlock& block);
     void PushTx(const std::string& forkid, const CMvDbpTransaction& dbptx);
-   
+    void PushEvent(const CMvDbpVirtualPeerNetEvent& event);
 
     void RespondFailed(CMvEventDbpConnect& event);
     void RespondConnected(CMvEventDbpConnect& event);
