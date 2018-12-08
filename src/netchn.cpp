@@ -4,7 +4,7 @@
 
 #include "netchn.h"
 #include "schedule.h"
-#include "forkpseudopeernet.h"
+#include "virtualpeernet.h"
 #include <boost/bind.hpp>
 
 using namespace std;
@@ -452,61 +452,24 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerInv& eventInv)
 
 bool CNetChannel::HandleEvent(network::CMvEventPeerGetData& eventGetData)
 {
-    CForkPseudoPeerNet::SUPER_NODE_TYPE catNode = dynamic_cast<CForkPseudoPeerNet*>(pPeerNet)->GetSuperNodeType();
     uint64 nNonce = eventGetData.nNonce;
     uint256& hashFork = eventGetData.hashFork;
     BOOST_FOREACH(const network::CInv& inv,eventGetData.data)
     {
         if (inv.nType == network::CInv::MSG_TX)
         {
-            switch(catNode)
+            network::CMvEventPeerTx eventTx(nNonce,hashFork);
+            if (pTxPool->Get(inv.nHash,eventTx.data))
             {
-                case CForkPseudoPeerNet::SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN:
-                {
-                    network::CMvEventPeerTx eventTx(nNonce,hashFork);
-                    if (pTxPool->Get(inv.nHash,eventTx.data))
-                    {
-                        pPeerNet->DispatchEvent(&eventTx);
-                    }
-                    break;
-                }
-                case CForkPseudoPeerNet::SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT:
-                {
-                    CFkEventNodeTxRequest event(nNonce, hashFork);
-                    event.hashTx = inv.nHash;
-                    pPeerNet->DispatchEvent(&event);
-                    break;
-                }
-                case CForkPseudoPeerNet::SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK:
-                {
-                    break;
-                }
+                pPeerNet->DispatchEvent(&eventTx);
             }
         }
         else if (inv.nType == network::CInv::MSG_BLOCK)
         {
-            switch(catNode)
+            network::CMvEventPeerBlock eventBlock(nNonce,hashFork);
+            if (pWorldLine->GetBlock(inv.nHash,eventBlock.data))
             {
-                case CForkPseudoPeerNet::SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN:
-                {
-                    network::CMvEventPeerBlock eventBlock(nNonce,hashFork);
-                    if (pWorldLine->GetBlock(inv.nHash,eventBlock.data))
-                    {
-                        pPeerNet->DispatchEvent(&eventBlock);
-                    }
-                    break;
-                }
-                case CForkPseudoPeerNet::SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT:
-                {
-                    CFkEventNodeBlockRequest event(nNonce, hashFork);
-                    event.hashBlock = inv.nHash;
-                    pPeerNet->DispatchEvent(&event);
-                    break;
-                }
-                case CForkPseudoPeerNet::SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK:
-                {
-                    break;
-                }
+                pPeerNet->DispatchEvent(&eventBlock);
             }
         }
     }
@@ -635,55 +598,6 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerBlock& eventBlock)
         DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
     }
     return true; 
-}
-
-bool CNetChannel::HandleEvent(CFkEventNodeMainBlockRequest& eventRequestMainBlock)
-{
-    //this handler is triggered when fork node connect to super node cluster
-
-    CFkEventNodeMainBlockRequest& event = eventRequestMainBlock;
-    //ignore if height of requested block is great than one root node owns
-    if(event.height >= pService->GetForkHeight(pCoreProtocol->GetGenesisBlockHash()))
-    {
-        return true;
-    }
-
-    CBlockLocator locator;
-    if(!pWorldLine->GetBlockLocator(pCoreProtocol->GetGenesisBlockHash(), locator))
-    {
-        return false;
-    }
-
-    int height = 0;
-    for(const auto& b : locator.vBlockHash)
-    {
-        if(height <= event.height)
-        {
-            ++height;
-            continue;
-        }
-
-        CBlockEx block;
-        uint256 hash;
-        int nHeight;
-        if(!pService->GetBlockEx(pCoreProtocol->GetGenesisBlockHash(), block, hash, nHeight))
-        {
-            return false;
-        }
-        {
-            CFkEventNodeBlockArrive evt(0, pCoreProtocol->GetGenesisBlockHash());
-            evt.height += 1;
-            pPeerNet->DispatchEvent(&evt);
-        }
-        ++height;
-    }
-
-
-
-
-
-
-    return true;
 }
 
 CSchedule& CNetChannel::GetSchedule(const uint256& hashFork)
