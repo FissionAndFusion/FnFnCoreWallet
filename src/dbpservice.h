@@ -8,7 +8,7 @@
 #include "mvbase.h"
 #include "dbpserver.h"
 #include "event.h"
-#include "forkpeerevent.h"
+#include "virtualpeernetevent.h"
 #include "mvpeernet.h"
 #include "walleve/walleve.h"
 

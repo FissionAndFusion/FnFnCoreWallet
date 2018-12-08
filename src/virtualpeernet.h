@@ -6,7 +6,7 @@
 #define MULTIVERSE_FORKPSEUDOPEERNET_H
 
 #include "mvproto.h"
-#include "forkpeerevent.h"
+#include "virtualpeernetevent.h"
 #include "mvpeernet.h"
 
 namespace multiverse

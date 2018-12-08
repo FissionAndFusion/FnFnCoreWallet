@@ -7,7 +7,7 @@
 
 #include "mvpeernet.h"
 #include "event.h"
-#include "forkpeerevent.h"
+#include "virtualpeernetevent.h"
 #include "mvbase.h"
 #include "schedule.h"
 

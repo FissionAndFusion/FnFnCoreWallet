@@ -4,7 +4,7 @@
 
 #include "netchn.h"
 #include "schedule.h"
-#include "forkpseudopeernet.h"
+#include "virtualpeernet.h"
 #include <boost/bind.hpp>
 
 using namespace std;

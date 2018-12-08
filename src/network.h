@@ -5,7 +5,7 @@
 #ifndef  MULTIVERSE_NETWORK_H
 #define  MULTIVERSE_NETWORK_H
 
-#include "forkpseudopeernet.h"
+#include "virtualpeernet.h"
 #include "config.h"
 
 namespace multiverse
