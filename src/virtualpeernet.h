@@ -12,7 +12,7 @@
 namespace multiverse
 {
 
-class CForkPseudoPeerNet: public network::CMvPeerNet, virtual public CFkNodeEventListener
+class CVirtualPeerNet: public network::CMvPeerNet, virtual public CFkNodeEventListener
 {
 public:
     enum class SUPER_NODE_TYPE : int
@@ -23,8 +23,8 @@ public:
     };
 
 public:
-    CForkPseudoPeerNet();
-    ~CForkPseudoPeerNet();
+    CVirtualPeerNet();
+    ~CVirtualPeerNet();
 
     SUPER_NODE_TYPE GetSuperNodeType() {return typeNode;};
 protected:

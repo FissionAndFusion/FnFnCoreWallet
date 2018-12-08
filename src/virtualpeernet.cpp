@@ -8,18 +8,18 @@
 using namespace multiverse;
 using namespace walleve;
 
-CForkPseudoPeerNet::CForkPseudoPeerNet()
+CVirtualPeerNet::CVirtualPeerNet()
 : CMvPeerNet("forkpseudopeernet")
 {
     pDbpService = nullptr;
     typeNode = SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN;
 }
 
-CForkPseudoPeerNet::~CForkPseudoPeerNet()
+CVirtualPeerNet::~CVirtualPeerNet()
 {
 }
 
-bool CForkPseudoPeerNet::WalleveHandleInitialize()
+bool CVirtualPeerNet::WalleveHandleInitialize()
 {
     CMvPeerNet::WalleveHandleInitialize();
 
@@ -32,14 +32,14 @@ bool CForkPseudoPeerNet::WalleveHandleInitialize()
     return true;
 }
 
-void CForkPseudoPeerNet::WalleveHandleDeinitialize()
+void CVirtualPeerNet::WalleveHandleDeinitialize()
 {
     CMvPeerNet::WalleveHandleDeinitialize();
 
     pDbpService = nullptr;
 }
 
-bool CForkPseudoPeerNet::HandleEvent(CFkEventNodePeerActive& event)
+bool CVirtualPeerNet::HandleEvent(CFkEventNodePeerActive& event)
 {
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
     {
@@ -53,7 +53,7 @@ bool CForkPseudoPeerNet::HandleEvent(CFkEventNodePeerActive& event)
     return true;
 }
 
-void CForkPseudoPeerNet::HandlePeerHandshakedForForkNode(network::CMvEventPeerActive& peerActive)
+void CVirtualPeerNet::HandlePeerHandshakedForForkNode(network::CMvEventPeerActive& peerActive)
 {
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
     {
