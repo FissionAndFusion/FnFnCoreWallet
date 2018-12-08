@@ -29,6 +29,11 @@ message BlockCmd
 	bytes hash = 3; //区块hash id
 }
 
+message VPeerNetEvent
+{
+    bytes data = 1; // 虚拟PeerNet二进制数据
+}
+
 message Transaction 
 {
     uint32 nVersion = 1; //版本号,目前交易版本为 0x0001

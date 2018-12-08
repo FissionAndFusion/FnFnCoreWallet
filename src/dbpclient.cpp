@@ -478,89 +478,14 @@ void CMvDbpClient::HandleResult(CMvDbpClientSocket* pClientSocket, google::proto
         std::cerr << "[<]method error:" << result.error()  <<  " [dbpclient]" << std::endl;    
         return;
     }
-
-    int size = result.result_size();
-    for (int i = 0; i < size; i++)
-    {
-        google::protobuf::Any any = result.result(i);
-        
-        if(any.Is<sn::RegisterForkIDRet>())
-        {
-            sn::RegisterForkIDRet ret;
-            any.UnpackTo(&ret);
-
-            std::cout << "[<] register forkid method return : \n";
-            uint256 forkid(std::vector<uint8>(ret.forkid().begin(), ret.forkid().end()));
-            std::cout << forkid.ToString() << "\n";
-        }
-
-        if(any.Is<sn::SendBlockRet>())
-        {
-            sn::SendBlockRet ret;
-            any.UnpackTo(&ret);
-
-            std::cout << "[<] send block method return : \n";
-            uint256 hash(std::vector<uint8>(ret.hash().begin(), ret.hash().end()));
-            std::cout << hash.ToString() << "\n";
-        }
-
-        if(any.Is<sn::SendTxRet>())
-        {
-            sn::SendTxRet ret;
-            any.UnpackTo(&ret);
-
-            std::cout << "[<] send tx method return : \n";
-            uint256 hash(std::vector<uint8>(ret.hash().begin(), ret.hash().end()));
-            std::cout << hash.ToString() << "\n";
-        }
-
-        if(any.Is<sn::SendBlockNoticeRet>())
-        {
-            sn::SendBlockNoticeRet ret;
-            any.UnpackTo(&ret);
-
-            std::cout << "[<] send block notice method return : \n";
-            uint256 hash(std::vector<uint8>(ret.hash().begin(), ret.hash().end()));
-            std::cout << hash.ToString() << "\n";
-        }
-
-        if(any.Is<sn::SendTxNoticeRet>())
-        {
-            sn::SendTxNoticeRet ret;
-            any.UnpackTo(&ret);
-
-            std::cout << "[<] send tx notice method return : \n";
-            uint256 hash(std::vector<uint8>(ret.hash().begin(), ret.hash().end()));
-            std::cout << hash.ToString() << "\n";
-        }
-
-        if(any.Is<sn::GetBlocksRet>())
-        {
-            sn::GetBlocksRet ret;
-            any.UnpackTo(&ret);
-
-            std::cout << "[<] get blocks  method return : \n";
-            uint256 hash(std::vector<uint8>(ret.hash().begin(), ret.hash().end()));
-            std::cout << hash.ToString() << "\n";
-        }
-        
-    }
 }
-
-
-
-
-
-
-
-
-
-
 
 void CMvDbpClient::HandleAdded(CMvDbpClientSocket* pClientSocket, google::protobuf::Any* any)
 {
     dbp::Added added;
     any->UnpackTo(&added);
+
+    
 }
 
 void CMvDbpClient::HandleReady(CMvDbpClientSocket* pClientSocket, google::protobuf::Any* any)
