@@ -58,7 +58,7 @@ bool CNetwork::WalleveHandleInitialize()
     }
     ConfigNetwork(config);
 
-    return CForkPseudoPeerNet::WalleveHandleInitialize();
+    return CVirtualPeerNet::WalleveHandleInitialize();
 }
 
 void CNetwork::WalleveHandleDeinitialize()
