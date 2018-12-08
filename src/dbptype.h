@@ -161,6 +161,11 @@ class CMvDbpMethod : public CMvDbpRequest
 {
 public: 
 
+    enum SnMethod : uint32_t
+    {
+        SEND_EVENT = 0x03
+    };
+    
     enum  LwsMethod : uint32_t
     {
         GET_BLOCKS = 0x00,

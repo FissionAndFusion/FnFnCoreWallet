@@ -587,6 +587,16 @@ void CDbpServer::HandleClientMethod(CDbpClient* pDbpClient, google::protobuf::An
         methodBody.method = CMvDbpMethod::LwsMethod::SEND_TRANSACTION;
         methodBody.params.insert(std::make_pair("data", args.data()));
     }
+    else if(methodMsg.method() == "sendevent" &&
+        methodMsg.params().Is<sn::VPeerNetEvent>())
+    {
+        sn::VPeerNetEvent event;
+        methodMsg.params().UnpackTo(&event);
+
+        methodBody.method = CMvDbpMethod::SnMethod::SEND_EVENT;
+        methodBody.params.insert(std::make_pair("type", event.type()));
+        methodBody.params.insert(std::make_pair("data", event.data()));
+    }
     else
     {
         delete pEventDbpMethod;

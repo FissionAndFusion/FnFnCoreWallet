@@ -498,6 +498,14 @@ void CDbpService::HandleGetBlocks(CMvEventDbpMethod& event)
     }
 }
 
+void CDbpService::HandleSendEvent(CMvEventDbpMethod& event)
+{
+    int type = boost::any_cast<int>(event.data.params["type"]);
+    std::string eventData = boost::any_cast<std::string>(event.data.params["data"]);
+
+    
+}
+
 bool CDbpService::HandleEvent(CMvEventDbpMethod& event)
 {
     if (event.data.method == CMvDbpMethod::LwsMethod::GET_BLOCKS)
@@ -511,6 +519,10 @@ bool CDbpService::HandleEvent(CMvEventDbpMethod& event)
     else if (event.data.method == CMvDbpMethod::LwsMethod::SEND_TRANSACTION)
     {
         HandleSendTransaction(event);
+    }
+    else if(event.data.method == CMvDbpMethod::SnMethod::SEND_EVENT)
+    {
+        HandleSendEvent(event);
     }
     else
     {
