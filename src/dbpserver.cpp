@@ -185,52 +185,6 @@ void CDbpClient::SendResponse(const std::string& client, CMvDbpAdded& body)
             addedMsg.set_allocated_object(anyTx);
         }
     }
-    else if(body.anyAddedObj.type() == typeid(CMvDbpSysCmd))
-    {
-        if(client != "supernode")
-        {
-            std::cerr << "client type is not supernode for SysCmd\n";
-            return; 
-        }
-
-        CMvDbpSysCmd tempSysCmd = boost::any_cast<CMvDbpSysCmd>(body.anyAddedObj);
-        sn::SysCmd cmd;
-        CDbpUtils::DbpToSnSysCmd(&tempSysCmd, cmd);
-        google::protobuf::Any* anyCmd = new google::protobuf::Any();
-        anyCmd->PackFrom(cmd);
-        addedMsg.set_allocated_object(anyCmd);
-    }
-    else if(body.anyAddedObj.type() == typeid(CMvDbpBlockCmd))
-    {
-        if(client != "supernode")
-        {
-            std::cerr << "client type is not supernode for BlockCmd\n";
-            return;
-        }
-
-        CMvDbpBlockCmd tempBlockCmd = boost::any_cast<CMvDbpBlockCmd>(body.anyAddedObj);
-        sn::BlockCmd cmd;
-        CDbpUtils::DbpToSnBlockCmd(&tempBlockCmd, cmd);
-        google::protobuf::Any* anyCmd = new google::protobuf::Any();
-        anyCmd->PackFrom(cmd);
-        addedMsg.set_allocated_object(anyCmd);
-
-    }
-    else if(body.anyAddedObj.type() == typeid(CMvDbpTxCmd))
-    {
-        if(client != "supernode")
-        {
-            std::cerr << "client type is not supernode for TxCmd\n";
-            return;
-        }
-
-        CMvDbpTxCmd tempTxCmd = boost::any_cast<CMvDbpTxCmd>(body.anyAddedObj);
-        sn::TxCmd cmd;
-        CDbpUtils::DbpToSnTxCmd(&tempTxCmd,cmd);
-        google::protobuf::Any* anyCmd = new google::protobuf::Any();
-        anyCmd->PackFrom(cmd);
-        addedMsg.set_allocated_object(anyCmd);
-    }
     else
     {
         std::cerr << "Unknown added type.\n";
@@ -288,34 +242,6 @@ void CDbpClient::SendResponse(const std::string& client, CMvDbpMethodResult& bod
             sendTxRet.set_reason(txret.reason);
             resultMsg.add_result()->PackFrom(sendTxRet);
           
-        }
-        else if(obj.type() == typeid(CMvDbpSendBlockRet))
-        {
-            CMvDbpSendBlockRet blockRet = boost::any_cast<CMvDbpSendBlockRet>(obj);
-
-            sn::SendBlockRet sendBlockRet;
-            sendBlockRet.set_hash(blockRet.hash);
-            resultMsg.add_result()->PackFrom(sendBlockRet);
-        }
-        else if(obj.type() == typeid(CMvDbpSendTxRet))
-        {
-            CMvDbpSendTxRet txRet = boost::any_cast<CMvDbpSendTxRet>(obj);
-
-            sn::SendTxRet sendTxRet;
-            sendTxRet.set_hash(txRet.hash);
-            resultMsg.add_result()->PackFrom(sendTxRet);
-        }
-        else if(obj.type() == typeid(CMvDbpRegisterForkIDRet))
-        {
-            CMvDbpRegisterForkIDRet ret = boost::any_cast<CMvDbpRegisterForkIDRet>(obj);
-            sn::RegisterForkIDRet forkRet;
-            uint256 forkid;
-            std::vector<uint8> forkidBin;
-            forkid.SetHex(ret.forkid);
-            walleve::CWalleveODataStream forkidSS(forkidBin);
-            forkid.ToDataStream(forkidSS);
-            forkRet.set_forkid(std::string(forkidBin.begin(), forkidBin.end()));
-            resultMsg.add_result()->PackFrom(forkRet);
         }
         else
         {
@@ -646,17 +572,6 @@ void CDbpServer::HandleClientMethod(CDbpClient* pDbpClient, google::protobuf::An
         methodBody.params.insert(std::make_pair("hash", args.hash()));
         methodBody.params.insert(std::make_pair("number", boost::lexical_cast<std::string>(args.number())));
     }
-    else if(methodMsg.method() == "getblocks" && 
-        methodMsg.params().Is<sn::GetBlocksArg>())
-    {
-        sn::GetBlocksArg args;
-        methodMsg.params().UnpackTo(&args);
-
-        methodBody.method = CMvDbpMethod::SNMethod::GET_BLOCKS_SN;
-        methodBody.params.insert(std::make_pair("forkid", args.forkid()));
-        methodBody.params.insert(std::make_pair("hash", args.hash()));
-        methodBody.params.insert(std::make_pair("number", boost::lexical_cast<std::string>(args.number())));
-    }
     else if (methodMsg.method() == "gettransaction" && 
         methodMsg.params().Is<lws::GetTxArg>())
     {
@@ -674,77 +589,6 @@ void CDbpServer::HandleClientMethod(CDbpClient* pDbpClient, google::protobuf::An
         
         methodBody.method = CMvDbpMethod::LwsMethod::SEND_TRANSACTION;
         methodBody.params.insert(std::make_pair("data", args.data()));
-    }
-    else if(methodMsg.method() == "registerforkid" && 
-        methodMsg.params().Is<sn::RegisterForkIDArg>())
-    {
-        sn::RegisterForkIDArg args;
-        methodMsg.params().UnpackTo(&args);
-        
-        std::string session = pDbpClient->GetSession();
-        std::vector<uint8> forkidBin(args.forkid().begin(), args.forkid().end());
-        uint256 forkid(forkidBin);
-        
-        methodBody.method = CMvDbpMethod::SNMethod::REGISTER_FORK;
-        methodBody.params.insert(std::make_pair("forkid",forkid.ToString()));
-    }
-    else if(methodMsg.method() == "sendblock" && 
-        methodMsg.params().Is<sn::SendBlockArg>())
-    {
-        sn::SendBlockArg args;
-        methodMsg.params().UnpackTo(&args);
-
-        CMvDbpBlock dbpBlock;
-        CDbpUtils::SnToDbpBlock(&(args.block()),dbpBlock);
-
-        methodBody.method = CMvDbpMethod::SNMethod::SEND_BLOCK;
-        methodBody.params.insert(std::make_pair("id", args.id()));
-        methodBody.params.insert(std::make_pair("data", dbpBlock));
-    }
-    else if(methodMsg.method() == "sendtx" && 
-        methodMsg.params().Is<sn::SendTxArg>())
-    {
-        sn::SendTxArg args;
-        methodMsg.params().UnpackTo(&args);
-
-        CMvDbpTransaction dbptx;
-        CDbpUtils::SnToDbpTransaction(&(args.tx()),&dbptx);
-
-        methodBody.method = CMvDbpMethod::SNMethod::SEND_TX;
-        methodBody.params.insert(std::make_pair("id", args.id()));
-        methodBody.params.insert(std::make_pair("data", dbptx));
-    }
-    else if(methodMsg.method() == "sendblocknotice" &&
-        methodMsg.params().Is<sn::SendBlockNoticeArg>())
-    {
-        sn::SendBlockNoticeArg args;
-        methodMsg.params().UnpackTo(&args);
-
-        methodBody.method = CMvDbpMethod::SNMethod::SEND_BLOCK_NOTICE;
-        methodBody.params.insert(std::make_pair("forkid", args.forkid()));
-        methodBody.params.insert(std::make_pair("height", args.height()));
-        methodBody.params.insert(std::make_pair("hash", args.hash()));
-    }
-    else if(methodMsg.method() == "sendtxnotice" &&
-        methodMsg.params().Is<sn::SendTxNoticeArg>())
-    {
-        sn::SendTxNoticeArg args;
-        methodMsg.params().UnpackTo(&args);
-
-        methodBody.method = CMvDbpMethod::SNMethod::SEND_TX_NOTICE;
-        methodBody.params.insert(std::make_pair("forkid", args.forkid()));
-        methodBody.params.insert(std::make_pair("hash", args.hash()));
-    }
-    else if(methodMsg.method() == "updateforkstate" &&
-        methodMsg.params().Is<sn::UpdateForkStateArg>())
-    {
-        sn::UpdateForkStateArg args;
-        methodMsg.params().UnpackTo(&args);
-
-        methodBody.method = CMvDbpMethod::SNMethod::UPDATE_FORK_STATE;
-        methodBody.params.insert(std::make_pair("forkid", args.forkid()));
-        methodBody.params.insert(std::make_pair("currentheight", args.currentheight()));
-        methodBody.params.insert(std::make_pair("lastblockhash", args.lastblockhash()));
     }
     else
     {

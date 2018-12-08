@@ -102,7 +102,6 @@ CNetChannel::CNetChannel()
     pService = NULL;
     pDispatcher = NULL;
     pDbpService = NULL;
-    fIsForkNode = false;
 }
 
 CNetChannel::~CNetChannel()
@@ -293,13 +292,6 @@ void CNetChannel::UnsubscribeFork(const uint256& hashFork)
             pPeerNet->DispatchEvent(&eventUnsubscribe);
         }
     }
-}
-
-void CNetChannel::SetForkFilterInfo(bool fIsForkNodeIn, const std::map<std::string, std::tuple<int, std::string>>& thisNodeForksStateIn)
-{
-    boost::unique_lock<boost::shared_mutex> wlock(rwForkFilter);
-    fIsForkNode = fIsForkNodeIn;
-    mapThisNodeForkStates = thisNodeForksStateIn;
 }
 
 bool CNetChannel::HandleEvent(network::CMvEventPeerActive& eventActive)
@@ -540,7 +532,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerGetBlocks& eventGetBlocks)
     return true;
 }
 
-bool CNetChannel::HandleEventForOrigin(network::CMvEventPeerTx& eventTx)
+bool CNetChannel::HandleEvent(network::CMvEventPeerTx& eventTx)
 {
     uint64 nNonce = eventTx.nNonce;
     uint256& hashFork = eventTx.hashFork;
@@ -596,9 +588,10 @@ bool CNetChannel::HandleEventForOrigin(network::CMvEventPeerTx& eventTx)
         DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
     }
     return true;
+    
 }
 
-bool CNetChannel::HandleEventForOrigin(network::CMvEventPeerBlock& eventBlock)
+bool CNetChannel::HandleEvent(network::CMvEventPeerBlock& eventBlock)
 {
     uint64 nNonce = eventBlock.nNonce;
     uint256& hashFork = eventBlock.hashFork; 
@@ -641,65 +634,7 @@ bool CNetChannel::HandleEventForOrigin(network::CMvEventPeerBlock& eventBlock)
     {
         DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
     }
-    return true;
-}
-
-bool CNetChannel::HandleEvent(network::CMvEventPeerTx& eventTx)
-{
-    uint256& hashFork = eventTx.hashFork;
-    boost::shared_lock<boost::shared_mutex> rblock(rwForkFilter);
-    
-    // if this node is root node, it only process tx on main fork
-    if(!fIsForkNode && IsMainFork(hashFork)) 
-    {
-        HandleEventForOrigin(eventTx);
-    }
-
-    // if this node is root node, it send all tx to virtual peer net and push to dbpservice
-    if(!fIsForkNode)
-    {
-        int nNonce = 0;
-        CFkEventNodeTxArrive eventTxArrive(nNonce, hashFork);
-        eventTxArrive.data = eventTx.data;
-        pPeerNet->DispatchEvent(&eventTxArrive);
-    }
-
-    if(fIsForkNode)
-    {
-        HandleEventForOrigin(eventTx);
-    }
-    
-    return true;
-    
-}
-
-bool CNetChannel::HandleEvent(network::CMvEventPeerBlock& eventBlock)
-{
-    uint256& hashFork = eventBlock.hashFork;
-    boost::shared_lock<boost::shared_mutex> rblock(rwForkFilter);
-    
-    // if this node is root node, it only process block on main fork
-    if(!fIsForkNode && IsMainFork(hashFork))
-    {
-        HandleEventForOrigin(eventBlock);
-    }
-
-    // if this node is root node, it send all block to virtual peernet push to dbpservice
-    if(!fIsForkNode)
-    {
-        int nNonce = 0;
-        CFkEventNodeBlockArrive eventBlockArrive(nNonce, hashFork);
-        CBlockEx blockEx(eventBlock.data);
-        eventBlockArrive.data = blockEx;
-        pPeerNet->DispatchEvent(&eventBlockArrive);
-    }
-
-    if(fIsForkNode)
-    {
-        HandleEventForOrigin(eventBlock);
-    }
-
-    return true;
+    return true; 
 }
 
 bool CNetChannel::HandleEvent(CFkEventNodeMainBlockRequest& eventRequestMainBlock)
@@ -959,14 +894,4 @@ void CNetChannel::SetPeerSyncStatus(uint64 nNonce,const uint256& hashFork,bool f
             }
         } 
     }
-}
-
-bool CNetChannel::IsMainFork(const uint256& hash)
-{
-    return pCoreProtocol->GetGenesisBlockHash().ToString() == hash.ToString();
-}
-
-bool CNetChannel::IsMyFork(const uint256& hash)
-{
-    return mapThisNodeForkStates.find(hash.ToString()) != mapThisNodeForkStates.end();
 }
