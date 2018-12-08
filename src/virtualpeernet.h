@@ -31,31 +31,12 @@ protected:
     bool WalleveHandleInitialize() override;
     void WalleveHandleDeinitialize() override;
 
-    bool HandleEvent(CFkEventNodeBlockArrive& event) override;
-    bool HandleEvent(CFkEventNodeTxArrive& event) override;
-    bool HandleEvent(CFkEventNodeBlockRequest& event) override;
-    bool HandleEvent(CFkEventNodeTxRequest& event) override;
-    bool HandleEvent(CFkEventNodeUpdateForkState& event) override;
-    bool HandleEvent(CFkEventNodeSendBlockNotice& event) override;
-    bool HandleEvent(CFkEventNodeSendTxNotice& event) override;
-    bool HandleEvent(CFkEventNodeSendBlock& event) override;
-    bool HandleEvent(CFkEventNodeSendTx& event) override;
-    bool HandleEvent(CFkEventNodeIsForkNode& event) override;
-
-    bool HandleEvent(CFkEventNodeNewForkNodeConnected& event) override;
-
     bool HandleEvent(CFkEventNodePeerActive& event) override;
 
     void HandlePeerHandshakedForForkNode(network::CMvEventPeerActive& peerActive) override;
 
-    bool ExistForkID(const uint256& forkid) {
-        return (mapForkNodeHeight.find(forkid) != mapForkNodeHeight.end());
-    }
-
 protected:
     walleve::IIOModule* pDbpService;
-    std::map<uint256, std::pair<int, uint256>> mapForkNodeHeight;          //ForkID-(LastHeight-BlockHash) for offspring node
-    std::map<uint256, std::pair<int, uint256>> mapForkNodeHeightCurrent;   //ForkID-(LastHeight-BlockHash) for current node
     SUPER_NODE_TYPE typeNode;
 };
 
