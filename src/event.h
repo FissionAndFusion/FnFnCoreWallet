@@ -43,14 +43,7 @@ enum
     MV_EVENT_DBP_RESULT,
 
     /*super node*/
-    MV_EVENT_DBP_REGISTER_FORKID,
-    MV_EVENT_DBP_SEND_BLOCK,
-    MV_EVENT_DBP_SEND_TX,
-    MV_EVENT_DBP_SEND_BLOCK_NOTICE,
-    MV_EVENT_DBP_SEND_TX_NOTICE,
-    MV_EVENT_DBP_GET_BLOCKS,
-    MV_EVENT_DBP_UPDATE_FORK_STATE,
-    MV_EVENT_DBP_IS_FORK_NODE,
+    MV_EVENT_DBP_VPEERNET,
 
     MV_EVENT_DBP_PING,
     MV_EVENT_DBP_PONG,
@@ -139,6 +132,9 @@ typedef TYPE_DBP_EVENT(MV_EVENT_DBP_RESULT, CMvDbpMethodResult) CMvEventDbpMetho
 typedef TYPE_DBP_EVENT(MV_EVENT_DBP_BROKEN, CMvDbpBroken) CMvEventDbpBroken;
 typedef TYPE_DBP_EVENT(MV_EVENT_DBP_REMOVE_SESSION, CMvDbpRemoveSession) CMvEventDbpRemoveSession;
 
+/*supernode*/
+typedef TYPE_DBP_EVENT(MV_EVENT_DBP_VPEERNET, CMvDbpVirtualPeerNetEvent) CMvEventDbpVirtualPeerNet;
+
 // HeartBeats
 typedef TYPE_DBP_EVENT(MV_EVENT_DBP_PING, CMvDbpPing) CMvEventDbpPing;
 typedef TYPE_DBP_EVENT(MV_EVENT_DBP_PONG, CMvDbpPong) CMvEventDbpPong;
@@ -169,6 +165,9 @@ public:
     DECLARE_EVENTHANDLER(CMvEventDbpMethodResult);
     DECLARE_EVENTHANDLER(CMvEventDbpBroken);
     DECLARE_EVENTHANDLER(CMvEventDbpRemoveSession);
+
+    /*supernode*/
+    DECLARE_EVENTHANDLER(CMvEventDbpVirtualPeerNet);
 
     DECLARE_EVENTHANDLER(CMvEventDbpPing);
     DECLARE_EVENTHANDLER(CMvEventDbpPong);

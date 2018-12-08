@@ -100,21 +100,29 @@ void CMvDbpClientSocket::SendConnectSession(const std::string& session, const st
     connect.set_client("supernode");
     connect.set_version(1);
 
-    google::protobuf::Any anyFork;
-    sn::ForkID forkidMsg;
-
-    for(const auto& fork : forks)
-    {
-        forkidMsg.add_ids(fork);
-    }
-    
-    anyFork.PackFrom(forkidMsg);
-    (*connect.mutable_udata())["supernode-forks"] = anyFork;
-
     google::protobuf::Any *any = new google::protobuf::Any();
     any->PackFrom(connect);
 
     SendMessage(dbp::Msg::CONNECT,any);
+}
+
+void CMvDbpClientSocket::SendEvent(const CMvDbpVirtualPeerNetEvent& dbpEvent)
+{
+    dbp::Method method;
+    method.set_id(CDbpUtils::RandomString());
+    method.set_method("sendevent");
+
+    google::protobuf::Any *params = new google::protobuf::Any();
+    sn::VPeerNetEvent event;
+    event.set_type(dbpEvent.type);
+    event.set_data(std::string(dbpEvent.data.begin(), dbpEvent.data.end()));
+    params->PackFrom(event);
+    method.set_allocated_params(params);
+
+    google::protobuf::Any *any = new google::protobuf::Any();
+    any->PackFrom(method);
+
+    SendMessage(dbp::Msg::METHOD, any);
 }
 
 bool CMvDbpClientSocket::IsSentComplete()
@@ -485,7 +493,15 @@ void CMvDbpClient::HandleAdded(CMvDbpClientSocket* pClientSocket, google::protob
     dbp::Added added;
     any->UnpackTo(&added);
 
-    
+    if(added.name() == "event")
+    {
+        sn::VPeerNetEvent event;
+        added.object().UnpackTo(&event);
+        CMvEventDbpVirtualPeerNet* dbpEvent = new CMvEventDbpVirtualPeerNet("");
+        dbpEvent->data.type = event.type();
+        dbpEvent->data.data = std::vector<uint8>(event.data().begin(), event.data().end());
+        pDbpService->PostEvent(dbpEvent);
+    }
 }
 
 void CMvDbpClient::HandleReady(CMvDbpClientSocket* pClientSocket, google::protobuf::Any* any)

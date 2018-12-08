@@ -41,6 +41,8 @@ public:
     bool HandleEvent(CMvEventDbpUpdateNewBlock& event) override;
     bool HandleEvent(CMvEventDbpUpdateNewTx& event) override;
 
+    bool HandleEvent(CMvEventDbpVirtualPeerNet& event) override;
+
 protected:
     bool WalleveHandleInitialize() override;
     void WalleveHandleDeinitialize() override;
@@ -57,12 +59,11 @@ private:
     bool GetLwsBlocks(const uint256& forkHash, const uint256& startHash, int32 n, std::vector<CMvDbpBlock>& blocks);
     bool IsEmpty(const uint256& hash);
     bool IsForkHash(const uint256& hash);
-  
     
     void HandleGetBlocks(CMvEventDbpMethod& event);
     void HandleGetTransaction(CMvEventDbpMethod& event);
     void HandleSendTransaction(CMvEventDbpMethod& event);
-   
+    void HandleSendEvent(CMvEventDbpMethod& event);
 
     bool IsTopicExist(const std::string& topic);
 
@@ -72,7 +73,7 @@ private:
 
     void PushBlock(const std::string& forkid, const CMvDbpBlock& block);
     void PushTx(const std::string& forkid, const CMvDbpTransaction& dbptx);
-   
+    void PushEvent(const CMvDbpVirtualPeerNetEvent& event);
 
     void RespondFailed(CMvEventDbpConnect& event);
     void RespondConnected(CMvEventDbpConnect& event);

@@ -17,7 +17,6 @@ static const std::string BLOCK_CMD_TOPIC("block-cmd");
 static const std::string TX_CMD_TOPIC("tx-cmd");
 static const std::string CHANGED_TOPIC("changed");
 static const std::string REMOVED_TOPIC("removed");
-static const std::string VPEER_NET_EVENT_TOPIC("virtual-peernet-event");
 
 class CMvDbpContent
 {
@@ -70,6 +69,25 @@ public:
     std::string id;
 };
 
+class CMvDbpVirtualPeerNetEvent
+{
+public:
+    enum EventType : int
+    {
+        DBP_EVENT_PEER_ACTIVE = 0x00,
+        DBP_EVENT_PEER_DEACTIVE = 0x01,
+        DBP_EVENT_PEER_SUBSCRIBE = 0x02,
+        DBP_EVENT_PEER_UNSUBSCRIBE = 0x03,
+        DBP_EVENT_PEER_INV = 0x04,
+        DBP_EVENT_PEER_GETDATA = 0x05,
+        DBP_EVENT_PEER_GETBLOCKS= 0x06,
+        DBP_EVENT_PEER_TX = 0x07,
+        DBP_EVENT_PEER_BLOCK = 0x08
+    };
+public:
+    int type; 
+    std::vector<uint8> data;
+};
 
 class CMvDbpTxIn
 {
@@ -143,6 +161,11 @@ class CMvDbpMethod : public CMvDbpRequest
 {
 public: 
 
+    enum SnMethod : uint32_t
+    {
+        SEND_EVENT = 0x03
+    };
+    
     enum  LwsMethod : uint32_t
     {
         GET_BLOCKS = 0x00,

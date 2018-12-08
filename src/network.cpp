@@ -63,7 +63,7 @@ bool CNetwork::WalleveHandleInitialize()
 
 void CNetwork::WalleveHandleDeinitialize()
 {
-    network::CMvPeerNet::WalleveHandleDeinitialize();
+    CVirtualPeerNet::WalleveHandleDeinitialize();
 }
 
 bool CNetwork::CheckPeerVersion(uint32 nVersionIn,uint64 nServiceIn,const string& subVersionIn)

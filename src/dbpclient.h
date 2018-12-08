@@ -80,6 +80,7 @@ public:
     void SendPing(const std::string& id);
 
     void SendConnectSession(const std::string& session, const std::vector<std::string>& forks);
+    void SendEvent(const CMvDbpVirtualPeerNetEvent& dbpEvent);
 
 protected:
     void StartReadHeader();

@@ -9,7 +9,7 @@ using namespace multiverse;
 using namespace walleve;
 
 CVirtualPeerNet::CVirtualPeerNet()
-: CMvPeerNet("forkpseudopeernet")
+: CMvPeerNet("virtualpeernet")
 {
     pDbpService = nullptr;
     typeNode = SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN;

@@ -147,15 +147,7 @@ void CDbpClient::SendResponse(const std::string& client, CMvDbpAdded& body)
     {
         CMvDbpBlock tempBlock = boost::any_cast<CMvDbpBlock>(body.anyAddedObj);
 
-        if(client == "supernode")
-        {
-            sn::Block block;
-            CDbpUtils::DbpToSnBlock(&tempBlock,block);
-            google::protobuf::Any* anyBlock = new google::protobuf::Any();
-            anyBlock->PackFrom(block);
-            addedMsg.set_allocated_object(anyBlock);
-        }
-        else
+        if(client != "supernode")
         {
             lws::Block block;
             CDbpUtils::DbpToLwsBlock(&tempBlock, block);
@@ -168,21 +160,26 @@ void CDbpClient::SendResponse(const std::string& client, CMvDbpAdded& body)
     {
         CMvDbpTransaction tempTx = boost::any_cast<CMvDbpTransaction>(body.anyAddedObj);
 
-        if(client == "supernode")
-        {
-            std::unique_ptr<sn::Transaction> tx(new sn::Transaction());
-            CDbpUtils::DbpToSnTransaction(&tempTx, tx.get());
-            google::protobuf::Any* anyTx = new google::protobuf::Any();
-            anyTx->PackFrom(*tx);
-            addedMsg.set_allocated_object(anyTx);
-        }
-        else
+        if(client != "supernode")
         {
             std::unique_ptr<lws::Transaction> tx(new lws::Transaction());
             CDbpUtils::DbpToLwsTransaction(&tempTx, tx.get());
             google::protobuf::Any* anyTx = new google::protobuf::Any();
             anyTx->PackFrom(*tx);
             addedMsg.set_allocated_object(anyTx);
+        }
+    }
+    else if(body.anyAddedObj.type() == typeid(CMvDbpVirtualPeerNetEvent))
+    {
+        CMvDbpVirtualPeerNetEvent tempEvent = boost::any_cast<CMvDbpVirtualPeerNetEvent>(body.anyAddedObj);
+        if(client == "supernode")
+        {
+            std::unique_ptr<sn::VPeerNetEvent> event(new sn::VPeerNetEvent());
+            event.get()->set_type(tempEvent.type); 
+            event.get()->set_data(std::string(tempEvent.data.begin(), tempEvent.data.end()));
+            google::protobuf::Any* anyEvent = new google::protobuf::Any();
+            anyEvent->PackFrom(*event);
+            addedMsg.set_allocated_object(anyEvent);
         }
     }
     else
@@ -589,6 +586,16 @@ void CDbpServer::HandleClientMethod(CDbpClient* pDbpClient, google::protobuf::An
         
         methodBody.method = CMvDbpMethod::LwsMethod::SEND_TRANSACTION;
         methodBody.params.insert(std::make_pair("data", args.data()));
+    }
+    else if(methodMsg.method() == "sendevent" &&
+        methodMsg.params().Is<sn::VPeerNetEvent>())
+    {
+        sn::VPeerNetEvent event;
+        methodMsg.params().UnpackTo(&event);
+
+        methodBody.method = CMvDbpMethod::SnMethod::SEND_EVENT;
+        methodBody.params.insert(std::make_pair("type", event.type()));
+        methodBody.params.insert(std::make_pair("data", event.data()));
     }
     else
     {
