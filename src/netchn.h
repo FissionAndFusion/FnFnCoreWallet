@@ -7,7 +7,7 @@
 
 #include "mvpeernet.h"
 #include "event.h"
-#include "forkpeerevent.h"
+#include "virtualpeernetevent.h"
 #include "mvbase.h"
 #include "schedule.h"
 
@@ -85,8 +85,6 @@ protected:
     bool HandleEvent(network::CMvEventPeerGetBlocks& eventGetBlocks) override;
     bool HandleEvent(network::CMvEventPeerTx& eventTx) override;
     bool HandleEvent(network::CMvEventPeerBlock& eventBlock) override;
-
-    bool HandleEvent(CFkEventNodeMainBlockRequest& eventRequestMainBlock) override;
 
     CSchedule& GetSchedule(const uint256& hashFork);
     void NotifyPeerUpdate(uint64 nNonce,bool fActive,const network::CAddress& addrPeer);
