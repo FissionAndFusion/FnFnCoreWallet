@@ -11,7 +11,7 @@
 namespace multiverse
 {
 
-class CNetwork : public CForkPseudoPeerNet
+class CNetwork : public CVirtualPeerNet
 {
 public:
     CNetwork();

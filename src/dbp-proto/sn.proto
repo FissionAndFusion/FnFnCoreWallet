@@ -26,5 +26,6 @@ message BlockCmd
 
 message VPeerNetEvent
 {
-    bytes data = 1; // 虚拟PeerNet二进制数据
+    int32 type = 1; // 事件类型
+    bytes data = 2; // 虚拟PeerNet二进制数据
 }
