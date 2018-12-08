@@ -100,17 +100,6 @@ void CMvDbpClientSocket::SendConnectSession(const std::string& session, const st
     connect.set_client("supernode");
     connect.set_version(1);
 
-    google::protobuf::Any anyFork;
-    sn::ForkID forkidMsg;
-
-    for(const auto& fork : forks)
-    {
-        forkidMsg.add_ids(fork);
-    }
-    
-    anyFork.PackFrom(forkidMsg);
-    (*connect.mutable_udata())["supernode-forks"] = anyFork;
-
     google::protobuf::Any *any = new google::protobuf::Any();
     any->PackFrom(connect);
 
@@ -485,7 +474,7 @@ void CMvDbpClient::HandleAdded(CMvDbpClientSocket* pClientSocket, google::protob
     dbp::Added added;
     any->UnpackTo(&added);
 
-    
+
 }
 
 void CMvDbpClient::HandleReady(CMvDbpClientSocket* pClientSocket, google::protobuf::Any* any)
