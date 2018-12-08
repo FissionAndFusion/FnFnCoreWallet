@@ -2,14 +2,14 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "forkpseudopeernet.h"
+#include "virtualpeernet.h"
 #include "walleve/peernet/peer.h"
 
 using namespace multiverse;
 using namespace walleve;
 
 CVirtualPeerNet::CVirtualPeerNet()
-: CMvPeerNet("forkpseudopeernet")
+: CMvPeerNet("virtualpeernet")
 {
     pDbpService = nullptr;
     typeNode = SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN;

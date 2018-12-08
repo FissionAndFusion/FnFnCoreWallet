@@ -76,7 +76,7 @@ bool CDbpService::WalleveHandleInitialize()
         return false;
     }
 
-    if (!WalleveGetObject("forkpseudopeernet",pVirtualPeerNet))
+    if (!WalleveGetObject("virtualpeernet",pVirtualPeerNet))
     {
         WalleveLog("Failed to request virtual peer net\n");
         return false;
