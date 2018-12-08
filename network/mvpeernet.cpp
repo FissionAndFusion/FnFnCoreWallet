@@ -334,7 +334,34 @@ bool CMvPeerNet::HandlePeerHandshaked(CPeer *pPeer,uint32 nTimerId)
     {
         pMvPeer->SendMessage(MVPROTO_CHN_NETWORK,MVPROTO_CMD_GETADDRESS);
     }
+
+    CMvEventPeerActive* pEventActiveForFork = new CMvEventPeerActive(*pEventActive);
+    if(!pEventActiveForFork)
+    {
+        return false;
+    }
+    HandlePeerHandshakedForForkNode(*pEventActiveForFork);
+
     return true;
+}
+
+bool CMvPeerNet::HandleForkPeerActive(const uint64& nNonce, const CAddress& addr)
+{
+    CMvEventPeerActive* pEventActive = new CMvEventPeerActive(nNonce);
+    if (pEventActive == NULL)
+    {
+        return false;
+    }
+
+    pEventActive->data = addr;
+
+    pNetChannel->PostEvent(pEventActive);
+    return true;
+}
+
+void CMvPeerNet::HandlePeerHandshakedForForkNode(CMvEventPeerActive& peerActive)
+{
+
 }
 
 bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CWalleveBufStream& ssPayload)

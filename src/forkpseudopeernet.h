@@ -40,8 +40,13 @@ protected:
     bool HandleEvent(CFkEventNodeSendTxNotice& event) override;
     bool HandleEvent(CFkEventNodeSendBlock& event) override;
     bool HandleEvent(CFkEventNodeSendTx& event) override;
-
     bool HandleEvent(CFkEventNodeIsForkNode& event) override;
+
+    bool HandleEvent(CFkEventNodeNewForkNodeConnected& event) override;
+
+    bool HandleEvent(CFkEventNodePeerActive& event) override;
+
+    void HandlePeerHandshakedForForkNode(network::CMvEventPeerActive& peerActive) override;
 
     bool ExistForkID(const uint256& forkid) {
         return (mapForkNodeHeight.find(forkid) != mapForkNodeHeight.end());
