@@ -55,47 +55,119 @@ bool CVirtualPeerNet::HandleEvent(CFkEventNodePeerActive& event)
 
 bool CVirtualPeerNet::HandleEvent(walleve::CWalleveEventPeerNetReward& eventReward)
 {
-    return CPeerNet::HandleEvent(eventReward);
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
+    {
+        return CPeerNet::HandleEvent(eventReward);
+    }
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
+    {
+        pDbpService->PostEvent(eventReward);
+    }
+    return true;
 }
 
 bool CVirtualPeerNet::HandleEvent(walleve::CWalleveEventPeerNetClose& eventClose)
 {
-    return CPeerNet::HandleEvent(eventClose);
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
+    {
+        return CPeerNet::HandleEvent(eventClose);
+    }
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
+    {
+        pDbpService->PostEvent(eventClose);
+    }
+    return true;
 }
 
 bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerSubscribe& eventSubscribe)
 {
-    return CMvPeerNet::HandleEvent(eventSubscribe);
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
+    {
+        return CMvPeerNet::HandleEvent(eventSubscribe);
+    }
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
+    {
+        pDbpService->PostEvent(eventSubscribe);
+    }
+    return true;
 }
 
 bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerUnsubscribe& eventUnsubscribe)
 {
-    return CMvPeerNet::HandleEvent(eventUnsubscribe);
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
+    {
+        return CMvPeerNet::HandleEvent(eventUnsubscribe);
+    }
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
+    {
+        pDbpService->PostEvent(eventUnsubscribe);
+    }
+    return true;
 }
 
 bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerInv& eventInv)
 {
-    return CMvPeerNet::HandleEvent(eventInv);
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
+    {
+        return CMvPeerNet::HandleEvent(eventInv);
+    }
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
+    {
+        pDbpService->PostEvent(eventInv);
+    }
+    return true;
 }
 
 bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerGetData& eventGetData)
 {
-    return CMvPeerNet::HandleEvent(eventGetData);
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
+    {
+        return CMvPeerNet::HandleEvent(eventGetData);
+    }
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
+    {
+        pDbpService->PostEvent(eventGetData);
+    }
+    return true;
 }
 
 bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerGetBlocks& eventGetBlocks)
 {
-    return CMvPeerNet::HandleEvent(eventGetBlocks);
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
+    {
+        return CMvPeerNet::HandleEvent(eventGetBlocks);
+    }
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
+    {
+        pDbpService->PostEvent(eventGetBlocks);
+    }
+    return true;
 }
 
 bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerTx& eventTx)
 {
-    return CMvPeerNet::HandleEvent(eventTx);
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
+    {
+        return CMvPeerNet::HandleEvent(eventTx);
+    }
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
+    {
+        pDbpService->PostEvent(eventTx);
+    }
+    return true;
 }
 
 bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerBlock& eventBlock)
 {
-    return CMvPeerNet::HandleEvent(eventBlock);
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
+    {
+        return CMvPeerNet::HandleEvent(eventBlock);
+    }
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
+    {
+        pDbpService->PostEvent(eventBlock);
+    }
+    return true;
 }
 
 void CVirtualPeerNet::HandlePeerHandshakedForForkNode(network::CMvEventPeerActive& peerActive)
