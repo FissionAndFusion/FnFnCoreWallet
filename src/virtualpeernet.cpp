@@ -53,6 +53,123 @@ bool CVirtualPeerNet::HandleEvent(CFkEventNodePeerActive& event)
     return true;
 }
 
+bool CVirtualPeerNet::HandleEvent(walleve::CWalleveEventPeerNetReward& eventReward)
+{
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
+    {
+        return CPeerNet::HandleEvent(eventReward);
+    }
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
+    {
+        pDbpService->PostEvent(eventReward);
+    }
+    return true;
+}
+
+bool CVirtualPeerNet::HandleEvent(walleve::CWalleveEventPeerNetClose& eventClose)
+{
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
+    {
+        return CPeerNet::HandleEvent(eventClose);
+    }
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
+    {
+        pDbpService->PostEvent(eventClose);
+    }
+    return true;
+}
+
+bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerSubscribe& eventSubscribe)
+{
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
+    {
+        return CMvPeerNet::HandleEvent(eventSubscribe);
+    }
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
+    {
+        pDbpService->PostEvent(eventSubscribe);
+    }
+    return true;
+}
+
+bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerUnsubscribe& eventUnsubscribe)
+{
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
+    {
+        return CMvPeerNet::HandleEvent(eventUnsubscribe);
+    }
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
+    {
+        pDbpService->PostEvent(eventUnsubscribe);
+    }
+    return true;
+}
+
+bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerInv& eventInv)
+{
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
+    {
+        return CMvPeerNet::HandleEvent(eventInv);
+    }
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
+    {
+        pDbpService->PostEvent(eventInv);
+    }
+    return true;
+}
+
+bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerGetData& eventGetData)
+{
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
+    {
+        return CMvPeerNet::HandleEvent(eventGetData);
+    }
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
+    {
+        pDbpService->PostEvent(eventGetData);
+    }
+    return true;
+}
+
+bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerGetBlocks& eventGetBlocks)
+{
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
+    {
+        return CMvPeerNet::HandleEvent(eventGetBlocks);
+    }
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
+    {
+        pDbpService->PostEvent(eventGetBlocks);
+    }
+    return true;
+}
+
+bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerTx& eventTx)
+{
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
+    {
+        return CMvPeerNet::HandleEvent(eventTx);
+    }
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
+    {
+        pDbpService->PostEvent(eventTx);
+    }
+    return true;
+}
+
+bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerBlock& eventBlock)
+{
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
+    {
+        return CMvPeerNet::HandleEvent(eventBlock);
+    }
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
+    {
+        pDbpService->PostEvent(eventBlock);
+    }
+    return true;
+}
+
 void CVirtualPeerNet::HandlePeerHandshakedForForkNode(network::CMvEventPeerActive& peerActive)
 {
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
@@ -61,6 +178,19 @@ void CVirtualPeerNet::HandlePeerHandshakedForForkNode(network::CMvEventPeerActiv
         if(nullptr != pEvent)
         {
             pEvent->data = peerActive.data;
+            pDbpService->PostEvent(pEvent);
+        }
+    }
+}
+
+void CVirtualPeerNet::DestroyPeerForForkNode(network::CMvEventPeerDeactive& peerDeactive)
+{
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
+    {
+        network::CMvEventPeerDeactive* pEvent = new network::CMvEventPeerDeactive(peerDeactive);
+        if(nullptr != pEvent)
+        {
+            pEvent->data = peerDeactive.data;
             pDbpService->PostEvent(pEvent);
         }
     }
