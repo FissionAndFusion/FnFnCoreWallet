@@ -33,8 +33,19 @@ protected:
 
     bool HandleEvent(CFkEventNodePeerActive& event) override;
 
-    void HandlePeerHandshakedForForkNode(network::CMvEventPeerActive& peerActive) override;
+    bool HandleEvent(walleve::CWalleveEventPeerNetReward& eventReward) override;
+    bool HandleEvent(walleve::CWalleveEventPeerNetClose& eventClose) override;
 
+    bool HandleEvent(network::CMvEventPeerSubscribe& eventSubscribe) override;
+    bool HandleEvent(network::CMvEventPeerUnsubscribe& eventUnsubscribe) override;
+    bool HandleEvent(network::CMvEventPeerInv& eventInv) override;
+    bool HandleEvent(network::CMvEventPeerGetData& eventGetData) override;
+    bool HandleEvent(network::CMvEventPeerGetBlocks& eventGetBlocks) override;
+    bool HandleEvent(network::CMvEventPeerTx& eventTx) override;
+    bool HandleEvent(network::CMvEventPeerBlock& eventBlock) override;
+
+    void HandlePeerHandshakedForForkNode(network::CMvEventPeerActive& peerActive) override;
+    void DestroyPeerForForkNode(network::CMvEventPeerDeactive& peerDeactive) override;
 protected:
     walleve::IIOModule* pDbpService;
     SUPER_NODE_TYPE typeNode;

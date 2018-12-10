@@ -200,6 +200,13 @@ void CMvPeerNet::DestroyPeer(CPeer* pPeer)
         }
     }
     CPeerNet::DestroyPeer(pPeer);
+
+    CMvEventPeerDeactive* pEventDeactiveForFork = new CMvEventPeerDeactive(pMvPeer->GetNonce());
+    if(!pEventDeactiveForFork)
+    {
+        assert(false);
+    }
+    DestroyPeerForForkNode(*pEventDeactiveForFork);
 }
 
 CPeerInfo* CMvPeerNet::GetPeerInfo(CPeer* pPeer,CPeerInfo* pInfo)
@@ -360,6 +367,11 @@ bool CMvPeerNet::HandleForkPeerActive(const uint64& nNonce, const CAddress& addr
 }
 
 void CMvPeerNet::HandlePeerHandshakedForForkNode(CMvEventPeerActive& peerActive)
+{
+
+}
+
+void CMvPeerNet::DestroyPeerForForkNode(CMvEventPeerDeactive& peerDeactive)
 {
 
 }

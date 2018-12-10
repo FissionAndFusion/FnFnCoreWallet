@@ -53,6 +53,51 @@ bool CVirtualPeerNet::HandleEvent(CFkEventNodePeerActive& event)
     return true;
 }
 
+bool CVirtualPeerNet::HandleEvent(walleve::CWalleveEventPeerNetReward& eventReward)
+{
+    return CPeerNet::HandleEvent(eventReward);
+}
+
+bool CVirtualPeerNet::HandleEvent(walleve::CWalleveEventPeerNetClose& eventClose)
+{
+    return CPeerNet::HandleEvent(eventClose);
+}
+
+bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerSubscribe& eventSubscribe)
+{
+    return CMvPeerNet::HandleEvent(eventSubscribe);
+}
+
+bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerUnsubscribe& eventUnsubscribe)
+{
+    return CMvPeerNet::HandleEvent(eventUnsubscribe);
+}
+
+bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerInv& eventInv)
+{
+    return CMvPeerNet::HandleEvent(eventInv);
+}
+
+bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerGetData& eventGetData)
+{
+    return CMvPeerNet::HandleEvent(eventGetData);
+}
+
+bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerGetBlocks& eventGetBlocks)
+{
+    return CMvPeerNet::HandleEvent(eventGetBlocks);
+}
+
+bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerTx& eventTx)
+{
+    return CMvPeerNet::HandleEvent(eventTx);
+}
+
+bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerBlock& eventBlock)
+{
+    return CMvPeerNet::HandleEvent(eventBlock);
+}
+
 void CVirtualPeerNet::HandlePeerHandshakedForForkNode(network::CMvEventPeerActive& peerActive)
 {
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
@@ -61,6 +106,19 @@ void CVirtualPeerNet::HandlePeerHandshakedForForkNode(network::CMvEventPeerActiv
         if(nullptr != pEvent)
         {
             pEvent->data = peerActive.data;
+            pDbpService->PostEvent(pEvent);
+        }
+    }
+}
+
+void CVirtualPeerNet::DestroyPeerForForkNode(network::CMvEventPeerDeactive& peerDeactive)
+{
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
+    {
+        network::CMvEventPeerDeactive* pEvent = new network::CMvEventPeerDeactive(peerDeactive);
+        if(nullptr != pEvent)
+        {
+            pEvent->data = peerDeactive.data;
             pDbpService->PostEvent(pEvent);
         }
     }
