@@ -28,7 +28,6 @@ class CDbpClientConfig
 public:
     CDbpClientConfig(){}
     CDbpClientConfig(const boost::asio::ip::tcp::endpoint& epParentHostIn,
-                    const std::string&  SupportForksIn,
                     const std::string& strPrivateKeyIn,
                     const CIOSSLOption& optSSLIn, 
                     const std::string& strIOModuleIn)
@@ -37,14 +36,9 @@ public:
       optSSL(optSSLIn),
       strIOModule(strIOModuleIn)
     {
-        const auto forks = CDbpUtils::Split(SupportForksIn,';');
-        std::for_each(forks.begin(),forks.end(),[this](const std::string& fork) -> void {
-            vSupportForks.push_back(boost::algorithm::to_lower_copy(fork));
-        });
     }
 public:
     boost::asio::ip::tcp::endpoint epParentHost;
-    std::vector<std::string> vSupportForks;
     std::string strPrivateKey;
     CIOSSLOption optSSL;
     std::string strIOModule;
@@ -58,7 +52,6 @@ public:
     IIOModule* pIOModule;
     CIOSSLOption optSSL;
     boost::asio::ip::tcp::endpoint epParentHost;
-    std::vector<std::string> vSupportForks;
     std::string strPrivateKey;
 };
 
@@ -80,7 +73,7 @@ public:
     void SendPing(const std::string& id);
 
     void SendConnectSession(const std::string& session, const std::vector<std::string>& forks);
-    void SendEvent(const CMvDbpVirtualPeerNetEvent& dbpEvent);
+    void SendEvent(CMvDbpVirtualPeerNetEvent& dbpEvent);
 
 protected:
     void StartReadHeader();
@@ -141,6 +134,8 @@ public:
     void HandleAdded(CMvDbpClientSocket* pClientSocket, google::protobuf::Any* any);
     void HandleReady(CMvDbpClientSocket* pClientSocket, google::protobuf::Any* any);
     void HandleNoSub(CMvDbpClientSocket* pClientSocket, google::protobuf::Any* any);
+
+    bool HandleEvent(CMvEventDbpVirtualPeerNet& event) override;
 
 protected:
     bool WalleveHandleInitialize() override;

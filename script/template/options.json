@@ -203,14 +203,6 @@
             "desc": "Set dbp parent node ip to <ip> for super node(default: empty)"
         },
         {
-            "name": "strSupportForks",
-            "type": "string",
-            "opt": "supernodeforks",
-            "default": "",
-            "format": "-supernodeforks=<forkids>",
-            "desc": "Set Support Fork List to <forkids> for ForkNode of super node(default: empty)"
-        },
-        {
             "name": "strPrivateKey",
             "type": "string",
             "opt": "supernodeprikey",

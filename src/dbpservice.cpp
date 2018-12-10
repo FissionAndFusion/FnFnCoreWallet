@@ -643,7 +643,67 @@ bool CDbpService::HandleEvent(CMvEventDbpUpdateNewTx& event)
 
 bool CDbpService::HandleEvent(CMvEventDbpVirtualPeerNet& event)
 {
+    // process and classify and dispatch to vpeernet
+    if(event.data.type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_ACTIVE)
+    {
+        CWalleveBufStream ss;
+        decltype(event.data.data) bytes;
+        ss.Write((char*)bytes.data(), bytes.size());
+
+        CMvEventPeerActive eventActive(0);
+        ss >> eventActive;
+        
+        pVirtualPeerNet->DispatchEvent(&eventActive);
+    }
+
+    if(event.data.type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_DEACTIVE)
+    {
+        
+    }
+
+    if(event.data.type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_SUBSCRIBE)
+    {
+
+    }
+
+    if(event.data.type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_UNSUBSCRIBE)
+    {
+
+    }
+
+    if(event.data.type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_GETBLOCKS)
+    {
+
+    }
+
+    if(event.data.type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_GETDATA)
+    {
+
+    }
+
+    if(event.data.type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_INV)
+    {
+
+    }
+
+    if(event.data.type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_TX)
+    {
+
+    }
+
+    if(event.data.type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_BLOCK)
+    {
+
+    }
+
     return true;
 }
 
+ void CDbpService::SendEventToParentNode(CMvDbpVirtualPeerNetEvent& event)
+ {
+    CMvEventDbpVirtualPeerNet eventVirtualPeerNet("");
+    eventVirtualPeerNet.data.type = event.type;
+    eventVirtualPeerNet.data.data = event.data;
+    pDbpClient->DispatchEvent(&eventVirtualPeerNet);
+ }
 
