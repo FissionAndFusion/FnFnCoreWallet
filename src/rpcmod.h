@@ -43,16 +43,33 @@ protected:
     {
         return i.IsValid() ? uint64(i) : valDefault;
     }
-    const uint256 GetForkHash(const rpc::CRPCString& hex)
+    const bool IsForkHash(uint256& hash)
     {
-        uint256 fork;
+        std::vector<std::pair<uint256,CProfile>> forks;
+        pService->ListFork(forks);
+        for(const auto& fork : forks)
+        {
+            if(fork.first == hash)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+    const bool GetForkHashOfDef(const rpc::CRPCString& hex, uint256& hashFork)
+    {
         if (hex.IsValid())
         {
-            fork.SetHex(hex);
+            if (!hashFork.SetHexCheck(hex))
+                return false;
         }
-        if (fork == 0)
-            fork = pCoreProtocol->GetGenesisBlockHash();
-        return fork;
+        else
+            hashFork = pCoreProtocol->GetGenesisBlockHash();
+            
+        if (!IsForkHash(hashFork))
+            return false;
+
+        return true;
     }
     bool CheckWalletError(MvErr err);
     multiverse::crypto::CPubKey GetPubKey(const std::string& addr);
