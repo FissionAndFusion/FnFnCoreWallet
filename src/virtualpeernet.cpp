@@ -63,14 +63,23 @@ void CVirtualPeerNet::WalleveHandleDeinitialize()
     pDbpService = nullptr;
 }
 
-bool CVirtualPeerNet::HandleEvent(CFkEventNodePeerActive& event)
+bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerActive& eventActive)
 {
-    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK
-            || typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN)
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
     {
-        uint64 nNonce = event.nNonce;
-        network::CAddress addr = event.data;
-        if(!HandleForkPeerActive(nNonce, addr))
+        if(!HandleForkPeerActive(eventActive))
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerDeactive& eventDeactive)
+{
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
+    {
+        if(!HandleForkPeerDeactive(eventDeactive))
         {
             return false;
         }
@@ -249,28 +258,30 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerBlock& eventBlock)
     return true;
 }
 
-void CVirtualPeerNet::HandlePeerHandshakedForForkNode(network::CMvEventPeerActive& peerActive)
+bool CVirtualPeerNet::HandlePeerHandshakedForForkNode(const network::CMvEventPeerActive& peerActive)
 {
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
     {
-        CFkEventNodePeerActive* pEvent = new CFkEventNodePeerActive(peerActive.nNonce);
-        if(nullptr != pEvent)
+        CMvEventPeerActive* pEvent = new CMvEventPeerActive(peerActive);
+        if(nullptr == pEvent)
         {
-            pEvent->data = peerActive.data;
-            pDbpService->PostEvent(pEvent);
+            return false;
         }
+        pDbpService->PostEvent(pEvent);
     }
+    return true;
 }
 
-void CVirtualPeerNet::DestroyPeerForForkNode(network::CMvEventPeerDeactive& peerDeactive)
+bool CVirtualPeerNet::DestroyPeerForForkNode(const network::CMvEventPeerDeactive& peerDeactive)
 {
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
     {
         network::CMvEventPeerDeactive* pEvent = new network::CMvEventPeerDeactive(peerDeactive);
-        if(nullptr != pEvent)
+        if(nullptr == pEvent)
         {
-            pEvent->data = peerDeactive.data;
-            pDbpService->PostEvent(pEvent);
+            return false;
         }
+        pDbpService->PostEvent(pEvent);
     }
+    return true;
 }

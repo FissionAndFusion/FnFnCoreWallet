@@ -10,6 +10,9 @@
 #include "walleve/walleve.h"
 #include "mvproto.h"
 #include "block.h"
+#include "mvpeerevent.h"
+
+using namespace multiverse::network;
 
 namespace multiverse
 {
@@ -74,8 +77,8 @@ class CFkNodeEventListener : virtual public walleve::CWalleveEventListener
 {
 public:
     virtual ~CFkNodeEventListener() {}
-    DECLARE_EVENTHANDLER(CFkEventNodePeerActive);
-    DECLARE_EVENTHANDLER(CFkEventNodeSubscribe);
+    DECLARE_EVENTHANDLER(CMvEventPeerActive);
+    DECLARE_EVENTHANDLER(CMvEventPeerDeactive);
     DECLARE_EVENTHANDLER(CFkEventNodeInv);
 };
 

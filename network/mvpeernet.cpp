@@ -193,6 +193,11 @@ void CMvPeerNet::DestroyPeer(CPeer* pPeer)
 
             pNetChannel->PostEvent(pEventDeactive);
 
+            if(!DestroyPeerForForkNode(*pEventDeactive))
+            {
+                WalleveLog("Failed to deliver peer deactive event to super node cluster.\n");
+            }
+
             if (pEventDeactiveDelegated != NULL)
             {
                 pDelegatedChannel->PostEvent(pEventDeactiveDelegated);
@@ -200,13 +205,6 @@ void CMvPeerNet::DestroyPeer(CPeer* pPeer)
         }
     }
     CPeerNet::DestroyPeer(pPeer);
-
-    CMvEventPeerDeactive* pEventDeactiveForFork = new CMvEventPeerDeactive(pMvPeer->GetNonce());
-    if(!pEventDeactiveForFork)
-    {
-        assert(false);
-    }
-    DestroyPeerForForkNode(*pEventDeactiveForFork);
 }
 
 CPeerInfo* CMvPeerNet::GetPeerInfo(CPeer* pPeer,CPeerInfo* pInfo)
@@ -342,36 +340,45 @@ bool CMvPeerNet::HandlePeerHandshaked(CPeer *pPeer,uint32 nTimerId)
         pMvPeer->SendMessage(MVPROTO_CHN_NETWORK,MVPROTO_CMD_GETADDRESS);
     }
 
-    CMvEventPeerActive* pEventActiveForFork = new CMvEventPeerActive(*pEventActive);
-    if(!pEventActiveForFork)
+    if(!HandlePeerHandshakedForForkNode(*pEventActive))
     {
-        return false;
+        WalleveLog("Failed to deliver peer active event to super node cluster.\n");
+        //return false;
     }
-    HandlePeerHandshakedForForkNode(*pEventActiveForFork);
 
     return true;
 }
 
-bool CMvPeerNet::HandleForkPeerActive(const uint64& nNonce, const CAddress& addr)
+bool CMvPeerNet::HandleForkPeerActive(const CMvEventPeerActive& eventActive)
 {
-    CMvEventPeerActive* pEventActive = new CMvEventPeerActive(nNonce);
+    CMvEventPeerActive* pEventActive = new CMvEventPeerActive(eventActive);
     if (pEventActive == NULL)
     {
         return false;
     }
 
-    pEventActive->data = addr;
+    pNetChannel->PostEvent(pEventActive);
+    return true;
+}
+
+bool CMvPeerNet::HandleForkPeerDeactive(const CMvEventPeerDeactive& eventDeactive)
+{
+    CMvEventPeerDeactive* pEventActive = new CMvEventPeerDeactive(eventDeactive);
+    if (pEventActive == NULL)
+    {
+        return false;
+    }
 
     pNetChannel->PostEvent(pEventActive);
     return true;
 }
 
-void CMvPeerNet::HandlePeerHandshakedForForkNode(CMvEventPeerActive& peerActive)
+bool CMvPeerNet::HandlePeerHandshakedForForkNode(const CMvEventPeerActive& peerActive)
 {
 
 }
 
-void CMvPeerNet::DestroyPeerForForkNode(CMvEventPeerDeactive& peerDeactive)
+bool CMvPeerNet::DestroyPeerForForkNode(const CMvEventPeerDeactive& peerDeactive)
 {
 
 }
