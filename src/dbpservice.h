@@ -30,6 +30,9 @@ public:
     CDbpService();
     virtual ~CDbpService() noexcept;
 
+    void SetIsRootNode(bool isRootNode);
+    void SetIsFnFnNode(bool isFnFnNode);
+
     bool HandleEvent(CMvEventDbpConnect& event) override;
     bool HandleEvent(CMvEventDbpSub& event) override;
     bool HandleEvent(CMvEventDbpUnSub& event) override;
@@ -117,6 +120,9 @@ private:
     std::unordered_map<std::string, IdsType> mapTopicIds;       // topic => ids
 
     std::unordered_map<std::string, std::pair<uint256,uint256>> mapForkPoint; // fork point hash => (fork hash, fork point hash)
+
+    bool fIsRootNode;
+    bool fIsFnFnNode;
 };
 
 } // namespace multiverse

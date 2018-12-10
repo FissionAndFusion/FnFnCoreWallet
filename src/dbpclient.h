@@ -30,11 +30,15 @@ public:
     CDbpClientConfig(const boost::asio::ip::tcp::endpoint& epParentHostIn,
                     const std::string& strPrivateKeyIn,
                     const CIOSSLOption& optSSLIn, 
-                    const std::string& strIOModuleIn)
+                    const std::string& strIOModuleIn,
+                    bool isRootNode,
+                    bool isFnFnNode)
     : epParentHost(epParentHostIn),
       strPrivateKey(strPrivateKeyIn),
       optSSL(optSSLIn),
-      strIOModule(strIOModuleIn)
+      strIOModule(strIOModuleIn),
+      fIsRootNode(isRootNode),
+      fIsFnFnNode(isFnFnNode)
     {
     }
 public:
@@ -42,6 +46,8 @@ public:
     std::string strPrivateKey;
     CIOSSLOption optSSL;
     std::string strIOModule;
+    bool fIsRootNode;
+    bool fIsFnFnNode;
 };
 
 class CDbpClientProfile
@@ -123,7 +129,7 @@ public:
 
     void HandleClientSocketError(CMvDbpClientSocket* pClientSocket);
     void HandleClientSocketSent(CMvDbpClientSocket* pClientSocket);
-    void HandleClientSocketRecv(CMvDbpClientSocket* pClientSocket, const boost::any& anyObj);
+    void HandleClientSocketRecv(CMvDbpClientSocket* pClientSocket, const boost::any& anyObj);   
     void AddNewClient(const CDbpClientConfig& confClient);
 
     void HandleConnected(CMvDbpClientSocket* pClientSocket, google::protobuf::Any* any);
