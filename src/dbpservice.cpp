@@ -646,12 +646,19 @@ bool CDbpService::HandleEvent(CMvEventDbpVirtualPeerNet& event)
     // process and classify and dispatch to vpeernet
     if(event.data.type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_ACTIVE)
     {
+        CWalleveBufStream ss;
+        decltype(event.data.data) bytes;
+        ss.Write((char*)bytes.data(), bytes.size());
+
+        CMvEventPeerActive eventActive(0);
+        ss >> eventActive;
         
+        pVirtualPeerNet->DispatchEvent(&eventActive);
     }
 
     if(event.data.type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_DEACTIVE)
     {
-
+        
     }
 
     if(event.data.type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_SUBSCRIBE)

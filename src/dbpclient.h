@@ -28,7 +28,6 @@ class CDbpClientConfig
 public:
     CDbpClientConfig(){}
     CDbpClientConfig(const boost::asio::ip::tcp::endpoint& epParentHostIn,
-                    const std::string&  SupportForksIn,
                     const std::string& strPrivateKeyIn,
                     const CIOSSLOption& optSSLIn, 
                     const std::string& strIOModuleIn)
@@ -37,14 +36,9 @@ public:
       optSSL(optSSLIn),
       strIOModule(strIOModuleIn)
     {
-        const auto forks = CDbpUtils::Split(SupportForksIn,';');
-        std::for_each(forks.begin(),forks.end(),[this](const std::string& fork) -> void {
-            vSupportForks.push_back(boost::algorithm::to_lower_copy(fork));
-        });
     }
 public:
     boost::asio::ip::tcp::endpoint epParentHost;
-    std::vector<std::string> vSupportForks;
     std::string strPrivateKey;
     CIOSSLOption optSSL;
     std::string strIOModule;
@@ -58,7 +52,6 @@ public:
     IIOModule* pIOModule;
     CIOSSLOption optSSL;
     boost::asio::ip::tcp::endpoint epParentHost;
-    std::vector<std::string> vSupportForks;
     std::string strPrivateKey;
 };
 
