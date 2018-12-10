@@ -80,7 +80,7 @@ public:
     void SendPing(const std::string& id);
 
     void SendConnectSession(const std::string& session, const std::vector<std::string>& forks);
-    void SendEvent(const CMvDbpVirtualPeerNetEvent& dbpEvent);
+    void SendEvent(CMvDbpVirtualPeerNetEvent& dbpEvent);
 
 protected:
     void StartReadHeader();
@@ -141,6 +141,8 @@ public:
     void HandleAdded(CMvDbpClientSocket* pClientSocket, google::protobuf::Any* any);
     void HandleReady(CMvDbpClientSocket* pClientSocket, google::protobuf::Any* any);
     void HandleNoSub(CMvDbpClientSocket* pClientSocket, google::protobuf::Any* any);
+
+    bool HandleEvent(CMvEventDbpVirtualPeerNet& event) override;
 
 protected:
     bool WalleveHandleInitialize() override;

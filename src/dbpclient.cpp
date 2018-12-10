@@ -106,7 +106,7 @@ void CMvDbpClientSocket::SendConnectSession(const std::string& session, const st
     SendMessage(dbp::Msg::CONNECT,any);
 }
 
-void CMvDbpClientSocket::SendEvent(const CMvDbpVirtualPeerNetEvent& dbpEvent)
+void CMvDbpClientSocket::SendEvent(CMvDbpVirtualPeerNetEvent& dbpEvent)
 {
     dbp::Method method;
     method.set_id(CDbpUtils::RandomString());
@@ -793,6 +793,15 @@ CMvDbpClientSocket* CMvDbpClient::PickOneSessionSocket() const
     }
 
     return pClientSocket;
+}
+
+bool CMvDbpClient::HandleEvent(CMvEventDbpVirtualPeerNet& event)
+{
+    CMvDbpClientSocket* pClientSocket = PickOneSessionSocket();
+    if(!pClientSocket) return false;
+    
+    pClientSocket->SendEvent(event.data);
+    return true;
 }
 
 } // namespace multiverse
