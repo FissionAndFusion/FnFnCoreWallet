@@ -50,6 +50,7 @@ public:
                                walleve::CWalleveBufStream& ssPayload);
     bool HandleForkPeerActive(const uint64& nNonce, const CAddress& addr);
     virtual void HandlePeerHandshakedForForkNode(CMvEventPeerActive& peerActive);
+    virtual void DestroyPeerForForkNode(CMvEventPeerDeactive& peerDeactive);
 protected:
     bool WalleveHandleInitialize() override;
     void WalleveHandleDeinitialize() override;

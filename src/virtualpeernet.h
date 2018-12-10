@@ -34,7 +34,7 @@ protected:
     bool HandleEvent(CFkEventNodePeerActive& event) override;
 
     void HandlePeerHandshakedForForkNode(network::CMvEventPeerActive& peerActive) override;
-
+    void DestroyPeerForForkNode(network::CMvEventPeerDeactive& peerDeactive) override;
 protected:
     walleve::IIOModule* pDbpService;
     SUPER_NODE_TYPE typeNode;

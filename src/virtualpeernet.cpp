@@ -65,3 +65,16 @@ void CVirtualPeerNet::HandlePeerHandshakedForForkNode(network::CMvEventPeerActiv
         }
     }
 }
+
+void DestroyPeerForForkNode(network::CMvEventPeerDeactive& peerDeactive)
+{
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
+    {
+        CFkEventNodePeerDeactive* pEvent = new CFkEventNodePeerDeactive(peerDeactive.nNonce);
+        if(nullptr != pEvent)
+        {
+            pEvent->data = peerDeactive.data;
+            pDbpService->PostEvent(pEvent);
+        }
+    }
+}
