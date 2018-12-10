@@ -79,6 +79,8 @@ private:
     bool GetLwsBlocks(const uint256& forkHash, const uint256& startHash, int32 n, std::vector<CMvDbpBlock>& blocks);
     bool IsEmpty(const uint256& hash);
     bool IsForkHash(const uint256& hash);
+
+    bool IsMyFork(const uint256& hash);
     
     // from down node
     void HandleGetBlocks(CMvEventDbpMethod& event);
@@ -124,6 +126,8 @@ private:
 
     bool fIsRootNode;
     bool fIsFnFnNode;
+
+    std::vector<CMvDbpVirtualPeerNetEvent> vCacheEvent;
 };
 
 } // namespace multiverse
