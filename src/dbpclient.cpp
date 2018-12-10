@@ -552,6 +552,11 @@ void CMvDbpClient::EnterLoop()
          it != mapProfile.end(); ++it)
     {
         bool fEnableSSL = (*it).second.optSSL.fEnable;
+
+        if((*it).second.epParentHost.address().is_loopback())
+        {
+            continue;
+        }
        
         if(!StartConnection(it->first,DBPCLIENT_CONNECT_TIMEOUT,fEnableSSL,it->second.optSSL))
         {
@@ -649,7 +654,6 @@ bool CMvDbpClient::CreateProfile(const CDbpClientConfig& confClient)
     if(confClient.optSSL.fEnable)
         profile.optSSL = confClient.optSSL;
     
-    profile.vSupportForks = confClient.vSupportForks;
     profile.strPrivateKey = confClient.strPrivateKey;
     profile.epParentHost = confClient.epParentHost;
     mapProfile[confClient.epParentHost] = profile;
@@ -748,7 +752,7 @@ bool CMvDbpClient::ActivateConnect(CIOClient* pClient)
 
     mapClientSocket.insert(std::make_pair(nNonce,pDbpClientSocket));
     
-    std::vector<std::string> vSupportForks = mapProfile[pClient->GetRemote()].vSupportForks;
+    std::vector<std::string> vSupportForks{};
     
     pDbpClientSocket->SendConnectSession("",vSupportForks);
     
