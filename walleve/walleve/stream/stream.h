@@ -57,26 +57,26 @@ public:
     template <typename T,typename O>
     CWalleveStream& Serialize(T& t,O &opt)
     {
-        return Serialize(t,boost::is_fundamental<T>(),opt);
+        return Serialize(t,boost::has_logical_or<boost::is_fundamental<T>(), boost::is_enum<T>()>(),opt);
     }
 
     template <typename T>
     CWalleveStream& operator<< (const T& t)
     {
-        return Serialize(const_cast<T&>(t),boost::is_fundamental<T>(),SaveType());
+        return Serialize(const_cast<T&>(t),boost::has_logical_or<boost::is_fundamental<T>(), boost::is_enum<T>()>(),SaveType());
     }
 
     template <typename T>
     CWalleveStream& operator>> (T& t)
     {
-        return Serialize(t,boost::is_fundamental<T>(),LoadType());
+        return Serialize(t, boost::has_logical_or<boost::is_fundamental<T>(), boost::is_enum<T>()>(),LoadType());
     }
 
     template <typename T>
     std::size_t GetSerializeSize(const T& t)
     {
         std::size_t serSize = 0;
-        Serialize(const_cast<T&>(t),boost::is_fundamental<T>(),serSize);
+        Serialize(const_cast<T&>(t),boost::has_logical_or<boost::is_fundamental<T>(), boost::is_enum<T>()>(),serSize);
         return serSize;
     }
 

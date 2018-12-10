@@ -894,7 +894,7 @@ bool CDbpService::HandleEvent(CMvEventPeerGetData& event)
 bool CDbpService::HandleEvent(CWalleveEventPeerNetReward& event)
 {
     CWalleveBufStream ss;
-    //ss << event;
+    ss << event;
     std::string data(ss.GetData(), ss.GetSize());
         
     CMvDbpVirtualPeerNetEvent eventVPeer;
@@ -912,7 +912,7 @@ bool CDbpService::HandleEvent(CWalleveEventPeerNetReward& event)
 bool CDbpService::HandleEvent(CWalleveEventPeerNetClose& event)
 {
     CWalleveBufStream ss;
-    //ss << event;
+    ss << event;
     std::string data(ss.GetData(), ss.GetSize());
         
     CMvDbpVirtualPeerNetEvent eventVPeer;
