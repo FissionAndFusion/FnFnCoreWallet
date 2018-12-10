@@ -80,6 +80,7 @@ private:
     bool IsEmpty(const uint256& hash);
     bool IsForkHash(const uint256& hash);
     
+    // from down node
     void HandleGetBlocks(CMvEventDbpMethod& event);
     void HandleGetTransaction(CMvEventDbpMethod& event);
     void HandleSendTransaction(CMvEventDbpMethod& event);

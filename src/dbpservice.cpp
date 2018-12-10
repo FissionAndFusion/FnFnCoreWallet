@@ -511,11 +511,56 @@ void CDbpService::HandleGetBlocks(CMvEventDbpMethod& event)
     }
 }
 
+// from down node
 void CDbpService::HandleSendEvent(CMvEventDbpMethod& event)
 {
     int type = boost::any_cast<int>(event.data.params["type"]);
     std::string eventData = boost::any_cast<std::string>(event.data.params["data"]);
 
+    if(type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_REWARD)
+    {
+
+    }
+
+    if(type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_CLOSE)
+    {
+
+    }
+
+    if(type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_SUBSCRIBE)
+    {
+
+    }
+
+    if(type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_UNSUBSCRIBE)
+    {
+
+    }
+
+    if(type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_GETBLOCKS)
+    {
+
+    }
+
+    if(type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_GETDATA)
+    {
+
+    }
+
+    if(type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_INV)
+    {
+
+    }
+
+    if(type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_TX)
+    {
+
+    }
+
+    if(type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_BLOCK)
+    {
+        
+    }
     
 }
 
