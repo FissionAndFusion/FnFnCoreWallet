@@ -1181,9 +1181,18 @@
                             "type": "string",
                             "desc": "public key with hex system"
                         },
-                        "info": {
-                            "type": "string",
-                            "desc": "key other info"
+                        "version": {
+                            "type": "int",
+                            "desc": "public key version"
+                        },
+                        "locked": {
+                            "type": "bool",
+                            "desc": "public key locked"
+                        },
+                        "timeout": {
+                            "type": "int",
+                            "required": false,
+                            "desc": "public key timeout locked"
                         }
                     }
                 }
@@ -1192,11 +1201,11 @@
         "example": [
             {
                 "request": "multiverse-cli listkey",
-                "response": "[{\"key\":\"3d266a564ec85f3385babf615b1d7eeb01b3e4456d35174732bb9ec0fa8c8f4f\",\"info\":\"ver=0;locked\"},{\"key\":\"58e148d9e8610a6504c26ed346d15920c4d832cf0f03ecb8a016e0d0ec838b1b\",\"info\":\"ver=0;locked\"}]"
+                "response": "[{\"key\":\"3d266a564ec85f3385babf615b1d7eeb01b3e4456d35174732bb9ec0fa8c8f4f\",\"version\": 1,\"locked\": true},{\"key\":\"58e148d9e8610a6504c26ed346d15920c4d832cf0f03ecb8a016e0d0ec838b1b\",\"version\": 1,\"locked\": true}]"
             },
             {
                 "request": "curl -d '{\"id\":43,\"method\":\"listkey\",\"jsonrpc\":\"2.0\",\"params\":{}}' http://127.0.0.1:6812",
-                "response": "{\"id\":43,\"jsonrpc\":\"2.0\",\"result\":[{\"key\":\"3d266a564ec85f3385babf615b1d7eeb01b3e4456d35174732bb9ec0fa8c8f4f\",\"info\":\"ver=0;locked\"},{\"key\":\"58e148d9e8610a6504c26ed346d15920c4d832cf0f03ecb8a016e0d0ec838b1b\",\"info\":\"ver=1;unlocked;timeout=5\"}]}"
+                "response": "{\"id\":43,\"jsonrpc\":\"2.0\",\"result\":[{\"key\":\"3d266a564ec85f3385babf615b1d7eeb01b3e4456d35174732bb9ec0fa8c8f4f\",\"version\": 1,\"locked\": true},{\"key\":\"58e148d9e8610a6504c26ed346d15920c4d832cf0f03ecb8a016e0d0ec838b1b\",\"version\": 1,\"locked\": true}]}"
             }
         ]
     },

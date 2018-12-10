@@ -717,22 +717,15 @@ CRPCResultPtr CRPCMod::RPCListKey(CRPCParamPtr param)
         int64 nAutoLockTime;
         if (pService->GetKeyStatus(pubkey,nVersion,fLocked,nAutoLockTime))
         {
-            ostringstream oss;
-            oss << "ver=" << nVersion;
-            if (fLocked)
+            CListKeyResult::CPubkey p;
+            p.strKey = pubkey.GetHex();
+            p.nVersion = nVersion;
+            p.fLocked = fLocked;
+            if (!fLocked && nAutoLockTime > 0)
             {
-                oss << ";locked";
+                p.nTimeout = (nAutoLockTime - GetTime());
             }
-            else
-            {
-                oss << ";unlocked";
-                if (nAutoLockTime > 0)
-                {
-                    oss <<";timeout=" << (nAutoLockTime - GetTime());
-                }
-            }
-
-            spResult->vecPubkey.push_back({pubkey.GetHex(), oss.str()});
+            spResult->vecPubkey.push_back(p);
         }
     } 
     return spResult;
