@@ -23,7 +23,8 @@ namespace multiverse
 using namespace network;
 
 class CDbpService : public walleve::IIOModule, virtual public CDBPEventListener, 
-                    virtual public CMvDBPEventListener, virtual public CFkNodeEventListener
+                    virtual public CMvDBPEventListener, virtual public CMvPeerEventListener, 
+                    virtual public CWallevePeerEventListener 
 {
 public:
     CDbpService();
@@ -37,10 +38,26 @@ public:
     bool HandleEvent(CMvEventDbpBroken& event) override;
     bool HandleEvent(CMvEventDbpAdded& event) override;
     bool HandleEvent(CMvEventDbpRemoveSession& event) override;
+    
     // notify add msg(block tx ...) to event handler
     bool HandleEvent(CMvEventDbpUpdateNewBlock& event) override;
     bool HandleEvent(CMvEventDbpUpdateNewTx& event) override;
 
+    // from virtualpeernet
+    bool HandleEvent(CMvEventPeerActive& event) override;
+    bool HandleEvent(CMvEventPeerDeactive& event) override;
+    bool HandleEvent(CMvEventPeerSubscribe& event) override;
+    bool HandleEvent(CMvEventPeerUnsubscribe& event) override;
+    bool HandleEvent(CMvEventPeerInv& event) override;
+    bool HandleEvent(CMvEventPeerBlock& event) override;
+    bool HandleEvent(CMvEventPeerTx& event) override;
+    bool HandleEvent(CMvEventPeerGetBlocks& event) override;
+    bool HandleEvent(CMvEventPeerGetData& event) override;
+    
+    bool HandleEvent(CWalleveEventPeerNetReward& event) override;
+    bool HandleEvent(CWalleveEventPeerNetClose& event) override;
+    
+    // from up node
     bool HandleEvent(CMvEventDbpVirtualPeerNet& event) override;
 
 protected:

@@ -55,8 +55,7 @@ public:
     std::map<uint256,CNetChannelPeerFork> mapSubscribedFork;
 };
 
-class CNetChannel : public network::IMvNetChannel, virtual public CMvDBPEventListener
-                    , virtual public CFkNodeEventListener
+class CNetChannel : public network::IMvNetChannel
 {
 public:
     CNetChannel();
