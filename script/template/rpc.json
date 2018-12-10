@@ -445,11 +445,11 @@
         "example": [
             {
                 "request": "multiverse-cli version",
-                "response": "multiverse server stopping"
+                "response": "Multiverse server version is v0.1.0"
             },
             {
-                "request": "curl -d '{\"id\":1,\"method\":\"stop\",\"jsonrpc\":\"2.0\",\"params\":{}}' http://127.0.0.1:6812",
-                "response": "{\"id\":1,\"jsonrpc\":\"2.0\",\"result\":\"multiverse server stopping\"}"
+                "request": "curl -d '{\"id\":0,\"method\":\"version\",\"jsonrpc\":\"2.0\",\"params\":{}}' http://127.0.0.1:6812",
+                "response": "{\"id\":0,\"jsonrpc\":\"2.0\",\"result\":\"Multiverse server version is v0.1.0\"}"
             }
         ]
     },
