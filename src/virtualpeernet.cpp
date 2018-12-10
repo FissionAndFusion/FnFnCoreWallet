@@ -19,6 +19,30 @@ CVirtualPeerNet::~CVirtualPeerNet()
 {
 }
 
+void CVirtualPeerNet::SetNodeTypeAsFnfn(bool fIsFnfnNode)
+{
+    if(fIsFnfnNode)
+    {
+        typeNode = SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN;
+    }
+    else
+    {
+        typeNode = SUPER_NODE_TYPE::SUPER_NODE_TYPE_UNKN;
+    }
+}
+
+void CVirtualPeerNet::SetNodeTypeAsSuperNode(bool fIsRootNode)
+{
+    if(fIsRootNode)
+    {
+        typeNode = SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT;
+    }
+    else
+    {
+        typeNode = SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK;
+    }
+}
+
 bool CVirtualPeerNet::WalleveHandleInitialize()
 {
     CMvPeerNet::WalleveHandleInitialize();
