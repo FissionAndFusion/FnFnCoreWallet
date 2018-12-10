@@ -344,8 +344,6 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
         }
         case EModuleType::DBPCLIENT:
         {
-            
-            
             if(!AttachModule(new CMvDbpClient()))
             {
                 return false;
@@ -374,16 +372,29 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
             {
                 return false;
             }
+
+            auto pForkManagerBase = walleveDocker.GetObject("forkmanager");
+            if(!pForkManagerBase)
+            {
+                return false;
+            }
             
             dynamic_cast<CVirtualPeerNet*>(pVirtualPeerNetBase)->SetNodeTypeAsFnfn(config.fIsFnFnNode);
             dynamic_cast<CVirtualPeerNet*>(pVirtualPeerNetBase)->SetNodeTypeAsSuperNode(config.fIsRootNode);
             dynamic_cast<CMvDbpClient*>(pClientBase)->AddNewClient(config);
+            std::vector<std::string> vSupportForks = dynamic_cast<CForkManager*>(pForkManagerBase)->ForkConfig()->vFork;
+            std::vector<uint256> vForkHash;
+            for(const auto& fork : vSupportForks)
+            {
+                uint256 forkHash;
+                forkHash.SetHex(fork);
+                vForkHash.push_back(forkHash);
+            }
 
             CDbpService* pDbpService = new CDbpService();
             pDbpService->SetIsFnFnNode(config.fIsFnFnNode);
             pDbpService->SetIsRootNode(config.fIsRootNode);
-
-
+            pDbpService->SetSupportForks(vForkHash);
 
             if (!AttachModule(pDbpService))
             {

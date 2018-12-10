@@ -32,6 +32,7 @@ public:
 
     void SetIsRootNode(bool isRootNode);
     void SetIsFnFnNode(bool isFnFnNode);
+    void SetSupportForks(const std::vector<uint256>& vForks);
 
     bool HandleEvent(CMvEventDbpConnect& event) override;
     bool HandleEvent(CMvEventDbpSub& event) override;
@@ -114,7 +115,6 @@ protected:
     ICoreProtocol* pCoreProtocol;
     IWallet* pWallet;
     IMvNetChannel* pNetChannel;
-    IForkManager* pForkManager;
 
 private:
     std::map<std::string, ForksType> mapSessionChildNodeForks; // session => child node forks
@@ -128,6 +128,11 @@ private:
     bool fIsFnFnNode;
 
     std::vector<CMvDbpVirtualPeerNetEvent> vCacheEvent;
+
+    /*Event router*/
+    std::map<uint256, int> mapChildNodeForkCount;
+    std::vector<uint256> vSupportFork;
+
 };
 
 } // namespace multiverse
