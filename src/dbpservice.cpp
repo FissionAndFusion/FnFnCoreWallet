@@ -643,7 +643,15 @@ bool CDbpService::HandleEvent(CMvEventDbpUpdateNewTx& event)
 
 bool CDbpService::HandleEvent(CMvEventDbpVirtualPeerNet& event)
 {
+    // process and classify and dispatch to vpeernet
     return true;
 }
 
+ void CDbpService::SendEventToParentNode(CMvDbpVirtualPeerNetEvent& event)
+ {
+    CMvEventDbpVirtualPeerNet eventVirtualPeerNet("");
+    eventVirtualPeerNet.data.type = event.type;
+    eventVirtualPeerNet.data.data = event.data;
+    pDbpClient->DispatchEvent(&eventVirtualPeerNet);
+ }
 

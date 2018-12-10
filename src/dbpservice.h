@@ -75,6 +75,8 @@ private:
     void PushTx(const std::string& forkid, const CMvDbpTransaction& dbptx);
     void PushEvent(const CMvDbpVirtualPeerNetEvent& event);
 
+    void SendEventToParentNode(CMvDbpVirtualPeerNetEvent& event);
+
     void RespondFailed(CMvEventDbpConnect& event);
     void RespondConnected(CMvEventDbpConnect& event);
     void RespondNoSub(CMvEventDbpSub& event);
