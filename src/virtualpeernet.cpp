@@ -63,7 +63,12 @@ bool CVirtualPeerNet::HandleEvent(walleve::CWalleveEventPeerNetReward& eventRewa
     }
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
     {
-        pDbpService->PostEvent(&eventReward);
+        walleve::CWalleveEventPeerNetReward* pEvent = new walleve::CWalleveEventPeerNetReward(eventReward);
+        if(nullptr == pEvent)
+        {
+            return false;
+        }
+        pDbpService->PostEvent(pEvent);
     }
     return true;
 }
@@ -77,7 +82,12 @@ bool CVirtualPeerNet::HandleEvent(walleve::CWalleveEventPeerNetClose& eventClose
     }
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
     {
-        pDbpService->PostEvent(&eventClose);
+        walleve::CWalleveEventPeerNetClose* pEvent = new walleve::CWalleveEventPeerNetClose(eventClose);
+        if(nullptr == pEvent)
+        {
+            return false;
+        }
+        pDbpService->PostEvent(pEvent);
     }
     return true;
 }
@@ -91,7 +101,12 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerSubscribe& eventSubscribe
     }
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
     {
-        pDbpService->PostEvent(&eventSubscribe);
+        network::CMvEventPeerSubscribe* pEvent = new network::CMvEventPeerSubscribe(eventSubscribe);
+        if(nullptr == pEvent)
+        {
+            return false;
+        }
+        pDbpService->PostEvent(pEvent);
     }
     return true;
 }
@@ -105,7 +120,12 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerUnsubscribe& eventUnsubsc
     }
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
     {
-        pDbpService->PostEvent(&eventUnsubscribe);
+        network::CMvEventPeerUnsubscribe* pEvent = new network::CMvEventPeerUnsubscribe(eventUnsubscribe);
+        if(nullptr == pEvent)
+        {
+            return false;
+        }
+        pDbpService->PostEvent(pEvent);
     }
     return true;
 }
@@ -119,7 +139,12 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerInv& eventInv)
     }
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
     {
-        pDbpService->PostEvent(&eventInv);
+        network::CMvEventPeerInv* pEvent = new network::CMvEventPeerInv(eventInv);
+        if(nullptr == pEvent)
+        {
+            return false;
+        }
+        pDbpService->PostEvent(pEvent);
     }
     return true;
 }
@@ -133,7 +158,12 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerGetData& eventGetData)
     }
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
     {
-        pDbpService->PostEvent(&eventGetData);
+        network::CMvEventPeerGetData* pEvent = new network::CMvEventPeerGetData(eventGetData);
+        if(nullptr == pEvent)
+        {
+            return false;
+        }
+        pDbpService->PostEvent(pEvent);
     }
     return true;
 }
@@ -147,7 +177,12 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerGetBlocks& eventGetBlocks
     }
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
     {
-        pDbpService->PostEvent(&eventGetBlocks);
+        network::CMvEventPeerGetBlocks* pEvent = new network::CMvEventPeerGetBlocks(eventGetBlocks);
+        if(nullptr == pEvent)
+        {
+            return false;
+        }
+        pDbpService->PostEvent(pEvent);
     }
     return true;
 }
@@ -161,7 +196,12 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerTx& eventTx)
     }
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
     {
-        pDbpService->PostEvent(&eventTx);
+        network::CMvEventPeerTx* pEvent = new network::CMvEventPeerTx(eventTx);
+        if(nullptr == pEvent)
+        {
+            return false;
+        }
+        pDbpService->PostEvent(pEvent);
     }
     return true;
 }
@@ -175,7 +215,12 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerBlock& eventBlock)
     }
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
     {
-        pDbpService->PostEvent(&eventBlock);
+        network::CMvEventPeerBlock* pEvent = new network::CMvEventPeerBlock(eventBlock);
+        if(nullptr == pEvent)
+        {
+            return false;
+        }
+        pDbpService->PostEvent(pEvent);
     }
     return true;
 }
