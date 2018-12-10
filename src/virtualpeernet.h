@@ -17,6 +17,7 @@ class CVirtualPeerNet: public network::CMvPeerNet, virtual public CFkNodeEventLi
 public:
     enum class SUPER_NODE_TYPE : int
     {
+        SUPER_NODE_TYPE_UNKN,
         SUPER_NODE_TYPE_FNFN = 0,
         SUPER_NODE_TYPE_ROOT,
         SUPER_NODE_TYPE_FORK
@@ -27,6 +28,9 @@ public:
     ~CVirtualPeerNet();
 
     SUPER_NODE_TYPE GetSuperNodeType() {return typeNode;};
+    void SetNodeTypeAsFnfn(bool fIsFnfnNode);
+    void SetNodeTypeAsSuperNode(bool fIsRootNode);
+
 protected:
     bool WalleveHandleInitialize() override;
     void WalleveHandleDeinitialize() override;
