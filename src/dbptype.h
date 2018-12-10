@@ -83,8 +83,8 @@ public:
         DBP_EVENT_PEER_GETBLOCKS= 0x06,
         DBP_EVENT_PEER_TX = 0x07,
         DBP_EVENT_PEER_BLOCK = 0x08,
-        DBP_EVENT_REWARD = 0x09,
-        DBP_EVENT_CLOSE = 0x0A
+        DBP_EVENT_PEER_REWARD = 0x09,
+        DBP_EVENT_PEER_CLOSE = 0x0A
     };
 public:
     int type; 

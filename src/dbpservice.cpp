@@ -163,15 +163,6 @@ static void print_tx(const CTransaction &tx)
 
 bool CDbpService::HandleEvent(CMvEventDbpAdded& event)
 {
-    if(true)
-    {
-
-    }
-    else
-    {
-        return false;
-    }
-    
     return true;
 }
 
@@ -192,6 +183,11 @@ bool CDbpService::HandleEvent(CMvEventDbpConnect& event)
         else
         {
             RespondConnected(event);
+
+            for(const auto& virtualevent : vCacheEvent)
+            {
+                PushEvent(virtualevent);
+            }
         }
     }
 
@@ -364,6 +360,10 @@ bool CDbpService::IsForkHash(const uint256& hash)
     return false;
 }
 
+bool CDbpService::IsMyFork(const uint256& hash)
+{
+    return pNetChannel->IsCotains(hash);
+}
 
 void CDbpService::TrySwitchFork(const uint256& blockHash,uint256& forkHash)
 {
@@ -511,11 +511,64 @@ void CDbpService::HandleGetBlocks(CMvEventDbpMethod& event)
     }
 }
 
+// from down node
 void CDbpService::HandleSendEvent(CMvEventDbpMethod& event)
 {
     int type = boost::any_cast<int>(event.data.params["type"]);
     std::string eventData = boost::any_cast<std::string>(event.data.params["data"]);
 
+    if(type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_REWARD)
+    {
+        if(!fIsFnFnNode && fIsFnFnNode)
+        {
+
+        }
+
+        if(!fIsFnFnNode && !fIsFnFnNode)
+        {
+            
+        }
+    }
+
+    if(type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_CLOSE)
+    {
+
+    }
+
+    if(type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_SUBSCRIBE)
+    {
+
+    }
+
+    if(type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_UNSUBSCRIBE)
+    {
+
+    }
+
+    if(type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_GETBLOCKS)
+    {
+
+    }
+
+    if(type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_GETDATA)
+    {
+
+    }
+
+    if(type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_INV)
+    {
+
+    }
+
+    if(type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_TX)
+    {
+
+    }
+
+    if(type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_BLOCK)
+    {
+
+    }
     
 }
 
@@ -656,56 +709,221 @@ bool CDbpService::HandleEvent(CMvEventDbpUpdateNewTx& event)
 
 bool CDbpService::HandleEvent(CMvEventPeerActive& event)
 {
+    if(!fIsFnFnNode && fIsRootNode)
+    {
+        CWalleveBufStream ss;
+        ss << event;
+        std::string data(ss.GetData(), ss.GetSize());
+        
+        CMvDbpVirtualPeerNetEvent eventVPeer;
+        eventVPeer.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_ACTIVE;
+        eventVPeer.data = std::vector<uint8>(data.begin(), data.end());
+        vCacheEvent.push_back(eventVPeer);
+    }
+
     return true;
 }
 
 bool CDbpService::HandleEvent(CMvEventPeerDeactive& event)
 {
+    if(!fIsFnFnNode && fIsRootNode)
+    {
+        CWalleveBufStream ss;
+        ss << event;
+        std::string data(ss.GetData(), ss.GetSize());
+        
+        CMvDbpVirtualPeerNetEvent eventVPeer;
+        eventVPeer.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_DEACTIVE;
+        eventVPeer.data = std::vector<uint8>(data.begin(), data.end());
+        vCacheEvent.push_back(eventVPeer);
+    }
+    
     return true;
 }
 
 bool CDbpService::HandleEvent(CMvEventPeerSubscribe& event)
 {
+    if(!fIsFnFnNode && fIsRootNode)
+    {
+        CWalleveBufStream ss;
+        ss << event;
+        std::string data(ss.GetData(), ss.GetSize());
+        
+        CMvDbpVirtualPeerNetEvent eventVPeer;
+        eventVPeer.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_SUBSCRIBE;
+        eventVPeer.data = std::vector<uint8>(data.begin(), data.end());
+        vCacheEvent.push_back(eventVPeer);
+    }
+    
     return true;
 }
 
 bool CDbpService::HandleEvent(CMvEventPeerUnsubscribe& event)
 {
+    if(!fIsFnFnNode && fIsRootNode)
+    {
+        CWalleveBufStream ss;
+        ss << event;
+        std::string data(ss.GetData(), ss.GetSize());
+        
+        CMvDbpVirtualPeerNetEvent eventVPeer;
+        eventVPeer.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_UNSUBSCRIBE;
+        eventVPeer.data = std::vector<uint8>(data.begin(), data.end());
+        vCacheEvent.push_back(eventVPeer);
+    }
+    
     return true;
 }
 
 bool CDbpService::HandleEvent(CMvEventPeerInv& event)
 {
+    CWalleveBufStream ss;
+    ss << event;
+    std::string data(ss.GetData(), ss.GetSize());
+        
+    CMvDbpVirtualPeerNetEvent eventVPeer;
+    eventVPeer.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_INV;
+    eventVPeer.data = std::vector<uint8>(data.begin(), data.end());
+    
+    if(!fIsFnFnNode && fIsRootNode)
+    {
+        vCacheEvent.push_back(eventVPeer);
+    }
+
+    if(!fIsFnFnNode && !fIsRootNode)
+    {
+        PushEvent(eventVPeer);
+    }
+    
     return true;
 }
 
 bool CDbpService::HandleEvent(CMvEventPeerBlock& event)
 {
+    CWalleveBufStream ss;
+    ss << event;
+    std::string data(ss.GetData(), ss.GetSize());
+        
+    CMvDbpVirtualPeerNetEvent eventVPeer;
+    eventVPeer.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_BLOCK;
+    eventVPeer.data = std::vector<uint8>(data.begin(), data.end());
+
+    if(!fIsFnFnNode && fIsRootNode)
+    {
+        PushEvent(eventVPeer);
+    }
+
+    if(!fIsFnFnNode && !fIsRootNode)
+    {
+
+    }
+    
+    
     return true;
 }
 
 bool CDbpService::HandleEvent(CMvEventPeerTx& event)
 {
+    CWalleveBufStream ss;
+    ss << event;
+    std::string data(ss.GetData(), ss.GetSize());
+        
+    CMvDbpVirtualPeerNetEvent eventVPeer;
+    eventVPeer.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_TX;
+    eventVPeer.data = std::vector<uint8>(data.begin(), data.end());
+
+    if(!fIsFnFnNode && fIsRootNode)
+    {
+        PushEvent(eventVPeer);
+    }
+
+    if(!fIsFnFnNode && !fIsRootNode)
+    {
+        
+    }
+    
     return true;
 }
 
 bool CDbpService::HandleEvent(CMvEventPeerGetBlocks& event)
 {
+    CWalleveBufStream ss;
+    ss << event;
+    std::string data(ss.GetData(), ss.GetSize());
+        
+    CMvDbpVirtualPeerNetEvent eventVPeer;
+    eventVPeer.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_GETBLOCKS;
+    eventVPeer.data = std::vector<uint8>(data.begin(), data.end());
+    
+    if(!fIsFnFnNode && fIsRootNode)
+    {
+        PushEvent(eventVPeer);
+    }
+
+    if(!fIsFnFnNode && !fIsRootNode)
+    {
+        
+    }
+
     return true;
 }
 
 bool CDbpService::HandleEvent(CMvEventPeerGetData& event)
 {
+    CWalleveBufStream ss;
+    ss << event;
+    std::string data(ss.GetData(), ss.GetSize());
+        
+    CMvDbpVirtualPeerNetEvent eventVPeer;
+    eventVPeer.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_GETDATA;
+    eventVPeer.data = std::vector<uint8>(data.begin(), data.end());
+    
+    if(!fIsFnFnNode && fIsRootNode)
+    {
+        PushEvent(eventVPeer);
+    }
+
+    if(!fIsFnFnNode && !fIsRootNode)
+    {
+        
+    }
+    
     return true;
 }
 
 bool CDbpService::HandleEvent(CWalleveEventPeerNetReward& event)
 {
+    CWalleveBufStream ss;
+    //ss << event;
+    std::string data(ss.GetData(), ss.GetSize());
+        
+    CMvDbpVirtualPeerNetEvent eventVPeer;
+    eventVPeer.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_REWARD;
+    eventVPeer.data = std::vector<uint8>(data.begin(), data.end());
+
+    if(!fIsFnFnNode && !fIsRootNode)
+    {
+        SendEventToParentNode(eventVPeer);
+    }
+    
     return true;
 }
     
 bool CDbpService::HandleEvent(CWalleveEventPeerNetClose& event)
 {
+    CWalleveBufStream ss;
+    //ss << event;
+    std::string data(ss.GetData(), ss.GetSize());
+        
+    CMvDbpVirtualPeerNetEvent eventVPeer;
+    eventVPeer.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_CLOSE;
+    eventVPeer.data = std::vector<uint8>(data.begin(), data.end());
+
+    if(!fIsFnFnNode && !fIsRootNode)
+    {
+        SendEventToParentNode(eventVPeer);
+    }
+    
     return true;
 }
 
@@ -722,6 +940,8 @@ bool CDbpService::HandleEvent(CMvEventDbpVirtualPeerNet& event)
         CMvEventPeerActive eventActive(0);
         ss >> eventActive;   
         pVirtualPeerNet->DispatchEvent(&eventActive);
+
+        vCacheEvent.push_back(event.data);
     }
 
     if(event.data.type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_DEACTIVE)
@@ -729,6 +949,8 @@ bool CDbpService::HandleEvent(CMvEventDbpVirtualPeerNet& event)
         CMvEventPeerDeactive eventDeactive(0);
         ss >> eventDeactive;   
         pVirtualPeerNet->DispatchEvent(&eventDeactive);
+
+        vCacheEvent.push_back(event.data);
     }
 
     if(event.data.type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_SUBSCRIBE)
@@ -736,6 +958,8 @@ bool CDbpService::HandleEvent(CMvEventDbpVirtualPeerNet& event)
         CMvEventPeerSubscribe eventSub(0, uint256());
         ss >> eventSub;    
         pVirtualPeerNet->DispatchEvent(&eventSub);
+
+        vCacheEvent.push_back(event.data);
     }
 
     if(event.data.type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_UNSUBSCRIBE)
@@ -743,41 +967,73 @@ bool CDbpService::HandleEvent(CMvEventDbpVirtualPeerNet& event)
         CMvEventPeerUnsubscribe eventUnSub(0, uint256());
         ss >> eventUnSub;
         pVirtualPeerNet->DispatchEvent(&eventUnSub);
+
+        vCacheEvent.push_back(event.data);
     }
 
     if(event.data.type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_GETBLOCKS)
     {
         CMvEventPeerGetBlocks eventGetBlocks(0, uint256());
-        ss >> eventGetBlocks;   
-        pVirtualPeerNet->DispatchEvent(&eventGetBlocks);
+        ss >> eventGetBlocks;
+
+        if(IsMyFork(eventGetBlocks.hashFork))
+        {
+            pVirtualPeerNet->DispatchEvent(&eventGetBlocks);
+        }
+
+        PushEvent(event.data);
     }
 
     if(event.data.type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_GETDATA)
     {
         CMvEventPeerGetData eventGetData(0, uint256());
-        ss >> eventGetData;   
-        pVirtualPeerNet->DispatchEvent(&eventGetData);
+        ss >> eventGetData; 
+
+        if(IsMyFork(eventGetData.hashFork))
+        {
+            pVirtualPeerNet->DispatchEvent(&eventGetData);
+        }
+
+        PushEvent(event.data);
     }
 
     if(event.data.type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_INV)
     {
         CMvEventPeerInv eventInv(0, uint256());
         ss >> eventInv;   
-        pVirtualPeerNet->DispatchEvent(&eventInv);
+        
+        if(IsMyFork(eventInv.hashFork))
+        {
+            pVirtualPeerNet->DispatchEvent(&eventInv);
+        }
+
+        PushEvent(event.data);
     }
 
     if(event.data.type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_TX)
     {
         CMvEventPeerTx eventTx(0, uint256());
-        ss >> eventTx;   
-        pVirtualPeerNet->DispatchEvent(&eventTx);
+        ss >> eventTx;
+
+        if(IsMyFork(eventTx.hashFork))
+        {
+            pVirtualPeerNet->DispatchEvent(&eventTx);
+        }
+
+        PushEvent(event.data);
     }
 
     if(event.data.type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_BLOCK)
     {
-        CMvEventPeerTx eventTx(0, uint256());
-        ss >> eventTx;   
-        pVirtualPeerNet->DispatchEvent(&eventTx);
+        CMvEventPeerBlock eventBlock(0, uint256());
+        ss >> eventBlock;
+
+        if(IsMyFork(eventBlock.hashFork))
+        {
+            pVirtualPeerNet->DispatchEvent(&eventBlock);
+        }
+
+        PushEvent(event.data);
     }
 
     return true;
