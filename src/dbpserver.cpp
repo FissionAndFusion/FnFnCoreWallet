@@ -1019,27 +1019,30 @@ bool CDbpServer::HandleEvent(CMvEventDbpReady& event)
 
 bool CDbpServer::HandleEvent(CMvEventDbpAdded& event)
 {
-    auto it = mapSessionProfile.find(event.strSessionId);
-    if (it == mapSessionProfile.end())
+    if(!event.strSessionId.empty())
     {
-        std::cerr << "cannot find session [Added] " << event.strSessionId << std::endl;
-        return false;
+        auto it = mapSessionProfile.find(event.strSessionId);
+        if (it == mapSessionProfile.end())
+        {
+            std::cerr << "cannot find session [Added] " << event.strSessionId << std::endl;
+            return false;
+        }
+
+        if(it->second.strClient != "supernode" && it->second.strForkId == event.data.forkid)
+        {
+            CDbpClient* pDbpClient = (*it).second.pDbpClient;
+            CMvDbpAdded& addedBody = event.data;
+            pDbpClient->SendResponse(it->second.strClient,addedBody);
+        }
     }
-
-    if(it->second.strClient != "supernode" && it->second.strForkId == event.data.forkid)
+    else
     {
-        CDbpClient* pDbpClient = (*it).second.pDbpClient;
-        CMvDbpAdded& addedBody = event.data;
-
-        pDbpClient->SendResponse(it->second.strClient,addedBody);
-    }
-
-    if(it->second.strClient == "supernode")
-    {
-        CDbpClient* pDbpClient = (*it).second.pDbpClient;
-        CMvDbpAdded& addedBody = event.data;
-
-        pDbpClient->SendResponse(it->second.strClient,addedBody);
+        for(const auto& session : mapSessionProfile)
+        {
+            CDbpClient* pDbpClient = session.second.pDbpClient;
+            CMvDbpAdded& addedBody = event.data;
+            pDbpClient->SendResponse("supernode",addedBody);
+        }
     }
     
     return true;
