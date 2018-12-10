@@ -39,8 +39,13 @@ else
     if [ "${cores}" == "" ]; then
         cores = 1
     fi
-    echo "sudo make install -j${cores}"
-    sudo make install -j${cores}
+    echo "make -j${cores}"
+    make -j${cores}
+
+    if [ $? == 0 ]; then
+        echo "sudo make install"
+        sudo make install
+    fi
 fi
 
 cd $origin_path

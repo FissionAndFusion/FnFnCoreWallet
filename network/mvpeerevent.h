@@ -10,6 +10,8 @@
 #include "transaction.h"
 #include "walleve/walleve.h"
 
+using namespace walleve;
+
 namespace multiverse
 {
 namespace network
@@ -54,7 +56,10 @@ public:
         {
             return listener.HandleEvent(*this);
         }
-        catch (...) {}
+        catch (std::exception& e)
+        {
+            StdError(__PRETTY_FUNCTION__, e.what());
+        }
         return false;
     }
 protected:
@@ -91,7 +96,10 @@ public:
         {
             return listener.HandleEvent(*this);
         }
-        catch (...) {}
+        catch (std::exception& e)
+        {
+            StdError(__PRETTY_FUNCTION__, e.what());
+        }
         return false;
     }
 protected:

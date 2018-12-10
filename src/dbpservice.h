@@ -23,11 +23,15 @@ namespace multiverse
 using namespace network;
 
 class CDbpService : public walleve::IIOModule, virtual public CDBPEventListener, 
-                    virtual public CMvDBPEventListener, virtual public CFkNodeEventListener
+                    virtual public CMvDBPEventListener, virtual public CMvPeerEventListener, 
+                    virtual public CWallevePeerEventListener 
 {
 public:
     CDbpService();
     virtual ~CDbpService() noexcept;
+
+    void SetIsRootNode(bool isRootNode);
+    void SetIsFnFnNode(bool isFnFnNode);
 
     bool HandleEvent(CMvEventDbpConnect& event) override;
     bool HandleEvent(CMvEventDbpSub& event) override;
@@ -37,10 +41,26 @@ public:
     bool HandleEvent(CMvEventDbpBroken& event) override;
     bool HandleEvent(CMvEventDbpAdded& event) override;
     bool HandleEvent(CMvEventDbpRemoveSession& event) override;
+    
     // notify add msg(block tx ...) to event handler
     bool HandleEvent(CMvEventDbpUpdateNewBlock& event) override;
     bool HandleEvent(CMvEventDbpUpdateNewTx& event) override;
 
+    // from virtualpeernet
+    bool HandleEvent(CMvEventPeerActive& event) override;
+    bool HandleEvent(CMvEventPeerDeactive& event) override;
+    bool HandleEvent(CMvEventPeerSubscribe& event) override;
+    bool HandleEvent(CMvEventPeerUnsubscribe& event) override;
+    bool HandleEvent(CMvEventPeerInv& event) override;
+    bool HandleEvent(CMvEventPeerBlock& event) override;
+    bool HandleEvent(CMvEventPeerTx& event) override;
+    bool HandleEvent(CMvEventPeerGetBlocks& event) override;
+    bool HandleEvent(CMvEventPeerGetData& event) override;
+    
+    bool HandleEvent(CWalleveEventPeerNetReward& event) override;
+    bool HandleEvent(CWalleveEventPeerNetClose& event) override;
+    
+    // from up node
     bool HandleEvent(CMvEventDbpVirtualPeerNet& event) override;
 
 protected:
@@ -59,7 +79,10 @@ private:
     bool GetLwsBlocks(const uint256& forkHash, const uint256& startHash, int32 n, std::vector<CMvDbpBlock>& blocks);
     bool IsEmpty(const uint256& hash);
     bool IsForkHash(const uint256& hash);
+
+    bool IsMyFork(const uint256& hash);
     
+    // from down node
     void HandleGetBlocks(CMvEventDbpMethod& event);
     void HandleGetTransaction(CMvEventDbpMethod& event);
     void HandleSendTransaction(CMvEventDbpMethod& event);
@@ -100,6 +123,11 @@ private:
     std::unordered_map<std::string, IdsType> mapTopicIds;       // topic => ids
 
     std::unordered_map<std::string, std::pair<uint256,uint256>> mapForkPoint; // fork point hash => (fork hash, fork point hash)
+
+    bool fIsRootNode;
+    bool fIsFnFnNode;
+
+    std::vector<CMvDbpVirtualPeerNetEvent> vCacheEvent;
 };
 
 } // namespace multiverse

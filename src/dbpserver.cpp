@@ -777,9 +777,9 @@ void CDbpServer::EnterLoop()
     for (std::map<boost::asio::ip::tcp::endpoint, CDbpProfile>::iterator it = mapProfile.begin();
          it != mapProfile.end(); ++it)
     {
-        if (!StartService((*it).first, (*it).second.nMaxConnections))
+        if (!StartService((*it).first, (*it).second.nMaxConnections, (*it).second.vAllowMask))
         {
-            WalleveLog("Setup service %s failed, listen port = %d, connection limit %d\n",
+            WalleveError("Setup service %s failed, listen port = %d, connection limit %d\n",
                        (*it).second.pIOModule->WalleveGetOwnKey().c_str(),
                        (*it).first.port(), (*it).second.nMaxConnections);
         }
@@ -822,7 +822,7 @@ bool CDbpServer::CreateProfile(const CDbpHostConfig& confHost)
     CDbpProfile profile;
     if (!WalleveGetObject(confHost.strIOModule, profile.pIOModule))
     {
-        WalleveLog("Failed to request %s\n", confHost.strIOModule.c_str());
+        WalleveError("Failed to request %s\n", confHost.strIOModule.c_str());
         return false;
     }
 
@@ -831,14 +831,14 @@ bool CDbpServer::CreateProfile(const CDbpHostConfig& confHost)
         profile.pSSLContext = new boost::asio::ssl::context(boost::asio::ssl::context::sslv23);
         if (!profile.pSSLContext)
         {
-            WalleveLog("Failed to alloc ssl context for %s:%u\n",
+            WalleveError("Failed to alloc ssl context for %s:%u\n",
                        confHost.epHost.address().to_string().c_str(),
                        confHost.epHost.port());
             return false;
         }
         if (!confHost.optSSL.SetupSSLContext(*profile.pSSLContext))
         {
-            WalleveLog("Failed to setup ssl context for %s:%u\n",
+            WalleveError("Failed to setup ssl context for %s:%u\n",
                        confHost.epHost.address().to_string().c_str(),
                        confHost.epHost.port());
             delete profile.pSSLContext;
@@ -1019,27 +1019,30 @@ bool CDbpServer::HandleEvent(CMvEventDbpReady& event)
 
 bool CDbpServer::HandleEvent(CMvEventDbpAdded& event)
 {
-    auto it = mapSessionProfile.find(event.strSessionId);
-    if (it == mapSessionProfile.end())
+    if(!event.strSessionId.empty())
     {
-        std::cerr << "cannot find session [Added] " << event.strSessionId << std::endl;
-        return false;
+        auto it = mapSessionProfile.find(event.strSessionId);
+        if (it == mapSessionProfile.end())
+        {
+            std::cerr << "cannot find session [Added] " << event.strSessionId << std::endl;
+            return false;
+        }
+
+        if(it->second.strClient != "supernode" && it->second.strForkId == event.data.forkid)
+        {
+            CDbpClient* pDbpClient = (*it).second.pDbpClient;
+            CMvDbpAdded& addedBody = event.data;
+            pDbpClient->SendResponse(it->second.strClient,addedBody);
+        }
     }
-
-    if(it->second.strClient != "supernode" && it->second.strForkId == event.data.forkid)
+    else
     {
-        CDbpClient* pDbpClient = (*it).second.pDbpClient;
-        CMvDbpAdded& addedBody = event.data;
-
-        pDbpClient->SendResponse(it->second.strClient,addedBody);
-    }
-
-    if(it->second.strClient == "supernode")
-    {
-        CDbpClient* pDbpClient = (*it).second.pDbpClient;
-        CMvDbpAdded& addedBody = event.data;
-
-        pDbpClient->SendResponse(it->second.strClient,addedBody);
+        for(const auto& session : mapSessionProfile)
+        {
+            CDbpClient* pDbpClient = session.second.pDbpClient;
+            CMvDbpAdded& addedBody = event.data;
+            pDbpClient->SendResponse("supernode",addedBody);
+        }
     }
     
     return true;

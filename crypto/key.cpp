@@ -4,6 +4,9 @@
 
 #include "key.h"
 #include "walleve/stream/datastream.h"
+#include "walleve/util.h"
+
+using namespace walleve;
 using namespace multiverse::crypto;
 
 //////////////////////////////
@@ -201,7 +204,10 @@ bool CKey::Unlock(const CCryptoString& strPassphrase)
     {
         return CryptoDecryptSecret(nVersion,strPassphrase,cipher,*pCryptoKey);
     }
-    catch (...) {}
+    catch (std::exception& e) 
+    {
+        StdError(__PRETTY_FUNCTION__, e.what());
+    }
     return false;
 }
 
@@ -217,7 +223,10 @@ bool CKey::UpdateCipher(uint32 nVersionIn,const CCryptoString& strPassphrase)
             return true;
         }
     }
-    catch (...) {}
+    catch (std::exception& e) 
+    {
+        StdError(__PRETTY_FUNCTION__, e.what());
+    }
     return false;
 }
 

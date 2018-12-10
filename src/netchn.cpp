@@ -112,37 +112,37 @@ bool CNetChannel::WalleveHandleInitialize()
 {
     if (!WalleveGetObject("virtualpeernet",pPeerNet))
     {
-        WalleveLog("Failed to request peer net\n");
+        WalleveError("Failed to request peer net\n");
         return false;
     }
 
     if (!WalleveGetObject("coreprotocol",pCoreProtocol))
     {
-        WalleveLog("Failed to request coreprotocol\n");
+        WalleveError("Failed to request coreprotocol\n");
         return false;
     }
 
     if (!WalleveGetObject("worldline",pWorldLine))
     {
-        WalleveLog("Failed to request worldline\n");
+        WalleveError("Failed to request worldline\n");
         return false;
     }
 
     if (!WalleveGetObject("txpool",pTxPool))
     {
-        WalleveLog("Failed to request txpool\n");
+        WalleveError("Failed to request txpool\n");
         return false;
     }
 
     if (!WalleveGetObject("service",pService))
     {
-        WalleveLog("Failed to request service\n");
+        WalleveError("Failed to request service\n");
         return false;
     }
 
     if (!WalleveGetObject("dispatcher",pDispatcher))
     {
-        WalleveLog("Failed to request dispatcher\n");
+        WalleveError("Failed to request dispatcher\n");
         return false;
     }
 
@@ -292,6 +292,12 @@ void CNetChannel::UnsubscribeFork(const uint256& hashFork)
             pPeerNet->DispatchEvent(&eventUnsubscribe);
         }
     }
+}
+
+bool CNetChannel::IsCotains(const uint256& hashFork)
+{
+    boost::recursive_mutex::scoped_lock scoped_lock(mtxSched);
+    return mapSched.find(hashFork) != mapSched.end();
 }
 
 bool CNetChannel::HandleEvent(network::CMvEventPeerActive& eventActive)

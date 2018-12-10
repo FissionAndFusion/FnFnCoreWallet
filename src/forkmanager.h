@@ -82,7 +82,7 @@ public:
     CForkManager();
     ~CForkManager();
     bool IsAllowed(const uint256& hashFork) const override;
-    bool GetJoint(const uint256& hashFork,uint256& hashParent,uint256& hashJoint,int& nHeight) const;
+    bool GetJoint(const uint256& hashFork,uint256& hashParent,uint256& hashJoint,int& nHeight) const override;
     bool LoadForkContext(std::vector<uint256>& vActive) override;
     void ForkUpdate(const CWorldLineUpdate& update,std::vector<uint256>& vActive,std::vector<uint256>& vDeactive) override;
     bool AddNewForkContext(const CForkContext& ctxt,std::vector<uint256>& vActive);

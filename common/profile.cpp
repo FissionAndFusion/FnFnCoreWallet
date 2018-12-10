@@ -37,8 +37,9 @@ bool CProfile::Save(std::vector<unsigned char>& vchProfile)
 
         encoder.Encode(vchProfile);
     }
-    catch (...)
+    catch (exception& e)
     {
+        StdError(__PRETTY_FUNCTION__, e.what());
         return false;
     }
     return true;
@@ -102,8 +103,9 @@ bool CProfile::Load(const vector<unsigned char>& vchProfile)
             is >> destOwner.prefix >> destOwner.data;
         }
     }
-    catch (...) 
+    catch (exception& e) 
     {
+        StdError(__PRETTY_FUNCTION__, e.what());
         return false;
     } 
     return true;

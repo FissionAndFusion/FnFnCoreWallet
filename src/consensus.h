@@ -84,6 +84,7 @@ protected:
     void WalleveHandleHalt() override;
 
     bool LoadDelegateTx();
+    bool LoadChain();
 protected:
     boost::mutex mutex;
     ICoreProtocol* pCoreProtocol;

@@ -22,6 +22,7 @@
 #include "dbpclient.h"
 #include "dnseed.h"
 #include "version.h"
+#include "purger.h"
 
 #include <map>
 #include <string>
@@ -82,6 +83,13 @@ bool CMvEntry::Initialize(int argc, char *argv[])
     if (mvConfig.GetConfig()->fVersion)
     {
         cout << "Multiverse version is v" << MV_VERSION_STR << endl;
+        return false;
+    }
+
+    // purge
+    if (mvConfig.GetConfig()->fPurge)
+    {
+        PurgeStorage();
         return false;
     }
 
@@ -336,6 +344,8 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
         }
         case EModuleType::DBPCLIENT:
         {
+            
+            
             if(!AttachModule(new CMvDbpClient()))
             {
                 return false;
@@ -344,21 +354,38 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
         }
         case EModuleType::DBPSERVICE:
         {
-            auto pBase = walleveDocker.GetObject("dbpserver");
-            if (!pBase)
+            auto config = GetDbpClientConfig();
+            
+            auto pServerBase = walleveDocker.GetObject("dbpserver");
+            if (!pServerBase)
             {
                 return false;
             }
-            dynamic_cast<CDbpServer*>(pBase)->AddNewHost(GetDbpHostConfig());
+            dynamic_cast<CDbpServer*>(pServerBase)->AddNewHost(GetDbpHostConfig());
 
             auto pClientBase = walleveDocker.GetObject("dbpclient");
             if(!pClientBase)
             {
                 return false;
             }
-            dynamic_cast<CMvDbpClient*>(pClientBase)->AddNewClient(GetDbpClientConfig());
 
-            if (!AttachModule(new CDbpService()))
+            auto pVirtualPeerNetBase = walleveDocker.GetObject("virtualpeernet");
+            if(!pVirtualPeerNetBase)
+            {
+                return false;
+            }
+            
+            dynamic_cast<CVirtualPeerNet*>(pVirtualPeerNetBase)->SetNodeTypeAsFnfn(config.fIsFnFnNode);
+            dynamic_cast<CVirtualPeerNet*>(pVirtualPeerNetBase)->SetNodeTypeAsSuperNode(config.fIsRootNode);
+            dynamic_cast<CMvDbpClient*>(pClientBase)->AddNewClient(config);
+
+            CDbpService* pDbpService = new CDbpService();
+            pDbpService->SetIsFnFnNode(config.fIsFnFnNode);
+            pDbpService->SetIsRootNode(config.fIsRootNode);
+
+
+
+            if (!AttachModule(pDbpService))
             {
                 return false;
             }
@@ -422,7 +449,33 @@ CDbpClientConfig CMvEntry::GetDbpClientConfig()
                         config->strDbpCAFile, config->strDbpCertFile,
                         config->strDbpPKFile, config->strDbpCiphers);
     
-    return CDbpClientConfig(config->epParentHost,config->strPrivateKey,sslDbp,"dbpservice");
+    return CDbpClientConfig(config->epParentHost,config->strPrivateKey,sslDbp,"dbpservice", 
+            config->fIsRootNode, config->fIsFnFnNode);
+}
+
+void CMvEntry::PurgeStorage()
+{
+    path& pathData = mvConfig.GetConfig()->pathData;
+
+    if (!TryLockFile((pathData / ".lock").string()))
+    {
+        cerr << "Cannot obtain a lock on data directory " << pathData << "\n"
+             << "Multiverse is probably already running.\n";
+        return;
+    }
+
+    const CMvStorageConfig* config = CastConfigPtr<CMvStorageConfig*>(mvConfig.GetConfig());
+    storage::CMvDBConfig dbConfig(config->strDBHost,config->nDBPort,
+                                  config->strDBName,config->strDBUser,config->strDBPass);
+    storage::CPurger purger;
+    if (purger(dbConfig,pathData))
+    {
+        cout << "Reset database and removed blockfiles\n";
+    }
+    else
+    {
+        cout << "Failed to purge storage\n";
+    }
 }
 
 bool CMvEntry::Run()
@@ -470,7 +523,7 @@ path CMvEntry::GetDefaultDataDir()
     {
         pathRet = path(pszHome);
     }
-#ifdef MAC_OSX
+#ifdef __APPLE__
     // Mac
     pathRet /= "Library/Application Support";
     create_directory(pathRet);

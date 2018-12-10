@@ -24,13 +24,13 @@ int main(int argc,char **argv)
             mvEntry.Run();
         }
     }
-    catch (const std::exception& e)
+    catch (std::exception& e)
     {
-        std::cerr << "Multiverse exception caught : " << e.what() << "\n";
+        StdError(__PRETTY_FUNCTION__, e.what());
     }
     catch (...)
     {
-        std::cerr << "Multiverse exception caught : unknown\n";
+        StdError(__PRETTY_FUNCTION__, "unknown");
     }
 
     mvEntry.Exit();

@@ -46,13 +46,13 @@ bool CForkManager::WalleveHandleInitialize()
 {
     if (!WalleveGetObject("coreprotocol",pCoreProtocol))
     {
-        WalleveLog("Failed to request coreprotocol\n");
+        WalleveError("Failed to request coreprotocol\n");
         return false;
     }
 
     if (!WalleveGetObject("worldline",pWorldLine))
     {
-        WalleveLog("Failed to request worldline\n");
+        WalleveError("Failed to request worldline\n");
         return false;
     }
 

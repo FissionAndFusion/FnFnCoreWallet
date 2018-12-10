@@ -77,31 +77,31 @@ bool CBlockMaker::WalleveHandleInitialize()
 {
     if (!WalleveGetObject("coreprotocol",pCoreProtocol))
     {
-        WalleveLog("Failed to request coreprotocol\n");
+        WalleveError("Failed to request coreprotocol\n");
         return false;
     }
 
     if (!WalleveGetObject("worldline",pWorldLine))
     {
-        WalleveLog("Failed to request worldline\n");
+        WalleveError("Failed to request worldline\n");
         return false;
     }
 
     if (!WalleveGetObject("txpool",pTxPool))
     {
-        WalleveLog("Failed to request txpool\n");
+        WalleveError("Failed to request txpool\n");
         return false;
     }
 
     if (!WalleveGetObject("dispatcher",pDispatcher))
     {
-        WalleveLog("Failed to request dispatcher\n");
+        WalleveError("Failed to request dispatcher\n");
         return false;
     }
 
     if (!WalleveGetObject("consensus",pConsensus))
     {
-        WalleveLog("Failed to request consensus\n");
+        WalleveError("Failed to request consensus\n");
         return false;
     }
 
@@ -294,7 +294,7 @@ bool CBlockMaker::DispatchBlock(CBlock& block)
     MvErr err = pDispatcher->AddNewBlock(block);
     if (err != MV_OK)
     {
-        WalleveLog("Dispatch new block failed (%d) : %s\n", err, MvErrString(err));
+        WalleveError("Dispatch new block failed (%d) : %s\n", err, MvErrString(err));
         return false;
     }
     return true;
@@ -683,7 +683,7 @@ void CBlockMaker::BlockMakerThreadFunc()
         }
         catch (exception& e)
         {
-            WalleveLog("Block maker error: %s\n", e.what());
+            WalleveError("Block maker error: %s\n", e.what());
             break;
         }
     }

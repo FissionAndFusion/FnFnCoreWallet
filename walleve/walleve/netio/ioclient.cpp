@@ -8,6 +8,9 @@
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 #include <boost/asio/ssl/rfc2818_verification.hpp>
+
+#include "walleve/util.h"
+
 using namespace std;
 using namespace walleve;
 using boost::asio::ip::tcp;
@@ -32,8 +35,9 @@ const tcp::endpoint CIOClient::GetRemote()
         {
             epRemote = SocketGetRemote();
         }
-        catch (...)
+        catch (exception& e)
         {
+            StdError(__PRETTY_FUNCTION__, e.what());
         }
     }
     return epRemote;
@@ -45,8 +49,9 @@ const tcp::endpoint CIOClient::GetLocal()
     {
         return SocketGetLocal();
     }
-    catch (...)
+    catch (exception& e)
     {
+        StdError(__PRETTY_FUNCTION__, e.what());
     }
     return (tcp::endpoint());
 }

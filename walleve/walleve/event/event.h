@@ -6,6 +6,7 @@
 #define  WALLEVE_EVENT_H
 
 #include "walleve/stream/stream.h"
+#include "walleve/util.h"
 
 namespace walleve
 {
@@ -69,7 +70,10 @@ public:
         {
             return listener.HandleEvent(*this);
         }
-        catch (...) {}
+        catch (std::exception& e)
+        {
+            StdError(__PRETTY_FUNCTION__, e.what());
+        }
         return false;
     }
 protected:

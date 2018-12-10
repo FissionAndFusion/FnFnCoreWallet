@@ -599,8 +599,9 @@ bool CBlockBase::RetrieveOrigin(const uint256& hash,CBlock& block)
         ss.Write((const char*)&tx.vchData[0],tx.vchData.size());
         ss >> block;
     }
-    catch (...)
+    catch (exception& e)
     {
+        StdError(__PRETTY_FUNCTION__, e.what());
         return false;
     }
     return true;

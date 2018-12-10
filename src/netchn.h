@@ -55,8 +55,7 @@ public:
     std::map<uint256,CNetChannelPeerFork> mapSubscribedFork;
 };
 
-class CNetChannel : public network::IMvNetChannel, virtual public CMvDBPEventListener
-                    , virtual public CFkNodeEventListener
+class CNetChannel : public network::IMvNetChannel
 {
 public:
     CNetChannel();
@@ -67,6 +66,7 @@ public:
     void BroadcastTxInv(const uint256& hashFork) override;
     void SubscribeFork(const uint256& hashFork) override;
     void UnsubscribeFork(const uint256& hashFork) override;
+    bool IsCotains(const uint256& hashFork) override;
 protected:
     enum {MAX_GETBLOCKS_COUNT = 128};
     enum {MAX_PEER_SCHED_COUNT = 8};

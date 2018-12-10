@@ -25,7 +25,7 @@ bool CWorldLine::WalleveHandleInitialize()
 {
     if (!WalleveGetObject("coreprotocol",pCoreProtocol))
     {
-        WalleveLog("Failed to request coreprotocol\n");
+        WalleveError("Failed to request coreprotocol\n");
         return false;
     }
 
@@ -44,7 +44,7 @@ bool CWorldLine::WalleveHandleInvoke()
 
     if (!cntrBlock.Initialize(dbConfig,StorageConfig()->nDBConn,WalleveConfig()->pathData,WalleveConfig()->fDebug))
     {
-        WalleveLog("Failed to initalize container\n");
+        WalleveError("Failed to initalize container\n");
         return false;
     }
 
@@ -56,7 +56,7 @@ bool CWorldLine::WalleveHandleInvoke()
         if (!RebuildContainer())
         {
             cntrBlock.Clear(); 
-            WalleveLog("Failed to rebuild Block container,reconstruct all\n");
+            WalleveError("Failed to rebuild Block container,reconstruct all\n");
         } 
     }
 
@@ -66,7 +66,7 @@ bool CWorldLine::WalleveHandleInvoke()
         pCoreProtocol->GetGenesisBlock(block);
         if (!InsertGenesisBlock(block))
         {
-            WalleveLog("Failed to create genesis block\n");
+            WalleveError("Failed to create genesis block\n");
             return false;
         }
     }    
@@ -300,7 +300,7 @@ MvErr CWorldLine::AddNewForkContext(const CTransaction& txFork,CForkContext& ctx
     }
     catch (...)
     {
-        WalleveLog("Invalid orign block found in tx (%s)\n",txid.GetHex().c_str());
+        WalleveError("Invalid orign block found in tx (%s)\n",txid.GetHex().c_str());
         return MV_ERR_BLOCK_INVALID_FORK;
     }
     uint256 hashFork = block.GetHash();
