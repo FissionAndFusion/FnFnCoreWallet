@@ -336,6 +336,8 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
         }
         case EModuleType::DBPCLIENT:
         {
+            
+            
             if(!AttachModule(new CMvDbpClient()))
             {
                 return false;
@@ -344,21 +346,38 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
         }
         case EModuleType::DBPSERVICE:
         {
-            auto pBase = walleveDocker.GetObject("dbpserver");
-            if (!pBase)
+            auto config = GetDbpClientConfig();
+            
+            auto pServerBase = walleveDocker.GetObject("dbpserver");
+            if (!pServerBase)
             {
                 return false;
             }
-            dynamic_cast<CDbpServer*>(pBase)->AddNewHost(GetDbpHostConfig());
+            dynamic_cast<CDbpServer*>(pServerBase)->AddNewHost(GetDbpHostConfig());
 
             auto pClientBase = walleveDocker.GetObject("dbpclient");
             if(!pClientBase)
             {
                 return false;
             }
-            dynamic_cast<CMvDbpClient*>(pClientBase)->AddNewClient(GetDbpClientConfig());
 
-            if (!AttachModule(new CDbpService()))
+            auto pVirtualPeerNetBase = walleveDocker.GetObject("virtualpeernet");
+            if(!pVirtualPeerNetBase)
+            {
+                return false;
+            }
+            
+            dynamic_cast<CVirtualPeerNet*>(pVirtualPeerNetBase)->SetNodeTypeAsFnfn(config.fIsFnFnNode);
+            dynamic_cast<CVirtualPeerNet*>(pVirtualPeerNetBase)->SetNodeTypeAsSuperNode(config.fIsRootNode);
+            dynamic_cast<CMvDbpClient*>(pClientBase)->AddNewClient(config);
+
+            CDbpService* pDbpService = new CDbpService();
+            pDbpService->SetIsFnFnNode(config.fIsFnFnNode);
+            pDbpService->SetIsRootNode(config.fIsRootNode);
+
+
+
+            if (!AttachModule(pDbpService))
             {
                 return false;
             }
@@ -422,7 +441,8 @@ CDbpClientConfig CMvEntry::GetDbpClientConfig()
                         config->strDbpCAFile, config->strDbpCertFile,
                         config->strDbpPKFile, config->strDbpCiphers);
     
-    return CDbpClientConfig(config->epParentHost,config->strPrivateKey,sslDbp,"dbpservice");
+    return CDbpClientConfig(config->epParentHost,config->strPrivateKey,sslDbp,"dbpservice", 
+            config->fIsRootNode, config->fIsFnFnNode);
 }
 
 bool CMvEntry::Run()

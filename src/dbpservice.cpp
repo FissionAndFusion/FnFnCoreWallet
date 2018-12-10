@@ -32,6 +32,9 @@ CDbpService::CDbpService()
                                   (REMOVED_TOPIC,   std::set<std::string>());
 
     mapTopicIds = temp_map;
+
+    fIsRootNode = true;
+    fIsFnFnNode = true;
 }
 
 CDbpService::~CDbpService()
@@ -100,6 +103,16 @@ void CDbpService::WalleveHandleDeinitialize()
     pNetChannel = NULL;
     pVirtualPeerNet = NULL;
     pForkManager = NULL;
+}
+
+void CDbpService::SetIsRootNode(bool isRootNode)
+{
+    fIsRootNode = isRootNode;
+}
+
+void CDbpService::SetIsFnFnNode(bool isFnFnNode)
+{
+    fIsFnFnNode = isFnFnNode;
 }
 
 bool CDbpService::HandleEvent(CMvEventDbpPong& event)
