@@ -20,7 +20,6 @@ CDbpService::CDbpService()
     pDbpServer = NULL;
     pNetChannel = NULL;
     pVirtualPeerNet = NULL;
-    pForkManager = NULL;
 
     std::unordered_map<std::string, IdsType> temp_map = 
         boost::assign::map_list_of(ALL_BLOCK_TOPIC, std::set<std::string>())
@@ -84,12 +83,6 @@ bool CDbpService::WalleveHandleInitialize()
         WalleveLog("Failed to request virtual peer net\n");
         return false;
     }
-    
-    if(!WalleveGetObject("forkmanager", pForkManager))
-    {
-        WalleveLog("Failed to request fork manager\n");
-        return false;
-    }
 
     return true;
 }
@@ -102,7 +95,6 @@ void CDbpService::WalleveHandleDeinitialize()
     pWallet = NULL;
     pNetChannel = NULL;
     pVirtualPeerNet = NULL;
-    pForkManager = NULL;
 }
 
 void CDbpService::SetIsRootNode(bool isRootNode)
@@ -113,6 +105,11 @@ void CDbpService::SetIsRootNode(bool isRootNode)
 void CDbpService::SetIsFnFnNode(bool isFnFnNode)
 {
     fIsFnFnNode = isFnFnNode;
+}
+
+void CDbpService::SetSupportForks(const std::vector<uint256>& vForks)
+{
+    vSupportFork = vForks;
 }
 
 bool CDbpService::HandleEvent(CMvEventDbpPong& event)
