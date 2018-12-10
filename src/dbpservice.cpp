@@ -644,6 +644,51 @@ bool CDbpService::HandleEvent(CMvEventDbpUpdateNewTx& event)
 bool CDbpService::HandleEvent(CMvEventDbpVirtualPeerNet& event)
 {
     // process and classify and dispatch to vpeernet
+    if(event.data.type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_ACTIVE)
+    {
+        
+    }
+
+    if(event.data.type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_DEACTIVE)
+    {
+
+    }
+
+    if(event.data.type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_SUBSCRIBE)
+    {
+
+    }
+
+    if(event.data.type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_UNSUBSCRIBE)
+    {
+
+    }
+
+    if(event.data.type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_GETBLOCKS)
+    {
+
+    }
+
+    if(event.data.type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_GETDATA)
+    {
+
+    }
+
+    if(event.data.type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_INV)
+    {
+
+    }
+
+    if(event.data.type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_TX)
+    {
+
+    }
+
+    if(event.data.type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_BLOCK)
+    {
+
+    }
+
     return true;
 }
 
