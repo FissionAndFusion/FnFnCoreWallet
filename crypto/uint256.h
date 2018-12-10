@@ -331,6 +331,47 @@ public:
         SetHex(str.c_str());
     }
 
+    bool SetHexCheck(const char* psz)
+    {
+        for (int i = 0; i < WIDTH; i++)
+            pn[i] = 0;
+
+        // skip leading spaces
+        while (isspace(*psz))
+            psz++;
+
+        // skip 0x
+        if (psz[0] == '0' && tolower(psz[1]) == 'x')
+            psz += 2;
+
+        // hex string to uint
+        static unsigned char phexdigit[256] = { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,1,2,3,4,5,6,7,8,9,0,0,0,0,0,0, 0,0xa,0xb,0xc,0xd,0xe,0xf,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0xa,0xb,0xc,0xd,0xe,0xf,0,0,0,0,0,0,0,0,0 };
+        const char* pbegin = psz;
+        while (phexdigit[(unsigned char)*psz] || *psz == '0')
+            psz++;
+        if ((int)(psz-pbegin) != (int)(WIDTH * 4 * 2))
+            return false;
+        psz--;
+        unsigned char* p1 = (unsigned char*)pn;
+        unsigned char* pend = p1 + WIDTH * 4;
+        while (psz >= pbegin && p1 < pend)
+        {
+            *p1 = phexdigit[(unsigned char)*psz--];
+            if (psz >= pbegin)
+            {
+                *p1 |= (phexdigit[(unsigned char)*psz--] << 4);
+                p1++;
+            }
+        }
+
+        return true;
+    }
+
+    bool SetHexCheck(const std::string& str)
+    {
+        return SetHexCheck(str.c_str());
+    }
+
     std::string ToString() const
     {
         return (GetHex());

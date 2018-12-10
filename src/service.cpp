@@ -434,6 +434,7 @@ bool CService::SignTransaction(CTransaction& tx,bool& fCompleted)
     {
         return false;
     }
+
     return (!fCompleted 
             || (pCoreProtocol->ValidateTransaction(tx) == MV_OK 
                 && pCoreProtocol->VerifyTransaction(tx,vUnspent,nHeight) == MV_OK));
