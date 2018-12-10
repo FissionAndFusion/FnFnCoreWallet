@@ -367,7 +367,8 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
                 return false;
             }
             
-            //dynamic_cast<CVirtualPeerNet*>(pVirtualPeerNetBase)->
+            dynamic_cast<CVirtualPeerNet*>(pVirtualPeerNetBase)->SetNodeTypeAsFnfn(config.fIsFnFnNode);
+            dynamic_cast<CVirtualPeerNet*>(pVirtualPeerNetBase)->SetNodeTypeAsSuperNode(config.fIsRootNode);
             dynamic_cast<CMvDbpClient*>(pClientBase)->AddNewClient(config);
 
             CDbpService* pDbpService = new CDbpService();
