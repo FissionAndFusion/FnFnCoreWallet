@@ -43,8 +43,9 @@ bool CMvDelegateVerify::VerifyProof(const vector<unsigned char>& vchProof,
             }
         }
     }
-    catch (...)
+    catch (exception& e) 
     {
+        StdError(__PRETTY_FUNCTION__, e.what());
         return false;
     } 
 

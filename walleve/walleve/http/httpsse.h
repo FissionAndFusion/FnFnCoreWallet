@@ -14,6 +14,8 @@
 #include <boost/ptr_container/ptr_map.hpp>
 #include <boost/thread/thread.hpp>
 
+#include "walleve/util.h"
+
 namespace walleve
 {
 
@@ -57,8 +59,9 @@ public:
                 return true;
             }
         }
-        catch (...)
+        catch (std::exception& e)
         {
+            StdError(__PRETTY_FUNCTION__, e.what());
         }
         return false;
     }
@@ -98,8 +101,9 @@ public:
                 return true;
             }
         }
-        catch (...)
+        catch (std::exception& e)
         {
+            StdError(__PRETTY_FUNCTION__, e.what());
         }
         return false;
     }

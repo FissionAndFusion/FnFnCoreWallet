@@ -14,6 +14,8 @@
 #include <boost/thread/condition_variable.hpp>
 #include <boost/date_time.hpp>
 
+#include "walleve/util.h"
+
 namespace walleve
 {
 
@@ -51,7 +53,7 @@ public:
             boost::mutex::scoped_lock scoped_lock(mutex);
             if (fNewLine && pszFormat[0] != '\n')
             {
-                fprintf(pFile,"%s <%s> %s",GetLocalTime().c_str(),walleveKey,strPrefix);
+                fprintf(pFile,"%s %s <%s> ",GetLocalTime().c_str(), strPrefix, walleveKey);
             }
 
             fNewLine = (pszFormat[strlen(pszFormat) - 1] == '\n');
@@ -61,16 +63,6 @@ public:
         }
     }
 
-protected:
-    std::string GetLocalTime()
-    {
-        using namespace boost::posix_time;
-        time_facet *facet = new time_facet("%Y-%m-%d %H:%M:%S");
-        std::stringstream ss;
-        ss.imbue(std::locale(std::locale("C"), facet));
-        ss << second_clock::universal_time();
-        return ss.str();
-    }
 protected:
     FILE *pFile;
     boost::mutex mutex;

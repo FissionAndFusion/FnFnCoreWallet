@@ -7,9 +7,11 @@
 #include <stdlib.h>
 #include <iostream>
 
+#include "walleve/util.h"
 #include "mpinterpolation.h"
 
 using namespace std;
+using namespace walleve;
 
 //////////////////////////////
 // CMPParticipant
@@ -68,7 +70,6 @@ void CMPParticipant::PrepareVerification(std::size_t nThresh,std::size_t nLastIn
 // CMPSecretShare
 
 CMPSecretShare::CMPSecretShare()
-: computer(1)
 {
     nIndex = 0;
     nThresh = 0;
@@ -76,7 +77,7 @@ CMPSecretShare::CMPSecretShare()
 }
 
 CMPSecretShare::CMPSecretShare(const uint256& nIdentIn)
-: nIdent(nIdentIn), computer(1)
+: nIdent(nIdentIn)
 {
     nIndex = 0;
     nThresh = 0;
@@ -171,7 +172,10 @@ void CMPSecretShare::Enroll(const vector<CMPCandidate>& vCandidate)
                 mapParticipant[candidate.nIdent] = CMPParticipant(candidate,nLastIndex,shared);
                 nLastIndex += candidate.nWeight;
             }
-            catch (...) {}
+            catch (exception& e) 
+            {
+                StdError(__PRETTY_FUNCTION__, e.what());
+            }
         }
     }
     nThresh = (nLastIndex - 1) / 2 + 1;

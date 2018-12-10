@@ -342,7 +342,10 @@ bool CWalleveDocker::ThreadStart(CWalleveThread& thr)
         thr.pThread = new boost::thread(attr,boost::bind(&CWalleveDocker::ThreadRun,this,boost::ref(thr)));
         return (thr.pThread != NULL);
     }
-    catch (...) {}
+    catch (exception& e)
+    {
+        LogException(thr.strThreadName.c_str(), &e);
+    }
     return false;
 }
 
@@ -353,7 +356,10 @@ bool CWalleveDocker::ThreadDelayStart(CWalleveThread& thr)
         thr.pThread = new boost::thread(boost::bind(&CWalleveDocker::ThreadDelayRun,this,boost::ref(thr)));
         return (thr.pThread != NULL);
     }
-    catch (...) {}
+    catch (exception& e)
+    {
+        LogException(thr.strThreadName.c_str(), &e);
+    }
     return false;
 }
 
@@ -531,22 +537,18 @@ void CWalleveDocker::Log(const char *pszFormat,...)
 {
     va_list ap;
     va_start(ap, pszFormat);
-    LogOutput("docker","",pszFormat, ap);
+    LogOutput("docker","[INFO]",pszFormat, ap);
     va_end(ap);
 }
 
-void CWalleveDocker::LogException(const char* pszThread,std::exception* pex)
+void CWalleveDocker::LogException(const char* pszThread, std::exception* pex)
 {
-    if (pex != NULL)
-    {
-        Log("EXCEPTION: %s [%s] in (%s)\n",typeid(*pex).name(), pex->what(),
-                   pszThread != NULL ? pszThread : "");
-    }
-    else
-    {
-        Log("EXCEPTION: %s in (%s)\n","unknown",
-                   pszThread != NULL ? pszThread : "");
-    }
+    const char* pszError = (pex != NULL) ? pex->what() : "";
+
+    ostringstream oss;
+    oss << "(" << (pszThread != NULL ? pszThread : "") << "): " << ((pex != NULL) ? pex->what() : "unknown") << '\n';
+    va_list ap;
+    LogOutput("docker","[ERROR]", oss.str().c_str(), ap);
 }
 
 void CWalleveDocker::TimerProc()

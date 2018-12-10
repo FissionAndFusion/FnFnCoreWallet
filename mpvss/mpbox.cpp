@@ -7,7 +7,10 @@
 #include <stdexcept>
 #include <string>
 
+#include "walleve/util.h"
+
 using namespace std;
+using namespace walleve;
 
 //////////////////////////////
 // CMPSealedBox
@@ -127,7 +130,10 @@ bool CMPOpenedBox::MakeSealedBox(CMPSealedBox& sealed,const uint256& nIdent,cons
         Signature(nIdent,r,sealed.nR,sealed.nS);
         return true;
     }
-    catch (...) {}
+    catch (exception& e) 
+    {
+        StdError(__PRETTY_FUNCTION__, e.what());
+    }
     return false;
 }
 

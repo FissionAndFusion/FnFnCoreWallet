@@ -171,7 +171,7 @@ bool CHttpServer::CreateProfile(const CHttpHostConfig& confHost)
     
     if (!WalleveGetObject(confHost.strIOModule,profile.pIOModule))
     {
-        WalleveLog("Failed to request %s\n",confHost.strIOModule.c_str());
+        WalleveError("Failed to request %s\n",confHost.strIOModule.c_str());
         return false;
     }
 
@@ -188,13 +188,13 @@ bool CHttpServer::CreateProfile(const CHttpHostConfig& confHost)
         profile.pSSLContext = new boost::asio::ssl::context(boost::asio::ssl::context::sslv23);
         if (profile.pSSLContext == NULL)
         {
-            WalleveLog("Failed to alloc ssl context for %s:%u\n",confHost.epHost.address().to_string().c_str(),
+            WalleveError("Failed to alloc ssl context for %s:%u\n",confHost.epHost.address().to_string().c_str(),
                                                                  confHost.epHost.port());
             return false;
         }
         if (!confHost.optSSL.SetupSSLContext(*profile.pSSLContext))
         {
-            WalleveLog("Failed to setup ssl context for %s:%u\n",confHost.epHost.address().to_string().c_str(),
+            WalleveError("Failed to setup ssl context for %s:%u\n",confHost.epHost.address().to_string().c_str(),
                                                                  confHost.epHost.port());
             delete profile.pSSLContext;
             return false;
@@ -237,10 +237,18 @@ void CHttpServer::EnterLoop()
     for (map<tcp::endpoint,CHttpProfile>::iterator it = mapProfile.begin();
          it != mapProfile.end(); ++it)
     {
-        StartService((*it).first,(*it).second.nMaxConnections,(*it).second.vAllowMask);
-        WalleveLog("Setup service %s, listen port = %d, connection limit %d\n",
-                    (*it).second.pIOModule->WalleveGetOwnKey().c_str(),
-                    (*it).first.port(),(*it).second.nMaxConnections);
+        if (!StartService((*it).first,(*it).second.nMaxConnections,(*it).second.vAllowMask))
+        {
+            WalleveError("Setup service %s failed, listen port = %d, connection limit %d\n",
+                        (*it).second.pIOModule->WalleveGetOwnKey().c_str(),
+                        (*it).first.port(),(*it).second.nMaxConnections);
+        }
+        else
+        {
+            WalleveLog("Setup service %s sucess, listen port = %d, connection limit %d\n",
+                        (*it).second.pIOModule->WalleveGetOwnKey().c_str(),
+                        (*it).first.port(),(*it).second.nMaxConnections);
+        }
     }
 }
 
@@ -393,7 +401,7 @@ void CHttpServer::RespondError(CHttpClient *pHttpClient,int nStatusCode,const st
     
     MAPIKeyValue mapHeader;
     MAPCookie mapCookie;
-    mapHeader["connection"] = "close";
+    mapHeader["connection"] = "Close";
     if (!strContent.empty())
     {
         mapHeader["content-type"] = "text/html"; 

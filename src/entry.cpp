@@ -22,6 +22,7 @@
 #include "dbpclient.h"
 #include "dnseed.h"
 #include "version.h"
+#include "purger.h"
 
 #include <map>
 #include <string>
@@ -82,6 +83,13 @@ bool CMvEntry::Initialize(int argc, char *argv[])
     if (mvConfig.GetConfig()->fVersion)
     {
         cout << "Multiverse version is v" << MV_VERSION_STR << endl;
+        return false;
+    }
+
+    // purge
+    if (mvConfig.GetConfig()->fPurge)
+    {
+        PurgeStorage();
         return false;
     }
 
@@ -445,6 +453,31 @@ CDbpClientConfig CMvEntry::GetDbpClientConfig()
             config->fIsRootNode, config->fIsFnFnNode);
 }
 
+void CMvEntry::PurgeStorage()
+{
+    path& pathData = mvConfig.GetConfig()->pathData;
+
+    if (!TryLockFile((pathData / ".lock").string()))
+    {
+        cerr << "Cannot obtain a lock on data directory " << pathData << "\n"
+             << "Multiverse is probably already running.\n";
+        return;
+    }
+
+    const CMvStorageConfig* config = CastConfigPtr<CMvStorageConfig*>(mvConfig.GetConfig());
+    storage::CMvDBConfig dbConfig(config->strDBHost,config->nDBPort,
+                                  config->strDBName,config->strDBUser,config->strDBPass);
+    storage::CPurger purger;
+    if (purger(dbConfig,pathData))
+    {
+        cout << "Reset database and removed blockfiles\n";
+    }
+    else
+    {
+        cout << "Failed to purge storage\n";
+    }
+}
+
 bool CMvEntry::Run()
 {
     if (!walleveDocker.Run())
@@ -490,7 +523,7 @@ path CMvEntry::GetDefaultDataDir()
     {
         pathRet = path(pszHome);
     }
-#ifdef MAC_OSX
+#ifdef __APPLE__
     // Mac
     pathRet /= "Library/Application Support";
     create_directory(pathRet);

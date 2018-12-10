@@ -9,8 +9,9 @@
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
-
 #include <iostream>
+
+#include "walleve/util.h"
 
 using namespace std;
 using namespace walleve;
@@ -79,7 +80,7 @@ bool CWalleveConfig::Load(int argc,char *argv[],const fs::path& pathDefault,cons
     }
     catch (exception& e)
     {
-        cout << e.what() << std::endl;
+        StdError(__PRETTY_FUNCTION__, e.what());
         return false;
     }
     return true;
@@ -102,11 +103,11 @@ string CWalleveConfig::ListConfig() const
 string CWalleveConfig::Help() const
 {
     return string()
-        + "  -help                         Get more information\n"
-        + "  -daemon                       Run server in background\n"
-        + "  -debug                        Run in debug mode\n"
-        + "  -datadir                      Root directory of resources\n"
-        + "  -conf                         Configuration file name\n";
+        + "  -help                                 Get more information\n"
+        + "  -daemon                               Run server in background\n"
+        + "  -debug                                Run in debug mode\n"
+        + "  -datadir=<path>                       Root directory of resources\n"
+        + "  -conf=<file>                          Configuration file name\n";
 }
 
 pair<string,string> CWalleveConfig::ExtraParser(const string& s)

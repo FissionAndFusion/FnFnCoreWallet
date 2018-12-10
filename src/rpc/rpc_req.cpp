@@ -10,7 +10,6 @@
 #include "json/json_spirit_reader_template.h"
 #include "json/json_spirit_utils.h"
 
-#include "rpc/rpc_error.h"
 #include "rpc/auto_rpc.h"
 
 namespace multiverse
@@ -54,7 +53,7 @@ json_spirit::Value CRPCReq::ToJSON() const
 
 std::string CRPCReq::Serialize(bool indent)
 {
-    return json_spirit::write_string<json_spirit::Value>(ToJSON(), indent);
+    return json_spirit::write_string<json_spirit::Value>(ToJSON(), indent, RPC_DOUBLE_PRECISION);
 }
 
 CRPCReqVec DeserializeCRPCReq(const std::string& str, bool& fArray)
@@ -140,7 +139,6 @@ CRPCReqVec DeserializeCRPCReq(const std::string& str, bool& fArray)
                     json_spirit::value_type_to_string(valMethod.type()), req->valID);
         }
         req->strMethod = valMethod.get_str();
-        // WalleveLog("RPC command : %s\n", strMethod.c_str());
 
         // Parse params
         json_spirit::Value valParams = find_value(request, "params");
@@ -172,7 +170,7 @@ std::string SerializeCRPCReq(const CRPCReqVec& req, bool indent)
     {
         arr.push_back(r->ToJSON());
     }
-    return json_spirit::write_string<json_spirit::Value>(arr, indent);
+    return json_spirit::write_string<json_spirit::Value>(arr, indent, RPC_DOUBLE_PRECISION);
 }
 
 }  // namespace rpc

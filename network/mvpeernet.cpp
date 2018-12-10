@@ -52,13 +52,13 @@ bool CMvPeerNet::WalleveHandleInitialize()
 {
     if (!WalleveGetObject("netchannel",pNetChannel))
     {
-        WalleveLog("Failed to request peer net datachannel\n");
+        WalleveError("Failed to request peer net datachannel\n");
         return false;
     }
 
     if (!WalleveGetObject("delegatedchannel",pDelegatedChannel))
     {
-        WalleveLog("Failed to request delegated datachannel\n");
+        WalleveError("Failed to request delegated datachannel\n");
         return false;
     }
 

@@ -11,8 +11,10 @@
 #include <iostream>
 
 #include "rpc/rpc_error.h"
+#include "walleve/util.h"
 
 using namespace multiverse;
+using namespace walleve;
 
 namespace po = boost::program_options;
 namespace fs = boost::filesystem;
@@ -122,12 +124,12 @@ bool CMvConfig::PostLoad()
         }
         catch (rpc::CRPCException& e)
         {
-            std::cerr << e.strMessage + rpc::strHelpTips << std::endl;
+            StdError(__PRETTY_FUNCTION__, (e.strMessage + rpc::strHelpTips).c_str());
             return false;
         }
         catch (std::exception& e)
         {
-            std::cerr << e.what() << std::endl;
+            StdError(__PRETTY_FUNCTION__, e.what());
             return false;
         }
     }

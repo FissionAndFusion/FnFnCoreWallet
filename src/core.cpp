@@ -416,8 +416,40 @@ CMvTestNetCoreProtocol::CMvTestNetCoreProtocol()
 {
 }
 
+/*
+PubKey : 75490d20c9b270d36e019016f154bdfb6f19ff03fa7c09e3280ccc3ad8a1992e
+Secret : 88abd5c9c0f2aac6bf7edfa10ffdbebce19cdc1cadba91558bfa60e2ba2f4fc0
+
+PubKey : 67125587821e523de89e9a263410686b0432383c3e49190ea11788273d673633
+Secret : 06ea8304d01ccc93187f3543b6f857651ddfa5a147efcd87528ed25e6f6a5675
+
+PubKey : d49132d517a44cf2ec5754cbf4d3ffa6ab2a23670dfc7c890aaa3ef57e57ff96
+Secret : 1d5df6ac054138dca89f96461df6397009765aa68af76bdf008dccf0c171bf3c
+*/
 void CMvTestNetCoreProtocol::GetGenesisBlock(CBlock& block)
 {
-    (void)block;
+    const CDestination destOwner = CDestination(multiverse::crypto::CPubKey(uint256("75490d20c9b270d36e019016f154bdfb6f19ff03fa7c09e3280ccc3ad8a1992e")));
+
+    block.SetNull();
+
+    block.nVersion   = 1;
+    block.nType      = CBlock::BLOCK_GENESIS;
+    block.nTimeStamp = 1515745156;
+    block.hashPrev   = 0;
+    
+    CTransaction& tx = block.txMint;
+    tx.nType   = CTransaction::TX_GENESIS;
+    tx.sendTo  = destOwner;
+    tx.nAmount = 745000000 * COIN; // 745000000 is initial number of token
+
+    CProfile profile;
+    profile.strName = "Fission And Fusion Test Network";
+    profile.strSymbol = "FnFnTest";
+    profile.destOwner = destOwner;
+    profile.nMintReward = 15 * COIN;
+    profile.nMinTxFee = MIN_TX_FEE;
+    profile.SetFlag(true,false,false);
+
+    profile.Save(block.vchProof);
 }
 

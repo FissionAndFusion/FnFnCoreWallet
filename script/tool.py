@@ -23,9 +23,9 @@ tab_len = 8
 # Temporarily not break line now (system terminal will be auto line break, macosx, ubuntu)
 max_line_len = -1
 # set max "format" length of one line to show on terminal
-max_format_len = 32
+max_format_len = 40
 # increasing step length, when format length is not enough
-step_len = 16
+step_len = 20 
 
 
 # esacpe \t to space

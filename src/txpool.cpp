@@ -213,13 +213,13 @@ bool CTxPool::WalleveHandleInitialize()
 {
     if (!WalleveGetObject("coreprotocol",pCoreProtocol))
     {
-        WalleveLog("Failed to request coreprotocol\n");
+        WalleveError("Failed to request coreprotocol\n");
         return false;
     }
 
     if (!WalleveGetObject("worldline",pWorldLine))
     {
-        WalleveLog("Failed to request worldline\n");
+        WalleveError("Failed to request worldline\n");
         return false;
     }
 
@@ -238,12 +238,12 @@ bool CTxPool::WalleveHandleInvoke()
                                   StorageConfig()->strDBName,StorageConfig()->strDBUser,StorageConfig()->strDBPass);
     if (!dbTxPool.Initialize(dbConfig))
     {
-        WalleveLog("Failed to initialize txpool database\n");
+        WalleveError("Failed to initialize txpool database\n");
         return false;
     }
     if (!LoadDB())
     {
-        WalleveLog("Failed to load txpool database\n");
+        WalleveError("Failed to load txpool database\n");
         return false;
     }  
     return true;

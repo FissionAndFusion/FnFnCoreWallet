@@ -4,7 +4,9 @@
     
 #include "walletdb.h"
 #include <boost/foreach.hpp>    
+
 using namespace std;
+using namespace walleve;
 using namespace multiverse::storage;
     
 //////////////////////////////
@@ -293,8 +295,9 @@ bool CWalletDB::ParseTxIn(const std::vector<unsigned char>& vchTxIn,CWalletTx& w
     {
         ss >> wtx.vInput;
     }
-    catch (...) 
+    catch (exception& e)
     {
+        StdError(__PRETTY_FUNCTION__, e.what());
         return false; 
     }
     

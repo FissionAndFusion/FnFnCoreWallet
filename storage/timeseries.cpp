@@ -7,6 +7,7 @@
 using namespace std;
 using namespace boost::filesystem;
 using namespace multiverse::storage;
+using namespace walleve;
 
 //////////////////////////////
 // CTimeSeries
@@ -121,8 +122,9 @@ bool CTimeSeries::VacateCache(uint32 nNeeded)
             cacheStream.Rewind();
             cacheStream >> diskpos >> nSize;
         }
-        catch (...)
-        {   
+        catch (exception& e)
+        {
+            StdError(__PRETTY_FUNCTION__, e.what());
             return false;
         }
 

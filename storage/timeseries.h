@@ -69,8 +69,9 @@ public:
             nOffset = fs.GetCurPos();
             fs << t;
         }
-        catch (...) 
+        catch (std::exception& e)
         {
+            walleve::StdError(__PRETTY_FUNCTION__, e.what());
             return false;
         }
         if (!WriteToCache(t,CDiskPos(nFile,nOffset)))
@@ -101,8 +102,9 @@ public:
             fs.Seek(nOffset);
             fs >> t;
         }
-        catch(...)
+        catch (std::exception& e)
         {
+            walleve::StdError(__PRETTY_FUNCTION__, e.what());
             return false;
         }
 
@@ -146,8 +148,9 @@ public:
                     nOffset = fs.GetCurPos();
                 }
             }
-            catch (...)
+            catch (std::exception& e)
             {
+                walleve::StdError(__PRETTY_FUNCTION__, e.what());
                 fRet = false;
             }
             nFile++;
@@ -183,7 +186,10 @@ protected:
             mapCachePos.insert(std::make_pair(diskpos,nPos));
             return true;
         }
-        catch (...) {}
+        catch (std::exception& e)
+        {
+            walleve::StdError(__PRETTY_FUNCTION__, e.what());
+        }
         return false;
     }
     template <typename T>
@@ -199,7 +205,10 @@ protected:
                     cacheStream >> t;
                     return true;
                 }
-                catch (...) {}
+                catch (std::exception& e)
+                {
+                    walleve::StdError(__PRETTY_FUNCTION__, e.what());
+                }
             }
             ResetCache();
         }

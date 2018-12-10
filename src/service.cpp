@@ -50,43 +50,43 @@ bool CService::WalleveHandleInitialize()
 {
     if (!WalleveGetObject("coreprotocol",pCoreProtocol))
     {
-        WalleveLog("Failed to request coreprotocol\n");
+        WalleveError("Failed to request coreprotocol\n");
         return false;
     }
 
     if (!WalleveGetObject("worldline",pWorldLine))
     {
-        WalleveLog("Failed to request worldline\n");
+        WalleveError("Failed to request worldline\n");
         return false;
     }
 
     if (!WalleveGetObject("txpool",pTxPool))
     {
-        WalleveLog("Failed to request txpool\n");
+        WalleveError("Failed to request txpool\n");
         return false;
     }
 
     if (!WalleveGetObject("dispatcher",pDispatcher))
     {
-        WalleveLog("Failed to request dispatcher\n");
+        WalleveError("Failed to request dispatcher\n");
         return false;
     }
 
     if (!WalleveGetObject("wallet",pWallet))
     {
-        WalleveLog("Failed to request wallet\n");
+        WalleveError("Failed to request wallet\n");
         return false;
     }
 
     if (!WalleveGetObject("virtualpeernet",pNetwork))
     {
-        WalleveLog("Failed to request network\n");
+        WalleveError("Failed to request network\n");
         return false;
     }
 
     if (!WalleveGetObject("dbpservice", pDbpSocket))
     {
-         WalleveLog("Failed to request DbpSocket\n");
+         WalleveError("Failed to request DbpSocket\n");
          return false;
     }
 
@@ -598,8 +598,9 @@ MvErr CService::SubmitWork(const vector<unsigned char>& vchWorkData,CTemplatePtr
             return MV_ERR_BLOCK_PROOF_OF_WORK_INVALID;
         }
     }
-    catch (...)
+    catch (exception& e)
     {
+        StdError(__PRETTY_FUNCTION__, e.what());
         return MV_FAILED;
     }
     int nBits;

@@ -37,7 +37,7 @@ CDbpService::CDbpService()
     fIsFnFnNode = true;
 }
 
-CDbpService::~CDbpService()
+CDbpService::~CDbpService() noexcept
 {
 }
 
@@ -45,37 +45,37 @@ bool CDbpService::WalleveHandleInitialize()
 {
     if (!WalleveGetObject("coreprotocol", pCoreProtocol))
     {
-        WalleveLog("Failed to request coreprotocol\n");
+        WalleveError("Failed to request coreprotocol\n");
         return false;
     }
 
     if (!WalleveGetObject("service", pService))
     {
-        WalleveLog("Failed to request service\n");
+        WalleveError("Failed to request service\n");
         return false;
     }
 
     if (!WalleveGetObject("wallet", pWallet))
     {
-        WalleveLog("Failed to request wallet\n");
+        WalleveError("Failed to request wallet\n");
         return false;
     }
 
     if (!WalleveGetObject("dbpserver", pDbpServer))
     {
-        WalleveLog("Failed to request dbpserver\n");
+        WalleveError("Failed to request dbpserver\n");
         return false;
     }
 
     if(!WalleveGetObject("dbpclient",pDbpClient))
     {
-        WalleveLog("Failed to request dbpclient\n");
+        WalleveError("Failed to request dbpclient\n");
         return false;
     }
 
     if (!WalleveGetObject("netchannel",pNetChannel))
     {
-        WalleveLog("Failed to request peer net datachannel\n");
+        WalleveError("Failed to request peer net datachannel\n");
         return false;
     }
 

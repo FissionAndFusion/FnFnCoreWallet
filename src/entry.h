@@ -32,6 +32,8 @@ protected:
     CDbpHostConfig GetDbpHostConfig();
     CDbpClientConfig GetDbpClientConfig();
 
+    void PurgeStorage();
+
     boost::filesystem::path GetDefaultDataDir();
 
     bool SetupEnvironment();

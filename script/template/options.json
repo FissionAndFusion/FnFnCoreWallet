@@ -23,6 +23,14 @@
             "default": false,
             "format": "-version",
             "desc": "Get multiverse version"
+        },
+        {
+            "name": "fPurge",
+            "type": "bool",
+            "opt": "purge",
+            "default": false,
+            "format": "-purge",
+            "desc": "Purge database and blockfile"
         }
     ],
     "CMvForkConfigOption": [
@@ -251,7 +259,7 @@
             "name": "nDbpPortInt",
             "type": "int",
             "opt": "dbpport",
-            "default": "DEFAULT_DBPPORT",
+            "default": 0,
             "format": "-dbpport=port",
             "desc": "Listen for DBP connections on <port> (default: 6815)"
         },

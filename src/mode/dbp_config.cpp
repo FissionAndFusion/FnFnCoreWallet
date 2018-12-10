@@ -155,12 +155,12 @@ std::string CMvDbpClientConfig::ListConfig() const
     std::ostringstream oss;
     oss << CMvDbpClientConfigOption::ListConfigImpl();
     oss << "epParentDbp: " << epParentHost << "\n";
-    return CMvDbpBasicConfig::ListConfig() + oss.str();
+    return oss.str();
 }
 
 std::string CMvDbpClientConfig::Help() const
 {
-    return CMvDbpBasicConfig::Help() + CMvDbpClientConfigOption::HelpImpl();
+    return CMvDbpClientConfigOption::HelpImpl();
 }
 
 } // namepspace multiverse
