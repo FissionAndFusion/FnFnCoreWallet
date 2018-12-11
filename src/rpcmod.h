@@ -43,33 +43,19 @@ protected:
     {
         return i.IsValid() ? uint64(i) : valDefault;
     }
-    const bool IsForkHash(uint256& hash)
-    {
-        std::vector<std::pair<uint256,CProfile>> forks;
-        pService->ListFork(forks);
-        for(const auto& fork : forks)
-        {
-            if(fork.first == hash)
-            {
-                return true;
-            }
-        }
-        return false;
-    }
     const bool GetForkHashOfDef(const rpc::CRPCString& hex, uint256& hashFork)
     {
-        if (hex.IsValid())
-        {
-            hashFork.SetHex(hex);
-            if (hashFork == 0)
+        if (!hex.empty())
+        {  
+            if (hashFork.SetHex(hex) != hex.size())
+            {
                 return false;
+            }
         }
         else
+        {
             hashFork = pCoreProtocol->GetGenesisBlockHash();
-            
-        if (!IsForkHash(hashFork))
-            return false;
-
+        }
         return true;
     }
     bool CheckWalletError(MvErr err);
