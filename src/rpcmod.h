@@ -60,7 +60,8 @@ protected:
     {
         if (hex.IsValid())
         {
-            if (!hashFork.SetHexCheck(hex))
+            hashFork.SetHex(hex);
+            if (hashFork == 0)
                 return false;
         }
         else

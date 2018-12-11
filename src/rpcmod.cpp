@@ -513,7 +513,9 @@ CRPCResultPtr CRPCMod::RPCGetForkGenealogy(CRPCParamPtr param)
     //getgenealogy (-f="fork")
     uint256 fork;
 	if (!GetForkHashOfDef(spParam->strFork, fork))
+    {
     	throw CRPCException(RPC_INVALID_PARAMETER, "Invalid fork");
+    }
 
     vector<pair<uint256,int> > vAncestry;
     vector<pair<int,uint256> > vSubline;
@@ -540,8 +542,7 @@ CRPCResultPtr CRPCMod::RPCGetBlockLocation(CRPCParamPtr param)
     
     //getblocklocation <"block">
     uint256 hashBlock;
-    if (spParam->strBlock.empty() || !hashBlock.SetHexCheck(spParam->strBlock))
-        throw CRPCException(RPC_INVALID_PARAMETER, "Invalid block hash");
+    hashBlock.SetHex(spParam->strBlock);
         
     uint256 fork;
     int height;
@@ -563,7 +564,9 @@ CRPCResultPtr CRPCMod::RPCGetBlockCount(CRPCParamPtr param)
     //getblockcount (-f="fork")
     uint256 hashFork;
 	if (!GetForkHashOfDef(spParam->strFork, hashFork))
+    {
     	throw CRPCException(RPC_INVALID_PARAMETER, "Invalid fork");
+    }
 
     return MakeCGetBlockCountResultPtr(pService->GetBlockCount(hashFork));
 }
@@ -574,7 +577,9 @@ CRPCResultPtr CRPCMod::RPCGetBlockHash(CRPCParamPtr param)
 
     //getblockhash <height> (-f="fork")
     if (!spParam->nHeight.IsValid())
+    {
         throw CRPCException(RPC_INVALID_PARAMETER, "Invalid height");
+    }
 
     int nHeight = spParam->nHeight;
 
@@ -603,8 +608,7 @@ CRPCResultPtr CRPCMod::RPCGetBlock(CRPCParamPtr param)
     
     //getblock <"block">
     uint256 hashBlock;
-    if (spParam->strBlock.empty() || !hashBlock.SetHexCheck(spParam->strBlock))
-        throw CRPCException(RPC_INVALID_PARAMETER, "Invalid block hash");
+    hashBlock.SetHex(spParam->strBlock);
 
     CBlock block;
     uint256 fork;
@@ -624,7 +628,9 @@ CRPCResultPtr CRPCMod::RPCGetTxPool(CRPCParamPtr param)
     //gettxpool (-f="fork") (-d|-nod*detail*)
     uint256 hashFork;
     if (!GetForkHashOfDef(spParam->strFork, hashFork))
+    {
         throw CRPCException(RPC_INVALID_PARAMETER, "Invalid fork");
+    }
     
     bool fDetail = spParam->fDetail.IsValid() ? bool(spParam->fDetail) : false;
     
@@ -659,8 +665,7 @@ CRPCResultPtr CRPCMod::RPCRemovePendingTx(CRPCParamPtr param)
 
     //removependingtx <"txid">
     uint256 txid;
-    if (spParam->strTxid.empty() || !txid.SetHexCheck(spParam->strTxid))
-        throw CRPCException(RPC_INVALID_PARAMETER, "Invalid txid");
+    txid.SetHex(spParam->strTxid);
 
     if (!pService->RemovePendingTx(txid))
     {
@@ -676,8 +681,7 @@ CRPCResultPtr CRPCMod::RPCGetTransaction(CRPCParamPtr param)
 
     //gettransaction <"txid"> (-s|-nos*serialized*)
     uint256 txid;
-    if (spParam->strTxid.empty() || !txid.SetHexCheck(spParam->strTxid))
-        throw CRPCException(RPC_INVALID_PARAMETER, "Invalid txid");
+    txid.SetHex(spParam->strTxid);
 
     CTransaction tx;
     uint256 hashFork;
@@ -736,7 +740,9 @@ CRPCResultPtr CRPCMod::RPCGetForkHeight(CRPCParamPtr param)
     //getforkheight (-f="fork")
     uint256 hashFork;
     if (!GetForkHashOfDef(spParam->strFork, hashFork))
+    {
         throw CRPCException(RPC_INVALID_PARAMETER, "Invalid fork");
+    }
     
     return MakeCGetForkHeightResultPtr(pService->GetForkHeight(hashFork));
 }
@@ -800,9 +806,9 @@ CRPCResultPtr CRPCMod::RPCEncryptKey(CRPCParamPtr param)
 {
     auto spParam = CastParamPtr<CEncryptKeyParam>(param);
 
+    //encryptkey <"pubkey"> <-new="passphrase"> <-old="oldpassphrase">
     crypto::CPubKey pubkey;
-    if (spParam->strPubkey.empty() || !pubkey.SetHexCheck(spParam->strPubkey))
-        throw CRPCException(RPC_INVALID_PARAMETER, "Invalid pubkey");
+    pubkey.SetHex(spParam->strPubkey);
 
     if (spParam->strPassphrase.empty())
     {
@@ -871,33 +877,49 @@ CRPCResultPtr CRPCMod::RPCUnlockKey(CRPCParamPtr param)
     CMvAddress address(spParam->strPubkey);
 
     if(address.IsTemplate())
+    {
         throw CRPCException(RPC_INVALID_PARAMETER, "This method only accepts pubkey or pubkey address as parameter rather than template address you supplied.");
+    }
   
     crypto::CPubKey pubkey;
     if(address.IsPubKey())
+    {
         address.GetPubKey(pubkey);
+    }
     else
+    {
         pubkey.SetHex(spParam->strPubkey);
+    }
 
     if (spParam->strPassphrase.empty())
+    {
         throw CRPCException(RPC_INVALID_PARAMETER, "Passphrase must be nonempty");
+    }
         
     crypto::CCryptoString strPassphrase = spParam->strPassphrase.c_str();
     int64 nTimeout = 0;
     if (spParam->nTimeout.IsValid())
+    {
          nTimeout = spParam->nTimeout;
+    }
 
     int nVersion;
     bool fLocked;
     int64 nAutoLockTime; 
     if (!pService->GetKeyStatus(pubkey,nVersion,fLocked,nAutoLockTime))
+    {
         throw CRPCException(RPC_INVALID_ADDRESS_OR_KEY,"Unknown key");
+    }
         
     if (!fLocked)
+    {
         throw CRPCException(RPC_WALLET_ALREADY_UNLOCKED,"Key is already unlocked");
+    }
         
     if (!pService->Unlock(pubkey,strPassphrase,nTimeout))
+    {
         throw CRPCException(RPC_WALLET_PASSPHRASE_INCORRECT,"The passphrase entered was incorrect.");
+    }
         
     return MakeCUnlockKeyResultPtr(string("Unlock key successfully: ") + spParam->strPubkey);
 }
@@ -908,11 +930,15 @@ CRPCResultPtr CRPCMod::RPCImportPrivKey(CRPCParamPtr param)
 
     //importprivkey <"privkey"> <"passphrase">
     uint256 nPriv;
-    if (spParam->strPrivkey.empty() || !nPriv.SetHexCheck(spParam->strPrivkey))
+    if (nPriv.SetHex(spParam->strPrivkey) != spParam->strPrivkey.size())
+    {
         throw CRPCException(RPC_INVALID_PARAMETER, "Invalid private key");
-        
+    }
+
     if (spParam->strPassphrase.empty())
+    {
         throw CRPCException(RPC_INVALID_PARAMETER, "Passphrase must be nonempty");
+    }
 
     crypto::CCryptoString strPassphrase = spParam->strPassphrase.c_str();
 
@@ -979,8 +1005,7 @@ CRPCResultPtr CRPCMod::RPCExportKey(CRPCParamPtr param)
 
     //exportkey <"pubkey">
     crypto::CPubKey pubkey;
-    if (spParam->strPubkey.empty() || !pubkey.SetHexCheck(spParam->strPubkey))
-        throw CRPCException(RPC_INVALID_ADDRESS_OR_KEY,"Unknown pubkey");
+    pubkey.SetHex(spParam->strPubkey);
 
     if (!pService->HaveKey(pubkey))
     {
@@ -1052,11 +1077,15 @@ CRPCResultPtr CRPCMod::RPCExportTemplate(CRPCParamPtr param)
     //exporttemplate <"address">
     CMvAddress address(spParam->strAddress);
     if (address.IsNull())
+    {
         throw CRPCException(RPC_INVALID_PARAMETER, "Invalid address");
+    }
 
     CTemplateId tid;
     if (!address.GetTemplateId(tid))
+    {
         throw CRPCException(RPC_INVALID_PARAMETER, "Invalid address, should be template address");
+    }
 
     CTemplatePtr ptr;
     if (!pService->GetTemplate(tid,ptr))
@@ -1192,7 +1221,9 @@ CRPCResultPtr CRPCMod::RPCGetBalance(CRPCParamPtr param)
     //getbalance (-f="fork") (-a="address")
     uint256 hashFork;
     if (!GetForkHashOfDef(spParam->strFork, hashFork))
+    {
         throw CRPCException(RPC_INVALID_PARAMETER, "Invalid fork");
+    }
     
     vector<CDestination> vDest;
     if (spParam->strAddress.IsValid())
@@ -1260,14 +1291,20 @@ CRPCResultPtr CRPCMod::RPCSendFrom(CRPCParamPtr param)
     //sendfrom <"from"> <"to"> <$amount$> ($txfee$) (-f="fork") (-d="data")
     CMvAddress from(spParam->strFrom);
     if (from.IsNull())
+    {
         throw CRPCException(RPC_INVALID_PARAMETER, "Invalid from address");
+    }
 
     CMvAddress to(spParam->strTo);
     if (to.IsNull())
+    {
         throw CRPCException(RPC_INVALID_PARAMETER, "Invalid to address");
+    }
 
     if (!spParam->fAmount.IsValid())
+    {
         throw CRPCException(RPC_INVALID_PARAMETER, "Invalid $amount$");
+    }
 
     int64 nAmount = AmountFromValue(spParam->fAmount);
     
@@ -1283,7 +1320,9 @@ CRPCResultPtr CRPCMod::RPCSendFrom(CRPCParamPtr param)
     
     uint256 hashFork;
     if (!GetForkHashOfDef(spParam->strFork, hashFork))
+    {
         throw CRPCException(RPC_INVALID_PARAMETER, "Invalid fork");
+    }
     
     vector<unsigned char> vchData;
     if (spParam->strData.IsValid())
@@ -1322,14 +1361,20 @@ CRPCResultPtr CRPCMod::RPCCreateTransaction(CRPCParamPtr param)
     //createtransaction <"from"> <"to"> <$amount$> ($txfee$) (-f="fork") (-d="data")
     CMvAddress from(spParam->strFrom);
     if (from.IsNull())
+    {
         throw CRPCException(RPC_INVALID_PARAMETER, "Invalid from address");
+    }
 
     CMvAddress to(spParam->strTo);
     if (to.IsNull())
+    {
         throw CRPCException(RPC_INVALID_PARAMETER, "Invalid to address");
+    }
         
     if (!spParam->fAmount.IsValid())
+    {
         throw CRPCException(RPC_INVALID_PARAMETER, "Invalid $amount$");
+    }
 
     int64 nAmount = AmountFromValue(spParam->fAmount);
     
@@ -1345,7 +1390,9 @@ CRPCResultPtr CRPCMod::RPCCreateTransaction(CRPCParamPtr param)
 
     uint256 hashFork;
     if (!GetForkHashOfDef(spParam->strFork, hashFork))
+    {
         throw CRPCException(RPC_INVALID_PARAMETER, "Invalid fork");
+    }
     
     vector<unsigned char> vchData;
     if (spParam->strData.IsValid())
@@ -1405,11 +1452,7 @@ CRPCResultPtr CRPCMod::RPCSignMessage(CRPCParamPtr param)
 
     //signmessage <"pubkey"> <"message">
     crypto::CPubKey pubkey;
-    if (spParam->strPubkey.empty() || !pubkey.SetHexCheck(spParam->strPubkey))
-        throw CRPCException(RPC_INVALID_PARAMETER, "Invalid pubkey");
-
-    if (spParam->strMessage.empty())
-        throw CRPCException(RPC_INVALID_PARAMETER, "Invalid message");
+    pubkey.SetHex(spParam->strPubkey);
 
     string strMessage = spParam->strMessage;
 
@@ -1727,18 +1770,23 @@ CRPCResultPtr CRPCMod::RPCMakeOrigin(CRPCParamPtr param)
     
     //makeorigin <"prev"> <"owner"> <$amount$> <"name"> <"symbol"> <$reward$> (-i|-noi*isolated*) (-p|-nop*private*) (-e|-noe*enclosed*)
     uint256 hashPrev;
-    if (spParam->strPrev.empty() || !hashPrev.SetHexCheck(spParam->strPrev))
-        throw CRPCException(RPC_INVALID_PARAMETER, "Invalid prev");
+    hashPrev.SetHex(spParam->strPrev);
 
     CDestination destOwner = static_cast<CDestination>(CMvAddress(spParam->strOwner));
     if (destOwner.IsNull())
+    {
         throw CRPCException(RPC_INVALID_PARAMETER, "Invalid owner");
+    }
 
     if (!spParam->fAmount.IsValid())
+    {
         throw CRPCException(RPC_INVALID_PARAMETER, "Invalid amount");
+    }
 
     if (!spParam->fReward.IsValid())
+    {
         throw CRPCException(RPC_INVALID_PARAMETER, "Invalid reward");
+    }
 	
     int64 nAmount = AmountFromValue(spParam->fAmount);
     int64 nMintReward = AmountFromValue(spParam->fReward);
@@ -1754,12 +1802,12 @@ CRPCResultPtr CRPCMod::RPCMakeOrigin(CRPCParamPtr param)
     int nJointHeight;
     if (!pService->GetBlock(hashPrev,blockPrev,hashParent,nJointHeight))
     {
-        throw CRPCException(RPC_INVALID_PARAMETER, "Unknown prev block");
+        throw CRPCException(RPC_INVALID_ADDRESS_OR_KEY, "Unknown prev block");
     }
 
     if (blockPrev.IsExtended() || blockPrev.IsVacant())
     {
-        throw CRPCException(RPC_INVALID_PARAMETER, "Prev block should not be extended/vacant block");
+        throw CRPCException(RPC_INVALID_ADDRESS_OR_KEY, "Prev block should not be extended/vacant block");
     }
 
     CProfile profile;
@@ -1826,17 +1874,32 @@ CRPCResultPtr CRPCMod::RPCVerifyMessage(CRPCParamPtr param)
 
     //verifymessage <"pubkey"> <"message"> <"sig">
     crypto::CPubKey pubkey;
-    if (spParam->strPubkey.empty() || !pubkey.SetHexCheck(spParam->strPubkey))
+    if (spParam->strPubkey.empty())
+    {
         throw CRPCException(RPC_INVALID_PARAMETER, "Invalid pubkey");
+    }
+    pubkey.SetHex(spParam->strPubkey);
 
     if (spParam->strMessage.empty())
+    {
         throw CRPCException(RPC_INVALID_PARAMETER, "Invalid message");
-
+    }
     string strMessage = spParam->strMessage;
 
     if (spParam->strSig.empty())
+    {
         throw CRPCException(RPC_INVALID_PARAMETER, "Invalid sig");
+    }
     vector<unsigned char> vchSig = ParseHexString(spParam->strSig);
+    if (vchSig.size() == 0)
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Invalid sig");
+    }
+
+    if (!pService->HaveKey(pubkey))
+    {
+        throw CRPCException(RPC_INVALID_ADDRESS_OR_KEY, "Unknown pubkey");
+    }
 
     const string strMessageMagic = "Multiverse Signed Message:\n";
     CWalleveBufStream ss;
@@ -1866,8 +1929,12 @@ CRPCResultPtr CRPCMod::RPCGetPubKeyAddress(CRPCParamPtr param)
 
     //getpubkeyaddress <"pubkey">
     crypto::CPubKey pubkey;
-    if (spParam->strPubkey.empty() || !pubkey.SetHexCheck(spParam->strPubkey))
-        throw CRPCException(RPC_INVALID_PARAMETER, "Invalid pubkey");
+    pubkey.SetHex(spParam->strPubkey);
+
+    if (!pService->HaveKey(pubkey))
+    {
+        throw CRPCException(RPC_INVALID_ADDRESS_OR_KEY, "Unknown pubkey");
+    }
 
     CDestination dest(pubkey);
 
@@ -1880,8 +1947,21 @@ CRPCResultPtr CRPCMod::RPCGetTemplateAddress(CRPCParamPtr param)
 
     //gettemplateaddress <"tid">
     CTemplateId tid;
-    if (spParam->strTid.empty() || !tid.SetHexCheck(spParam->strTid))
+    if (spParam->strTid.empty())
+    {
         throw CRPCException(RPC_INVALID_PARAMETER, "Invalid tid");
+    }
+
+    tid.SetHex(spParam->strTid);
+    if (tid == 0)
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Invalid tid");
+    }
+
+    if (!pService->HaveTemplate(tid))
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Unknown tid");
+    }
 
     CDestination dest(tid);
 
@@ -1939,23 +2019,14 @@ CRPCResultPtr CRPCMod::RPCDecodeTransaction(CRPCParamPtr param)
 CRPCResultPtr CRPCMod::RPCGetWork(CRPCParamPtr param)
 {
     auto spParam = CastParamPtr<CGetWorkParam>(param);
-
-    //getwork ("prev")
     uint256 hashPrev;
-    if (!spParam->strPrev.empty())
-    {
-        if (!hashPrev.SetHexCheck(spParam->strPrev))
-            throw CRPCException(RPC_INVALID_PARAMETER, "Invalid prev");
-    }
-
-    uint256 hashGenesisBlock;
-    if (!pService->GetBlockHash(pCoreProtocol->GetGenesisBlockHash(),-1,hashGenesisBlock))
+    if (!pService->GetBlockHash(pCoreProtocol->GetGenesisBlockHash(),-1,hashPrev))
     {
         throw CRPCException(RPC_INTERNAL_ERROR, "The primary chain is invalid.");
     }
 
     auto spResult = MakeCGetWorkResultPtr();
-    if (hashGenesisBlock == hashPrev)
+    if (hashPrev == uint256(spParam->strPrev))
     {
         spResult->fResult = true;
         return spResult;
@@ -1964,13 +2035,13 @@ CRPCResultPtr CRPCMod::RPCGetWork(CRPCParamPtr param)
     vector<unsigned char> vchWorkData;
     uint32 nPrevTime;
     int nAlgo,nBits;
-    if (!pService->GetWork(vchWorkData,hashGenesisBlock,nPrevTime,nAlgo,nBits))
+    if (!pService->GetWork(vchWorkData,hashPrev,nPrevTime,nAlgo,nBits))
     {
         spResult->fResult = false;
         return spResult;
     }
 
-    spResult->work.strPrevblockhash = hashGenesisBlock.GetHex();
+    spResult->work.strPrevblockhash = hashPrev.GetHex();
     spResult->work.nPrevblocktime = nPrevTime;
     spResult->work.nAlgo = nAlgo;
     spResult->work.nBits = nBits;
