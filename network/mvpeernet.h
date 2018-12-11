@@ -49,11 +49,9 @@ public:
     virtual bool HandlePeerHandshaked(walleve::CPeer *pPeer,uint32 nTimerId);
     virtual bool HandlePeerRecvMessage(walleve::CPeer *pPeer,int nChannel,int nCommand,
                                walleve::CWalleveBufStream& ssPayload);
-
+protected:
     bool HandleForkPeerActive(const CMvEventPeerActive& eventActive);
     bool HandleForkPeerDeactive(const CMvEventPeerDeactive& eventDeactive);
-
-protected:
     virtual bool HandlePeerHandshakedForForkNode(const CMvEventPeerActive& peerActive);
     virtual bool DestroyPeerForForkNode(const CMvEventPeerDeactive& peerDeactive);
 protected:
