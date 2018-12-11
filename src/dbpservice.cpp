@@ -1077,7 +1077,14 @@ bool CDbpService::HandleEvent(CMvEventPeerBlock& event)
 
     if(IsForkNodeOfSuperNode())
     {
-        PushEvent(eventVPeer);
+        if(event.nNonce == 0)
+        {
+            PushEvent(eventVPeer);
+        }
+        else
+        {
+            SendEventToParentNode(eventVPeer);
+        }
     }
     
     
@@ -1101,7 +1108,14 @@ bool CDbpService::HandleEvent(CMvEventPeerTx& event)
 
     if(IsForkNodeOfSuperNode())
     {
-        PushEvent(eventVPeer);
+        if(event.nNonce == 0)
+        {
+            PushEvent(eventVPeer);
+        }
+        else
+        {
+            SendEventToParentNode(eventVPeer);
+        }
     }
     
     return true;
