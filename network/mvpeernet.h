@@ -52,6 +52,8 @@ public:
 
     bool HandleForkPeerActive(const CMvEventPeerActive& eventActive);
     bool HandleForkPeerDeactive(const CMvEventPeerDeactive& eventDeactive);
+
+protected:
     virtual bool HandlePeerHandshakedForForkNode(const CMvEventPeerActive& peerActive);
     virtual bool DestroyPeerForForkNode(const CMvEventPeerDeactive& peerDeactive);
 protected:
