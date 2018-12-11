@@ -20,7 +20,6 @@ CDbpService::CDbpService()
     pDbpServer = NULL;
     pNetChannel = NULL;
     pVirtualPeerNet = NULL;
-    pForkManager = NULL;
 
     std::unordered_map<std::string, IdsType> temp_map = 
         boost::assign::map_list_of(ALL_BLOCK_TOPIC, std::set<std::string>())
@@ -84,12 +83,6 @@ bool CDbpService::WalleveHandleInitialize()
         WalleveLog("Failed to request virtual peer net\n");
         return false;
     }
-    
-    if(!WalleveGetObject("forkmanager", pForkManager))
-    {
-        WalleveLog("Failed to request fork manager\n");
-        return false;
-    }
 
     return true;
 }
@@ -102,7 +95,6 @@ void CDbpService::WalleveHandleDeinitialize()
     pWallet = NULL;
     pNetChannel = NULL;
     pVirtualPeerNet = NULL;
-    pForkManager = NULL;
 }
 
 void CDbpService::SetIsRootNode(bool isRootNode)
@@ -113,6 +105,11 @@ void CDbpService::SetIsRootNode(bool isRootNode)
 void CDbpService::SetIsFnFnNode(bool isFnFnNode)
 {
     fIsFnFnNode = isFnFnNode;
+}
+
+void CDbpService::SetSupportForks(const std::vector<uint256>& vForks)
+{
+    vSupportFork = vForks;
 }
 
 bool CDbpService::HandleEvent(CMvEventDbpPong& event)
@@ -517,27 +514,48 @@ void CDbpService::HandleSendEvent(CMvEventDbpMethod& event)
     int type = boost::any_cast<int>(event.data.params["type"]);
     std::string eventData = boost::any_cast<std::string>(event.data.params["data"]);
 
+    CWalleveBufStream ss;
+    ss.Write(eventData.data(), eventData.size());
+   
     if(type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_REWARD)
     {
         if(!fIsFnFnNode && fIsFnFnNode)
         {
-
+            CWalleveEventPeerNetReward eventReward(0);
+            ss >> eventReward;
+            pVirtualPeerNet->DispatchEvent(&eventReward);
         }
 
         if(!fIsFnFnNode && !fIsFnFnNode)
         {
-            
+            CMvDbpVirtualPeerNetEvent vpeerEvent;
+            vpeerEvent.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_REWARD;
+            vpeerEvent.data = std::vector<uint8>(eventData.begin(), eventData.end());
+            SendEventToParentNode(vpeerEvent);
         }
     }
 
     if(type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_CLOSE)
     {
+        if(!fIsFnFnNode && fIsFnFnNode)
+        {
+            CWalleveEventPeerNetClose eventClose(0);
+            ss >> eventClose;
+            pVirtualPeerNet->DispatchEvent(&eventClose);
+        }
 
+        if(!fIsFnFnNode && !fIsFnFnNode)
+        {
+            CMvDbpVirtualPeerNetEvent vpeerEvent;
+            vpeerEvent.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_CLOSE;
+            vpeerEvent.data = std::vector<uint8>(eventData.begin(), eventData.end());
+            SendEventToParentNode(vpeerEvent);
+        }
     }
 
     if(type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_SUBSCRIBE)
     {
-
+        
     }
 
     if(type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_UNSUBSCRIBE)
@@ -894,7 +912,7 @@ bool CDbpService::HandleEvent(CMvEventPeerGetData& event)
 bool CDbpService::HandleEvent(CWalleveEventPeerNetReward& event)
 {
     CWalleveBufStream ss;
-    //ss << event;
+    ss << event;
     std::string data(ss.GetData(), ss.GetSize());
         
     CMvDbpVirtualPeerNetEvent eventVPeer;
@@ -912,7 +930,7 @@ bool CDbpService::HandleEvent(CWalleveEventPeerNetReward& event)
 bool CDbpService::HandleEvent(CWalleveEventPeerNetClose& event)
 {
     CWalleveBufStream ss;
-    //ss << event;
+    ss << event;
     std::string data(ss.GetData(), ss.GetSize());
         
     CMvDbpVirtualPeerNetEvent eventVPeer;
