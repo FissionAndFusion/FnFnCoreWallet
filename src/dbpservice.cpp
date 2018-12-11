@@ -907,6 +907,8 @@ bool CDbpService::HandleEvent(CMvEventPeerActive& event)
         eventVPeer.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_ACTIVE;
         eventVPeer.data = std::vector<uint8>(data.begin(), data.end());
         vCacheEvent.push_back(eventVPeer);
+
+        PushEvent(eventVPeer);
     }
 
     return true;
@@ -924,6 +926,8 @@ bool CDbpService::HandleEvent(CMvEventPeerDeactive& event)
         eventVPeer.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_DEACTIVE;
         eventVPeer.data = std::vector<uint8>(data.begin(), data.end());
         vCacheEvent.push_back(eventVPeer);
+
+        PushEvent(eventVPeer);
     }
     
     return true;
@@ -942,6 +946,8 @@ bool CDbpService::HandleEvent(CMvEventPeerSubscribe& event)
         eventVPeer.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_SUBSCRIBE;
         eventVPeer.data = std::vector<uint8>(data.begin(), data.end());
         vCacheEvent.push_back(eventVPeer);
+
+        PushEvent(eventVPeer);
     }
 
     if(IsForkNodeOfSuperNode())
@@ -989,6 +995,8 @@ bool CDbpService::HandleEvent(CMvEventPeerUnsubscribe& event)
         eventVPeer.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_UNSUBSCRIBE;
         eventVPeer.data = std::vector<uint8>(data.begin(), data.end());
         vCacheEvent.push_back(eventVPeer);
+
+        PushEvent(eventVPeer);
     }
 
     if(IsForkNodeOfSuperNode())
