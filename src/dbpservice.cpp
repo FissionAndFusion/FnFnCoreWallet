@@ -158,11 +158,6 @@ static void print_tx(const CTransaction &tx)
     
 }
 
-bool CDbpService::HandleEvent(CMvEventDbpAdded& event)
-{
-    return true;
-}
-
 bool CDbpService::HandleEvent(CMvEventDbpConnect& event)
 {
     bool isReconnect = event.data.isReconnect;
