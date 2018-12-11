@@ -375,12 +375,38 @@ bool CMvPeerNet::HandleForkPeerDeactive(const CMvEventPeerDeactive& eventDeactiv
 
 bool CMvPeerNet::HandlePeerHandshakedForForkNode(const CMvEventPeerActive& peerActive)
 {
-
 }
 
 bool CMvPeerNet::DestroyPeerForForkNode(const CMvEventPeerDeactive& peerDeactive)
 {
+}
 
+bool CMvPeerNet::HandleRootPeerSub(const uint64& nNonce, const uint256& hashFork)
+{
+}
+
+bool CMvPeerNet::HandleRootPeerUnSub(const uint64& nNonce, const uint256& hashFork)
+{
+}
+
+bool CMvPeerNet::HandleRootPeerGetBlks(const uint64& nNonce, const uint256& hashFork)
+{
+}
+
+bool CMvPeerNet::HandleRootPeerInv(const uint64& nNonce, const uint256& hashFork)
+{
+}
+
+bool CMvPeerNet::HandleRootPeerGetData(const uint64& nNonce, const uint256& hashFork)
+{
+}
+
+bool CMvPeerNet::HandleRootPeerBlock(const uint64& nNonce, const uint256& hashFork)
+{
+}
+
+bool CMvPeerNet::HandleRootPeerTx(const uint64& nNonce, const uint256& hashFork)
+{
 }
 
 bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CWalleveBufStream& ssPayload)
