@@ -1034,9 +1034,21 @@ bool CDbpServer::HandleEvent(CMvEventDbpAdded& event)
             CMvDbpAdded& addedBody = event.data;
             pDbpClient->SendResponse(it->second.strClient,addedBody);
         }
+        else
+        {
+            CDbpClient* pDbpClient = (*it).second.pDbpClient;
+            CMvDbpAdded& addedBody = event.data;
+            pDbpClient->SendResponse("supernode",addedBody);
+        }
     }
     else
     {
+        
+        if(mapSessionProfile.empty())
+        {
+            return false;
+        }
+        
         for(const auto& session : mapSessionProfile)
         {
             CDbpClient* pDbpClient = session.second.pDbpClient;

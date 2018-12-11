@@ -158,11 +158,6 @@ static void print_tx(const CTransaction &tx)
     
 }
 
-bool CDbpService::HandleEvent(CMvEventDbpAdded& event)
-{
-    return true;
-}
-
 bool CDbpService::HandleEvent(CMvEventDbpConnect& event)
 {
     bool isReconnect = event.data.isReconnect;
@@ -183,7 +178,11 @@ bool CDbpService::HandleEvent(CMvEventDbpConnect& event)
 
             for(const auto& virtualevent : vCacheEvent)
             {
-                PushEvent(virtualevent);
+                std::string session(event.strSessionId);
+                CMvEventDbpAdded eventAdd(session);
+                eventAdd.data.name = "event";
+                eventAdd.data.anyAddedObj = virtualevent;
+                return pDbpServer->DispatchEvent(&eventAdd);
             }
         }
     }
@@ -827,13 +826,13 @@ void CDbpService::PushTx(const std::string& forkid, const CMvDbpTransaction& dbp
     }
 }
 
-void CDbpService::PushEvent(const CMvDbpVirtualPeerNetEvent& event)
+bool CDbpService::PushEvent(const CMvDbpVirtualPeerNetEvent& event)
 {
     std::string session;
     CMvEventDbpAdded eventAdd(session);
     eventAdd.data.name = "event";
     eventAdd.data.anyAddedObj = event;
-    pDbpServer->DispatchEvent(&eventAdd);
+    return pDbpServer->DispatchEvent(&eventAdd);
 }
 
 void CDbpService::RespondFailed(CMvEventDbpConnect& event)
@@ -908,6 +907,8 @@ bool CDbpService::HandleEvent(CMvEventPeerActive& event)
         eventVPeer.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_ACTIVE;
         eventVPeer.data = std::vector<uint8>(data.begin(), data.end());
         vCacheEvent.push_back(eventVPeer);
+
+        PushEvent(eventVPeer);
     }
 
     return true;
@@ -925,6 +926,8 @@ bool CDbpService::HandleEvent(CMvEventPeerDeactive& event)
         eventVPeer.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_DEACTIVE;
         eventVPeer.data = std::vector<uint8>(data.begin(), data.end());
         vCacheEvent.push_back(eventVPeer);
+
+        PushEvent(eventVPeer);
     }
     
     return true;
@@ -932,8 +935,9 @@ bool CDbpService::HandleEvent(CMvEventPeerDeactive& event)
 
 bool CDbpService::HandleEvent(CMvEventPeerSubscribe& event)
 {
+   
     if(IsRootNodeOfSuperNode())
-    {
+    {   
         CWalleveBufStream ss;
         ss << event;
         std::string data(ss.GetData(), ss.GetSize());
@@ -942,6 +946,38 @@ bool CDbpService::HandleEvent(CMvEventPeerSubscribe& event)
         eventVPeer.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_SUBSCRIBE;
         eventVPeer.data = std::vector<uint8>(data.begin(), data.end());
         vCacheEvent.push_back(eventVPeer);
+
+        PushEvent(eventVPeer);
+    }
+
+    if(IsForkNodeOfSuperNode())
+    {
+        CMvEventPeerSubscribe eventUpSub(event.nNonce, event.hashFork);
+        
+        auto& vSubForks = event.data;
+        for(const auto& fork : vSubForks)
+        {
+            if(mapChildNodeForkCount.find(fork) == mapChildNodeForkCount.end())
+            {
+                mapChildNodeForkCount[fork] = 1;
+                eventUpSub.data.push_back(fork);
+            }
+            else
+            {
+                mapChildNodeForkCount[fork]++;
+            }
+        }
+
+        if(!eventUpSub.data.empty())
+        {
+            CWalleveBufStream UpSubSs;
+            UpSubSs << eventUpSub;
+            std::string data(UpSubSs.GetData(), UpSubSs.GetSize());
+            CMvDbpVirtualPeerNetEvent eventVPeer;
+            eventVPeer.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_SUBSCRIBE;
+            eventVPeer.data = std::vector<uint8>(data.begin(), data.end());
+            SendEventToParentNode(eventVPeer);
+        }
     }
     
     return true;
@@ -959,6 +995,43 @@ bool CDbpService::HandleEvent(CMvEventPeerUnsubscribe& event)
         eventVPeer.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_UNSUBSCRIBE;
         eventVPeer.data = std::vector<uint8>(data.begin(), data.end());
         vCacheEvent.push_back(eventVPeer);
+
+        PushEvent(eventVPeer);
+    }
+
+    if(IsForkNodeOfSuperNode())
+    {
+        CMvEventPeerUnsubscribe eventUpUnSub(event.nNonce, event.hashFork);
+
+        auto& vUnSubForks = event.data;
+        for(const auto& fork : vUnSubForks)
+        {
+            if(mapChildNodeForkCount.find(fork) != mapChildNodeForkCount.end())
+            {
+                if(mapChildNodeForkCount[fork] == 1)
+                {
+                    mapChildNodeForkCount[fork] = 0;
+                    eventUpUnSub.data.push_back(fork);
+                    mapChildNodeForkCount.erase(fork);
+                }
+                else
+                {
+                    mapChildNodeForkCount[fork]--;
+                }
+            }
+        }
+
+        if(!eventUpUnSub.data.empty())
+        {
+            CWalleveBufStream eventSs;
+            eventSs << eventUpUnSub;
+            std::string data(eventSs.GetData(), eventSs.GetSize());
+            
+            CMvDbpVirtualPeerNetEvent vpeerEvent;
+            vpeerEvent.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_UNSUBSCRIBE;
+            vpeerEvent.data = std::vector<uint8>(data.begin(), data.end());
+            SendEventToParentNode(vpeerEvent); 
+        }
     }
     
     return true;
@@ -1004,7 +1077,14 @@ bool CDbpService::HandleEvent(CMvEventPeerBlock& event)
 
     if(IsForkNodeOfSuperNode())
     {
-        PushEvent(eventVPeer);
+        if(event.nNonce == 0)
+        {
+            PushEvent(eventVPeer);
+        }
+        else
+        {
+            SendEventToParentNode(eventVPeer);
+        }
     }
     
     
@@ -1028,7 +1108,14 @@ bool CDbpService::HandleEvent(CMvEventPeerTx& event)
 
     if(IsForkNodeOfSuperNode())
     {
-        PushEvent(eventVPeer);
+        if(event.nNonce == 0)
+        {
+            PushEvent(eventVPeer);
+        }
+        else
+        {
+            SendEventToParentNode(eventVPeer);
+        }
     }
     
     return true;

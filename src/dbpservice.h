@@ -40,7 +40,6 @@ public:
     bool HandleEvent(CMvEventDbpMethod& event) override;
     bool HandleEvent(CMvEventDbpPong& event) override;
     bool HandleEvent(CMvEventDbpBroken& event) override;
-    bool HandleEvent(CMvEventDbpAdded& event) override;
     bool HandleEvent(CMvEventDbpRemoveSession& event) override;
     
     // notify add msg(block tx ...) to event handler
@@ -99,7 +98,7 @@ private:
 
     void PushBlock(const std::string& forkid, const CMvDbpBlock& block);
     void PushTx(const std::string& forkid, const CMvDbpTransaction& dbptx);
-    void PushEvent(const CMvDbpVirtualPeerNetEvent& event);
+    bool PushEvent(const CMvDbpVirtualPeerNetEvent& event);
 
     void SendEventToParentNode(CMvDbpVirtualPeerNetEvent& event);
 
