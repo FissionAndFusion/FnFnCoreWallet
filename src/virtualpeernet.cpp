@@ -285,3 +285,92 @@ bool CVirtualPeerNet::DestroyPeerForForkNode(const network::CMvEventPeerDeactive
     }
     return true;
 }
+
+bool CVirtualPeerNet::HandleRootPeerSub(const uint64& nNonce, const uint256& hashFork)
+{
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
+    {
+        CMvEventPeerSubscribe* pEvent = new CMvEventPeerSubscribe(nNonce, hashFork);
+        if(nullptr == pEvent)
+        {
+            return false;
+        }
+        pDbpService->PostEvent(pEvent);
+    }
+    return true;
+}
+
+bool CVirtualPeerNet::HandleRootPeerUnSub(const uint64& nNonce, const uint256& hashFork)
+{
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
+    {
+        CMvEventPeerUnsubscribe* pEvent = new CMvEventPeerUnsubscribe(nNonce, hashFork);
+        if(nullptr == pEvent)
+        {
+            return false;
+        }
+        pDbpService->PostEvent(pEvent);
+    }
+    return true;
+}
+
+bool CVirtualPeerNet::HandleRootPeerGetBlks(const uint64& nNonce, const uint256& hashFork)
+{
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
+    {
+        CMvEventPeerGetBlocks* pEvent = new CMvEventPeerGetBlocks(nNonce, hashFork);
+        if(nullptr == pEvent)
+        {
+            return false;
+        }
+        pDbpService->PostEvent(pEvent);
+    }
+    return true;
+}
+
+bool CVirtualPeerNet::HandleRootPeerInv(const uint64& nNonce, const uint256& hashFork)
+{
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
+    {
+        CMvEventPeerInv* pEvent = new CMvEventPeerInv(nNonce, hashFork);
+        if(nullptr == pEvent)
+        {
+            return false;
+        }
+        pDbpService->PostEvent(pEvent);
+    }
+    return true;
+}
+
+bool CVirtualPeerNet::HandleRootPeerGetData(const uint64& nNonce, const uint256& hashFork)
+{
+
+}
+
+bool CVirtualPeerNet::HandleRootPeerBlock(const uint64& nNonce, const uint256& hashFork)
+{
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
+    {
+        CMvEventPeerTx* pEvent = new CMvEventPeerTx(nNonce, hashFork);
+        if(nullptr == pEvent)
+        {
+            return false;
+        }
+        pDbpService->PostEvent(pEvent);
+    }
+    return true;
+}
+
+bool CVirtualPeerNet::HandleRootPeerTx(const uint64& nNonce, const uint256& hashFork)
+{
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
+    {
+        CMvEventPeerBlock* pEvent = new CMvEventPeerBlock(nNonce, hashFork);
+        if(nullptr == pEvent)
+        {
+            return false;
+        }
+        pDbpService->PostEvent(pEvent);
+    }
+    return true;
+}

@@ -51,6 +51,13 @@ protected:
 
     bool HandlePeerHandshakedForForkNode(const network::CMvEventPeerActive& peerActive) override;
     bool DestroyPeerForForkNode(const network::CMvEventPeerDeactive& peerDeactive) override;
+    bool HandleRootPeerSub(const uint64& nNonce, const uint256& hashFork) override;
+    bool HandleRootPeerUnSub(const uint64& nNonce, const uint256& hashFork) override;
+    bool HandleRootPeerGetBlks(const uint64& nNonce, const uint256& hashFork) override;
+    bool HandleRootPeerInv(const uint64& nNonce, const uint256& hashFork) override;
+    bool HandleRootPeerGetData(const uint64& nNonce, const uint256& hashFork) override;
+    bool HandleRootPeerBlock(const uint64& nNonce, const uint256& hashFork) override;
+    bool HandleRootPeerTx(const uint64& nNonce, const uint256& hashFork) override;
 protected:
     walleve::IIOModule* pDbpService;
     SUPER_NODE_TYPE typeNode;
