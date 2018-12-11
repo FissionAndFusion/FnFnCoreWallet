@@ -43,8 +43,8 @@ class CMvEventPeerData : public walleve::CWalleveEvent
 {
     friend class walleve::CWalleveStream;
 public:
-    CMvEventPeerData(uint64 nNonceIn,const uint256& hashForkIn,const std::string& identifier="netchannel")
-    : CWalleveEvent(nNonceIn,type), hashFork(hashForkIn), sender(identifier) {}
+    CMvEventPeerData(uint64 nNonceIn,const uint256& hashForkIn,const std::string& identifier="netchannel", const std::string& flowIn = "up")
+    : CWalleveEvent(nNonceIn,type), hashFork(hashForkIn), sender(identifier), flow(flowIn) {}
     virtual ~CMvEventPeerData() {}
     virtual bool Handle(walleve::CWalleveEventListener& listener)
     {
@@ -69,6 +69,7 @@ protected:
         s.Serialize(hashFork,opt);
         s.Serialize(data,opt);
         s.Serialize(sender,opt);
+        s.Serialize(flow,opt);
     }
 public:
     uint256 hashFork;
@@ -76,6 +77,7 @@ public:
     std::string sender; //used to identify which side starts the event,
                         // currently there are two types of senders
                         //one is called "netchannel", another "dbpservice"
+    std::string flow; //dbpservice data flow dirction:"up"/"down", default:"up"
 };
 
 template <int type,typename L,typename D>

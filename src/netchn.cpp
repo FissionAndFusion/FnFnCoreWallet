@@ -460,11 +460,18 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerGetData& eventGetData)
 {
     uint64 nNonce = eventGetData.nNonce;
     uint256& hashFork = eventGetData.hashFork;
+    std::string flow = eventGetData.flow;
     BOOST_FOREACH(const network::CInv& inv,eventGetData.data)
     {
         if (inv.nType == network::CInv::MSG_TX)
         {
             network::CMvEventPeerTx eventTx(nNonce,hashFork);
+
+            if("up" == flow)
+            {
+                eventTx.nNonce = 0;
+            }
+
             if (pTxPool->Get(inv.nHash,eventTx.data))
             {
                 pPeerNet->DispatchEvent(&eventTx);
@@ -473,6 +480,12 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerGetData& eventGetData)
         else if (inv.nType == network::CInv::MSG_BLOCK)
         {
             network::CMvEventPeerBlock eventBlock(nNonce,hashFork);
+
+            if("up" == flow)
+            {
+                eventBlock.nNonce = 0;
+            }
+
             if (pWorldLine->GetBlock(inv.nHash,eventBlock.data))
             {
                 pPeerNet->DispatchEvent(&eventBlock);
@@ -487,6 +500,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerGetBlocks& eventGetBlocks)
     uint64 nNonce = eventGetBlocks.nNonce;
     uint256& hashFork = eventGetBlocks.hashFork;
     vector<uint256> vBlockHash;
+    std::string flow = eventGetBlocks.flow;
     if (!pWorldLine->GetBlockInv(hashFork,eventGetBlocks.data,vBlockHash,MAX_GETBLOCKS_COUNT))
     {
         DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
@@ -497,6 +511,12 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerGetBlocks& eventGetBlocks)
     {
         eventInv.data.push_back(network::CInv(network::CInv::MSG_BLOCK,hash));
     }
+
+    if("up" == flow)
+    {
+        eventInv.nNonce = 0;
+    }
+
     pPeerNet->DispatchEvent(&eventInv);
     return true;
 }
