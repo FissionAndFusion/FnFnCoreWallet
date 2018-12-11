@@ -545,9 +545,20 @@ bool CVirtualPeerNet::HandleRootPeerInv(const uint64& nNonce, const uint256& has
     return true;
 }
 
+//only available at the level of root node which delivers GETDATA event to super node cluster
+//by hook member function in terms of template method in design pattern
 bool CVirtualPeerNet::HandleRootPeerGetData(const uint64& nNonce, const uint256& hashFork)
 {
-
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
+    {
+        CMvEventPeerGetData* pEvent = new CMvEventPeerGetData(nNonce, hashFork);
+        if(nullptr == pEvent)
+        {
+            return false;
+        }
+        pDbpService->PostEvent(pEvent);
+    }
+    return true;
 }
 
 //only available at the level of root node which delivers BLOCK event to super node cluster
