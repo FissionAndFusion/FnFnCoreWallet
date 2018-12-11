@@ -89,7 +89,7 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerDeactive& eventDeactive)
 
 bool CVirtualPeerNet::HandleEvent(walleve::CWalleveEventPeerNetReward& eventReward)
 {
-    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT
        || typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN)
     {
         return CPeerNet::HandleEvent(eventReward);
@@ -108,7 +108,7 @@ bool CVirtualPeerNet::HandleEvent(walleve::CWalleveEventPeerNetReward& eventRewa
 
 bool CVirtualPeerNet::HandleEvent(walleve::CWalleveEventPeerNetClose& eventClose)
 {
-    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT
        || typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN)
     {
         return CPeerNet::HandleEvent(eventClose);
@@ -127,7 +127,7 @@ bool CVirtualPeerNet::HandleEvent(walleve::CWalleveEventPeerNetClose& eventClose
 
 bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerSubscribe& eventSubscribe)
 {
-    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT
        || typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN)
     {
         return CMvPeerNet::HandleEvent(eventSubscribe);
@@ -146,7 +146,7 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerSubscribe& eventSubscribe
 
 bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerUnsubscribe& eventUnsubscribe)
 {
-    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT
        || typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN)
     {
         return CMvPeerNet::HandleEvent(eventUnsubscribe);
@@ -165,7 +165,7 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerUnsubscribe& eventUnsubsc
 
 bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerInv& eventInv)
 {
-    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT
        || typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN)
     {
         return CMvPeerNet::HandleEvent(eventInv);
@@ -184,7 +184,7 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerInv& eventInv)
 
 bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerGetData& eventGetData)
 {
-    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT
        || typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN)
     {
         return CMvPeerNet::HandleEvent(eventGetData);
@@ -203,7 +203,7 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerGetData& eventGetData)
 
 bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerGetBlocks& eventGetBlocks)
 {
-    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT
        || typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN)
     {
         return CMvPeerNet::HandleEvent(eventGetBlocks);
@@ -222,7 +222,7 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerGetBlocks& eventGetBlocks
 
 bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerTx& eventTx)
 {
-    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT
        || typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN)
     {
         return CMvPeerNet::HandleEvent(eventTx);
@@ -241,7 +241,7 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerTx& eventTx)
 
 bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerBlock& eventBlock)
 {
-    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT
        || typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN)
     {
         return CMvPeerNet::HandleEvent(eventBlock);
