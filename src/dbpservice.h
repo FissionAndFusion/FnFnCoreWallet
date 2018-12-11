@@ -82,6 +82,8 @@ private:
     bool IsForkHash(const uint256& hash);
 
     bool IsMyFork(const uint256& hash);
+    bool IsForkNodeOfSuperNode();
+    bool IsRootNodeOfSuperNode();
     
     // from down node
     void HandleGetBlocks(CMvEventDbpMethod& event);
