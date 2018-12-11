@@ -37,6 +37,7 @@ bool CWalleveConfig::Load(int argc,char *argv[],const fs::path& pathDefault,cons
                          | po::command_line_style::long_allow_adjacent
                          | po::command_line_style::allow_long_disguise;
     fs::path pathConfile;
+    string strRoot, strConfig;
     try
     { 
         vector<string> vecIgnoreCmd;
@@ -46,8 +47,8 @@ bool CWalleveConfig::Load(int argc,char *argv[],const fs::path& pathDefault,cons
         ("help", po::value<bool>(&fHelp)->default_value(false))
         ("daemon", po::value<bool>(&fDaemon)->default_value(false))
         ("debug", po::value<bool>(&fDebug)->default_value(false))
-        ("datadir", po::value<fs::path>(&pathRoot)->default_value(pathDefault))
-        ("conf", po::value<fs::path>(&pathConfile)->default_value(fs::path(strConfile)))
+        ("datadir", po::value<string>(&strRoot)->default_value(pathDefault.string()))
+        ("conf", po::value<string>(&strConfig)->default_value(strConfile))
         ("ignore", po::value<vector<string> >(&vecIgnoreCmd));
 
         po::positional_options_description defaultPosDesc;
@@ -59,7 +60,9 @@ bool CWalleveConfig::Load(int argc,char *argv[],const fs::path& pathDefault,cons
         po::store(parser.run(),vm);
 
         po::notify(vm);
-        
+        pathRoot = strRoot;
+        pathConfile = strConfig;
+
         if (fHelp)
         {
             return true;
