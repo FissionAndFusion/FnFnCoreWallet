@@ -98,7 +98,7 @@ private:
 
     void PushBlock(const std::string& forkid, const CMvDbpBlock& block);
     void PushTx(const std::string& forkid, const CMvDbpTransaction& dbptx);
-    void PushEvent(const CMvDbpVirtualPeerNetEvent& event);
+    bool PushEvent(const CMvDbpVirtualPeerNetEvent& event);
 
     void SendEventToParentNode(CMvDbpVirtualPeerNetEvent& event);
 
