@@ -333,7 +333,7 @@ public:
 
     size_t SetHex(const std::string& str)
     {
-        SetHex(str.c_str());
+        return SetHex(str.c_str());
     }
 
     std::string ToString() const

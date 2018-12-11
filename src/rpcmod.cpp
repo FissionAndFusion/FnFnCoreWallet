@@ -543,7 +543,6 @@ CRPCResultPtr CRPCMod::RPCGetBlockLocation(CRPCParamPtr param)
     //getblocklocation <"block">
     uint256 hashBlock;
     hashBlock.SetHex(spParam->strBlock);
-        
 
     uint256 fork;
     int height;
@@ -577,16 +576,13 @@ CRPCResultPtr CRPCMod::RPCGetBlockHash(CRPCParamPtr param)
     auto spParam = CastParamPtr<CGetBlockHashParam>(param);
 
     //getblockhash <height> (-f="fork")
-    if (!spParam->nHeight.IsValid())
-    {
-        throw CRPCException(RPC_INVALID_PARAMETER, "Invalid height");
-    }
-
     int nHeight = spParam->nHeight;
 
     uint256 hashFork;
     if (!GetForkHashOfDef(spParam->strFork, hashFork))
+    {
         throw CRPCException(RPC_INVALID_PARAMETER, "Invalid fork");
+    }
 
     vector<uint256> vBlockHash;
     if (!pService->GetBlockHash(hashFork,nHeight,vBlockHash))
@@ -897,12 +893,12 @@ CRPCResultPtr CRPCMod::RPCUnlockKey(CRPCParamPtr param)
     {
         throw CRPCException(RPC_INVALID_ADDRESS_OR_KEY,"Unknown key");
     }
-        
+
     if (!fLocked)
     {
         throw CRPCException(RPC_WALLET_ALREADY_UNLOCKED,"Key is already unlocked");
     }
-        
+
     if (!pService->Unlock(pubkey,strPassphrase,nTimeout))
     {
         throw CRPCException(RPC_WALLET_PASSPHRASE_INCORRECT,"The passphrase entered was incorrect.");
@@ -1274,11 +1270,6 @@ CRPCResultPtr CRPCMod::RPCSendFrom(CRPCParamPtr param)
         throw CRPCException(RPC_INVALID_PARAMETER, "Invalid to address");
     }
 
-    if (!spParam->fAmount.IsValid())
-    {
-        throw CRPCException(RPC_INVALID_PARAMETER, "Invalid $amount$");
-    }
-
     int64 nAmount = AmountFromValue(spParam->fAmount);
     
     int64 nTxFee = MIN_TX_FEE;
@@ -1341,11 +1332,6 @@ CRPCResultPtr CRPCMod::RPCCreateTransaction(CRPCParamPtr param)
     if (to.IsNull())
     {
         throw CRPCException(RPC_INVALID_PARAMETER, "Invalid to address");
-    }
-        
-    if (!spParam->fAmount.IsValid())
-    {
-        throw CRPCException(RPC_INVALID_PARAMETER, "Invalid $amount$");
     }
 
     int64 nAmount = AmountFromValue(spParam->fAmount);
@@ -1745,11 +1731,6 @@ CRPCResultPtr CRPCMod::RPCMakeOrigin(CRPCParamPtr param)
     if (destOwner.IsNull())
     {
         throw CRPCException(RPC_INVALID_PARAMETER, "Invalid owner");
-    }
-
-    if (!spParam->fAmount.IsValid())
-    {
-        throw CRPCException(RPC_INVALID_PARAMETER, "Invalid amount");
     }
 
     if (!spParam->fReward.IsValid())

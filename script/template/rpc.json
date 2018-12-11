@@ -1938,7 +1938,6 @@
         "error": [
             "{\"code\":-6,\"message\":\"Invalid from address\"}",
             "{\"code\":-6,\"message\":\"Invalid to address\"}",
-            "{\"code\":-6,\"message\":\"Invalid $amount$\"}",
             "{\"code\":-401,\"message\":\"Failed to create transaction\"}",
             "{\"code\":-401,\"message\":\"Failed to sign transaction\"}",
             "{\"code\":-401,\"message\":\"The signature is not completed\"}",
@@ -2005,7 +2004,6 @@
         "error": [
             "{\"code\":-6,\"message\":\"Invalid from address\"}",
             "{\"code\":-6,\"message\":\"Invalid to address\"}",
-            "{\"code\":-6,\"message\":\"Invalid $amount$\"}",
             "{\"code\":-401,\"message\":\"Failed to create transaction\"}"
         ]
     },
@@ -2320,7 +2318,6 @@
         "error": [
             "{\"code\":-4,\"message\":\"Unknown prev block\"}",
             "{\"code\":-6,\"message\":\"Invalid owner\"}",
-            "{\"code\":-6,\"message\":\"Invalid amount\"}",
             "{\"code\":-6,\"message\":\"Invalid reward\"}",
             "{\"code\":-6,\"message\":\"Invalid name or symbol\"}",
             "{\"code\":-4,\"message\":\"Owner' address should be pubkey address\"}",
