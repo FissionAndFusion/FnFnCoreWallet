@@ -567,6 +567,11 @@ CRPCResultPtr CRPCMod::RPCGetBlockCount(CRPCParamPtr param)
     {
     	throw CRPCException(RPC_INVALID_PARAMETER, "Invalid fork");
     }
+    
+    if (!pService->HaveFork(hashFork))
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Unknown fork");
+    }
 
     return MakeCGetBlockCountResultPtr(pService->GetBlockCount(hashFork));
 }
@@ -582,6 +587,11 @@ CRPCResultPtr CRPCMod::RPCGetBlockHash(CRPCParamPtr param)
     if (!GetForkHashOfDef(spParam->strFork, hashFork))
     {
         throw CRPCException(RPC_INVALID_PARAMETER, "Invalid fork");
+    }
+    
+    if (!pService->HaveFork(hashFork))
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Unknown fork");
     }
 
     vector<uint256> vBlockHash;
@@ -629,6 +639,11 @@ CRPCResultPtr CRPCMod::RPCGetTxPool(CRPCParamPtr param)
         throw CRPCException(RPC_INVALID_PARAMETER, "Invalid fork");
     }
     
+    if (!pService->HaveFork(hashFork))
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Unknown fork");
+    }
+
     bool fDetail = spParam->fDetail.IsValid() ? bool(spParam->fDetail) : false;
     
     vector<pair<uint256,size_t> > vTxPool;
@@ -735,6 +750,11 @@ CRPCResultPtr CRPCMod::RPCGetForkHeight(CRPCParamPtr param)
     if (!GetForkHashOfDef(spParam->strFork, hashFork))
     {
         throw CRPCException(RPC_INVALID_PARAMETER, "Invalid fork");
+    }
+    
+    if (!pService->HaveFork(hashFork))
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Unknown fork");
     }
     
     return MakeCGetForkHeightResultPtr(pService->GetForkHeight(hashFork));
@@ -1196,6 +1216,11 @@ CRPCResultPtr CRPCMod::RPCGetBalance(CRPCParamPtr param)
         throw CRPCException(RPC_INVALID_PARAMETER, "Invalid fork");
     }
     
+    if (!pService->HaveFork(hashFork))
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Unknown fork");
+    }
+    
     vector<CDestination> vDest;
     if (spParam->strAddress.IsValid())
     {
@@ -1258,6 +1283,7 @@ CRPCResultPtr CRPCMod::RPCSendFrom(CRPCParamPtr param)
 {
     auto spParam = CastParamPtr<CSendFromParam>(param);
 
+    //sendfrom <"from"> <"to"> <$amount$> ($txfee$) (-f="fork") (-d="data")
     CMvAddress from(spParam->strFrom);
     if (from.IsNull())
     {
@@ -1286,6 +1312,11 @@ CRPCResultPtr CRPCMod::RPCSendFrom(CRPCParamPtr param)
     if (!GetForkHashOfDef(spParam->strFork, hashFork))
     {
         throw CRPCException(RPC_INVALID_PARAMETER, "Invalid fork");
+    }
+    
+    if (!pService->HaveFork(hashFork))
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Unknown fork");
     }
     
     vector<unsigned char> vchData;
@@ -1322,6 +1353,7 @@ CRPCResultPtr CRPCMod::RPCCreateTransaction(CRPCParamPtr param)
 {
     auto spParam = CastParamPtr<CCreateTransactionParam>(param);
 
+    //createtransaction <"from"> <"to"> <$amount$> ($txfee$) (-f="fork") (-d="data")
     CMvAddress from(spParam->strFrom);
     if (from.IsNull())
     {
@@ -1350,6 +1382,11 @@ CRPCResultPtr CRPCMod::RPCCreateTransaction(CRPCParamPtr param)
     if (!GetForkHashOfDef(spParam->strFork, hashFork))
     {
         throw CRPCException(RPC_INVALID_PARAMETER, "Invalid fork");
+    }
+    
+    if (!pService->HaveFork(hashFork))
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Unknown fork");
     }
     
     vector<unsigned char> vchData;
@@ -1961,10 +1998,18 @@ CRPCResultPtr CRPCMod::RPCDecodeTransaction(CRPCParamPtr param)
 CRPCResultPtr CRPCMod::RPCGetWork(CRPCParamPtr param)
 {
     auto spParam = CastParamPtr<CGetWorkParam>(param);
+
+    //getwork ("prev")
     uint256 hashPrev;
     if (!pService->GetBlockHash(pCoreProtocol->GetGenesisBlockHash(),-1,hashPrev))
     {
         throw CRPCException(RPC_INTERNAL_ERROR, "The primary chain is invalid.");
+    }
+
+    uint256 inPrev;
+    if (inPrev.SetHex(spParam->strPrev) != spParam->strPrev.size())
+    {
+        throw CRPCException(RPC_INTERNAL_ERROR, "Invalid prev.");
     }
 
     auto spResult = MakeCGetWorkResultPtr();
