@@ -127,11 +127,29 @@ bool CVirtualPeerNet::HandleEvent(walleve::CWalleveEventPeerNetClose& eventClose
 
 bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerSubscribe& eventSubscribe)
 {
-    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT
-       || typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN)
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN)
     {
         return CMvPeerNet::HandleEvent(eventSubscribe);
     }
+
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
+    {
+        if(strSenderOfNetChn == eventSubscribe.sender)
+        {
+            return CMvPeerNet::HandleEvent(eventSubscribe);
+        }
+        else if(strSenderOfDbpSvc == eventSubscribe.sender)
+        {
+            network::CMvEventPeerSubscribe* pEvent = new network::CMvEventPeerSubscribe(eventSubscribe);
+            if(nullptr == pEvent)
+            {
+                return false;
+            }
+            pNetChannel->PostEvent(&eventSubscribe);
+            return true;
+        }
+    }
+
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
     {
         network::CMvEventPeerSubscribe* pEvent = new network::CMvEventPeerSubscribe(eventSubscribe);
@@ -139,18 +157,43 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerSubscribe& eventSubscribe
         {
             return false;
         }
-        pDbpService->PostEvent(pEvent);
+        if(strSenderOfNetChn == eventSubscribe.sender)
+        {
+            pDbpService->PostEvent(pEvent);
+        }
+        else if(strSenderOfDbpSvc == eventSubscribe.sender)
+        {
+            pNetChannel->PostEvent(pEvent);
+        }
     }
     return true;
 }
 
 bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerUnsubscribe& eventUnsubscribe)
 {
-    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT
-       || typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN)
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN)
     {
         return CMvPeerNet::HandleEvent(eventUnsubscribe);
     }
+
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
+    {
+        if(strSenderOfNetChn == eventUnsubscribe.sender)
+        {
+            return CMvPeerNet::HandleEvent(eventUnsubscribe);
+        }
+        else if(strSenderOfDbpSvc == eventUnsubscribe.sender)
+        {
+            network::CMvEventPeerUnsubscribe* pEvent = new network::CMvEventPeerUnsubscribe(eventUnsubscribe);
+            if(nullptr == pEvent)
+            {
+                return false;
+            }
+            pNetChannel->PostEvent(&eventUnsubscribe);
+            return true;
+        }
+    }
+
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
     {
         network::CMvEventPeerUnsubscribe* pEvent = new network::CMvEventPeerUnsubscribe(eventUnsubscribe);
@@ -158,18 +201,43 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerUnsubscribe& eventUnsubsc
         {
             return false;
         }
-        pDbpService->PostEvent(pEvent);
+        if(strSenderOfNetChn == eventUnsubscribe.sender)
+        {
+            pDbpService->PostEvent(pEvent);
+        }
+        else if(strSenderOfDbpSvc == eventUnsubscribe.sender)
+        {
+            pNetChannel->PostEvent(pEvent);
+        }
     }
     return true;
 }
 
 bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerInv& eventInv)
 {
-    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT
-       || typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN)
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN)
     {
         return CMvPeerNet::HandleEvent(eventInv);
     }
+
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
+    {
+        if(strSenderOfNetChn == eventInv.sender)
+        {
+            return CMvPeerNet::HandleEvent(eventInv);
+        }
+        else if(strSenderOfDbpSvc == eventInv.sender)
+        {
+            network::CMvEventPeerInv* pEvent = new network::CMvEventPeerInv(eventInv);
+            if(nullptr == pEvent)
+            {
+                return false;
+            }
+            pNetChannel->PostEvent(&eventInv);
+            return true;
+        }
+    }
+
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
     {
         network::CMvEventPeerInv* pEvent = new network::CMvEventPeerInv(eventInv);
@@ -177,18 +245,43 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerInv& eventInv)
         {
             return false;
         }
-        pDbpService->PostEvent(pEvent);
+        if(strSenderOfNetChn == eventInv.sender)
+        {
+            pDbpService->PostEvent(pEvent);
+        }
+        else if(strSenderOfDbpSvc == eventInv.sender)
+        {
+            pNetChannel->PostEvent(pEvent);
+        }
     }
     return true;
 }
 
 bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerGetData& eventGetData)
 {
-    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT
-       || typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN)
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN)
     {
         return CMvPeerNet::HandleEvent(eventGetData);
     }
+
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
+    {
+        if(strSenderOfNetChn == eventGetData.sender)
+        {
+            return CMvPeerNet::HandleEvent(eventGetData);
+        }
+        else if(strSenderOfDbpSvc == eventGetData.sender)
+        {
+            network::CMvEventPeerGetData* pEvent = new network::CMvEventPeerGetData(eventGetData);
+            if(nullptr == pEvent)
+            {
+                return false;
+            }
+            pNetChannel->PostEvent(&eventGetData);
+            return true;
+        }
+    }
+
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
     {
         network::CMvEventPeerGetData* pEvent = new network::CMvEventPeerGetData(eventGetData);
@@ -196,18 +289,43 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerGetData& eventGetData)
         {
             return false;
         }
-        pDbpService->PostEvent(pEvent);
+        if(strSenderOfNetChn == eventGetData.sender)
+        {
+            pDbpService->PostEvent(pEvent);
+        }
+        else if(strSenderOfDbpSvc == eventGetData.sender)
+        {
+            pNetChannel->PostEvent(pEvent);
+        }
     }
     return true;
 }
 
 bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerGetBlocks& eventGetBlocks)
 {
-    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT
-       || typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN)
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN)
     {
         return CMvPeerNet::HandleEvent(eventGetBlocks);
     }
+
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
+    {
+        if(strSenderOfNetChn == eventGetBlocks.sender)
+        {
+            return CMvPeerNet::HandleEvent(eventGetBlocks);
+        }
+        else if(strSenderOfDbpSvc == eventGetBlocks.sender)
+        {
+            network::CMvEventPeerGetBlocks* pEvent = new network::CMvEventPeerGetBlocks(eventGetBlocks);
+            if(nullptr == pEvent)
+            {
+                return false;
+            }
+            pNetChannel->PostEvent(&eventGetBlocks);
+            return true;
+        }
+    }
+
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
     {
         network::CMvEventPeerGetBlocks* pEvent = new network::CMvEventPeerGetBlocks(eventGetBlocks);
@@ -215,18 +333,43 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerGetBlocks& eventGetBlocks
         {
             return false;
         }
-        pDbpService->PostEvent(pEvent);
+        if(strSenderOfNetChn == eventGetBlocks.sender)
+        {
+            pDbpService->PostEvent(pEvent);
+        }
+        else if(strSenderOfDbpSvc == eventGetBlocks.sender)
+        {
+            pNetChannel->PostEvent(pEvent);
+        }
     }
     return true;
 }
 
 bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerTx& eventTx)
 {
-    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT
-       || typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN)
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN)
     {
         return CMvPeerNet::HandleEvent(eventTx);
     }
+
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
+    {
+        if(strSenderOfNetChn == eventTx.sender)
+        {
+            return CMvPeerNet::HandleEvent(eventTx);
+        }
+        else if(strSenderOfDbpSvc == eventTx.sender)
+        {
+            network::CMvEventPeerTx* pEvent = new network::CMvEventPeerTx(eventTx);
+            if(nullptr == pEvent)
+            {
+                return false;
+            }
+            pNetChannel->PostEvent(&eventTx);
+            return true;
+        }
+    }
+
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
     {
         network::CMvEventPeerTx* pEvent = new network::CMvEventPeerTx(eventTx);
@@ -234,18 +377,43 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerTx& eventTx)
         {
             return false;
         }
-        pDbpService->PostEvent(pEvent);
+        if(strSenderOfNetChn == eventTx.sender)
+        {
+            pDbpService->PostEvent(pEvent);
+        }
+        else if(strSenderOfDbpSvc == eventTx.sender)
+        {
+            pNetChannel->PostEvent(pEvent);
+        }
     }
     return true;
 }
 
 bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerBlock& eventBlock)
 {
-    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT
-       || typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN)
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN)
     {
         return CMvPeerNet::HandleEvent(eventBlock);
     }
+
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
+    {
+        if(strSenderOfNetChn == eventBlock.sender)
+        {
+            return CMvPeerNet::HandleEvent(eventBlock);
+        }
+        else if(strSenderOfDbpSvc == eventBlock.sender)
+        {
+            network::CMvEventPeerBlock* pEvent = new network::CMvEventPeerBlock(eventBlock);
+            if(nullptr == pEvent)
+            {
+                return false;
+            }
+            pNetChannel->PostEvent(&eventBlock);
+            return true;
+        }
+    }
+
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
     {
         network::CMvEventPeerBlock* pEvent = new network::CMvEventPeerBlock(eventBlock);
@@ -253,7 +421,14 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerBlock& eventBlock)
         {
             return false;
         }
-        pDbpService->PostEvent(pEvent);
+        if(strSenderOfNetChn == eventBlock.sender)
+        {
+            pDbpService->PostEvent(pEvent);
+        }
+        else if(strSenderOfDbpSvc == eventBlock.sender)
+        {
+            pNetChannel->PostEvent(pEvent);
+        }
     }
     return true;
 }
