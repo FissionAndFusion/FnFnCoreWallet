@@ -423,12 +423,15 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerInv& eventInv)
 {
     uint64 nNonce = eventInv.nNonce;
     uint256& hashFork = eventInv.hashFork;
+
+    std::cout << ">>> CNetChannel::HandleEvent(network::CMvEventPeerInv& eventInv), nNonce: " << nNonce << ", hashFork: " << hashFork.ToString() << std::endl;
     try 
     {
         if (eventInv.data.size() > network::CInv::MAX_INV_COUNT)
         {
             throw runtime_error("Inv count overflow.");
         }
+
 
         {
             boost::recursive_mutex::scoped_lock scoped_lock(mtxSched);
@@ -458,6 +461,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerInv& eventInv)
     catch (...)
     {
         DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
+        std::cout << ">>> excption" << std::endl;
     }
     return true;
 }
