@@ -515,7 +515,7 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                 ssPayload >> vInv;
                 pMvPeer->AskFor(hashFork,vInv);
                 ProcessAskFor(pPeer);
-                return true;
+                return HandleRootPeerGetData(pMvPeer->GetNonce(),hashFork);
             }
             break;
         case MVPROTO_CMD_INV:
