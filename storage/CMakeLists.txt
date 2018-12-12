@@ -16,11 +16,12 @@ set(sources
 	txpooldb.cpp txpooldb.h
 	dnseeddb.cpp dnseeddb.h
 	purger.cpp purger.h
+	leveldbeng.cpp leveldbeng.h
 )
 
 add_library(storage ${sources})
 
-include_directories(../walleve ../crypto ../common)
+include_directories(../walleve ../crypto ../common ../leveldb/include)
 target_link_libraries(storage
 	Boost::system
 	Boost::filesystem
@@ -33,5 +34,6 @@ target_link_libraries(storage
 	walleve
 	crypto
 	common
-	${MYSQL_LIB}	
+	${MYSQL_LIB}
+        leveldb	
 )
