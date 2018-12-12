@@ -1321,6 +1321,7 @@ bool CDbpService::HandleEvent(CMvEventDbpVirtualPeerNet& event)
         eventUnSub.sender = "dbpservice";
         pVirtualPeerNet->DispatchEvent(&eventUnSub);
 
+        DeleteCache(eventUnSub.hashFork, CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_SUBSCRIBE);
         vCacheEvent.push_back(event.data);
     }
 
