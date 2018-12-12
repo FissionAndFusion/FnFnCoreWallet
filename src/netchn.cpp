@@ -430,7 +430,6 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerInv& eventInv)
     uint64 nNonce = eventInv.nNonce;
     uint256& hashFork = eventInv.hashFork;
 
-    std::cout << ">>> CNetChannel::HandleEvent(network::CMvEventPeerInv& eventInv), nNonce: " << nNonce << ", hashFork: " << hashFork.ToString() << std::endl;
     try 
     {
         if (eventInv.data.size() > network::CInv::MAX_INV_COUNT)
