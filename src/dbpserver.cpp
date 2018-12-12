@@ -456,11 +456,13 @@ void CDbpServer::HandleClientConnect(CDbpClient* pDbpClient, google::protobuf::A
         std::string client = connectMsg.client();
         CreateSession(session, client, forkid, pDbpClient);
 
-        std::string childNodeforks = GetUdata(&connectMsg,"supernode-forks");
-        auto forks = CDbpUtils::Split(childNodeforks,';');
-        std::for_each(forks.begin(),forks.end(),[&](const std::string& fork) -> void {
-            mapSessionProfile[pDbpClient->GetSession()].setChildForks.insert(fork); 
-        });
+        std::cout << "[#] Generate Session " << session << " For Connect Msg [dbpserver]\n"; 
+
+        //std::string childNodeforks = GetUdata(&connectMsg,"supernode-forks");
+        //auto forks = CDbpUtils::Split(childNodeforks,';');
+        //std::for_each(forks.begin(),forks.end(),[&](const std::string& fork) -> void {
+          //  mapSessionProfile[pDbpClient->GetSession()].setChildForks.insert(fork); 
+        //});
         
         CMvEventDbpConnect *pEventDbpConnect = new CMvEventDbpConnect(session);
         if (!pEventDbpConnect)
@@ -471,7 +473,7 @@ void CDbpServer::HandleClientConnect(CDbpClient* pDbpClient, google::protobuf::A
         CMvDbpConnect& connectBody = pEventDbpConnect->data;
         connectBody.isReconnect = false;
         connectBody.session = session;
-        connectBody.forks = childNodeforks;
+        //connectBody.forks = childNodeforks;
         connectBody.version = connectMsg.version();
         connectBody.client = connectMsg.client();
 
