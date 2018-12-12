@@ -814,6 +814,11 @@ bool CDbpServer::ClientAccepted(const boost::asio::ip::tcp::endpoint& epService,
     {
         return false;
     }
+
+    std::cout << "[<] Client Accepted Remote Address " << 
+        pClient->GetRemote().address().to_string() << 
+        " [dbpserver]\n";
+
     return AddNewClient(pClient, &(*it).second) != NULL;
 }
 
