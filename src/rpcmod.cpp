@@ -1769,11 +1769,6 @@ CRPCResultPtr CRPCMod::RPCMakeOrigin(CRPCParamPtr param)
     {
         throw CRPCException(RPC_INVALID_PARAMETER, "Invalid owner");
     }
-
-    if (!spParam->fReward.IsValid())
-    {
-        throw CRPCException(RPC_INVALID_PARAMETER, "Invalid reward");
-    }
 	
     int64 nAmount = AmountFromValue(spParam->fAmount);
     int64 nMintReward = AmountFromValue(spParam->fReward);
@@ -1789,12 +1784,12 @@ CRPCResultPtr CRPCMod::RPCMakeOrigin(CRPCParamPtr param)
     int nJointHeight;
     if (!pService->GetBlock(hashPrev,blockPrev,hashParent,nJointHeight))
     {
-        throw CRPCException(RPC_INVALID_ADDRESS_OR_KEY, "Unknown prev block");
+        throw CRPCException(RPC_INVALID_PARAMETER, "Unknown prev block");
     }
 
     if (blockPrev.IsExtended() || blockPrev.IsVacant())
     {
-        throw CRPCException(RPC_INVALID_ADDRESS_OR_KEY, "Prev block should not be extended/vacant block");
+        throw CRPCException(RPC_INVALID_PARAMETER, "Prev block should not be extended/vacant block");
     }
 
     CProfile profile;
@@ -1860,16 +1855,11 @@ CRPCResultPtr CRPCMod::RPCVerifyMessage(CRPCParamPtr param)
     auto spParam = CastParamPtr<CVerifyMessageParam>(param);
 
     crypto::CPubKey pubkey;
-    if (spParam->strPubkey.empty())
+    if (pubkey.SetHex(spParam->strPubkey) != spParam->strPubkey.size())
     {
         throw CRPCException(RPC_INVALID_PARAMETER, "Invalid pubkey");
     }
-    pubkey.SetHex(spParam->strPubkey);
 
-    if (spParam->strMessage.empty())
-    {
-        throw CRPCException(RPC_INVALID_PARAMETER, "Invalid message");
-    }
     string strMessage = spParam->strMessage;
 
     if (spParam->strSig.empty())
