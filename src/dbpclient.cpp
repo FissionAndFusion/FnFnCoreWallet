@@ -116,6 +116,9 @@ void CMvDbpClientSocket::SendEvent(CMvDbpVirtualPeerNetEvent& dbpEvent)
     sn::VPeerNetEvent event;
     event.set_type(dbpEvent.type);
     event.set_data(std::string(dbpEvent.data.begin(), dbpEvent.data.end()));
+
+    std::cout << "sent event type " << dbpEvent.type << " [dbpclient]\n";
+
     params->PackFrom(event);
     method.set_allocated_params(params);
 
