@@ -297,6 +297,12 @@ void CNetChannel::UnsubscribeFork(const uint256& hashFork)
 bool CNetChannel::IsCotains(const uint256& hashFork)
 {
     boost::recursive_mutex::scoped_lock scoped_lock(mtxSched);
+    
+    for(const auto& fork : mapSched)
+    {
+        std::cout << "fork schedule: " << fork.first.ToString() << " [netchannel]\n";
+    }
+    
     return mapSched.find(hashFork) != mapSched.end();
 }
 

@@ -188,7 +188,7 @@ bool CDbpService::HandleEvent(CMvEventDbpConnect& event)
                 CMvEventDbpAdded eventAdd(session);
                 eventAdd.data.name = "event";
                 eventAdd.data.anyAddedObj = virtualevent;
-               // return pDbpServer->DispatchEvent(&eventAdd);
+                return pDbpServer->DispatchEvent(&eventAdd);
             }
         }
     }
@@ -977,7 +977,8 @@ void CDbpService::DeleteCache(const uint256& forkHash, int type)
 
 bool CDbpService::HandleEvent(CMvEventPeerSubscribe& event)
 {
-   
+    
+    
     if(IsRootNodeOfSuperNode())
     {   
         CWalleveBufStream ss;
@@ -994,6 +995,8 @@ bool CDbpService::HandleEvent(CMvEventPeerSubscribe& event)
 
     if(IsForkNodeOfSuperNode())
     {
+        std::cout << "[forknode] generate subscribe event [dbpservice]\n";
+        
         CMvEventPeerSubscribe eventUpSub(event.nNonce, event.hashFork);
         
         auto& vSubForks = event.data;
@@ -1010,6 +1013,8 @@ bool CDbpService::HandleEvent(CMvEventPeerSubscribe& event)
             {
                 mapThisNodeForkCount[key]++;
             }
+
+            std::cout << "Sub Fork: " << fork.ToString() << " [dbpservice]\n";
         }
 
         if(!eventUpSub.data.empty())
@@ -1047,6 +1052,8 @@ bool CDbpService::HandleEvent(CMvEventPeerUnsubscribe& event)
 
     if(IsForkNodeOfSuperNode())
     {
+        std::cout << "[forknode] generate unSubscribe event [dbpservice]\n";
+        
         CMvEventPeerUnsubscribe eventUpUnSub(event.nNonce, event.hashFork);
 
         auto& vUnSubForks = event.data;
@@ -1067,6 +1074,7 @@ bool CDbpService::HandleEvent(CMvEventPeerUnsubscribe& event)
                     mapThisNodeForkCount[key]--;
                 }
             }
+            std::cout << "UnSub Fork: " << fork.ToString() << " [dbpservice]\n";
         }
 
         if(!eventUpUnSub.data.empty())
@@ -1294,6 +1302,11 @@ bool CDbpService::HandleEvent(CMvEventDbpVirtualPeerNet& event)
     {
         CMvEventPeerActive eventActive(0);
         ss >> eventActive;  
+        
+        boost::asio::ip::tcp::endpoint ep;
+        eventActive.data.ssEndpoint.GetEndpoint(ep);
+        std::cout << "recv active event address: " << ep.address().to_string() << " [dbpservice]\n";
+
         pVirtualPeerNet->DispatchEvent(&eventActive);
 
         vCacheEvent.push_back(event.data);
@@ -1303,6 +1316,11 @@ bool CDbpService::HandleEvent(CMvEventDbpVirtualPeerNet& event)
     {
         CMvEventPeerDeactive eventDeactive(0);
         ss >> eventDeactive;   
+        
+        boost::asio::ip::tcp::endpoint ep;
+        eventDeactive.data.ssEndpoint.GetEndpoint(ep);
+        std::cout << "recv deactive event address: " << ep.address().to_string() << " [dbpservice]\n";
+        
         pVirtualPeerNet->DispatchEvent(&eventDeactive);
 
         vCacheEvent.push_back(event.data);
@@ -1365,6 +1383,8 @@ bool CDbpService::HandleEvent(CMvEventDbpVirtualPeerNet& event)
         CMvEventPeerInv eventInv(0, uint256());
         ss >> eventInv;   
         
+        std::cout << "[<] Peer Inv Fork " << eventInv.hashFork.ToString() << " [dbpservice]\n"; 
+
         if(IsMyFork(eventInv.hashFork))
         {
             eventInv.sender = "dbpservice";
