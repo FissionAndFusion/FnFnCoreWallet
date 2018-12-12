@@ -531,7 +531,7 @@ void CDbpService::HandleSendEvent(CMvEventDbpMethod& event)
     {
         if(IsRootNodeOfSuperNode())
         {
-            CWalleveEventPeerNetReward eventReward(0);
+            CWalleveSuperNodeEventPeerNetReward eventReward(0);
             ss >> eventReward;
             pVirtualPeerNet->DispatchEvent(&eventReward);
         }
@@ -549,7 +549,7 @@ void CDbpService::HandleSendEvent(CMvEventDbpMethod& event)
     {
         if(IsRootNodeOfSuperNode())
         {
-            CWalleveEventPeerNetClose eventClose(0);
+            CWalleveSuperNodeEventPeerNetClose eventClose(0);
             ss >> eventClose;
             pVirtualPeerNet->DispatchEvent(&eventClose);
         }
@@ -1232,8 +1232,13 @@ bool CDbpService::HandleEvent(CMvEventPeerGetData& event)
 
 bool CDbpService::HandleEvent(CWalleveEventPeerNetReward& event)
 {
+    CWalleveSuperNodeEventPeerNetReward eventSNReward(event.nNonce);
+    eventSNReward.result = event.result;
+    eventSNReward.nType = event.nType;
+    eventSNReward.data = event.data;
+    
     CWalleveBufStream ss;
-    ss << event;
+    ss << eventSNReward;
     std::string data(ss.GetData(), ss.GetSize());
         
     CMvDbpVirtualPeerNetEvent eventVPeer;
@@ -1250,8 +1255,13 @@ bool CDbpService::HandleEvent(CWalleveEventPeerNetReward& event)
     
 bool CDbpService::HandleEvent(CWalleveEventPeerNetClose& event)
 {
+    CWalleveSuperNodeEventPeerNetClose eventSNNetClose(event.nNonce);
+    eventSNNetClose.result = event.result;
+    eventSNNetClose.nType = event.nType;
+    eventSNNetClose.data = event.data;
+    
     CWalleveBufStream ss;
-    ss << event;
+    ss << eventSNNetClose;
     std::string data(ss.GetData(), ss.GetSize());
         
     CMvDbpVirtualPeerNetEvent eventVPeer;
