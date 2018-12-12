@@ -423,6 +423,9 @@ void CMvDbpClient::HandleConnected(CMvDbpClientSocket* pClientSocket, google::pr
 {
     dbp::Connected connected;
     any->UnpackTo(&connected);
+
+    std::cout << "[<] Recved Connected " << connected.session() << " [dbpclient]\n";
+
     CreateSession(connected.session(),pClientSocket);
     
     if(IsSessionExist(connected.session()))
@@ -554,8 +557,6 @@ void CMvDbpClient::EnterLoop()
          it != mapProfile.end(); ++it)
     {
         bool fEnableSSL = (*it).second.optSSL.fEnable;
-
-        std::cout << "enable ssl: " << fEnableSSL << "\n";
 
         if((*it).second.epParentHost.address().is_loopback())
         {

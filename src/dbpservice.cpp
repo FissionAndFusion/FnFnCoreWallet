@@ -174,7 +174,13 @@ bool CDbpService::HandleEvent(CMvEventDbpConnect& event)
         }
         else
         {
+            std::cout << "[<] Recved Connect [dbpservice]\n"; 
+            
             RespondConnected(event);
+
+            std::cout << "[>] Sent Connected " << event.strSessionId << " [dbpservice]\n";
+
+            std::cout << "[>] Cached Event Size " << vCacheEvent.size() << " [dbpservice]\n";
 
             for(const auto& virtualevent : vCacheEvent)
             {
@@ -182,7 +188,7 @@ bool CDbpService::HandleEvent(CMvEventDbpConnect& event)
                 CMvEventDbpAdded eventAdd(session);
                 eventAdd.data.name = "event";
                 eventAdd.data.anyAddedObj = virtualevent;
-                return pDbpServer->DispatchEvent(&eventAdd);
+               // return pDbpServer->DispatchEvent(&eventAdd);
             }
         }
     }
