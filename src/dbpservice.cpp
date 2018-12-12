@@ -929,6 +929,8 @@ bool CDbpService::HandleEvent(CMvEventPeerActive& event)
         CWalleveBufStream ss;
         ss << event;
         std::string data(ss.GetData(), ss.GetSize());
+
+        std::cout << "[rootnode] PeerActive [dbpservice]\n";
         
         CMvDbpVirtualPeerNetEvent eventVPeer;
         eventVPeer.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_ACTIVE;

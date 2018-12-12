@@ -268,6 +268,7 @@ void CNetChannel::SubscribeFork(const uint256& hashFork)
         {
             eventSubscribe.nNonce = (*it).first;
             pPeerNet->DispatchEvent(&eventSubscribe);
+            std::cout << "Dispatched Event Sub " <<  " [netchannel::SubscribeFork]\n";
             DispatchGetBlocksEvent((*it).first,hashFork);
         }
     }
@@ -311,6 +312,9 @@ bool CNetChannel::IsCotains(const uint256& hashFork)
 bool CNetChannel::HandleEvent(network::CMvEventPeerActive& eventActive)
 {
     uint64 nNonce = eventActive.nNonce;
+
+    std::cout << "PeerActive nonce " << nNonce << " [netchannel]\n";
+
     if ((eventActive.data.nService & network::NODE_NETWORK))
     {
         DispatchGetBlocksEvent(nNonce,pCoreProtocol->GetGenesisBlockHash());
