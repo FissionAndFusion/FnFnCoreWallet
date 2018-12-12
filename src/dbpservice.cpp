@@ -931,6 +931,7 @@ bool CDbpService::HandleEvent(CMvEventPeerActive& event)
         std::string data(ss.GetData(), ss.GetSize());
 
         std::cout << "[rootnode] PeerActive [dbpservice]\n";
+        std::cout << "[rootnode] PeerActive nonce " << event.nNonce << "[dbpservice]\n";
         
         CMvDbpVirtualPeerNetEvent eventVPeer;
         eventVPeer.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_ACTIVE;
@@ -1310,6 +1311,7 @@ bool CDbpService::HandleEvent(CMvEventDbpVirtualPeerNet& event)
         boost::asio::ip::tcp::endpoint ep;
         eventActive.data.ssEndpoint.GetEndpoint(ep);
         std::cout << "recv active event address: " << ep.address().to_string() << " [dbpservice]\n";
+        std::cout << "recv active event nonce: " << eventActive.nNonce << "[dbpservice]\n";
 
         pVirtualPeerNet->DispatchEvent(&eventActive);
 
