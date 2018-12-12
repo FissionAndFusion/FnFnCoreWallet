@@ -671,6 +671,9 @@ void CDbpService::HandleSendEvent(CMvEventDbpMethod& event)
 
         if(IsMyFork(eventGetBlocks.hashFork))
         {
+            std::cout << "[rootnode] [<] Event GetBlocks nonce " << eventGetBlocks.nNonce << " [dbpservice]\n";
+            std::cout << "[rootnode] [<] Event GetBlocks Fork " << eventGetBlocks.hashFork.ToString() << " [dbpservice]\n";
+            
             eventGetBlocks.flow = "up";
             eventGetBlocks.sender = "dbpservice";
             pVirtualPeerNet->DispatchEvent(&eventGetBlocks);
@@ -687,6 +690,9 @@ void CDbpService::HandleSendEvent(CMvEventDbpMethod& event)
 
             if(IsRootNodeOfSuperNode())
             {
+                std::cout << "[rootnode] [<] Event GetBlocks nonce " << eventGetBlocks.nNonce << " [dbpservice]\n";
+                std::cout << "[rootnode] [<] Event GetBlocks Fork " << eventGetBlocks.hashFork.ToString() << " [dbpservice]\n";
+                
                 eventGetBlocks.flow = "up";
                 eventGetBlocks.sender = "dbpservice";
                 pVirtualPeerNet->DispatchEvent(&eventGetBlocks);
@@ -1219,6 +1225,9 @@ bool CDbpService::HandleEvent(CMvEventPeerGetBlocks& event)
         }
         else
         {
+            std::cout << "[forknode] generated event getblocks nonce " << event.nNonce 
+                << " sent to parent node [dbpservice]\n";
+            
             SendEventToParentNode(eventVPeer);
         }
     }
