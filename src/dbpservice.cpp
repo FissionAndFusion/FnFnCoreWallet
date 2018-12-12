@@ -1105,6 +1105,8 @@ bool CDbpService::HandleEvent(CMvEventPeerInv& event)
     
     if(IsRootNodeOfSuperNode())
     {
+        std::cout << "PeerInv Nonce" << event.nNonce << " fork " 
+            << event.hashFork.ToString() << " [rootnode dbpservice]\n";
         PushEvent(eventVPeer);
     }
 

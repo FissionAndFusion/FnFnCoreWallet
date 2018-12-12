@@ -249,6 +249,8 @@ void CNetChannel::BroadcastTxInv(const uint256& hashFork)
 
 void CNetChannel::SubscribeFork(const uint256& hashFork)
 {
+    std::cout << "Entry SubscribeFork:" << hashFork.ToString() << " [netchannel]\n";
+    
     {
         boost::recursive_mutex::scoped_lock scoped_lock(mtxSched);
         if (!mapSched.insert(make_pair(hashFork,CSchedule())).second)
