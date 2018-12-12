@@ -933,6 +933,13 @@ bool CDbpService::HandleEvent(CMvEventPeerActive& event)
         std::cout << "[rootnode] PeerActive [dbpservice]\n";
         std::cout << "[rootnode] PeerActive nonce " << event.nNonce << "[dbpservice]\n";
         
+
+
+        CMvEventPeerActive tempAtive(0);
+        ss >> tempAtive;
+
+        std::cout <<  " PeerActive Temp " << tempAtive.nNonce << " [dbpservice]\n";
+        
         CMvDbpVirtualPeerNetEvent eventVPeer;
         eventVPeer.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_ACTIVE;
         eventVPeer.data = std::vector<uint8>(data.begin(), data.end());
