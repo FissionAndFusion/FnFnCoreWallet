@@ -70,6 +70,8 @@ protected:
         s.Serialize(data,opt);
         s.Serialize(sender,opt);
         s.Serialize(flow,opt);
+        s.Serialize(nNonce,opt);
+        s.Serialize(nType,opt);
     }
 public:
     uint256 hashFork;
