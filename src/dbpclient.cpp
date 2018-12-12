@@ -555,6 +555,8 @@ void CMvDbpClient::EnterLoop()
     {
         bool fEnableSSL = (*it).second.optSSL.fEnable;
 
+        std::cout << "enable ssl: " << fEnableSSL << "\n";
+
         if((*it).second.epParentHost.address().is_loopback())
         {
             continue;
