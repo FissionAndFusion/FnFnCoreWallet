@@ -1387,6 +1387,7 @@ bool CDbpService::HandleEvent(CMvEventDbpVirtualPeerNet& event)
         ss >> eventInv;   
         
         std::cout << "[<] Peer Inv Fork " << eventInv.hashFork.ToString() << " [dbpservice]\n"; 
+        std::cout << "[<] Peer Inv Nonce " << eventInv.nNonce << " [dbpservice]\n"; 
 
         if(IsMyFork(eventInv.hashFork))
         {
