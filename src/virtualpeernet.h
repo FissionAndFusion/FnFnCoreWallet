@@ -62,8 +62,8 @@ protected:
     walleve::IIOModule* pDbpService;
     SUPER_NODE_TYPE typeNode;
 private:
-    const std::string strSenderOfNetChn = "netchannel";
-    const std::string strSenderOfDbpSvc = "dbpservice";
+    static const std::string SENDER_NETCHN;
+    static const std::string SENDER_DBPSVC;
 };
 
 }
