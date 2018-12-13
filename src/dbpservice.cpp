@@ -539,6 +539,8 @@ void CDbpService::HandleSendEvent(CMvEventDbpMethod& event)
         {
             CWalleveSuperNodeEventPeerNetReward eventReward(0);
             ss >> eventReward;
+        
+            
             pVirtualPeerNet->DispatchEvent(&eventReward);
         }
 
@@ -1105,8 +1107,7 @@ bool CDbpService::HandleEvent(CMvEventPeerInv& event)
     
     if(IsRootNodeOfSuperNode())
     {
-        
-        std::cout << "PeerInv Nonce" << event.nNonce << " fork " 
+        std::cout << "[rootnode] Generated PeerInv Nonce" << event.nNonce << " fork " 
             << event.hashFork.ToString() << " [rootnode dbpservice]\n";
         PushEvent(eventVPeer);
     }
@@ -1422,6 +1423,9 @@ bool CDbpService::HandleEvent(CMvEventDbpVirtualPeerNet& event)
     {
         CMvEventPeerBlock eventBlock(0, uint256());
         ss >> eventBlock;
+
+        std::cout << "[forknode] [<] Peer Block Fork " << eventBlock.hashFork.ToString() << " [dbpservice]\n"; 
+        std::cout << "[forknode] [<] Peer Block Nonce " << eventBlock.nNonce << " [dbpservice]\n"; 
 
         if(IsMyFork(eventBlock.hashFork))
         {

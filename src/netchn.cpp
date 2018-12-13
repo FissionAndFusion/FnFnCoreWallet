@@ -387,6 +387,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerSubscribe& eventSubscribe)
     }
     else
     {
+        std::cout << "DDOS in PeerSub [netchannel]\n";
         DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
     }
 
@@ -411,6 +412,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerUnsubscribe& eventUnsubscribe
     }
     else
     {
+        std::cout << "DDOS in UnSun [netchannel]\n";
         DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
     }
 
@@ -422,7 +424,8 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerInv& eventInv)
     uint64 nNonce = eventInv.nNonce;
     uint256& hashFork = eventInv.hashFork;
 
-
+    std::cout << " PeerInv nonce" << nNonce << " [netchannel]\n";
+    std::cout << " PeerInv hash fork " << hashFork.ToString() << " [netchannel]\n";
     
     try 
     {
@@ -430,7 +433,6 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerInv& eventInv)
         {
             throw runtime_error("Inv count overflow.");
         }
-
 
         {
             boost::recursive_mutex::scoped_lock scoped_lock(mtxSched);
@@ -459,8 +461,8 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerInv& eventInv)
     }
     catch (...)
     {
+        std::cout << "DDOS in PeerInv [netchannel]\n";
         DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
-        std::cout << ">>> excption" << std::endl;
     }
     return true;
 }
@@ -512,6 +514,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerGetBlocks& eventGetBlocks)
     std::string flow = eventGetBlocks.flow;
     if (!pWorldLine->GetBlockInv(hashFork,eventGetBlocks.data,vBlockHash,MAX_GETBLOCKS_COUNT))
     {
+        std::cout << "DDOS in PeerGetBlocks [netchannel]\n";
         DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
         return true;
     }
@@ -583,6 +586,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerTx& eventTx)
     }
     catch (...)
     {
+        std::cout << "DDOS in PeerTx [netchannel]\n";
         DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
     }
     return true;
@@ -596,6 +600,10 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerBlock& eventBlock)
     CBlock& block = eventBlock.data;
     uint256 hash = block.GetHash();
 
+    std::cout << "[forknode] [<] Peer Block Fork " << hashFork.ToString() << " [netchannel]\n"; 
+    std::cout << "[forknode] [<] Peer Block Nonce " << nNonce << " [netchannel]\n"; 
+    std::cout << "[forknode] [<] Peer Block hash " << hash.ToString() << " [netchannel]\n"; 
+
     try
     {
         boost::recursive_mutex::scoped_lock scoped_lock(mtxSched);
@@ -605,6 +613,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerBlock& eventBlock)
         
         if (!sched.ReceiveBlock(nNonce,hash,block,setSchedPeer))
         {
+            std::cerr << "Failed recved block " << hash.ToString() << " [netchannel]\n";
             throw runtime_error("Failed to receive block");
         }
 
@@ -630,6 +639,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerBlock& eventBlock)
     }
     catch (...)
     {
+        std::cout << "DDOS in PeerBlock [netchannel]\n";
         DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
     }
     return true; 
@@ -818,6 +828,7 @@ void CNetChannel::PostAddNew(const uint256& hashFork,CSchedule& sched,
 
     BOOST_FOREACH(const uint64 nNonceMisbehave,setMisbehavePeer)
     {
+        std::cout << "DDOS in PostAddNew [netchannel]\n";
         DispatchMisbehaveEvent(nNonceMisbehave,CEndpointManager::DDOS_ATTACK);
     }
 }
