@@ -749,9 +749,9 @@ void CNetChannel::AddNewBlock(const uint256& hashFork,const uint256& hash,CSched
                 if(nNonceSender != 0)
                 {
                     DispatchAwardEvent(nNonceSender,CEndpointManager::VITAL_DATA);
+                    BroadcastBlockInv(hashFork,hashBlock,setKnownPeer);
                 }
-
-                BroadcastBlockInv(hashFork,hashBlock,setKnownPeer); 
+                
                 setSchedPeer.insert(setKnownPeer.begin(),setKnownPeer.end());
             }
             else if (err == MV_ERR_ALREADY_HAVE && pBlock->IsVacant())
