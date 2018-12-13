@@ -309,7 +309,7 @@ void CSC25519::BarrettReduce(uint64_t* m)
     Reduce();
 }
 
-const CSC25519 CSC25519::naturalPowTable[27][27] = 
+const CSC25519 CSC25519::naturalPowTable[26][26] = 
 {
     {
         CSC25519({0x1,0x0,0x0,0x0}),
