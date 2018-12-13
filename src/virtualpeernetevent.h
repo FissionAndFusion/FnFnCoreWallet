@@ -2,8 +2,8 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef MULTIVERSE_FORKPEEREVENT_H
-#define MULTIVERSE_FORKPEEREVENT_H
+#ifndef MULTIVERSE_VIRTUAL_PEEREVENT_H
+#define MULTIVERSE_VIRTUAL_PEEREVENT_H
 
 #include <boost/variant.hpp>
 
@@ -26,4 +26,4 @@ public:
 };
 
 }
-#endif //MULTIVERSE_FORKPEEREVENT_H
+#endif // MULTIVERSE_VIRTUAL_PEEREVENT_H

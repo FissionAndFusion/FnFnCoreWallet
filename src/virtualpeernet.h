@@ -2,8 +2,8 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef MULTIVERSE_FORKPSEUDOPEERNET_H
-#define MULTIVERSE_FORKPSEUDOPEERNET_H
+#ifndef MULTIVERSE_VIRTUAL_PEERNET_H
+#define MULTIVERSE_VIRTUAL_PEERNET_H
 
 #include "mvproto.h"
 #include "virtualpeernetevent.h"
@@ -68,4 +68,4 @@ private:
 
 }
 
-#endif //MULTIVERSE_FORKPSEUDOPEERNET_H
+#endif // MULTIVERSE_VIRTUAL_PEERNET_H
