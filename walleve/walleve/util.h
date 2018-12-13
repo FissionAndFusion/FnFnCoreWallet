@@ -11,6 +11,7 @@
 
 namespace walleve
 {
+extern bool STD_DEBUG;
 
 inline int64 GetTime()
 {
@@ -36,9 +37,17 @@ using namespace boost::posix_time;
     return ss.str();
 }
 
+inline void StdDebug(const char* pszName, const char* pszErr)
+{
+    if (STD_DEBUG)
+    {
+        std::cout << GetLocalTime() << " [DEBUG] <" << pszName << "> " << pszErr << std::endl;
+    }
+}
+
 inline void StdLog(const char* pszName, const char* pszErr)
 {
-    std::cerr << GetLocalTime() << " [INFO] <" << pszName << "> " << pszErr << std::endl;
+    std::cout << GetLocalTime() << " [INFO] <" << pszName << "> " << pszErr << std::endl;
 }
 
 inline void StdWarn(const char* pszName, const char* pszErr)
