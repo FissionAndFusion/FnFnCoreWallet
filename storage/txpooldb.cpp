@@ -3,7 +3,9 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
     
 #include "txpooldb.h"
-#include "walleve/stream/stream.h"
+#include "leveldbeng.h"
+
+#include <boost/bind.hpp>
 #include <boost/foreach.hpp>    
 
 using namespace std;
@@ -14,101 +16,111 @@ using namespace multiverse::storage;
 // CTxPoolDB
 
 CTxPoolDB::CTxPoolDB()
+: nSequence(0)
 {   
 }   
     
 CTxPoolDB::~CTxPoolDB()
 {   
-    Deinitialize();
 }
 
-bool CTxPoolDB::Initialize(const CMvDBConfig& config)
+bool CTxPoolDB::Initialize(const boost::filesystem::path& pathData)
 {
-    if (!dbConn.Connect(config))
+    CLevelDBArguments args;
+    args.path = (pathData / "txpool").string();
+    args.syncwrite = false;
+    CLevelDBEngine *engine = new CLevelDBEngine(args);
+
+    if (!Open(engine))
     {
+        delete engine;
         return false;
     }
-    return CreateTable();
+
+    return true;
 }
 
 void CTxPoolDB::Deinitialize()
 {
-    dbConn.Disconnect();
+    Close();
 }
 
 bool CTxPoolDB::RemoveAll()
 {
-    return dbConn.Query("TRUNCATE TABLE txpool");
+    if (!CKVDB::RemoveAll())
+    {
+        return false;
+    }
+    nSequence = 0;
+    return true;
 }
 
 bool CTxPoolDB::UpdateTx(const uint256& hashFork,const vector<pair<uint256,CAssembledTx> >& vAddNew,
                                                  const vector<uint256>& vRemove)
 {
-    string strEscHashFork = dbConn.ToEscString(hashFork);
+    if (vAddNew.size() == 1 && vRemove.empty())
+    {
+        return Write(vAddNew[0].first,make_pair(nSequence++,make_pair(hashFork,vAddNew[0].second)));
+    }
+    
+    if (!TxnBegin())
+    {
+        return false;
+    }
 
-    CMvDBTxn txn(dbConn);
     for (int i = 0;i < vAddNew.size();i++)
     {
-        const CAssembledTx& tx = vAddNew[i].second;
-        walleve::CWalleveBufStream ss;
-        ss << tx;
-        string strEscTx = dbConn.ToEscString(ss.GetData(),ss.GetSize());
-
-        ostringstream oss;
-        oss << "INSERT INTO txpool(txid,fork,tx) "
-                  "VALUES("
-            <<            "\'" << dbConn.ToEscString(vAddNew[i].first) << "\',"
-            <<            "\'" << strEscHashFork << "\',"
-            <<            "\'" << strEscTx << "\')";
-        txn.Query(oss.str());
+        Write(vAddNew[i].first,make_pair(nSequence++,make_pair(hashFork,vAddNew[i].second)));
     }
+
     BOOST_FOREACH(const uint256& txid,vRemove)
     {
-        ostringstream oss;
-        oss << "DELETE FROM txpool WHERE txid = \'" << dbConn.ToEscString(txid) << "\'";
-        txn.Query(oss.str());
+        Erase(txid);
     }
-    return txn.Commit();
+
+    return TxnCommit();
 }
 
 bool CTxPoolDB::WalkThroughTx(CTxPoolDBTxWalker& walker)
 {
-    CMvDBRes res(dbConn,"SELECT txid,fork,tx FROM txpool",true);
-    while (res.GetRow())
+    map<uint64,pair<uint256,pair<uint256,CAssembledTx> > > mapTx;
+    try
     {
-        uint256 txid,fork;
-        vector<unsigned char> vchTx;
-        if (!res.GetField(0,txid) || !res.GetField(1,fork) || !res.GetField(2,vchTx) || vchTx.empty())
+        if (!WalkThrough(boost::bind(&CTxPoolDB::LoadWalker,this,_1,_2,boost::ref(mapTx))))
         {
             return false;
         }
-        walleve::CWalleveBufStream ss;
-        ss.Write((char*)&vchTx[0],vchTx.size());
-        CAssembledTx tx;
-        try
+
+        map<uint64,pair<uint256,pair<uint256,CAssembledTx> > >::iterator it = mapTx.begin();
+        while (it != mapTx.end())
         {
-            ss >> tx;
-            if (!walker.Walk(txid,fork,tx))
+            pair<uint256,CAssembledTx>& pairTx = (*it).second.second;
+            if (!walker.Walk((*it).second.first,pairTx.first,pairTx.second))
             {
                 return false;
             }
+            ++it;
         }
-        catch (exception& e)
-        {
-            StdError(__PRETTY_FUNCTION__, e.what());
-            return false;
-        }
+        nSequence = mapTx.empty() ? 0 : (*mapTx.rbegin()).first + 1;
+    }
+    catch (exception& e)
+    {
+        StdError(__PRETTY_FUNCTION__, e.what());
+        return false;
     }
     return true;
 }
 
-bool CTxPoolDB::CreateTable()
+bool CTxPoolDB::LoadWalker(CWalleveBufStream& ssKey, CWalleveBufStream& ssValue,
+                           map<uint64,pair<uint256,pair<uint256,CAssembledTx> > > & mapTx)
 {
-    return dbConn.Query("CREATE TABLE IF NOT EXISTS txpool("
-                          "id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,"
-                          "txid BINARY(32) NOT NULL UNIQUE KEY,"
-                          "fork BINARY(32) NOT NULL,"
-                          "tx BLOB NOT NULL)"
-                          "ENGINE=InnoDB"
-                       );
+    uint256 txid;
+    uint64 n;
+    pair<uint256,CAssembledTx> pairTx;
+    ssKey >> txid;
+    ssValue >> n >> pairTx;
+    
+    mapTx.insert(make_pair(n,make_pair(txid,pairTx)));
+
+    return true;
 }

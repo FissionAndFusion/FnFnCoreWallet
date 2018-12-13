@@ -209,6 +209,19 @@ int  CService::GetForkCount()
     return mapForkStatus.size();
 }
 
+bool CService::HaveFork(const uint256& hashFork)
+{
+    boost::shared_lock<boost::shared_mutex> rlock(rwForkStatus);
+
+    map<uint256,CForkStatus>::iterator it = mapForkStatus.find(hashFork);
+    if (it != mapForkStatus.end())
+    {
+        return true;
+    }
+
+    return false;
+}
+
 int  CService::GetForkHeight(const uint256& hashFork)
 {
     boost::shared_lock<boost::shared_mutex> rlock(rwForkStatus);
