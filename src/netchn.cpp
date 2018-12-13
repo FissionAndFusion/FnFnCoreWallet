@@ -300,20 +300,12 @@ void CNetChannel::UnsubscribeFork(const uint256& hashFork)
 bool CNetChannel::IsCotains(const uint256& hashFork)
 {
     boost::recursive_mutex::scoped_lock scoped_lock(mtxSched);
-    
-    for(const auto& fork : mapSched)
-    {
-        std::cout << "fork schedule: " << fork.first.ToString() << " [netchannel]\n";
-    }
-    
     return mapSched.find(hashFork) != mapSched.end();
 }
 
 bool CNetChannel::HandleEvent(network::CMvEventPeerActive& eventActive)
 {
     uint64 nNonce = eventActive.nNonce;
-
-    std::cout << "PeerActive nonce " << nNonce << " [netchannel]\n";
 
     if ((eventActive.data.nService & network::NODE_NETWORK))
     {
@@ -430,6 +422,8 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerInv& eventInv)
     uint64 nNonce = eventInv.nNonce;
     uint256& hashFork = eventInv.hashFork;
 
+
+    
     try 
     {
         if (eventInv.data.size() > network::CInv::MAX_INV_COUNT)
@@ -665,11 +659,6 @@ void CNetChannel::DispatchGetBlocksEvent(uint64 nNonce,const uint256& hashFork)
     network::CMvEventPeerGetBlocks eventGetBlocks(nNonce,hashFork);
     if (pWorldLine->GetBlockLocator(hashFork,eventGetBlocks.data))
     {
-        for(const auto& hash : eventGetBlocks.data.vBlockHash)
-        {
-            std::cout << "block locator : " << hash.ToString() << " [netchannel]\n";
-        }
-        
         pPeerNet->DispatchEvent(&eventGetBlocks);
     }
 }
@@ -703,6 +692,7 @@ void CNetChannel::SchedulePeerInv(uint64 nNonce,const uint256& hashFork,CSchedul
         {
             if (!sched.ScheduleTxInv(nNonce,eventGetData.data,MAX_PEER_SCHED_COUNT))
             {
+                std::cout << "Dispatch Event DDOS (ScheduleTxInv return false) [netchannel]\n";
                 DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
             }
         }
@@ -710,6 +700,7 @@ void CNetChannel::SchedulePeerInv(uint64 nNonce,const uint256& hashFork,CSchedul
     }
     else
     {
+        std::cout << "Dispatch Event DDOS (ScheduleBlockInv return false) [netchannel]\n";
         DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
     }
     if (!eventGetData.data.empty())

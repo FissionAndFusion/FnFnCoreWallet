@@ -557,6 +557,8 @@ void CDbpService::HandleSendEvent(CMvEventDbpMethod& event)
         {
             CWalleveSuperNodeEventPeerNetClose eventClose(0);
             ss >> eventClose;
+            
+            std::cout << "[rootnode] [<] NetClose Type: " << eventClose.data << " [dbpservice]\n";
             pVirtualPeerNet->DispatchEvent(&eventClose);
         }
 
@@ -671,9 +673,6 @@ void CDbpService::HandleSendEvent(CMvEventDbpMethod& event)
 
         if(IsMyFork(eventGetBlocks.hashFork))
         {
-            std::cout << "[rootnode] [<] Event GetBlocks nonce " << eventGetBlocks.nNonce << " [dbpservice]\n";
-            std::cout << "[rootnode] [<] Event GetBlocks Fork " << eventGetBlocks.hashFork.ToString() << " [dbpservice]\n";
-            
             eventGetBlocks.flow = "up";
             eventGetBlocks.sender = "dbpservice";
             pVirtualPeerNet->DispatchEvent(&eventGetBlocks);
@@ -689,10 +688,7 @@ void CDbpService::HandleSendEvent(CMvEventDbpMethod& event)
             }
 
             if(IsRootNodeOfSuperNode())
-            {
-                std::cout << "[rootnode] [<] Event GetBlocks nonce " << eventGetBlocks.nNonce << " [dbpservice]\n";
-                std::cout << "[rootnode] [<] Event GetBlocks Fork " << eventGetBlocks.hashFork.ToString() << " [dbpservice]\n";
-                
+            {   
                 eventGetBlocks.flow = "up";
                 eventGetBlocks.sender = "dbpservice";
                 pVirtualPeerNet->DispatchEvent(&eventGetBlocks);
@@ -935,16 +931,6 @@ bool CDbpService::HandleEvent(CMvEventPeerActive& event)
         CWalleveBufStream ss;
         ss << event;
         std::string data(ss.GetData(), ss.GetSize());
-
-        std::cout << "[rootnode] PeerActive [dbpservice]\n";
-        std::cout << "[rootnode] PeerActive nonce " << event.nNonce << "[dbpservice]\n";
-        
-
-
-        CMvEventPeerActive tempAtive(0);
-        ss >> tempAtive;
-
-        std::cout <<  " PeerActive Temp " << tempAtive.nNonce << " [dbpservice]\n";
         
         CMvDbpVirtualPeerNetEvent eventVPeer;
         eventVPeer.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_ACTIVE;
@@ -1029,8 +1015,6 @@ bool CDbpService::HandleEvent(CMvEventPeerSubscribe& event)
             {
                 mapThisNodeForkCount[key]++;
             }
-
-            std::cout << "Sub Fork: " << fork.ToString() << " [dbpservice]\n";
         }
 
         if(!eventUpSub.data.empty())
@@ -1121,6 +1105,7 @@ bool CDbpService::HandleEvent(CMvEventPeerInv& event)
     
     if(IsRootNodeOfSuperNode())
     {
+        
         std::cout << "PeerInv Nonce" << event.nNonce << " fork " 
             << event.hashFork.ToString() << " [rootnode dbpservice]\n";
         PushEvent(eventVPeer);
@@ -1224,22 +1209,7 @@ bool CDbpService::HandleEvent(CMvEventPeerGetBlocks& event)
             PushEvent(eventVPeer);
         }
         else
-        {
-            std::cout << "[forknode] generated event getblocks nonce " << event.nNonce 
-                << " sent to parent node [dbpservice]\n";
-
-            std::cout << "[forknode] generated event getblocks fork " << event.hashFork.ToString()
-                << " sent to parent node [dbpservice]\n";
-            
-
-            for(const auto& block : event.data.vBlockHash)
-            {
-                std::cout << "[forknode] generated event getblocks locator block " << block.ToString()
-                  << " sent to parent node [dbpservice]\n";
-            }    
-                
-                
-            
+        {   
             SendEventToParentNode(eventVPeer);
         }
     }
@@ -1420,8 +1390,8 @@ bool CDbpService::HandleEvent(CMvEventDbpVirtualPeerNet& event)
         CMvEventPeerInv eventInv(0, uint256());
         ss >> eventInv;   
         
-        std::cout << "[<] Peer Inv Fork " << eventInv.hashFork.ToString() << " [dbpservice]\n"; 
-        std::cout << "[<] Peer Inv Nonce " << eventInv.nNonce << " [dbpservice]\n"; 
+        std::cout << "[forknode] [<] Peer Inv Fork " << eventInv.hashFork.ToString() << " [dbpservice]\n"; 
+        std::cout << "[forknode] [<] Peer Inv Nonce " << eventInv.nNonce << " [dbpservice]\n"; 
 
         if(IsMyFork(eventInv.hashFork))
         {
