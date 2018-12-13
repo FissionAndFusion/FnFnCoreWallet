@@ -1,8 +1,17 @@
+// Copyright (c) 2017-2018 The Multiverse developers
+// Distributed under the MIT/X11 software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
 #include "mpvss.h"
-#include "mplagrange.h"
+
 #include <stdlib.h>
+#include <iostream>
+
+#include "walleve/util.h"
+#include "mpinterpolation.h"
 
 using namespace std;
+using namespace walleve;
 
 //////////////////////////////
 // CMPParticipant
@@ -10,22 +19,22 @@ CMPParticipant::CMPParticipant()
 {
 }
 
-CMPParticipant::CMPParticipant(const CMPCandidate& candidate,size_t nIndexIn,const MPUInt256& nSharedKeyIn)
+CMPParticipant::CMPParticipant(const CMPCandidate& candidate,size_t nIndexIn,const uint256& nSharedKeyIn)
 : nWeight(candidate.nWeight),nIndex(nIndexIn),sBox(candidate.sBox),nSharedKey(nSharedKeyIn)
 {
 }
 
-const MPUInt256 CMPParticipant::Encrypt(const MPUInt256& data) const
+const uint256 CMPParticipant::Encrypt(const uint256& data) const
 {
     return (nSharedKey ^ data); 
 }
 
-const MPUInt256 CMPParticipant::Decrypt(const MPUInt256& cipher) const
+const uint256 CMPParticipant::Decrypt(const uint256& cipher) const
 {
     return (nSharedKey ^ cipher); 
 }
 
-bool CMPParticipant::AcceptShare(size_t nThresh,size_t nIndexIn,const vector<MPUInt256>& vEncrypedShare)
+bool CMPParticipant::AcceptShare(size_t nThresh,size_t nIndexIn,const vector<uint256>& vEncrypedShare)
 {
     vShare.resize(vEncrypedShare.size());
     for (size_t i = 0; i < vEncrypedShare.size(); i++)
@@ -40,7 +49,7 @@ bool CMPParticipant::AcceptShare(size_t nThresh,size_t nIndexIn,const vector<MPU
     return true;
 }
 
-bool CMPParticipant::VerifyShare(size_t nThresh,size_t nIndexIn,const vector<MPUInt256>& vShare)
+bool CMPParticipant::VerifyShare(size_t nThresh,size_t nIndexIn,const vector<uint256>& vShare)
 {
     for (size_t i = 0; i < vShare.size(); i++)
     {
@@ -67,7 +76,7 @@ CMPSecretShare::CMPSecretShare()
     nWeight = 0;    
 }
 
-CMPSecretShare::CMPSecretShare(const MPUInt256& nIdentIn)
+CMPSecretShare::CMPSecretShare(const uint256& nIdentIn)
 : nIdent(nIdentIn)
 {
     nIndex = 0;
@@ -75,24 +84,24 @@ CMPSecretShare::CMPSecretShare(const MPUInt256& nIdentIn)
     nWeight = 0;    
 }
 
-void CMPSecretShare::RandGeneretor(MPUInt256& r)
+void CMPSecretShare::RandGeneretor(uint256& r)
 {
-    uint8_t *p = r.Data();
+    uint8_t *p = r.begin();
     for (int i = 0;i < 32;i++)
     {
         *p++ = rand();
     }
 }
 
-const MPUInt256 CMPSecretShare::RandShare()
+const uint256 CMPSecretShare::RandShare()
 {
-    MPUInt256 r;
+    uint256 r;
     RandGeneretor(r);
-    r.u64[3] &= 0x0FFFFFFFFFFFFFFFULL;
+    r[7] &= 0x0FFFFFFFULL;
     return r;
 }
 
-bool CMPSecretShare::GetParticipantRange(const MPUInt256& nIdentIn,size_t& nIndexRet,size_t& nWeightRet)
+bool CMPSecretShare::GetParticipantRange(const uint256& nIdentIn,size_t& nIndexRet,size_t& nWeightRet)
 {
     if (nIdentIn == nIdent)
     {
@@ -101,7 +110,7 @@ bool CMPSecretShare::GetParticipantRange(const MPUInt256& nIdentIn,size_t& nInde
         return true;
     }
 
-    map<MPUInt256,CMPParticipant>::iterator it = mapParticipant.find(nIdentIn);
+    map<uint256,CMPParticipant>::iterator it = mapParticipant.find(nIdentIn);
     if (it == mapParticipant.end())
     {
         return false;
@@ -159,40 +168,48 @@ void CMPSecretShare::Enroll(const vector<CMPCandidate>& vCandidate)
         {
             try
             {
-                MPUInt256 shared = myBox.SharedKey(candidate.PubKey());
+                uint256 shared = myBox.SharedKey(candidate.PubKey());
                 mapParticipant[candidate.nIdent] = CMPParticipant(candidate,nLastIndex,shared);
                 nLastIndex += candidate.nWeight;
             }
-            catch (...) {}
-        } 
+            catch (exception& e) 
+            {
+                StdError(__PRETTY_FUNCTION__, e.what());
+            }
+        }
     }
     nThresh = (nLastIndex - 1) / 2 + 1;
 
-    for (map<MPUInt256,CMPParticipant>::iterator it = mapParticipant.begin();it != mapParticipant.end();++it)
+    // parallel compute
+    vector<CMPParticipant*> vParticipant;
+    vParticipant.reserve(mapParticipant.size());
+    for (auto& x: mapParticipant)
     {
-        (*it).second.PrepareVerification(nThresh,nLastIndex);
+        vParticipant.push_back(&x.second);
     }
+    computer.Transform(vParticipant.begin(), vParticipant.end(),
+        [&](CMPParticipant* p) { p->PrepareVerification(nThresh, nLastIndex); return 0; });
 }
 
-void CMPSecretShare::Distribute(map<MPUInt256,vector<MPUInt256> >& mapShare)
+void CMPSecretShare::Distribute(map<uint256,vector<uint256> >& mapShare)
 {
-    for (map<MPUInt256,CMPParticipant>::iterator it = mapParticipant.begin();it != mapParticipant.end();++it)
+    for (map<uint256,CMPParticipant>::iterator it = mapParticipant.begin();it != mapParticipant.end();++it)
     {
         CMPParticipant& participant = (*it).second;
-        vector<MPUInt256>& vShare = mapShare[(*it).first];
+        vector<uint256>& vShare = mapShare[(*it).first];
         vShare.resize(participant.nWeight);
-        for (size_t i = 0;i < participant.nWeight;i++)
+        for (size_t i = 0; i < participant.nWeight; i++)
         {
-            vShare[i] = participant.Encrypt(myBox.Polynomial(nThresh,participant.nIndex + i));
+            vShare[i] = participant.Encrypt(myBox.Polynomial(nThresh, participant.nIndex + i));
         }
     }
 }
 
-bool CMPSecretShare::Accept(const MPUInt256& nIdentFrom,const vector<MPUInt256>& vEncryptedShare)
+bool CMPSecretShare::Accept(const uint256& nIdentFrom,const vector<uint256>& vEncryptedShare)
 {
     if (vEncryptedShare.size() == nWeight)
     {
-        map<MPUInt256,CMPParticipant>::iterator it = mapParticipant.find(nIdentFrom);
+        map<uint256,CMPParticipant>::iterator it = mapParticipant.find(nIdentFrom);
         if (it != mapParticipant.end())
         {
             return (*it).second.AcceptShare(nThresh,nIndex,vEncryptedShare);
@@ -201,11 +218,11 @@ bool CMPSecretShare::Accept(const MPUInt256& nIdentFrom,const vector<MPUInt256>&
     return false;
 }
 
-void CMPSecretShare::Publish(map<MPUInt256,vector<MPUInt256> >& mapShare)
+void CMPSecretShare::Publish(map<uint256,vector<uint256> >& mapShare)
 {
     mapShare.clear();
 
-    for (map<MPUInt256,CMPParticipant>::iterator it = mapParticipant.begin();it != mapParticipant.end();++it)
+    for (map<uint256,CMPParticipant>::iterator it = mapParticipant.begin();it != mapParticipant.end();++it)
     {
         if (!(*it).second.vShare.empty())
         {
@@ -213,14 +230,14 @@ void CMPSecretShare::Publish(map<MPUInt256,vector<MPUInt256> >& mapShare)
         }
     }
 
-    vector<MPUInt256>& myShare = mapShare[nIdent];
+    vector<uint256>& myShare = mapShare[nIdent];
     for (size_t i = 0;i < nWeight;i++)
     {
         myShare.push_back(myBox.Polynomial(nThresh,nIndex + i));
     }
 }
 
-bool CMPSecretShare::Collect(const MPUInt256& nIdentFrom,const map<MPUInt256,vector<MPUInt256> >& mapShare,bool& fCompleted)
+bool CMPSecretShare::Collect(const uint256& nIdentFrom,const map<uint256,vector<uint256> >& mapShare,bool& fCompleted)
 {
     size_t nIndexFrom,nWeightFrom;
 
@@ -230,9 +247,9 @@ bool CMPSecretShare::Collect(const MPUInt256& nIdentFrom,const map<MPUInt256,vec
     {
         return false;
     }
-    for (map<MPUInt256,vector<MPUInt256> >::const_iterator mi = mapShare.begin();mi != mapShare.end();++mi)
+    for (map<uint256,vector<uint256> >::const_iterator mi = mapShare.begin();mi != mapShare.end();++mi)
     {
-        const vector<MPUInt256>& vShare = (*mi).second;
+        const vector<uint256>& vShare = (*mi).second;
         if (nWeightFrom != vShare.size())
         {
             return false;
@@ -250,7 +267,7 @@ bool CMPSecretShare::Collect(const MPUInt256& nIdentFrom,const map<MPUInt256,vec
             continue;
         }
 
-        map<MPUInt256,CMPParticipant>::iterator it = mapParticipant.find((*mi).first);
+        map<uint256,CMPParticipant>::iterator it = mapParticipant.find((*mi).first);
         if (it == mapParticipant.end())
         {
             return false;
@@ -263,9 +280,9 @@ bool CMPSecretShare::Collect(const MPUInt256& nIdentFrom,const map<MPUInt256,vec
     }
 
     size_t nCompleteCollect = 0;
-    for (map<MPUInt256,vector<MPUInt256> >::const_iterator mi = mapShare.begin();mi != mapShare.end();++mi)
+    for (map<uint256,vector<uint256> >::const_iterator mi = mapShare.begin();mi != mapShare.end();++mi)
     {
-        vector<pair<uint32_t,MPUInt256> >& vOpenedShare = mapOpenedShare[(*mi).first];
+        vector<pair<uint32_t,uint256> >& vOpenedShare = mapOpenedShare[(*mi).first];
         for (size_t i = 0;i < nWeightFrom && vOpenedShare.size() < nThresh;i++)
         {
             vOpenedShare.push_back(make_pair(nIndexFrom + i,(*mi).second[i]));
@@ -279,35 +296,61 @@ bool CMPSecretShare::Collect(const MPUInt256& nIdentFrom,const map<MPUInt256,vec
     return true;
 }
 
-void CMPSecretShare::Reconstruct(map<MPUInt256,pair<MPUInt256,size_t> >& mapSecret)
+void CMPSecretShare::Reconstruct(map<uint256,pair<uint256,size_t> >& mapSecret)
 {
-    map<MPUInt256,vector<pair<uint32_t,MPUInt256> > >::iterator it;
+    using ShareType = tuple<const uint256* ,std::vector<std::pair<uint32_t,uint256>>* >;
+    vector<ShareType> vOpenedShare;
+    vOpenedShare.reserve(mapOpenedShare.size());
+
+    map<uint256,vector<pair<uint32_t,uint256> > >::iterator it;
     for (it = mapOpenedShare.begin(); it != mapOpenedShare.end(); ++it)
     {
-        if ((*it).second.size() == nThresh)
+        vOpenedShare.push_back(ShareType(&it->first, &it->second));
+    }
+    
+    // parallel compute
+    using DataType = pair<uint256, size_t>;
+    vector<DataType> vData(vOpenedShare.size());
+
+    computer.Transform(vOpenedShare.begin(), vOpenedShare.end(), vData.begin(),
+        [&](const uint256* pIdent, std::vector<std::pair<uint32_t,uint256>>* pShare)
         {
-            const MPUInt256& nIdentAvail = (*it).first; 
-            size_t nIndexRet,nWeightRet;
-            if (GetParticipantRange(nIdentAvail,nIndexRet,nWeightRet))
+            if (pShare->size() == nThresh)
             {
-                mapSecret[nIdentAvail] = make_pair(MPLagrange((*it).second),nWeightRet);
+                const uint256& nIdentAvail = *pIdent; 
+                size_t nIndexRet,nWeightRet;
+                if (GetParticipantRange(nIdentAvail,nIndexRet,nWeightRet))
+                {
+                    return make_pair(MPNewton(*pShare), nWeightRet);
+                }
             }
+            return make_pair(uint256(uint64(0)), (size_t)0);
+        });
+
+    for (int i = 0; i < vData.size(); ++i)
+    {
+        const DataType& data = vData[i];
+        if (data.second > 0)
+        {
+            const uint256* pIndet = get<0>(vOpenedShare[i]);
+            mapSecret[*pIndet] = data;
         }
     }
 }
 
-void CMPSecretShare::Signature(const MPUInt256& hash,MPUInt256& nR,MPUInt256& nS)
+void CMPSecretShare::Signature(const uint256& hash,uint256& nR,uint256& nS)
 {
-    MPUInt256 r = RandShare();
+    uint256 r = RandShare();
     myBox.Signature(hash,r,nR,nS);
 }
-bool CMPSecretShare::VerifySignature(const MPUInt256& nIdentFrom,const MPUInt256& hash,const MPUInt256& nR,const MPUInt256& nS)
+
+bool CMPSecretShare::VerifySignature(const uint256& nIdentFrom,const uint256& hash,const uint256& nR,const uint256& nS)
 {
     if (nIdentFrom == nIdent)
     {
         return myBox.VerifySignature(hash,nR,nS);
     }
-    map<MPUInt256,CMPParticipant>::iterator it = mapParticipant.find(nIdentFrom);
+    map<uint256,CMPParticipant>::iterator it = mapParticipant.find(nIdentFrom);
     if (it == mapParticipant.end())
     {
         return false;

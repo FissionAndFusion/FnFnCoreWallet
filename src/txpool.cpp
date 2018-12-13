@@ -213,13 +213,13 @@ bool CTxPool::WalleveHandleInitialize()
 {
     if (!WalleveGetObject("coreprotocol",pCoreProtocol))
     {
-        WalleveLog("Failed to request coreprotocol\n");
+        WalleveError("Failed to request coreprotocol\n");
         return false;
     }
 
     if (!WalleveGetObject("worldline",pWorldLine))
     {
-        WalleveLog("Failed to request worldline\n");
+        WalleveError("Failed to request worldline\n");
         return false;
     }
 
@@ -234,16 +234,14 @@ void CTxPool::WalleveHandleDeinitialize()
 
 bool CTxPool::WalleveHandleInvoke()
 {
-    storage::CMvDBConfig dbConfig(StorageConfig()->strDBHost,StorageConfig()->nDBPort,
-                                  StorageConfig()->strDBName,StorageConfig()->strDBUser,StorageConfig()->strDBPass);
-    if (!dbTxPool.Initialize(dbConfig))
+    if (!dbTxPool.Initialize(WalleveConfig()->pathData))
     {
-        WalleveLog("Failed to initialize txpool database\n");
+        WalleveError("Failed to initialize txpool database\n");
         return false;
     }
     if (!LoadDB())
     {
-        WalleveLog("Failed to load txpool database\n");
+        WalleveError("Failed to load txpool database\n");
         return false;
     }  
     return true;
@@ -283,7 +281,7 @@ MvErr CTxPool::Push(const CTransaction& tx,uint256& hashFork,CDestination& destI
 {
     boost::unique_lock<boost::shared_mutex> wlock(rwAccess);
     uint256 txid = tx.GetHash();
-    
+ 
     if (mapTx.count(txid))
     {
         return MV_ERR_ALREADY_HAVE;
@@ -318,6 +316,7 @@ MvErr CTxPool::Push(const CTransaction& tx,uint256& hashFork,CDestination& destI
             return MV_ERR_SYS_DATABASE_ERROR;
         }
     }
+
     return err;
 }   
 

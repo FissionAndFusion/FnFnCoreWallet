@@ -9,8 +9,9 @@
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
-
 #include <iostream>
+
+#include "walleve/util.h"
 
 using namespace std;
 using namespace walleve;
@@ -36,6 +37,7 @@ bool CWalleveConfig::Load(int argc,char *argv[],const fs::path& pathDefault,cons
                          | po::command_line_style::long_allow_adjacent
                          | po::command_line_style::allow_long_disguise;
     fs::path pathConfile;
+    string strRoot, strConfig;
     try
     { 
         vector<string> vecIgnoreCmd;
@@ -45,8 +47,8 @@ bool CWalleveConfig::Load(int argc,char *argv[],const fs::path& pathDefault,cons
         ("help", po::value<bool>(&fHelp)->default_value(false))
         ("daemon", po::value<bool>(&fDaemon)->default_value(false))
         ("debug", po::value<bool>(&fDebug)->default_value(false))
-        ("datadir", po::value<fs::path>(&pathRoot)->default_value(pathDefault))
-        ("conf", po::value<fs::path>(&pathConfile)->default_value(fs::path(strConfile)))
+        ("datadir", po::value<string>(&strRoot)->default_value(pathDefault.string()))
+        ("conf", po::value<string>(&strConfig)->default_value(strConfile))
         ("ignore", po::value<vector<string> >(&vecIgnoreCmd));
 
         po::positional_options_description defaultPosDesc;
@@ -58,7 +60,9 @@ bool CWalleveConfig::Load(int argc,char *argv[],const fs::path& pathDefault,cons
         po::store(parser.run(),vm);
 
         po::notify(vm);
-        
+        pathRoot = strRoot;
+        pathConfile = strConfig;
+
         if (fHelp)
         {
             return true;
@@ -79,7 +83,7 @@ bool CWalleveConfig::Load(int argc,char *argv[],const fs::path& pathDefault,cons
     }
     catch (exception& e)
     {
-        cout << e.what() << std::endl;
+        StdError(__PRETTY_FUNCTION__, e.what());
         return false;
     }
     return true;
@@ -102,11 +106,11 @@ string CWalleveConfig::ListConfig() const
 string CWalleveConfig::Help() const
 {
     return string()
-        + "  -help                         Get more information\n"
-        + "  -daemon                       Run server in background\n"
-        + "  -debug                        Run in debug mode\n"
-        + "  -datadir                      Root directory of resources\n"
-        + "  -conf                         Configuration file name\n";
+        + "  -help                                 Get more information\n"
+        + "  -daemon                               Run server in background\n"
+        + "  -debug                                Run in debug mode\n"
+        + "  -datadir=<path>                       Root directory of resources\n"
+        + "  -conf=<file>                          Configuration file name\n";
 }
 
 pair<string,string> CWalleveConfig::ExtraParser(const string& s)
@@ -148,7 +152,7 @@ bool CWalleveConfig::TokenizeConfile(const char *pzConfile,vector<string>& token
         return false;
     }
     string line;
-    while(!getline(ifs,line).eof())
+    while(!getline(ifs,line).eof() || !line.empty())
     {
         string s = line.substr(0,line.find('#'));
         boost::trim(s);
@@ -156,6 +160,7 @@ bool CWalleveConfig::TokenizeConfile(const char *pzConfile,vector<string>& token
         {
             tokens.push_back(string("-") + s);
         }
+        line.clear();
     }
 
     return true;

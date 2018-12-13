@@ -42,8 +42,8 @@ public:
     class CSpent : public CTxOutput
     {
     public:
-        CSpent() : txidNextTx(0) {}
-        CSpent(const CTxOutput& output) : CTxOutput(output),txidNextTx(0) {}
+        CSpent() : txidNextTx(uint64(0)) {}
+        CSpent(const CTxOutput& output) : CTxOutput(output),txidNextTx(uint64(0)) {}
         CSpent(const uint256& txidNextTxIn) : txidNextTx(txidNextTxIn) {}
         void SetSpent(const uint256& txidNextTxIn) { *this = CSpent(txidNextTxIn); }
         void SetUnspent(const CTxOutput& output) { *this = CSpent(output); }

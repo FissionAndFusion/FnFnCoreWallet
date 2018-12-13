@@ -445,11 +445,11 @@
         "example": [
             {
                 "request": "multiverse-cli version",
-                "response": "multiverse server stopping"
+                "response": "Multiverse server version is v0.1.0"
             },
             {
-                "request": "curl -d '{\"id\":1,\"method\":\"stop\",\"jsonrpc\":\"2.0\",\"params\":{}}' http://127.0.0.1:6812",
-                "response": "{\"id\":1,\"jsonrpc\":\"2.0\",\"result\":\"multiverse server stopping\"}"
+                "request": "curl -d '{\"id\":0,\"method\":\"version\",\"jsonrpc\":\"2.0\",\"params\":{}}' http://127.0.0.1:6812",
+                "response": "{\"id\":0,\"jsonrpc\":\"2.0\",\"result\":\"Multiverse server version is v0.1.0\"}"
             }
         ]
     },
@@ -770,7 +770,10 @@
                 "response": "{\"id\":1,\"jsonrpc\":\"2.0\",\"error\":{\"code\":-6,\"message\":\"Unknown fork\"}}"
             }
         ],
-        "error": "{\"code\":-6,\"message\":\"Unknown fork.\"}"
+        "error": [
+            "{\"code\":-6,\"message\":\"Invalid fork\"}",
+            "{\"code\":-6,\"message\":\"Unknown fork\"}"
+        ]
     },
     "getblocklocation": {
         "type": "command",
@@ -848,6 +851,10 @@
                 "request": "curl -d '{\"id\":5,\"method\":\"getblockcount\",\"jsonrpc\":\"2.0\",\"params\":{\"fork\":\"0\"}}' http://127.0.0.1:6812",
                 "response": "{\"id\":5,\"jsonrpc\":\"2.0\",\"result\":32081}"
             }
+        ],
+        "error": [
+            "{\"code\":-6,\"message\":\"Invalid fork\"}",
+            "{\"code\":-6,\"message\":\"Unknown fork\"}"
         ]
     },
     "getblockhash": {
@@ -894,7 +901,11 @@
             },
             "multiverse-cli getblockhash 0 -f=a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0"
         ],
-        "error": "{\"code\":-6,\"message\":\"Block number out of range.\"}"
+        "error": [
+            "{\"code\":-6,\"message\":\"Invalid fork\"}",
+            "{\"code\":-6,\"message\":\"Unknown fork\"}",
+            "{\"code\":-6,\"message\":\"Block number out of range.\"}"
+        ]
     },
     "getblock": {
         "type": "command",
@@ -1001,6 +1012,10 @@
                 "request": "curl -d '{\"id\":11,\"method\":\"gettxpool\",\"jsonrpc\":\"2.0\",\"params\":{}}' http://127.0.0.1:6812",
                 "response": "{\"id\":11,\"jsonrpc\":\"2.0\",\"result\":{\"count\":0,\"size\":0}}"
             }
+        ],
+        "error": [
+            "{\"code\":-6,\"message\":\"Invalid fork\"}",
+            "{\"code\":-6,\"message\":\"Unknown fork\"}"
         ]
     },
     "removependingtx": {
@@ -1150,15 +1165,19 @@
         },
         "example": [
             {
-                "request": "multiverse-cli getblockcount",
+                "request": "multiverse-cli getforkheight",
                 "response": "32081"
             },
             {
-                "request": "curl -d '{\"id\":4,\"method\":\"getblockcount\",\"jsonrpc\":\"2.0\",\"params\":{}}' http://127.0.0.1:6812",
+                "request": "curl -d '{\"id\":4,\"method\":\"getforkheight\",\"jsonrpc\":\"2.0\",\"params\":{}}' http://127.0.0.1:6812",
                 "response": "{\"id\":4,\"jsonrpc\":\"2.0\",\"result\":32081}"
             },
-            "multiverse-cli getblockcount -f=a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0"
-        ]
+            "multiverse-cli getforkheight -f=a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0"
+        ],
+        "error": [
+            "{\"code\":-6,\"message\":\"Invalid fork\"}",
+            "{\"code\":-6,\"message\":\"Unknown fork\"}"
+        ]        
     },
     "listkey": {
         "type": "command",
@@ -1181,9 +1200,18 @@
                             "type": "string",
                             "desc": "public key with hex system"
                         },
-                        "info": {
-                            "type": "string",
-                            "desc": "key other info"
+                        "version": {
+                            "type": "int",
+                            "desc": "public key version"
+                        },
+                        "locked": {
+                            "type": "bool",
+                            "desc": "public key locked"
+                        },
+                        "timeout": {
+                            "type": "int",
+                            "required": false,
+                            "desc": "public key timeout locked"
                         }
                     }
                 }
@@ -1192,11 +1220,11 @@
         "example": [
             {
                 "request": "multiverse-cli listkey",
-                "response": "[{\"key\":\"3d266a564ec85f3385babf615b1d7eeb01b3e4456d35174732bb9ec0fa8c8f4f\",\"info\":\"ver=0;locked\"},{\"key\":\"58e148d9e8610a6504c26ed346d15920c4d832cf0f03ecb8a016e0d0ec838b1b\",\"info\":\"ver=0;locked\"}]"
+                "response": "[{\"key\":\"3d266a564ec85f3385babf615b1d7eeb01b3e4456d35174732bb9ec0fa8c8f4f\",\"version\": 1,\"locked\": true},{\"key\":\"58e148d9e8610a6504c26ed346d15920c4d832cf0f03ecb8a016e0d0ec838b1b\",\"version\": 1,\"locked\": true}]"
             },
             {
                 "request": "curl -d '{\"id\":43,\"method\":\"listkey\",\"jsonrpc\":\"2.0\",\"params\":{}}' http://127.0.0.1:6812",
-                "response": "{\"id\":43,\"jsonrpc\":\"2.0\",\"result\":[{\"key\":\"3d266a564ec85f3385babf615b1d7eeb01b3e4456d35174732bb9ec0fa8c8f4f\",\"info\":\"ver=0;locked\"},{\"key\":\"58e148d9e8610a6504c26ed346d15920c4d832cf0f03ecb8a016e0d0ec838b1b\",\"info\":\"ver=1;unlocked;timeout=5\"}]}"
+                "response": "{\"id\":43,\"jsonrpc\":\"2.0\",\"result\":[{\"key\":\"3d266a564ec85f3385babf615b1d7eeb01b3e4456d35174732bb9ec0fa8c8f4f\",\"version\": 1,\"locked\": true},{\"key\":\"58e148d9e8610a6504c26ed346d15920c4d832cf0f03ecb8a016e0d0ec838b1b\",\"version\": 1,\"locked\": true}]}"
             }
         ]
     },
@@ -1274,6 +1302,7 @@
         ],
         "error": [
             "{\"code\":-6,\"message\":\"Passphrase must be nonempty\"}",
+            "{\"code\":-6,\"message\":\"Old passphrase must be nonempty\"}",
             "{\"code\":-4,\"message\":\"Unknown key\"}",
             "{\"code\":-406,\"message\":\"The passphrase entered was incorrect.\"}"
         ]
@@ -1314,6 +1343,7 @@
         ],
         "error": [
             "{\"code\":-4,\"message\":\"Unknown key\"}",
+            "{\"code\":-6,\"message\":\"This method only accepts pubkey or pubkey address as parameter rather than template address you supplied.\"}",
             "{\"code\":-401,\"message\":\"Failed to lock key\"}"
         ]
     },
@@ -1583,6 +1613,7 @@
             }
         ],
         "error": [
+            "{\"code\":-6,\"message\":\"Invalid address\"}",
             "{\"code\":-6,\"message\":\"Invalid address, should be template address\"}",
             "{\"code\":-401,\"message\":\"Unkown template\"}"
         ]
@@ -1638,7 +1669,7 @@
                         "templatedata": {
                             "type": "templateresponse",
                             "desc": "template data",
-                            "condition": "ismine=true"
+                            "condition": "type=template && ismine=true"
                         }
                     }
                 }
@@ -1775,6 +1806,11 @@
                 "request": "curl -d '{\"id\":20,\"method\":\"getbalance\",\"jsonrpc\":\"2.0\",\"params\":{\"address\":\"20g0944xkyk8ybcmzhpv86vb5777jn1sfrdf3svzqn9phxftqth8116bm\"}}' http://127.0.0.1:6812",
                 "response": "{\"id\":20,\"jsonrpc\":\"2.0\",\"result\":[{\"address\":\"20g0944xkyk8ybcmzhpv86vb5777jn1sfrdf3svzqn9phxftqth8116bm\",\"avail\":58.99990000,\"locked\":0.00000000,\"unconfirmed\":13.99990000}]}"
             }
+        ],
+        "error": [
+            "{\"code\":-6,\"message\":\"Invalid fork\"}",
+            "{\"code\":-6,\"message\":\"Unknown fork\"}",
+            "{\"code\":-6,\"message\":\"Invalid address\"}"
         ]
     },
     "listtransaction": {
@@ -1904,7 +1940,10 @@
             }
         ],
         "error": [
-            "{\"code\":-6,\"message\":\"Invalid address\"}",
+            "{\"code\":-6,\"message\":\"Invalid from address\"}",
+            "{\"code\":-6,\"message\":\"Invalid to address\"}",
+            "{\"code\":-6,\"message\":\"Invalid fork\"}",
+            "{\"code\":-6,\"message\":\"Unknown fork\"}",
             "{\"code\":-401,\"message\":\"Failed to create transaction\"}",
             "{\"code\":-401,\"message\":\"Failed to sign transaction\"}",
             "{\"code\":-401,\"message\":\"The signature is not completed\"}",
@@ -1969,7 +2008,10 @@
             }
         ],
         "error": [
-            "{\"code\":-6,\"message\":\"Invalid address\"}",
+            "{\"code\":-6,\"message\":\"Invalid from address\"}",
+            "{\"code\":-6,\"message\":\"Invalid to address\"}",
+            "{\"code\":-6,\"message\":\"Invalid fork\"}",
+            "{\"code\":-6,\"message\":\"Unknown fork\"}",
             "{\"code\":-401,\"message\":\"Failed to create transaction\"}"
         ]
     },
@@ -2141,10 +2183,13 @@
             }
         ],
         "error": [
+            "{\"code\":-6,\"message\":\"Invalid template address\"}",
             "{\"code\":-401,\"message\":\"Must be an absolute path.\"}",
             "{\"code\":-401,\"message\":\"Cannot export to a folder.\"}",
             "{\"code\":-401,\"message\":\"File has been existed.\"}",
             "{\"code\":-401,\"message\":\"Failed to create directories.\"}",
+            "{\"code\":-401,\"message\":\"Failed to export key\"}",
+            "{\"code\":-401,\"message\":\"Unkown template\"}",
             "{\"code\":-401,\"message\":\"filesystem_error\"}"
         ]
     },
@@ -2177,16 +2222,18 @@
             }
         ],
         "error": [
+            "{\"code\":-6,\"message\":\"Invalid parameters,failed to make template\"}",
             "{\"code\":-401,\"message\":\"Must be an absolute path.\"}",
-            "{\"code\":-401,\"message\":\"File name is invalid.\"}",
+            "{\"code\":-401,\"message\":\"File has been existed.\"}",
             "{\"code\":-401,\"message\":\"Filesystem_error - failed to read.\"}",
+            "{\"code\":-401,\"message\":\"Wallet file exported is invalid, check it and try again.\"}",
             "{\"code\":-401,\"message\":\"Data format is not correct, check it and try again.\"}",
-            "{\"code\":-32602,\"message\":\"Failed to verify serialized key\"}",
-            "{\"code\":-32602,\"message\":\"Can't import the key with empty passphrase\"}",
             "{\"code\":-401,\"message\":\"Failed to add key\"}",
             "{\"code\":-401,\"message\":\"Failed to sync wallet tx\"}",
-            "{\"code\":-401,\"message\":\"Invalid parameters,failed to make template\"}",
-            "{\"code\":-401,\"message\":\"Failed to add template\"}"
+            "{\"code\":-401,\"message\":\"Failed to add template\"}",
+            "{\"code\":-401,\"message\":\"Failed to sync wallet tx\"}",
+            "{\"code\":-32602,\"message\":\"Failed to verify serialized key\"}",
+            "{\"code\":-32602,\"message\":\"Can't import the key with empty passphrase\"}"
         ]
     },
     "makeorigin": {
@@ -2277,9 +2324,13 @@
             }
         ],
         "error": [
-            "{\"code\":-6,\"message\":\"Unknown prev block\"}",
             "{\"code\":-4,\"message\":\"Owner' address should be pubkey address\"}",
             "{\"code\":-4,\"message\":\"Unknown key\"}",
+            "{\"code\":-6,\"message\":\"Unknown prev block\"}",
+            "{\"code\":-6,\"message\":\"Invalid owner\"}",
+            "{\"code\":-6,\"message\":\"Invalid amount\"}",
+            "{\"code\":-6,\"message\":\"Invalid name or symbol\"}",
+            "{\"code\":-6,\"message\":\"Prev block should not be extended/vacant block\"}",
             "{\"code\":-405,\"message\":\"Key is locked\"}",
             "{\"code\":-401,\"message\":\"Failed to sign message\"}"
         ]
@@ -2327,6 +2378,12 @@
                 "request": "curl -d '{\"id\":6,\"method\":\"verifymessage\",\"jsonrpc\":\"2.0\",\"params\":{\"pubkey\":\"2e05c9ee45fdf58f7b007458298042fc3d3ad416a2f9977ace16d14164a3e882\",\"message\":\"12345\",\"sig\":\"045977f8c07e6d846d6055357f36a70c16c071cb85115e3ffb498e171a9ac3f4aed1292203a0c8e42c4becafad3ced0d9874abd2a8b788fda9f07099a1e71707\"}}' http://127.0.0.1:6812",
                 "response": "{\"id\":6,\"jsonrpc\":\"2.0\",\"result\":false}"
             }
+        ],
+        "error": [
+            "{\"code\":-6,\"message\":\"Invalid pubkey\"}",
+            "{\"code\":-6,\"message\":\"Invalid message\"}",
+            "{\"code\":-6,\"message\":\"Invalid sig\"}",
+            "{\"code\":-4,\"message\":\"Unknown pubkey\"}"
         ]
     },
     "makekeypair": {
@@ -2389,6 +2446,9 @@
                 "request": "curl -d '{\"id\":44,\"method\":\"getpubkeyaddress\",\"jsonrpc\":\"2.0\",\"params\":{\"pubkey\":\"e8e3770e774d5ad84a8ea65ed08cc7c5c30b42e045623604d5c5c6be95afb4f9\"}}' http://127.0.0.1:6812",
                 "response": "{\"id\":44,\"jsonrpc\":\"2.0\",\"result\":\"1z6taz5dyrv2xa11pc92y0ggbrf2wf36gbtk8wjprb96qe3kqwfm3ayc1\"}"
             }
+        ],
+        "error": [
+            "{\"code\":-4,\"message\":\"Unknown pubkey\"}"
         ]
     },
     "gettemplateaddress": {
@@ -2418,6 +2478,9 @@
                 "request": "curl -d '{\"id\":53,\"method\":\"gettemplateaddress\",\"jsonrpc\":\"2.0\",\"params\":{\"tid\":\"2040fpytdr4k5h8tk0nferr7zb51tkccrkgqf341s6tg05q9xe6hth1m4\"}}' http://127.0.0.1:6812",
                 "response": "{\"id\":53,\"jsonrpc\":\"2.0\",\"result\":\"21w2040000000000000000000000000000000000000000000000epcek\"}"
             }
+        ],
+        "error": [
+            "{\"code\":-6,\"message\":\"Invalid tid\"}"
         ]
     },
     "maketemplate": {
@@ -2456,7 +2519,7 @@
             "multiverse-cli maketemplate weighted '{\"required\": 1, \"pubkeys\": [{\"key\":\"2e05c9ee45fdf58f7b007458298042fc3d3ad416a2f9977ace16d14164a3e882\", \"weight\": 1},{\"key\": \"f4124c636d37b1308ba95c14b2487134030d5817f7fa93f11bcbc616aab7c3b9\", \"weight\": 2}]}'"
         ],
         "error": [
-            "{\"code\":-6,\"message\":\"Invalid parameters,failed to make template\"}",
+            "{\"code\":-6,\"message\":\"Invalid parameters, failed to make template\"}",
             "{\"code\":-6,\"message\":\"Invalid parameter, missing weight\"}",
             "{\"code\":-6,\"message\":\"Invalid parameter, missing redeem address\"}",
             "{\"code\":-6,\"message\":\"Invalid parameter, missing spent address\"}",
@@ -2529,13 +2592,13 @@
                     "type": "bool",
                     "desc": "result",
                     "required": false,
-                    "condition": "prev=matched or block is not generated by POW"
+                    "condition": "prev is matched or block is not generated by POW"
                 },
                 "work": {
                     "type": "object",
                     "desc": "work data",
                     "required": false,
-                    "condition": "next block=generated by POW",
+                    "condition": "next block is generated by POW",
                     "content": {
                         "prevblockhash": {
                             "type": "string",
@@ -2570,6 +2633,9 @@
                 "request": "curl -d '{\"id\":1,\"method\":\"getwork\",\"jsonrpc\":\"2.0\",\"params\":{\"prev\":\"7ee748e9a827d476d1b4ddb77dc8f9bad779f7b71593d5c5bf73b535e1cc2446\"}}' http://127.0.0.1:6812",
                 "response": "{\"id\":1,\"jsonrpc\":\"2.0\",\"result\":{\"work\":{\"prevblockhash\":\"f734bb6bc12ab4058532113cfe6a3412d1036eae25f60a97ee1b17effc6e74de\",\"prevblocktime\":1538142032,\"algo\":1,\"bits\":25,\"data\":\"01000100822fae5bde746efcef171bee970af625ae6e03d112346afe3c11328505b42ac16bbb34f74300000000000000000000000000000000000000000000000000000000000000000001190000000000000000000000000000000000000000000000000000000000000000\"}}}"
             }
+        ],
+        "error": [
+            "{\"code\" : -32603, \"message\" : \"The primary chain is invalid.\"}"
         ]
     },
     "submitwork": {
@@ -2611,6 +2677,13 @@
                 "request": "curl -d '{\"id\":2,\"method\":\"submitwork\",\"jsonrpc\":\"2.0\",\"params\":{\"data\":\"01000100502fae5b4624cce135b573bfc5d59315b7f779d7baf9c87db7ddb4d176d427a8e948e77e43000000000000000000000000000000000000000000000000000000000000000000011acfff020000000000000000000000000000000000000000000000000000000000\",\"spent\":\"1dj5qcjst7eh4tems36n1m500hhyba3vx436t4a8hgdm7r7jrdbf2yqp9\",\"privkey\":\"41a9f94395ced97d5066e2d099df4f1e2bd96057f9c38e8ea3f8a02eccd0a98e\"}}' http://127.0.0.1:6812",
                 "response": "{\"id\":2,\"jsonrpc\":\"2.0\",\"result\":\"f734bb6bc12ab4058532113cfe6a3412d1036eae25f60a97ee1b17effc6e74de\"}"
             }
+        ],
+        "error": [
+            "{\"code\" : -4, \"message\" : \"Invalid spent address\"}",
+            "{\"code\" : -4, \"message\" : \"Invalid private key\"}",
+            "{\"code\" : -4, \"message\" : \"Invalid mint template\"}",
+            "{\"code\" : -6, \"message\" : \"Block rejected : operation failed\"}",
+            "{\"code\" : -6, \"message\" : \"Block rejected : block proof-of-work is invalid\"}"
         ]
     }
 }

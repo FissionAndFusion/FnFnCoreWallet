@@ -59,25 +59,14 @@ namespace delegate
        x <= h
 */
 
-
-inline const uint256 FromMPUInt256(const MPUInt256& m)
+inline const CDestination DestFromIdentUInt256(const uint256& nIdent)
 {
-    return uint256(*((uint256*)m.Data()));
+    return CDestination(CTemplateId(nIdent));
 }
 
-inline const MPUInt256 ToMPUInt256(const uint256& u)
+inline const uint256 DestToIdentUInt256(const CDestination& dest)
 {
-    return MPUInt256(*(MPUInt256*)&u);
-}
-
-inline const CDestination DestFromIdentUInt256(const MPUInt256& nIdent)
-{
-    return CDestination(CTemplateId(FromMPUInt256(nIdent)));
-}
-
-inline const MPUInt256 DestToIdentUInt256(const CDestination& dest)
-{
-    return ToMPUInt256(dest.GetTemplateId());
+    return dest.GetTemplateId();
 }
 
 } // namespace delegate

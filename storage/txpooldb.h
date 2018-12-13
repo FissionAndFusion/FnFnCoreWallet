@@ -5,9 +5,8 @@
 #ifndef  MULTIVERSE_TXPOOLDB_H
 #define  MULTIVERSE_TXPOOLDB_H
 
-#include "dbconn.h"
-#include "key.h"
-#include "wallettx.h"
+#include "walleve/walleve.h"
+#include "transaction.h"
 
 namespace multiverse
 {
@@ -20,20 +19,23 @@ public:
     virtual bool Walk(const uint256& txid,const uint256& hashFork,const CAssembledTx& tx) = 0;
 };
 
-class CTxPoolDB
+class CTxPoolDB : public walleve::CKVDB
 {
 public:
     CTxPoolDB();
     ~CTxPoolDB();
-    bool Initialize(const CMvDBConfig& config);
+    bool Initialize(const boost::filesystem::path& pathData);
     void Deinitialize();
+    bool RemoveAll();
     bool UpdateTx(const uint256& hashFork,const std::vector<std::pair<uint256,CAssembledTx> >& vAddNew,
                                           const std::vector<uint256>& vRemove=std::vector<uint256>());
     bool WalkThroughTx(CTxPoolDBTxWalker& walker); 
 protected:
-    bool CreateTable();
+    bool DBWalker(walleve::CWalleveBufStream& ssKey, walleve::CWalleveBufStream& ssValue) { return false; }
+    bool LoadWalker(walleve::CWalleveBufStream& ssKey, walleve::CWalleveBufStream& ssValue,
+                    std::map<uint64,std::pair<uint256,std::pair<uint256,CAssembledTx> > > & mapTx);
 protected:
-    CMvDBConn dbConn;
+    uint64 nSequence;
 };
 
 } // namespace storage

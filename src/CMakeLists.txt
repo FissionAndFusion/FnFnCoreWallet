@@ -19,11 +19,16 @@ add_custom_command(OUTPUT ${auto_files}
 	DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/../script/template/rpc.json"
 			"${CMAKE_CURRENT_SOURCE_DIR}/../script/template/options.json"
 			"${CMAKE_CURRENT_SOURCE_DIR}/../script/template/mode.json"
+			"${CMAKE_CURRENT_SOURCE_DIR}/../script/generator.py"
+			"${CMAKE_CURRENT_SOURCE_DIR}/../script/options_generator.py"
+			"${CMAKE_CURRENT_SOURCE_DIR}/../script/rpc_generator.py"
+			"${CMAKE_CURRENT_SOURCE_DIR}/../script/rpc_protocol_generator.py"
 )
 
 set(src
 	multiverse.cpp
 	address.cpp address.h
+	blockmaker.cpp blockmaker.h
 	config.cpp config.h
 	core.cpp core.h
 	dispatcher.cpp dispatcher.h
@@ -40,18 +45,18 @@ set(src
 	blockmaker.cpp blockmaker.h
 	rpcclient.cpp rpcclient.h
 	miner.cpp miner.h
-
-	dbpservice.cpp dbpservice.h
 	dbptype.h
-	dbpserver.h
-	dbpserver.cpp
 	dbputils.h
+	dbpserver.cpp dbpserver.h
+	dbpservice.cpp dbpservice.h
+	dbpclient.cpp dbpclient.h
 	dnseed.cpp dnseed.h
 	schedule.cpp schedule.h
 	service.cpp service.h
 	txpool.cpp txpool.h
 	wallet.cpp wallet.h
 	worldline.cpp worldline.h
+	forkmanager.cpp forkmanager.h
 	event.h
 	mvbase.h
 	mvtype.h
@@ -75,7 +80,7 @@ set(mode_src
 	mode/module_type.h
 )
 set(rpc_src
-	rpc/rpc.cpp rpc/rpc.h
+	rpc/rpc.h
 	rpc/rpc_error.cpp rpc/rpc_error.h
 	rpc/rpc_req.cpp rpc/rpc_req.h
 	rpc/rpc_resp.cpp rpc/rpc_resp.h
@@ -91,7 +96,8 @@ set(sources
 
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS 
 dbp-proto/dbp.proto 
-dbp-proto/lws.proto)
+dbp-proto/lws.proto
+dbp-proto/sn.proto)
 
 add_executable(multiverse ${sources} ${PROTO_SRCS} ${PROTO_HDRS})
 
@@ -114,8 +120,6 @@ target_link_libraries(multiverse
 	network
 	${Protobuf_LIBRARIES}
 	delegate	
-	${WS2_32_LIB}
-	${WSSOCK32_LIB}
 	${Readline_LIBRARY}
 )
 

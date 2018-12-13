@@ -8,6 +8,7 @@ namespace multiverse
 {
 namespace rpc
 {
+
 ///////////////////////////////////////////////////////
 // CRPCError
 
@@ -38,7 +39,7 @@ json_spirit::Value CRPCError::ToJSON() const
 std::string CRPCError::Serialize(bool indent) const
 {
     auto val = ToJSON();
-    return json_spirit::write_string<json_spirit::Value>(val, indent);
+    return json_spirit::write_string<json_spirit::Value>(val, indent, RPC_DOUBLE_PRECISION);
 }
 
 ///////////////////////////////////////////////////////

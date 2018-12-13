@@ -65,7 +65,8 @@ protected:
     void CancelTimer(uint32 nTimerId);
     void CancelClientTimers(uint64 nNonce);
 
-    bool StartService(const boost::asio::ip::tcp::endpoint& epLocal,size_t nMaxConnections);
+    bool StartService(const boost::asio::ip::tcp::endpoint& epLocal,size_t nMaxConnections,
+                      const std::vector<std::string>& vAllowMask = std::vector<std::string>());
     void StopService(const boost::asio::ip::tcp::endpoint& epLocal);
 
     bool Connect(const boost::asio::ip::tcp::endpoint& epRemote,int64 nTimeout);

@@ -28,6 +28,7 @@ public:
     bool GetLastBlock(const uint256& hashFork,uint256& hashBlock,int& nHeight,int64& nTime) override;
     bool GetLastBlockTime(const uint256& hashFork,int nDepth,std::vector<int64>& vTime) override;
     bool GetBlock(const uint256& hashBlock,CBlock& block) override;
+    bool GetBlockEx(const uint256& hashBlock,CBlockEx& block) override;
     bool GetOrigin(const uint256& hashFork,CBlock& block) override;
     bool Exists(const uint256& hashBlock) override;
     bool GetTransaction(const uint256& txid,CTransaction& tx) override;
@@ -36,6 +37,7 @@ public:
     bool GetTxUnspent(const uint256& hashFork,const std::vector<CTxIn>& vInput,
                                                     std::vector<CTxOutput>& vOutput) override;
     bool FilterTx(CTxFilter& filter) override;
+    bool FilterForkContext(CForkContextFilter& filter) override;
     MvErr AddNewForkContext(const CTransaction& txFork,CForkContext& ctxt) override;
     MvErr AddNewBlock(const CBlock& block,CWorldLineUpdate& update) override;
     MvErr AddNewOrigin(const CBlock& block,CWorldLineUpdate& update) override;

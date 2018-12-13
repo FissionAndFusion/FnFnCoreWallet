@@ -32,12 +32,14 @@ bool CProfile::Save(std::vector<unsigned char>& vchProfile)
         if (hashParent != 0)
         {
             encoder.Push(PROFILE_PARENT,hashParent);
+            encoder.Push(PROFILE_JOINTHEIGHT,nJointHeight);
         }
 
         encoder.Encode(vchProfile);
     }
-    catch (...)
+    catch (exception& e)
     {
+        StdError(__PRETTY_FUNCTION__, e.what());
         return false;
     }
     return true;
@@ -85,6 +87,15 @@ bool CProfile::Load(const vector<unsigned char>& vchProfile)
             hashParent = 0;
         }
 
+        if (!decoder.Get(PROFILE_JOINTHEIGHT,nJointHeight))
+        {
+            if (hashParent != 0)
+            {
+                return false;
+            }
+            nJointHeight = -1;
+        }
+
         vector<unsigned char> vchDestOwner;
         if (decoder.Get(PROFILE_OWNER,vchDestOwner))
         {
@@ -92,8 +103,9 @@ bool CProfile::Load(const vector<unsigned char>& vchProfile)
             is >> destOwner.prefix >> destOwner.data;
         }
     }
-    catch (...) 
+    catch (exception& e) 
     {
+        StdError(__PRETTY_FUNCTION__, e.what());
         return false;
     } 
     return true;

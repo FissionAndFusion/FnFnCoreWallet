@@ -18,6 +18,7 @@ CDispatcher::CDispatcher()
     pCoreProtocol = NULL;
     pWorldLine = NULL;
     pTxPool = NULL;
+    pForkManager = NULL;
     pConsensus = NULL;
     pWallet = NULL;
     pService = NULL;
@@ -34,55 +35,61 @@ bool CDispatcher::WalleveHandleInitialize()
 {
     if (!WalleveGetObject("coreprotocol",pCoreProtocol))
     {
-        WalleveLog("Failed to request coreprotocol\n");
+        WalleveError("Failed to request coreprotocol\n");
         return false;
     }
 
     if (!WalleveGetObject("worldline",pWorldLine))
     {
-        WalleveLog("Failed to request worldline\n");
+        WalleveError("Failed to request worldline\n");
         return false;
     }
 
     if (!WalleveGetObject("txpool",pTxPool))
     {
-        WalleveLog("Failed to request txpool\n");
+        WalleveError("Failed to request txpool\n");
+        return false;
+    }
+
+    if (!WalleveGetObject("forkmanager",pForkManager))
+    {
+        WalleveError("Failed to request forkmanager\n");
         return false;
     }
 
     if (!WalleveGetObject("consensus",pConsensus))
     {
-        WalleveLog("Failed to request consensus\n");
+        WalleveError("Failed to request consensus\n");
         return false;
     }
 
     if (!WalleveGetObject("wallet",pWallet))
     {
-        WalleveLog("Failed to request wallet\n");
+        WalleveError("Failed to request wallet\n");
         return false;
     }
 
     if (!WalleveGetObject("service",pService))
     {
-        WalleveLog("Failed to request service\n");
+        WalleveError("Failed to request service\n");
         return false;
     }
 
     if (!WalleveGetObject("blockmaker",pBlockMaker))
     {
-        WalleveLog("Failed to request blockmaker\n");
+        WalleveError("Failed to request blockmaker\n");
         return false;
     }
 
     if (!WalleveGetObject("netchannel",pNetChannel))
     {
-        WalleveLog("Failed to request netchannel\n");
+        WalleveError("Failed to request netchannel\n");
         return false;
     }
 
     if (!WalleveGetObject("delegatedchannel",pDelegatedChannel))
     {
-        WalleveLog("Failed to request delegatedchannel\n");
+        WalleveError("Failed to request delegatedchannel\n");
         return false;
     }
 
@@ -94,6 +101,7 @@ void CDispatcher::WalleveHandleDeinitialize()
     pCoreProtocol = NULL;
     pWorldLine = NULL;
     pTxPool = NULL;
+    pForkManager = NULL;
     pConsensus = NULL;
     pWallet = NULL;
     pService = NULL;
@@ -104,6 +112,18 @@ void CDispatcher::WalleveHandleDeinitialize()
 
 bool CDispatcher::WalleveHandleInvoke()
 {
+    vector<uint256> vActive;
+    if (!pForkManager->LoadForkContext(vActive))
+    {
+        WalleveError("Failed to load for context\n");
+        return false;
+    }
+
+    BOOST_FOREACH(const uint256& hashFork,vActive)
+    {
+        ActivateFork(hashFork); 
+    }
+
     return true;
 }
 
@@ -161,6 +181,22 @@ MvErr CDispatcher::AddNewBlock(const CBlock& block,uint64 nNonce)
         pNetChannel->BroadcastBlockInv(updateWorldLine.hashFork,block.GetHash());
     }
 
+    if (!block.IsVacant())
+    {
+        vector<uint256> vActive,vDeactive;
+        pForkManager->ForkUpdate(updateWorldLine,vActive,vDeactive);
+
+        BOOST_FOREACH(const uint256 hashFork,vActive)
+        {
+            ActivateFork(hashFork);
+        }
+
+        BOOST_FOREACH(const uint256 hashFork,vDeactive)
+        {
+            pNetChannel->UnsubscribeFork(hashFork);
+        }
+    }
+
     if (block.IsPrimary())
     {
         UpdatePrimaryBlock(block,updateWorldLine,changeTxSet);
@@ -177,6 +213,7 @@ MvErr CDispatcher::AddNewTx(const CTransaction& tx,uint64 nNonce)
     {
         return err;
     }
+
     set<uint256> setMissingPrevTx;
     BOOST_FOREACH(const CTxIn& txin,tx.vInput)
     {
@@ -189,6 +226,7 @@ MvErr CDispatcher::AddNewTx(const CTransaction& tx,uint64 nNonce)
     {
         return MV_ERR_MISSING_PREV;
     }
+
     uint256 hashFork;
     CDestination destIn;
     int64 nValueIn;
@@ -219,6 +257,7 @@ MvErr CDispatcher::AddNewTx(const CTransaction& tx,uint64 nNonce)
     {
         pConsensus->AddNewTx(CAssembledTx(tx,-1,destIn,nValueIn));
     }
+
     return MV_OK;
 }
 
@@ -271,29 +310,41 @@ void CDispatcher::UpdatePrimaryBlock(const CBlock& block,const CWorldLineUpdate&
         pBlockMaker->PostEvent(pBlockMakerUpdate);
     }
 
-    for (int i = updateWorldLine.vBlockAddNew.size() - 1;i >= 0;i--)
-    {
-        BOOST_FOREACH(const CTransaction& tx,updateWorldLine.vBlockAddNew[i].vtx)
-        {
-            CTemplateId tid;
-            if (tx.sendTo.GetTemplateId(tid) && tid.GetType() == TEMPLATE_FORK && !tx.vchData.empty())
-            {
-                CForkContext ctxt;
-                if (pWorldLine->AddNewForkContext(tx,ctxt) == MV_OK)
-                {
-                    ProcessForkTx(tx,updateWorldLine.nLastBlockHeight);
-                }
-            }
-        }
-    }
-
     SyncForkHeight(updateWorldLine.nLastBlockHeight);
 }
 
-void CDispatcher::ProcessForkTx(const CTransaction& tx,int nPrimaryHeight)
+void CDispatcher::ActivateFork(const uint256& hashFork)
 {
-    uint256 txid = tx.GetHash();
+    WalleveLog("Activating fork %s ...\n",hashFork.GetHex().c_str());
+    if (!pWorldLine->Exists(hashFork))
+    {
+        CForkContext ctxt;
+        if (!pWorldLine->GetForkContext(hashFork,ctxt))
+        {
+            WalleveWarn("Failed to find fork context %s\n",hashFork.GetHex().c_str());
+            return;
+        }
 
+        CTransaction txFork;
+        if (!pWorldLine->GetTransaction(ctxt.txidEmbedded,txFork))
+        {
+            WalleveWarn("Failed to find tx fork %s\n",hashFork.GetHex().c_str());
+            return;
+        }
+ 
+        if (!ProcessForkTx(ctxt.txidEmbedded,txFork))
+        {
+            return;
+        }
+        WalleveLog("Add origin block in tx (%s), hash=%s\n",ctxt.txidEmbedded.GetHex().c_str(),
+                                                            hashFork.GetHex().c_str());
+    }
+    pNetChannel->SubscribeFork(hashFork);
+    WalleveLog("Activated fork %s ...\n",hashFork.GetHex().c_str());
+}
+
+bool CDispatcher::ProcessForkTx(const uint256& txid,const CTransaction& tx)
+{
     CBlock block;
     try
     {
@@ -307,22 +358,18 @@ void CDispatcher::ProcessForkTx(const CTransaction& tx,int nPrimaryHeight)
     }
     catch (...) 
     { 
-        WalleveLog("Invalid orign block found in tx (%s)\n",txid.GetHex().c_str());
-        return;
+        WalleveWarn("Invalid orign block found in tx (%s)\n",txid.GetHex().c_str());
+        return false;
     }
     
     MvErr err = AddNewBlock(block);
-    if (err == MV_OK)
-    {
-        WalleveLog("Add origin block in tx (%s), hash=%s\n",txid.GetHex().c_str(),
-                                                            block.GetHash().GetHex().c_str());
-        pNetChannel->SubscribeFork(block.GetHash()); 
-    }
-    else
+    if (err != MV_OK)
     {
         WalleveLog("Add origin block in tx (%s) failed : %s\n",txid.GetHex().c_str(),
                                                                MvErrString(err));
+        return false;
     }
+    return true;
 }
 
 void CDispatcher::SyncForkHeight(int nPrimaryHeight)
@@ -333,7 +380,11 @@ void CDispatcher::SyncForkHeight(int nPrimaryHeight)
     {
         const uint256& hashFork = (*it).first;
         CForkStatus& status = (*it).second;
-        
+        if (!pForkManager->IsAllowed(hashFork))
+        {
+            continue;
+        }
+
         vector<int64> vTimeStamp;
         int nDepth = nPrimaryHeight - status.nLastBlockHeight;
 

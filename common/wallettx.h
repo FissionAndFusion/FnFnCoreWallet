@@ -43,7 +43,7 @@ public:
         nFlags       = (fIsMine ? WTX_ISMINE : 0) | (fFromMe ? WTX_FROMME : 0);
         txid         = txidIn;
         hashFork     = hashForkIn;
-        nRefCount = 0;
+        nRefCount    = 0;
     }
     void SetNull()
     {
@@ -59,6 +59,7 @@ public:
         nFlags       = 0;
         txid         = 0;
         hashFork     = 0;
+        nRefCount    = 0;
     }
     bool IsNull() const { return (txid == 0); }
     bool IsMintTx() const 
@@ -76,6 +77,10 @@ public:
         if (nType == CTransaction::TX_STAKE) return std::string("stake");
         if (nType == CTransaction::TX_WORK) return std::string("work");
         return std::string("undefined");
+    }
+    void SetFlags(bool fIsMine,bool fFromMe)
+    {
+        nFlags = (fIsMine ? WTX_ISMINE : 0) | (fFromMe ? WTX_FROMME : 0);
     }
     int64 GetChange() const
     {
@@ -102,24 +107,24 @@ public:
 class CWalletTxOut
 {
 public:
-    CWalletTxOut(CWalletTx* pWalletTxIn=NULL,int nIn=-1) : pWalletTx(pWalletTxIn),n(nIn) {}
-    bool IsNull() const { return (pWalletTx == NULL || pWalletTx->GetOutput(n).IsNull()); }
-    bool IsLocked(int nHeight) const { return (n == 0 && pWalletTx->nLockUntil > 0 && pWalletTx->nLockUntil < nHeight); }
-    int GetDepth(int nHeight) const { return (pWalletTx->nBlockHeight >= 0 ? nHeight - pWalletTx->nBlockHeight + 1 : 0); }
-    int64 GetAmount() const { return (n == 0 ? pWalletTx->nAmount : pWalletTx->GetChange()); }
-    CTxOutPoint GetTxOutPoint() const { return CTxOutPoint(pWalletTx->txid,n); }
-    void AddRef() const { ++pWalletTx->nRefCount; }
-    void Release() const { --pWalletTx->nRefCount; }
+    CWalletTxOut(const std::shared_ptr<CWalletTx>& spWalletTxIn=NULL,int nIn=-1) : spWalletTx(spWalletTxIn),n(nIn) {}
+    bool IsNull() const { return (spWalletTx == NULL || spWalletTx->GetOutput(n).IsNull()); }
+    bool IsLocked(int nHeight) const { return (n == 0 && spWalletTx->nLockUntil > 0 && spWalletTx->nLockUntil < nHeight); }
+    int GetDepth(int nHeight) const { return (spWalletTx->nBlockHeight >= 0 ? nHeight - spWalletTx->nBlockHeight + 1 : 0); }
+    int64 GetAmount() const { return (n == 0 ? spWalletTx->nAmount : spWalletTx->GetChange()); }
+    CTxOutPoint GetTxOutPoint() const { return CTxOutPoint(spWalletTx->txid,n); }
+    void AddRef() const { ++spWalletTx->nRefCount; }
+    void Release() const { --spWalletTx->nRefCount; }
     friend inline bool operator==(const CWalletTxOut& a,const CWalletTxOut& b)
     {
-        return (a.pWalletTx == b.pWalletTx && a.n == b.n);
+        return (a.spWalletTx == b.spWalletTx && a.n == b.n);
     }
     friend inline bool operator<(const CWalletTxOut& a,const CWalletTxOut& b)
     {
-        return (a.pWalletTx < b.pWalletTx || (a.pWalletTx == b.pWalletTx && a.n < b.n));
+        return (a.spWalletTx < b.spWalletTx || (a.spWalletTx == b.spWalletTx && a.n < b.n));
     }
 public:
-    CWalletTx* pWalletTx;
+    std::shared_ptr<CWalletTx> spWalletTx;
     int n;
 };
 

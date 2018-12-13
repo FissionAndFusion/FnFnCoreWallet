@@ -13,12 +13,12 @@ using namespace multiverse::delegate;
 //////////////////////////////
 // CMvDelegateData
 
-const MPUInt256 CMvDelegateData::GetHash() const
+const uint256 CMvDelegateData::GetHash() const
 {
     vector<unsigned char> vch;
     CWalleveODataStream os(vch);
     os << mapShare;
-    return ToMPUInt256(crypto::CryptoHash(&vch[0],vch.size()));
+    return crypto::CryptoHash(&vch[0],vch.size());
 }
 
 //////////////////////////////
@@ -28,7 +28,7 @@ CMvSecretShare::CMvSecretShare()
 {
 }
 
-CMvSecretShare::CMvSecretShare(const MPUInt256& nIdentIn)
+CMvSecretShare::CMvSecretShare(const uint256& nIdentIn)
 : CMPSecretShare(nIdentIn)
 {
 
@@ -52,9 +52,9 @@ void CMvSecretShare::Publish(CMvDelegateData& delegateData)
     Signature(delegateData.GetHash(),delegateData.nR,delegateData.nS);
 }
 
-void CMvSecretShare::RandGeneretor(MPUInt256& r)
+void CMvSecretShare::RandGeneretor(uint256& r)
 {
-    crypto::CryptoGetRand256(*((uint256*)r.Data()));
+    crypto::CryptoGetRand256(r);
 }
 
 //////////////////////////////
@@ -135,8 +135,8 @@ void CMvDelegateVote::Enroll(const map<CDestination,size_t>& mapWeight,
         {
             try
             {
-                vector<MPUInt256> vEncryptedCoeff;
-                MPUInt256 nPubKey,nR,nS;
+                vector<uint256> vEncryptedCoeff;
+                uint256 nPubKey,nR,nS;
 
                 CWalleveIDataStream is((*mi).second);
                 is >> nPubKey >> vEncryptedCoeff >> nR >> nS;
@@ -144,8 +144,9 @@ void CMvDelegateVote::Enroll(const map<CDestination,size_t>& mapWeight,
                 vCandidate.push_back(CMPCandidate(DestToIdentUInt256((*it).first),(*it).second,
                                                   CMPSealedBox(vEncryptedCoeff,nPubKey,nR,nS)));
             }
-            catch (...)
+            catch (exception& e) 
             {
+                StdError(__PRETTY_FUNCTION__, e.what());
             }
         }
     }
@@ -169,8 +170,9 @@ bool CMvDelegateVote::Accept(const CDestination& destFrom,const vector<unsigned 
             return false;
         }
     }
-    catch (...)
+    catch (exception& e) 
     {
+        StdError(__PRETTY_FUNCTION__, e.what());
         return false;
     }
 
@@ -179,7 +181,7 @@ bool CMvDelegateVote::Accept(const CDestination& destFrom,const vector<unsigned 
         CMvSecretShare& delegate = (*it).second;
         if (delegate.IsEnrolled())
         {
-            map<MPUInt256,vector<MPUInt256> >::iterator mi = delegateData.mapShare.find(delegate.GetIdent());
+            map<uint256,vector<uint256> >::iterator mi = delegateData.mapShare.find(delegate.GetIdent());
             if (mi != delegateData.mapShare.end())
             {
                 if (!delegate.Accept(delegateData.nIdentFrom,(*mi).second))
@@ -208,7 +210,10 @@ bool CMvDelegateVote::Collect(const CDestination& destFrom,const vector<unsigned
             }
         }
     }
-    catch (...) {}
+    catch (exception& e) 
+    {
+        StdError(__PRETTY_FUNCTION__, e.what());
+    }
     return false;
 }
 
@@ -218,7 +223,7 @@ void CMvDelegateVote::GetAgreement(uint256& nAgreement,size_t& nWeight,map<CDest
     nWeight = 0;
     mapBallot.clear();
 
-    map<MPUInt256,pair<MPUInt256,size_t> > mapSecret;
+    map<uint256,pair<uint256,size_t> > mapSecret;
 
     witness.Reconstruct(mapSecret);
      
@@ -226,7 +231,7 @@ void CMvDelegateVote::GetAgreement(uint256& nAgreement,size_t& nWeight,map<CDest
     {
         vector<unsigned char> vch;
         CWalleveODataStream os(vch);
-        for (map<MPUInt256,pair<MPUInt256,size_t> >::iterator it = mapSecret.begin();
+        for (map<uint256,pair<uint256,size_t> >::iterator it = mapSecret.begin();
              it != mapSecret.end(); ++it)
         {
             os << (*it).second.first;

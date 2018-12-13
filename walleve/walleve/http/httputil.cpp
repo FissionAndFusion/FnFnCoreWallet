@@ -3,7 +3,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "httputil.h"
-#include "walleve/version.h"
+
 #include <sstream>
 #include <locale>
 #include <boost/algorithm/string/trim.hpp>
@@ -11,6 +11,9 @@
 #include <boost/archive/iterators/base64_from_binary.hpp>
 #include <boost/archive/iterators/binary_from_base64.hpp>
 #include <boost/archive/iterators/transform_width.hpp>
+
+#include "walleve/version.h"
+#include "walleve/util.h"
 
 using namespace std;
 using namespace boost::posix_time;
@@ -35,7 +38,10 @@ const ptime CHttpUtil::ParseRFC1123DayTime(const string& strDayTime)
             return pt;
         }
     }
-    catch (...) {}
+    catch (exception& e)
+    {
+        StdError(__PRETTY_FUNCTION__, e.what());
+    }
     return ptime(boost::date_time::not_a_date_time); 
 }
 
@@ -52,7 +58,10 @@ const string CHttpUtil::FormatRFC1123DayTime(const ptime& pt)
             return ss.str();
         }
     }
-    catch (...) {}
+    catch (exception& e)
+    {
+        StdError(__PRETTY_FUNCTION__, e.what());
+    }
     return "";
 }
 
@@ -82,8 +91,9 @@ bool CHttpUtil::Base64Decode(const std::string& strEncoded,std::string& strDecod
         strDecoded = string(base64dec(s.begin()), base64dec(s.end()));
         strDecoded.resize(strDecoded.size() - nPadding);
     }
-    catch (...)
+    catch (exception& e)
     {
+        StdError(__PRETTY_FUNCTION__, e.what());
         return false;
     }
     return true;

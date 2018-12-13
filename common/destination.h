@@ -107,7 +107,7 @@ public:
     } 
     const CTemplateId GetTemplateId() const
     {
-        return (prefix == PREFIX_TEMPLATE ? CTemplateId(data) : CTemplateId(0));
+        return (prefix == PREFIX_TEMPLATE ? CTemplateId(data) : CTemplateId(uint64(0)));
     }
     bool VerifySignature(const uint256& hash,const std::vector<unsigned char>& vchSig) const;
     friend bool operator==(const CDestination& a, const CDestination& b)
