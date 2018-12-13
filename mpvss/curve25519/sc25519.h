@@ -42,8 +42,6 @@ protected:
 public:
     uint64_t value[4];
 
-    static const CSC25519 naturalPowTable[26][26];
-
 protected:
     static const uint64_t prime[4];
 };
