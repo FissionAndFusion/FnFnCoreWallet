@@ -537,10 +537,13 @@ void CDbpService::HandleSendEvent(CMvEventDbpMethod& event)
     {
         if(IsRootNodeOfSuperNode())
         {
-            CWalleveSuperNodeEventPeerNetReward eventReward(0);
-            ss >> eventReward;
-        
-            
+            CWalleveSuperNodeEventPeerNetReward eventSNReward(0);
+            ss >> eventSNReward;
+
+            CWalleveEventPeerNetReward eventReward(eventSNReward.nNonce);
+            eventReward.nType = eventSNReward.nType;
+            eventReward.result = eventSNReward.result;
+            eventReward.data = static_cast<CEndpointManager::Bonus>(eventSNReward.data);
             pVirtualPeerNet->DispatchEvent(&eventReward);
         }
 
@@ -557,10 +560,13 @@ void CDbpService::HandleSendEvent(CMvEventDbpMethod& event)
     {
         if(IsRootNodeOfSuperNode())
         {
-            CWalleveSuperNodeEventPeerNetClose eventClose(0);
-            ss >> eventClose;
-            
-            std::cout << "[rootnode] [<] NetClose Type: " << eventClose.data << " [dbpservice]\n";
+            CWalleveSuperNodeEventPeerNetClose eventSNClose(0);
+            ss >> eventSNClose;
+
+            CWalleveEventPeerNetClose eventClose(eventSNClose.nNonce);
+            eventClose.nType = eventSNClose.nType;
+            eventClose.result = eventSNClose.result;
+            eventClose.data = static_cast<CEndpointManager::CloseReason>(eventSNClose.data);
             pVirtualPeerNet->DispatchEvent(&eventClose);
         }
 
