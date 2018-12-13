@@ -25,7 +25,7 @@ public:
 
 public:
     CVirtualPeerNet();
-    ~CVirtualPeerNet();
+    virtual ~CVirtualPeerNet();
 
     SUPER_NODE_TYPE GetSuperNodeType() {return typeNode;};
     void SetNodeTypeAsFnfn(bool fIsFnfnNode);
