@@ -53,7 +53,7 @@ protected:
     bool DestroyPeerForForkNode(const network::CMvEventPeerDeactive& peerDeactive) override;
     bool HandleRootPeerSub(const uint64& nNonce, const uint256& hashFork) override;
     bool HandleRootPeerUnSub(const uint64& nNonce, const uint256& hashFork) override;
-    bool HandleRootPeerGetBlks(const uint64& nNonce, const uint256& hashFork) override;
+    bool HandleRootPeerGetBlocks(const uint64& nNonce, const uint256& hashFork) override;
     bool HandleRootPeerInv(const uint64& nNonce, const uint256& hashFork) override;
     bool HandleRootPeerGetData(const uint64& nNonce, const uint256& hashFork) override;
     bool HandleRootPeerBlock(const uint64& nNonce, const uint256& hashFork) override;

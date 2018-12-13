@@ -518,7 +518,7 @@ bool CVirtualPeerNet::HandleRootPeerUnSub(const uint64& nNonce, const uint256& h
 
 //only available at the level of root node which delivers GETBLOCKS event to super node cluster
 //by hook member function in terms of template method in design pattern
-bool CVirtualPeerNet::HandleRootPeerGetBlks(const uint64& nNonce, const uint256& hashFork)
+bool CVirtualPeerNet::HandleRootPeerGetBlocks(const uint64& nNonce, const uint256& hashFork)
 {
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
     {
