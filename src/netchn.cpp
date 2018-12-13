@@ -683,14 +683,20 @@ void CNetChannel::SchedulePeerInv(uint64 nNonce,const uint256& hashFork,CSchedul
         {
             if (!sched.ScheduleTxInv(nNonce,eventGetData.data,MAX_PEER_SCHED_COUNT))
             {
-                DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
+                if(nNonce != 0)
+                {
+                    DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
+                }
             }
         }
         SetPeerSyncStatus(nNonce,hashFork,fEmpty);
     }
     else
     {
-        DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
+        if(nNonce != 0)
+        {
+            DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
+        }
     }
     if (!eventGetData.data.empty())
     {
@@ -739,7 +745,11 @@ void CNetChannel::AddNewBlock(const uint256& hashFork,const uint256& hash,CSched
                 set<uint64> setKnownPeer;
                 sched.GetNextBlock(hashBlock,vBlockHash);
                 sched.RemoveInv(network::CInv(network::CInv::MSG_BLOCK,hashBlock),setKnownPeer);
-                DispatchAwardEvent(nNonceSender,CEndpointManager::VITAL_DATA);
+                
+                if(nNonceSender != 0)
+                {
+                    DispatchAwardEvent(nNonceSender,CEndpointManager::VITAL_DATA);
+                }
 
                 BroadcastBlockInv(hashFork,hashBlock,setKnownPeer); 
                 setSchedPeer.insert(setKnownPeer.begin(),setKnownPeer.end());
@@ -779,7 +789,12 @@ void CNetChannel::AddNewTx(const uint256& hashFork,const uint256& txid,CSchedule
             {
                 sched.GetNextTx(hashTx,vtx,setTx);
                 sched.RemoveInv(network::CInv(network::CInv::MSG_TX,hashTx),setSchedPeer);
-                DispatchAwardEvent(nNonceSender,CEndpointManager::MAJOR_DATA);
+                
+                if(nNonceSender != 0)
+                {
+                    DispatchAwardEvent(nNonceSender,CEndpointManager::MAJOR_DATA);
+                }
+
                 nAddNewTx++;
             }
             else if (err != MV_ERR_MISSING_PREV)
@@ -807,7 +822,10 @@ void CNetChannel::PostAddNew(const uint256& hashFork,CSchedule& sched,
 
     BOOST_FOREACH(const uint64 nNonceMisbehave,setMisbehavePeer)
     {
-        DispatchMisbehaveEvent(nNonceMisbehave,CEndpointManager::DDOS_ATTACK);
+        if(nNonceMisbehave != 0)
+        {
+            DispatchMisbehaveEvent(nNonceMisbehave,CEndpointManager::DDOS_ATTACK);
+        }
     }
 }
 
