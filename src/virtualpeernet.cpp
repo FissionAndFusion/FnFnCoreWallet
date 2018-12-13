@@ -108,7 +108,7 @@ bool CVirtualPeerNet::HandleEvent(walleve::CWalleveEventPeerNetReward& eventRewa
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
     {
         walleve::CWalleveEventPeerNetReward* pEvent = new walleve::CWalleveEventPeerNetReward(eventReward);
-        if(nullptr == pEvent)
+        if(!pEvent)
         {
             return false;
         }
@@ -128,7 +128,7 @@ bool CVirtualPeerNet::HandleEvent(walleve::CWalleveEventPeerNetClose& eventClose
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
     {
         walleve::CWalleveEventPeerNetClose* pEvent = new walleve::CWalleveEventPeerNetClose(eventClose);
-        if(nullptr == pEvent)
+        if(!pEvent)
         {
             return false;
         }
@@ -154,7 +154,7 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerSubscribe& eventSubscribe
         else if(SENDER_DBPSVC == eventSubscribe.sender)
         {
             network::CMvEventPeerSubscribe* pEvent = new network::CMvEventPeerSubscribe(eventSubscribe);
-            if(nullptr == pEvent)
+            if(!pEvent)
             {
                 return false;
             }
@@ -166,7 +166,7 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerSubscribe& eventSubscribe
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
     {
         network::CMvEventPeerSubscribe* pEvent = new network::CMvEventPeerSubscribe(eventSubscribe);
-        if(nullptr == pEvent)
+        if(!pEvent)
         {
             return false;
         }
@@ -199,7 +199,7 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerUnsubscribe& eventUnsubsc
         else if(SENDER_DBPSVC == eventUnsubscribe.sender)
         {
             network::CMvEventPeerUnsubscribe* pEvent = new network::CMvEventPeerUnsubscribe(eventUnsubscribe);
-            if(nullptr == pEvent)
+            if(!pEvent)
             {
                 return false;
             }
@@ -211,7 +211,7 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerUnsubscribe& eventUnsubsc
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
     {
         network::CMvEventPeerUnsubscribe* pEvent = new network::CMvEventPeerUnsubscribe(eventUnsubscribe);
-        if(nullptr == pEvent)
+        if(!pEvent)
         {
             return false;
         }
@@ -244,7 +244,7 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerInv& eventInv)
         else if(SENDER_DBPSVC == eventInv.sender)
         {
             network::CMvEventPeerInv* pEvent = new network::CMvEventPeerInv(eventInv);
-            if(nullptr == pEvent)
+            if(!pEvent)
             {
                 return false;
             }
@@ -256,7 +256,7 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerInv& eventInv)
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
     {
         network::CMvEventPeerInv* pEvent = new network::CMvEventPeerInv(eventInv);
-        if(nullptr == pEvent)
+        if(!pEvent)
         {
             return false;
         }
@@ -289,7 +289,7 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerGetData& eventGetData)
         else if(SENDER_DBPSVC == eventGetData.sender)
         {
             network::CMvEventPeerGetData* pEvent = new network::CMvEventPeerGetData(eventGetData);
-            if(nullptr == pEvent)
+            if(!pEvent)
             {
                 return false;
             }
@@ -301,7 +301,7 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerGetData& eventGetData)
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
     {
         network::CMvEventPeerGetData* pEvent = new network::CMvEventPeerGetData(eventGetData);
-        if(nullptr == pEvent)
+        if(!pEvent)
         {
             return false;
         }
@@ -334,7 +334,7 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerGetBlocks& eventGetBlocks
         else if(SENDER_DBPSVC == eventGetBlocks.sender)
         {
             network::CMvEventPeerGetBlocks* pEvent = new network::CMvEventPeerGetBlocks(eventGetBlocks);
-            if(nullptr == pEvent)
+            if(!pEvent)
             {
                 return false;
             }
@@ -346,7 +346,7 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerGetBlocks& eventGetBlocks
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
     {
         network::CMvEventPeerGetBlocks* pEvent = new network::CMvEventPeerGetBlocks(eventGetBlocks);
-        if(nullptr == pEvent)
+        if(!pEvent)
         {
             return false;
         }
@@ -379,7 +379,7 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerTx& eventTx)
         else if(SENDER_DBPSVC == eventTx.sender)
         {
             network::CMvEventPeerTx* pEvent = new network::CMvEventPeerTx(eventTx);
-            if(nullptr == pEvent)
+            if(!pEvent)
             {
                 return false;
             }
@@ -391,7 +391,7 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerTx& eventTx)
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
     {
         network::CMvEventPeerTx* pEvent = new network::CMvEventPeerTx(eventTx);
-        if(nullptr == pEvent)
+        if(!pEvent)
         {
             return false;
         }
@@ -424,7 +424,7 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerBlock& eventBlock)
         else if(SENDER_DBPSVC == eventBlock.sender)
         {
             network::CMvEventPeerBlock* pEvent = new network::CMvEventPeerBlock(eventBlock);
-            if(nullptr == pEvent)
+            if(!pEvent)
             {
                 return false;
             }
@@ -436,7 +436,7 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerBlock& eventBlock)
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
     {
         network::CMvEventPeerBlock* pEvent = new network::CMvEventPeerBlock(eventBlock);
-        if(nullptr == pEvent)
+        if(!pEvent)
         {
             return false;
         }
@@ -459,7 +459,7 @@ bool CVirtualPeerNet::HandlePeerHandshakedForForkNode(const network::CMvEventPee
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
     {
         CMvEventPeerActive* pEvent = new CMvEventPeerActive(peerActive);
-        if(nullptr == pEvent)
+        if(!pEvent)
         {
             return false;
         }
@@ -475,7 +475,7 @@ bool CVirtualPeerNet::DestroyPeerForForkNode(const network::CMvEventPeerDeactive
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
     {
         network::CMvEventPeerDeactive* pEvent = new network::CMvEventPeerDeactive(peerDeactive);
-        if(nullptr == pEvent)
+        if(!pEvent)
         {
             return false;
         }
@@ -491,7 +491,7 @@ bool CVirtualPeerNet::HandleRootPeerSub(const uint64& nNonce, const uint256& has
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
     {
         CMvEventPeerSubscribe* pEvent = new CMvEventPeerSubscribe(nNonce, hashFork);
-        if(nullptr == pEvent)
+        if(!pEvent)
         {
             return false;
         }
@@ -507,7 +507,7 @@ bool CVirtualPeerNet::HandleRootPeerUnSub(const uint64& nNonce, const uint256& h
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
     {
         CMvEventPeerUnsubscribe* pEvent = new CMvEventPeerUnsubscribe(nNonce, hashFork);
-        if(nullptr == pEvent)
+        if(!pEvent)
         {
             return false;
         }
@@ -523,7 +523,7 @@ bool CVirtualPeerNet::HandleRootPeerGetBlks(const uint64& nNonce, const uint256&
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
     {
         CMvEventPeerGetBlocks* pEvent = new CMvEventPeerGetBlocks(nNonce, hashFork);
-        if(nullptr == pEvent)
+        if(!pEvent)
         {
             return false;
         }
@@ -539,7 +539,7 @@ bool CVirtualPeerNet::HandleRootPeerInv(const uint64& nNonce, const uint256& has
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
     {
         CMvEventPeerInv* pEvent = new CMvEventPeerInv(nNonce, hashFork);
-        if(nullptr == pEvent)
+        if(!pEvent)
         {
             return false;
         }
@@ -555,7 +555,7 @@ bool CVirtualPeerNet::HandleRootPeerGetData(const uint64& nNonce, const uint256&
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
     {
         CMvEventPeerGetData* pEvent = new CMvEventPeerGetData(nNonce, hashFork);
-        if(nullptr == pEvent)
+        if(!pEvent)
         {
             return false;
         }
@@ -571,7 +571,7 @@ bool CVirtualPeerNet::HandleRootPeerBlock(const uint64& nNonce, const uint256& h
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
     {
         CMvEventPeerTx* pEvent = new CMvEventPeerTx(nNonce, hashFork);
-        if(nullptr == pEvent)
+        if(!pEvent)
         {
             return false;
         }
@@ -587,7 +587,7 @@ bool CVirtualPeerNet::HandleRootPeerTx(const uint64& nNonce, const uint256& hash
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
     {
         CMvEventPeerBlock* pEvent = new CMvEventPeerBlock(nNonce, hashFork);
-        if(nullptr == pEvent)
+        if(!pEvent)
         {
             return false;
         }
