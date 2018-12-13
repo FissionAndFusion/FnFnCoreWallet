@@ -158,7 +158,7 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerSubscribe& eventSubscribe
             {
                 return false;
             }
-            pNetChannel->PostEvent(&eventSubscribe);
+            pNetChannel->PostEvent(pEvent);
             return true;
         }
     }
@@ -203,7 +203,7 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerUnsubscribe& eventUnsubsc
             {
                 return false;
             }
-            pNetChannel->PostEvent(&eventUnsubscribe);
+            pNetChannel->PostEvent(pEvent);
             return true;
         }
     }
@@ -248,7 +248,7 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerInv& eventInv)
             {
                 return false;
             }
-            pNetChannel->PostEvent(&eventInv);
+            pNetChannel->PostEvent(pEvent);
             return true;
         }
     }
@@ -293,7 +293,7 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerGetData& eventGetData)
             {
                 return false;
             }
-            pNetChannel->PostEvent(&eventGetData);
+            pNetChannel->PostEvent(pEvent);
             return true;
         }
     }
@@ -338,7 +338,7 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerGetBlocks& eventGetBlocks
             {
                 return false;
             }
-            pNetChannel->PostEvent(&eventGetBlocks);
+            pNetChannel->PostEvent(pEvent);
             return true;
         }
     }
@@ -383,7 +383,7 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerTx& eventTx)
             {
                 return false;
             }
-            pNetChannel->PostEvent(&eventTx);
+            pNetChannel->PostEvent(pEvent);
             return true;
         }
     }
@@ -428,7 +428,7 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerBlock& eventBlock)
             {
                 return false;
             }
-            pNetChannel->PostEvent(&eventBlock);
+            pNetChannel->PostEvent(pEvent);
             return true;
         }
     }
