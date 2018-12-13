@@ -375,38 +375,63 @@ bool CMvPeerNet::HandleForkPeerDeactive(const CMvEventPeerDeactive& eventDeactiv
 
 bool CMvPeerNet::HandlePeerHandshakedForForkNode(const CMvEventPeerActive& peerActive)
 {
+    (void)peerActive;
+    return false;
 }
 
 bool CMvPeerNet::DestroyPeerForForkNode(const CMvEventPeerDeactive& peerDeactive)
 {
+    (void)peerDeactive;
+    return false;
 }
 
 bool CMvPeerNet::HandleRootPeerSub(const uint64& nNonce, const uint256& hashFork)
 {
+    (void)nNonce;
+    (void)hashFork;
+    return false;
 }
 
 bool CMvPeerNet::HandleRootPeerUnSub(const uint64& nNonce, const uint256& hashFork)
 {
+    (void)nNonce;
+    (void)hashFork;
+    return false;
 }
 
-bool CMvPeerNet::HandleRootPeerGetBlks(const uint64& nNonce, const uint256& hashFork)
+bool CMvPeerNet::HandleRootPeerGetBlocks(const uint64& nNonce, const uint256& hashFork)
 {
+    (void)nNonce;
+    (void)hashFork;
+    return false;
 }
 
 bool CMvPeerNet::HandleRootPeerInv(const uint64& nNonce, const uint256& hashFork)
 {
+    (void)nNonce;
+    (void)hashFork;
+    return false;
 }
 
 bool CMvPeerNet::HandleRootPeerGetData(const uint64& nNonce, const uint256& hashFork)
 {
+    (void)nNonce;
+    (void)hashFork;
+    return false;
 }
 
 bool CMvPeerNet::HandleRootPeerBlock(const uint64& nNonce, const uint256& hashFork)
 {
+    (void)nNonce;
+    (void)hashFork;
+    return false;
 }
 
 bool CMvPeerNet::HandleRootPeerTx(const uint64& nNonce, const uint256& hashFork)
 {
+    (void)nNonce;
+    (void)hashFork;
+    return false;
 }
 
 bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CWalleveBufStream& ssPayload)
@@ -505,7 +530,7 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                 {
                     ssPayload >> pEvent->data;
                     pNetChannel->PostEvent(pEvent);
-                    return HandleRootPeerGetBlks(pMvPeer->GetNonce(),hashFork);
+                    return HandleRootPeerGetBlocks(pMvPeer->GetNonce(),hashFork);
                 } 
             }
             break;

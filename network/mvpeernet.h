@@ -56,7 +56,7 @@ protected:
     virtual bool DestroyPeerForForkNode(const CMvEventPeerDeactive& peerDeactive);
     virtual bool HandleRootPeerSub(const uint64& nNonce, const uint256& hashFork);
     virtual bool HandleRootPeerUnSub(const uint64& nNonce, const uint256& hashFork);
-    virtual bool HandleRootPeerGetBlks(const uint64& nNonce, const uint256& hashFork);
+    virtual bool HandleRootPeerGetBlocks(const uint64& nNonce, const uint256& hashFork);
     virtual bool HandleRootPeerInv(const uint64& nNonce, const uint256& hashFork);
     virtual bool HandleRootPeerGetData(const uint64& nNonce, const uint256& hashFork);
     virtual bool HandleRootPeerBlock(const uint64& nNonce, const uint256& hashFork);
