@@ -2,8 +2,8 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef MULTIVERSE_FORKPSEUDOPEERNET_H
-#define MULTIVERSE_FORKPSEUDOPEERNET_H
+#ifndef MULTIVERSE_VIRTUAL_PEERNET_H
+#define MULTIVERSE_VIRTUAL_PEERNET_H
 
 #include "mvproto.h"
 #include "virtualpeernetevent.h"
@@ -12,7 +12,7 @@
 namespace multiverse
 {
 
-class CVirtualPeerNet: public network::CMvPeerNet, virtual public CFkNodeEventListener
+class CVirtualPeerNet: public network::CMvPeerNet, virtual public CVirtualPeerNetEventListener
 {
 public:
     enum class SUPER_NODE_TYPE : int
@@ -25,7 +25,7 @@ public:
 
 public:
     CVirtualPeerNet();
-    ~CVirtualPeerNet();
+    virtual ~CVirtualPeerNet();
 
     SUPER_NODE_TYPE GetSuperNodeType() {return typeNode;};
     void SetNodeTypeAsFnfn(bool fIsFnfnNode);
@@ -53,7 +53,7 @@ protected:
     bool DestroyPeerForForkNode(const network::CMvEventPeerDeactive& peerDeactive) override;
     bool HandleRootPeerSub(const uint64& nNonce, const uint256& hashFork) override;
     bool HandleRootPeerUnSub(const uint64& nNonce, const uint256& hashFork) override;
-    bool HandleRootPeerGetBlks(const uint64& nNonce, const uint256& hashFork) override;
+    bool HandleRootPeerGetBlocks(const uint64& nNonce, const uint256& hashFork) override;
     bool HandleRootPeerInv(const uint64& nNonce, const uint256& hashFork) override;
     bool HandleRootPeerGetData(const uint64& nNonce, const uint256& hashFork) override;
     bool HandleRootPeerBlock(const uint64& nNonce, const uint256& hashFork) override;
@@ -68,4 +68,4 @@ private:
 
 }
 
-#endif //MULTIVERSE_FORKPSEUDOPEERNET_H
+#endif // MULTIVERSE_VIRTUAL_PEERNET_H
