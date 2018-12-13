@@ -896,13 +896,20 @@ bool CBlockBase::GetForkBlockLocator(const uint256& hashFork,CBlockLocator& loca
 {
     CWalleveReadLock rlock(rwAccess);
     
+    std::cout << " hashFork " << hashFork.ToString() << "[GetForkBlockLocator]\n"; 
     CBlockFork* pFork = GetFork(hashFork);
     if (pFork == NULL)
     {
+        std::cout << " pFork == NULL [GetForkBlockLocator]\n"; 
         return false;
     }
     
     CBlockIndex* pIndex = pFork->GetLast();
+
+    std::cout << "pIndex value " << pIndex << " [GetForkBlockLocator]\n";
+    std::cout << "hash fork " << hashFork.ToString() << " [GetForkBlockLocator]\n";
+    std::cout << "Origin Hash: " << pIndex->GetOriginHash().ToString() << " [GetForkBlockLocator]\n";
+    std::cout << "Is Origin: " << pIndex->IsOrigin() << " [GetForkBlockLocator]\n";
 
     locator.vBlockHash.clear();
     int nStep = 1;
@@ -925,9 +932,11 @@ bool CBlockBase::GetForkBlockInv(const uint256& hashFork,const CBlockLocator& lo
 {
     CWalleveReadLock rlock(rwAccess);
 
+    std::cout << " hashFork " << hashFork.ToString() << "[GetForkBlockInv]\n"; 
     CBlockFork* pFork = GetFork(hashFork);
     if (pFork == NULL)
     {
+        std::cout << " pFork == NULL [GetForkBlockInv]\n"; 
         return false;
     }
     

@@ -665,6 +665,11 @@ void CNetChannel::DispatchGetBlocksEvent(uint64 nNonce,const uint256& hashFork)
     network::CMvEventPeerGetBlocks eventGetBlocks(nNonce,hashFork);
     if (pWorldLine->GetBlockLocator(hashFork,eventGetBlocks.data))
     {
+        for(const auto& hash : eventGetBlocks.data.vBlockHash)
+        {
+            std::cout << "block locator : " << hash.ToString() << " [netchannel]\n";
+        }
+        
         pPeerNet->DispatchEvent(&eventGetBlocks);
     }
 }

@@ -1227,6 +1227,18 @@ bool CDbpService::HandleEvent(CMvEventPeerGetBlocks& event)
         {
             std::cout << "[forknode] generated event getblocks nonce " << event.nNonce 
                 << " sent to parent node [dbpservice]\n";
+
+            std::cout << "[forknode] generated event getblocks fork " << event.hashFork.ToString()
+                << " sent to parent node [dbpservice]\n";
+            
+
+            for(const auto& block : event.data.vBlockHash)
+            {
+                std::cout << "[forknode] generated event getblocks locator block " << block.ToString()
+                  << " sent to parent node [dbpservice]\n";
+            }    
+                
+                
             
             SendEventToParentNode(eventVPeer);
         }
