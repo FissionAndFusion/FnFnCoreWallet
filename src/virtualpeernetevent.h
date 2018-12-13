@@ -17,18 +17,10 @@ using namespace multiverse::network;
 namespace multiverse
 {
 
-
-enum class ecForkEventType : int
-{
-    //FORK NODE PEER NET EVENT
-
-    FK_EVENT_NODE_MAX
-};
-
-class CFkNodeEventListener : virtual public walleve::CWalleveEventListener
+class CVirtualPeerNetEventListener : virtual public walleve::CWalleveEventListener
 {
 public:
-    virtual ~CFkNodeEventListener() {}
+    virtual ~CVirtualPeerNetEventListener() {}
     DECLARE_EVENTHANDLER(CMvEventPeerActive);
     DECLARE_EVENTHANDLER(CMvEventPeerDeactive);
 };
