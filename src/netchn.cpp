@@ -424,7 +424,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerInv& eventInv)
     uint64 nNonce = eventInv.nNonce;
     uint256& hashFork = eventInv.hashFork;
 
-    std::cout << " PeerInv nonce" << nNonce << " [netchannel]\n";
+    std::cout << " PeerInv nonce " << nNonce << " [netchannel]\n";
     std::cout << " PeerInv hash fork " << hashFork.ToString() << " [netchannel]\n";
     
     try 

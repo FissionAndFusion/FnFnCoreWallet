@@ -194,8 +194,11 @@ void CMvDbpClientSocket::HandleWritenRequest(std::size_t nTransferred, dbp::Msg 
             return;
         }
 
-        std::cout << "[>]  Sent Message type " << dbp::Msg_Name(type) << " Msg Size: " 
-            << nTransferred << " \n";
+        /*if(type != dbp::Msg::PING || type != dbp::Msg::PONG)
+        {
+            std::cout << "[>]  Sent Message type " << dbp::Msg_Name(type) << " Msg Size: " 
+                << nTransferred << " \n";
+        }*/
 
         if(!IsReading)
         {
