@@ -52,28 +52,18 @@ void CMvDelegate::Evolve(int nBlockHeight,const map<CDestination,size_t>& mapWei
 
     // init
     {
-        auto t0 = boost::posix_time::microsec_clock::universal_time();
-
         CMvDelegateVote& vote = mapVote[nTarget];
         vote.CreateDelegate(setDelegate);
         vote.Setup(MAX_DELEGATE_THRESH,result.mapEnrollData);
-
-        auto t1 = boost::posix_time::microsec_clock::universal_time();
-        walleve::StdDebug("CMvDelegate", (string("Setup height:") + to_string(nTarget) + " time:" + to_string((t1-t0).ticks())).c_str());
     }
     // enroll & distribute
     {
         map<int,CMvDelegateVote>::iterator it = mapVote.find(nEnrollEnd);
         if (it != mapVote.end())
         { 
-            auto t0 = boost::posix_time::microsec_clock::universal_time();
-
             CMvDelegateVote& vote = (*it).second;
             vote.Enroll(mapWeight,mapEnrollData);
             vote.Distribute(result.mapDistributeData);
-
-            auto t1 = boost::posix_time::microsec_clock::universal_time();
-            walleve::StdDebug("CMvDelegate", (string("Enroll height:") + to_string(nEnrollEnd) + " time:" + to_string((t1-t0).ticks())).c_str());
         }
     }
     // publish
@@ -81,13 +71,8 @@ void CMvDelegate::Evolve(int nBlockHeight,const map<CDestination,size_t>& mapWei
         map<int,CMvDelegateVote>::iterator it = mapVote.find(nPublish);
         if (it != mapVote.end())
         {
-            auto t0 = boost::posix_time::microsec_clock::universal_time();
-
             CMvDelegateVote& vote = (*it).second;
             vote.Publish(result.mapPublishData);
-
-            auto t1 = boost::posix_time::microsec_clock::universal_time();
-            walleve::StdDebug("CMvDelegate", (string("Publish height:") + to_string(nPublish) + " time:" + to_string((t1-t0).ticks())).c_str());
         }
     }
 }    
@@ -121,15 +106,7 @@ bool CMvDelegate::HandleDistribute(int nTargetHeight,const CDestination& destFro
     if (it != mapVote.end())
     {
         CMvDelegateVote& vote = (*it).second;
-
-        auto t0 = boost::posix_time::microsec_clock::universal_time();
-
-        bool ret = vote.Accept(destFrom,vchDistributeData);
-
-        auto t1 = boost::posix_time::microsec_clock::universal_time();
-        walleve::StdDebug("CMvDelegate", (string("Accept height:") + to_string(nTargetHeight) + " time:" + to_string((t1-t0).ticks())).c_str());
-
-        return ret;
+        return vote.Accept(destFrom,vchDistributeData);
     }
     return false;
 }
@@ -141,15 +118,7 @@ bool CMvDelegate::HandlePublish(int nTargetHeight,const CDestination& destFrom,
     if (it != mapVote.end())
     {
         CMvDelegateVote& vote = (*it).second;
-
-        auto t0 = boost::posix_time::microsec_clock::universal_time();
-
-        bool ret = vote.Collect(destFrom,vchPublishData,fCompleted); 
-
-        auto t1 = boost::posix_time::microsec_clock::universal_time();
-        walleve::StdDebug("CMvDelegate", (string("Collect height:") + to_string(nTargetHeight) + " time:" + to_string((t1-t0).ticks())).c_str());
-
-        return ret;
+        return vote.Collect(destFrom,vchPublishData,fCompleted); 
     }
     return false;
 }
@@ -163,13 +132,7 @@ void CMvDelegate::GetAgreement(int nTargetHeight,uint256& nAgreement,size_t& nWe
     if (it != mapVote.end())
     {
         CMvDelegateVote& vote = (*it).second;
-
-        auto t0 = boost::posix_time::microsec_clock::universal_time();
-
         vote.GetAgreement(nAgreement,nWeight,mapBallot);
-
-        auto t1 = boost::posix_time::microsec_clock::universal_time();
-        walleve::StdDebug("CMvDelegate", (string("Reconstruct height:") + to_string(nTargetHeight) + " time:" + to_string((t1-t0).ticks())).c_str());
     }
 }
 
