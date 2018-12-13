@@ -1317,6 +1317,8 @@ bool CDbpService::HandleEvent(CWalleveEventPeerNetClose& event)
 
     if(IsForkNodeOfSuperNode())
     {
+        std::cout << "[forknode] generate netclose nonce: " << event.nNonce << " [dbpservice]\n";
+        std::cout << "[forknode] generate netclose type: " << event.data << " [dbpservice]\n";
         SendEventToParentNode(eventVPeer);
     }
     
