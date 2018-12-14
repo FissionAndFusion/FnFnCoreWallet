@@ -87,6 +87,7 @@ public:
         DBP_EVENT_PEER_CLOSE = 0x0A
     };
 public:
+    uint64 nNonce; 
     int type;
     uint256 hashFork;
     std::vector<uint8> data;
