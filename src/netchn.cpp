@@ -6,6 +6,7 @@
 #include "schedule.h"
 #include "virtualpeernet.h"
 #include <boost/bind.hpp>
+#include <limits>
 
 using namespace std;
 using namespace walleve;
@@ -683,7 +684,7 @@ void CNetChannel::SchedulePeerInv(uint64 nNonce,const uint256& hashFork,CSchedul
         {
             if (!sched.ScheduleTxInv(nNonce,eventGetData.data,MAX_PEER_SCHED_COUNT))
             {
-                if(nNonce != 0)
+                if(nNonce != std::numeric_limits<uint64>::max())
                 {
                     DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
                 }
@@ -693,7 +694,7 @@ void CNetChannel::SchedulePeerInv(uint64 nNonce,const uint256& hashFork,CSchedul
     }
     else
     {
-        if(nNonce != 0)
+        if(nNonce != std::numeric_limits<uint64>::max())
         {
             DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
         }
