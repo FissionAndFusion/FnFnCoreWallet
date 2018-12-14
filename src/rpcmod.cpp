@@ -1585,7 +1585,7 @@ CRPCResultPtr CRPCMod::RPCExportWallet(CRPCParamPtr param)
     {
         throw CRPCException(RPC_WALLET_ERROR, "File has been existed.");
     }
-    if(pSave.filename() == ".")
+    if(pSave.filename() == "." || pSave.filename() == "..")
     {
         throw CRPCException(RPC_WALLET_ERROR, "Cannot export to a folder.");
     }
