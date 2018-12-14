@@ -102,6 +102,9 @@ private:
     void DeleteCache(const uint256& forkHash, int type);
 
     void SendEventToParentNode(CMvDbpVirtualPeerNetEvent& event);
+    void UpdateGetDataEventRecord(const CMvEventPeerGetData& event);
+    bool IsThisNodeBlock(CMvEventPeerBlock& eventBlock);
+    bool IsThisNodeTx(CMvEventPeerTx& eventTx);
 
     void RespondFailed(CMvEventDbpConnect& event);
     void RespondConnected(CMvEventDbpConnect& event);
@@ -135,6 +138,8 @@ private:
     typedef std::pair<uint256, int> ForkNonceKeyType;
     std::map<ForkNonceKeyType, int> mapChildNodeForkCount;
     std::map<ForkNonceKeyType, int> mapThisNodeForkCount;
+    std::map<ForkNonceKeyType, std::set<uint256>> mapThisNodeGetData; 
+    
     std::vector<uint256> vSupportFork;
 
 
