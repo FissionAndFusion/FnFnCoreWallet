@@ -3,12 +3,10 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "core.h"
-#include <boost/uuid/uuid.hpp>
 
 using namespace std;                      
 using namespace walleve; 
 using namespace multiverse;
-using namespace boost::uuids;
 
 #define DEBUG(err, ...)         Debug((err),__FUNCTION__,__VA_ARGS__)
 
@@ -106,25 +104,16 @@ MvErr CMvCoreProtocol::ValidateTransaction(const CTransaction& tx)
                && (tx.sendTo.GetTemplateId() == TEMPLATE_WEIGHTED || tx.sendTo.GetTemplateId() == TEMPLATE_MULTISIG)))
        && !tx.vchData.empty())
     {
-        if(tx.vchData.size() < 17)
-        {
-            return DEBUG(MV_ERR_TRANSACTION_INVALID, "tx vchData is less than 17 bytes.\n");
-        }
-        //check uuid field
-        uuid uuidRFC4112;
-        std::copy(tx.vchData.begin(), tx.vchData.begin() + 16, uuidRFC4112.begin());
-        if(uuidRFC4112.is_nil())
-        {
-            return DEBUG(MV_ERR_TRANSACTION_INVALID, "tx vchData uuid is nil.\n");
-        }
-        if(uuidRFC4112.variant() != uuid::variant_rfc_4122)
-        {
-            return DEBUG(MV_ERR_TRANSACTION_INVALID, "tx vchData uuid is not RFC 4122.\n");
+        if(tx.vchData.size() < 21)
+        {   //vchData must contain 3 fields of UUID, timestamp, szDescription at least
+            return DEBUG(MV_ERR_TRANSACTION_INVALID, "tx vchData is less than 21 bytes.\n");
         }
         //check description field
-        if(tx.vchData[16] > 0)
+        uint16 nPos = 20;
+        uint8 szDesc = tx.vchData[nPos];
+        if(szDesc > 0)
         {
-            std::string strDescEncodedBase64(tx.vchData.begin() + 17, tx.vchData.begin() + 17 + tx.vchData[16]);
+            std::string strDescEncodedBase64(tx.vchData.begin() + nPos, tx.vchData.begin() + nPos + szDesc);
             walleve::CHttpUtil util;
             std::string strDescDecodedBase64;
             if(!util.Base64Decode(strDescEncodedBase64, strDescDecodedBase64))
@@ -132,7 +121,6 @@ MvErr CMvCoreProtocol::ValidateTransaction(const CTransaction& tx)
                 return DEBUG(MV_ERR_TRANSACTION_INVALID, "tx vchData description base64 is not available.\n");
             }
         }
-        //user-defined data field can be nil
     }
     if (tx.vInput.empty() && tx.nType != CTransaction::TX_GENESIS && tx.nType != CTransaction::TX_WORK && tx.nType != CTransaction::TX_STAKE)
     {
