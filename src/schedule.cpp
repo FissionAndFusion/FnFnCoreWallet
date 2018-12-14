@@ -156,12 +156,26 @@ bool CSchedule::ReceiveBlock(uint64 nPeerNonce,const uint256& hash,const CBlock&
     if (it != mapState.end())
     {
         CInvState& state = (*it).second;
-        if (state.nAssigned == nPeerNonce && !state.IsReceived())
+
+        if(nPeerNonce != 0)
         {
-            state.objReceived = block;
-            setSchedPeer.insert(state.setKnownPeer.begin(),state.setKnownPeer.end());
-            mapPeer[nPeerNonce].Completed((*it).first);
-            return true;
+            if (state.nAssigned == nPeerNonce && !state.IsReceived())
+            {
+                state.objReceived = block;
+                setSchedPeer.insert(state.setKnownPeer.begin(),state.setKnownPeer.end());
+                mapPeer[nPeerNonce].Completed((*it).first);
+                return true;
+            }
+        }
+        else
+        {
+            if(!state.IsReceived())
+            {
+                state.objReceived = block;
+                setSchedPeer.insert(state.setKnownPeer.begin(),state.setKnownPeer.end());
+                mapPeer[nPeerNonce].Completed((*it).first);
+                return true;
+            }
         }
     }
     return false;
@@ -173,12 +187,26 @@ bool CSchedule::ReceiveTx(uint64 nPeerNonce,const uint256& txid,const CTransacti
     if (it != mapState.end())
     {
         CInvState& state = (*it).second;
-        if (state.nAssigned == nPeerNonce && !state.IsReceived())
+        
+        if(nPeerNonce != 0)
         {
-            state.objReceived = tx;
-            setSchedPeer.insert(state.setKnownPeer.begin(),state.setKnownPeer.end());
-            mapPeer[nPeerNonce].Completed((*it).first);
-            return true;
+            if (state.nAssigned == nPeerNonce && !state.IsReceived())
+            {
+                state.objReceived = tx;
+                setSchedPeer.insert(state.setKnownPeer.begin(),state.setKnownPeer.end());
+                mapPeer[nPeerNonce].Completed((*it).first);
+                return true;
+            }
+        }
+        else
+        {
+            if (!state.IsReceived())
+            {
+                state.objReceived = tx;
+                setSchedPeer.insert(state.setKnownPeer.begin(),state.setKnownPeer.end());
+                mapPeer[nPeerNonce].Completed((*it).first);
+                return true;
+            }
         }
     }
     return false;
