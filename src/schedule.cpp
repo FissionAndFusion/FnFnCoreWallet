@@ -176,8 +176,17 @@ bool CSchedule::ReceiveBlock(uint64 nPeerNonce,const uint256& hash,const CBlock&
                 mapPeer[state.nAssigned].Completed((*it).first);
                 return true;
             }
+            else
+            {
+                std::cerr << " hash " << hash.ToString() << " hash Received in mapState [netchannel]\n";        
+            }
         }
     }
+    else
+    {
+        std::cerr << "Cannot Find hash " << hash.ToString() << " in mapState [netchannel]\n";
+    }
+
     return false;
 }
 
