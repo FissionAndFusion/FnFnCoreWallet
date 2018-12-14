@@ -6,6 +6,7 @@
 #include "schedule.h"
 #include "virtualpeernet.h"
 #include <boost/bind.hpp>
+#include <limits>
 
 using namespace std;
 using namespace walleve;
@@ -702,7 +703,7 @@ void CNetChannel::SchedulePeerInv(uint64 nNonce,const uint256& hashFork,CSchedul
         {
             if (!sched.ScheduleTxInv(nNonce,eventGetData.data,MAX_PEER_SCHED_COUNT))
             {
-                if(nNonce != 0)
+                if(nNonce != std::numeric_limits<uint64>::max())
                 {
                     std::cout << "Dispatch Event DDOS (ScheduleTxInv return false) [netchannel]\n";
                     DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
@@ -712,8 +713,8 @@ void CNetChannel::SchedulePeerInv(uint64 nNonce,const uint256& hashFork,CSchedul
         SetPeerSyncStatus(nNonce,hashFork,fEmpty);
     }
     else
-    {  
-        if(nNonce != 0)
+    {
+        if(nNonce != std::numeric_limits<uint64>::max())
         {
             std::cout << "Dispatch Event DDOS (ScheduleBlockInv return false) [netchannel]\n";
             DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
@@ -767,7 +768,7 @@ void CNetChannel::AddNewBlock(const uint256& hashFork,const uint256& hash,CSched
                 sched.GetNextBlock(hashBlock,vBlockHash);
                 sched.RemoveInv(network::CInv(network::CInv::MSG_BLOCK,hashBlock),setKnownPeer);
                 
-                if(nNonceSender != 0)
+                if(nNonceSender != std::numeric_limits<uint64>::max())
                 {
                     DispatchAwardEvent(nNonceSender,CEndpointManager::VITAL_DATA);
                     BroadcastBlockInv(hashFork,hashBlock,setKnownPeer);
@@ -811,7 +812,7 @@ void CNetChannel::AddNewTx(const uint256& hashFork,const uint256& txid,CSchedule
                 sched.GetNextTx(hashTx,vtx,setTx);
                 sched.RemoveInv(network::CInv(network::CInv::MSG_TX,hashTx),setSchedPeer);
                 
-                if(nNonceSender != 0)
+                if(nNonceSender != std::numeric_limits<uint64>::max())
                 {
                     DispatchAwardEvent(nNonceSender,CEndpointManager::MAJOR_DATA);
                 }
@@ -843,7 +844,7 @@ void CNetChannel::PostAddNew(const uint256& hashFork,CSchedule& sched,
 
     BOOST_FOREACH(const uint64 nNonceMisbehave,setMisbehavePeer)
     {
-        if(nNonceMisbehave != 0)
+        if(nNonceMisbehave != std::numeric_limits<uint64>::max())
         {
             std::cout << "DDOS in PostAddNew [netchannel]\n";
             DispatchMisbehaveEvent(nNonceMisbehave,CEndpointManager::DDOS_ATTACK);

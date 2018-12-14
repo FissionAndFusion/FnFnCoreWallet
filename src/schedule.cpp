@@ -157,7 +157,7 @@ bool CSchedule::ReceiveBlock(uint64 nPeerNonce,const uint256& hash,const CBlock&
     {
         CInvState& state = (*it).second;
 
-        if(nPeerNonce != 0)
+        if(nPeerNonce != std::numeric_limits<uint64>::max())
         {
             if (state.nAssigned == nPeerNonce && !state.IsReceived())
             {
@@ -197,7 +197,7 @@ bool CSchedule::ReceiveTx(uint64 nPeerNonce,const uint256& txid,const CTransacti
     {
         CInvState& state = (*it).second;
         
-        if(nPeerNonce != 0)
+        if(nPeerNonce != std::numeric_limits<uint64>::max())
         {
             if (state.nAssigned == nPeerNonce && !state.IsReceived())
             {

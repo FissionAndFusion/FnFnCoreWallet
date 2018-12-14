@@ -1120,7 +1120,7 @@ bool CDbpService::HandleEvent(CMvEventPeerInv& event)
 
     if(IsForkNodeOfSuperNode())
     {
-        if(event.nNonce == 0)
+        if(event.nNonce == std::numeric_limits<uint64>::max())
         {
             PushEvent(eventVPeer);
         }
@@ -1150,7 +1150,7 @@ bool CDbpService::HandleEvent(CMvEventPeerBlock& event)
 
     if(IsForkNodeOfSuperNode())
     {
-        if(event.nNonce == 0)
+        if(event.nNonce == std::numeric_limits<uint64>::max())
         {
             PushEvent(eventVPeer);
         }
@@ -1181,7 +1181,7 @@ bool CDbpService::HandleEvent(CMvEventPeerTx& event)
 
     if(IsForkNodeOfSuperNode())
     {
-        if(event.nNonce == 0)
+        if(event.nNonce == std::numeric_limits<uint64>::max())
         {
             PushEvent(eventVPeer);
         }
