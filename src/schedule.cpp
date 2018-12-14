@@ -173,7 +173,7 @@ bool CSchedule::ReceiveBlock(uint64 nPeerNonce,const uint256& hash,const CBlock&
             {
                 state.objReceived = block;
                 setSchedPeer.insert(state.setKnownPeer.begin(),state.setKnownPeer.end());
-                mapPeer[nPeerNonce].Completed((*it).first);
+                mapPeer[state.nAssigned].Completed((*it).first);
                 return true;
             }
         }
@@ -204,7 +204,7 @@ bool CSchedule::ReceiveTx(uint64 nPeerNonce,const uint256& txid,const CTransacti
             {
                 state.objReceived = tx;
                 setSchedPeer.insert(state.setKnownPeer.begin(),state.setKnownPeer.end());
-                mapPeer[nPeerNonce].Completed((*it).first);
+                mapPeer[state.nAssigned].Completed((*it).first);
                 return true;
             }
         }
