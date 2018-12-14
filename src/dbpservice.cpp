@@ -937,10 +937,12 @@ bool CDbpService::HandleEvent(CMvEventPeerActive& event)
         std::string data(ss.GetData(), ss.GetSize());
         
         CMvDbpVirtualPeerNetEvent eventVPeer;
+        eventVPeer.nNonce = event.nNonce;
         eventVPeer.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_ACTIVE;
         eventVPeer.data = std::vector<uint8>(data.begin(), data.end());
         vCacheEvent.push_back(eventVPeer);
 
+        DeleteCache(event.nNonce, CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_DEACTIVE);
         PushEvent(eventVPeer);
     }
 
@@ -956,21 +958,23 @@ bool CDbpService::HandleEvent(CMvEventPeerDeactive& event)
         std::string data(ss.GetData(), ss.GetSize());
         
         CMvDbpVirtualPeerNetEvent eventVPeer;
+        eventVPeer.nNonce = event.nNonce;
         eventVPeer.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_DEACTIVE;
         eventVPeer.data = std::vector<uint8>(data.begin(), data.end());
         vCacheEvent.push_back(eventVPeer);
 
+        DeleteCache(event.nNonce, CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_ACTIVE);
         PushEvent(eventVPeer);
     }
     
     return true;
 }
 
-void CDbpService::DeleteCache(const uint256& forkHash, int type)
+void CDbpService::DeleteCache(uint64 nNonce, int type)
 {
     for (auto it = vCacheEvent.begin(); it != vCacheEvent.end(); ) 
     {
-        if ((*it).type == type && (*it).hashFork == forkHash) 
+        if ((*it).type == type && (*it).nNonce == nNonce) 
         {
             it = vCacheEvent.erase(it);
         } 
@@ -994,7 +998,6 @@ bool CDbpService::HandleEvent(CMvEventPeerSubscribe& event)
         eventVPeer.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_SUBSCRIBE;
         eventVPeer.hashFork = event.hashFork;
         eventVPeer.data = std::vector<uint8>(data.begin(), data.end());
-        vCacheEvent.push_back(eventVPeer);
         PushEvent(eventVPeer);
     }
 
@@ -1043,11 +1046,8 @@ bool CDbpService::HandleEvent(CMvEventPeerUnsubscribe& event)
         
         CMvDbpVirtualPeerNetEvent eventVPeer;
         eventVPeer.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_UNSUBSCRIBE;
+        eventVPeer.hashFork = event.hashFork;
         eventVPeer.data = std::vector<uint8>(data.begin(), data.end());
-        vCacheEvent.push_back(eventVPeer);
-
-        DeleteCache(event.hashFork, CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_SUBSCRIBE);
-
         PushEvent(eventVPeer);
     }
 
@@ -1289,6 +1289,7 @@ bool CDbpService::HandleEvent(CMvEventDbpVirtualPeerNet& event)
         ss >> eventActive;  
         pVirtualPeerNet->DispatchEvent(&eventActive);
 
+        DeleteCache(event.nNonce, CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_DEACTIVE);
         vCacheEvent.push_back(event.data);
     }
 
@@ -1298,6 +1299,7 @@ bool CDbpService::HandleEvent(CMvEventDbpVirtualPeerNet& event)
         ss >> eventDeactive;   
         pVirtualPeerNet->DispatchEvent(&eventDeactive);
 
+        DeleteCache(event.nNonce, CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_ACTIVE);
         vCacheEvent.push_back(event.data);
     }
 
@@ -1305,23 +1307,26 @@ bool CDbpService::HandleEvent(CMvEventDbpVirtualPeerNet& event)
     {
         CMvEventPeerSubscribe eventSub(0, uint256());
         ss >> eventSub;
-        eventSub.sender = "dbpservice";
-        eventSub.flow = "down";    
-        pVirtualPeerNet->DispatchEvent(&eventSub);
 
-        vCacheEvent.push_back(event.data);
+        if(IsMyFork(eventSub.hashFork))
+        {
+            eventSub.sender = "dbpservice";
+            eventSub.flow = "down";    
+            pVirtualPeerNet->DispatchEvent(&eventSub);
+        }
     }
 
     if(event.data.type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_UNSUBSCRIBE)
     {
         CMvEventPeerUnsubscribe eventUnSub(0, uint256());
         ss >> eventUnSub;
-        eventUnSub.flow = "down";
-        eventUnSub.sender = "dbpservice";
-        pVirtualPeerNet->DispatchEvent(&eventUnSub);
-
-        DeleteCache(eventUnSub.hashFork, CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_SUBSCRIBE);
-        vCacheEvent.push_back(event.data);
+        
+        if(IsMyFork(eventUnSub.hashFork))
+        {
+            eventUnSub.flow = "down";
+            eventUnSub.sender = "dbpservice";
+            pVirtualPeerNet->DispatchEvent(&eventUnSub);
+        }
     }
 
     if(event.data.type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_GETBLOCKS)
