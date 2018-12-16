@@ -28,26 +28,26 @@ class CDbpClientConfig
 public:
     CDbpClientConfig(){}
     CDbpClientConfig(const boost::asio::ip::tcp::endpoint& epParentHostIn,
-                    const std::string&  SupportForksIn,
                     const std::string& strPrivateKeyIn,
                     const CIOSSLOption& optSSLIn, 
-                    const std::string& strIOModuleIn)
+                    const std::string& strIOModuleIn,
+                    bool isRootNode,
+                    bool isFnFnNode)
     : epParentHost(epParentHostIn),
       strPrivateKey(strPrivateKeyIn),
       optSSL(optSSLIn),
-      strIOModule(strIOModuleIn)
+      strIOModule(strIOModuleIn),
+      fIsRootNode(isRootNode),
+      fIsFnFnNode(isFnFnNode)
     {
-        const auto forks = CDbpUtils::Split(SupportForksIn,';');
-        std::for_each(forks.begin(),forks.end(),[this](const std::string& fork) -> void {
-            vSupportForks.push_back(boost::algorithm::to_lower_copy(fork));
-        });
     }
 public:
     boost::asio::ip::tcp::endpoint epParentHost;
-    std::vector<std::string> vSupportForks;
     std::string strPrivateKey;
     CIOSSLOption optSSL;
     std::string strIOModule;
+    bool fIsRootNode;
+    bool fIsFnFnNode;
 };
 
 class CDbpClientProfile
@@ -58,7 +58,6 @@ public:
     IIOModule* pIOModule;
     CIOSSLOption optSSL;
     boost::asio::ip::tcp::endpoint epParentHost;
-    std::vector<std::string> vSupportForks;
     std::string strPrivateKey;
 };
 
@@ -79,16 +78,9 @@ public:
     void SendPong(const std::string& id);
     void SendPing(const std::string& id);
 
-    void SendForkIds(const std::vector<std::string>& forks);
-    void SendSubScribeTopics(const std::vector<std::string>& topics);
     void SendConnectSession(const std::string& session, const std::vector<std::string>& forks);
+    void SendEvent(CMvDbpVirtualPeerNetEvent& dbpEvent);
 
-    void SendBlockNotice(const std::string& fork, const std::string& height, const std::string& hash);
-    void SendTxNotice(const std::string& fork, const std::string& hash);
-    void SendBlock(const std::string& id, const CMvDbpBlock& block);
-    void SendTx(const std::string& id, const CMvDbpTransaction& tx);
-    void GetBlocks(const std::string& fork, const std::string& startHash, int32 num);
-    void SendForkStateUpdate(const std::string& fork, const std::string& currentHeight, const std::string& lastBlockHash);
 protected:
     void StartReadHeader();
     void StartReadPayload(std::size_t nLength);
@@ -137,7 +129,7 @@ public:
 
     void HandleClientSocketError(CMvDbpClientSocket* pClientSocket);
     void HandleClientSocketSent(CMvDbpClientSocket* pClientSocket);
-    void HandleClientSocketRecv(CMvDbpClientSocket* pClientSocket, const boost::any& anyObj);
+    void HandleClientSocketRecv(CMvDbpClientSocket* pClientSocket, const boost::any& anyObj);   
     void AddNewClient(const CDbpClientConfig& confClient);
 
     void HandleConnected(CMvDbpClientSocket* pClientSocket, google::protobuf::Any* any);
@@ -148,6 +140,8 @@ public:
     void HandleAdded(CMvDbpClientSocket* pClientSocket, google::protobuf::Any* any);
     void HandleReady(CMvDbpClientSocket* pClientSocket, google::protobuf::Any* any);
     void HandleNoSub(CMvDbpClientSocket* pClientSocket, google::protobuf::Any* any);
+
+    bool HandleEvent(CMvEventDbpVirtualPeerNet& event) override;
 
 protected:
     bool WalleveHandleInitialize() override;
@@ -162,36 +156,18 @@ protected:
     bool CreateProfile(const CDbpClientConfig& confClient);
     bool StartConnection(const boost::asio::ip::tcp::endpoint& epRemote, int64 nTimeout, bool fEnableSSL,
             const CIOSSLOption& optSSL);
-    void RegisterDefaultForks(CMvDbpClientSocket* pClientSocket);
-    void UpdateDefaultForksState(CMvDbpClientSocket* pClientSocket);
-    void SubscribeDefaultTopics(CMvDbpClientSocket* pClientSocket);
+   
     void StartPingTimer(const std::string& session);
     void SendPingHandler(const boost::system::error_code& err, const CMvSessionProfile& sessionProfile);
     void CreateSession(const std::string& session, CMvDbpClientSocket* pClientSocket);
     bool HaveAssociatedSessionOf(CMvDbpClientSocket* pClientSocket);
-    bool IsSessionExist(const std::string& session);
-    bool IsForkNode();    
+    bool IsSessionExist(const std::string& session);  
 
     bool ActivateConnect(CIOClient* pClient);
     void CloseConnect(CMvDbpClientSocket* pClientSocket);
     void RemoveSession(CMvDbpClientSocket* pClientSocket);
     void RemoveClientSocket(CMvDbpClientSocket* pClientSocket);
     CMvDbpClientSocket* PickOneSessionSocket() const;
-
-    void HandleAddedBlock(const dbp::Added& added, CMvDbpClientSocket* pClientSocket);
-    void HandleAddedTx(const dbp::Added& added, CMvDbpClientSocket* pClientSocket);
-    void HandleAddedSysCmd(const dbp::Added& added, CMvDbpClientSocket* pClientSocket);
-    void HandleAddedBlockCmd(const dbp::Added& added, CMvDbpClientSocket* pClientSocket);
-    void HandleAddedTxCmd(const dbp::Added& added, CMvDbpClientSocket* pClientSocket); 
-
-protected:
-    bool HandleEvent(CMvEventDbpRegisterForkID& event) override;
-    bool HandleEvent(CMvEventDbpSendBlock& event) override;
-    bool HandleEvent(CMvEventDbpSendTx& event) override;
-    bool HandleEvent(CMvEventDbpSendBlockNotice& event) override;
-    bool HandleEvent(CMvEventDbpSendTxNotice& event) override;
-    bool HandleEvent(CMvEventDbpGetBlocks& event) override;
-    bool HandleEvent(CMvEventDbpUpdateForkState& event) override;
 
 protected:
     std::vector<CDbpClientConfig> vecClientConfig;
@@ -202,6 +178,7 @@ protected:
     typedef SessionClientSocketBimapType::value_type position_pair;
     SessionClientSocketBimapType bimapSessionClientSocket;      // session id <=> CMvDbpClientSocket
     std::map<std::string, CMvSessionProfile> mapSessionProfile; // session id => session profile
+
 
 private:
     IIOModule* pDbpService;

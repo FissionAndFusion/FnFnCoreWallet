@@ -11,7 +11,6 @@
 #include "json/json_spirit_utils.h"
 
 #include "rpc/auto_rpc.h"
-#include "rpc/rpc_error.h"
 
 namespace multiverse
 {
@@ -53,7 +52,7 @@ json_spirit::Value CRPCResp::ToJSON() const
 
 std::string CRPCResp::Serialize(bool indent) const
 {
-    return json_spirit::write_string<json_spirit::Value>(ToJSON(), indent);
+    return json_spirit::write_string<json_spirit::Value>(ToJSON(), indent, RPC_DOUBLE_PRECISION);
 }
 
 bool CRPCResp::IsError() const { return (bool)spError; }
@@ -199,7 +198,7 @@ std::string SerializeCRPCResp(const CRPCRespVec& resp, bool indent)
         arr.push_back(r->ToJSON());
     }
 
-    return json_spirit::write_string<json_spirit::Value>(arr, indent);
+    return json_spirit::write_string<json_spirit::Value>(arr, indent, RPC_DOUBLE_PRECISION);
 }
 
 }  // namespace rpc

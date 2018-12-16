@@ -69,6 +69,29 @@ public:
     std::string id;
 };
 
+class CMvDbpVirtualPeerNetEvent
+{
+public:
+    enum EventType : int
+    {
+        DBP_EVENT_PEER_ACTIVE = 0x00,
+        DBP_EVENT_PEER_DEACTIVE = 0x01,
+        DBP_EVENT_PEER_SUBSCRIBE = 0x02,
+        DBP_EVENT_PEER_UNSUBSCRIBE = 0x03,
+        DBP_EVENT_PEER_INV = 0x04,
+        DBP_EVENT_PEER_GETDATA = 0x05,
+        DBP_EVENT_PEER_GETBLOCKS= 0x06,
+        DBP_EVENT_PEER_TX = 0x07,
+        DBP_EVENT_PEER_BLOCK = 0x08,
+        DBP_EVENT_PEER_REWARD = 0x09,
+        DBP_EVENT_PEER_CLOSE = 0x0A
+    };
+public:
+    uint64 nNonce; 
+    int type;
+    uint256 hashFork;
+    std::vector<uint8> data;
+};
 
 class CMvDbpTxIn
 {
@@ -129,31 +152,6 @@ public:
     std::vector<uint8> fork;            // 当前区块的forkid
 };
 
-class CMvDbpSysCmd
-{
-public:
-    std::string id;
-    std::vector<uint8> fork;
-    int32 nCmd;
-    std::vector<std::string> args; 
-};
-
-class CMvDbpTxCmd
-{
-public:
-    std::string id;
-    std::vector<uint8> fork;
-    std::vector<uint8> hash;
-};
-
-class CMvDbpBlockCmd
-{
-public:
-    std::string id;
-    std::vector<uint8> fork;
-    std::vector<uint8> hash;
-};
-
 class CMvDbpAdded : public CMvDbpRespond
 {
 public:
@@ -166,18 +164,12 @@ public:
 class CMvDbpMethod : public CMvDbpRequest
 {
 public: 
-    /*supernode*/
-    enum  SNMethod : uint32_t
-    {
-        REGISTER_FORK = 0x03,
-        SEND_BLOCK = 0x04,
-        SEND_BLOCK_NOTICE = 0x05,
-        SEND_TX = 0x06,
-        SEND_TX_NOTICE = 0x07,
-        GET_BLOCKS_SN = 0x08,
-        UPDATE_FORK_STATE = 0x09
-    };
 
+    enum SnMethod : uint32_t
+    {
+        SEND_EVENT = 0x03
+    };
+    
     enum  LwsMethod : uint32_t
     {
         GET_BLOCKS = 0x00,
@@ -200,106 +192,6 @@ public:
     std::string hash;
     std::string result;
     std::string reason;
-};
-
-class CMvDbpRegisterForkIDRet
-{
-public:
-    std::string forkid;
-};
-
-class CMvDbpSendBlockRet
-{
-public:
-    std::string hash;
-};
-
-class CMvDbpSendTxRet
-{
-public:
-    std::string hash;
-};
-
-class CMvDbpSendBlockNoticeRet
-{
-public:
-    std::string hash;
-};
-
-class CMvDbpSendTxNoticeRet
-{
-public:
-    std::string hash;
-};
-
-// for supernode getblocks ret
-class CMvDbpGetBlocksRet
-{
-public:
-    std::string hash;
-};
-
-class CMvDbpUpdateForkStateRet
-{
-public:
-    std::string forkid;
-};
-
-class CMvDbpIsForkNode
-{
-public:
-    bool IsForkNode;
-};
-
-class CMvDbpRegisterForkID : public CMvDbpRequest
-{
-public:
-    std::string forkid;
-};
-
-class CMvDbpUpdateForkState : public CMvDbpRequest
-{
-public:
-    std::string forkid;
-    std::string currentHeight;
-    std::string lastBlockHash;
-};
-
-class CMvDbpSendBlock : public CMvDbpRequest
-{
-public:
-    std::string id;
-    boost::any block;
-};
-
-class CMvDbpSendTx : public CMvDbpRequest
-{
-public:
-    std::string id;
-    boost::any tx;
-};
-
-class CMvDbpSendBlockNotice : public CMvDbpRequest
-{
-public:
-    std::string forkid;
-    std::string height;
-    std::string hash;
-};
-
-class CMvDbpSendTxNotice : public CMvDbpRequest
-{
-public:
-    std::string forkid;
-    std::string hash;
-};
-
-class CMvDbpGetBlocks : public CMvDbpRequest
-{
-public:
-    std::string forkid;
-    std::string hash;
-    int32 number;
 };
 
 class CMvDbpMethodResult : public CMvDbpRespond

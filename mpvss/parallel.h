@@ -18,6 +18,8 @@
 #include <type_traits>
 #include <vector>
 
+#include "walleve/util.h"
+
 /**
  * Parallel computer for CPU intensive computing
  */
@@ -69,6 +71,7 @@ public:
                 }
                 catch (std::exception& e)
                 {
+                    walleve::StdError(__PRETTY_FUNCTION__, e.what());
                     return false;
                 }
             });
@@ -112,6 +115,7 @@ public:
                 }
                 catch (std::exception& e)
                 {
+                    walleve::StdError(__PRETTY_FUNCTION__, e.what());
                     return false;
                 }
             });
@@ -159,6 +163,7 @@ public:
                 }
                 catch (std::exception& e)
                 {
+                    walleve::StdError(__PRETTY_FUNCTION__, e.what());
                     return false;
                 }
             });
@@ -204,6 +209,7 @@ public:
                 }
                 catch (std::exception& e)
                 {
+                    walleve::StdError(__PRETTY_FUNCTION__, e.what());
                     return false;
                 }
             });

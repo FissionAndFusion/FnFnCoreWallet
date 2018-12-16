@@ -8,7 +8,7 @@
 #include "mvbase.h"
 #include "dbpserver.h"
 #include "event.h"
-#include "forkpeerevent.h"
+#include "virtualpeernetevent.h"
 #include "mvpeernet.h"
 #include "walleve/walleve.h"
 
@@ -23,11 +23,16 @@ namespace multiverse
 using namespace network;
 
 class CDbpService : public walleve::IIOModule, virtual public CDBPEventListener, 
-                    virtual public CMvDBPEventListener, virtual public CFkNodeEventListener
+                    virtual public CMvDBPEventListener, virtual public CMvPeerEventListener, 
+                    virtual public CWallevePeerEventListener 
 {
 public:
     CDbpService();
     virtual ~CDbpService() noexcept;
+
+    void SetIsRootNode(bool isRootNode);
+    void SetIsFnFnNode(bool isFnFnNode);
+    void SetSupportForks(const std::vector<uint256>& vForks);
 
     bool HandleEvent(CMvEventDbpConnect& event) override;
     bool HandleEvent(CMvEventDbpSub& event) override;
@@ -35,22 +40,28 @@ public:
     bool HandleEvent(CMvEventDbpMethod& event) override;
     bool HandleEvent(CMvEventDbpPong& event) override;
     bool HandleEvent(CMvEventDbpBroken& event) override;
-    bool HandleEvent(CMvEventDbpAdded& event) override;
     bool HandleEvent(CMvEventDbpRemoveSession& event) override;
-    // client post event register fork id
-    bool HandleEvent(CMvEventDbpRegisterForkID& event) override;
-    // client post event update fork state
-    bool HandleEvent(CMvEventDbpUpdateForkState& event) override;
-    // client post event is forknode
-    bool HandleEvent(CMvEventDbpIsForkNode& event) override;
-
+    
     // notify add msg(block tx ...) to event handler
     bool HandleEvent(CMvEventDbpUpdateNewBlock& event) override;
     bool HandleEvent(CMvEventDbpUpdateNewTx& event) override;
 
-    // notify block and tx from virtual peer net
-    bool HandleEvent(CFkEventNodeBlockArrive& event) override;
-    bool HandleEvent(CFkEventNodeTxArrive& event) override;
+    // from virtualpeernet
+    bool HandleEvent(CMvEventPeerActive& event) override;
+    bool HandleEvent(CMvEventPeerDeactive& event) override;
+    bool HandleEvent(CMvEventPeerSubscribe& event) override;
+    bool HandleEvent(CMvEventPeerUnsubscribe& event) override;
+    bool HandleEvent(CMvEventPeerInv& event) override;
+    bool HandleEvent(CMvEventPeerBlock& event) override;
+    bool HandleEvent(CMvEventPeerTx& event) override;
+    bool HandleEvent(CMvEventPeerGetBlocks& event) override;
+    bool HandleEvent(CMvEventPeerGetData& event) override;
+    
+    bool HandleEvent(CWalleveEventPeerNetReward& event) override;
+    bool HandleEvent(CWalleveEventPeerNetClose& event) override;
+    
+    // from up node
+    bool HandleEvent(CMvEventDbpVirtualPeerNet& event) override;
 
 protected:
     bool WalleveHandleInitialize() override;
@@ -66,27 +77,18 @@ private:
     bool CalcForkPoints(const uint256& forkHash);
     void TrySwitchFork(const uint256& blockHash, uint256& forkHash);
     bool GetLwsBlocks(const uint256& forkHash, const uint256& startHash, int32 n, std::vector<CMvDbpBlock>& blocks);
-    bool GetSnBlocks(const uint256& forkHash, const uint256& startHash, int32 n, std::vector<CMvDbpBlock>& blocks);
     bool IsEmpty(const uint256& hash);
     bool IsForkHash(const uint256& hash);
-    bool IsInMyForkPath(const uint256& forkHash, int blockHeight);
-    bool IsInChildNodeForkPath(const uint256& forkHash, int blockHeight);
+
+    bool IsMyFork(const uint256& hash);
+    bool IsForkNodeOfSuperNode();
+    bool IsRootNodeOfSuperNode();
     
+    // from down node
     void HandleGetBlocks(CMvEventDbpMethod& event);
     void HandleGetTransaction(CMvEventDbpMethod& event);
     void HandleSendTransaction(CMvEventDbpMethod& event);
-    void HandleRegisterFork(CMvEventDbpMethod& event);
-    void HandleSendBlock(CMvEventDbpMethod& event);
-    void HandleSendTx(CMvEventDbpMethod& event);
-    void HandleSendBlockNotice(CMvEventDbpMethod& event);
-    void HandleSendTxNotice(CMvEventDbpMethod& event);
-    void HandleGetSNBlocks(CMvEventDbpMethod& event);
-    void HandleUpdateForkState(CMvEventDbpMethod& event);
-    void HandleAddedBlock(const CMvDbpBlock& block);
-    void HandleAddedTx(const CMvDbpTransaction& tx);
-    void HandleAddedSysCmd(const CMvDbpSysCmd& cmd);
-    void HandleAddedBlockCmd(const CMvDbpBlockCmd& cmd);
-    void HandleAddedTxCmd(const CMvDbpTxCmd& cmd);
+    void HandleSendEvent(CMvEventDbpMethod& event);
 
     bool IsTopicExist(const std::string& topic);
 
@@ -96,37 +98,19 @@ private:
 
     void PushBlock(const std::string& forkid, const CMvDbpBlock& block);
     void PushTx(const std::string& forkid, const CMvDbpTransaction& dbptx);
-    void PushSysCmd(const std::string& forkid, const CMvDbpSysCmd& syscmd);
-    void PushTxCmd(const std::string& forkid, const CMvDbpTxCmd& txcmd);
-    void PushBlockCmd(const std::string& forkid, const CMvDbpBlockCmd& blockcmd);
+    bool PushEvent(const CMvDbpVirtualPeerNetEvent& event);
+    void DeleteCache(uint64 nNonce, int type);
+
+    void SendEventToParentNode(CMvDbpVirtualPeerNetEvent& event);
+    void UpdateGetDataEventRecord(const CMvEventPeerGetData& event);
+    bool IsThisNodeBlock(CMvEventPeerBlock& eventBlock);
+    bool IsThisNodeTx(CMvEventPeerTx& eventTx);
 
     void RespondFailed(CMvEventDbpConnect& event);
     void RespondConnected(CMvEventDbpConnect& event);
     void RespondNoSub(CMvEventDbpSub& event);
     void RespondReady(CMvEventDbpSub& event);
 
-    ///////////  super node  ////////////
-    bool IsForkNode();
-    bool IsMainFork(const uint256& hash);
-    bool IsMyFork(const uint256& hash);
-    bool IsChildNodeFork(const uint256& hash);
-    bool IsBlockExist(const uint256& hash);
-    void GetForkState(const uint256& forkHash, int& lastHeight, uint256& lastBlockHash);
-    ForkTopology CalcForkToplogy(const uint256& forkHash);
-
-    void UpdateThisNodeForkState(const uint256& forkHash);
-    void UpdateChildNodeForks(const std::string& session, const std::string& forks);
-    void UpdateChildNodeForksStates(const std::string& forkid, int currentHeight, const std::string& lastBlockHash);
-    void UpdateChildNodeForksToParent();
-    void UpdateChildNodeForksStatesToParent();
-    void UpdateThisNodeForkToplogy();
-    void UpdateChildNodesForkToplogy();
-
-    void SendBlockToParent(const std::string& id, const CMvDbpBlock& block);
-    void SendTxToParent(const std::string& id, const CMvDbpTransaction& tx);
-    void SendBlockNoticeToParent(const std::string& forkid, const std::string& height, const std::string& hash);
-    void SendTxNoticeToParent(const std::string& forkid, const std::string& hash);
-    void GetBlocksToParent(const std::string& forkid, const std::string& hash, int32 num);
 
 protected:
     walleve::IIOProc* pDbpServer;
@@ -136,22 +120,29 @@ protected:
     ICoreProtocol* pCoreProtocol;
     IWallet* pWallet;
     IMvNetChannel* pNetChannel;
-    IForkManager* pForkManager;
 
 private:
     std::map<std::string, ForksType> mapSessionChildNodeForks; // session => child node forks
-    std::map<std::string, ForkStates> mapThisNodeForkStates; // fork id => fork states
-    std::map<std::string, ForkStates> mapChildNodeForksStates; // fork id => fork states
-    std::map<std::string, ForkTopology> mapThisNodeForkToplogy;       // fork id => fork toplogy
-    std::map<std::string, ForkTopology> mapChildNodesForkToplogy;     // fork id => fork toplogy
-    ForkStates tupleMainForkStates;
 
     std::map<std::string, std::string> mapIdSubedSession;       // id => session
     std::unordered_map<std::string, IdsType> mapTopicIds;       // topic => ids
 
     std::unordered_map<std::string, std::pair<uint256,uint256>> mapForkPoint; // fork point hash => (fork hash, fork point hash)
 
-    bool fIsForkNode;
+    bool fIsRootNode;
+    bool fIsFnFnNode;
+
+    std::vector<CMvDbpVirtualPeerNetEvent> vCacheEvent;
+
+    /*Event router*/
+    typedef std::pair<uint256, int> ForkNonceKeyType;
+    std::map<ForkNonceKeyType, int> mapChildNodeForkCount;
+    std::map<ForkNonceKeyType, int> mapThisNodeForkCount;
+    std::map<ForkNonceKeyType, std::set<uint256>> mapThisNodeGetData; 
+    
+    std::vector<uint256> vSupportFork;
+
+
 };
 
 } // namespace multiverse

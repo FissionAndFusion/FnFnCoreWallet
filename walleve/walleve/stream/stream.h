@@ -69,7 +69,7 @@ public:
     template <typename T>
     CWalleveStream& operator>> (T& t)
     {
-        return Serialize(t,boost::is_fundamental<T>(),LoadType());
+        return Serialize(t, boost::is_fundamental<T>(),LoadType());
     }
 
     template <typename T>

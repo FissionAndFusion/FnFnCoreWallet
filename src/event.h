@@ -43,14 +43,7 @@ enum
     MV_EVENT_DBP_RESULT,
 
     /*super node*/
-    MV_EVENT_DBP_REGISTER_FORKID,
-    MV_EVENT_DBP_SEND_BLOCK,
-    MV_EVENT_DBP_SEND_TX,
-    MV_EVENT_DBP_SEND_BLOCK_NOTICE,
-    MV_EVENT_DBP_SEND_TX_NOTICE,
-    MV_EVENT_DBP_GET_BLOCKS,
-    MV_EVENT_DBP_UPDATE_FORK_STATE,
-    MV_EVENT_DBP_IS_FORK_NODE,
+    MV_EVENT_DBP_VPEERNET,
 
     MV_EVENT_DBP_PING,
     MV_EVENT_DBP_PONG,
@@ -93,8 +86,9 @@ public:
         {
             return listener.HandleEvent(*this);
         }
-        catch (...)
+        catch (std::exception& e)
         {
+            StdError(__PRETTY_FUNCTION__, e.what());
         }
         return false;
     }
@@ -139,14 +133,9 @@ typedef TYPE_DBP_EVENT(MV_EVENT_DBP_RESULT, CMvDbpMethodResult) CMvEventDbpMetho
 typedef TYPE_DBP_EVENT(MV_EVENT_DBP_BROKEN, CMvDbpBroken) CMvEventDbpBroken;
 typedef TYPE_DBP_EVENT(MV_EVENT_DBP_REMOVE_SESSION, CMvDbpRemoveSession) CMvEventDbpRemoveSession;
 
-typedef TYPE_DBP_EVENT(MV_EVENT_DBP_REGISTER_FORKID, CMvDbpRegisterForkID) CMvEventDbpRegisterForkID;
-typedef TYPE_DBP_EVENT(MV_EVENT_DBP_SEND_BLOCK, CMvDbpSendBlock) CMvEventDbpSendBlock;
-typedef TYPE_DBP_EVENT(MV_EVENT_DBP_SEND_TX, CMvDbpSendTx) CMvEventDbpSendTx;
-typedef TYPE_DBP_EVENT(MV_EVENT_DBP_SEND_BLOCK_NOTICE, CMvDbpSendBlockNotice) CMvEventDbpSendBlockNotice;
-typedef TYPE_DBP_EVENT(MV_EVENT_DBP_SEND_TX_NOTICE, CMvDbpSendTxNotice) CMvEventDbpSendTxNotice;
-typedef TYPE_DBP_EVENT(MV_EVENT_DBP_GET_BLOCKS, CMvDbpGetBlocks) CMvEventDbpGetBlocks;
-typedef TYPE_DBP_EVENT(MV_EVENT_DBP_UPDATE_FORK_STATE, CMvDbpUpdateForkState) CMvEventDbpUpdateForkState;
-typedef TYPE_DBP_EVENT(MV_EVENT_DBP_IS_FORK_NODE, CMvDbpIsForkNode) CMvEventDbpIsForkNode;
+/*supernode*/
+typedef TYPE_DBP_EVENT(MV_EVENT_DBP_VPEERNET, CMvDbpVirtualPeerNetEvent) CMvEventDbpVirtualPeerNet;
+
 // HeartBeats
 typedef TYPE_DBP_EVENT(MV_EVENT_DBP_PING, CMvDbpPing) CMvEventDbpPing;
 typedef TYPE_DBP_EVENT(MV_EVENT_DBP_PONG, CMvDbpPong) CMvEventDbpPong;
@@ -178,17 +167,12 @@ public:
     DECLARE_EVENTHANDLER(CMvEventDbpBroken);
     DECLARE_EVENTHANDLER(CMvEventDbpRemoveSession);
 
+    /*supernode*/
+    DECLARE_EVENTHANDLER(CMvEventDbpVirtualPeerNet);
+
     DECLARE_EVENTHANDLER(CMvEventDbpPing);
     DECLARE_EVENTHANDLER(CMvEventDbpPong);
 
-    DECLARE_EVENTHANDLER(CMvEventDbpRegisterForkID);
-    DECLARE_EVENTHANDLER(CMvEventDbpSendBlock);
-    DECLARE_EVENTHANDLER(CMvEventDbpSendTx);
-    DECLARE_EVENTHANDLER(CMvEventDbpSendBlockNotice);
-    DECLARE_EVENTHANDLER(CMvEventDbpSendTxNotice);
-    DECLARE_EVENTHANDLER(CMvEventDbpGetBlocks);
-    DECLARE_EVENTHANDLER(CMvEventDbpUpdateForkState);
-    DECLARE_EVENTHANDLER(CMvEventDbpIsForkNode);
 };
 
 } // namespace multiverse

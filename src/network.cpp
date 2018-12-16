@@ -58,12 +58,12 @@ bool CNetwork::WalleveHandleInitialize()
     }
     ConfigNetwork(config);
 
-    return network::CMvPeerNet::WalleveHandleInitialize();
+    return CVirtualPeerNet::WalleveHandleInitialize();
 }
 
 void CNetwork::WalleveHandleDeinitialize()
 {
-    network::CMvPeerNet::WalleveHandleDeinitialize();
+    CVirtualPeerNet::WalleveHandleDeinitialize();
 }
 
 bool CNetwork::CheckPeerVersion(uint32 nVersionIn,uint64 nServiceIn,const string& subVersionIn)

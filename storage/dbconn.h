@@ -116,7 +116,10 @@ public:
                 }
                 return true;
             }
-            catch (...) {}
+            catch (std::exception& e)
+            {
+                walleve::StdError(__PRETTY_FUNCTION__, e.what());
+            }
         } 
         return false;
     }
@@ -138,7 +141,10 @@ public:
                 vch.assign(rowData[idx],rowData[idx] + pLength[idx]);
                 return true;
             }
-            catch (...) {}
+            catch (std::exception& e)
+            {
+                walleve::StdError(__PRETTY_FUNCTION__, e.what());
+            }
         }
         return false;
     }

@@ -6,6 +6,7 @@
 #define  WALLEVE_EVENT_H
 
 #include "walleve/stream/stream.h"
+#include "walleve/util.h"
 
 namespace walleve
 {
@@ -58,7 +59,7 @@ public:
         : CWalleveEvent(nNonceIn,type) {}
     CWalleveEventCategory(const std::string& session)
         : CWalleveEvent(session,type){}
-    virtual ~CWalleveEventCategory() {}
+    virtual ~CWalleveEventCategory() noexcept {}
     virtual bool Handle(CWalleveEventListener& listener) override
     {
         try
@@ -69,7 +70,10 @@ public:
         {
             return listener.HandleEvent(*this);
         }
-        catch (...) {}
+        catch (std::exception& e)
+        {
+            StdError(__PRETTY_FUNCTION__, e.what());
+        }
         return false;
     }
 protected:
@@ -77,6 +81,9 @@ protected:
     void WalleveSerialize(walleve::CWalleveStream& s,O& opt)
     {
         s.Serialize(data,opt);
+        s.Serialize(result,opt);
+        s.Serialize(nNonce,opt);
+        s.Serialize(nType,opt);
     }
 public:
     D data;

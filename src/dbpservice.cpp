@@ -20,7 +20,6 @@ CDbpService::CDbpService()
     pDbpServer = NULL;
     pNetChannel = NULL;
     pVirtualPeerNet = NULL;
-    pForkManager = NULL;
 
     std::unordered_map<std::string, IdsType> temp_map = 
         boost::assign::map_list_of(ALL_BLOCK_TOPIC, std::set<std::string>())
@@ -32,10 +31,12 @@ CDbpService::CDbpService()
                                   (REMOVED_TOPIC,   std::set<std::string>());
 
     mapTopicIds = temp_map;
-    fIsForkNode = true;
+
+    fIsRootNode = true;
+    fIsFnFnNode = true;
 }
 
-CDbpService::~CDbpService()
+CDbpService::~CDbpService() noexcept
 {
 }
 
@@ -43,49 +44,43 @@ bool CDbpService::WalleveHandleInitialize()
 {
     if (!WalleveGetObject("coreprotocol", pCoreProtocol))
     {
-        WalleveLog("Failed to request coreprotocol\n");
+        WalleveError("Failed to request coreprotocol\n");
         return false;
     }
 
     if (!WalleveGetObject("service", pService))
     {
-        WalleveLog("Failed to request service\n");
+        WalleveError("Failed to request service\n");
         return false;
     }
 
     if (!WalleveGetObject("wallet", pWallet))
     {
-        WalleveLog("Failed to request wallet\n");
+        WalleveError("Failed to request wallet\n");
         return false;
     }
 
     if (!WalleveGetObject("dbpserver", pDbpServer))
     {
-        WalleveLog("Failed to request dbpserver\n");
+        WalleveError("Failed to request dbpserver\n");
         return false;
     }
 
     if(!WalleveGetObject("dbpclient",pDbpClient))
     {
-        WalleveLog("Failed to request dbpclient\n");
+        WalleveError("Failed to request dbpclient\n");
         return false;
     }
 
     if (!WalleveGetObject("netchannel",pNetChannel))
     {
-        WalleveLog("Failed to request peer net datachannel\n");
+        WalleveError("Failed to request peer net datachannel\n");
         return false;
     }
 
-    if (!WalleveGetObject("forkpseudopeernet",pVirtualPeerNet))
+    if (!WalleveGetObject("virtualpeernet",pVirtualPeerNet))
     {
         WalleveLog("Failed to request virtual peer net\n");
-        return false;
-    }
-    
-    if(!WalleveGetObject("forkmanager", pForkManager))
-    {
-        WalleveLog("Failed to request fork manager\n");
         return false;
     }
 
@@ -100,7 +95,21 @@ void CDbpService::WalleveHandleDeinitialize()
     pWallet = NULL;
     pNetChannel = NULL;
     pVirtualPeerNet = NULL;
-    pForkManager = NULL;
+}
+
+void CDbpService::SetIsRootNode(bool isRootNode)
+{
+    fIsRootNode = isRootNode;
+}
+
+void CDbpService::SetIsFnFnNode(bool isFnFnNode)
+{
+    fIsFnFnNode = isFnFnNode;
+}
+
+void CDbpService::SetSupportForks(const std::vector<uint256>& vForks)
+{
+    vSupportFork = vForks;
 }
 
 bool CDbpService::HandleEvent(CMvEventDbpPong& event)
@@ -138,245 +147,15 @@ static std::string GetHex(std::string data)
     return ret;
 }
 
-static void print_block(const CMvDbpBlock &block)
+static void print_block(const CBlock &block)
 {
-    uint256 hash(std::vector<unsigned char>(block.hash.begin(),block.hash.end()));
-    uint256 prevHash(std::vector<unsigned char>(block.hashPrev.begin(),block.hashPrev.end()));
-    uint256 forkHash(std::vector<unsigned char>(block.fork.begin(),block.fork.end()));
+   
+
+}
+
+static void print_tx(const CTransaction &tx)
+{
     
-    std::cout << "[<]recived block" << std::endl;
-    std::cout << "   hash: " << hash.ToString() << std::endl;
-    std::cout << "   height: " << block.nHeight << std::endl;
-    std::cout << "   prev hash: " << prevHash.ToString() << std::endl;
-    std::cout << "   fork hash: " << forkHash.ToString() << std::endl;
-
-}
-
-static void print_tx(const CMvDbpTransaction &tx)
-{
-    uint256 hash(std::vector<unsigned char>(tx.hash.begin(),tx.hash.end()));
-    uint256 sig(std::vector<unsigned char>(tx.vchSig.begin(),tx.vchSig.end()));
-    uint256 forkHash(std::vector<unsigned char>(tx.fork.begin(),tx.fork.end()));
-
-    std::cout << "[<]recived transaction" << std::endl;
-    std::cout << "   hash:" << hash.ToString() << std::endl;
-    std::cout << "   sig:" << sig.ToString() << std::endl;
-    std::cout << "   fork hash:" << forkHash.ToString() << std::endl;
-}
-
-static void print_syscmd(const CMvDbpSysCmd &cmd)
-{
-    uint256 forkHash(std::vector<unsigned char>(cmd.fork.begin(),cmd.fork.end()));
-
-    std::cout << "[<]recived sys cmd" << std::endl;
-    std::cout << "   fork hash:" << forkHash.ToString() << std::endl;
-}
-
-static void print_blockcmd(const CMvDbpBlockCmd &cmd)
-{
-    uint256 hash(std::vector<unsigned char>(cmd.hash.begin(),cmd.hash.end()));
-    uint256 forkHash(std::vector<unsigned char>(cmd.fork.begin(),cmd.fork.end()));
-
-    std::cout << "[<]recived block cmd" << std::endl;
-    std::cout << "   hash:" << hash.ToString() << std::endl;
-    std::cout << "   fork hash:" << forkHash.ToString() << std::endl;
-}
-
-static void print_txcmd(const CMvDbpTxCmd &cmd)
-{
-    uint256 hash(std::vector<unsigned char>(cmd.hash.begin(),cmd.hash.end()));
-    uint256 forkHash(std::vector<unsigned char>(cmd.fork.begin(),cmd.fork.end()));
-
-    std::cout << "[<]recived tx cmd" << std::endl;
-    std::cout << "   hash:" << hash.ToString() << std::endl;
-    std::cout << "   fork hash:" << forkHash.ToString() << std::endl;
-}
-
-void CDbpService::UpdateThisNodeForkToplogy()
-{
-    for(const auto& kv : mapThisNodeForkStates)
-    {
-        std::string forkid = kv.first;
-        uint256 thisNodeForkid;
-        thisNodeForkid.SetHex(forkid);
-        mapThisNodeForkToplogy[forkid] = CalcForkToplogy(thisNodeForkid);
-    }
-}
-
-void CDbpService::UpdateChildNodesForkToplogy()
-{
-    for(const auto& kv : mapChildNodeForksStates)
-    {
-        std::string forkid = kv.first;
-        uint256 childNodeForkid;
-        childNodeForkid.SetHex(forkid);
-        mapChildNodesForkToplogy[forkid] = CalcForkToplogy(childNodeForkid);
-    }
-}
-
-void CDbpService::HandleAddedBlock(const CMvDbpBlock& block)
-{
-    uint256 forkHash(std::vector<unsigned char>(block.fork.begin(),block.fork.end()));
-    uint256 blockHash(std::vector<unsigned char>(block.hash.begin(), block.hash.end()));
-    uint256 blockPreHash(std::vector<unsigned char>(block.hashPrev.begin(), block.hashPrev.end()));
-    int blockHeight = block.nHeight;
-
-    if(IsMainFork(forkHash))
-    {
-       UpdateThisNodeForkToplogy();
-       UpdateChildNodesForkToplogy();
-    }
-
-    if(IsMyFork(forkHash) || IsMainFork(forkHash) || IsInMyForkPath(forkHash, blockHeight))
-    {
-        // THIS FORK NODE Handle this TODO
-        print_block(block);
-
-
-        if(!IsBlockExist(blockHash) && IsBlockExist(blockPreHash))
-        {
-            // process normal
-            pVirtualPeerNet->DispatchEvent(NULL);
-        }
-        else
-        {
-            UpdateThisNodeForkState(forkHash);
-            UpdateChildNodeForksStatesToParent();
-        }
-    }
-
-    if(IsChildNodeFork(forkHash) || IsMainFork(forkHash) || IsInChildNodeForkPath(forkHash, blockHeight))
-    {
-        PushBlock(forkHash.ToString(), block);
-    }
-
-}
-
-void CDbpService::HandleAddedTx(const CMvDbpTransaction& tx)
-{
-    uint256 forkHash(std::vector<unsigned char>(tx.fork.begin(),tx.fork.end()));
-
-    if(IsMyFork(forkHash) || IsMainFork(forkHash))
-    {
-        // THIS FORK NODE Handle this TODO
-        print_tx(tx);
-
-        pVirtualPeerNet->DispatchEvent(NULL);
-
-        if(IsMainFork(forkHash))
-        {
-            PushTx(forkHash.ToString(), tx);
-        }
-    }
-    else
-    {
-        // Dispatch Tx to child fork node
-        PushTx(forkHash.ToString(),tx);
-    }
-}
-
-void CDbpService::HandleAddedSysCmd(const CMvDbpSysCmd& cmd)
-{
-    uint256 forkHash(std::vector<unsigned char>(cmd.fork.begin(),cmd.fork.end()));
-
-    if(IsMyFork(forkHash))
-    {
-        // RESERVED sys-cmd nothing to do
-        print_syscmd(cmd);
-    }
-    else
-    {
-        // Dispatch SysCmd to child fork node
-        PushSysCmd(forkHash.ToString(),cmd);
-    }
-}
-
-void CDbpService::HandleAddedBlockCmd(const CMvDbpBlockCmd& cmd)
-{
-    uint256 forkHash(std::vector<unsigned char>(cmd.fork.begin(),cmd.fork.end()));
-    uint256 hash(std::vector<unsigned char>(cmd.hash.begin(), cmd.hash.end()));
-
-    if(IsMyFork(forkHash))
-    {
-        print_blockcmd(cmd);
-     
-        CBlockEx block;
-        uint256 tempForkHash;
-        int nHeight = 0;
-        if(pService->GetBlockEx(hash, block, tempForkHash, nHeight))
-        {
-            CMvDbpBlock dbpBlock;
-            CDbpUtils::RawToDbpBlock(block, tempForkHash, nHeight, dbpBlock);
-            SendBlockToParent(cmd.id, dbpBlock);
-        }
-        
-    }
-    else
-    {
-        // Dispatch BlockCmd to child fork node
-        PushBlockCmd(forkHash.ToString(),cmd);
-    }
-}
-
-void CDbpService::HandleAddedTxCmd(const CMvDbpTxCmd& cmd)
-{
-    uint256 forkHash(std::vector<unsigned char>(cmd.fork.begin(),cmd.fork.end()));
-    uint256 hash(std::vector<unsigned char>(cmd.hash.begin(),cmd.hash.end()));
-
-    if(IsMyFork(forkHash))
-    {
-        print_txcmd(cmd);
-
-        CTransaction tx;
-        uint256 tempForkHash;
-        int blockHeight;
-        if (pService->GetTransaction(hash, tx, tempForkHash, blockHeight))
-        {
-            CMvDbpTransaction dbpTx;
-            CDbpUtils::RawToDbpTransaction(tx, tempForkHash, 0, dbpTx);
-            SendTxToParent(cmd.id, dbpTx);
-        }
-    }
-    else
-    {
-        // Dispatch TxCmd to child fork node
-        PushTxCmd(forkHash.ToString(),cmd);
-    }
-}
-
-bool CDbpService::HandleEvent(CMvEventDbpAdded& event)
-{
-    if(event.data.name == ALL_BLOCK_TOPIC)
-    {
-        CMvDbpBlock block = boost::any_cast<CMvDbpBlock>(event.data.anyAddedObj);
-        HandleAddedBlock(block);
-    }
-    else if(event.data.name == ALL_TX_TOPIC)
-    {
-        CMvDbpTransaction tx = boost::any_cast<CMvDbpTransaction>(event.data.anyAddedObj);
-        HandleAddedTx(tx);
-    }
-    else if(event.data.name == SYS_CMD_TOPIC)
-    {
-        CMvDbpSysCmd cmd = boost::any_cast<CMvDbpSysCmd>(event.data.anyAddedObj);
-        HandleAddedSysCmd(cmd);
-    }
-    else if(event.data.name == BLOCK_CMD_TOPIC)
-    {
-        CMvDbpBlockCmd cmd = boost::any_cast<CMvDbpBlockCmd>(event.data.anyAddedObj);
-        HandleAddedBlockCmd(cmd);
-    }
-    else if(event.data.name == TX_CMD_TOPIC)
-    {
-        CMvDbpTxCmd cmd = boost::any_cast<CMvDbpTxCmd>(event.data.anyAddedObj);
-        HandleAddedTxCmd(cmd);
-    }
-    else
-    {
-        return false;
-    }
-    
-    return true;
 }
 
 bool CDbpService::HandleEvent(CMvEventDbpConnect& event)
@@ -385,7 +164,6 @@ bool CDbpService::HandleEvent(CMvEventDbpConnect& event)
     
     if (isReconnect)
     {
-        UpdateChildNodeForks(event.strSessionId,event.data.forks);
         RespondConnected(event);
     }
     else
@@ -396,8 +174,16 @@ bool CDbpService::HandleEvent(CMvEventDbpConnect& event)
         }
         else
         {
-            UpdateChildNodeForks(event.strSessionId,event.data.forks);
             RespondConnected(event);
+
+            for(const auto& virtualevent : vCacheEvent)
+            {
+                std::string session(event.strSessionId);
+                CMvEventDbpAdded eventAdd(session);
+                eventAdd.data.name = "event";
+                eventAdd.data.anyAddedObj = virtualevent;
+                return pDbpServer->DispatchEvent(&eventAdd);
+            }
         }
     }
 
@@ -570,82 +356,19 @@ bool CDbpService::IsForkHash(const uint256& hash)
     return false;
 }
 
-CDbpService::ForkTopology CDbpService::CalcForkToplogy(const uint256& forkHash)
+bool CDbpService::IsMyFork(const uint256& hash)
 {
-    const uint256 startForkHash = forkHash;
-    uint256 tempForkHash = forkHash;
-    uint256 parentForkHash;
-    uint256 hashJoint;
-    int parentJointHeight = 0;
-    ForkTopology toplogy;
-    while(pForkManager->GetJoint(tempForkHash,parentForkHash,hashJoint,parentJointHeight))
-    {
-        toplogy.push_back(std::make_tuple(parentForkHash.ToString(), hashJoint.ToString(), parentJointHeight));
-        tempForkHash = parentForkHash;
-    }
-
-    return toplogy;
+    return pNetChannel->IsCotains(hash);
 }
 
-bool CDbpService::IsInMyForkPath(const uint256& forkHash, int blockHeight)
+bool CDbpService::IsForkNodeOfSuperNode()
 {
-    for(const auto& kv : mapThisNodeForkToplogy)
-    {
-        const auto& vecToplogy = kv.second;
-        for(const auto& tuple : vecToplogy)
-        {
-            std::string parentForkHash;
-            std::string hashJoint;
-            int parentJointHeight;
-            std::tie(parentForkHash, hashJoint, parentJointHeight) = tuple;
-            if(parentForkHash == forkHash.ToString() && blockHeight <= parentJointHeight)
-            {
-                return true;
-            }
-        }
-
-    }
-    
-    return false;
+    return (!fIsFnFnNode && !fIsRootNode);
 }
 
-bool CDbpService::IsInChildNodeForkPath(const uint256& forkHash, int blockHeight)
+bool CDbpService::IsRootNodeOfSuperNode()
 {
-    for(const auto& kv : mapChildNodesForkToplogy)
-    {
-        const auto& vecToplogy = kv.second;
-        for(const auto& tuple : vecToplogy)
-        {
-            std::string parentForkHash;
-            std::string hashJoint;
-            int parentJointHeight;
-            std::tie(parentForkHash, hashJoint, parentJointHeight) = tuple;
-            if(parentForkHash == forkHash.ToString() && blockHeight <= parentJointHeight)
-            {
-                return true;
-            }
-        }
-
-    }
-    
-    return false;
-}
-
-bool CDbpService::IsBlockExist(const uint256& hash)
-{
-    uint256 forkHash;
-    int nHeight = 0;
-    return pService->GetBlockLocation(hash, forkHash, nHeight);
-}
-
-void CDbpService::GetForkState(const uint256& forkHash, int& lastHeight, uint256& lastBlockHash)
-{
-    lastHeight = pService->GetForkHeight(forkHash);
-    if(!pService->GetBlockHash(forkHash, lastHeight,lastBlockHash))
-    {
-        lastHeight = 0;
-        lastBlockHash = pCoreProtocol->GetGenesisBlockHash();
-    }
+    return (!fIsFnFnNode && fIsRootNode);
 }
 
 void CDbpService::TrySwitchFork(const uint256& blockHash,uint256& forkHash)
@@ -762,61 +485,6 @@ bool CDbpService::GetLwsBlocks(const uint256& forkHash, const uint256& startHash
     return true;
 }
 
-bool CDbpService::GetSnBlocks(const uint256& forkHash, const uint256& startHash, int32 n, std::vector<CMvDbpBlock>& blocks)
-{
-    uint256 blockHash = startHash;
-
-    if(!IsForkHash(forkHash))
-    {
-        std::cerr << "invalid fork hash.\n";
-        return false;
-    }
-
-    if (IsEmpty(blockHash))
-    {
-        std::cerr << "start hash is invalid.\n";
-        return false;
-    }
-
-    int blockHeight = 0;
-    uint256 tempForkHash;
-    if (!pService->GetBlockLocation(blockHash, tempForkHash, blockHeight))
-    {
-        return false;
-    }
-
-    const std::size_t nonExtendBlockMaxNum = n;
-    std::size_t nonExtendBlockCount = 0;
-    
-    pService->GetBlockLocation(blockHash, tempForkHash, blockHeight);
-    
-    std::vector<uint256> blocksHash;
-    while (nonExtendBlockCount < nonExtendBlockMaxNum && 
-            pService->GetBlockHash(tempForkHash, blockHeight, blocksHash))
-    {
-        for(int i = 0; i < blocksHash.size(); ++i)
-        {
-            CBlockEx block;
-            int height;
-            pService->GetBlockEx(blocksHash[i], block, tempForkHash, height);
-            if (block.nType != CBlock::BLOCK_EXTENDED)
-            {
-                nonExtendBlockCount++;
-            }
-
-            CMvDbpBlock DbpBlock;
-            CDbpUtils::RawToDbpBlock(block, tempForkHash, height, DbpBlock);
-            blocks.push_back(DbpBlock);
-        }
-        
-        blockHeight++;
-        blocksHash.clear(); blocksHash.shrink_to_fit();
-    }
-
-    return true;
-
-}
-
 void CDbpService::HandleGetBlocks(CMvEventDbpMethod& event)
 {
     std::string forkid = boost::any_cast<std::string>(event.data.params["forkid"]);
@@ -849,302 +517,279 @@ void CDbpService::HandleGetBlocks(CMvEventDbpMethod& event)
     }
 }
 
-bool CDbpService::IsForkNode()
+// event from down to up
+void CDbpService::HandleSendEvent(CMvEventDbpMethod& event)
 {
-    return fIsForkNode;
-}
+    int type = boost::any_cast<int>(event.data.params["type"]);
+    std::string eventData = boost::any_cast<std::string>(event.data.params["data"]);
 
-bool CDbpService::IsMainFork(const uint256& hash)
-{
-    return pCoreProtocol->GetGenesisBlockHash().ToString() == hash.ToString();
-}
-
-bool CDbpService::IsMyFork(const uint256& hash)
-{
-    return mapThisNodeForkStates.find(hash.ToString()) != mapThisNodeForkStates.end();
-}
-
-bool CDbpService::IsChildNodeFork(const uint256& hash)
-{
-    return mapChildNodeForksStates.find(hash.ToString()) != mapChildNodeForksStates.end();
-}
-
-bool CDbpService::HandleEvent(CMvEventDbpRegisterForkID& event)
-{
-    std::string& forkid = event.data.forkid;
-    if(!forkid.empty())
+    CWalleveBufStream ss;
+    ss.Write(eventData.data(), eventData.size());
+   
+    // process reward event from down node
+    if(type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_REWARD)
     {
-        mapThisNodeForkStates[forkid] = std::make_tuple(-1,"");
-    }
-    else
-    {
-        pNetChannel->SetForkFilterInfo(IsForkNode(), mapThisNodeForkStates);
-        
-        UpdateChildNodeForksToParent();
-    }
-    
-    return true;
-}
-
-bool CDbpService::HandleEvent(CMvEventDbpIsForkNode& event)
-{
-    fIsForkNode = event.data.IsForkNode;
-
-    int nNonce = 0;
-    uint32_t ramdom32 = CDbpUtils::RandomBits();
-    std::memcpy(&nNonce, &ramdom32, 4);
-    CFkEventNodeIsForkNode eventIsForkNode(nNonce);
-    eventIsForkNode.fIsForkNode = fIsForkNode;
-    pVirtualPeerNet->DispatchEvent(&eventIsForkNode);
-
-    return true;
-}
-
-bool CDbpService::HandleEvent(CMvEventDbpUpdateForkState& event)
-{
-    std::string& forkid = event.data.forkid;
-    if(!forkid.empty())
-    {
-        uint256 forkHash, lastBlockHash;
-        forkHash.SetHex(forkid);
-        UpdateThisNodeForkState(forkHash);
-    }
-    else
-    {
-        uint256 mainForkHash = pCoreProtocol->GetGenesisBlockHash();
-        UpdateThisNodeForkState(mainForkHash);
-        UpdateChildNodeForksStatesToParent();
-    }
-    
-    return true;
-}
-
-void CDbpService::HandleRegisterFork(CMvEventDbpMethod& event)
-{
-    std::string forkid = boost::any_cast<std::string>(event.data.params["forkid"]);
-    UpdateChildNodeForks(event.strSessionId,forkid);
-
-    uint256 forkHashRet;
-    forkHashRet.SetHex(forkid);
-    std::vector<uint8> forkHashBin;
-    walleve::CWalleveODataStream forkHashSs(forkHashBin);
-    forkHashRet.ToDataStream(forkHashSs);
-    
-    CMvEventDbpMethodResult eventResult(event.strSessionId);
-    eventResult.data.id = event.data.id;
-    CMvDbpRegisterForkIDRet ret;
-    ret.forkid = std::string(forkHashBin.begin(), forkHashBin.end());
-    eventResult.data.anyResultObjs.push_back(ret);
-    pDbpServer->DispatchEvent(&eventResult);
-
-    if(IsForkNode())
-    {
-        UpdateChildNodeForksToParent();
-    }
-}
-
-void CDbpService::HandleSendBlock(CMvEventDbpMethod& event)
-{
-    std::string id = boost::any_cast<std::string>(event.data.params["id"]);
-    CMvDbpBlock block = boost::any_cast<CMvDbpBlock>(event.data.params["data"]);
-    
-    CMvEventDbpMethodResult eventResult(event.strSessionId);
-    eventResult.data.id = event.data.id;
-    CMvDbpSendBlockRet ret;
-    ret.hash = std::string(block.hash.begin(), block.hash.end()); 
-    eventResult.data.anyResultObjs.push_back(ret);
-    pDbpServer->DispatchEvent(&eventResult);
-
-    if(!IsForkNode())
-    {
-        int nNonce = 0;
-        uint32_t ramdom32 = CDbpUtils::RandomBits();
-        std::memcpy(&nNonce, &ramdom32, 4);
-        uint256 forkHash(block.fork);
-        CFkEventNodeSendBlock eventBlock(nNonce, forkHash);
-        CDbpUtils::DbpToRawBlock(block, eventBlock.data);
-        pVirtualPeerNet->DispatchEvent(&eventBlock);
-    }
-    else
-    {
-        SendBlockToParent(id, block);
-    }
-}
-
-void CDbpService::HandleSendTx(CMvEventDbpMethod& event)
-{
-    std::string id = boost::any_cast<std::string>(event.data.params["id"]);
-    CMvDbpTransaction tx = boost::any_cast<CMvDbpTransaction>(event.data.params["data"]);
-
-    CMvEventDbpMethodResult eventResult(event.strSessionId);
-    eventResult.data.id = event.data.id;
-    CMvDbpSendTxRet ret;
-    ret.hash = std::string(tx.hash.begin(), tx.hash.end()); 
-    eventResult.data.anyResultObjs.push_back(ret);
-    pDbpServer->DispatchEvent(&eventResult);
-
-    if(!IsForkNode())
-    {
-        int nNonce = 0;
-        uint32_t ramdom32 = CDbpUtils::RandomBits();
-        std::memcpy(&nNonce, &ramdom32, 4);
-        uint256 forkHash(tx.fork);
-        CFkEventNodeSendTx eventTx(nNonce, forkHash);
-        CDbpUtils::DbpToRawTransaction(tx,eventTx.data);
-        pVirtualPeerNet->DispatchEvent(&eventTx);
-    }
-    else
-    { 
-        SendTxToParent(id, tx);
-    }
-    
-}
-
-void CDbpService::HandleSendBlockNotice(CMvEventDbpMethod& event)
-{
-    std::string forkid = boost::any_cast<std::string>(event.data.params["forkid"]);
-    std::string height = boost::any_cast<std::string>(event.data.params["height"]);
-    std::string hash = boost::any_cast<std::string>(event.data.params["hash"]);
-    
-    CMvEventDbpMethodResult eventResult(event.strSessionId);
-    eventResult.data.id = event.data.id;
-    CMvDbpSendBlockNoticeRet ret;
-    ret.hash = hash;
-    eventResult.data.anyResultObjs.push_back(ret);
-    pDbpServer->DispatchEvent(&eventResult);
-
-    if(!IsForkNode())
-    {
-        int nNonce = 0;
-        uint32_t ramdom32 = CDbpUtils::RandomBits();
-        std::memcpy(&nNonce, &ramdom32, 4);
-        uint256 forkHash(std::vector<unsigned char>(forkid.begin(), forkid.end()));
-        uint256 blockHash(std::vector<unsigned char>(hash.begin(), hash.end()));
-        CFkEventNodeSendBlockNotice eventBlockNotice(nNonce, forkHash);
-        eventBlockNotice.hashFork = forkHash;
-        eventBlockNotice.hashBlock = blockHash;
-        pVirtualPeerNet->DispatchEvent(&eventBlockNotice);
-    }
-    else
-    {
-        uint256 forkid256(std::vector<unsigned char>(forkid.begin(), forkid.end()));
-        uint256 hash256(std::vector<unsigned char>(hash.begin(), hash.end()));
-        SendBlockNoticeToParent(forkid256.ToString(),height,hash256.ToString());
-    }
-}
-
-void CDbpService::HandleSendTxNotice(CMvEventDbpMethod& event)
-{
-    std::string forkid = boost::any_cast<std::string>(event.data.params["forkid"]);
-    std::string hash = boost::any_cast<std::string>(event.data.params["hash"]);
-
-    CMvEventDbpMethodResult eventResult(event.strSessionId);
-    eventResult.data.id = event.data.id;
-    CMvDbpSendTxNoticeRet ret;
-    ret.hash = hash;
-    eventResult.data.anyResultObjs.push_back(ret);
-    pDbpServer->DispatchEvent(&eventResult);
-
-    if(!IsForkNode())
-    {
-        int nNonce = 0;
-        uint32_t ramdom32 = CDbpUtils::RandomBits();
-        std::memcpy(&nNonce, &ramdom32, 4);
-        uint256 forkHash(std::vector<unsigned char>(forkid.begin(), forkid.end()));
-        uint256 txHash(std::vector<unsigned char>(hash.begin(), hash.end()));
-        CFkEventNodeSendTxNotice eventTxNotice(nNonce, forkHash);
-        eventTxNotice.hashFork = forkHash;
-        eventTxNotice.hashTx = txHash;
-        pVirtualPeerNet->DispatchEvent(&eventTxNotice);
-    }
-    else
-    {
-        uint256 forkid256(std::vector<unsigned char>(forkid.begin(), forkid.end()));
-        uint256 hash256(std::vector<unsigned char>(hash.begin(), hash.end()));
-        SendTxNoticeToParent(forkid256.ToString(), hash256.ToString());
-    }
-}
-
-void CDbpService::HandleGetSNBlocks(CMvEventDbpMethod& event)
-{
-    std::string forkid = boost::any_cast<std::string>(event.data.params["forkid"]);
-    std::string hash = boost::any_cast<std::string>(event.data.params["hash"]);
-    std::string number = boost::any_cast<std::string>(event.data.params["number"]);
-    int32 blockNum = boost::lexical_cast<int32>(number);
-
-    CMvEventDbpMethodResult eventResult(event.strSessionId);
-    eventResult.data.id = event.data.id;
-    CMvDbpGetBlocksRet ret;
-    ret.hash = hash;
-    eventResult.data.anyResultObjs.push_back(ret);
-    pDbpServer->DispatchEvent(&eventResult);
-
-    if(IsForkNode())
-    {
-        GetBlocksToParent(forkid,hash,blockNum);
-    }
-}
-
-void CDbpService::HandleUpdateForkState(CMvEventDbpMethod& event)
-{
-    std::string forkid = boost::any_cast<std::string>(event.data.params["forkid"]);
-    std::string lastBlockHash = boost::any_cast<std::string>(event.data.params["lastblockhash"]);
-    std::string currentHeight = boost::any_cast<std::string>(event.data.params["currentheight"]);
-    int nCurrentHeight = boost::lexical_cast<int>(currentHeight);
-
-    CMvEventDbpMethodResult eventResult(event.strSessionId);
-    eventResult.data.id = event.data.id;
-    CMvDbpUpdateForkStateRet ret;
-    ret.forkid = forkid;
-    eventResult.data.anyResultObjs.push_back(ret);
-    pDbpServer->DispatchEvent(&eventResult);
-
-    uint256 forkHash(std::vector<unsigned char>(forkid.begin(), forkid.end())); 
-    uint256 blockHash(std::vector<unsigned char>(lastBlockHash.begin(), lastBlockHash.end()));
-
-    UpdateChildNodeForksStates(forkHash.ToString(), nCurrentHeight, lastBlockHash);
-    
-    if(IsMainFork(forkHash))
-    {
-        if(nCurrentHeight < pService->GetForkHeight(forkHash))
+        if(IsRootNodeOfSuperNode())
         {
-            int num = pService->GetForkHeight(forkHash) - nCurrentHeight;
-            std::vector<CMvDbpBlock> blocks;
-            if(GetSnBlocks(forkHash, blockHash, num + 1, blocks))
+            CWalleveSuperNodeEventPeerNetReward eventSNReward(0);
+            ss >> eventSNReward;
+
+            CWalleveEventPeerNetReward eventReward(eventSNReward.nNonce);
+            eventReward.nType = eventSNReward.nType;
+            eventReward.result = eventSNReward.result;
+            eventReward.data = static_cast<CEndpointManager::Bonus>(eventSNReward.data);
+            pVirtualPeerNet->DispatchEvent(&eventReward);
+        }
+
+        if(IsForkNodeOfSuperNode())
+        {
+            CMvDbpVirtualPeerNetEvent vpeerEvent;
+            vpeerEvent.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_REWARD;
+            vpeerEvent.data = std::vector<uint8>(eventData.begin(), eventData.end());
+            SendEventToParentNode(vpeerEvent);
+        }
+    }
+
+    if(type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_CLOSE)
+    {
+        if(IsRootNodeOfSuperNode())
+        {
+            CWalleveSuperNodeEventPeerNetClose eventSNClose(0);
+            ss >> eventSNClose;
+
+            CWalleveEventPeerNetClose eventClose(eventSNClose.nNonce);
+            eventClose.nType = eventSNClose.nType;
+            eventClose.result = eventSNClose.result;
+            eventClose.data = static_cast<CEndpointManager::CloseReason>(eventSNClose.data);
+
+
+            pVirtualPeerNet->DispatchEvent(&eventClose);
+        }
+
+        if(IsForkNodeOfSuperNode())
+        {
+            CMvDbpVirtualPeerNetEvent vpeerEvent;
+            vpeerEvent.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_CLOSE;
+            vpeerEvent.data = std::vector<uint8>(eventData.begin(), eventData.end());
+            SendEventToParentNode(vpeerEvent);
+        }
+    }
+
+    if(type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_SUBSCRIBE)
+    {
+        CMvEventPeerSubscribe eventSub(0,uint256());
+        ss >> eventSub;
+
+        CMvEventPeerSubscribe eventUpSub(eventSub.nNonce, eventSub.hashFork);
+
+        auto& vSubForks = eventSub.data;
+        for(const auto& fork : vSubForks)
+        {
+            auto key = ForkNonceKeyType(fork, eventSub.nNonce);
+            if(mapChildNodeForkCount.find(key) == mapChildNodeForkCount.end())
             {
-                for(const auto& block : blocks)
-                {
-                    PushBlock(forkHash.ToString(), block);
-                }
+                mapChildNodeForkCount[key] = 1;
+                eventUpSub.data.push_back(fork);
             }
             else
             {
-                UpdateChildNodeForksStatesToParent();      
+                mapChildNodeForkCount[key]++;
+            }
+          
+        }
+
+        if(!eventUpSub.data.empty())
+        {
+            CWalleveBufStream eventSs;
+            eventSs << eventUpSub;
+            std::string data(eventSs.GetData(), eventSs.GetSize());
+            
+            if(IsForkNodeOfSuperNode())
+            {
+                CMvDbpVirtualPeerNetEvent vpeerEvent;
+                vpeerEvent.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_SUBSCRIBE;
+                vpeerEvent.data = std::vector<uint8>(data.begin(), data.end());
+                SendEventToParentNode(vpeerEvent);
+            }
+
+            if(IsRootNodeOfSuperNode())
+            {
+                eventUpSub.flow = "up";
+                eventUpSub.sender = "dbpservice";
+                pVirtualPeerNet->DispatchEvent(&eventUpSub);
             }
         }
-        else
-        {
-            UpdateChildNodeForksStatesToParent();    
-        }
     }
-    else
+
+    if(type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_UNSUBSCRIBE)
     {
-        if(!IsForkNode())
+        CMvEventPeerUnsubscribe eventUnSub(0,uint256());
+        ss >> eventUnSub;
+
+        CMvEventPeerUnsubscribe eventUpUnSub(eventUnSub.nNonce, eventUnSub.hashFork);
+
+        auto& vUnSubForks = eventUnSub.data;
+        for(const auto& fork : vUnSubForks)
         {
-            int nNonce = 0;
-            uint32_t ramdom32 = CDbpUtils::RandomBits();
-            std::memcpy(&nNonce, &ramdom32, 4);
-            CFkEventNodeUpdateForkState eventForkState(nNonce, forkHash);
-            eventForkState.hashFork = forkHash;
-            eventForkState.hashBlock = blockHash;
-            eventForkState.height = nCurrentHeight;
-            pVirtualPeerNet->DispatchEvent(&eventForkState);
+            auto key = ForkNonceKeyType(fork, eventUnSub.nNonce);
+            if(mapChildNodeForkCount.find(key) != mapChildNodeForkCount.end())
+            {
+                if(mapChildNodeForkCount[key] == 1)
+                {
+                    mapChildNodeForkCount[key] = 0;
+                    eventUpUnSub.data.push_back(fork);
+                    mapChildNodeForkCount.erase(key);
+                }
+                else
+                {
+                    mapChildNodeForkCount[key]--;
+                }
+            }
+        }
+
+        if(!eventUpUnSub.data.empty())
+        {
+            CWalleveBufStream eventSs;
+            eventSs << eventUpUnSub;
+            std::string data(eventSs.GetData(), eventSs.GetSize());
+            
+            if(IsForkNodeOfSuperNode())
+            {
+                CMvDbpVirtualPeerNetEvent vpeerEvent;
+                vpeerEvent.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_UNSUBSCRIBE;
+                vpeerEvent.data = std::vector<uint8>(data.begin(), data.end());
+                SendEventToParentNode(vpeerEvent);
+            }
+
+            if(IsRootNodeOfSuperNode())
+            {
+                eventUpUnSub.flow = "up";
+                eventUpUnSub.sender = "dbpservice";
+                pVirtualPeerNet->DispatchEvent(&eventUpUnSub);
+            }
+        }
+    }
+
+    if(type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_GETBLOCKS)
+    {
+        CMvEventPeerGetBlocks eventGetBlocks(0,uint256());
+        ss >> eventGetBlocks;
+
+        if(IsMyFork(eventGetBlocks.hashFork))
+        {
+            eventGetBlocks.flow = "up";
+            eventGetBlocks.sender = "dbpservice";
+            pVirtualPeerNet->DispatchEvent(&eventGetBlocks);
         }
         else
         {
-            UpdateChildNodeForksStatesToParent();
+            if(IsForkNodeOfSuperNode())
+            {
+                CMvDbpVirtualPeerNetEvent vpeerEvent;
+                vpeerEvent.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_GETBLOCKS;
+                vpeerEvent.data = std::vector<uint8>(eventData.begin(), eventData.end());
+                SendEventToParentNode(vpeerEvent);
+            }
+
+            if(IsRootNodeOfSuperNode())
+            {
+                eventGetBlocks.flow = "up";
+                eventGetBlocks.sender = "dbpservice";
+                pVirtualPeerNet->DispatchEvent(&eventGetBlocks);
+            }
         }
     }
+
+    if(type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_GETDATA)
+    {
+        CMvEventPeerGetData eventGetData(0,uint256());
+        ss >> eventGetData;
+
+        if(IsMyFork(eventGetData.hashFork))
+        {
+            eventGetData.flow = "up";
+            eventGetData.sender = "dbpservice";
+            pVirtualPeerNet->DispatchEvent(&eventGetData);
+        }
+        else
+        {
+            if(IsForkNodeOfSuperNode())
+            {
+                CMvDbpVirtualPeerNetEvent vpeerEvent;
+                vpeerEvent.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_GETDATA;
+                vpeerEvent.data = std::vector<uint8>(eventData.begin(), eventData.end());
+                SendEventToParentNode(vpeerEvent);
+            }
+
+            if(IsRootNodeOfSuperNode())
+            {
+                eventGetData.flow = "up";
+                eventGetData.sender = "dbpservice";
+                pVirtualPeerNet->DispatchEvent(&eventGetData);
+            }
+        }
+    }
+
+    if(type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_INV)
+    {
+        if(IsRootNodeOfSuperNode())
+        {
+            CMvEventPeerInv eventInv(0,uint256());
+            ss >> eventInv;
+            eventInv.sender = "dbpservice";
+            eventInv.flow = "up";
+            pVirtualPeerNet->DispatchEvent(&eventInv);
+        }
+        
+        if(IsForkNodeOfSuperNode())
+        {
+            CMvDbpVirtualPeerNetEvent vpeerEvent;
+            vpeerEvent.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_INV;
+            vpeerEvent.data = std::vector<uint8>(eventData.begin(), eventData.end());
+            SendEventToParentNode(vpeerEvent);
+        }
+    }
+
+    if(type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_TX)
+    {
+        if(IsRootNodeOfSuperNode())
+        {
+            CMvEventPeerTx eventTx(0,uint256());
+            ss >> eventTx;
+            eventTx.sender = "dbpservice";
+            eventTx.flow = "up";
+            pVirtualPeerNet->DispatchEvent(&eventTx);
+        }
+        
+        if(IsForkNodeOfSuperNode())
+        {
+            CMvDbpVirtualPeerNetEvent vpeerEvent;
+            vpeerEvent.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_TX;
+            vpeerEvent.data = std::vector<uint8>(eventData.begin(), eventData.end());
+            SendEventToParentNode(vpeerEvent);
+        }
+    }
+
+    if(type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_BLOCK)
+    {
+        if(IsRootNodeOfSuperNode())
+        {
+            CMvEventPeerBlock eventBlock(0,uint256());
+            ss >> eventBlock;
+            eventBlock.sender = "dbpservice";
+            eventBlock.flow = "up";
+            pVirtualPeerNet->DispatchEvent(&eventBlock);
+        }
+        
+        if(IsForkNodeOfSuperNode())
+        {
+            CMvDbpVirtualPeerNetEvent vpeerEvent;
+            vpeerEvent.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_BLOCK;
+            vpeerEvent.data = std::vector<uint8>(eventData.begin(), eventData.end());
+            SendEventToParentNode(vpeerEvent);
+        }
+    }
+    
 }
 
 bool CDbpService::HandleEvent(CMvEventDbpMethod& event)
@@ -1161,33 +806,9 @@ bool CDbpService::HandleEvent(CMvEventDbpMethod& event)
     {
         HandleSendTransaction(event);
     }
-    else if(event.data.method == CMvDbpMethod::SNMethod::REGISTER_FORK)
+    else if(event.data.method == CMvDbpMethod::SnMethod::SEND_EVENT)
     {
-        HandleRegisterFork(event);
-    }
-    else if(event.data.method == CMvDbpMethod::SNMethod::SEND_BLOCK)
-    {
-        HandleSendBlock(event);
-    }
-    else if(event.data.method == CMvDbpMethod::SNMethod::SEND_TX)
-    {
-        HandleSendTx(event);
-    }
-    else if(event.data.method == CMvDbpMethod::SNMethod::SEND_BLOCK_NOTICE)
-    {
-        HandleSendBlockNotice(event);
-    }
-    else if(event.data.method == CMvDbpMethod::SNMethod::SEND_TX_NOTICE)
-    {
-        HandleSendTxNotice(event);
-    }
-    else if(event.data.method == CMvDbpMethod::SNMethod::GET_BLOCKS_SN)
-    {
-        HandleGetSNBlocks(event);
-    }
-    else if(event.data.method == CMvDbpMethod::SNMethod::UPDATE_FORK_STATE)
-    {
-        HandleUpdateForkState(event);
+        HandleSendEvent(event);
     }
     else
     {
@@ -1237,64 +858,13 @@ void CDbpService::PushTx(const std::string& forkid, const CMvDbpTransaction& dbp
     }
 }
 
-void CDbpService::PushSysCmd(const std::string& forkid, const CMvDbpSysCmd& syscmd)
+bool CDbpService::PushEvent(const CMvDbpVirtualPeerNetEvent& event)
 {
-    const auto& sysCmdIds = mapTopicIds[SYS_CMD_TOPIC];
-    for (const auto& kv : mapIdSubedSession)
-    {
-        std::string id = kv.first;
-        std::string session = kv.second;
-
-        if (sysCmdIds.find(id) != sysCmdIds.end())
-        {
-            CMvEventDbpAdded eventAdded(session);
-            eventAdded.data.id = id;
-            eventAdded.data.forkid = forkid;
-            eventAdded.data.name = SYS_CMD_TOPIC;
-            eventAdded.data.anyAddedObj = syscmd;
-            pDbpServer->DispatchEvent(&eventAdded);
-        }
-    }
-}
-
-void CDbpService::PushTxCmd(const std::string& forkid, const CMvDbpTxCmd& txcmd)
-{
-    const auto& txCmdIds = mapTopicIds[TX_CMD_TOPIC];
-    for (const auto& kv : mapIdSubedSession)
-    {
-        std::string id = kv.first;
-        std::string session = kv.second;
-
-        if (txCmdIds.find(id) != txCmdIds.end())
-        {
-            CMvEventDbpAdded eventAdded(session);
-            eventAdded.data.id = id;
-            eventAdded.data.forkid = forkid;
-            eventAdded.data.name = TX_CMD_TOPIC;
-            eventAdded.data.anyAddedObj = txcmd;
-            pDbpServer->DispatchEvent(&eventAdded);
-        }
-    }
-}
-
-void CDbpService::PushBlockCmd(const std::string& forkid, const CMvDbpBlockCmd& blockcmd)
-{
-    const auto& blockCmdIds = mapTopicIds[BLOCK_CMD_TOPIC];
-    for (const auto& kv : mapIdSubedSession)
-    {
-        std::string id = kv.first;
-        std::string session = kv.second;
-
-        if (blockCmdIds.find(id) != blockCmdIds.end())
-        {
-            CMvEventDbpAdded eventAdded(session);
-            eventAdded.data.id = id;
-            eventAdded.data.forkid = forkid;
-            eventAdded.data.name = BLOCK_CMD_TOPIC;
-            eventAdded.data.anyAddedObj = blockcmd;
-            pDbpServer->DispatchEvent(&eventAdded);
-        }
-    }
+    std::string session;
+    CMvEventDbpAdded eventAdd(session);
+    eventAdd.data.name = "event";
+    eventAdd.data.anyAddedObj = event;
+    return pDbpServer->DispatchEvent(&eventAdd);
 }
 
 void CDbpService::RespondFailed(CMvEventDbpConnect& event)
@@ -1328,149 +898,6 @@ void CDbpService::RespondReady(CMvEventDbpSub& event)
     pDbpServer->DispatchEvent(&eventReady);
 }
 
-void CDbpService::UpdateChildNodeForks(const std::string& session, const std::string& forks)
-{
-    std::vector<std::string> vForks = CDbpUtils::Split(forks,';');
-    ForksType setForks;
-    for(const auto& fork : vForks)
-    {
-        setForks.insert(fork);
-    }
-    
-    if(mapSessionChildNodeForks.count(session) == 0)
-    {
-        mapSessionChildNodeForks[session] = setForks;
-    }
-    else
-    {
-        auto& forks = mapSessionChildNodeForks[session];
-        forks.insert(setForks.begin(),setForks.end());
-    }
-}
-
-void CDbpService::UpdateChildNodeForksStates(const std::string& forkid, int currentHeight, 
-    const std::string& lastBlockHash)
-{
-    mapChildNodeForksStates[forkid] = std::make_tuple(currentHeight, lastBlockHash);
-}
-
-void CDbpService::UpdateThisNodeForkState(const uint256& forkHash)
-{
-    int lastHeight;
-    uint256 lastBlockHash;
-    GetForkState(forkHash, lastHeight, lastBlockHash);
-    if(IsMainFork(forkHash))
-    {
-        tupleMainForkStates = std::make_tuple(lastHeight, lastBlockHash.ToString());
-    }
-    else
-    {
-        mapThisNodeForkStates[forkHash.ToString()] =
-            std::make_tuple(lastHeight, lastBlockHash.ToString());
-    }
-}
-
-void CDbpService::UpdateChildNodeForksToParent()
-{
-    for(const auto& kv : mapSessionChildNodeForks)
-    {
-        std::string session = kv.first;
-        auto forks = kv.second;
-        for(const std::string& forkid : forks)
-        {
-            CMvEventDbpRegisterForkID eventRegister("");
-            eventRegister.data.forkid = forkid;
-            pDbpClient->DispatchEvent(&eventRegister);
-        }
-    }
-
-    for(const auto& kv : mapThisNodeForkStates)
-    {
-        std::string forkid = kv.first;
-        CMvEventDbpRegisterForkID eventRegister("");
-        eventRegister.data.forkid = forkid;
-        pDbpClient->DispatchEvent(&eventRegister);
-    }
-}
-
-void CDbpService::UpdateChildNodeForksStatesToParent()
-{
-    for(const auto& kv : mapThisNodeForkStates)
-    {
-        std::string forkid = kv.first;
-        int currentHeight;
-        std::string lastBlockHash;
-        const auto& tupleStates = kv.second;
-        std::tie(currentHeight, lastBlockHash) = tupleStates;
-        CMvEventDbpUpdateForkState eventUpdate("");
-        eventUpdate.data.forkid = forkid;
-        eventUpdate.data.currentHeight = std::to_string(currentHeight);
-        eventUpdate.data.lastBlockHash = lastBlockHash;
-        pDbpClient->DispatchEvent(&eventUpdate);
-    }
-
-    for(const auto& kv : mapChildNodeForksStates)
-    {
-        std::string forkid = kv.first;
-        int currentHeight;
-        std::string lastBlockHash;
-        const auto& tupleStates = kv.second;
-        std::tie(currentHeight, lastBlockHash) = tupleStates;
-        CMvEventDbpUpdateForkState eventUpdate("");
-        eventUpdate.data.forkid = forkid;
-        eventUpdate.data.currentHeight = std::to_string(currentHeight);
-        eventUpdate.data.lastBlockHash = lastBlockHash;
-        pDbpClient->DispatchEvent(&eventUpdate);
-    }
-
-}
-
-void CDbpService::SendBlockToParent(const std::string& id, const CMvDbpBlock& block)
-{
-    CMvEventDbpSendBlock eventSendBlock("");
-    eventSendBlock.data.id = id;
-    eventSendBlock.data.block = block;
-    pDbpClient->DispatchEvent(&eventSendBlock);
-}
-
-void CDbpService::SendTxToParent(const std::string& id, const CMvDbpTransaction& tx)
-{
-    CMvEventDbpSendTx eventSendTx("");
-    eventSendTx.data.id = id;
-    eventSendTx.data.tx = tx;
-    pDbpClient->DispatchEvent(&eventSendTx);
-}
-
-void CDbpService::SendBlockNoticeToParent(const std::string& forkid, const std::string& height, const std::string& hash)
-{ 
-    CMvEventDbpSendBlockNotice eventSendBlockNotice("");
-    eventSendBlockNotice.data.forkid = forkid;
-    eventSendBlockNotice.data.height = height;
-    eventSendBlockNotice.data.hash = hash;
-    pDbpClient->DispatchEvent(&eventSendBlockNotice);
-}
-
-void CDbpService::SendTxNoticeToParent(const std::string& forkid, const std::string& hash)
-{
-    CMvEventDbpSendTxNotice eventSendTxNotice("");
-    eventSendTxNotice.data.forkid = forkid;
-    eventSendTxNotice.data.hash = hash;
-    pDbpClient->DispatchEvent(&eventSendTxNotice);
-}
-
-void CDbpService::GetBlocksToParent(const std::string& forkid, const std::string& hash, int32 num)
-{
-    uint256 forkid256(std::vector<uint8>(forkid.begin(), forkid.end()));
-    uint256 hash256(std::vector<uint8>(hash.begin(), hash.end()));
-    
-    CMvEventDbpGetBlocks eventGetBlocks("");
-    eventGetBlocks.data.forkid = forkid256.ToString();
-    eventGetBlocks.data.hash = hash256.ToString();
-    eventGetBlocks.data.number = num;
-    pDbpClient->DispatchEvent(&eventGetBlocks);
-}
-
-
 bool CDbpService::HandleEvent(CMvEventDbpUpdateNewBlock& event)
 {
     // get details about new block
@@ -1482,12 +909,6 @@ bool CDbpService::HandleEvent(CMvEventDbpUpdateNewBlock& event)
         CMvDbpBlock block;
         CDbpUtils::RawToDbpBlock(newBlock, forkHash, blockHeight, block);
         PushBlock(forkHash.ToString(),block);
-        SendBlockNoticeToParent(forkHash.ToString(), std::to_string(blockHeight), 
-            newBlock.GetHash().ToString());
-         
-
-        UpdateThisNodeForkState(forkHash);
-        UpdateChildNodeForksStatesToParent();
     }
 
     return true;
@@ -1502,32 +923,549 @@ bool CDbpService::HandleEvent(CMvEventDbpUpdateNewTx& event)
     CMvDbpTransaction dbpTx;
     CDbpUtils::RawToDbpTransaction(newtx, hashFork, change, dbpTx);
     PushTx(hashFork.ToString(),dbpTx);
-    SendTxNoticeToParent(hashFork.ToString(), newtx.GetHash().ToString());
 
     return true;
 }
 
-bool CDbpService::HandleEvent(CFkEventNodeBlockArrive& event)
+// from virtual peernet
+bool CDbpService::HandleEvent(CMvEventPeerActive& event)
 {
-    if(!IsForkNode())
+    if(IsRootNodeOfSuperNode())
     {
-        CMvDbpBlock block;
-        CBlockEx blockEx(event.data);
-        CDbpUtils::RawToDbpBlock(blockEx, event.hashFork, event.height, block);
-        PushBlock(event.hashFork.ToString(), block);
+        CWalleveBufStream ss;
+        ss << event;
+        std::string data(ss.GetData(), ss.GetSize());
+        
+        CMvDbpVirtualPeerNetEvent eventVPeer;
+        eventVPeer.nNonce = event.nNonce;
+        eventVPeer.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_ACTIVE;
+        eventVPeer.data = std::vector<uint8>(data.begin(), data.end());
+        vCacheEvent.push_back(eventVPeer);
+
+        DeleteCache(event.nNonce, CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_DEACTIVE);
+        PushEvent(eventVPeer);
     }
 
     return true;
 }
 
-bool CDbpService::HandleEvent(CFkEventNodeTxArrive& event)
+bool CDbpService::HandleEvent(CMvEventPeerDeactive& event)
 {
-    if(!IsForkNode())
+    if(IsRootNodeOfSuperNode())
     {
-        CMvDbpTransaction tx;
-        CDbpUtils::RawToDbpTransaction(event.data, event.hashFork, 0, tx);
-        PushTx(event.hashFork.ToString(), tx);
+        CWalleveBufStream ss;
+        ss << event;
+        std::string data(ss.GetData(), ss.GetSize());
+        
+        CMvDbpVirtualPeerNetEvent eventVPeer;
+        eventVPeer.nNonce = event.nNonce;
+        eventVPeer.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_DEACTIVE;
+        eventVPeer.data = std::vector<uint8>(data.begin(), data.end());
+        vCacheEvent.push_back(eventVPeer);
+
+        DeleteCache(event.nNonce, CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_ACTIVE);
+        PushEvent(eventVPeer);
     }
     
     return true;
 }
+
+void CDbpService::DeleteCache(uint64 nNonce, int type)
+{
+    for (auto it = vCacheEvent.begin(); it != vCacheEvent.end(); ) 
+    {
+        if ((*it).type == type && (*it).nNonce == nNonce) 
+        {
+            it = vCacheEvent.erase(it);
+        } 
+        else 
+        {
+            ++it;
+        }
+    }
+}
+
+bool CDbpService::HandleEvent(CMvEventPeerSubscribe& event)
+{
+   
+    if(IsRootNodeOfSuperNode())
+    {   
+        CWalleveBufStream ss;
+        ss << event;
+        std::string data(ss.GetData(), ss.GetSize());
+        
+        CMvDbpVirtualPeerNetEvent eventVPeer;
+        eventVPeer.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_SUBSCRIBE;
+        eventVPeer.hashFork = event.hashFork;
+        eventVPeer.data = std::vector<uint8>(data.begin(), data.end());
+        PushEvent(eventVPeer);
+    }
+
+    if(IsForkNodeOfSuperNode())
+    {
+        CMvEventPeerSubscribe eventUpSub(event.nNonce, event.hashFork);
+        
+        auto& vSubForks = event.data;
+        for(const auto& fork : vSubForks)
+        {
+            auto key = ForkNonceKeyType(fork, event.nNonce);
+            
+            if(mapThisNodeForkCount.find(key) == mapThisNodeForkCount.end())
+            {
+                mapThisNodeForkCount[key] = 1;
+                eventUpSub.data.push_back(fork);
+            }
+            else
+            {
+                mapThisNodeForkCount[key]++;
+            }
+        }
+
+        if(!eventUpSub.data.empty())
+        {
+            CWalleveBufStream UpSubSs;
+            UpSubSs << eventUpSub;
+            std::string data(UpSubSs.GetData(), UpSubSs.GetSize());
+            CMvDbpVirtualPeerNetEvent eventVPeer;
+            eventVPeer.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_SUBSCRIBE;
+            eventVPeer.data = std::vector<uint8>(data.begin(), data.end());
+            SendEventToParentNode(eventVPeer);
+        }
+    }
+    
+    return true;
+}
+
+bool CDbpService::HandleEvent(CMvEventPeerUnsubscribe& event)
+{
+    if(IsRootNodeOfSuperNode())
+    {
+        CWalleveBufStream ss;
+        ss << event;
+        std::string data(ss.GetData(), ss.GetSize());
+        
+        CMvDbpVirtualPeerNetEvent eventVPeer;
+        eventVPeer.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_UNSUBSCRIBE;
+        eventVPeer.hashFork = event.hashFork;
+        eventVPeer.data = std::vector<uint8>(data.begin(), data.end());
+        PushEvent(eventVPeer);
+    }
+
+    if(IsForkNodeOfSuperNode())
+    {
+        CMvEventPeerUnsubscribe eventUpUnSub(event.nNonce, event.hashFork);
+
+        auto& vUnSubForks = event.data;
+        for(const auto& fork : vUnSubForks)
+        {
+            auto key = ForkNonceKeyType(fork, event.nNonce);
+            
+            if(mapThisNodeForkCount.find(key) != mapThisNodeForkCount.end())
+            {
+                if(mapThisNodeForkCount[key] == 1)
+                {
+                    mapThisNodeForkCount[key] = 0;
+                    eventUpUnSub.data.push_back(fork);
+                    mapThisNodeForkCount.erase(key);
+                }
+                else
+                {
+                    mapThisNodeForkCount[key]--;
+                }
+            }
+        }
+
+        if(!eventUpUnSub.data.empty())
+        {
+            CWalleveBufStream eventSs;
+            eventSs << eventUpUnSub;
+            std::string data(eventSs.GetData(), eventSs.GetSize());
+            
+            CMvDbpVirtualPeerNetEvent vpeerEvent;
+            vpeerEvent.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_UNSUBSCRIBE;
+            vpeerEvent.data = std::vector<uint8>(data.begin(), data.end());
+            SendEventToParentNode(vpeerEvent); 
+        }
+    }
+    
+    return true;
+}
+
+bool CDbpService::HandleEvent(CMvEventPeerInv& event)
+{
+    CWalleveBufStream ss;
+    ss << event;
+    std::string data(ss.GetData(), ss.GetSize());
+        
+    CMvDbpVirtualPeerNetEvent eventVPeer;
+    eventVPeer.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_INV;
+    eventVPeer.data = std::vector<uint8>(data.begin(), data.end());
+    
+    if(IsRootNodeOfSuperNode())
+    {
+        PushEvent(eventVPeer);
+    }
+
+    if(IsForkNodeOfSuperNode())
+    {
+        if(event.nNonce == std::numeric_limits<uint64>::max())
+        {
+            PushEvent(eventVPeer);
+        }
+        else
+        {
+            SendEventToParentNode(eventVPeer);
+        }
+    }
+    
+    return true;
+}
+
+bool CDbpService::HandleEvent(CMvEventPeerBlock& event)
+{
+    CWalleveBufStream ss;
+    ss << event;
+    std::string data(ss.GetData(), ss.GetSize());
+        
+    CMvDbpVirtualPeerNetEvent eventVPeer;
+    eventVPeer.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_BLOCK;
+    eventVPeer.data = std::vector<uint8>(data.begin(), data.end());
+
+    if(IsRootNodeOfSuperNode())
+    {
+        PushEvent(eventVPeer);
+    }
+
+    if(IsForkNodeOfSuperNode())
+    {
+        if(event.nNonce == std::numeric_limits<uint64>::max())
+        {
+            PushEvent(eventVPeer);
+        }
+        else
+        {
+            SendEventToParentNode(eventVPeer);
+        }
+    }
+    
+    
+    return true;
+}
+
+bool CDbpService::HandleEvent(CMvEventPeerTx& event)
+{
+    CWalleveBufStream ss;
+    ss << event;
+    std::string data(ss.GetData(), ss.GetSize());
+        
+    CMvDbpVirtualPeerNetEvent eventVPeer;
+    eventVPeer.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_TX;
+    eventVPeer.data = std::vector<uint8>(data.begin(), data.end());
+
+    if(IsRootNodeOfSuperNode())
+    {
+        PushEvent(eventVPeer);
+    }
+
+    if(IsForkNodeOfSuperNode())
+    {
+        if(event.nNonce == std::numeric_limits<uint64>::max())
+        {
+            PushEvent(eventVPeer);
+        }
+        else
+        {
+            SendEventToParentNode(eventVPeer);
+        }
+    }
+    
+    return true;
+}
+
+bool CDbpService::HandleEvent(CMvEventPeerGetBlocks& event)
+{
+    CWalleveBufStream ss;
+    ss << event;
+    std::string data(ss.GetData(), ss.GetSize());
+        
+    CMvDbpVirtualPeerNetEvent eventVPeer;
+    eventVPeer.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_GETBLOCKS;
+    eventVPeer.data = std::vector<uint8>(data.begin(), data.end());
+    
+    if(IsRootNodeOfSuperNode())
+    {
+        PushEvent(eventVPeer);
+    }
+
+    if(IsForkNodeOfSuperNode())
+    {
+       SendEventToParentNode(eventVPeer);
+    }
+
+    return true;
+}
+
+bool CDbpService::HandleEvent(CMvEventPeerGetData& event)
+{
+    CWalleveBufStream ss;
+    ss << event;
+    std::string data(ss.GetData(), ss.GetSize());
+        
+    CMvDbpVirtualPeerNetEvent eventVPeer;
+    eventVPeer.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_GETDATA;
+    eventVPeer.data = std::vector<uint8>(data.begin(), data.end());
+    
+    if(IsRootNodeOfSuperNode())
+    {
+        PushEvent(eventVPeer);
+    }
+
+    if(IsForkNodeOfSuperNode())
+    {
+        UpdateGetDataEventRecord(event);
+        SendEventToParentNode(eventVPeer);
+    }
+    
+    return true;
+}
+
+bool CDbpService::HandleEvent(CWalleveEventPeerNetReward& event)
+{
+    CWalleveSuperNodeEventPeerNetReward eventSNReward(event.nNonce);
+    eventSNReward.result = event.result;
+    eventSNReward.nType = event.nType;
+    eventSNReward.data = event.data;
+    
+    CWalleveBufStream ss;
+    ss << eventSNReward;
+    std::string data(ss.GetData(), ss.GetSize());
+        
+    CMvDbpVirtualPeerNetEvent eventVPeer;
+    eventVPeer.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_REWARD;
+    eventVPeer.data = std::vector<uint8>(data.begin(), data.end());
+
+    if(IsForkNodeOfSuperNode())
+    {
+        SendEventToParentNode(eventVPeer);
+    }
+    
+    return true;
+}
+    
+bool CDbpService::HandleEvent(CWalleveEventPeerNetClose& event)
+{
+    CWalleveSuperNodeEventPeerNetClose eventSNNetClose(event.nNonce);
+    eventSNNetClose.result = event.result;
+    eventSNNetClose.nType = event.nType;
+    eventSNNetClose.data = event.data;
+    
+    CWalleveBufStream ss;
+    ss << eventSNNetClose;
+    std::string data(ss.GetData(), ss.GetSize());
+        
+    CMvDbpVirtualPeerNetEvent eventVPeer;
+    eventVPeer.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_CLOSE;
+    eventVPeer.data = std::vector<uint8>(data.begin(), data.end());
+
+    if(IsForkNodeOfSuperNode())
+    {
+        SendEventToParentNode(eventVPeer);
+    }
+    
+    return true;
+}
+
+//Event from up to down
+bool CDbpService::HandleEvent(CMvEventDbpVirtualPeerNet& event)
+{
+    CWalleveBufStream ss;
+    decltype(event.data.data) bytes = event.data.data;
+    ss.Write((char*)bytes.data(), bytes.size());
+
+    // process and classify and dispatch to vpeernet
+    if(event.data.type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_ACTIVE)
+    {
+        CMvEventPeerActive eventActive(0);
+        ss >> eventActive;  
+        pVirtualPeerNet->DispatchEvent(&eventActive);
+
+        DeleteCache(event.nNonce, CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_DEACTIVE);
+        vCacheEvent.push_back(event.data);
+    }
+
+    if(event.data.type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_DEACTIVE)
+    {
+        CMvEventPeerDeactive eventDeactive(0);
+        ss >> eventDeactive;   
+        pVirtualPeerNet->DispatchEvent(&eventDeactive);
+
+        DeleteCache(event.nNonce, CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_ACTIVE);
+        vCacheEvent.push_back(event.data);
+    }
+
+    if(event.data.type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_SUBSCRIBE)
+    {
+        CMvEventPeerSubscribe eventSub(0, uint256());
+        ss >> eventSub;
+
+        if(IsMyFork(eventSub.hashFork))
+        {
+            eventSub.sender = "dbpservice";
+            eventSub.flow = "down";    
+            pVirtualPeerNet->DispatchEvent(&eventSub);
+        }
+    }
+
+    if(event.data.type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_UNSUBSCRIBE)
+    {
+        CMvEventPeerUnsubscribe eventUnSub(0, uint256());
+        ss >> eventUnSub;
+        
+        if(IsMyFork(eventUnSub.hashFork))
+        {
+            eventUnSub.flow = "down";
+            eventUnSub.sender = "dbpservice";
+            pVirtualPeerNet->DispatchEvent(&eventUnSub);
+        }
+    }
+
+    if(event.data.type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_GETBLOCKS)
+    {
+        CMvEventPeerGetBlocks eventGetBlocks(0, uint256());
+        ss >> eventGetBlocks;
+
+        if(IsMyFork(eventGetBlocks.hashFork))
+        {
+            eventGetBlocks.sender = "dbpservice";
+            eventGetBlocks.flow = "down";
+            pVirtualPeerNet->DispatchEvent(&eventGetBlocks);
+        }
+
+        PushEvent(event.data);
+    }
+
+    if(event.data.type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_GETDATA)
+    {
+        CMvEventPeerGetData eventGetData(0, uint256());
+        ss >> eventGetData; 
+
+        if(IsMyFork(eventGetData.hashFork))
+        {
+            eventGetData.sender = "dbpservice";
+            eventGetData.flow = "down";
+            pVirtualPeerNet->DispatchEvent(&eventGetData);
+        }
+
+        PushEvent(event.data);
+    }
+
+    if(event.data.type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_INV)
+    {
+        CMvEventPeerInv eventInv(0, uint256());
+        ss >> eventInv;   
+        
+        if(IsMyFork(eventInv.hashFork))
+        {
+            eventInv.sender = "dbpservice";
+            eventInv.flow = "down";
+            pVirtualPeerNet->DispatchEvent(&eventInv);
+        }
+
+        PushEvent(event.data);
+    }
+
+    if(event.data.type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_TX)
+    {
+        CMvEventPeerTx eventTx(0, uint256());
+        ss >> eventTx;
+
+        if(IsMyFork(eventTx.hashFork) && IsThisNodeTx(eventTx))
+        {
+            eventTx.sender = "dbpservice";
+            eventTx.flow = "down";
+            pVirtualPeerNet->DispatchEvent(&eventTx);
+        }
+
+        PushEvent(event.data);
+    }
+
+    if(event.data.type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_BLOCK)
+    {
+        CMvEventPeerBlock eventBlock(0, uint256());
+        ss >> eventBlock;
+
+        if(IsMyFork(eventBlock.hashFork) && IsThisNodeBlock(eventBlock))
+        {
+            eventBlock.sender = "dbpservice";
+            eventBlock.flow = "down";
+            pVirtualPeerNet->DispatchEvent(&eventBlock);
+        }
+
+        PushEvent(event.data);
+    }
+
+    return true;
+}
+
+void CDbpService::SendEventToParentNode(CMvDbpVirtualPeerNetEvent& event)
+{
+    CMvEventDbpVirtualPeerNet eventVirtualPeerNet("");
+    eventVirtualPeerNet.data.type = event.type;
+    eventVirtualPeerNet.data.data = event.data;
+    pDbpClient->DispatchEvent(&eventVirtualPeerNet);
+}
+
+void CDbpService::UpdateGetDataEventRecord(const CMvEventPeerGetData& event)
+{
+    uint64 nNonce = event.nNonce;
+    const uint256& hashFork = event.hashFork;
+    
+    std::set<uint256> setInvHash;
+    for(const auto& inv : event.data)
+    {
+        setInvHash.insert(inv.nHash);
+    }
+
+    mapThisNodeGetData[std::make_pair(hashFork, nNonce)] = setInvHash;
+}
+
+bool CDbpService::IsThisNodeBlock(CMvEventPeerBlock& eventBlock)
+{
+    uint64 nNonce = eventBlock.nNonce;
+    uint256& hashFork = eventBlock.hashFork;
+    uint256 blockHash = eventBlock.data.GetHash();
+    auto pairKey = std::make_pair(hashFork, nNonce);
+    if(mapThisNodeGetData.find(pairKey) == mapThisNodeGetData.end())
+    {
+        return false;
+    }
+
+    auto& setInvHash = mapThisNodeGetData[pairKey];
+    if(setInvHash.find(blockHash) == setInvHash.end())
+    {
+        return false;
+    }
+
+    return true;
+}
+
+bool CDbpService::IsThisNodeTx(CMvEventPeerTx& eventTx)
+{
+    uint64 nNonce = eventTx.nNonce;
+    uint256& hashFork = eventTx.hashFork;
+    uint256 txHash = eventTx.data.GetHash();
+    auto pairKey = std::make_pair(hashFork, nNonce);
+    if(mapThisNodeGetData.find(pairKey) == mapThisNodeGetData.end())
+    {
+        return false;
+    }
+
+    auto& setInvHash = mapThisNodeGetData[pairKey];
+    if(setInvHash.find(txHash) == setInvHash.end())
+    {
+        return false;
+    }
+
+    return true;
+}
+

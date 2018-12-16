@@ -4,8 +4,9 @@
 
 #include "netchn.h"
 #include "schedule.h"
-#include "forkpseudopeernet.h"
+#include "virtualpeernet.h"
 #include <boost/bind.hpp>
+#include <limits>
 
 using namespace std;
 using namespace walleve;
@@ -102,7 +103,6 @@ CNetChannel::CNetChannel()
     pService = NULL;
     pDispatcher = NULL;
     pDbpService = NULL;
-    fIsForkNode = false;
 }
 
 CNetChannel::~CNetChannel()
@@ -111,39 +111,39 @@ CNetChannel::~CNetChannel()
 
 bool CNetChannel::WalleveHandleInitialize()
 {
-    if (!WalleveGetObject("forkpseudopeernet",pPeerNet))
+    if (!WalleveGetObject("virtualpeernet",pPeerNet))
     {
-        WalleveLog("Failed to request peer net\n");
+        WalleveError("Failed to request peer net\n");
         return false;
     }
 
     if (!WalleveGetObject("coreprotocol",pCoreProtocol))
     {
-        WalleveLog("Failed to request coreprotocol\n");
+        WalleveError("Failed to request coreprotocol\n");
         return false;
     }
 
     if (!WalleveGetObject("worldline",pWorldLine))
     {
-        WalleveLog("Failed to request worldline\n");
+        WalleveError("Failed to request worldline\n");
         return false;
     }
 
     if (!WalleveGetObject("txpool",pTxPool))
     {
-        WalleveLog("Failed to request txpool\n");
+        WalleveError("Failed to request txpool\n");
         return false;
     }
 
     if (!WalleveGetObject("service",pService))
     {
-        WalleveLog("Failed to request service\n");
+        WalleveError("Failed to request service\n");
         return false;
     }
 
     if (!WalleveGetObject("dispatcher",pDispatcher))
     {
-        WalleveLog("Failed to request dispatcher\n");
+        WalleveError("Failed to request dispatcher\n");
         return false;
     }
 
@@ -295,11 +295,10 @@ void CNetChannel::UnsubscribeFork(const uint256& hashFork)
     }
 }
 
-void CNetChannel::SetForkFilterInfo(bool fIsForkNodeIn, const std::map<std::string, std::tuple<int, std::string>>& thisNodeForksStateIn)
+bool CNetChannel::IsCotains(const uint256& hashFork)
 {
-    boost::unique_lock<boost::shared_mutex> wlock(rwForkFilter);
-    fIsForkNode = fIsForkNodeIn;
-    mapThisNodeForkStates = thisNodeForksStateIn;
+    boost::recursive_mutex::scoped_lock scoped_lock(mtxSched);
+    return mapSched.find(hashFork) != mapSched.end();
 }
 
 bool CNetChannel::HandleEvent(network::CMvEventPeerActive& eventActive)
@@ -460,61 +459,37 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerInv& eventInv)
 
 bool CNetChannel::HandleEvent(network::CMvEventPeerGetData& eventGetData)
 {
-    CForkPseudoPeerNet::SUPER_NODE_TYPE catNode = dynamic_cast<CForkPseudoPeerNet*>(pPeerNet)->GetSuperNodeType();
     uint64 nNonce = eventGetData.nNonce;
     uint256& hashFork = eventGetData.hashFork;
+    std::string flow = eventGetData.flow;
     BOOST_FOREACH(const network::CInv& inv,eventGetData.data)
     {
         if (inv.nType == network::CInv::MSG_TX)
         {
-            switch(catNode)
+            network::CMvEventPeerTx eventTx(nNonce,hashFork);
+
+            if("up" == flow)
             {
-                case CForkPseudoPeerNet::SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN:
-                {
-                    network::CMvEventPeerTx eventTx(nNonce,hashFork);
-                    if (pTxPool->Get(inv.nHash,eventTx.data))
-                    {
-                        pPeerNet->DispatchEvent(&eventTx);
-                    }
-                    break;
-                }
-                case CForkPseudoPeerNet::SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT:
-                {
-                    CFkEventNodeTxRequest event(nNonce, hashFork);
-                    event.hashTx = inv.nHash;
-                    pPeerNet->DispatchEvent(&event);
-                    break;
-                }
-                case CForkPseudoPeerNet::SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK:
-                {
-                    break;
-                }
+                eventTx.nNonce = 0;
+            }
+
+            if (pTxPool->Get(inv.nHash,eventTx.data))
+            {
+                pPeerNet->DispatchEvent(&eventTx);
             }
         }
         else if (inv.nType == network::CInv::MSG_BLOCK)
         {
-            switch(catNode)
+            network::CMvEventPeerBlock eventBlock(nNonce,hashFork);
+
+            if("up" == flow)
             {
-                case CForkPseudoPeerNet::SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN:
-                {
-                    network::CMvEventPeerBlock eventBlock(nNonce,hashFork);
-                    if (pWorldLine->GetBlock(inv.nHash,eventBlock.data))
-                    {
-                        pPeerNet->DispatchEvent(&eventBlock);
-                    }
-                    break;
-                }
-                case CForkPseudoPeerNet::SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT:
-                {
-                    CFkEventNodeBlockRequest event(nNonce, hashFork);
-                    event.hashBlock = inv.nHash;
-                    pPeerNet->DispatchEvent(&event);
-                    break;
-                }
-                case CForkPseudoPeerNet::SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK:
-                {
-                    break;
-                }
+                eventBlock.nNonce = 0;
+            }
+
+            if (pWorldLine->GetBlock(inv.nHash,eventBlock.data))
+            {
+                pPeerNet->DispatchEvent(&eventBlock);
             }
         }
     }
@@ -526,6 +501,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerGetBlocks& eventGetBlocks)
     uint64 nNonce = eventGetBlocks.nNonce;
     uint256& hashFork = eventGetBlocks.hashFork;
     vector<uint256> vBlockHash;
+    std::string flow = eventGetBlocks.flow;
     if (!pWorldLine->GetBlockInv(hashFork,eventGetBlocks.data,vBlockHash,MAX_GETBLOCKS_COUNT))
     {
         DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
@@ -536,11 +512,17 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerGetBlocks& eventGetBlocks)
     {
         eventInv.data.push_back(network::CInv(network::CInv::MSG_BLOCK,hash));
     }
+
+    if("up" == flow)
+    {
+        eventInv.nNonce = 0;
+    }
+
     pPeerNet->DispatchEvent(&eventInv);
     return true;
 }
 
-bool CNetChannel::HandleEventForOrigin(network::CMvEventPeerTx& eventTx)
+bool CNetChannel::HandleEvent(network::CMvEventPeerTx& eventTx)
 {
     uint64 nNonce = eventTx.nNonce;
     uint256& hashFork = eventTx.hashFork;
@@ -596,9 +578,10 @@ bool CNetChannel::HandleEventForOrigin(network::CMvEventPeerTx& eventTx)
         DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
     }
     return true;
+    
 }
 
-bool CNetChannel::HandleEventForOrigin(network::CMvEventPeerBlock& eventBlock)
+bool CNetChannel::HandleEvent(network::CMvEventPeerBlock& eventBlock)
 {
     uint64 nNonce = eventBlock.nNonce;
     uint256& hashFork = eventBlock.hashFork; 
@@ -641,58 +624,7 @@ bool CNetChannel::HandleEventForOrigin(network::CMvEventPeerBlock& eventBlock)
     {
         DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
     }
-    return true;
-}
-
-bool CNetChannel::HandleEvent(network::CMvEventPeerTx& eventTx)
-{
-    uint256& hashFork = eventTx.hashFork;
-    boost::shared_lock<boost::shared_mutex> rblock(rwForkFilter);
-    
-    // if this node is root node, it only process tx on main fork
-    if(!fIsForkNode && IsMainFork(hashFork)) 
-    {
-        HandleEventForOrigin(eventTx);
-    }
-
-    // if this node is root node, it send all tx to virtual peer net and push to dbpservice
-    if(!fIsForkNode)
-    {
-       
-    }
-
-    if(fIsForkNode)
-    {
-        HandleEventForOrigin(eventTx);
-    }
-    
-    return true;
-    
-}
-
-bool CNetChannel::HandleEvent(network::CMvEventPeerBlock& eventBlock)
-{
-    uint256& hashFork = eventBlock.hashFork;
-    boost::shared_lock<boost::shared_mutex> rblock(rwForkFilter);
-    
-    // if this node is root node, it only process block on main fork
-    if(!fIsForkNode && IsMainFork(hashFork))
-    {
-        HandleEventForOrigin(eventBlock);
-    }
-
-    // if this node is root node, it send all block to virtual peernet push to dbpservice
-    if(!fIsForkNode)
-    {
-        
-    }
-
-    if(fIsForkNode)
-    {
-        HandleEventForOrigin(eventBlock);
-    }
-
-    return true;
+    return true; 
 }
 
 CSchedule& CNetChannel::GetSchedule(const uint256& hashFork)
@@ -752,14 +684,20 @@ void CNetChannel::SchedulePeerInv(uint64 nNonce,const uint256& hashFork,CSchedul
         {
             if (!sched.ScheduleTxInv(nNonce,eventGetData.data,MAX_PEER_SCHED_COUNT))
             {
-                DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
+                if(nNonce != std::numeric_limits<uint64>::max())
+                {
+                    DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
+                }
             }
         }
         SetPeerSyncStatus(nNonce,hashFork,fEmpty);
     }
     else
     {
-        DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
+        if(nNonce != std::numeric_limits<uint64>::max())
+        {
+            DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
+        }
     }
     if (!eventGetData.data.empty())
     {
@@ -808,9 +746,13 @@ void CNetChannel::AddNewBlock(const uint256& hashFork,const uint256& hash,CSched
                 set<uint64> setKnownPeer;
                 sched.GetNextBlock(hashBlock,vBlockHash);
                 sched.RemoveInv(network::CInv(network::CInv::MSG_BLOCK,hashBlock),setKnownPeer);
-                DispatchAwardEvent(nNonceSender,CEndpointManager::VITAL_DATA);
-
-                BroadcastBlockInv(hashFork,hashBlock,setKnownPeer); 
+                
+                if(nNonceSender != std::numeric_limits<uint64>::max())
+                {
+                    DispatchAwardEvent(nNonceSender,CEndpointManager::VITAL_DATA);
+                    BroadcastBlockInv(hashFork,hashBlock,setKnownPeer);
+                }
+                
                 setSchedPeer.insert(setKnownPeer.begin(),setKnownPeer.end());
             }
             else if (err == MV_ERR_ALREADY_HAVE && pBlock->IsVacant())
@@ -848,7 +790,12 @@ void CNetChannel::AddNewTx(const uint256& hashFork,const uint256& txid,CSchedule
             {
                 sched.GetNextTx(hashTx,vtx,setTx);
                 sched.RemoveInv(network::CInv(network::CInv::MSG_TX,hashTx),setSchedPeer);
-                DispatchAwardEvent(nNonceSender,CEndpointManager::MAJOR_DATA);
+                
+                if(nNonceSender != std::numeric_limits<uint64>::max())
+                {
+                    DispatchAwardEvent(nNonceSender,CEndpointManager::MAJOR_DATA);
+                }
+
                 nAddNewTx++;
             }
             else if (err != MV_ERR_MISSING_PREV)
@@ -876,7 +823,10 @@ void CNetChannel::PostAddNew(const uint256& hashFork,CSchedule& sched,
 
     BOOST_FOREACH(const uint64 nNonceMisbehave,setMisbehavePeer)
     {
-        DispatchMisbehaveEvent(nNonceMisbehave,CEndpointManager::DDOS_ATTACK);
+        if(nNonceMisbehave != std::numeric_limits<uint64>::max())
+        {
+            DispatchMisbehaveEvent(nNonceMisbehave,CEndpointManager::DDOS_ATTACK);
+        }
     }
 }
 
@@ -903,14 +853,4 @@ void CNetChannel::SetPeerSyncStatus(uint64 nNonce,const uint256& hashFork,bool f
             }
         } 
     }
-}
-
-bool CNetChannel::IsMainFork(const uint256& hash)
-{
-    return pCoreProtocol->GetGenesisBlockHash().ToString() == hash.ToString();
-}
-
-bool CNetChannel::IsMyFork(const uint256& hash)
-{
-    return mapThisNodeForkStates.find(hash.ToString()) != mapThisNodeForkStates.end();
 }

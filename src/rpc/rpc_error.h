@@ -14,6 +14,9 @@ namespace multiverse
 {
 namespace rpc
 {
+
+#define RPC_DOUBLE_PRECISION 6
+
 enum RPCErrorCode
 {
     //! Standard JSON-RPC 2.0 errors

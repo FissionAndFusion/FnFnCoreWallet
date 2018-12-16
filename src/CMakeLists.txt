@@ -19,6 +19,10 @@ add_custom_command(OUTPUT ${auto_files}
 	DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/../script/template/rpc.json"
 			"${CMAKE_CURRENT_SOURCE_DIR}/../script/template/options.json"
 			"${CMAKE_CURRENT_SOURCE_DIR}/../script/template/mode.json"
+			"${CMAKE_CURRENT_SOURCE_DIR}/../script/generator.py"
+			"${CMAKE_CURRENT_SOURCE_DIR}/../script/options_generator.py"
+			"${CMAKE_CURRENT_SOURCE_DIR}/../script/rpc_generator.py"
+			"${CMAKE_CURRENT_SOURCE_DIR}/../script/rpc_protocol_generator.py"
 )
 
 set(src
@@ -59,8 +63,8 @@ set(src
 	param.h
 	storage.h
 	version.h
-	forkpseudopeernet.cpp forkpseudopeernet.h
-		forkpeerevent.h)
+	virtualpeernet.cpp virtualpeernet.h
+		virtualpeernetevent.h)
 set(mode_src
 	mode/basic_config.cpp mode/basic_config.h
 	mode/fork_config.cpp mode/fork_config.h
@@ -77,7 +81,7 @@ set(mode_src
 	mode/module_type.h
 )
 set(rpc_src
-	rpc/rpc.cpp rpc/rpc.h
+	rpc/rpc.h
 	rpc/rpc_error.cpp rpc/rpc_error.h
 	rpc/rpc_req.cpp rpc/rpc_req.h
 	rpc/rpc_resp.cpp rpc/rpc_resp.h

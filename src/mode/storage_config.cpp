@@ -30,7 +30,7 @@ bool CMvStorageConfig::PostLoad()
 
     if (fTestNet)
     {
-        strDBName += "-testnet";
+        strDBName = "multiverse_test";
     }
     if (nDBPort < 0 || nDBPort > 0xFFFF)
     {

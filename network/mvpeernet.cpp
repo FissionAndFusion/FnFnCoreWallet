@@ -52,13 +52,13 @@ bool CMvPeerNet::WalleveHandleInitialize()
 {
     if (!WalleveGetObject("netchannel",pNetChannel))
     {
-        WalleveLog("Failed to request peer net datachannel\n");
+        WalleveError("Failed to request peer net datachannel\n");
         return false;
     }
 
     if (!WalleveGetObject("delegatedchannel",pDelegatedChannel))
     {
-        WalleveLog("Failed to request delegated datachannel\n");
+        WalleveError("Failed to request delegated datachannel\n");
         return false;
     }
 
@@ -192,6 +192,11 @@ void CMvPeerNet::DestroyPeer(CPeer* pPeer)
             CMvEventPeerDeactive* pEventDeactiveDelegated = new CMvEventPeerDeactive(*pEventDeactive);
 
             pNetChannel->PostEvent(pEventDeactive);
+
+            if(!DestroyPeerForForkNode(*pEventDeactive))
+            {
+                WalleveLog("Failed to deliver peer deactive event to super node cluster.\n");
+            }
 
             if (pEventDeactiveDelegated != NULL)
             {
@@ -334,7 +339,99 @@ bool CMvPeerNet::HandlePeerHandshaked(CPeer *pPeer,uint32 nTimerId)
     {
         pMvPeer->SendMessage(MVPROTO_CHN_NETWORK,MVPROTO_CMD_GETADDRESS);
     }
+
+    if(!HandlePeerHandshakedForForkNode(*pEventActive))
+    {
+        WalleveLog("Failed to deliver peer active event to super node cluster.\n");
+        //return false;
+    }
+
     return true;
+}
+
+bool CMvPeerNet::HandleForkPeerActive(const CMvEventPeerActive& eventActive)
+{
+    CMvEventPeerActive* pEventActive = new CMvEventPeerActive(eventActive);
+    if (pEventActive == NULL)
+    {
+        return false;
+    }
+
+    pNetChannel->PostEvent(pEventActive);
+    return true;
+}
+
+bool CMvPeerNet::HandleForkPeerDeactive(const CMvEventPeerDeactive& eventDeactive)
+{
+    CMvEventPeerDeactive* pEventActive = new CMvEventPeerDeactive(eventDeactive);
+    if (pEventActive == NULL)
+    {
+        return false;
+    }
+
+    pNetChannel->PostEvent(pEventActive);
+    return true;
+}
+
+bool CMvPeerNet::HandlePeerHandshakedForForkNode(const CMvEventPeerActive& peerActive)
+{
+    (void)peerActive;
+    return false;
+}
+
+bool CMvPeerNet::DestroyPeerForForkNode(const CMvEventPeerDeactive& peerDeactive)
+{
+    (void)peerDeactive;
+    return false;
+}
+
+bool CMvPeerNet::HandleRootPeerSub(const uint64& nNonce, const uint256& hashFork)
+{
+    (void)nNonce;
+    (void)hashFork;
+    return false;
+}
+
+bool CMvPeerNet::HandleRootPeerUnSub(const uint64& nNonce, const uint256& hashFork)
+{
+    (void)nNonce;
+    (void)hashFork;
+    return false;
+}
+
+bool CMvPeerNet::HandleRootPeerGetBlocks(const uint64& nNonce, const uint256& hashFork)
+{
+    (void)nNonce;
+    (void)hashFork;
+    return false;
+}
+
+bool CMvPeerNet::HandleRootPeerInv(const uint64& nNonce, const uint256& hashFork)
+{
+    (void)nNonce;
+    (void)hashFork;
+    return false;
+}
+
+bool CMvPeerNet::HandleRootPeerGetData(const uint64& nNonce, const uint256& hashFork)
+{
+    (void)nNonce;
+    (void)hashFork;
+    return false;
+}
+
+bool CMvPeerNet::HandleRootPeerBlock(const uint64& nNonce, const uint256& hashFork)
+{
+    (void)nNonce;
+    (void)hashFork;
+    return false;
+}
+
+bool CMvPeerNet::HandleRootPeerTx(const uint64& nNonce, const uint256& hashFork)
+{
+    (void)nNonce;
+    (void)hashFork;
+    return false;
 }
 
 bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CWalleveBufStream& ssPayload)
@@ -411,7 +508,7 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                 {
                     ssPayload >> pEvent->data;
                     pNetChannel->PostEvent(pEvent);
-                    return true;
+                    return HandleRootPeerSub(pMvPeer->GetNonce(),hashFork);
                 }
             }
             break;
@@ -422,7 +519,7 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                 {
                     ssPayload >> pEvent->data;
                     pNetChannel->PostEvent(pEvent);
-                    return true;
+                    return HandleRootPeerUnSub(pMvPeer->GetNonce(),hashFork);
                 }
             }
             break;
@@ -433,7 +530,7 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                 {
                     ssPayload >> pEvent->data;
                     pNetChannel->PostEvent(pEvent);
-                    return true;
+                    return HandleRootPeerGetBlocks(pMvPeer->GetNonce(),hashFork);
                 } 
             }
             break;
@@ -443,7 +540,7 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                 ssPayload >> vInv;
                 pMvPeer->AskFor(hashFork,vInv);
                 ProcessAskFor(pPeer);
-                return true;
+                return HandleRootPeerGetData(pMvPeer->GetNonce(),hashFork);
             }
             break;
         case MVPROTO_CMD_INV:
@@ -453,7 +550,7 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                 {
                     ssPayload >> pEvent->data;
                     pNetChannel->PostEvent(pEvent);
-                    return true;
+                    return HandleRootPeerInv(pMvPeer->GetNonce(),hashFork);
                 } 
             }
             break;
@@ -466,7 +563,7 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                     CInv inv(CInv::MSG_TX,pEvent->data.GetHash());
                     CancelTimer(pMvPeer->Responded(inv));
                     pNetChannel->PostEvent(pEvent);
-                    return true;
+                    return HandleRootPeerTx(pMvPeer->GetNonce(),hashFork);
                 }
             }
             break;
@@ -479,7 +576,7 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                     CInv inv(CInv::MSG_BLOCK,pEvent->data.GetHash());
                     CancelTimer(pMvPeer->Responded(inv));
                     pNetChannel->PostEvent(pEvent);
-                    return true;
+                    return HandleRootPeerBlock(pMvPeer->GetNonce(),hashFork);
                 }
             }
             break;

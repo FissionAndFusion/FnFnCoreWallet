@@ -26,6 +26,31 @@ using namespace boost::posix_time;
     return int64((microsec_clock::universal_time() - epoch).total_milliseconds());
 }
 
+inline std::string GetLocalTime()
+{
+using namespace boost::posix_time;
+    time_facet *facet = new time_facet("%Y-%m-%d %H:%M:%S");
+    std::stringstream ss;
+    ss.imbue(std::locale(std::locale("C"), facet));
+    ss << second_clock::universal_time();
+    return ss.str();
+}
+
+inline void StdLog(const char* pszName, const char* pszErr)
+{
+    std::cerr << GetLocalTime() << " [INFO] <" << pszName << "> " << pszErr << std::endl;
+}
+
+inline void StdWarn(const char* pszName, const char* pszErr)
+{
+    std::cerr << GetLocalTime() << " [WARN] <" << pszName << "> " << pszErr << std::endl;
+}
+
+inline void StdError(const char* pszName, const char* pszErr)
+{
+    std::cerr << GetLocalTime() << " [ERROR] <" << pszName << "> " << pszErr << std::endl;
+}
+
 inline bool IsRoutable(const boost::asio::ip::address& address)
 {
     if (address.is_loopback() || address.is_unspecified())

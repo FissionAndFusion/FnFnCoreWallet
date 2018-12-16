@@ -35,61 +35,61 @@ bool CDispatcher::WalleveHandleInitialize()
 {
     if (!WalleveGetObject("coreprotocol",pCoreProtocol))
     {
-        WalleveLog("Failed to request coreprotocol\n");
+        WalleveError("Failed to request coreprotocol\n");
         return false;
     }
 
     if (!WalleveGetObject("worldline",pWorldLine))
     {
-        WalleveLog("Failed to request worldline\n");
+        WalleveError("Failed to request worldline\n");
         return false;
     }
 
     if (!WalleveGetObject("txpool",pTxPool))
     {
-        WalleveLog("Failed to request txpool\n");
+        WalleveError("Failed to request txpool\n");
         return false;
     }
 
     if (!WalleveGetObject("forkmanager",pForkManager))
     {
-        WalleveLog("Failed to request forkmanager\n");
+        WalleveError("Failed to request forkmanager\n");
         return false;
     }
 
     if (!WalleveGetObject("consensus",pConsensus))
     {
-        WalleveLog("Failed to request consensus\n");
+        WalleveError("Failed to request consensus\n");
         return false;
     }
 
     if (!WalleveGetObject("wallet",pWallet))
     {
-        WalleveLog("Failed to request wallet\n");
+        WalleveError("Failed to request wallet\n");
         return false;
     }
 
     if (!WalleveGetObject("service",pService))
     {
-        WalleveLog("Failed to request service\n");
+        WalleveError("Failed to request service\n");
         return false;
     }
 
     if (!WalleveGetObject("blockmaker",pBlockMaker))
     {
-        WalleveLog("Failed to request blockmaker\n");
+        WalleveError("Failed to request blockmaker\n");
         return false;
     }
 
     if (!WalleveGetObject("netchannel",pNetChannel))
     {
-        WalleveLog("Failed to request netchannel\n");
+        WalleveError("Failed to request netchannel\n");
         return false;
     }
 
     if (!WalleveGetObject("delegatedchannel",pDelegatedChannel))
     {
-        WalleveLog("Failed to request delegatedchannel\n");
+        WalleveError("Failed to request delegatedchannel\n");
         return false;
     }
 
@@ -115,7 +115,7 @@ bool CDispatcher::WalleveHandleInvoke()
     vector<uint256> vActive;
     if (!pForkManager->LoadForkContext(vActive))
     {
-        WalleveLog("Failed to load for context\n");
+        WalleveError("Failed to load for context\n");
         return false;
     }
 
@@ -318,14 +318,14 @@ void CDispatcher::ActivateFork(const uint256& hashFork)
         CForkContext ctxt;
         if (!pWorldLine->GetForkContext(hashFork,ctxt))
         {
-            WalleveLog("Failed to find fork context %s\n",hashFork.GetHex().c_str());
+            WalleveWarn("Failed to find fork context %s\n",hashFork.GetHex().c_str());
             return;
         }
 
         CTransaction txFork;
         if (!pWorldLine->GetTransaction(ctxt.txidEmbedded,txFork))
         {
-            WalleveLog("Failed to find tx fork %s\n",hashFork.GetHex().c_str());
+            WalleveWarn("Failed to find tx fork %s\n",hashFork.GetHex().c_str());
             return;
         }
  
@@ -355,7 +355,7 @@ bool CDispatcher::ProcessForkTx(const uint256& txid,const CTransaction& tx)
     }
     catch (...) 
     { 
-        WalleveLog("Invalid orign block found in tx (%s)\n",txid.GetHex().c_str());
+        WalleveWarn("Invalid orign block found in tx (%s)\n",txid.GetHex().c_str());
         return false;
     }
     

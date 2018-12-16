@@ -144,8 +144,9 @@ void CMvDelegateVote::Enroll(const map<CDestination,size_t>& mapWeight,
                 vCandidate.push_back(CMPCandidate(DestToIdentUInt256((*it).first),(*it).second,
                                                   CMPSealedBox(vEncryptedCoeff,nPubKey,nR,nS)));
             }
-            catch (...)
+            catch (exception& e) 
             {
+                StdError(__PRETTY_FUNCTION__, e.what());
             }
         }
     }
@@ -169,8 +170,9 @@ bool CMvDelegateVote::Accept(const CDestination& destFrom,const vector<unsigned 
             return false;
         }
     }
-    catch (...)
+    catch (exception& e) 
     {
+        StdError(__PRETTY_FUNCTION__, e.what());
         return false;
     }
 
@@ -208,7 +210,10 @@ bool CMvDelegateVote::Collect(const CDestination& destFrom,const vector<unsigned
             }
         }
     }
-    catch (...) {}
+    catch (exception& e) 
+    {
+        StdError(__PRETTY_FUNCTION__, e.what());
+    }
     return false;
 }
 
