@@ -244,12 +244,12 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerInv& eventInv)
     {
         if(SENDER_NETCHN == eventInv.sender)
         {
-            if(0 != eventInv.nNonce)
+            if(std::numeric_limits<uint64>::max() != eventInv.nNonce)
             {
                 return CMvPeerNet::HandleEvent(eventInv);
             }
 
-            if(0 == eventInv.nNonce)
+            if(std::numeric_limits<uint64>::max() == eventInv.nNonce)
             {
                 network::CMvEventPeerInv* pEvent = new network::CMvEventPeerInv(eventInv);
                 if(!pEvent)
@@ -440,12 +440,12 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerBlock& eventBlock)
     {
         if(SENDER_NETCHN == eventBlock.sender)
         {
-            if(0 != eventBlock.nNonce)
+            if(std::numeric_limits<uint64>::max() != eventBlock.nNonce)
             {
                 return CMvPeerNet::HandleEvent(eventBlock);
             }
 
-            if(0 == eventBlock.nNonce)
+            if(std::numeric_limits<uint64>::max() == eventBlock.nNonce)
             {
                 network::CMvEventPeerBlock *pEvent = new network::CMvEventPeerBlock(eventBlock);
                 if(!pEvent)

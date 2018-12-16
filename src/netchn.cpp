@@ -470,7 +470,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerGetData& eventGetData)
 
             if("up" == flow)
             {
-                eventTx.nNonce = 0;
+                eventTx.nNonce = std::numeric_limits<uint64>::max();
             }
 
             if (pTxPool->Get(inv.nHash,eventTx.data))
@@ -484,7 +484,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerGetData& eventGetData)
 
             if("up" == flow)
             {
-                eventBlock.nNonce = 0;
+                eventBlock.nNonce = std::numeric_limits<uint64>::max();
             }
 
             if (pWorldLine->GetBlock(inv.nHash,eventBlock.data))
@@ -515,7 +515,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerGetBlocks& eventGetBlocks)
 
     if("up" == flow)
     {
-        eventInv.nNonce = 0;
+        eventInv.nNonce = std::numeric_limits<uint64>::max();
     }
 
     pPeerNet->DispatchEvent(&eventInv);
