@@ -154,13 +154,14 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerSubscribe& eventSubscribe
 
         if(SENDER_DBPSVC == eventSubscribe.sender)
         {
-            network::CMvEventPeerSubscribe* pEvent = new network::CMvEventPeerSubscribe(eventSubscribe);
-            if(!pEvent)
-            {
-                return false;
-            }
-            pNetChannel->PostEvent(pEvent);
-            return true;
+            // network::CMvEventPeerSubscribe* pEvent = new network::CMvEventPeerSubscribe(eventSubscribe);
+            // if(!pEvent)
+            // {
+            //     return false;
+            // }
+            // pNetChannel->PostEvent(pEvent);
+            // return true;
+            return CMvPeerNet::HandleEvent(eventSubscribe);
         }
     }
 
