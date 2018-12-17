@@ -18,7 +18,7 @@ namespace storage
 class CBlockDBFork
 {
 public:
-    CBlockDBFork(const uint256& hashForkIn=0,const uint256 hashRefIn=0,int nIndexIn=0)
+    CBlockDBFork(const uint256& hashForkIn=uint64(0),const uint256 hashRefIn=uint64(0),int nIndexIn=0)
     : hashFork(hashForkIn),hashRef(hashRefIn),nIndex(nIndexIn) {}
     uint256 hashFork;
     uint256 hashRef;

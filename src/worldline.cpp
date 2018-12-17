@@ -25,7 +25,7 @@ bool CWorldLine::WalleveHandleInitialize()
 {
     if (!WalleveGetObject("coreprotocol",pCoreProtocol))
     {
-        WalleveLog("Failed to request coreprotocol\n");
+        WalleveError("Failed to request coreprotocol\n");
         return false;
     }
 
@@ -44,7 +44,7 @@ bool CWorldLine::WalleveHandleInvoke()
 
     if (!cntrBlock.Initialize(dbConfig,StorageConfig()->nDBConn,WalleveConfig()->pathData,WalleveConfig()->fDebug))
     {
-        WalleveLog("Failed to initalize container\n");
+        WalleveError("Failed to initalize container\n");
         return false;
     }
 
@@ -62,7 +62,7 @@ bool CWorldLine::WalleveHandleInvoke()
         if (!RebuildContainer())
         {
             cntrBlock.Clear(); 
-            WalleveLog("Failed to rebuild Block container,reconstruct all\n");
+            WalleveError("Failed to rebuild Block container,reconstruct all\n");
         } 
     }
 
@@ -72,7 +72,7 @@ bool CWorldLine::WalleveHandleInvoke()
         pCoreProtocol->GetGenesisBlock(block);
         if (!InsertGenesisBlock(block))
         {
-            WalleveLog("Failed to create genesis block\n");
+            WalleveError("Failed to create genesis block\n");
             return false;
         }
     }    
@@ -169,7 +169,7 @@ bool CWorldLine::GetBlockHash(const uint256& hashFork,int nHeight,uint256& hashB
     {
         pIndex = pIndex->pPrev;
     }
-    hashBlock = !pIndex ? 0 : pIndex->GetBlockHash();
+    hashBlock = !pIndex ? uint64(0) : pIndex->GetBlockHash();
     return (pIndex != NULL);
 }
 
@@ -228,6 +228,11 @@ bool CWorldLine::GetBlock(const uint256& hashBlock,CBlock& block)
     return cntrBlock.Retrieve(hashBlock,block);
 }
 
+bool CWorldLine::GetBlockEx(const uint256& hashBlock,CBlockEx& block)
+{
+    return cntrBlock.Retrieve(hashBlock,block);
+}
+
 bool CWorldLine::GetOrigin(const uint256& hashFork,CBlock& block)
 {
     return cntrBlock.RetrieveOrigin(hashFork,block);
@@ -264,7 +269,10 @@ bool CWorldLine::GetTxUnspent(const uint256& hashFork,const vector<CTxIn>& vInpu
     
     for (std::size_t i = 0;i < vInput.size();i++)
     {
-        view.RetrieveUnspent(vInput[i].prevout,vOutput[i]);
+        if (vOutput[i].IsNull())
+        {
+            view.RetrieveUnspent(vInput[i].prevout,vOutput[i]);
+        }
     }
     return true;
 }
@@ -272,6 +280,11 @@ bool CWorldLine::GetTxUnspent(const uint256& hashFork,const vector<CTxIn>& vInpu
 bool CWorldLine::FilterTx(CTxFilter& filter)
 {
     return cntrBlock.FilterTx(filter);
+}
+
+bool CWorldLine::FilterForkContext(CForkContextFilter& filter)
+{
+    return cntrBlock.FilterForkContext(filter);
 }
 
 MvErr CWorldLine::AddNewForkContext(const CTransaction& txFork,CForkContext& ctxt)
@@ -296,7 +309,7 @@ MvErr CWorldLine::AddNewForkContext(const CTransaction& txFork,CForkContext& ctx
     }
     catch (...)
     {
-        WalleveLog("Invalid orign block found in tx (%s)\n",txid.GetHex().c_str());
+        WalleveError("Invalid orign block found in tx (%s)\n",txid.GetHex().c_str());
         return MV_ERR_BLOCK_INVALID_FORK;
     }
     uint256 hashFork = block.GetHash();
@@ -304,6 +317,7 @@ MvErr CWorldLine::AddNewForkContext(const CTransaction& txFork,CForkContext& ctx
     CForkContext ctxtParent;
     if (!cntrBlock.RetrieveForkContext(profile.hashParent,ctxtParent))
     {
+        WalleveLog("AddNewForkContext Retrieve parent context Error: %s \n",profile.hashParent.ToString().c_str());
         return MV_ERR_MISSING_PREV;
     }
     
@@ -311,14 +325,17 @@ MvErr CWorldLine::AddNewForkContext(const CTransaction& txFork,CForkContext& ctx
     MvErr err = pCoreProtocol->ValidateOrigin(block,ctxtParent.GetProfile(),forkProfile);
     if (err != MV_OK)
     {
+        WalleveLog("AddNewForkContext Validate Block Error(%s) : %s \n",MvErrString(err),hashFork.ToString().c_str());
         return err;
     }
 
     ctxt = CForkContext(block.GetHash(),block.hashPrev,txid,profile);
     if (!cntrBlock.AddNewForkContext(ctxt))
     {
+        WalleveLog("AddNewForkContext Already Exists : %s \n",hashFork.ToString().c_str());
         return MV_ERR_ALREADY_HAVE;
     }
+
     return MV_OK;
 }
 

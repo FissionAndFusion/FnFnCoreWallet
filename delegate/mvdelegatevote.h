@@ -20,7 +20,7 @@ public:
     CMvDelegateData()
     {
     }
-    CMvDelegateData(const MPUInt256& nIdentFromIn)
+    CMvDelegateData(const uint256& nIdentFromIn)
     : nIdentFrom(nIdentFromIn)
     {
     }
@@ -32,43 +32,43 @@ public:
     {
         is >> nIdentFrom >> mapShare >> nR >> nS;
     }
-    const MPUInt256 GetHash() const;
+    const uint256 GetHash() const;
     std::string ToString() const
     {
         std::ostringstream os;
         os << "CMvDelegateData: \n";
-        os << nIdentFrom.ToHex() << "\n";
-        os << nR.ToHex() << "\n";
-        os << nS.ToHex() << "\n";
+        os << nIdentFrom.GetHex() << "\n";
+        os << nR.GetHex() << "\n";
+        os << nS.GetHex() << "\n";
         os << mapShare.size() << "\n";
-        for (std::map<MPUInt256,std::vector<MPUInt256> >::const_iterator it = mapShare.begin();
+        for (std::map<uint256,std::vector<uint256> >::const_iterator it = mapShare.begin();
              it != mapShare.end();++it)
         {
-            os << " " << (*it).first.ToHex() << " " << (*it).second.size() << "\n";
+            os << " " << (*it).first.GetHex() << " " << (*it).second.size() << "\n";
             for (int i = 0;i < (*it).second.size();i++)
             {
-                os << "   " << (*it).second[i].ToHex() << "\n";
+                os << "   " << (*it).second[i].GetHex() << "\n";
             }
         }
         return os.str();
     }
 public:
-    MPUInt256 nIdentFrom;
-    std::map<MPUInt256,std::vector<MPUInt256> > mapShare;
-    MPUInt256 nR;
-    MPUInt256 nS;
+    uint256 nIdentFrom;
+    std::map<uint256,std::vector<uint256> > mapShare;
+    uint256 nR;
+    uint256 nS;
 };
 
 class CMvSecretShare : public CMPSecretShare
 {
 public:
     CMvSecretShare();
-    CMvSecretShare(const MPUInt256& nIdentIn);
+    CMvSecretShare(const uint256& nIdentIn);
     ~CMvSecretShare();
     void Distribute(CMvDelegateData& delegateData);
     void Publish(CMvDelegateData& delegateData);
 protected:
-    void RandGeneretor(MPUInt256& r);
+    void RandGeneretor(uint256& r);
 };
 
 class CMvDelegateVote

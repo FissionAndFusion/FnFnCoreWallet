@@ -31,6 +31,7 @@ public:
     bool RemoveNode(const walleve::CNetHost& node) override;
     /* Worldline & Tx Pool*/
     int  GetForkCount() override;
+    bool HaveFork(const uint256& hashFork) override;
     int  GetForkHeight(const uint256& hashFork) override;
     void ListFork(std::vector<std::pair<uint256,CProfile> >& vFork) override;
     bool GetForkGenealogy(const uint256& hashFork,std::vector<std::pair<uint256,int> >& vAncestry,
@@ -40,6 +41,7 @@ public:
     bool GetBlockHash(const uint256& hashFork,int nHeight,uint256& hashBlock) override;
     bool GetBlockHash(const uint256& hashFork,int nHeight,std::vector<uint256>& vBlockHash) override;
     bool GetBlock(const uint256& hashBlock,CBlock& block,uint256& hashFork,int& nHeight) override;
+    bool GetBlockEx(const uint256& hashBlock, CBlockEx& block, uint256& hashFork, int& nHeight) override;
     void GetTxPool(const uint256& hashFork,std::vector<std::pair<uint256,std::size_t> >& vTxPool) override;
     bool GetTransaction(const uint256& txid,CTransaction& tx,uint256& hashFork,int& nHeight) override;
     MvErr SendTransaction(CTransaction& tx) override;

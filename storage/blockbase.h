@@ -188,7 +188,7 @@ public:
     bool LoadIndex(CBlockOutline& diskIndex);
     bool LoadTx(CTransaction& tx,uint32 nTxFile,uint32 nTxOffset,uint256& hashFork);
     bool FilterTx(CTxFilter& filter);
-    bool FilterForkContext(CForkContextFilter& ctxtFilter);
+    bool FilterForkContext(CForkContextFilter& filter);
     bool GetForkBlockLocator(const uint256& hashFork,CBlockLocator& locator);
     bool GetForkBlockInv(const uint256& hashFork,const CBlockLocator& locator,std::vector<uint256>& vBlockHash,size_t nMaxCount);
     bool CheckConsistency(int nCheckLevel);
@@ -212,14 +212,7 @@ protected:
     {
         va_list ap;
         va_start(ap, pszFormat);
-        walleveLog(pszIdent,"",pszFormat, ap);
-        va_end(ap);
-    }
-    void Error(const char* pszIdent,const char *pszFormat,...)
-    {
-        va_list ap;
-        va_start(ap, pszFormat);
-        walleveLog(pszIdent,"ERROR ",pszFormat, ap);
+        walleveLog(pszIdent,"[INFO]",pszFormat, ap);
         va_end(ap);
     }
     void Debug(const char* pszIdent,const char *pszFormat,...)
@@ -228,9 +221,23 @@ protected:
         {
             va_list ap;
             va_start(ap, pszFormat);
-            walleveLog(pszIdent,"DEBUG ",pszFormat, ap);
+            walleveLog(pszIdent,"[DEBUG]",pszFormat, ap);
             va_end(ap);
         }
+    }
+    void Warn(const char* pszIdent,const char *pszFormat,...)
+    {
+        va_list ap;
+        va_start(ap, pszFormat);
+        walleveLog(pszIdent,"[WARN]",pszFormat, ap);
+        va_end(ap);
+    }
+    void Error(const char* pszIdent,const char *pszFormat,...)
+    {
+        va_list ap;
+        va_start(ap, pszFormat);
+        walleveLog(pszIdent,"[ERROR]",pszFormat, ap);
+        va_end(ap);
     }
 protected:
     mutable walleve::CWalleveRWAccess rwAccess;

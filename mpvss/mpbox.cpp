@@ -1,51 +1,59 @@
+// Copyright (c) 2017-2018 The Multiverse developers
+// Distributed under the MIT/X11 software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
 #include "mpbox.h"
+
 #include <stdexcept>
 #include <string>
 
+#include "walleve/util.h"
+
 using namespace std;
+using namespace walleve;
 
 //////////////////////////////
 // CMPSealedBox
 
-static inline const MPUInt256 MPEccPubkey(const MPUInt256& s)
+static inline const uint256 MPEccPubkey(const uint256& s)
 {
-    MPUInt256 pubkey;
+    uint256 pubkey;
     CEdwards25519 P;
     P.Generate(s);
-    P.Pack(pubkey.Data());
+    P.Pack(pubkey.begin());
     return pubkey;
 }
 
-static inline bool MPEccPubkeyValidate(const MPUInt256& pubkey)
+static inline bool MPEccPubkeyValidate(const uint256& pubkey)
 {
     CEdwards25519 P;
-    return (!pubkey.IsZero() && P.Unpack(pubkey.Data()) && P != CEdwards25519());
+    return (!!pubkey && P.Unpack(pubkey.begin()) && P != CEdwards25519());
 }
 
-static inline const MPUInt256 MPEccSign(const MPUInt256& key,const MPUInt256& r,const MPUInt256& hash)
+static inline const uint256 MPEccSign(const uint256& key,const uint256& r,const uint256& hash)
 {
-    CSC25519 sign = key.ToSC25519() + r.ToSC25519() * hash.ToSC25519();
-    return MPUInt256(sign);
+    CSC25519 sign = CSC25519(key.begin()) + CSC25519(r.begin()) * CSC25519(hash.begin());
+    return uint256(sign.value);
 }
 
-static inline bool MPEccVerify(const MPUInt256& pubkey,const MPUInt256& rG,const MPUInt256& signature,const MPUInt256& hash)
+static inline bool MPEccVerify(const uint256& pubkey,const uint256& rG,const uint256& signature,const uint256& hash)
 {
     CEdwards25519 P,R,S;
-    if (P.Unpack(pubkey.Data()) && R.Unpack(rG.Data()))
+    if (P.Unpack(pubkey.begin()) && R.Unpack(rG.begin()))
     {
         S.Generate(signature);
-        return (S == (P + R.ScalarMult(hash.ToSC25519())));
+        return (S == (P + R.ScalarMult(hash)));
     }
     return false;
 }
 
-static inline const MPUInt256 MPEccSharedKey(const MPUInt256& key,const MPUInt256& other)
+static inline const uint256 MPEccSharedKey(const uint256& key,const uint256& other)
 {
-    MPUInt256 shared;
+    uint256 shared;
     CEdwards25519 P;
-    if (P.Unpack(other.Data()))
+    if (P.Unpack(other.begin()))
     {
-        P.ScalarMult(key.ToSC25519()).Pack(shared.Data());
+        P.ScalarMult(key).Pack(shared.begin());
     }
     return shared;
 }
@@ -56,57 +64,55 @@ CMPOpenedBox::CMPOpenedBox()
 {
 }
 
-CMPOpenedBox::CMPOpenedBox(const std::vector<MPUInt256>& vCoeffIn,const MPUInt256& nPrivKeyIn)
+CMPOpenedBox::CMPOpenedBox(const std::vector<uint256>& vCoeffIn,const uint256& nPrivKeyIn)
 : vCoeff(vCoeffIn),nPrivKey(nPrivKeyIn)
 {
 }
 
-const MPUInt256 CMPOpenedBox::PrivKey() const
+const uint256 CMPOpenedBox::PrivKey() const
 {
     return nPrivKey;
 }
 
-const MPUInt256 CMPOpenedBox::PubKey() const
+const uint256 CMPOpenedBox::PubKey() const
 {
     return MPEccPubkey(PrivKey());
 }
 
-const MPUInt256 CMPOpenedBox::SharedKey(const MPUInt256& pubkey) const
+const uint256 CMPOpenedBox::SharedKey(const uint256& pubkey) const
 {
     return MPEccSharedKey(PrivKey(),pubkey);
 }
 
-const MPUInt256 CMPOpenedBox::Polynomial(std::size_t nThresh,uint32_t nX) const
+const uint256 CMPOpenedBox::Polynomial(std::size_t nThresh,uint32_t nX) const
 {
     if (IsNull() || nThresh > vCoeff.size())
     {
         throw runtime_error("Box is null or insufficient");
     }
 
-    CSC25519 f = vCoeff[0].ToSC25519();
-    CSC25519 x(nX);
+    CSC25519 f = CSC25519(vCoeff[0].begin());
     for (size_t i = 1;i < nThresh;i++)
     {
-        f += vCoeff[i].ToSC25519() * x;
-        x *= nX;
+        f += CSC25519(vCoeff[i].begin()) * CSC25519::naturalPowTable[nX-1][i-1];
     }
-    return MPUInt256(f);
+    return uint256(f.value);
 }
 
-void CMPOpenedBox::Signature(const MPUInt256& hash,const MPUInt256& r,MPUInt256& nR,MPUInt256& nS) const
+void CMPOpenedBox::Signature(const uint256& hash,const uint256& r,uint256& nR,uint256& nS) const
 {
     nR = MPEccPubkey(r);
     nS = MPEccSign(PrivKey(),r,hash);
 }
 
-bool CMPOpenedBox::VerifySignature(const MPUInt256& hash,const MPUInt256& nR,const MPUInt256& nS) const
+bool CMPOpenedBox::VerifySignature(const uint256& hash,const uint256& nR,const uint256& nS) const
 {
     return MPEccVerify(PubKey(),nR,nS,hash);
 }
 
-bool CMPOpenedBox::MakeSealedBox(CMPSealedBox& sealed,const MPUInt256& nIdent,const MPUInt256& r) const
+bool CMPOpenedBox::MakeSealedBox(CMPSealedBox& sealed,const uint256& nIdent,const uint256& r) const
 {
-    if (!Validate() || r.IsZero())
+    if (!Validate() || !r)
     {
         return false;
     } 
@@ -122,7 +128,10 @@ bool CMPOpenedBox::MakeSealedBox(CMPSealedBox& sealed,const MPUInt256& nIdent,co
         Signature(nIdent,r,sealed.nR,sealed.nS);
         return true;
     }
-    catch (...) {}
+    catch (exception& e) 
+    {
+        StdError(__PRETTY_FUNCTION__, e.what());
+    }
     return false;
 }
 
@@ -133,12 +142,12 @@ CMPSealedBox::CMPSealedBox()
 {
 }
 
-CMPSealedBox::CMPSealedBox(const vector<MPUInt256>& vEncryptedCoeffIn,const MPUInt256& nPubKeyIn,const MPUInt256& nRIn,const MPUInt256& nSIn)
+CMPSealedBox::CMPSealedBox(const vector<uint256>& vEncryptedCoeffIn,const uint256& nPubKeyIn,const uint256& nRIn,const uint256& nSIn)
 : vEncryptedCoeff(vEncryptedCoeffIn),nPubKey(nPubKeyIn),nR(nRIn),nS(nSIn)
 {
 }
 
-const MPUInt256 CMPSealedBox::PubKey() const
+const uint256 CMPSealedBox::PubKey() const
 {
     if (IsNull())
     {
@@ -147,7 +156,7 @@ const MPUInt256 CMPSealedBox::PubKey() const
     return nPubKey;
 }
 
-bool CMPSealedBox::VerifySignature(const MPUInt256& nIdent) const
+bool CMPSealedBox::VerifySignature(const uint256& nIdent) const
 {
     if (IsNull())
     {
@@ -163,7 +172,7 @@ bool CMPSealedBox::VerifySignature(const MPUInt256& nIdent) const
     return MPEccVerify(PubKey(),nR,nS,nIdent);
 }
 
-bool CMPSealedBox::VerifySignature(const MPUInt256& hash,const MPUInt256& nSignR,const MPUInt256& nSignS) const
+bool CMPSealedBox::VerifySignature(const uint256& hash,const uint256& nSignR,const uint256& nSignS) const
 {
     if (IsNull())
     {
@@ -172,7 +181,7 @@ bool CMPSealedBox::VerifySignature(const MPUInt256& hash,const MPUInt256& nSignR
     return MPEccVerify(PubKey(),nSignR,nSignS,hash);
 }
 
-bool CMPSealedBox::VerifyPolynomial(uint32_t nX,const MPUInt256& v)
+bool CMPSealedBox::VerifyPolynomial(uint32_t nX,const uint256& v)
 {
     if (nX >= vEncryptedShare.size())
     {
@@ -188,19 +197,18 @@ void CMPSealedBox::PrecalcPolynomial(size_t nThresh,size_t nLastIndex)
     vEncryptedShare.resize(nLastIndex);
     for (int i = 0;i < nThresh;i++)
     {
-        vP[i].Unpack(vEncryptedCoeff[i].Data());
+        vP[i].Unpack(vEncryptedCoeff[i].begin());
     }
     
+    vector<pair<CSC25519, CEdwards25519> > vTerm(nThresh);
     for (uint32_t nX = 1; nX < nLastIndex; nX++)
     {
         CEdwards25519 P = vP[0];
-        CSC25519 x(nX);
         for (size_t i = 1;i < nThresh;i++)
         {
-            P += vP[i].ScalarMult(x);
-            x *= nX;
+            P += vP[i].ScalarMult(CSC25519::naturalPowTable[nX-1][i-1]);
         }
-        P.Pack(vEncryptedShare[nX].Data());
+        P.Pack(vEncryptedShare[nX].begin());
     }
 }
 

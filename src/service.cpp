@@ -50,43 +50,43 @@ bool CService::WalleveHandleInitialize()
 {
     if (!WalleveGetObject("coreprotocol",pCoreProtocol))
     {
-        WalleveLog("Failed to request coreprotocol\n");
+        WalleveError("Failed to request coreprotocol\n");
         return false;
     }
 
     if (!WalleveGetObject("worldline",pWorldLine))
     {
-        WalleveLog("Failed to request worldline\n");
+        WalleveError("Failed to request worldline\n");
         return false;
     }
 
     if (!WalleveGetObject("txpool",pTxPool))
     {
-        WalleveLog("Failed to request txpool\n");
+        WalleveError("Failed to request txpool\n");
         return false;
     }
 
     if (!WalleveGetObject("dispatcher",pDispatcher))
     {
-        WalleveLog("Failed to request dispatcher\n");
+        WalleveError("Failed to request dispatcher\n");
         return false;
     }
 
     if (!WalleveGetObject("wallet",pWallet))
     {
-        WalleveLog("Failed to request wallet\n");
+        WalleveError("Failed to request wallet\n");
         return false;
     }
 
     if (!WalleveGetObject("peernet",pNetwork))
     {
-        WalleveLog("Failed to request network\n");
+        WalleveError("Failed to request network\n");
         return false;
     }
 
     if (!WalleveGetObject("dbpservice", pDbpSocket))
     {
-         WalleveLog("Failed to request DbpSocket\n");
+         WalleveError("Failed to request DbpSocket\n");
          return false;
     }
 
@@ -209,6 +209,19 @@ int  CService::GetForkCount()
     return mapForkStatus.size();
 }
 
+bool CService::HaveFork(const uint256& hashFork)
+{
+    boost::shared_lock<boost::shared_mutex> rlock(rwForkStatus);
+
+    map<uint256,CForkStatus>::iterator it = mapForkStatus.find(hashFork);
+    if (it != mapForkStatus.end())
+    {
+        return true;
+    }
+
+    return false;
+}
+
 int  CService::GetForkHeight(const uint256& hashFork)
 {
     boost::shared_lock<boost::shared_mutex> rlock(rwForkStatus);
@@ -296,6 +309,12 @@ bool CService::GetBlockHash(const uint256& hashFork,int nHeight,vector<uint256>&
 bool CService::GetBlock(const uint256& hashBlock,CBlock& block,uint256& hashFork,int& nHeight)
 {
     return pWorldLine->GetBlock(hashBlock,block) 
+           && pWorldLine->GetBlockLocation(hashBlock,hashFork,nHeight);
+}
+
+bool CService::GetBlockEx(const uint256& hashBlock, CBlockEx& block, uint256& hashFork, int& nHeight)
+{
+    return pWorldLine->GetBlockEx(hashBlock,block)
            && pWorldLine->GetBlockLocation(hashBlock,hashFork,nHeight);
 }
 
@@ -592,8 +611,9 @@ MvErr CService::SubmitWork(const vector<unsigned char>& vchWorkData,CTemplatePtr
             return MV_ERR_BLOCK_PROOF_OF_WORK_INVALID;
         }
     }
-    catch (...)
+    catch (exception& e)
     {
+        StdError(__PRETTY_FUNCTION__, e.what());
         return MV_FAILED;
     }
     int nBits;

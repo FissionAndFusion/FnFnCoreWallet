@@ -80,13 +80,13 @@ bool CWallet::WalleveHandleInitialize()
 {
     if (!WalleveGetObject("coreprotocol",pCoreProtocol))
     {
-        WalleveLog("Failed to request coreprotocol\n");
+        WalleveError("Failed to request coreprotocol\n");
         return false;
     }
 
     if (!WalleveGetObject("worldline",pWorldLine))
     {
-        WalleveLog("Failed to request worldline\n");
+        WalleveError("Failed to request worldline\n");
         return false;
     }
 
@@ -105,7 +105,7 @@ bool CWallet::WalleveHandleInvoke()
                                   StorageConfig()->strDBName,StorageConfig()->strDBUser,StorageConfig()->strDBPass);
     if (!dbWallet.Initialize(dbConfig))
     {
-        WalleveLog("Failed to initialize wallet database\n");
+        WalleveError("Failed to initialize wallet database\n");
         return false;
     }
 
@@ -117,7 +117,7 @@ bool CWallet::WalleveHandleInvoke()
 
     if (!LoadDB())
     {
-        WalleveLog("Failed to load wallet database\n");
+        WalleveError("Failed to load wallet database\n");
         return false;
     }
     
@@ -150,14 +150,14 @@ bool CWallet::AddKey(const crypto::CKey& key)
     boost::unique_lock<boost::shared_mutex> wlock(rwKeyStore);
     if (!InsertKey(key))
     {
-        WalleveLog("AddKey : invalid or duplicated key\n");
+        WalleveWarn("AddKey : invalid or duplicated key\n");
         return false;
     }
 
     if (!dbWallet.AddNewKey(key.GetPubKey(),key.GetVersion(),key.GetCipher()))
     {
         mapKeyStore.erase(key.GetPubKey());
-        WalleveLog("AddKey : failed to save key\n");
+        WalleveWarn("AddKey : failed to save key\n");
         return false;
     }
     return true;
@@ -167,7 +167,7 @@ bool CWallet::LoadKey(const crypto::CKey& key)
 {
     if (!InsertKey(key))
     {
-        WalleveLog("LoadKey : invalid or duplicated key\n");
+        WalleveError("LoadKey : invalid or duplicated key\n");
         return false;
     }
     return true;
@@ -228,7 +228,7 @@ bool CWallet::Encrypt(const crypto::CPubKey& pubkey,const crypto::CCryptoString&
         }
         if (!dbWallet.UpdateKey(key.GetPubKey(),keyTemp.GetVersion(),keyTemp.GetCipher()))
         {
-            WalleveLog("AddKey : failed to update key\n");
+            WalleveError("AddKey : failed to update key\n");
             return false;
         }
         key.Encrypt(strPassphrase,strCurrentPassphrase);
@@ -451,12 +451,13 @@ bool CWallet::ArrangeInputs(const CDestination& destIn,const uint256& hashFork,i
 
 bool CWallet::LoadTx(const CWalletTx& wtx)
 {
-    CWalletTx& wtxNew = (*mapWalletTx.insert(make_pair(wtx.txid,wtx)).first).second;
+    std::shared_ptr<CWalletTx> spWalletTx(new CWalletTx(wtx));
+    mapWalletTx.insert(make_pair(wtx.txid,spWalletTx));
 
     vector<uint256> vFork;
-    GetWalletTxFork(wtxNew.hashFork,wtxNew.nBlockHeight,vFork);
+    GetWalletTxFork(spWalletTx->hashFork,spWalletTx->nBlockHeight,vFork);
 
-    AddNewWalletTx(wtxNew,vFork);
+    AddNewWalletTx(spWalletTx,vFork);
 
     return true; 
 }
@@ -491,11 +492,11 @@ bool CWallet::AddNewFork(const uint256& hashFork,const uint256& hashParent,int n
             }
             for (int i = vForkTx.size() - 1;i >= 0;--i)
             {
-                CWalletTx* pWalletTx = LoadWalletTx(vForkTx[i]);
-                if (pWalletTx != NULL)
+                std::shared_ptr<CWalletTx> spWalletTx = LoadWalletTx(vForkTx[i]);
+                if (spWalletTx != NULL)
                 {
-                    RemoveWalletTx(*pWalletTx,hashFork);
-                    if (!pWalletTx->GetRefCount())
+                    RemoveWalletTx(spWalletTx,hashFork);
+                    if (!spWalletTx->GetRefCount())
                     {
                         mapWalletTx.erase(vForkTx[i]);
                     }
@@ -585,10 +586,10 @@ bool CWallet::SynchronizeTxSet(CTxSetChange& change)
     for (std::size_t i = 0;i < change.vTxRemove.size();i++)
     {
         uint256& txid = change.vTxRemove[i].first;
-        CWalletTx* pWalletTx = LoadWalletTx(txid);
-        if (pWalletTx != NULL)
+        std::shared_ptr<CWalletTx> spWalletTx = LoadWalletTx(txid);
+        if (spWalletTx != NULL)
         {
-            RemoveWalletTx(*pWalletTx,change.hashFork);
+            RemoveWalletTx(spWalletTx,change.hashFork);
             mapWalletTx.erase(txid); 
             vRemove.push_back(txid); 
         }
@@ -597,11 +598,11 @@ bool CWallet::SynchronizeTxSet(CTxSetChange& change)
     for (map<uint256,int>::iterator it = change.mapTxUpdate.begin();it != change.mapTxUpdate.end();++it)
     {
         const uint256& txid = (*it).first;
-        CWalletTx* pWalletTx = LoadWalletTx(txid);
-        if (pWalletTx != NULL)
+        std::shared_ptr<CWalletTx> spWalletTx = LoadWalletTx(txid);
+        if (spWalletTx != NULL)
         {
-            pWalletTx->nBlockHeight = (*it).second;
-            vWalletTx.push_back(*pWalletTx);
+            spWalletTx->nBlockHeight = (*it).second;
+            vWalletTx.push_back(*spWalletTx);
         }
     }
 
@@ -613,24 +614,24 @@ bool CWallet::SynchronizeTxSet(CTxSetChange& change)
         if (fFromMe || fIsMine)
         {
             uint256 txid = tx.GetHash();
-            CWalletTx* pWalletTx = InsertWalletTx(txid,tx,change.hashFork,fIsMine,fFromMe);
-            if (pWalletTx != NULL)
+            std::shared_ptr<CWalletTx> spWalletTx = InsertWalletTx(txid,tx,change.hashFork,fIsMine,fFromMe);
+            if (spWalletTx != NULL)
             {
-                vector<uint256>& vFork = mapPreFork[pWalletTx->nBlockHeight];
+                vector<uint256>& vFork = mapPreFork[spWalletTx->nBlockHeight];
                 if (vFork.empty())
                 {
-                    GetWalletTxFork(change.hashFork,pWalletTx->nBlockHeight,vFork);
+                    GetWalletTxFork(change.hashFork,spWalletTx->nBlockHeight,vFork);
                 }
-                AddNewWalletTx(*pWalletTx,vFork);
-                vWalletTx.push_back(*pWalletTx);
+                AddNewWalletTx(spWalletTx,vFork);
+                vWalletTx.push_back(*spWalletTx);
             }
         }
     }
 
     BOOST_FOREACH(const CWalletTx& wtx,vWalletTx)
     {
-        map<uint256,CWalletTx>::iterator it = mapWalletTx.find(wtx.txid);
-        if (it != mapWalletTx.end() && !(*it).second.GetRefCount())
+        map<uint256,std::shared_ptr<CWalletTx> >::iterator it = mapWalletTx.find(wtx.txid);
+        if (it != mapWalletTx.end() && !(*it).second->GetRefCount())
         {
             mapWalletTx.erase(it);
         }
@@ -652,14 +653,14 @@ bool CWallet::UpdateTx(const uint256& hashFork,const CAssembledTx& tx)
     if (fFromMe || fIsMine)
     {
         uint256 txid = tx.GetHash();
-        CWalletTx* pWalletTx = InsertWalletTx(txid,tx,hashFork,fIsMine,fFromMe);
-        if (pWalletTx != NULL)
+        std::shared_ptr<CWalletTx> spWalletTx = InsertWalletTx(txid,tx,hashFork,fIsMine,fFromMe);
+        if (spWalletTx != NULL)
         {
             vector<uint256> vFork;
             GetWalletTxFork(hashFork,tx.nBlockHeight,vFork);
-            AddNewWalletTx(*pWalletTx,vFork);
-            vWalletTx.push_back(*pWalletTx);
-            if (!pWalletTx->GetRefCount())
+            AddNewWalletTx(spWalletTx,vFork);
+            vWalletTx.push_back(*spWalletTx);
+            if (!spWalletTx->GetRefCount())
             {
                 mapWalletTx.erase(txid);
             }
@@ -680,9 +681,10 @@ bool CWallet::ClearTx()
     return dbWallet.ClearTx();
 }
 
-CWalletTx* CWallet::LoadWalletTx(const uint256& txid)
+std::shared_ptr<CWalletTx> CWallet::LoadWalletTx(const uint256& txid)
 {
-    map<uint256,CWalletTx>::iterator it = mapWalletTx.find(txid);
+    std::shared_ptr<CWalletTx> spWalletTx;
+    map<uint256,std::shared_ptr<CWalletTx> >::iterator it = mapWalletTx.find(txid);
     if (it == mapWalletTx.end())
     {
         CWalletTx wtx;
@@ -690,17 +692,32 @@ CWalletTx* CWallet::LoadWalletTx(const uint256& txid)
         {
             return NULL;
         }
-        it = mapWalletTx.insert(make_pair(txid,wtx)).first;
+        spWalletTx = std::shared_ptr<CWalletTx>(new CWalletTx(wtx));
+        mapWalletTx.insert(make_pair(txid,spWalletTx));
     }
-    CWalletTx& wtx = (*it).second;
-    return (!wtx.IsNull() ? &wtx : NULL);
+    else
+    {
+        spWalletTx = (*it).second;
+    }
+    return (!spWalletTx->IsNull() ? spWalletTx : NULL);
 }
 
-CWalletTx* CWallet::InsertWalletTx(const uint256& txid,const CAssembledTx &tx,const uint256& hashFork,bool fIsMine,bool fFromMe)
+std::shared_ptr<CWalletTx> CWallet::InsertWalletTx(const uint256& txid,const CAssembledTx &tx,const uint256& hashFork,bool fIsMine,bool fFromMe)
 {
-    CWalletTx& wtx = mapWalletTx[txid];
-    wtx = CWalletTx(txid,tx,hashFork,fIsMine,fFromMe);
-    return &wtx;
+    std::shared_ptr<CWalletTx> spWalletTx;
+    map<uint256,std::shared_ptr<CWalletTx> >::iterator it = mapWalletTx.find(txid);
+    if (it == mapWalletTx.end())
+    {
+        spWalletTx = std::shared_ptr<CWalletTx>(new CWalletTx(txid,tx,hashFork,fIsMine,fFromMe));
+        mapWalletTx.insert(make_pair(txid,spWalletTx));
+    }
+    else
+    {
+        spWalletTx = (*it).second;
+        spWalletTx->nBlockHeight = tx.nBlockHeight;
+        spWalletTx->SetFlags(fIsMine,fFromMe); 
+    }
+    return spWalletTx;
 }
 
 int64 CWallet::SelectCoins(const CDestination& dest,const uint256& hashFork,int nForkHeight,
@@ -953,21 +970,22 @@ void CWallet::GetWalletTxFork(const uint256& hashFork,int nHeight,vector<uint256
     }
 }
 
-void CWallet::AddNewWalletTx(CWalletTx& wtx,vector<uint256>& vFork)
+void CWallet::AddNewWalletTx(std::shared_ptr<CWalletTx>& spWalletTx,vector<uint256>& vFork)
 {
-    if (wtx.IsFromMe())
+    if (spWalletTx->IsFromMe())
     {
-        BOOST_FOREACH(const CTxIn& txin,wtx.vInput)
+        BOOST_FOREACH(const CTxIn& txin,spWalletTx->vInput)
         {
-            map<uint256,CWalletTx>::iterator it = mapWalletTx.find(txin.prevout.hash);
+            map<uint256,std::shared_ptr<CWalletTx> >::iterator it = mapWalletTx.find(txin.prevout.hash);
             if (it != mapWalletTx.end())
             {
-                CWalletTx& wtxPrev = (*it).second;
+                std::shared_ptr<CWalletTx>& spPrevWalletTx = (*it).second;
                 BOOST_FOREACH(const uint256& hashFork,vFork)
                 {
-                    mapWalletUnspent[wtx.destIn].Pop(hashFork,&wtxPrev,txin.prevout.n);
+                    mapWalletUnspent[spWalletTx->destIn].Pop(hashFork,spPrevWalletTx,txin.prevout.n);
                 }
-                if (!wtxPrev.GetRefCount())
+
+                if (!spPrevWalletTx->GetRefCount())
                 {
                      mapWalletTx.erase(it);
                 }
@@ -975,35 +993,35 @@ void CWallet::AddNewWalletTx(CWalletTx& wtx,vector<uint256>& vFork)
         }
         BOOST_FOREACH(const uint256& hashFork,vFork)
         {
-            mapWalletUnspent[wtx.destIn].Push(hashFork,&wtx,1);
+            mapWalletUnspent[spWalletTx->destIn].Push(hashFork,spWalletTx,1);
         }
     }
-    if (wtx.IsMine())
+    if (spWalletTx->IsMine())
     {
         BOOST_FOREACH(const uint256& hashFork,vFork)
         {
-            mapWalletUnspent[wtx.sendTo].Push(hashFork,&wtx,0);
+            mapWalletUnspent[spWalletTx->sendTo].Push(hashFork,spWalletTx,0);
         }
     }
 }
 
-void CWallet::RemoveWalletTx(CWalletTx& wtx,const uint256& hashFork)
+void CWallet::RemoveWalletTx(std::shared_ptr<CWalletTx>& spWalletTx,const uint256& hashFork)
 {
-    if (wtx.IsFromMe())
+    if (spWalletTx->IsFromMe())
     {
-        BOOST_FOREACH(const CTxIn& txin,wtx.vInput)
+        BOOST_FOREACH(const CTxIn& txin,spWalletTx->vInput)
         {
-            CWalletTx* pWalletPrevTx = LoadWalletTx(txin.prevout.hash);
-            if (pWalletPrevTx != NULL)
+            std::shared_ptr<CWalletTx> spPrevWalletTx = LoadWalletTx(txin.prevout.hash);
+            if (spPrevWalletTx != NULL)
             {
-                mapWalletUnspent[wtx.destIn].Push(hashFork,pWalletPrevTx,txin.prevout.n);
+                mapWalletUnspent[spWalletTx->destIn].Push(hashFork,spPrevWalletTx,txin.prevout.n);
             }
         }
-        mapWalletUnspent[wtx.destIn].Pop(hashFork,&wtx,1);
+        mapWalletUnspent[spWalletTx->destIn].Pop(hashFork,spWalletTx,1);
     }
-    if (wtx.IsMine())
+    if (spWalletTx->IsMine())
     {
-        mapWalletUnspent[wtx.sendTo].Pop(hashFork,&wtx,0);
+        mapWalletUnspent[spWalletTx->sendTo].Pop(hashFork,spWalletTx,0);
     }
 }
 

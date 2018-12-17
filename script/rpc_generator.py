@@ -199,20 +199,22 @@ def parse():
     # parse mode.json
     with open(mode_json, 'r') as r:
         content = json.loads(r.read(), object_pairs_hook=OrderedDict)
+        content = json_hook(content)
 
         for mode, detail in content.items():
-            usage = get_json_value(mode, detail, 'usage', unicode, u'')
+            usage = get_json_value(mode, detail, 'usage', str, '')
             desc = get_desc(mode, detail)
             modes[mode] = (usage, desc)
 
     # parse rpc.json
     with open(rpc_json, 'r') as r:
         content = json.loads(r.read(), object_pairs_hook=OrderedDict)
+        content = json_hook(content)
 
         for cmd, detail in content.items():
-            type = get_json_value(cmd, detail, 'type', unicode, u'command')
+            type = get_json_value(cmd, detail, 'type', str, 'command')
             if type == 'command':
-                name = get_json_value(cmd, detail, 'name', unicode, default=cmd.title())
+                name = get_json_value(cmd, detail, 'name', str, default=cmd.title())
                 if 'request' in detail:
                     param_class[cmd] = param_class_name(name)
                     config_class[cmd] = config_class_name(name)

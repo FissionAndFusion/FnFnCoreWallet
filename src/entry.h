@@ -7,6 +7,7 @@
 
 #include "config.h"
 #include "dbpserver.h"
+#include "dbpclient.h"
 #include <walleve/walleve.h>
 #include <boost/filesystem.hpp>
 
@@ -29,6 +30,9 @@ protected:
 
     walleve::CHttpHostConfig GetRPCHostConfig();
     CDbpHostConfig GetDbpHostConfig();
+    CDbpClientConfig GetDbpClientConfig();
+
+    void PurgeStorage();
 
     boost::filesystem::path GetDefaultDataDir();
 

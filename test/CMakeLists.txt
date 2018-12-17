@@ -12,14 +12,16 @@ set(sources
 	uint256_tests.cpp
 	rpc_tests.cpp
 	version_tests.cpp
+	mpvss_tests.cpp
 )
 
 add_executable(test_fnfn ${sources})
 
-include_directories(../src ../walleve ../crypto ../common ../storage ../network)
+include_directories(../src ../walleve ../crypto ../common ../storage ../network ../mpvss)
 
 target_link_libraries(test_fnfn
 	Boost::unit_test_framework
 	Boost::system
 	Boost::thread
+	mpvss
 )

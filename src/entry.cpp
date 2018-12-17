@@ -6,6 +6,7 @@
 #include "core.h"
 #include "worldline.h"
 #include "txpool.h"
+#include "forkmanager.h"
 #include "consensus.h"
 #include "wallet.h"
 #include "dispatcher.h"
@@ -18,8 +19,10 @@
 #include "rpcclient.h"
 #include "miner.h"
 #include "dbpservice.h"
+#include "dbpclient.h"
 #include "dnseed.h"
 #include "version.h"
+#include "purger.h"
 
 #include <map>
 #include <string>
@@ -80,6 +83,13 @@ bool CMvEntry::Initialize(int argc, char *argv[])
     if (mvConfig.GetConfig()->fVersion)
     {
         cout << "Multiverse version is v" << MV_VERSION_STR << endl;
+        return false;
+    }
+
+    // purge
+    if (mvConfig.GetConfig()->fPurge)
+    {
+        PurgeStorage();
         return false;
     }
 
@@ -308,6 +318,14 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
             }
             break;
         }
+        case EModuleType::FORKMANAGER:
+        {
+            if (!AttachModule(new CForkManager()))
+            {
+                return false;
+            }
+            break;
+        }
         case EModuleType::CONSENSUS:
         {
             if (!AttachModule(new CConsensus()))
@@ -324,6 +342,14 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
             }
             break;
         }
+        case EModuleType::DBPCLIENT:
+        {
+            if(!AttachModule(new CMvDbpClient()))
+            {
+                return false;
+            }
+            break;
+        }
         case EModuleType::DBPSERVICE:
         {
             auto pBase = walleveDocker.GetObject("dbpserver");
@@ -332,6 +358,13 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
                 return false;
             }
             dynamic_cast<CDbpServer*>(pBase)->AddNewHost(GetDbpHostConfig());
+
+            auto pClientBase = walleveDocker.GetObject("dbpclient");
+            if(!pClientBase)
+            {
+                return false;
+            }
+            dynamic_cast<CMvDbpClient*>(pClientBase)->AddNewClient(GetDbpClientConfig());
 
             if (!AttachModule(new CDbpService()))
             {
@@ -390,6 +423,41 @@ CDbpHostConfig CMvEntry::GetDbpHostConfig()
                           sslDbp, mapUsrDbp, config->vDbpAllowIP, "dbpservice");
 }
 
+CDbpClientConfig CMvEntry::GetDbpClientConfig()
+{
+    const CMvDbpClientConfig* config =  CastConfigPtr<CMvDbpClientConfig*>(mvConfig.GetConfig());
+    CIOSSLOption sslDbp(config->fDbpSSLEnable, config->fDbpSSLVerify,
+                        config->strDbpCAFile, config->strDbpCertFile,
+                        config->strDbpPKFile, config->strDbpCiphers);
+    
+    return CDbpClientConfig(config->epParentHost,config->strSupportForks,sslDbp,"dbpservice");
+}
+
+void CMvEntry::PurgeStorage()
+{
+    path& pathData = mvConfig.GetConfig()->pathData;
+
+    if (!TryLockFile((pathData / ".lock").string()))
+    {
+        cerr << "Cannot obtain a lock on data directory " << pathData << "\n"
+             << "Multiverse is probably already running.\n";
+        return;
+    }
+
+    const CMvStorageConfig* config = CastConfigPtr<CMvStorageConfig*>(mvConfig.GetConfig());
+    storage::CMvDBConfig dbConfig(config->strDBHost,config->nDBPort,
+                                  config->strDBName,config->strDBUser,config->strDBPass);
+    storage::CPurger purger;
+    if (purger(dbConfig,pathData))
+    {
+        cout << "Reset database and removed blockfiles\n";
+    }
+    else
+    {
+        cout << "Failed to purge storage\n";
+    }
+}
+
 bool CMvEntry::Run()
 {
     if (!walleveDocker.Run())
@@ -435,7 +503,7 @@ path CMvEntry::GetDefaultDataDir()
     {
         pathRet = path(pszHome);
     }
-#ifdef MAC_OSX
+#ifdef __APPLE__
     // Mac
     pathRet /= "Library/Application Support";
     create_directory(pathRet);

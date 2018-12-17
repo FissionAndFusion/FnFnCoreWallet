@@ -72,7 +72,7 @@ bool CDNSeed::WalleveHandleInitialize()
     ConfigNetwork(config);
     if (!WalleveThreadStart(thrIOProc_test))
     {
-        WalleveLog("Failed to start filter timer thread\n");
+        WalleveError("Failed to start filter timer thread\n");
         return false;
     }
 
@@ -298,7 +298,7 @@ void CDNSeed::RequestGetTrustedHeight()
 void CDNSeed::ClientFailToConnect(const tcp::endpoint &epRemote)
 {
     CPeerNet::ClientFailToConnect(epRemote);
-    WalleveLog("ConnectFailTo>>>%s\n", epRemote.address().to_string().c_str());
+    WalleveWarn("ConnectFailTo>>>%s\n", epRemote.address().to_string().c_str());
 
     CSeedNode *sn = dnseedService.FindSeedNode(epRemote);
     if (sn)

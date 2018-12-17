@@ -42,10 +42,16 @@ enum
     MV_EVENT_DBP_METHOD,
     MV_EVENT_DBP_RESULT,
 
+    /*super node*/
+    MV_EVENT_DBP_REGISTER_FORKID,
+    MV_EVENT_DBP_SEND_BLOCK,
+    MV_EVENT_DBP_SEND_TX,
+
     MV_EVENT_DBP_PING,
     MV_EVENT_DBP_PONG,
 
-    MV_EVENT_DBP_BROKEN
+    MV_EVENT_DBP_BROKEN,
+    MV_EVENT_DBP_REMOVE_SESSION
 };
 
 class CMvBlockMakerEventListener;
@@ -82,8 +88,9 @@ public:
         {
             return listener.HandleEvent(*this);
         }
-        catch (...)
+        catch (std::exception& e)
         {
+            StdError(__PRETTY_FUNCTION__, e.what());
         }
         return false;
     }
@@ -126,6 +133,11 @@ typedef TYPE_DBP_EVENT(MV_EVENT_DBP_ADDED, CMvDbpAdded) CMvEventDbpAdded;
 typedef TYPE_DBP_EVENT(MV_EVENT_DBP_METHOD, CMvDbpMethod) CMvEventDbpMethod;
 typedef TYPE_DBP_EVENT(MV_EVENT_DBP_RESULT, CMvDbpMethodResult) CMvEventDbpMethodResult;
 typedef TYPE_DBP_EVENT(MV_EVENT_DBP_BROKEN, CMvDbpBroken) CMvEventDbpBroken;
+typedef TYPE_DBP_EVENT(MV_EVENT_DBP_REMOVE_SESSION, CMvDbpRemoveSession) CMvEventDbpRemoveSession;
+
+typedef TYPE_DBP_EVENT(MV_EVENT_DBP_REGISTER_FORKID, CMvDbpRegisterForkID) CMvEventDbpRegisterForkID;
+typedef TYPE_DBP_EVENT(MV_EVENT_DBP_SEND_BLOCK, CMvDbpSendBlock) CMvEventDbpSendBlock;
+typedef TYPE_DBP_EVENT(MV_EVENT_DBP_SEND_TX, CMvDbpSendTx) CMvEventDbpSendTx;
 
 // HeartBeats
 typedef TYPE_DBP_EVENT(MV_EVENT_DBP_PING, CMvDbpPing) CMvEventDbpPing;
@@ -156,9 +168,14 @@ public:
     DECLARE_EVENTHANDLER(CMvEventDbpMethod);
     DECLARE_EVENTHANDLER(CMvEventDbpMethodResult);
     DECLARE_EVENTHANDLER(CMvEventDbpBroken);
+    DECLARE_EVENTHANDLER(CMvEventDbpRemoveSession);
 
     DECLARE_EVENTHANDLER(CMvEventDbpPing);
     DECLARE_EVENTHANDLER(CMvEventDbpPong);
+
+    DECLARE_EVENTHANDLER(CMvEventDbpRegisterForkID);
+    DECLARE_EVENTHANDLER(CMvEventDbpSendBlock);
+    DECLARE_EVENTHANDLER(CMvEventDbpSendTx);
 };
 
 } // namespace multiverse

@@ -59,6 +59,7 @@ public:
     CNetChannel();
     ~CNetChannel();
     int GetPrimaryChainHeight() override;
+    bool IsForkSynchronized(const uint256& hashFork) const override;
     void BroadcastBlockInv(const uint256& hashFork,const uint256& hashBlock,const std::set<uint64>& setKnownPeer=std::set<uint64>()) override;
     void BroadcastTxInv(const uint256& hashFork) override;
     void SubscribeFork(const uint256& hashFork) override;
@@ -96,6 +97,8 @@ protected:
     void PostAddNew(const uint256& hashFork,CSchedule& sched,
                     std::set<uint64>& setSchedPeer,std::set<uint64>& setMisbehavePeer);
     void SetPeerSyncStatus(uint64 nNonce,const uint256& hashFork,bool fSync);
+    void PushTxTimerFunc(uint32 nTimerId);
+    void PushTxInv(const uint256& hashFork);
 protected:
     network::CMvPeerNet* pPeerNet;
     ICoreProtocol* pCoreProtocol;
@@ -107,6 +110,10 @@ protected:
     mutable boost::recursive_mutex mtxSched; 
     std::map<uint256,CSchedule> mapSched; 
     std::map<uint64,CNetChannelPeer> mapPeer;
+
+    mutable boost::mutex mtxPushTx; 
+    uint32 nTimerPushTx;
+    std::set<uint256> setPushTxFork;
 };
 
 } // namespace multiverse

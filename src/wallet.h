@@ -42,13 +42,13 @@ class CWalletUnspent
 {
 public:
     void Clear() { mapWalletCoins.clear(); }
-    void Push(const uint256& hashFork,CWalletTx* pWalletTx,int n)
+    void Push(const uint256& hashFork,std::shared_ptr<CWalletTx>& spWalletTx,int n)
     {
-        mapWalletCoins[hashFork].Push(CWalletTxOut(pWalletTx,n));
+        mapWalletCoins[hashFork].Push(CWalletTxOut(spWalletTx,n));
     }
-    void Pop(const uint256& hashFork,CWalletTx* pWalletTx,int n)
+    void Pop(const uint256& hashFork,std::shared_ptr<CWalletTx>& spWalletTx,int n)
     {
-        mapWalletCoins[hashFork].Pop(CWalletTxOut(pWalletTx,n));
+        mapWalletCoins[hashFork].Pop(CWalletTxOut(spWalletTx,n));
     }
     CWalletCoins& GetCoins(const uint256& hashFork)
     {
@@ -85,7 +85,7 @@ public:
 class CWalletFork
 {
 public:
-    CWalletFork(const uint256& hashParentIn=0,int nOriginHeightIn=-1,bool fIsolatedIn=true)
+    CWalletFork(const uint256& hashParentIn=uint64(0),int nOriginHeightIn=-1,bool fIsolatedIn=true)
     : hashParent(hashParentIn),nOriginHeight(nOriginHeightIn),fIsolated(fIsolatedIn)
     {
     }
@@ -151,14 +151,14 @@ protected:
     int64 SelectCoins(const CDestination& dest,const uint256& hashFork,int nForkHeight,
                       int64 nTargetValue,std::size_t nMaxInput,std::vector<CTxOutPoint>& vCoins);
 
-    CWalletTx* LoadWalletTx(const uint256& txid);
-    CWalletTx* InsertWalletTx(const uint256& txid,const CAssembledTx &tx,const uint256& hashFork,bool fIsMine,bool fFromMe);
+    std::shared_ptr<CWalletTx> LoadWalletTx(const uint256& txid);
+    std::shared_ptr<CWalletTx> InsertWalletTx(const uint256& txid,const CAssembledTx &tx,const uint256& hashFork,bool fIsMine,bool fFromMe);
     bool SignPubKey(const crypto::CPubKey& pubkey,const uint256& hash,std::vector<uint8>& vchSig) const;
     bool SignDestination(const CDestination& destIn,const uint256& hash,std::vector<uint8>& vchSig,bool& fCompleted) const;
     bool UpdateFork();
     void GetWalletTxFork(const uint256& hashFork,int nHeight,std::vector<uint256>& vFork);
-    void AddNewWalletTx(CWalletTx& wtx,std::vector<uint256>& vFork);
-    void RemoveWalletTx(CWalletTx& wtx,const uint256& hashFork);
+    void AddNewWalletTx(std::shared_ptr<CWalletTx>& spWalletTx,std::vector<uint256>& vFork);
+    void RemoveWalletTx(std::shared_ptr<CWalletTx>& spWalletTx,const uint256& hashFork);
 protected:
     storage::CWalletDB dbWallet;
     ICoreProtocol* pCoreProtocol;
@@ -167,7 +167,7 @@ protected:
     mutable boost::shared_mutex rwWalletTx;
     std::map<crypto::CPubKey,CWalletKeyStore> mapKeyStore;
     std::map<CTemplateId,CTemplatePtr> mapTemplatePtr;
-    std::map<uint256,CWalletTx> mapWalletTx;
+    std::map<uint256,std::shared_ptr<CWalletTx> > mapWalletTx;
     std::map<CDestination,CWalletUnspent> mapWalletUnspent;
     std::map<uint256,CWalletFork> mapFork;
 };

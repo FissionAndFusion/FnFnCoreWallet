@@ -17,6 +17,7 @@ class CMvRPCServerConfig;
 class CMvRPCClientConfig;
 class CMvStorageConfig;
 class CMvDbpServerConfig;
+class CMvDbpClientConfig;
 
 ///
 // When add new config, add type to EConfigType add class pointer to ___ConfigTypeTemplate
@@ -32,21 +33,23 @@ enum class EConfigType
     RPCSERVER,  // CMvRPCServerConfig
     RPCCLIENT,  // CMvRPCClientConfig
     STORAGE,    // CMvStorageConfig
-    DBPSERVER   // CMvDbpServerConfig
+    DBPSERVER,  // CMvDbpServerConfig
+    DBPCLIENT   // CMvDbpClientConfig
 };
 
 namespace config_type
 {
 // config type class template
 static const auto ___ConfigTypeTemplate = std::make_tuple(
-    (CMvBasicConfig*)NULL, 
+    (CMvBasicConfig*)NULL,
     (CMvForkConfig*)NULL, 
     (CMvMintConfig*)NULL, 
     (CMvNetworkConfig*)NULL,
     (CMvRPCServerConfig*)NULL, 
     (CMvRPCClientConfig*)NULL, 
     (CMvStorageConfig*)NULL,
-    (CMvDbpServerConfig*)NULL);
+    (CMvDbpServerConfig*)NULL,
+    (CMvDbpClientConfig*)NULL);
 }  // namespace config_type
 
 }  // namespace multiverse

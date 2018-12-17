@@ -5,11 +5,9 @@ sys.dont_write_bytecode = True
 import math
 import re
 import os
+from collections import OrderedDict
 
 type_f = type
-
-if sys.version > '3':
-    unicode = str
 
 # copyright on .h file
 copyright = \
@@ -25,9 +23,9 @@ tab_len = 8
 # Temporarily not break line now (system terminal will be auto line break, macosx, ubuntu)
 max_line_len = -1
 # set max "format" length of one line to show on terminal
-max_format_len = 32
+max_format_len = 40
 # increasing step length, when format length is not enough
-step_len = 16
+step_len = 20 
 
 
 # esacpe \t to space
@@ -49,7 +47,7 @@ error_indent = tab_to_space('* ')
 
 
 def is_str(s):
-    return isinstance(s, str) or isinstance(s, unicode)
+    return isinstance(s, str) or isinstance(s, str)
 
 
 # length of esacpe \t to space
@@ -196,10 +194,10 @@ def get_json_value(prefix, json, key, type=None, default=None, required=True):
 
 # get string text or array text. If it's an array, join them.
 def get_multiple_text(prefix, json, key):
-    desc = get_json_value(prefix, json, key, default=u'')
+    desc = get_json_value(prefix, json, key, default='')
     if isinstance(desc, list):
-        desc = u'\n'.join(desc)
-    check_value_type(join_prefix(prefix, key), desc, unicode)
+        desc = '\n'.join(desc)
+    check_value_type(join_prefix(prefix, key), desc, str)
     return desc
 
 
@@ -211,11 +209,11 @@ def get_desc(prefix, json):
 # string to "string", others to string type
 def quote(o, type='string'):
     if type == 'string':
-        return u'"%s"' % o
+        return '"%s"' % o
     elif type == 'bool':
-        return unicode(o).lower()
+        return str(o).lower()
     else:
-        return unicode(o)
+        return str(o)
 
 # indent + prefix + "name + desc";
 # or
@@ -263,3 +261,16 @@ def write_chapter(infos, w, indent):
         w.write(indent + 'oss << "\\n";\n')
     else:
         w.write(indent + 'oss << "\\tnone\\n\\n";\n')
+
+def json_hook(data):
+    if sys.version < '3' and isinstance(data, unicode):
+        return data.encode('utf-8')
+    if isinstance(data, list):
+        return [ json_hook(item) for item in data ]
+    if isinstance(data, dict):
+        return OrderedDict([
+            (json_hook(key), json_hook(value))
+            for key, value in data.items()
+        ])
+        
+    return data

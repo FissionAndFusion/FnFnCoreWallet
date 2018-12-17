@@ -14,7 +14,7 @@ namespace multiverse
 class CDelegatedDataIdent
 {
 public:
-    CDelegatedDataIdent(const uint256& hashAnchorIn = 0, uint32 nInvTypeIn = 0,
+    CDelegatedDataIdent(const uint256& hashAnchorIn = uint64(0), uint32 nInvTypeIn = 0,
                         const CDestination& destDelegatedIn = CDestination())
     : hashAnchor(hashAnchorIn), nInvType(nInvTypeIn), destDelegated(destDelegatedIn)
     {
@@ -40,7 +40,7 @@ class CDelegatedChannelPeer : public walleve::CDataPeer<CDelegatedDataIdent>
 {
 public:
     CDelegatedChannelPeer(uint64 nNonceIn)
-    : CDataPeer<CDelegatedDataIdent>(nNonceIn), hashAnchor(0), bmDistribute(0), bmPublish(0)
+    : CDataPeer<CDelegatedDataIdent>(nNonceIn), hashAnchor(uint64(0)), bmDistribute(0), bmPublish(0)
     {
     }
     void Renew(const uint256& hashAnchorIn,const network::CMvEventPeerDelegatedBulletin& bulletin)

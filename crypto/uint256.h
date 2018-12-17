@@ -52,7 +52,6 @@ public:
         return ret;
     }
 
-
     base_uint& operator=(uint64 b)
     {
         pn[0] = (unsigned int)b;
@@ -165,7 +164,6 @@ public:
         return *this;
     }
 
-
     base_uint& operator++()
     {
         // prefix operator
@@ -200,6 +198,15 @@ public:
         return ret;
     }
 
+    unsigned int& operator[](size_t pos)
+    {
+        return pn[pos];
+    }
+
+    const unsigned int& operator[](size_t pos) const
+    {
+        return pn[pos];
+    }
 
     friend inline bool operator<(const base_uint& a, const base_uint& b)
     {
@@ -279,8 +286,6 @@ public:
         return (!(a == b));
     }
 
-
-
     std::string GetHex() const
     {
         char psz[sizeof(pn)*2 + 1];
@@ -289,8 +294,11 @@ public:
         return std::string(psz, psz + sizeof(pn)*2);
     }
 
-    void SetHex(const char* psz)
+    size_t SetHex(const char* psz)
     {
+        size_t len = 0;
+        const char *in = psz;
+
         for (int i = 0; i < WIDTH; i++)
             pn[i] = 0;
 
@@ -307,6 +315,7 @@ public:
         const char* pbegin = psz;
         while (phexdigit[(unsigned char)*psz] || *psz == '0')
             psz++;
+        len = psz - in;
         psz--;
         unsigned char* p1 = (unsigned char*)pn;
         unsigned char* pend = p1 + WIDTH * 4;
@@ -319,11 +328,12 @@ public:
                 p1++;
             }
         }
+        return len;
     }
 
-    void SetHex(const std::string& str)
+    size_t SetHex(const std::string& str)
     {
-        SetHex(str.c_str());
+        return SetHex(str.c_str());
     }
 
     std::string ToString() const
@@ -550,12 +560,21 @@ public:
         return *this;
     }
 
-    uint256(uint64 b)
+    uint256(const uint64 b)
     {
         pn[0] = (unsigned int)b;
         pn[1] = (unsigned int)(b >> 32);
         for (int i = 2; i < WIDTH; i++)
             pn[i] = 0;
+    }
+
+    uint256(const uint64 b[4])
+    {
+        for (int i = 0; i < 4; i++)
+        {
+            pn[2*i] = (unsigned int)b[i];
+            pn[2*i+1] = (unsigned int)(b[i] >> 32);
+        }
     }
 
     uint256& operator=(uint64 b)

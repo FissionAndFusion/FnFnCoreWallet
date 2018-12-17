@@ -118,4 +118,49 @@ std::string CMvDbpServerConfig::Help() const
     return CMvDbpBasicConfig::Help() + CMvDbpServerConfigOption::HelpImpl();
 }
 
+CMvDbpClientConfig::CMvDbpClientConfig()
+{
+    po::options_description desc("DbpClient");
+
+    CMvDbpClientConfigOption::AddOptionsImpl(desc);
+
+    AddOptions(desc);
+}
+
+CMvDbpClientConfig::~CMvDbpClientConfig()
+{
+
+}
+    
+bool CMvDbpClientConfig::PostLoad()
+{
+    if (fHelp)
+    {
+        return true;
+    }
+
+    CMvDbpBasicConfig::PostLoad();
+
+    epParentHost = 
+    tcp::endpoint(!strParentHost.empty()
+                    ? boost::asio::ip::address::from_string(strParentHost)
+                    : boost::asio::ip::address_v4::loopback(),
+                    nDbpPort);
+    
+    return true;
+}
+
+std::string CMvDbpClientConfig::ListConfig() const
+{
+    std::ostringstream oss;
+    oss << CMvDbpClientConfigOption::ListConfigImpl();
+    oss << "epParentDbp: " << epParentHost << "\n";
+    return oss.str();
+}
+
+std::string CMvDbpClientConfig::Help() const
+{
+    return CMvDbpClientConfigOption::HelpImpl();
+}
+
 } // namepspace multiverse

@@ -212,13 +212,13 @@ bool CMiner::HandleEvent(CWalleveEventHttpGetRsp& event)
         }
         return true;
     }
-    catch (const std::exception& e)
+    catch (exception& e)
     {
-        cerr << "error: " << e.what() << "\n";
+        StdError(__PRETTY_FUNCTION__, e.what());
     }
     catch (...)
     {
-        cerr << "unknown exception\n";
+        StdError(__PRETTY_FUNCTION__, "unknown");
     }
     return true;
 }
@@ -271,9 +271,9 @@ bool CMiner::GetWork()
         CRPCReqPtr spReq = MakeCRPCReqPtr(nNonceGetWork, spParam);
         return SendRequest(nNonceGetWork, spReq->Serialize());
     }
-    catch (...)
+    catch (exception& e)
     {
-        cerr << "getwork exception\n";
+        StdError(__PRETTY_FUNCTION__, e.what());
     }
     return false;
 }
@@ -292,9 +292,9 @@ bool CMiner::SubmitWork(const vector<unsigned char>& vchWorkData)
         CRPCReqPtr spReq = MakeCRPCReqPtr(nNonceSubmitWork, spParam);
         return SendRequest(nNonceSubmitWork, spReq->Serialize());
     }
-    catch (...)
+    catch (exception& e)
     {
-        cerr << "submitwork exception\n";
+        StdError(__PRETTY_FUNCTION__, e.what());
     }
     return false;
 }
@@ -327,7 +327,7 @@ uint256 CMiner::GetHashTarget(const CMinerWork& work,int64 nTime)
     {
         nBits = 16;
     } 
-    return ((~uint256(0) >> nBits));
+    return ((~uint256(uint64(0)) >> nBits));
 }
 
 void CMiner::LaunchFetcher()

@@ -183,19 +183,19 @@ bool CConsensus::WalleveHandleInitialize()
 {
     if (!WalleveGetObject("coreprotocol",pCoreProtocol))
     {
-        WalleveLog("Failed to request coreprotocol\n");
+        WalleveError("Failed to request coreprotocol\n");
         return false;
     }
 
     if (!WalleveGetObject("worldline",pWorldLine))
     {
-        WalleveLog("Failed to request worldline\n");
+        WalleveError("Failed to request worldline\n");
         return false;
     }
 
     if (!WalleveGetObject("txpool",pTxPool))
     {
-        WalleveLog("Failed to request txpool\n");
+        WalleveError("Failed to request txpool\n");
         return false;
     }
 
@@ -230,13 +230,19 @@ bool CConsensus::WalleveHandleInvoke()
 
     if (!mvDelegate.Initialize())
     {
-        WalleveLog("Failed to initialize delegate\n");
+        WalleveError("Failed to initialize delegate\n");
         return false;
     }
 
     if (!LoadDelegateTx())
     {
-        WalleveLog("Failed to load delegate tx\n");
+        WalleveError("Failed to load delegate tx\n");
+        return false;
+    }
+    
+    if (!LoadChain())
+    {
+        WalleveError("Failed to load chain\n");
         return false;
     }
     
@@ -389,3 +395,29 @@ bool CConsensus::LoadDelegateTx()
     return true;
 }
 
+bool CConsensus::LoadChain()
+{
+    int nLashBlockHeight = pWorldLine->GetBlockCount(pCoreProtocol->GetGenesisBlockHash()) - 1;
+    int nStartHeight = nLashBlockHeight - MV_CONSENSUS_ENROLL_INTERVAL + 1;
+    if (nStartHeight < 0)
+    {
+        nStartHeight = 0;
+    }
+    for (int i = nStartHeight;i <= nLashBlockHeight;i++)
+    {
+        uint256 hashBlock;
+        if (!pWorldLine->GetBlockHash(pCoreProtocol->GetGenesisBlockHash(),i,hashBlock))
+        {
+            return false;
+        }
+        map<CDestination,size_t> mapWeight;
+        map<CDestination,vector<unsigned char> > mapEnrollData;
+
+        if (pWorldLine->GetBlockDelegateEnrolled(hashBlock,mapWeight,mapEnrollData))
+        {
+            delegate::CMvDelegateEvolveResult result;
+            mvDelegate.Evolve(i,mapWeight,mapEnrollData,result);
+        }
+    }
+    return true;
+}

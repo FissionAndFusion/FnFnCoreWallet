@@ -146,7 +146,10 @@ bool CIOInBound::Invoke(const tcp::endpoint& epListen,size_t nMaxConnection,cons
                         boost::bind(&CIOInBound::HandleAccept,this,pClient,_1));
         return true;
     }
-    catch (...) {}
+    catch (exception& e)
+    {
+        StdError(__PRETTY_FUNCTION__, e.what());
+    }
 
     acceptorService.close();
 
@@ -179,8 +182,9 @@ bool CIOInBound::BuildWhiteList(const vector<string>& vAllowMask)
             vWhiteList.push_back(boost::regex(strRegex));
         }        
     }
-    catch (...)
+    catch (exception& e)
     {
+        StdError(__PRETTY_FUNCTION__, e.what());
         return false;
     }
     return true;
@@ -199,8 +203,9 @@ bool CIOInBound::IsAllowedRemote(const tcp::endpoint& ep)
             }
         }
     }
-    catch (...)
+    catch (exception& e)
     {
+        StdError(__PRETTY_FUNCTION__, e.what());
     }
     return (vWhiteList.empty());
 }
@@ -212,6 +217,10 @@ void CIOInBound::HandleAccept(CIOClient *pClient, const boost::system::error_cod
         if (queIdleClient.size() <= 1 || !IsAllowedRemote(pClient->GetRemote()) 
             || !pIOProc->ClientAccepted(acceptorService.local_endpoint(),pClient))
         {
+            StdError(__PRETTY_FUNCTION__, (string("Accept error ") + epService.address().to_string()
+                + ". Idle client size: " + to_string(queIdleClient.size())
+                + ". Is allowed: " + to_string(IsAllowedRemote(pClient->GetRemote()))
+                + ". Accepted: " + to_string(pIOProc->ClientAccepted(acceptorService.local_endpoint(),pClient))).c_str());
             pClient->Close();
         }
         
@@ -228,6 +237,7 @@ void CIOInBound::HandleAccept(CIOClient *pClient, const boost::system::error_cod
     }
     else
     {
+        StdError(__PRETTY_FUNCTION__, (string("Other error ") + epService.address().to_string() + ". " + err.message()).c_str());
         if (err != boost::asio::error::operation_aborted)
         {
             acceptorService.close();
@@ -342,8 +352,9 @@ bool CIOSSLOption::SetupSSLContext(boost::asio::ssl::context& ctx) const
             SSL_CTX_set_cipher_list(ctx.native_handle(),strCiphers.c_str());
         }
     }
-    catch (...)
+    catch (exception& e)
     {
+        StdError(__PRETTY_FUNCTION__, e.what());
         return false;
     }
     return true;
@@ -401,8 +412,9 @@ CIOClient* CIOSSLOutBound::ClientAlloc(const CIOSSLOption& optSSL)
             }
             return new CSSLClient(this,ioService,ctx,optSSL.fVerifyPeer ? optSSL.strPeerName : ""); 
         }
-        catch (...)
+        catch (exception& e)
         {
+            StdError(__PRETTY_FUNCTION__, e.what());
             return NULL;
         }
     }
