@@ -245,9 +245,21 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerInv& eventInv)
     {
         if(SENDER_NETCHN == eventInv.sender)
         {
-            if(std::numeric_limits<uint64>::max() != eventInv.nNonce)
+            if(std::numeric_limits<uint64>::max() != eventInv.nNonce && "in" != eventInv.flow)
             {
                 return CMvPeerNet::HandleEvent(eventInv);
+            }
+
+            if (std::numeric_limits<uint64>::max() != eventInv.nNonce && "in" == eventInv.flow)
+            {
+                network::CMvEventPeerInv* pEvent = new network::CMvEventPeerInv(eventInv);
+                if(!pEvent)
+                {
+                    return false;
+                }
+
+                pDbpService->PostEvent(pEvent);
+                return true;
             }
 
             if(std::numeric_limits<uint64>::max() == eventInv.nNonce)
@@ -394,18 +406,20 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerTx& eventTx)
 
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
     {
-        if(SENDER_NETCHN == eventTx.sender)
+        if(SENDER_NETCHN == eventTx.sender && "in" != eventTx.flow)
         {
             return CMvPeerNet::HandleEvent(eventTx);
         }
-        else if(SENDER_DBPSVC == eventTx.sender)
+
+        if ("in" == eventTx.flow)
         {
             network::CMvEventPeerTx* pEvent = new network::CMvEventPeerTx(eventTx);
-            if(!pEvent)
+            if (!pEvent)
             {
                 return false;
             }
-            pNetChannel->PostEvent(pEvent);
+
+            pDbpService->PostEvent(pEvent);
             return true;
         }
     }
@@ -441,9 +455,21 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerBlock& eventBlock)
     {
         if(SENDER_NETCHN == eventBlock.sender)
         {
-            if(std::numeric_limits<uint64>::max() != eventBlock.nNonce)
+            if(std::numeric_limits<uint64>::max() != eventBlock.nNonce && "in" != eventBlock.flow)
             {
                 return CMvPeerNet::HandleEvent(eventBlock);
+            }
+
+            if(std::numeric_limits<uint64>::max() != eventBlock.nNonce && "in" == eventBlock.flow)
+            {
+                network::CMvEventPeerBlock* pEvent = new network::CMvEventPeerBlock(eventBlock);
+                if(!pEvent)
+                {
+                    return false;
+                }
+
+                pDbpService->PostEvent(pEvent);
+                return true;
             }
 
             if(std::numeric_limits<uint64>::max() == eventBlock.nNonce)

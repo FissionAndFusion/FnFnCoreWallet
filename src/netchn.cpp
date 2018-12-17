@@ -541,6 +541,12 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerTx& eventTx)
     uint256& hashFork = eventTx.hashFork;
     CTransaction& tx = eventTx.data;
     uint256 txid = tx.GetHash();
+
+    if (NODE_TYPE::NODE_TYPE_ROOT == nodeType && !IsContains(eventTx.hashFork))
+    {
+        pPeerNet->DispatchEvent(&eventTx);
+        return true;
+    }
     
     try
     {
@@ -600,6 +606,12 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerBlock& eventBlock)
     uint256& hashFork = eventBlock.hashFork; 
     CBlock& block = eventBlock.data;
     uint256 hash = block.GetHash();
+
+    if (NODE_TYPE::NODE_TYPE_ROOT == nodeType && !IsContains(eventBlock.hashFork))
+    {
+        pPeerNet->DispatchEvent(&eventBlock);
+        return true;
+    }
 
     try
     {
