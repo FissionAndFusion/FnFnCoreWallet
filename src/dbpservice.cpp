@@ -176,12 +176,12 @@ bool CDbpService::HandleEvent(CMvEventDbpConnect& event)
         {
             RespondConnected(event);
 
-            for(const auto& virtualevent : vCacheEvent)
+            for(const auto& virtualevent : mapPeerEvent)
             {
                 std::string session(event.strSessionId);
                 CMvEventDbpAdded eventAdd(session);
                 eventAdd.data.name = "event";
-                eventAdd.data.anyAddedObj = virtualevent;
+                eventAdd.data.anyAddedObj = virtualevent.second;
                 return pDbpServer->DispatchEvent(&eventAdd);
             }
         }
@@ -940,9 +940,8 @@ bool CDbpService::HandleEvent(CMvEventPeerActive& event)
         eventVPeer.nNonce = event.nNonce;
         eventVPeer.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_ACTIVE;
         eventVPeer.data = std::vector<uint8>(data.begin(), data.end());
-        vCacheEvent.push_back(eventVPeer);
-
-        DeleteCache(event.nNonce, CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_DEACTIVE);
+       
+        mapPeerEvent[event.nNonce] = eventVPeer;
         PushEvent(eventVPeer);
     }
 
@@ -961,28 +960,12 @@ bool CDbpService::HandleEvent(CMvEventPeerDeactive& event)
         eventVPeer.nNonce = event.nNonce;
         eventVPeer.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_DEACTIVE;
         eventVPeer.data = std::vector<uint8>(data.begin(), data.end());
-        vCacheEvent.push_back(eventVPeer);
-
-        DeleteCache(event.nNonce, CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_ACTIVE);
+        
+        mapPeerEvent.erase(event.nNonce);
         PushEvent(eventVPeer);
     }
     
     return true;
-}
-
-void CDbpService::DeleteCache(uint64 nNonce, int type)
-{
-    for (auto it = vCacheEvent.begin(); it != vCacheEvent.end(); ) 
-    {
-        if ((*it).type == type && (*it).nNonce == nNonce) 
-        {
-            it = vCacheEvent.erase(it);
-        } 
-        else 
-        {
-            ++it;
-        }
-    }
 }
 
 bool CDbpService::HandleEvent(CMvEventPeerSubscribe& event)
@@ -1289,8 +1272,8 @@ bool CDbpService::HandleEvent(CMvEventDbpVirtualPeerNet& event)
         ss >> eventActive;  
         pVirtualPeerNet->DispatchEvent(&eventActive);
 
-        DeleteCache(event.nNonce, CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_DEACTIVE);
-        vCacheEvent.push_back(event.data);
+        mapPeerEvent[eventActive.nNonce] = event.data;
+        PushEvent(event.data);
     }
 
     if(event.data.type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_DEACTIVE)
@@ -1299,8 +1282,8 @@ bool CDbpService::HandleEvent(CMvEventDbpVirtualPeerNet& event)
         ss >> eventDeactive;   
         pVirtualPeerNet->DispatchEvent(&eventDeactive);
 
-        DeleteCache(event.nNonce, CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_ACTIVE);
-        vCacheEvent.push_back(event.data);
+        mapPeerEvent.erase(eventDeactive.nNonce);
+        PushEvent(event.data);
     }
 
     if(event.data.type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_SUBSCRIBE)
