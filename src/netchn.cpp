@@ -103,6 +103,7 @@ CNetChannel::CNetChannel()
     pService = NULL;
     pDispatcher = NULL;
     pDbpService = NULL;
+    nodeType = NODE_TYPE::NODE_TYPE_FNFN;
 }
 
 CNetChannel::~CNetChannel()
@@ -301,6 +302,11 @@ bool CNetChannel::IsContains(const uint256& hashFork)
     return mapSched.find(hashFork) != mapSched.end();
 }
 
+void CNetChannel::EnableSuperNode(bool fIsFork)
+{
+    nodeType = fIsFork ? NODE_TYPE::NODE_TYPE_FORK : NODE_TYPE::NODE_TYPE_ROOT;
+}
+
 bool CNetChannel::HandleEvent(network::CMvEventPeerActive& eventActive)
 {
     uint64 nNonce = eventActive.nNonce;
@@ -470,7 +476,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerGetData& eventGetData)
 
             if("up" == flow)
             {
-                eventTx.nNonce = 0;
+                eventTx.nNonce = std::numeric_limits<uint64>::max();
             }
 
             if (pTxPool->Get(inv.nHash,eventTx.data))
@@ -484,7 +490,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerGetData& eventGetData)
 
             if("up" == flow)
             {
-                eventBlock.nNonce = 0;
+                eventBlock.nNonce = std::numeric_limits<uint64>::max();
             }
 
             if (pWorldLine->GetBlock(inv.nHash,eventBlock.data))
@@ -515,7 +521,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerGetBlocks& eventGetBlocks)
 
     if("up" == flow)
     {
-        eventInv.nNonce = 0;
+        eventInv.nNonce = std::numeric_limits<uint64>::max();
     }
 
     pPeerNet->DispatchEvent(&eventInv);
