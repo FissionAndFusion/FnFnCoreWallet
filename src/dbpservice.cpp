@@ -747,6 +747,7 @@ void CDbpService::HandleSendEvent(CMvEventDbpMethod& event)
             ss >> eventInv;
             eventInv.sender = "dbpservice";
             eventInv.flow = "up";
+            std::cout << "from down to up Peer Inv " <<  eventInv.hashFork.ToString() << " [rootnode dbpservice]\n";
             pVirtualPeerNet->DispatchEvent(&eventInv);
         }
         
@@ -1136,6 +1137,9 @@ bool CDbpService::HandleEvent(CMvEventPeerInv& event)
         }
         else
         {
+            std::cout << "[forknode] Generated PeerInv Nonce" << event.nNonce << " fork " 
+             << event.hashFork.ToString() << " [forknode dbpservice]\n";
+            
             SendEventToParentNode(eventVPeer);
         }
     }
