@@ -630,6 +630,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerBlock& eventBlock)
         {
             if (hashForkPrev == hashFork)
             {
+               std::cout << "Add New Block  Type " <<  block.nType << " [netchannel]\n";
                AddNewBlock(hashFork,hash,sched,setSchedPeer,setMisbehavePeer);
             }
             else
