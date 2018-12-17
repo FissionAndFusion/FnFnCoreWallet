@@ -211,20 +211,20 @@
             "desc": "Set dbp parent node ip to <ip> for super node(default: empty)"
         },
         {
-            "name": "fIsRootNode",
+            "name": "fEnableForkNode",
             "type": "bool",
-            "opt": "isrootnode",
-            "default": "true",
-            "format": "-isrootnode=<true | false>",
-            "desc": "Set is root node for super node(default: true)"
+            "opt": "enableforknode",
+            "default": "false",
+            "format": "-enableforknode=<true | false>",
+            "desc": "Enable fork node for super node(default: false)"
         },
         {
-            "name": "fIsFnFnNode",
+            "name": "fEnableSuperNode",
             "type": "bool",
-            "opt": "isfnfnnode",
-            "default": "true",
-            "format": "-isfnfnnode=<true | false>",
-            "desc": "Set is fnfn node for super node(default: true)"
+            "opt": "enablesupernode",
+            "default": "false",
+            "format": "-enablesupernode=<true | false>",
+            "desc": "Enable super node(default: false)"
         },
         {
             "name": "strPrivateKey",

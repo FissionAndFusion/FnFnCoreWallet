@@ -30,8 +30,8 @@ public:
     CDbpService();
     virtual ~CDbpService() noexcept;
 
-    void SetIsRootNode(bool isRootNode);
-    void SetIsFnFnNode(bool isFnFnNode);
+    void EnableForkNode(bool enable);
+    void EnableSuperNode(bool enable);
     void SetSupportForks(const std::vector<uint256>& vForks);
 
     bool HandleEvent(CMvEventDbpConnect& event) override;
@@ -129,8 +129,8 @@ private:
 
     std::unordered_map<std::string, std::pair<uint256,uint256>> mapForkPoint; // fork point hash => (fork hash, fork point hash)
 
-    bool fIsRootNode;
-    bool fIsFnFnNode;
+    bool fEnableForkNode;
+    bool fEnableSuperNode;
 
     std::vector<CMvDbpVirtualPeerNetEvent> vCacheEvent;
 
