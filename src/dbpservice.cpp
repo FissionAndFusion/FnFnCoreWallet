@@ -358,7 +358,7 @@ bool CDbpService::IsForkHash(const uint256& hash)
 
 bool CDbpService::IsMyFork(const uint256& hash)
 {
-    return pNetChannel->IsCotains(hash);
+    return pNetChannel->IsContains(hash);
 }
 
 bool CDbpService::IsForkNodeOfSuperNode()

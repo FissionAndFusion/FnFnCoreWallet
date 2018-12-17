@@ -25,7 +25,7 @@ public:
     virtual void BroadcastTxInv(const uint256& hashFork) = 0;
     virtual void SubscribeFork(const uint256& hashFork) = 0;
     virtual void UnsubscribeFork(const uint256& hashFork) = 0;
-    virtual bool IsCotains(const uint256& hashFork) = 0;
+    virtual bool IsContains(const uint256& hashFork) = 0;
 };
 
 class IMvDelegatedChannel : public walleve::IIOModule, virtual public CMvPeerEventListener
