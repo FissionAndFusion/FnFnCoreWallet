@@ -500,7 +500,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerGetData& eventGetData)
             if("up" == flow)
             {
                 eventBlock.nNonce = std::numeric_limits<uint64>::max();
-                eventTx.sender = "netchannel";
+                eventBlock.sender = "netchannel";
             }
 
             if (pWorldLine->GetBlock(inv.nHash,eventBlock.data))
@@ -548,7 +548,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerTx& eventTx)
 
     if (NODE_TYPE::NODE_TYPE_ROOT == nodeType && !IsContains(eventTx.hashFork))
     {
-        eventTx.sender = "netchannel"
+        eventTx.sender = "netchannel";
         pPeerNet->DispatchEvent(&eventTx);
         return true;
     }
