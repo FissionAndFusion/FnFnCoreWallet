@@ -618,6 +618,11 @@ void CDbpService::HandleSendEvent(CMvEventDbpMethod& event)
 
             if(IsRootNodeOfSuperNode())
             {
+                std::cout << "#############[rootnode] "  << "Subscribe Fork: [dbpservice]\n";
+                for(const auto& fork : eventUpSub.data)
+                {
+                    std::cout << "Fork ID " << fork.ToString() << " [dbpservice]\n";
+                }
                 eventUpSub.flow = "up";
                 eventUpSub.sender = "dbpservice";
                 pVirtualPeerNet->DispatchEvent(&eventUpSub);
@@ -1008,9 +1013,12 @@ bool CDbpService::HandleEvent(CMvEventPeerSubscribe& event)
 
     if(IsForkNodeOfSuperNode())
     {
-        std::cout << "[forknode] generate subscribe event [dbpservice]\n";
+        std::cout << "###################[forknode] generate subscribe event [dbpservice]\n";
         
         CMvEventPeerSubscribe eventUpSub(event.nNonce, event.hashFork);
+
+        std::cout << "nonce " << event.nNonce << " [dbpservice]\n";
+        std::cout << "hashfork " << event.hashFork.ToString() << " [dbpservice]\n";
         
         auto& vSubForks = event.data;
         for(const auto& fork : vSubForks)
@@ -1026,6 +1034,8 @@ bool CDbpService::HandleEvent(CMvEventPeerSubscribe& event)
             {
                 mapThisNodeForkCount[key]++;
             }
+
+            std::cout << "[forknode] Subscribe fork " << fork.ToString() << " [dbpservice]\n";
         }
 
         if(!eventUpSub.data.empty())
