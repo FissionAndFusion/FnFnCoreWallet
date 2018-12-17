@@ -47,7 +47,6 @@ public:
     bool GetBlockInv(const uint256& hashFork,const CBlockLocator& locator,std::vector<uint256>& vBlockHash,std::size_t nMaxCount) override;
     bool GetBlockDelegateEnrolled(const uint256& hashBlock,std::map<CDestination,std::size_t>& mapWeight,
                                                            std::map<CDestination,std::vector<unsigned char> >& mapEnrollData) override;
-    bool CheckDataConsistency(int nCheckLevel) override;
 protected:
     bool WalleveHandleInitialize() override;
     void WalleveHandleDeinitialize() override;

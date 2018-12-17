@@ -44,13 +44,7 @@ bool CWorldLine::WalleveHandleInvoke()
 
     if (!cntrBlock.Initialize(dbConfig,StorageConfig()->nDBConn,WalleveConfig()->pathData,WalleveConfig()->fDebug))
     {
-        WalleveError("Failed to initalize container\n");
-        return false;
-    }
-
-    if(!CheckDataConsistency(StorageConfig()->nCheckLevel))
-    {
-        WalleveLog("Checking for data in database and files failed\n");
+        WalleveError("Failed to initialize container\n");
         return false;
     }
 
@@ -639,11 +633,6 @@ bool CWorldLine::GetBlockDelegateEnrolled(const uint256& hashBlock,map<CDestinat
     return true;
 }
 
-bool CWorldLine::CheckDataConsistency(int nCheckLevel)
-{
-    return cntrBlock.CheckConsistency(nCheckLevel);
-}
-
 bool CWorldLine::CheckContainer()
 {
     if (cntrBlock.IsEmpty())
@@ -654,7 +643,7 @@ bool CWorldLine::CheckContainer()
     {
         return false;
     }
-    return true;
+    return cntrBlock.CheckConsistency(StorageConfig()->nCheckLevel);
 }
 
 bool CWorldLine::RebuildContainer()
