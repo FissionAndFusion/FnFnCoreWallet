@@ -373,6 +373,12 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
                 return false;
             }
 
+            auto pNetChannelBase = walleveDocker.GetObject("netchannel");
+            if(!pNetChannelBase)
+            {
+                return false;
+            }
+
             auto pForkManagerBase = walleveDocker.GetObject("forkmanager");
             if(!pForkManagerBase)
             {
@@ -383,6 +389,8 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
             {
                 dynamic_cast<CVirtualPeerNet*>(pVirtualPeerNetBase)->SetNodeTypeAsFnfn(!config.fEnableSuperNode);
                 dynamic_cast<CVirtualPeerNet*>(pVirtualPeerNetBase)->SetNodeTypeAsSuperNode(!config.fEnableForkNode);
+
+                dynamic_cast<CNetChannel*>(pNetChannelBase)->EnableSuperNode(config.fEnableForkNode);
             }
             
             dynamic_cast<CMvDbpClient*>(pClientBase)->AddNewClient(config);

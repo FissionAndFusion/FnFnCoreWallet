@@ -151,15 +151,17 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerSubscribe& eventSubscribe
         {
             return CMvPeerNet::HandleEvent(eventSubscribe);
         }
-        else if(SENDER_DBPSVC == eventSubscribe.sender)
+
+        if(SENDER_DBPSVC == eventSubscribe.sender)
         {
-            network::CMvEventPeerSubscribe* pEvent = new network::CMvEventPeerSubscribe(eventSubscribe);
-            if(!pEvent)
-            {
-                return false;
-            }
-            pNetChannel->PostEvent(pEvent);
-            return true;
+            // network::CMvEventPeerSubscribe* pEvent = new network::CMvEventPeerSubscribe(eventSubscribe);
+            // if(!pEvent)
+            // {
+            //     return false;
+            // }
+            // pNetChannel->PostEvent(pEvent);
+            // return true;
+            return CMvPeerNet::HandleEvent(eventSubscribe);
         }
     }
 
@@ -170,11 +172,13 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerSubscribe& eventSubscribe
         {
             return false;
         }
+
         if(SENDER_NETCHN == eventSubscribe.sender)
         {
             pDbpService->PostEvent(pEvent);
         }
-        else if(SENDER_DBPSVC == eventSubscribe.sender)
+
+        if(SENDER_DBPSVC == eventSubscribe.sender)
         {
             pNetChannel->PostEvent(pEvent);
         }
@@ -196,7 +200,8 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerUnsubscribe& eventUnsubsc
         {
             return CMvPeerNet::HandleEvent(eventUnsubscribe);
         }
-        else if(SENDER_DBPSVC == eventUnsubscribe.sender)
+
+        if (SENDER_DBPSVC == eventUnsubscribe.sender)
         {
             network::CMvEventPeerUnsubscribe* pEvent = new network::CMvEventPeerUnsubscribe(eventUnsubscribe);
             if(!pEvent)
@@ -219,7 +224,8 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerUnsubscribe& eventUnsubsc
         {
             pDbpService->PostEvent(pEvent);
         }
-        else if(SENDER_DBPSVC == eventUnsubscribe.sender)
+
+        if(SENDER_DBPSVC == eventUnsubscribe.sender)
         {
             pNetChannel->PostEvent(pEvent);
         }
@@ -239,9 +245,25 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerInv& eventInv)
     {
         if(SENDER_NETCHN == eventInv.sender)
         {
-            return CMvPeerNet::HandleEvent(eventInv);
+            if(std::numeric_limits<uint64>::max() != eventInv.nNonce)
+            {
+                return CMvPeerNet::HandleEvent(eventInv);
+            }
+
+            if(std::numeric_limits<uint64>::max() == eventInv.nNonce)
+            {
+                network::CMvEventPeerInv* pEvent = new network::CMvEventPeerInv(eventInv);
+                if(!pEvent)
+                {
+                    return false;
+                }
+
+                pDbpService->PostEvent(pEvent);
+                return true;
+            }
         }
-        else if(SENDER_DBPSVC == eventInv.sender)
+
+        if(SENDER_DBPSVC == eventInv.sender)
         {
             network::CMvEventPeerInv* pEvent = new network::CMvEventPeerInv(eventInv);
             if(!pEvent)
@@ -419,9 +441,25 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerBlock& eventBlock)
     {
         if(SENDER_NETCHN == eventBlock.sender)
         {
-            return CMvPeerNet::HandleEvent(eventBlock);
+            if(std::numeric_limits<uint64>::max() != eventBlock.nNonce)
+            {
+                return CMvPeerNet::HandleEvent(eventBlock);
+            }
+
+            if(std::numeric_limits<uint64>::max() == eventBlock.nNonce)
+            {
+                network::CMvEventPeerBlock *pEvent = new network::CMvEventPeerBlock(eventBlock);
+                if(!pEvent)
+                {
+                    return false;
+                }
+
+                pDbpService->PostEvent(pEvent);
+                return true;
+            }
         }
-        else if(SENDER_DBPSVC == eventBlock.sender)
+
+        if(SENDER_DBPSVC == eventBlock.sender)
         {
             network::CMvEventPeerBlock* pEvent = new network::CMvEventPeerBlock(eventBlock);
             if(!pEvent)
