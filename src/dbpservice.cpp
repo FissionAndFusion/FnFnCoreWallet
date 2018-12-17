@@ -32,8 +32,8 @@ CDbpService::CDbpService()
 
     mapTopicIds = temp_map;
 
-    fIsRootNode = true;
-    fIsFnFnNode = true;
+    fEnableSuperNode = false;
+    fEnableForkNode = false;
 }
 
 CDbpService::~CDbpService() noexcept
@@ -97,14 +97,14 @@ void CDbpService::WalleveHandleDeinitialize()
     pVirtualPeerNet = NULL;
 }
 
-void CDbpService::SetIsRootNode(bool isRootNode)
+void CDbpService::EnableForkNode(bool enable)
 {
-    fIsRootNode = isRootNode;
+    fEnableForkNode = enable;
 }
 
-void CDbpService::SetIsFnFnNode(bool isFnFnNode)
+void CDbpService::EnableSuperNode(bool enable)
 {
-    fIsFnFnNode = isFnFnNode;
+    fEnableSuperNode = enable;
 }
 
 void CDbpService::SetSupportForks(const std::vector<uint256>& vForks)
@@ -364,17 +364,17 @@ bool CDbpService::IsForkHash(const uint256& hash)
 
 bool CDbpService::IsMyFork(const uint256& hash)
 {
-    return pNetChannel->IsCotains(hash);
+    return pNetChannel->IsContains(hash);
 }
 
 bool CDbpService::IsForkNodeOfSuperNode()
 {
-    return (!fIsFnFnNode && !fIsRootNode);
+    return (fEnableSuperNode && fEnableForkNode);
 }
 
 bool CDbpService::IsRootNodeOfSuperNode()
 {
-    return (!fIsFnFnNode && fIsRootNode);
+    return (fEnableSuperNode && !fEnableForkNode);
 }
 
 void CDbpService::TrySwitchFork(const uint256& blockHash,uint256& forkHash)

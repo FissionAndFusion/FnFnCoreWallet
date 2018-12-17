@@ -298,7 +298,7 @@ void CNetChannel::UnsubscribeFork(const uint256& hashFork)
     }
 }
 
-bool CNetChannel::IsCotains(const uint256& hashFork)
+bool CNetChannel::IsContains(const uint256& hashFork)
 {
     boost::recursive_mutex::scoped_lock scoped_lock(mtxSched);
     return mapSched.find(hashFork) != mapSched.end();

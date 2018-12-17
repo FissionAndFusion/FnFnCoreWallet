@@ -379,8 +379,8 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
                 return false;
             }
             
-            dynamic_cast<CVirtualPeerNet*>(pVirtualPeerNetBase)->SetNodeTypeAsFnfn(config.fIsFnFnNode);
-            dynamic_cast<CVirtualPeerNet*>(pVirtualPeerNetBase)->SetNodeTypeAsSuperNode(config.fIsRootNode);
+            dynamic_cast<CVirtualPeerNet*>(pVirtualPeerNetBase)->SetNodeTypeAsFnfn(!config.fEnableSuperNode);
+            dynamic_cast<CVirtualPeerNet*>(pVirtualPeerNetBase)->SetNodeTypeAsSuperNode(!config.fEnableForkNode);
             dynamic_cast<CMvDbpClient*>(pClientBase)->AddNewClient(config);
             std::vector<std::string> vSupportForks = dynamic_cast<CForkManager*>(pForkManagerBase)->ForkConfig()->vFork;
             std::vector<uint256> vForkHash;
@@ -392,8 +392,8 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
             }
 
             CDbpService* pDbpService = new CDbpService();
-            pDbpService->SetIsFnFnNode(config.fIsFnFnNode);
-            pDbpService->SetIsRootNode(config.fIsRootNode);
+            pDbpService->EnableSuperNode(config.fEnableSuperNode);
+            pDbpService->EnableForkNode(config.fEnableForkNode);
             pDbpService->SetSupportForks(vForkHash);
 
             if (!AttachModule(pDbpService))
@@ -461,7 +461,7 @@ CDbpClientConfig CMvEntry::GetDbpClientConfig()
                         config->strDbpPKFile, config->strDbpCiphers);
     
     return CDbpClientConfig(config->epParentHost,config->strPrivateKey,sslDbp,"dbpservice", 
-            config->fIsRootNode, config->fIsFnFnNode);
+            config->fEnableForkNode, config->fEnableSuperNode);
 }
 
 void CMvEntry::PurgeStorage()
