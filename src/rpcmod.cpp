@@ -1585,6 +1585,10 @@ CRPCResultPtr CRPCMod::RPCExportWallet(CRPCParamPtr param)
     {
         throw CRPCException(RPC_WALLET_ERROR, "File has been existed.");
     }
+    if(pSave.filename() == "." || pSave.filename() == "..")
+    {
+        throw CRPCException(RPC_WALLET_ERROR, "Cannot export to a folder.");
+    }
 
     if(!exists(pSave.parent_path()) && !create_directories(pSave.parent_path()))
     {
@@ -1697,6 +1701,11 @@ CRPCResultPtr CRPCMod::RPCImportWallet(CRPCParamPtr param)
         string sHex = oAddr.get_obj()[1].value_.get_str();  //"hex" field
 
         CMvAddress addr(sAddr);
+        if (addr.IsNull())
+        {
+            throw CRPCException(RPC_WALLET_ERROR, "Data format is not correct, check it and try again.");
+        }
+
         //import keys
         if(addr.IsPubKey())
         {
@@ -1854,6 +1863,7 @@ CRPCResultPtr CRPCMod::RPCVerifyMessage(CRPCParamPtr param)
 {
     auto spParam = CastParamPtr<CVerifyMessageParam>(param);
 
+    //verifymessage <"pubkey"> <"message"> <"sig">
     crypto::CPubKey pubkey;
     if (pubkey.SetHex(spParam->strPubkey) != spParam->strPubkey.size())
     {
@@ -1870,11 +1880,6 @@ CRPCResultPtr CRPCMod::RPCVerifyMessage(CRPCParamPtr param)
     if (vchSig.size() == 0)
     {
         throw CRPCException(RPC_INVALID_PARAMETER, "Invalid sig");
-    }
-
-    if (!pService->HaveKey(pubkey))
-    {
-        throw CRPCException(RPC_INVALID_ADDRESS_OR_KEY, "Unknown pubkey");
     }
 
     const string strMessageMagic = "Multiverse Signed Message:\n";
@@ -1903,11 +1908,9 @@ CRPCResultPtr CRPCMod::RPCGetPubKeyAddress(CRPCParamPtr param)
 {
     auto spParam = CastParamPtr<CGetPubkeyAddressParam>(param);
     crypto::CPubKey pubkey;
-    pubkey.SetHex(spParam->strPubkey);
-
-    if (!pService->HaveKey(pubkey))
+    if (pubkey.SetHex(spParam->strPubkey) != spParam->strPubkey.size())
     {
-        throw CRPCException(RPC_INVALID_ADDRESS_OR_KEY, "Unknown pubkey");
+        throw CRPCException(RPC_INVALID_PARAMETER, "Invalid pubkey");
     }
 
     CDestination dest(pubkey);
@@ -1919,20 +1922,9 @@ CRPCResultPtr CRPCMod::RPCGetTemplateAddress(CRPCParamPtr param)
 {
     auto spParam = CastParamPtr<CGetTemplateAddressParam>(param);
     CTemplateId tid;
-    if (spParam->strTid.empty())
+    if (tid.SetHex(spParam->strTid) != spParam->strTid.size())
     {
         throw CRPCException(RPC_INVALID_PARAMETER, "Invalid tid");
-    }
-
-    tid.SetHex(spParam->strTid);
-    if (tid == 0)
-    {
-        throw CRPCException(RPC_INVALID_PARAMETER, "Invalid tid");
-    }
-
-    if (!pService->HaveTemplate(tid))
-    {
-        throw CRPCException(RPC_INVALID_PARAMETER, "Unknown tid");
     }
 
     CDestination dest(tid);
