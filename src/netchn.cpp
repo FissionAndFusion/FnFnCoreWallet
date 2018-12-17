@@ -424,6 +424,13 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerInv& eventInv)
 {
     uint64 nNonce = eventInv.nNonce;
     uint256& hashFork = eventInv.hashFork;
+
+    if(NODE_TYPE::NODE_TYPE_ROOT == nodeType && !IsContains(eventInv.hashFork))
+    {
+        pPeerNet->DispatchEvent(&eventInv);
+        return true;
+    }
+
     try 
     {
         if (eventInv.data.size() > network::CInv::MAX_INV_COUNT)
