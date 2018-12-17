@@ -427,6 +427,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerInv& eventInv)
 
     if(NODE_TYPE::NODE_TYPE_ROOT == nodeType && !IsContains(eventInv.hashFork))
     {
+        eventInv.sender = "netchannel";
         pPeerNet->DispatchEvent(&eventInv);
         return true;
     }
@@ -484,6 +485,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerGetData& eventGetData)
             if("up" == flow)
             {
                 eventTx.nNonce = std::numeric_limits<uint64>::max();
+                eventTx.sender = "netchannel";
             }
 
             if (pTxPool->Get(inv.nHash,eventTx.data))
@@ -498,6 +500,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerGetData& eventGetData)
             if("up" == flow)
             {
                 eventBlock.nNonce = std::numeric_limits<uint64>::max();
+                eventTx.sender = "netchannel";
             }
 
             if (pWorldLine->GetBlock(inv.nHash,eventBlock.data))
@@ -529,6 +532,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerGetBlocks& eventGetBlocks)
     if("up" == flow)
     {
         eventInv.nNonce = std::numeric_limits<uint64>::max();
+        eventInv.sender = "netchannel";
     }
 
     pPeerNet->DispatchEvent(&eventInv);
@@ -544,6 +548,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerTx& eventTx)
 
     if (NODE_TYPE::NODE_TYPE_ROOT == nodeType && !IsContains(eventTx.hashFork))
     {
+        eventTx.sender = "netchannel"
         pPeerNet->DispatchEvent(&eventTx);
         return true;
     }
@@ -609,6 +614,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerBlock& eventBlock)
 
     if (NODE_TYPE::NODE_TYPE_ROOT == nodeType && !IsContains(eventBlock.hashFork))
     {
+        eventBlock.sender = "netchannel";
         pPeerNet->DispatchEvent(&eventBlock);
         return true;
     }
