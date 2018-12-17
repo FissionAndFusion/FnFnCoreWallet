@@ -103,6 +103,7 @@ CNetChannel::CNetChannel()
     pService = NULL;
     pDispatcher = NULL;
     pDbpService = NULL;
+    nodeType = NODE_TYPE::NODE_TYPE_FNFN;
 }
 
 CNetChannel::~CNetChannel()
@@ -299,6 +300,11 @@ bool CNetChannel::IsCotains(const uint256& hashFork)
 {
     boost::recursive_mutex::scoped_lock scoped_lock(mtxSched);
     return mapSched.find(hashFork) != mapSched.end();
+}
+
+void CNetChannel::EnableSuperNode(bool fIsFork)
+{
+    nodeType = fIsFork ? NODE_TYPE::NODE_TYPE_FORK : NODE_TYPE::NODE_TYPE_ROOT;
 }
 
 bool CNetChannel::HandleEvent(network::CMvEventPeerActive& eventActive)

@@ -58,6 +58,14 @@ public:
 class CNetChannel : public network::IMvNetChannel
 {
 public:
+    enum class NODE_TYPE : int
+    {
+        NODE_TYPE_UNKN,
+        NODE_TYPE_FNFN = 0,
+        NODE_TYPE_ROOT,
+        NODE_TYPE_FORK
+    };
+
     CNetChannel();
     ~CNetChannel();
     int GetPrimaryChainHeight() override;
@@ -67,6 +75,7 @@ public:
     void SubscribeFork(const uint256& hashFork) override;
     void UnsubscribeFork(const uint256& hashFork) override;
     bool IsCotains(const uint256& hashFork) override;
+    void EnableSuperNode(bool fIsFork = false) override;
 protected:
     enum {MAX_GETBLOCKS_COUNT = 128};
     enum {MAX_PEER_SCHED_COUNT = 8};
@@ -113,7 +122,7 @@ protected:
     mutable boost::recursive_mutex mtxSched; 
     std::map<uint256,CSchedule> mapSched; 
     std::map<uint64,CNetChannelPeer> mapPeer;
-    
+    NODE_TYPE nodeType;
 };
 
 } // namespace multiverse
