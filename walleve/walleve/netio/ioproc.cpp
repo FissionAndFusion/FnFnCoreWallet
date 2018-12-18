@@ -122,7 +122,7 @@ bool CIOProc::WalleveHandleInvoke()
     
     ioSSLOutBound.Invoke(GetMaxOutBoundCount());
 
-    if (!WalleveThreadStart(thrIOProc))
+    if (!WalleveThreadDelayStart(thrIOProc))
     {
         WalleveError("Failed to start iothread\n");
         return false;

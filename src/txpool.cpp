@@ -234,9 +234,7 @@ void CTxPool::WalleveHandleDeinitialize()
 
 bool CTxPool::WalleveHandleInvoke()
 {
-    storage::CMvDBConfig dbConfig(StorageConfig()->strDBHost,StorageConfig()->nDBPort,
-                                  StorageConfig()->strDBName,StorageConfig()->strDBUser,StorageConfig()->strDBPass);
-    if (!dbTxPool.Initialize(dbConfig))
+    if (!dbTxPool.Initialize(WalleveConfig()->pathData))
     {
         WalleveError("Failed to initialize txpool database\n");
         return false;
@@ -283,7 +281,7 @@ MvErr CTxPool::Push(const CTransaction& tx,uint256& hashFork,CDestination& destI
 {
     boost::unique_lock<boost::shared_mutex> wlock(rwAccess);
     uint256 txid = tx.GetHash();
-    
+ 
     if (mapTx.count(txid))
     {
         return MV_ERR_ALREADY_HAVE;
@@ -318,6 +316,7 @@ MvErr CTxPool::Push(const CTransaction& tx,uint256& hashFork,CDestination& destI
             return MV_ERR_SYS_DATABASE_ERROR;
         }
     }
+
     return err;
 }   
 
@@ -436,34 +435,43 @@ void CTxPool::ArrangeBlockTx(const uint256& hashFork,size_t nMaxSize,vector<CTra
 
 bool CTxPool::FetchInputs(const uint256& hashFork,const CTransaction& tx,vector<CTxOutput>& vUnspent)
 {
+    boost::shared_lock<boost::shared_mutex> rlock(rwAccess);
+    CTxPoolView& txView = mapPoolView[hashFork];
+
+    vUnspent.resize(tx.vInput.size());
+
+    for (std::size_t i = 0;i < tx.vInput.size();i++)
+    {
+        if (txView.IsSpent(tx.vInput[i].prevout))
+        {
+            return false;
+        }
+        txView.GetUnspent(tx.vInput[i].prevout,vUnspent[i]);
+    }
+
     if (!pWorldLine->GetTxUnspent(hashFork,tx.vInput,vUnspent))
     {
         return false;
     }
+
+    CDestination destIn;
+    for (std::size_t i = 0;i < tx.vInput.size();i++)
     {
-        boost::shared_lock<boost::shared_mutex> rlock(rwAccess);
-        CTxPoolView& txView = mapPoolView[hashFork];
-        CDestination destIn;
-        for (std::size_t i = 0;i < tx.vInput.size();i++)
+        if (vUnspent[i].IsNull())
         {
-            if (txView.IsSpent(tx.vInput[i].prevout))
-            {
-                return false;
-            }
-            if (vUnspent[i].IsNull() && !txView.GetUnspent(tx.vInput[i].prevout,vUnspent[i]))
-            {
-                return false;
-            }
-            if (destIn.IsNull())
-            {
-                destIn = vUnspent[i].destTo;
-            }
-            else if (destIn != vUnspent[i].destTo)
-            {
-                return false;
-            }
+            return false;
+        }
+        
+        if (destIn.IsNull())
+        {
+            destIn = vUnspent[i].destTo;
+        }
+        else if (destIn != vUnspent[i].destTo)
+        {
+            return false;
         }
     }
+    
     return true;
 }
 
@@ -593,18 +601,25 @@ bool CTxPool::LoadDB()
 MvErr CTxPool::AddNew(CTxPoolView& txView,const uint256& txid,const CTransaction& tx,const uint256& hashFork,int nForkHeight)
 {
     vector<CTxOutput> vPrevOutput;
-    if (!pWorldLine->GetTxUnspent(hashFork,tx.vInput,vPrevOutput))
-    {
-        return MV_ERR_SYS_STORAGE_ERROR;
-    }
-    int64 nValueIn = 0;
+    vPrevOutput.resize(tx.vInput.size());
     for (int i = 0;i < tx.vInput.size();i++)
     {
         if (txView.IsSpent(tx.vInput[i].prevout))
         {
             return MV_ERR_TRANSACTION_CONFLICTING_INPUT;
         }
-        if (vPrevOutput[i].IsNull() && !txView.GetUnspent(tx.vInput[i].prevout,vPrevOutput[i]))
+        txView.GetUnspent(tx.vInput[i].prevout,vPrevOutput[i]);
+    }
+ 
+    if (!pWorldLine->GetTxUnspent(hashFork,tx.vInput,vPrevOutput))
+    {
+        return MV_ERR_SYS_STORAGE_ERROR;
+    }
+
+    int64 nValueIn = 0;
+    for (int i = 0;i < tx.vInput.size();i++)
+    {
+        if (vPrevOutput[i].IsNull())
         {
             return MV_ERR_TRANSACTION_CONFLICTING_INPUT;
         }

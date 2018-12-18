@@ -294,8 +294,11 @@ public:
         return std::string(psz, psz + sizeof(pn)*2);
     }
 
-    void SetHex(const char* psz)
+    size_t SetHex(const char* psz)
     {
+        size_t len = 0;
+        const char *in = psz;
+
         for (int i = 0; i < WIDTH; i++)
             pn[i] = 0;
 
@@ -312,6 +315,7 @@ public:
         const char* pbegin = psz;
         while (phexdigit[(unsigned char)*psz] || *psz == '0')
             psz++;
+        len = psz - in;
         psz--;
         unsigned char* p1 = (unsigned char*)pn;
         unsigned char* pend = p1 + WIDTH * 4;
@@ -324,11 +328,12 @@ public:
                 p1++;
             }
         }
+        return len;
     }
 
-    void SetHex(const std::string& str)
+    size_t SetHex(const std::string& str)
     {
-        SetHex(str.c_str());
+        return SetHex(str.c_str());
     }
 
     std::string ToString() const

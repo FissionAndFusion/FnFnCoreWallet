@@ -213,6 +213,7 @@ MvErr CDispatcher::AddNewTx(const CTransaction& tx,uint64 nNonce)
     {
         return err;
     }
+
     set<uint256> setMissingPrevTx;
     BOOST_FOREACH(const CTxIn& txin,tx.vInput)
     {
@@ -225,6 +226,7 @@ MvErr CDispatcher::AddNewTx(const CTransaction& tx,uint64 nNonce)
     {
         return MV_ERR_MISSING_PREV;
     }
+
     uint256 hashFork;
     CDestination destIn;
     int64 nValueIn;
@@ -255,6 +257,7 @@ MvErr CDispatcher::AddNewTx(const CTransaction& tx,uint64 nNonce)
     {
         pConsensus->AddNewTx(CAssembledTx(tx,-1,destIn,nValueIn));
     }
+
     return MV_OK;
 }
 
