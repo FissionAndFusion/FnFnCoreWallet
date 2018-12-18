@@ -43,16 +43,20 @@ protected:
     {
         return i.IsValid() ? uint64(i) : valDefault;
     }
-    const uint256 GetForkHash(const rpc::CRPCString& hex)
+    const bool GetForkHashOfDef(const rpc::CRPCString& hex, uint256& hashFork)
     {
-        uint256 fork;
-        if (hex.IsValid())
-        {
-            fork.SetHex(hex);
+        if (!hex.empty())
+        {  
+            if (hashFork.SetHex(hex) != hex.size())
+            {
+                return false;
+            }
         }
-        if (fork == 0)
-            fork = pCoreProtocol->GetGenesisBlockHash();
-        return fork;
+        else
+        {
+            hashFork = pCoreProtocol->GetGenesisBlockHash();
+        }
+        return true;
     }
     bool CheckWalletError(MvErr err);
     multiverse::crypto::CPubKey GetPubKey(const std::string& addr);

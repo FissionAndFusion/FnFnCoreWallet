@@ -31,6 +31,7 @@ public:
     bool RemoveNode(const walleve::CNetHost& node) override;
     /* Worldline & Tx Pool*/
     int  GetForkCount() override;
+    bool HaveFork(const uint256& hashFork) override;
     int  GetForkHeight(const uint256& hashFork) override;
     void ListFork(std::vector<std::pair<uint256,CProfile> >& vFork) override;
     bool GetForkGenealogy(const uint256& hashFork,std::vector<std::pair<uint256,int> >& vAncestry,

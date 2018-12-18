@@ -105,6 +105,11 @@ private:
     bool IsThisNodeBlock(CMvEventPeerBlock& eventBlock);
     bool IsThisNodeTx(CMvEventPeerTx& eventTx);
 
+    void FilterChildSubscribeFork(const CMvEventPeerSubscribe& in, CMvEventPeerSubscribe& out);
+    void FilterChildUnsubscribeFork(const CMvEventPeerUnsubscribe& in, CMvEventPeerUnsubscribe& out);
+    void FilterThisSubscribeFork(const CMvEventPeerSubscribe& in, CMvEventPeerSubscribe& out);
+    void FilterThisUnsubscribeFork(const CMvEventPeerUnsubscribe& in, CMvEventPeerUnsubscribe& out);
+
     void RespondFailed(CMvEventDbpConnect& event);
     void RespondConnected(CMvEventDbpConnect& event);
     void RespondNoSub(CMvEventDbpSub& event);

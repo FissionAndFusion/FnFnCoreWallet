@@ -30,18 +30,6 @@ bool CPurger::ResetDB(const CMvDBConfig& dbConfig) const
     }
 
     {
-        CTxPoolDB dbTxPool;
-        if (dbTxPool.Initialize(dbConfig))
-        {
-            if (!dbTxPool.RemoveAll())
-            {
-                return false;
-            }
-            dbTxPool.Deinitialize();
-        }
-    }
-
-    {
         CWalletDB dbWallet;
         if (dbWallet.Initialize(dbConfig))
         {
@@ -53,6 +41,22 @@ bool CPurger::ResetDB(const CMvDBConfig& dbConfig) const
         }
     }
 
+    return true;
+}
+
+bool CPurger::ResetCache(const path& pathDataLocation) const
+{
+    {
+        CTxPoolDB dbTxPool;
+        if (dbTxPool.Initialize(pathDataLocation))
+        {
+            if (!dbTxPool.RemoveAll())
+            {
+                return false;
+            }
+            dbTxPool.Deinitialize();
+        }
+    }
     return true;
 }
 
