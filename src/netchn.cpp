@@ -604,10 +604,6 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerBlock& eventBlock)
     CBlock& block = eventBlock.data;
     uint256 hash = block.GetHash();
 
-    std::cout << "[forknode] [<] Peer Block Fork " << hashFork.ToString() << " [netchannel]\n"; 
-    std::cout << "[forknode] [<] Peer Block Nonce " << nNonce << " [netchannel]\n"; 
-    std::cout << "[forknode] [<] Peer Block hash " << hash.ToString() << " [netchannel]\n"; 
-
     try
     {
         boost::recursive_mutex::scoped_lock scoped_lock(mtxSched);
@@ -627,7 +623,6 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerBlock& eventBlock)
         {
             if (hashForkPrev == hashFork)
             {
-               std::cout << "Add New Block  Type " <<  block.nType << " [netchannel]\n";
                AddNewBlock(hashFork,hash,sched,setSchedPeer,setMisbehavePeer);
             }
             else
