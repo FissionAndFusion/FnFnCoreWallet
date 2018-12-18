@@ -71,6 +71,7 @@ protected:
     virtual bool HandleRootPeerGetData(const uint64& nNonce, const uint256& hashFork);
     virtual bool HandleRootPeerBlock(const uint64& nNonce, const uint256& hashFork);
     virtual bool HandleRootPeerTx(const uint64& nNonce, const uint256& hashFork);
+    virtual bool IsMainFork(const uint256& hashFork);
 protected:
     bool WalleveHandleInitialize() override;
     void WalleveHandleDeinitialize() override;

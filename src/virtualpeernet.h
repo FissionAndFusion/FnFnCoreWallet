@@ -6,6 +6,7 @@
 #define MULTIVERSE_VIRTUAL_PEERNET_H
 
 #include "mvproto.h"
+#include "mvbase.h"
 #include "virtualpeernetevent.h"
 #include "mvpeernet.h"
 
@@ -49,8 +50,10 @@ protected:
     bool HandleRootPeerGetData(const uint64& nNonce, const uint256& hashFork) override;
     bool HandleRootPeerBlock(const uint64& nNonce, const uint256& hashFork) override;
     bool HandleRootPeerTx(const uint64& nNonce, const uint256& hashFork) override;
+    bool IsMainFork(const uint256& hashFork) override;
 protected:
     walleve::IIOModule* pDbpService;
+    ICoreProtocol* pCoreProtocol;
 private:
     static const std::string SENDER_NETCHN;
     static const std::string SENDER_DBPSVC;

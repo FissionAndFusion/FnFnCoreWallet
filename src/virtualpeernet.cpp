@@ -14,7 +14,8 @@ const std::string CVirtualPeerNet::SENDER_DBPSVC = "dbpservice";
 CVirtualPeerNet::CVirtualPeerNet()
 : CMvPeerNet("virtualpeernet")
 {
-    pDbpService = nullptr;
+    pDbpService = NULL;
+    pCoreProtocol = NULL;
     typeNode = SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN;
 }
 
@@ -59,6 +60,12 @@ bool CVirtualPeerNet::WalleveHandleInitialize()
         return false;
     }
 
+    if(!WalleveGetObject("coreprotocol", pCoreProtocol))
+    {
+        WalleveLog("Failed to request coreprotocol\n");
+        return false;
+    }
+
     return true;
 }
 
@@ -66,7 +73,8 @@ void CVirtualPeerNet::WalleveHandleDeinitialize()
 {
     CMvPeerNet::WalleveHandleDeinitialize();
 
-    pDbpService = nullptr;
+    pDbpService = NULL;
+    pCoreProtocol = NULL;
 }
 
 //must be invoked by dbpservice only to notify netchannel
@@ -614,4 +622,9 @@ bool CVirtualPeerNet::HandleRootPeerTx(const uint64& nNonce, const uint256& hash
         pDbpService->PostEvent(pEvent);
     }
     return true;
+}
+
+bool CVirtualPeerNet::IsMainFork(const uint256& hashFork)
+{
+    return hashFork == pCoreProtocol->GetGenesisBlockHash();
 }

@@ -434,6 +434,12 @@ bool CMvPeerNet::HandleRootPeerTx(const uint64& nNonce, const uint256& hashFork)
     return false;
 }
 
+bool CMvPeerNet::IsMainFork(const uint256& hashFork)
+{
+    (void)hashFork;
+    return false;
+}
+
 bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CWalleveBufStream& ssPayload)
 {
     CMvPeer *pMvPeer = static_cast<CMvPeer *>(pPeer);
@@ -528,7 +534,7 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                 // SuperNode
                 if(SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT == typeNode)
                 {
-                    if(pNetChannel->IsContains(hashFork))
+                    if(IsMainFork(hashFork))
                     {
                         CMvEventPeerGetBlocks* pEvent = new CMvEventPeerGetBlocks(pMvPeer->GetNonce(), hashFork);
                         if (pEvent != NULL)
@@ -557,7 +563,7 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                 // SuperNode
                 if(SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT == typeNode)
                 {
-                    if(pNetChannel->IsContains(hashFork))
+                    if(IsMainFork(hashFork))
                     {
                         vector<CInv> vInv;
                         ssPayload >> vInv;
@@ -595,7 +601,7 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                 // SuperNode
                 if(SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT == typeNode)
                 {
-                    if(pNetChannel->IsContains(hashFork))
+                    if(IsMainFork(hashFork))
                     {
                         CMvEventPeerInv* pEvent = new CMvEventPeerInv(pMvPeer->GetNonce(), hashFork);
                         if (pEvent != NULL)
@@ -621,9 +627,10 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
             break;
         case MVPROTO_CMD_TX:
             {
+                //SuperNode
                 if(SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT == typeNode)
                 {
-                    if(pNetChannel->IsContains(hashFork))
+                    if(IsMainFork(hashFork))
                     {
                         CMvEventPeerTx* pEvent = new CMvEventPeerTx(pMvPeer->GetNonce(), hashFork);
                         if (pEvent != NULL)
@@ -655,7 +662,7 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                 //SuperNode
                 if(SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT == typeNode)
                 {
-                    if(pNetChannel->IsContains(hashFork))
+                    if(IsMainFork(hashFork))
                     {
                         CMvEventPeerBlock* pEvent = new CMvEventPeerBlock(pMvPeer->GetNonce(), hashFork);
                         if (pEvent != NULL)
