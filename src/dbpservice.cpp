@@ -517,6 +517,47 @@ void CDbpService::HandleGetBlocks(CMvEventDbpMethod& event)
     }
 }
 
+void CDbpService::FilterChildSubscribeFork(const CMvEventPeerSubscribe& in, CMvEventPeerSubscribe& out)
+{
+    auto& vSubForks = in.data;
+    for(const auto& fork : vSubForks)
+    {
+        auto key = ForkNonceKeyType(fork, in.nNonce);
+        if(mapChildNodeForkCount.find(key) == mapChildNodeForkCount.end())
+        {
+            mapChildNodeForkCount[key] = 1;
+            out.data.push_back(fork);
+        }
+        else
+        {
+            mapChildNodeForkCount[key]++;
+        }
+        
+    }
+}
+
+void CDbpService::FilterChildUnsubscribeFork(const CMvEventPeerUnsubscribe& in, CMvEventPeerUnsubscribe& out)
+{
+    auto& vUnSubForks = in.data;
+    for(const auto& fork : vUnSubForks)
+    {
+        auto key = ForkNonceKeyType(fork, in.nNonce);
+        if(mapChildNodeForkCount.find(key) != mapChildNodeForkCount.end())
+        {
+            if(mapChildNodeForkCount[key] == 1)
+            {
+                mapChildNodeForkCount[key] = 0;
+                out.data.push_back(fork);
+                mapChildNodeForkCount.erase(key);
+            }
+            else
+            {
+                mapChildNodeForkCount[key]--;
+            }
+        }
+    }
+}
+
 // event from down to up
 void CDbpService::HandleSendEvent(CMvEventDbpMethod& event)
 {
@@ -582,21 +623,8 @@ void CDbpService::HandleSendEvent(CMvEventDbpMethod& event)
 
         CMvEventPeerSubscribe eventUpSub(eventSub.nNonce, eventSub.hashFork);
 
-        auto& vSubForks = eventSub.data;
-        for(const auto& fork : vSubForks)
-        {
-            auto key = ForkNonceKeyType(fork, eventSub.nNonce);
-            if(mapChildNodeForkCount.find(key) == mapChildNodeForkCount.end())
-            {
-                mapChildNodeForkCount[key] = 1;
-                eventUpSub.data.push_back(fork);
-            }
-            else
-            {
-                mapChildNodeForkCount[key]++;
-            }
-          
-        }
+
+        FilterChildSubscribeFork(eventSub, eventUpSub);
 
         if(!eventUpSub.data.empty())
         {
@@ -628,24 +656,7 @@ void CDbpService::HandleSendEvent(CMvEventDbpMethod& event)
 
         CMvEventPeerUnsubscribe eventUpUnSub(eventUnSub.nNonce, eventUnSub.hashFork);
 
-        auto& vUnSubForks = eventUnSub.data;
-        for(const auto& fork : vUnSubForks)
-        {
-            auto key = ForkNonceKeyType(fork, eventUnSub.nNonce);
-            if(mapChildNodeForkCount.find(key) != mapChildNodeForkCount.end())
-            {
-                if(mapChildNodeForkCount[key] == 1)
-                {
-                    mapChildNodeForkCount[key] = 0;
-                    eventUpUnSub.data.push_back(fork);
-                    mapChildNodeForkCount.erase(key);
-                }
-                else
-                {
-                    mapChildNodeForkCount[key]--;
-                }
-            }
-        }
+        FilterChildUnsubscribeFork(eventUnSub, eventUpUnSub);
 
         if(!eventUpUnSub.data.empty())
         {
@@ -968,6 +979,48 @@ bool CDbpService::HandleEvent(CMvEventPeerDeactive& event)
     return true;
 }
 
+void CDbpService::FilterThisSubscribeFork(const CMvEventPeerSubscribe& in, CMvEventPeerSubscribe& out)
+{
+    auto& vSubForks = in.data;
+    for(const auto& fork : vSubForks)
+    {
+        auto key = ForkNonceKeyType(fork, in.nNonce);
+        
+        if(mapThisNodeForkCount.find(key) == mapThisNodeForkCount.end())
+        {
+            mapThisNodeForkCount[key] = 1;
+            out.data.push_back(fork);
+        }
+        else
+        {
+            mapThisNodeForkCount[key]++;
+        }
+    }
+}
+
+void CDbpService::FilterThisUnsubscribeFork(const CMvEventPeerUnsubscribe& in, CMvEventPeerUnsubscribe& out)
+{
+    auto& vUnSubForks = in.data;
+    for(const auto& fork : vUnSubForks)
+    {
+        auto key = ForkNonceKeyType(fork, in.nNonce);
+        
+        if(mapThisNodeForkCount.find(key) != mapThisNodeForkCount.end())
+        {
+            if(mapThisNodeForkCount[key] == 1)
+            {
+                mapThisNodeForkCount[key] = 0;
+                out.data.push_back(fork);
+                mapThisNodeForkCount.erase(key);
+            }
+            else
+            {
+                mapThisNodeForkCount[key]--;
+            }
+        }
+    }
+}
+
 bool CDbpService::HandleEvent(CMvEventPeerSubscribe& event)
 {
    
@@ -987,22 +1040,7 @@ bool CDbpService::HandleEvent(CMvEventPeerSubscribe& event)
     if(IsForkNodeOfSuperNode())
     {
         CMvEventPeerSubscribe eventUpSub(event.nNonce, event.hashFork);
-        
-        auto& vSubForks = event.data;
-        for(const auto& fork : vSubForks)
-        {
-            auto key = ForkNonceKeyType(fork, event.nNonce);
-            
-            if(mapThisNodeForkCount.find(key) == mapThisNodeForkCount.end())
-            {
-                mapThisNodeForkCount[key] = 1;
-                eventUpSub.data.push_back(fork);
-            }
-            else
-            {
-                mapThisNodeForkCount[key]++;
-            }
-        }
+        FilterThisSubscribeFork(event, eventUpSub);
 
         if(!eventUpSub.data.empty())
         {
@@ -1037,26 +1075,7 @@ bool CDbpService::HandleEvent(CMvEventPeerUnsubscribe& event)
     if(IsForkNodeOfSuperNode())
     {
         CMvEventPeerUnsubscribe eventUpUnSub(event.nNonce, event.hashFork);
-
-        auto& vUnSubForks = event.data;
-        for(const auto& fork : vUnSubForks)
-        {
-            auto key = ForkNonceKeyType(fork, event.nNonce);
-            
-            if(mapThisNodeForkCount.find(key) != mapThisNodeForkCount.end())
-            {
-                if(mapThisNodeForkCount[key] == 1)
-                {
-                    mapThisNodeForkCount[key] = 0;
-                    eventUpUnSub.data.push_back(fork);
-                    mapThisNodeForkCount.erase(key);
-                }
-                else
-                {
-                    mapThisNodeForkCount[key]--;
-                }
-            }
-        }
+        FilterThisUnsubscribeFork(event, eventUpUnSub);
 
         if(!eventUpUnSub.data.empty())
         {
