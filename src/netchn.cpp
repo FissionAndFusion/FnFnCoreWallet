@@ -425,13 +425,6 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerInv& eventInv)
     uint64 nNonce = eventInv.nNonce;
     uint256& hashFork = eventInv.hashFork;
 
-    if(NODE_TYPE::NODE_TYPE_ROOT == nodeType && !IsContains(eventInv.hashFork))
-    {
-        eventInv.sender = "netchannel";
-        pPeerNet->DispatchEvent(&eventInv);
-        return true;
-    }
-
     try 
     {
         if (eventInv.data.size() > network::CInv::MAX_INV_COUNT)
@@ -546,13 +539,6 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerTx& eventTx)
     CTransaction& tx = eventTx.data;
     uint256 txid = tx.GetHash();
 
-    if (NODE_TYPE::NODE_TYPE_ROOT == nodeType && !IsContains(eventTx.hashFork))
-    {
-        eventTx.sender = "netchannel";
-        pPeerNet->DispatchEvent(&eventTx);
-        return true;
-    }
-    
     try
     {
         boost::recursive_mutex::scoped_lock scoped_lock(mtxSched);
@@ -611,13 +597,6 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerBlock& eventBlock)
     uint256& hashFork = eventBlock.hashFork; 
     CBlock& block = eventBlock.data;
     uint256 hash = block.GetHash();
-
-    if (NODE_TYPE::NODE_TYPE_ROOT == nodeType && !IsContains(eventBlock.hashFork))
-    {
-        eventBlock.sender = "netchannel";
-        pPeerNet->DispatchEvent(&eventBlock);
-        return true;
-    }
 
     try
     {
