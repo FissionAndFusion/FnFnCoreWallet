@@ -102,7 +102,6 @@ CNetChannel::CNetChannel()
     pTxPool = NULL;
     pService = NULL;
     pDispatcher = NULL;
-    pDbpService = NULL;
     nodeType = NODE_TYPE::NODE_TYPE_FNFN;
 }
 
@@ -148,12 +147,6 @@ bool CNetChannel::WalleveHandleInitialize()
         return false;
     }
 
-    if (!WalleveGetObject("dbpservice",pDbpService))
-    {
-        WalleveLog("Failed to request dbpservice\n");
-        return false;
-    }
-
     return true;
 }
 
@@ -165,7 +158,6 @@ void CNetChannel::WalleveHandleDeinitialize()
     pTxPool = NULL;
     pService = NULL;
     pDispatcher = NULL;
-    pDbpService = NULL;
 }
 
 bool CNetChannel::WalleveHandleInvoke()
