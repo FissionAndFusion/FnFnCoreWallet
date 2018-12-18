@@ -154,13 +154,6 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerSubscribe& eventSubscribe
 
         if(SENDER_DBPSVC == eventSubscribe.sender)
         {
-            // network::CMvEventPeerSubscribe* pEvent = new network::CMvEventPeerSubscribe(eventSubscribe);
-            // if(!pEvent)
-            // {
-            //     return false;
-            // }
-            // pNetChannel->PostEvent(pEvent);
-            // return true;
             return CMvPeerNet::HandleEvent(eventSubscribe);
         }
     }
@@ -245,21 +238,9 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerInv& eventInv)
     {
         if(SENDER_NETCHN == eventInv.sender)
         {
-            if(std::numeric_limits<uint64>::max() != eventInv.nNonce && "in" != eventInv.flow)
+            if(std::numeric_limits<uint64>::max() != eventInv.nNonce)
             {
                 return CMvPeerNet::HandleEvent(eventInv);
-            }
-
-            if (std::numeric_limits<uint64>::max() != eventInv.nNonce && "in" == eventInv.flow)
-            {
-                network::CMvEventPeerInv* pEvent = new network::CMvEventPeerInv(eventInv);
-                if(!pEvent)
-                {
-                    return false;
-                }
-
-                pDbpService->PostEvent(pEvent);
-                return true;
             }
 
             if(std::numeric_limits<uint64>::max() == eventInv.nNonce)
@@ -320,7 +301,8 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerGetData& eventGetData)
         {
             return CMvPeerNet::HandleEvent(eventGetData);
         }
-        else if(SENDER_DBPSVC == eventGetData.sender)
+
+        if(SENDER_DBPSVC == eventGetData.sender)
         {
             network::CMvEventPeerGetData* pEvent = new network::CMvEventPeerGetData(eventGetData);
             if(!pEvent)
@@ -365,13 +347,12 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerGetBlocks& eventGetBlocks
         {
             return CMvPeerNet::HandleEvent(eventGetBlocks);
         }
-        else if(SENDER_DBPSVC == eventGetBlocks.sender)
+
+        if(SENDER_DBPSVC == eventGetBlocks.sender)
         {
-            network::CMvEventPeerGetBlocks* pEvent = new network::CMvEventPeerGetBlocks(eventGetBlocks);
-            if(!pEvent)
-            {
-                return false;
-            }
+            // TODO:switch to send p2p or netchannel
+            network::CMvEventPeerGetBlocks *pEvent = new network::CMvEventPeerGetBlocks(eventGetBlocks);
+            pEvent->sender = "virtualpeernet";
             pNetChannel->PostEvent(pEvent);
             return true;
         }
@@ -406,21 +387,14 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerTx& eventTx)
 
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
     {
-        if(SENDER_NETCHN == eventTx.sender && "in" != eventTx.flow)
+        if(SENDER_NETCHN == eventTx.sender)
         {
             return CMvPeerNet::HandleEvent(eventTx);
         }
 
-        if ("in" == eventTx.flow)
+        if(SENDER_DBPSVC == eventTx.sender)
         {
-            network::CMvEventPeerTx* pEvent = new network::CMvEventPeerTx(eventTx);
-            if (!pEvent)
-            {
-                return false;
-            }
-
-            pDbpService->PostEvent(pEvent);
-            return true;
+            return true; // TODO
         }
     }
 
@@ -455,21 +429,9 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerBlock& eventBlock)
     {
         if(SENDER_NETCHN == eventBlock.sender)
         {
-            if(std::numeric_limits<uint64>::max() != eventBlock.nNonce && "in" != eventBlock.flow)
+            if(std::numeric_limits<uint64>::max() != eventBlock.nNonce)
             {
                 return CMvPeerNet::HandleEvent(eventBlock);
-            }
-
-            if(std::numeric_limits<uint64>::max() != eventBlock.nNonce && "in" == eventBlock.flow)
-            {
-                network::CMvEventPeerBlock* pEvent = new network::CMvEventPeerBlock(eventBlock);
-                if(!pEvent)
-                {
-                    return false;
-                }
-
-                pDbpService->PostEvent(pEvent);
-                return true;
             }
 
             if(std::numeric_limits<uint64>::max() == eventBlock.nNonce)
@@ -487,13 +449,7 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerBlock& eventBlock)
 
         if(SENDER_DBPSVC == eventBlock.sender)
         {
-            network::CMvEventPeerBlock* pEvent = new network::CMvEventPeerBlock(eventBlock);
-            if(!pEvent)
-            {
-                return false;
-            }
-            pNetChannel->PostEvent(pEvent);
-            return true;
+            return true; // TODO
         }
     }
 
