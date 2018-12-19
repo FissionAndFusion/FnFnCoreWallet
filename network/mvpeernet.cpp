@@ -609,7 +609,6 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                             ssPayload >> pEvent->data;
                             pNetChannel->PostEvent(pEvent);
                         }
-                        return true;
                     }
 
                     return HandleRootPeerInv(pMvPeer->GetNonce(), hashFork);
