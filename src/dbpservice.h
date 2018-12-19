@@ -99,12 +99,16 @@ private:
     void PushBlock(const std::string& forkid, const CMvDbpBlock& block);
     void PushTx(const std::string& forkid, const CMvDbpTransaction& dbptx);
     bool PushEvent(const CMvDbpVirtualPeerNetEvent& event);
-    void DeleteCache(uint64 nNonce, int type);
-
+   
     void SendEventToParentNode(CMvDbpVirtualPeerNetEvent& event);
     void UpdateGetDataEventRecord(const CMvEventPeerGetData& event);
     bool IsThisNodeBlock(CMvEventPeerBlock& eventBlock);
     bool IsThisNodeTx(CMvEventPeerTx& eventTx);
+
+    void FilterChildSubscribeFork(const CMvEventPeerSubscribe& in, CMvEventPeerSubscribe& out);
+    void FilterChildUnsubscribeFork(const CMvEventPeerUnsubscribe& in, CMvEventPeerUnsubscribe& out);
+    void FilterThisSubscribeFork(const CMvEventPeerSubscribe& in, CMvEventPeerSubscribe& out);
+    void FilterThisUnsubscribeFork(const CMvEventPeerUnsubscribe& in, CMvEventPeerUnsubscribe& out);
 
     void RespondFailed(CMvEventDbpConnect& event);
     void RespondConnected(CMvEventDbpConnect& event);
@@ -132,7 +136,8 @@ private:
     bool fEnableForkNode;
     bool fEnableSuperNode;
 
-    std::vector<CMvDbpVirtualPeerNetEvent> vCacheEvent;
+    
+    std::map<uint64, CMvDbpVirtualPeerNetEvent> mapPeerEvent;
 
     /*Event router*/
     typedef std::pair<uint256, int> ForkNonceKeyType;

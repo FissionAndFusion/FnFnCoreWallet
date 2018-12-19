@@ -176,12 +176,12 @@ bool CDbpService::HandleEvent(CMvEventDbpConnect& event)
         {
             RespondConnected(event);
 
-            for(const auto& virtualevent : vCacheEvent)
+            for(const auto& virtualevent : mapPeerEvent)
             {
                 std::string session(event.strSessionId);
                 CMvEventDbpAdded eventAdd(session);
                 eventAdd.data.name = "event";
-                eventAdd.data.anyAddedObj = virtualevent;
+                eventAdd.data.anyAddedObj = virtualevent.second;
                 return pDbpServer->DispatchEvent(&eventAdd);
             }
         }
@@ -517,6 +517,47 @@ void CDbpService::HandleGetBlocks(CMvEventDbpMethod& event)
     }
 }
 
+void CDbpService::FilterChildSubscribeFork(const CMvEventPeerSubscribe& in, CMvEventPeerSubscribe& out)
+{
+    auto& vSubForks = in.data;
+    for(const auto& fork : vSubForks)
+    {
+        auto key = ForkNonceKeyType(fork, in.nNonce);
+        if(mapChildNodeForkCount.find(key) == mapChildNodeForkCount.end())
+        {
+            mapChildNodeForkCount[key] = 1;
+            out.data.push_back(fork);
+        }
+        else
+        {
+            mapChildNodeForkCount[key]++;
+        }
+        
+    }
+}
+
+void CDbpService::FilterChildUnsubscribeFork(const CMvEventPeerUnsubscribe& in, CMvEventPeerUnsubscribe& out)
+{
+    auto& vUnSubForks = in.data;
+    for(const auto& fork : vUnSubForks)
+    {
+        auto key = ForkNonceKeyType(fork, in.nNonce);
+        if(mapChildNodeForkCount.find(key) != mapChildNodeForkCount.end())
+        {
+            if(mapChildNodeForkCount[key] == 1)
+            {
+                mapChildNodeForkCount[key] = 0;
+                out.data.push_back(fork);
+                mapChildNodeForkCount.erase(key);
+            }
+            else
+            {
+                mapChildNodeForkCount[key]--;
+            }
+        }
+    }
+}
+
 // event from down to up
 void CDbpService::HandleSendEvent(CMvEventDbpMethod& event)
 {
@@ -582,21 +623,8 @@ void CDbpService::HandleSendEvent(CMvEventDbpMethod& event)
 
         CMvEventPeerSubscribe eventUpSub(eventSub.nNonce, eventSub.hashFork);
 
-        auto& vSubForks = eventSub.data;
-        for(const auto& fork : vSubForks)
-        {
-            auto key = ForkNonceKeyType(fork, eventSub.nNonce);
-            if(mapChildNodeForkCount.find(key) == mapChildNodeForkCount.end())
-            {
-                mapChildNodeForkCount[key] = 1;
-                eventUpSub.data.push_back(fork);
-            }
-            else
-            {
-                mapChildNodeForkCount[key]++;
-            }
-          
-        }
+
+        FilterChildSubscribeFork(eventSub, eventUpSub);
 
         if(!eventUpSub.data.empty())
         {
@@ -628,24 +656,7 @@ void CDbpService::HandleSendEvent(CMvEventDbpMethod& event)
 
         CMvEventPeerUnsubscribe eventUpUnSub(eventUnSub.nNonce, eventUnSub.hashFork);
 
-        auto& vUnSubForks = eventUnSub.data;
-        for(const auto& fork : vUnSubForks)
-        {
-            auto key = ForkNonceKeyType(fork, eventUnSub.nNonce);
-            if(mapChildNodeForkCount.find(key) != mapChildNodeForkCount.end())
-            {
-                if(mapChildNodeForkCount[key] == 1)
-                {
-                    mapChildNodeForkCount[key] = 0;
-                    eventUpUnSub.data.push_back(fork);
-                    mapChildNodeForkCount.erase(key);
-                }
-                else
-                {
-                    mapChildNodeForkCount[key]--;
-                }
-            }
-        }
+        FilterChildUnsubscribeFork(eventUnSub, eventUpUnSub);
 
         if(!eventUpUnSub.data.empty())
         {
@@ -940,9 +951,8 @@ bool CDbpService::HandleEvent(CMvEventPeerActive& event)
         eventVPeer.nNonce = event.nNonce;
         eventVPeer.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_ACTIVE;
         eventVPeer.data = std::vector<uint8>(data.begin(), data.end());
-        vCacheEvent.push_back(eventVPeer);
-
-        DeleteCache(event.nNonce, CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_DEACTIVE);
+       
+        mapPeerEvent[event.nNonce] = eventVPeer;
         PushEvent(eventVPeer);
     }
 
@@ -961,26 +971,52 @@ bool CDbpService::HandleEvent(CMvEventPeerDeactive& event)
         eventVPeer.nNonce = event.nNonce;
         eventVPeer.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_DEACTIVE;
         eventVPeer.data = std::vector<uint8>(data.begin(), data.end());
-        vCacheEvent.push_back(eventVPeer);
-
-        DeleteCache(event.nNonce, CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_ACTIVE);
+        
+        mapPeerEvent.erase(event.nNonce);
         PushEvent(eventVPeer);
     }
     
     return true;
 }
 
-void CDbpService::DeleteCache(uint64 nNonce, int type)
+void CDbpService::FilterThisSubscribeFork(const CMvEventPeerSubscribe& in, CMvEventPeerSubscribe& out)
 {
-    for (auto it = vCacheEvent.begin(); it != vCacheEvent.end(); ) 
+    auto& vSubForks = in.data;
+    for(const auto& fork : vSubForks)
     {
-        if ((*it).type == type && (*it).nNonce == nNonce) 
+        auto key = ForkNonceKeyType(fork, in.nNonce);
+        
+        if(mapThisNodeForkCount.find(key) == mapThisNodeForkCount.end())
         {
-            it = vCacheEvent.erase(it);
-        } 
-        else 
+            mapThisNodeForkCount[key] = 1;
+            out.data.push_back(fork);
+        }
+        else
         {
-            ++it;
+            mapThisNodeForkCount[key]++;
+        }
+    }
+}
+
+void CDbpService::FilterThisUnsubscribeFork(const CMvEventPeerUnsubscribe& in, CMvEventPeerUnsubscribe& out)
+{
+    auto& vUnSubForks = in.data;
+    for(const auto& fork : vUnSubForks)
+    {
+        auto key = ForkNonceKeyType(fork, in.nNonce);
+        
+        if(mapThisNodeForkCount.find(key) != mapThisNodeForkCount.end())
+        {
+            if(mapThisNodeForkCount[key] == 1)
+            {
+                mapThisNodeForkCount[key] = 0;
+                out.data.push_back(fork);
+                mapThisNodeForkCount.erase(key);
+            }
+            else
+            {
+                mapThisNodeForkCount[key]--;
+            }
         }
     }
 }
@@ -1004,22 +1040,7 @@ bool CDbpService::HandleEvent(CMvEventPeerSubscribe& event)
     if(IsForkNodeOfSuperNode())
     {
         CMvEventPeerSubscribe eventUpSub(event.nNonce, event.hashFork);
-        
-        auto& vSubForks = event.data;
-        for(const auto& fork : vSubForks)
-        {
-            auto key = ForkNonceKeyType(fork, event.nNonce);
-            
-            if(mapThisNodeForkCount.find(key) == mapThisNodeForkCount.end())
-            {
-                mapThisNodeForkCount[key] = 1;
-                eventUpSub.data.push_back(fork);
-            }
-            else
-            {
-                mapThisNodeForkCount[key]++;
-            }
-        }
+        FilterThisSubscribeFork(event, eventUpSub);
 
         if(!eventUpSub.data.empty())
         {
@@ -1054,26 +1075,7 @@ bool CDbpService::HandleEvent(CMvEventPeerUnsubscribe& event)
     if(IsForkNodeOfSuperNode())
     {
         CMvEventPeerUnsubscribe eventUpUnSub(event.nNonce, event.hashFork);
-
-        auto& vUnSubForks = event.data;
-        for(const auto& fork : vUnSubForks)
-        {
-            auto key = ForkNonceKeyType(fork, event.nNonce);
-            
-            if(mapThisNodeForkCount.find(key) != mapThisNodeForkCount.end())
-            {
-                if(mapThisNodeForkCount[key] == 1)
-                {
-                    mapThisNodeForkCount[key] = 0;
-                    eventUpUnSub.data.push_back(fork);
-                    mapThisNodeForkCount.erase(key);
-                }
-                else
-                {
-                    mapThisNodeForkCount[key]--;
-                }
-            }
-        }
+        FilterThisUnsubscribeFork(event, eventUpUnSub);
 
         if(!eventUpUnSub.data.empty())
         {
@@ -1289,8 +1291,8 @@ bool CDbpService::HandleEvent(CMvEventDbpVirtualPeerNet& event)
         ss >> eventActive;  
         pVirtualPeerNet->DispatchEvent(&eventActive);
 
-        DeleteCache(event.nNonce, CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_DEACTIVE);
-        vCacheEvent.push_back(event.data);
+        mapPeerEvent[eventActive.nNonce] = event.data;
+        PushEvent(event.data);
     }
 
     if(event.data.type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_DEACTIVE)
@@ -1299,8 +1301,8 @@ bool CDbpService::HandleEvent(CMvEventDbpVirtualPeerNet& event)
         ss >> eventDeactive;   
         pVirtualPeerNet->DispatchEvent(&eventDeactive);
 
-        DeleteCache(event.nNonce, CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_ACTIVE);
-        vCacheEvent.push_back(event.data);
+        mapPeerEvent.erase(eventDeactive.nNonce);
+        PushEvent(event.data);
     }
 
     if(event.data.type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_SUBSCRIBE)

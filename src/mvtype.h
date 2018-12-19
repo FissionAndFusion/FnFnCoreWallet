@@ -127,15 +127,6 @@ public:
     CDelegateRoutine() : fPublishCompleted(false) {}
 };
 
-/* Proof */
-/*
-class CMPSSProof
-{
-public:
-    uint256 
-}
-*/
-
 /* Protocol & Event */
 class CNil
 {
