@@ -975,7 +975,87 @@ bool CBlockBase::CheckConsistency(int nCheckLevel)
     }
 
     //TODO - remove it after done
-    nLevel = 1;
+    nLevel = 0;
+
+    //checking of level 0
+    if(nLevel >= 0)
+    {
+        //check field refblock of table fork must be in rows in table block
+
+        vector<CBlockDBFork> vFork;
+        if(!dbBlock.FetchFork(vFork))
+        {
+            return false;
+        }
+
+        for(const auto& fork : vFork)
+        {
+            CBlockIndex* pBlockIndex = GetIndex(fork.hashRef);
+            if(!pBlockIndex)
+            {
+                return false;
+            }
+        }
+
+        //check table block
+
+        for(const auto& i : mapIndex)
+        {
+            const uint256& hashBlock = i.first;
+            CBlockIndex* pBlockIndex = i.second;
+
+            //be able to read from block files
+            CBlockEx block;
+            if(!tsBlock.ReadDirect(block, pBlockIndex->nFile, pBlockIndex->nOffset))
+            {
+                return false;
+            }
+
+            //consistent between database and block file
+            if(!(hashBlock == *(pBlockIndex->phashBlock)
+                && hashBlock == block.GetHash()
+                && pBlockIndex->pPrev->GetBlockHash() == block.hashPrev
+                && pBlockIndex->nVersion == block.nVersion
+                && pBlockIndex->nType == block.nType
+                && pBlockIndex->nTimeStamp == block.nTimeStamp
+                && ((pBlockIndex->nMintType == 0 && block.IsVacant()) ?
+                      true : (pBlockIndex->txidMint == block.txMint.GetHash() && pBlockIndex->nMintType == block.txMint.nType))
+              ))
+            {
+                return false;
+            }
+        }
+
+        if(0 == nLevel)
+        {
+            return true;
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     //retrieve all forks from db
     vector<CBlockDBFork> vFork;

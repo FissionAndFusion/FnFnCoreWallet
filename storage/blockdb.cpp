@@ -426,12 +426,12 @@ bool CBlockDB::FetchFork(std::vector<CBlockDBFork>& vFork)
         CMvDBRes res(*db, "SELECT * FROM fork ORDER BY id ASC", true);
         while (res.GetRow())
         {
-            CBlockDBFork fk;
-            if (!res.GetField(0, fk.nIndex) || !res.GetField(1, fk.hashFork) || !res.GetField(2, fk.hashRef))
+            CBlockDBFork fork;
+            if (!res.GetField(0, fork.nIndex) || !res.GetField(1, fork.hashFork) || !res.GetField(2, fork.hashRef))
             {
                 return false;
             }
-            vFork.push_back(fk);
+            vFork.push_back(fork);
         }
     }
 
