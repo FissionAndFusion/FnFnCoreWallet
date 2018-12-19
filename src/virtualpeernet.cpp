@@ -50,6 +50,11 @@ void CVirtualPeerNet::SetNodeTypeAsSuperNode(bool fIsRootNode)
     }
 }
 
+void CVirtualPeerNet::EnableSuperNode(bool fIsFork)
+{
+    typeNode= fIsFork ? SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK : SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT;
+}
+
 bool CVirtualPeerNet::WalleveHandleInitialize()
 {
     CMvPeerNet::WalleveHandleInitialize();
