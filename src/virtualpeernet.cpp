@@ -52,6 +52,11 @@ void CVirtualPeerNet::SetNodeTypeAsSuperNode(bool fIsRootNode)
     }
 }
 
+void CVirtualPeerNet::EnableSuperNode(bool fIsFork)
+{
+    typeNode= fIsFork ? SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK : SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT;
+}
+
 bool CVirtualPeerNet::WalleveHandleInitialize()
 {
     CMvPeerNet::WalleveHandleInitialize();
@@ -207,13 +212,7 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerUnsubscribe& eventUnsubsc
 
         if (SENDER_DBPSVC == eventUnsubscribe.sender)
         {
-            network::CMvEventPeerUnsubscribe* pEvent = new network::CMvEventPeerUnsubscribe(eventUnsubscribe);
-            if(!pEvent)
-            {
-                return false;
-            }
-            pNetChannel->PostEvent(pEvent);
-            return true;
+            return CMvPeerNet::HandleEvent(eventUnsubscribe);
         }
     }
 
@@ -267,15 +266,20 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerInv& eventInv)
             }
         }
 
-        if(SENDER_DBPSVC == eventInv.sender)
+        if (SENDER_DBPSVC == eventInv.sender)
         {
-            network::CMvEventPeerInv* pEvent = new network::CMvEventPeerInv(eventInv);
-            if(!pEvent)
+            if (IsMainFork(eventInv.hashFork))
             {
-                return false;
+                network::CMvEventPeerInv* pEvent = new network::CMvEventPeerInv(eventInv);
+                if (!pEvent)
+                {
+                    return false;
+                }
+                pNetChannel->PostEvent(pEvent);
+                return true;
             }
-            pNetChannel->PostEvent(pEvent);
-            return true;
+
+            return CMvPeerNet::HandleEvent(eventInv);
         }
     }
 
@@ -315,13 +319,18 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerGetData& eventGetData)
 
         if(SENDER_DBPSVC == eventGetData.sender)
         {
-            network::CMvEventPeerGetData* pEvent = new network::CMvEventPeerGetData(eventGetData);
-            if(!pEvent)
+            if(IsMainFork(eventGetData.hashFork))
             {
-                return false;
+                network::CMvEventPeerGetData* pEvent = new network::CMvEventPeerGetData(eventGetData);
+                if (!pEvent)
+                {
+                    return false;
+                }
+                pNetChannel->PostEvent(pEvent);
+                return true;
             }
-            pNetChannel->PostEvent(pEvent);
-            return true;
+
+            return CMvPeerNet::HandleEvent(eventGetData);
         }
     }
 
@@ -361,11 +370,15 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerGetBlocks& eventGetBlocks
 
         if(SENDER_DBPSVC == eventGetBlocks.sender)
         {
-            // TODO:switch to send p2p or netchannel
-            network::CMvEventPeerGetBlocks *pEvent = new network::CMvEventPeerGetBlocks(eventGetBlocks);
-            pEvent->sender = "virtualpeernet";
-            pNetChannel->PostEvent(pEvent);
-            return true;
+            if (IsMainFork(eventGetBlocks.hashFork))
+            {
+                network::CMvEventPeerGetBlocks* pEvent = new network::CMvEventPeerGetBlocks(eventGetBlocks);
+                pEvent->sender = "virtualpeernet";
+                pNetChannel->PostEvent(pEvent);
+                return true;
+            }
+
+            return CMvPeerNet::HandleEvent(eventGetBlocks);
         }
     }
 
@@ -405,7 +418,7 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerTx& eventTx)
 
         if(SENDER_DBPSVC == eventTx.sender)
         {
-            return true; // TODO
+            return true; // TODO: send logic
         }
     }
 
@@ -460,7 +473,7 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerBlock& eventBlock)
 
         if(SENDER_DBPSVC == eventBlock.sender)
         {
-            return true; // TODO
+            return true; // TODO: send logic
         }
     }
 

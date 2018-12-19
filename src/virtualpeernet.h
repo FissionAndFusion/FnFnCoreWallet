@@ -22,6 +22,7 @@ public:
     SUPER_NODE_TYPE GetSuperNodeType() {return typeNode;};
     void SetNodeTypeAsFnfn(bool fIsFnfnNode);
     void SetNodeTypeAsSuperNode(bool fIsRootNode);
+    void EnableSuperNode(bool fIsFork = false);
 
 protected:
     bool WalleveHandleInitialize() override;
