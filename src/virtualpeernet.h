@@ -6,6 +6,7 @@
 #define MULTIVERSE_VIRTUAL_PEERNET_H
 
 #include "mvproto.h"
+#include "mvbase.h"
 #include "virtualpeernetevent.h"
 #include "mvpeernet.h"
 
@@ -14,15 +15,6 @@ namespace multiverse
 
 class CVirtualPeerNet: public network::CMvPeerNet, virtual public CVirtualPeerNetEventListener
 {
-public:
-    enum class SUPER_NODE_TYPE : int
-    {
-        SUPER_NODE_TYPE_UNKN,
-        SUPER_NODE_TYPE_FNFN = 0,
-        SUPER_NODE_TYPE_ROOT,
-        SUPER_NODE_TYPE_FORK
-    };
-
 public:
     CVirtualPeerNet();
     virtual ~CVirtualPeerNet();
@@ -58,9 +50,10 @@ protected:
     bool HandleRootPeerGetData(const uint64& nNonce, const uint256& hashFork) override;
     bool HandleRootPeerBlock(const uint64& nNonce, const uint256& hashFork) override;
     bool HandleRootPeerTx(const uint64& nNonce, const uint256& hashFork) override;
+    bool IsMainFork(const uint256& hashFork) override;
 protected:
     walleve::IIOModule* pDbpService;
-    SUPER_NODE_TYPE typeNode;
+    ICoreProtocol* pCoreProtocol;
 private:
     static const std::string SENDER_NETCHN;
     static const std::string SENDER_DBPSVC;

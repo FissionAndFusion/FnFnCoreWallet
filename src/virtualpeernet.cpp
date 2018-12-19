@@ -5,6 +5,8 @@
 #include "virtualpeernet.h"
 #include "walleve/peernet/peer.h"
 
+#include <thread>
+
 using namespace multiverse;
 using namespace walleve;
 
@@ -14,7 +16,8 @@ const std::string CVirtualPeerNet::SENDER_DBPSVC = "dbpservice";
 CVirtualPeerNet::CVirtualPeerNet()
 : CMvPeerNet("virtualpeernet")
 {
-    pDbpService = nullptr;
+    pDbpService = NULL;
+    pCoreProtocol = NULL;
     typeNode = SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN;
 }
 
@@ -59,6 +62,12 @@ bool CVirtualPeerNet::WalleveHandleInitialize()
         return false;
     }
 
+    if(!WalleveGetObject("coreprotocol", pCoreProtocol))
+    {
+        WalleveLog("Failed to request coreprotocol\n");
+        return false;
+    }
+
     return true;
 }
 
@@ -66,7 +75,8 @@ void CVirtualPeerNet::WalleveHandleDeinitialize()
 {
     CMvPeerNet::WalleveHandleDeinitialize();
 
-    pDbpService = nullptr;
+    pDbpService = NULL;
+    pCoreProtocol = NULL;
 }
 
 //must be invoked by dbpservice only to notify netchannel
@@ -123,6 +133,7 @@ bool CVirtualPeerNet::HandleEvent(walleve::CWalleveEventPeerNetClose& eventClose
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT
        || typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN)
     {
+        std::cout << "net close thread id " << std::this_thread::get_id() << " [vpeernet]\n";
         return CPeerNet::HandleEvent(eventClose);
     }
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
@@ -154,13 +165,6 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerSubscribe& eventSubscribe
 
         if(SENDER_DBPSVC == eventSubscribe.sender)
         {
-            // network::CMvEventPeerSubscribe* pEvent = new network::CMvEventPeerSubscribe(eventSubscribe);
-            // if(!pEvent)
-            // {
-            //     return false;
-            // }
-            // pNetChannel->PostEvent(pEvent);
-            // return true;
             return CMvPeerNet::HandleEvent(eventSubscribe);
         }
     }
@@ -308,7 +312,8 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerGetData& eventGetData)
         {
             return CMvPeerNet::HandleEvent(eventGetData);
         }
-        else if(SENDER_DBPSVC == eventGetData.sender)
+
+        if(SENDER_DBPSVC == eventGetData.sender)
         {
             network::CMvEventPeerGetData* pEvent = new network::CMvEventPeerGetData(eventGetData);
             if(!pEvent)
@@ -353,13 +358,12 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerGetBlocks& eventGetBlocks
         {
             return CMvPeerNet::HandleEvent(eventGetBlocks);
         }
-        else if(SENDER_DBPSVC == eventGetBlocks.sender)
+
+        if(SENDER_DBPSVC == eventGetBlocks.sender)
         {
-            network::CMvEventPeerGetBlocks* pEvent = new network::CMvEventPeerGetBlocks(eventGetBlocks);
-            if(!pEvent)
-            {
-                return false;
-            }
+            // TODO:switch to send p2p or netchannel
+            network::CMvEventPeerGetBlocks *pEvent = new network::CMvEventPeerGetBlocks(eventGetBlocks);
+            pEvent->sender = "virtualpeernet";
             pNetChannel->PostEvent(pEvent);
             return true;
         }
@@ -398,15 +402,10 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerTx& eventTx)
         {
             return CMvPeerNet::HandleEvent(eventTx);
         }
-        else if(SENDER_DBPSVC == eventTx.sender)
+
+        if(SENDER_DBPSVC == eventTx.sender)
         {
-            network::CMvEventPeerTx* pEvent = new network::CMvEventPeerTx(eventTx);
-            if(!pEvent)
-            {
-                return false;
-            }
-            pNetChannel->PostEvent(pEvent);
-            return true;
+            return true; // TODO
         }
     }
 
@@ -461,13 +460,7 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerBlock& eventBlock)
 
         if(SENDER_DBPSVC == eventBlock.sender)
         {
-            network::CMvEventPeerBlock* pEvent = new network::CMvEventPeerBlock(eventBlock);
-            if(!pEvent)
-            {
-                return false;
-            }
-            pNetChannel->PostEvent(pEvent);
-            return true;
+            return true; // TODO
         }
     }
 
@@ -632,4 +625,9 @@ bool CVirtualPeerNet::HandleRootPeerTx(const uint64& nNonce, const uint256& hash
         pDbpService->PostEvent(pEvent);
     }
     return true;
+}
+
+bool CVirtualPeerNet::IsMainFork(const uint256& hashFork)
+{
+    return hashFork == pCoreProtocol->GetGenesisBlockHash();
 }

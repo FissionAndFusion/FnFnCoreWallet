@@ -42,6 +42,15 @@ public:
 class CMvPeerNet : public walleve::CPeerNet, virtual public CMvPeerEventListener
 {
 public:
+    enum class SUPER_NODE_TYPE : int
+    {
+        SUPER_NODE_TYPE_UNKN,
+        SUPER_NODE_TYPE_FNFN = 0,
+        SUPER_NODE_TYPE_ROOT,
+        SUPER_NODE_TYPE_FORK
+    };
+
+public:
     CMvPeerNet();
     CMvPeerNet(const std::string& walleveOwnKeyIn);
     ~CMvPeerNet();
@@ -62,6 +71,7 @@ protected:
     virtual bool HandleRootPeerGetData(const uint64& nNonce, const uint256& hashFork);
     virtual bool HandleRootPeerBlock(const uint64& nNonce, const uint256& hashFork);
     virtual bool HandleRootPeerTx(const uint64& nNonce, const uint256& hashFork);
+    virtual bool IsMainFork(const uint256& hashFork);
 protected:
     bool WalleveHandleInitialize() override;
     void WalleveHandleDeinitialize() override;
@@ -98,6 +108,7 @@ protected:
     bool fEnclosed;
     std::string subVersion;    
     std::set<boost::asio::ip::tcp::endpoint> setDNSeed;
+    SUPER_NODE_TYPE typeNode;
 };
 
 } // namespace network

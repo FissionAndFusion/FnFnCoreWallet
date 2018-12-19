@@ -7,6 +7,7 @@
 #include "virtualpeernet.h"
 #include <boost/bind.hpp>
 #include <limits>
+#include <thread>
 
 using namespace std;
 using namespace walleve;
@@ -485,6 +486,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerGetData& eventGetData)
             if("up" == flow)
             {
                 eventTx.nNonce = std::numeric_limits<uint64>::max();
+                eventTx.sender = "netchannel";
             }
 
             if (pTxPool->Get(inv.nHash,eventTx.data))
@@ -499,6 +501,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerGetData& eventGetData)
             if("up" == flow)
             {
                 eventBlock.nNonce = std::numeric_limits<uint64>::max();
+                eventBlock.sender = "netchannel";
             }
 
             if (pWorldLine->GetBlock(inv.nHash,eventBlock.data))
@@ -531,6 +534,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerGetBlocks& eventGetBlocks)
     if("up" == flow)
     {
         eventInv.nNonce = std::numeric_limits<uint64>::max();
+        eventInv.sender = "netchannel";
     }
 
     pPeerNet->DispatchEvent(&eventInv);
@@ -543,7 +547,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerTx& eventTx)
     uint256& hashFork = eventTx.hashFork;
     CTransaction& tx = eventTx.data;
     uint256 txid = tx.GetHash();
-    
+
     try
     {
         boost::recursive_mutex::scoped_lock scoped_lock(mtxSched);
@@ -682,6 +686,7 @@ void CNetChannel::DispatchAwardEvent(uint64 nNonce,CEndpointManager::Bonus bonus
 
 void CNetChannel::DispatchMisbehaveEvent(uint64 nNonce,CEndpointManager::CloseReason reason)
 {
+    std::cout << "net close thread id " << std::this_thread::get_id() << " [netchannel]\n";
     CWalleveEventPeerNetClose eventClose(nNonce);
     eventClose.data = reason;
     pPeerNet->DispatchEvent(&eventClose);
