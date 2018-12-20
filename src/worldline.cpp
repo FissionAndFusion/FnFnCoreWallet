@@ -409,8 +409,8 @@ MvErr CWorldLine::AddNewBlock(const CBlock& block,CWorldLineUpdate& update)
         return MV_ERR_SYS_STORAGE_ERROR;
     }
 
-    WalleveLog("AddNew Block : %s \n",hash.ToString().c_str());
-    WalleveLog("    %s\n",pIndexNew->ToString().c_str());
+    WalleveLog("AddNew Block : %s\n", pIndexNew->ToString().c_str());
+    WalleveDebug("New Block %s tx : %s\n",hash.ToString().c_str(), view.ToString().c_str());
 
     CBlockIndex* pIndexFork = NULL;
     if (cntrBlock.RetrieveFork(pIndexNew->GetOriginHash(),&pIndexFork)
