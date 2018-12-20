@@ -1018,8 +1018,9 @@ bool CBlockBase::CheckConsistency(int nCheckLevel)
                 && pBlockIndex->nVersion == block.nVersion
                 && pBlockIndex->nType == block.nType
                 && pBlockIndex->nTimeStamp == block.nTimeStamp
-                && ((pBlockIndex->nMintType == 0 && block.IsVacant()) ?
-                      true : (pBlockIndex->txidMint == block.txMint.GetHash() && pBlockIndex->nMintType == block.txMint.nType))
+                && ((pBlockIndex->nMintType == 0 ) ?
+                   block.IsVacant()
+                   : (!block.IsVacant() && pBlockIndex->txidMint == block.txMint.GetHash() && pBlockIndex->nMintType == block.txMint.nType))
               ))
             {
                 return false;
