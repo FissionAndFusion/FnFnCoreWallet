@@ -209,19 +209,24 @@ bool CSocketClient::IsSocketOpen()
 CSSLClient::CSSLClient(CIOContainer* pContainerIn, boost::asio::io_service& ioserivce,
                        boost::asio::ssl::context& context,
                        const string& strVerifyHost)
-    : CIOClient(pContainerIn), sslClient(ioserivce, context)
+    : CIOClient(pContainerIn), sslClient(ioserivce, context), sVerifyHost(strVerifyHost)
 {
-    if (!strVerifyHost.empty())
+    /*if (!strVerifyHost.empty())
     {
         //        sslClient.set_verify_callback(boost::bind(&CSSLClient::VerifyCertificate,this,
         //                                                   strVerifyHost,_1,_2));
         sslClient.set_verify_callback(boost::asio::ssl::rfc2818_verification(strVerifyHost));
-    }
+    }*/
 }
 
 CSSLClient::~CSSLClient()
 {
     CloseSocket();
+}
+
+void CSSLClient::SetVerifyPeer(bool fIfVerify)
+{
+    fIfVerifyPeer = fIfVerify;
 }
 
 void CSSLClient::AsyncAccept(tcp::acceptor& acceptor, CallBackConn fnAccepted)
@@ -295,6 +300,13 @@ void CSSLClient::HandleConnected(CallBackConn fnHandshaked,
 {
     if (!err)
     {
+        if (fIfVerifyPeer)
+        {
+            sslClient.set_verify_mode(boost::asio::ssl::verify_peer);
+            sslClient.set_verify_callback(boost::bind(&CSSLClient::VerifyCertificate, this, 
+                                                      sVerifyHost, _1, _2));
+        }
+
         sslClient.async_handshake(type, boost::bind(&CSSLClient::HandleConnCompleted, this, fnHandshaked,
                                                     boost::asio::placeholders::error));
     }

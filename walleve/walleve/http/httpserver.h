@@ -37,10 +37,11 @@ public:
 class CHttpProfile
 {
 public:
-    CHttpProfile() : pIOModule(NULL),pSSLContext(NULL) {}
+    CHttpProfile() : pIOModule(NULL),pSSLContext(NULL),fSslVerifyPeer(false) {}
 public:
     IIOModule* pIOModule;
     boost::asio::ssl::context* pSSLContext;
+    bool fSslVerifyPeer;
     std::map<std::string,std::string> mapAuthrizeUser;
     std::vector<std::string> vAllowMask;
     unsigned int nMaxConnections;

@@ -131,14 +131,26 @@ bool CIOInBound::Invoke(const tcp::endpoint& epListen,size_t nMaxConnection,cons
         BuildWhiteList(vAllowMask);
         epService = epListen;
 
-        if (!PrepareClient(nMaxConnection + 1))
+        if (!PrepareClient(nMaxConnection + 2))
         {
             return false;
         }
 
         acceptorService.open(epListen.protocol());
         acceptorService.set_option(tcp::acceptor::reuse_address(true));
-        acceptorService.bind(epListen);
+
+        //acceptorService.bind(epListen);
+        boost::system::error_code ec;
+        acceptorService.bind(epListen, ec);
+        if (ec)
+        {
+            cerr << "IOInBound tcp bind fail, addr: " 
+                 << epListen.address().to_string() << ":" 
+                 << epListen.port() 
+                 << ", cause: " << ec.message() << endl;
+            return false;
+        }
+
         acceptorService.listen();
 
         CIOClient *pClient = ClientAlloc();
@@ -328,7 +340,7 @@ bool CIOSSLOption::SetupSSLContext(boost::asio::ssl::context& ctx) const
         if (fVerifyPeer)
         {
             ctx.set_verify_mode(boost::asio::ssl::verify_peer 
-                                    | boost::asio::ssl::verify_fail_if_no_peer_cert);
+                                    /*| boost::asio::ssl::verify_fail_if_no_peer_cert*/);
             if (strPathCA.empty())
             {
                 ctx.set_default_verify_paths();
@@ -391,7 +403,7 @@ CIOClient* CIOSSLOutBound::ClientAlloc(const CIOSSLOption& optSSL)
             if (optSSL.fVerifyPeer)
             {
                 ctx.set_verify_mode(boost::asio::ssl::verify_peer 
-                                    | boost::asio::ssl::verify_fail_if_no_peer_cert);
+                                    /*| boost::asio::ssl::verify_fail_if_no_peer_cert*/);
                 if (optSSL.strPathCA.empty())
                 {
                     ctx.set_default_verify_paths();
@@ -410,7 +422,10 @@ CIOClient* CIOSSLOutBound::ClientAlloc(const CIOSSLOption& optSSL)
                 ctx.use_certificate_chain_file(optSSL.strPathCert);
                 ctx.use_private_key_file(optSSL.strPathPK,boost::asio::ssl::context::pem);
             }
-            return new CSSLClient(this,ioService,ctx,optSSL.fVerifyPeer ? optSSL.strPeerName : ""); 
+
+            CSSLClient *pSslClient = new CSSLClient(this,ioService,ctx,optSSL.fVerifyPeer ? optSSL.strPeerName : ""); 
+            pSslClient->SetVerifyPeer(optSSL.fVerifyPeer);
+            return pSslClient;
         }
         catch (exception& e)
         {
