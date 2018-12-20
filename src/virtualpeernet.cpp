@@ -528,7 +528,7 @@ bool CVirtualPeerNet::DestroyPeerForForkNode(const network::CMvEventPeerDeactive
 
 //only available at the level of root node which delivers SUB event to super node cluster
 //by hook member function in terms of template method in design pattern
-bool CVirtualPeerNet::HandleRootPeerSub(const uint64& nNonce, const uint256& hashFork)
+bool CVirtualPeerNet::HandleRootPeerSub(const uint64& nNonce, const uint256& hashFork, vector<uint256>& data)
 {
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
     {
@@ -537,6 +537,7 @@ bool CVirtualPeerNet::HandleRootPeerSub(const uint64& nNonce, const uint256& has
         {
             return false;
         }
+        pEvent->data = data;
         pDbpService->PostEvent(pEvent);
     }
     return true;
@@ -544,7 +545,7 @@ bool CVirtualPeerNet::HandleRootPeerSub(const uint64& nNonce, const uint256& has
 
 //only available at the level of root node which delivers UNSUB event to super node cluster
 //by hook member function in terms of template method in design pattern
-bool CVirtualPeerNet::HandleRootPeerUnSub(const uint64& nNonce, const uint256& hashFork)
+bool CVirtualPeerNet::HandleRootPeerUnSub(const uint64& nNonce, const uint256& hashFork, vector<uint256>& data)
 {
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
     {
@@ -553,6 +554,7 @@ bool CVirtualPeerNet::HandleRootPeerUnSub(const uint64& nNonce, const uint256& h
         {
             return false;
         }
+        pEvent->data = data;
         pDbpService->PostEvent(pEvent);
     }
     return true;
@@ -560,7 +562,7 @@ bool CVirtualPeerNet::HandleRootPeerUnSub(const uint64& nNonce, const uint256& h
 
 //only available at the level of root node which delivers GETBLOCKS event to super node cluster
 //by hook member function in terms of template method in design pattern
-bool CVirtualPeerNet::HandleRootPeerGetBlocks(const uint64& nNonce, const uint256& hashFork)
+bool CVirtualPeerNet::HandleRootPeerGetBlocks(const uint64& nNonce, const uint256& hashFork, CBlockLocator& data)
 {
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
     {
@@ -569,6 +571,7 @@ bool CVirtualPeerNet::HandleRootPeerGetBlocks(const uint64& nNonce, const uint25
         {
             return false;
         }
+        pEvent->data = data;
         pDbpService->PostEvent(pEvent);
     }
     return true;
@@ -576,7 +579,7 @@ bool CVirtualPeerNet::HandleRootPeerGetBlocks(const uint64& nNonce, const uint25
 
 //only available at the level of root node which delivers INV event to super node cluster
 //by hook member function in terms of template method in design pattern
-bool CVirtualPeerNet::HandleRootPeerInv(const uint64& nNonce, const uint256& hashFork)
+bool CVirtualPeerNet::HandleRootPeerInv(const uint64& nNonce, const uint256& hashFork, vector<CInv>& data)
 {
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
     {
@@ -585,6 +588,7 @@ bool CVirtualPeerNet::HandleRootPeerInv(const uint64& nNonce, const uint256& has
         {
             return false;
         }
+        pEvent->data = data;
         pDbpService->PostEvent(pEvent);
     }
     return true;
@@ -592,7 +596,7 @@ bool CVirtualPeerNet::HandleRootPeerInv(const uint64& nNonce, const uint256& has
 
 //only available at the level of root node which delivers GETDATA event to super node cluster
 //by hook member function in terms of template method in design pattern
-bool CVirtualPeerNet::HandleRootPeerGetData(const uint64& nNonce, const uint256& hashFork)
+bool CVirtualPeerNet::HandleRootPeerGetData(const uint64& nNonce, const uint256& hashFork, vector<CInv>& data)
 {
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
     {
@@ -601,6 +605,7 @@ bool CVirtualPeerNet::HandleRootPeerGetData(const uint64& nNonce, const uint256&
         {
             return false;
         }
+        pEvent->data = data;
         pDbpService->PostEvent(pEvent);
     }
     return true;
@@ -608,23 +613,7 @@ bool CVirtualPeerNet::HandleRootPeerGetData(const uint64& nNonce, const uint256&
 
 //only available at the level of root node which delivers BLOCK event to super node cluster
 //by hook member function in terms of template method in design pattern
-bool CVirtualPeerNet::HandleRootPeerBlock(const uint64& nNonce, const uint256& hashFork)
-{
-    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
-    {
-        CMvEventPeerTx* pEvent = new CMvEventPeerTx(nNonce, hashFork);
-        if(!pEvent)
-        {
-            return false;
-        }
-        pDbpService->PostEvent(pEvent);
-    }
-    return true;
-}
-
-//only available at the level of root node which delivers TX event to super node cluster
-//by hook member function in terms of template method in design pattern
-bool CVirtualPeerNet::HandleRootPeerTx(const uint64& nNonce, const uint256& hashFork)
+bool CVirtualPeerNet::HandleRootPeerBlock(const uint64& nNonce, const uint256& hashFork, CBlock& data)
 {
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
     {
@@ -633,6 +622,24 @@ bool CVirtualPeerNet::HandleRootPeerTx(const uint64& nNonce, const uint256& hash
         {
             return false;
         }
+        pEvent->data = data;
+        pDbpService->PostEvent(pEvent);
+    }
+    return true;
+}
+
+//only available at the level of root node which delivers TX event to super node cluster
+//by hook member function in terms of template method in design pattern
+bool CVirtualPeerNet::HandleRootPeerTx(const uint64& nNonce, const uint256& hashFork, CTransaction& data)
+{
+    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
+    {
+        CMvEventPeerTx* pEvent = new CMvEventPeerTx(nNonce, hashFork);
+        if(!pEvent)
+        {
+            return false;
+        }
+        pEvent->data = data;
         pDbpService->PostEvent(pEvent);
     }
     return true;
