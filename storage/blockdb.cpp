@@ -768,6 +768,50 @@ bool CBlockDB::FilterTx(CBlockDBTxFilter& filter)
     return true;
 }
 
+bool CBlockDB::GetTxAmount(uint64& nAmount)
+{
+    nAmount = 0;
+    CMvDBInst db(&dbPool);
+    if (!db.Available())
+    {
+        return false;
+    }
+    {
+        std::string sqlQuery("SELECT COUNT(id) FROM transaction");
+        CMvDBRes res(*db, sqlQuery);
+        return (res.GetRow() && res.GetField(0, nAmount));
+    }
+}
+
+bool CBlockDB::GetAllTx(std::vector<std::pair<uint256, CTxIndex*>>& vTxIndex)
+{
+    vTxIndex.clear();
+
+    CMvDBInst db(&dbPool);
+    if (!db.Available())
+    {
+        return false;
+    }
+    {
+        CMvDBRes res(*db, "SELECT txid, version, type, lockuntil, anchor, sendto, amount, file, offset FROM transaction ORDER BY id DESC", true);
+        while (res.GetRow())
+        {
+            uint256 txid;
+            CTxIndex* pTx = new CTxIndex();
+            if (    !res.GetField(0, txid)            || !res.GetField(1, pTx->nVersion)
+                 || !res.GetField(2, pTx->nType)      || !res.GetField(3, pTx->nLockUntil)
+                 || !res.GetField(4, pTx->hashAnchor) || !res.GetField(5, pTx->sendTo)
+                 || !res.GetField(6, pTx->nAmount)    || !res.GetField(7, pTx->nFile)
+                 || !res.GetField(8, pTx->nOffset))
+            {
+                return false;
+            }
+            vTxIndex.push_back(std::make_pair(txid, pTx));
+        }
+    }
+    return true;
+}
+
 bool CBlockDB::RetrieveDelegate(const uint256& hash,int64 nMinAmount,map<CDestination,int64>& mapDelegate)
 {
     CMvDBInst db(&dbPool);

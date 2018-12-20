@@ -77,6 +77,8 @@ public:
     bool RetrieveTxLocation(const uint256& txid,uint256& hashAnchor,int& nBlockHeight);
     bool RetrieveTxUnspent(const uint256& fork,const CTxOutPoint& out,CTxOutput& unspent);
     bool FilterTx(CBlockDBTxFilter& filter);
+    bool GetTxAmount(uint64& nAmount);
+    bool GetAllTx(std::vector<std::pair<uint256, CTxIndex*>>& vTxIndex);
     bool RetrieveDelegate(const uint256& hash,int64 nMinAmount,std::map<CDestination,int64>& mapDelegate);
     bool RetrieveEnroll(const uint256& hashAnchor,const std::set<uint256>& setBlockRange, 
                         std::map<CDestination,std::pair<uint32,uint32> >& mapEnrollTxPos);

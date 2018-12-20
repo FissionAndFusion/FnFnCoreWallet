@@ -975,7 +975,7 @@ bool CBlockBase::CheckConsistency(int nCheckLevel)
     }
 
     //TODO - remove it after done
-    nLevel = 0;
+    nLevel = 1;
 
     //checking of level 0
     if(nLevel >= 0)
@@ -1033,7 +1033,63 @@ bool CBlockBase::CheckConsistency(int nCheckLevel)
         }
     }
 
+    //checking of level 1
+    if(nLevel >= 1)
+    {
+        uint64 nTx = 0;
+        if(!GetTxAmount(nTx))
+        {
+            return false;
+        }
+        std::vector<std::pair<uint256, CTxIndex*>> vTxIndex;
+        try
+        {
+            vTxIndex.reserve(nTx);
+            if(!dbBlock.GetAllTx(vTxIndex))
+            {
+                throw std::runtime_error("GetAllTx failed");
+            }
 
+            for(const auto& p : vTxIndex)
+            {
+                uint256 txid = p.first;
+                CTxIndex* pTxIndex = p.second;
+                CTransaction tx;
+                if (!tsBlock.Read(tx, pTxIndex->nFile, pTxIndex->nOffset))
+                {
+                    throw std::runtime_error("Reading tx from file failed");
+                }
+
+                //consistent between database and block file
+                if( !(txid == tx.GetHash()
+                     && pTxIndex->nVersion == tx.nVersion
+                     && pTxIndex->nType == tx.nType
+                     && pTxIndex->nLockUntil == tx.nLockUntil
+                     && pTxIndex->hashAnchor == tx.hashAnchor
+                     && pTxIndex->sendTo == tx.sendTo
+                     && pTxIndex->nAmount == tx.nAmount)
+                  )
+                {
+                    throw std::runtime_error("Comparing db with file failed");
+                }
+            }
+
+        }
+        catch(...)
+        {
+            for(auto pTx : vTxIndex)
+            {
+                delete pTx.second;
+            }
+            vTxIndex.clear();
+            return false;
+        }
+
+        if(1 == nLevel)
+        {
+            return true;
+        }
+    }
 
 
 
@@ -1238,6 +1294,11 @@ bool CBlockBase::CheckConsistency(int nCheckLevel)
 
 
     return true;
+}
+
+bool CBlockBase::GetTxAmount(uint64& nAmount)
+{
+    return dbBlock.GetTxAmount(nAmount);
 }
 
 CBlockIndex* CBlockBase::GetIndex(const uint256& hash) const
