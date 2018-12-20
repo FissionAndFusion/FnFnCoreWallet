@@ -167,7 +167,40 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerSubscribe& eventSubscribe
 
         if(SENDER_DBPSVC == eventSubscribe.sender)
         {
-            return CMvPeerNet::HandleEvent(eventSubscribe);
+            vector<uint256> vHashFork = eventSubscribe.data;
+            vector<uint256> vMain;
+            vector<uint256> vFork;
+            for (auto subHash = vHashFork.cbegin(); subHash != vHashFork.cend(); ++subHash)
+            {
+                if (IsMainFork(*subHash))
+                {
+                    vMain.push_back(*subHash);
+                }
+                else
+                {
+                    vFork.push_back(*subHash);
+                }
+            }
+
+            if (!vMain.empty())
+            {
+                network::CMvEventPeerSubscribe* pEvent = new network::CMvEventPeerSubscribe(eventSubscribe.nNonce, eventSubscribe.hashFork);
+                if (!pEvent)
+                {
+                    return false;
+                }
+
+                pEvent->data = vMain;
+                pNetChannel->PostEvent(pEvent);
+            }
+
+            if (!vFork.empty())
+            { network::CMvEventPeerSubscribe event(eventSubscribe.nNonce, eventSubscribe.hashFork);
+                event.data = vFork;
+                return CMvPeerNet::HandleEvent(eventSubscribe);
+            }
+
+            return true;
         }
     }
 
