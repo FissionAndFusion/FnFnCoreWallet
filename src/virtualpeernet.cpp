@@ -323,6 +323,7 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerGetData& eventGetData)
                 {
                     return false;
                 }
+                pEvent->sender = "virtualpeernet";
                 pNetChannel->PostEvent(pEvent);
                 return true;
             }
