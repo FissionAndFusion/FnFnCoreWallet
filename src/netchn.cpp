@@ -165,8 +165,10 @@ void CNetChannel::WalleveHandleDeinitialize()
 
 bool CNetChannel::WalleveHandleInvoke()
 {
-    nTimerPushTx = 0;
-
+    {
+        boost::unique_lock<boost::mutex> lock(mtxPushTx);
+        nTimerPushTx = 0;
+    }
     return network::IMvNetChannel::WalleveHandleInvoke(); 
 }
 

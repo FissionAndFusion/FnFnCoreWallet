@@ -362,7 +362,7 @@ bool CDelegatedChannel::HandleEvent(network::CMvEventPeerDistribute& eventDistri
                 DispatchGetDelegated();
                 return true;
             }
-            if (pDispatcher->AddNewDistribute(hashAnchor,dest,vchData))
+            else if (pDispatcher->AddNewDistribute(hashAnchor,dest,vchData))
             {
                 bool fAssigned = DispatchGetDelegated();
                 if (dataChain.InsertDistributeData(hashAnchor,dest,vchData) && !fAssigned)
@@ -489,7 +489,7 @@ bool CDelegatedChannel::DispatchGetDelegated()
 void CDelegatedChannel::AddPeerKnownDistrubute(uint64 nNonce, const uint256& hashAnchor, uint64 bmDistrubute)
 {
     set<CDestination> setDestination;
-    dataChain.GetDistribute(hashAnchor, bmDistrubute, setDestination);
+    dataChain.AskForDistribute(hashAnchor, bmDistrubute, setDestination);
     BOOST_FOREACH(const CDestination& dest,setDestination)
     {
         schedPeer.AddKnownData(nNonce, CDelegatedDataIdent(hashAnchor, network::CInv::MSG_DISTRIBUTE, dest));
@@ -499,7 +499,7 @@ void CDelegatedChannel::AddPeerKnownDistrubute(uint64 nNonce, const uint256& has
 void CDelegatedChannel::AddPeerKnownPublish(uint64 nNonce, const uint256& hashAnchor, uint64 bmPublish)
 {
     set<CDestination> setDestination;
-    dataChain.GetPublish(hashAnchor, bmPublish, setDestination);
+    dataChain.AskForPublish(hashAnchor, bmPublish, setDestination);
     BOOST_FOREACH(const CDestination& dest, setDestination)
     {
         schedPeer.AddKnownData(nNonce, CDelegatedDataIdent(hashAnchor, network::CInv::MSG_PUBLISH, dest));
