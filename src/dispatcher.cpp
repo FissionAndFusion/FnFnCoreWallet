@@ -133,6 +133,8 @@ void CDispatcher::WalleveHandleHalt()
 
 MvErr CDispatcher::AddNewBlock(const CBlock& block,uint64 nNonce)
 {
+    boost::recursive_mutex::scoped_lock scoped_lock(mtxDispatcher);
+
     MvErr err = MV_OK;
     if (!pWorldLine->Exists(block.hashPrev))
     {
@@ -207,6 +209,8 @@ MvErr CDispatcher::AddNewBlock(const CBlock& block,uint64 nNonce)
 
 MvErr CDispatcher::AddNewTx(const CTransaction& tx,uint64 nNonce)
 {
+    boost::recursive_mutex::scoped_lock scoped_lock(mtxDispatcher);
+
     MvErr err = MV_OK;
     err = pCoreProtocol->ValidateTransaction(tx);
     if (err != MV_OK)
@@ -263,6 +267,8 @@ MvErr CDispatcher::AddNewTx(const CTransaction& tx,uint64 nNonce)
 
 bool CDispatcher::AddNewDistribute(const uint256& hashAnchor,const CDestination& dest,const vector<unsigned char>& vchDistribute)
 {
+    boost::recursive_mutex::scoped_lock scoped_lock(mtxDispatcher);
+
     uint256 hashFork;
     int nHeight;
     if (pWorldLine->GetBlockLocation(hashAnchor,hashFork,nHeight) && hashFork == pCoreProtocol->GetGenesisBlockHash())
@@ -274,6 +280,8 @@ bool CDispatcher::AddNewDistribute(const uint256& hashAnchor,const CDestination&
 
 bool CDispatcher::AddNewPublish(const uint256& hashAnchor,const CDestination& dest,const vector<unsigned char>& vchPublish)
 {
+    boost::recursive_mutex::scoped_lock scoped_lock(mtxDispatcher);
+
     uint256 hashFork;
     int nHeight;
     if (pWorldLine->GetBlockLocation(hashAnchor,hashFork,nHeight) && hashFork == pCoreProtocol->GetGenesisBlockHash())
