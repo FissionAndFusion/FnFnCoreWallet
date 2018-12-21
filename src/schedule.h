@@ -70,10 +70,37 @@ public:
     }
     void Completed(const network::CInv& inv)
     {
+        
+        for(const auto& s :  GetAssigned(inv.nType))
+        {
+            std::cout << "Assigned Inv Hash " << s.ToString() << " completed [schedule]\n"; 
+        }
+        
+        
         GetAssigned(inv.nType).erase(inv.nHash);
     }
     bool IsAssigned()
     {
+        if(!invKnown[0].setAssigned.empty())
+        {
+            std::cout << "assigned[0] is not empty [schedule]\n";
+
+            for(const auto& assigned : invKnown[0].setAssigned)
+            {
+                std::cout << "assigned hash " << assigned.ToString() << " [schedule]\n";
+            }
+        }
+
+        if(!invKnown[1].setAssigned.empty())
+        {
+            std::cout << "assigned[1] is not empty [schedule]\n";
+
+            for(const auto& assigned : invKnown[1].setAssigned)
+            {
+                std::cout << "assigned hash " << assigned.ToString() << " [schedule]\n";
+            }
+        }
+        
         return (!invKnown[0].setAssigned.empty() || !invKnown[1].setAssigned.empty());
     }
 public:
