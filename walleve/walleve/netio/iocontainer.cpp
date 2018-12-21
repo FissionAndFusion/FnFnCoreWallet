@@ -340,7 +340,7 @@ bool CIOSSLOption::SetupSSLContext(boost::asio::ssl::context& ctx) const
         if (fVerifyPeer)
         {
             ctx.set_verify_mode(boost::asio::ssl::verify_peer 
-                                    /*| boost::asio::ssl::verify_fail_if_no_peer_cert*/);
+                                    | boost::asio::ssl::verify_fail_if_no_peer_cert);
             if (strPathCA.empty())
             {
                 ctx.set_default_verify_paths();
@@ -403,7 +403,7 @@ CIOClient* CIOSSLOutBound::ClientAlloc(const CIOSSLOption& optSSL)
             if (optSSL.fVerifyPeer)
             {
                 ctx.set_verify_mode(boost::asio::ssl::verify_peer 
-                                    /*| boost::asio::ssl::verify_fail_if_no_peer_cert*/);
+                                    | boost::asio::ssl::verify_fail_if_no_peer_cert);
                 if (optSSL.strPathCA.empty())
                 {
                     ctx.set_default_verify_paths();

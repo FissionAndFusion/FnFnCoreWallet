@@ -302,7 +302,6 @@ void CSSLClient::HandleConnected(CallBackConn fnHandshaked,
     {
         if (fIfVerifyPeer)
         {
-            sslClient.set_verify_mode(boost::asio::ssl::verify_peer);
             sslClient.set_verify_callback(boost::bind(&CSSLClient::VerifyCertificate, this, 
                                                       sVerifyHost, _1, _2));
         }
@@ -322,7 +321,7 @@ bool CSSLClient::VerifyCertificate(const string& strVerifyHost, bool fPreverifie
     char subject_name[256];
     X509* cert = X509_STORE_CTX_get_current_cert(ctx.native_handle());
     X509_NAME_oneline(X509_get_subject_name(cert), subject_name, 256);
-    std::cout << "Verifying " << fPreverified << " " << subject_name << "\n";
+    std::cout << "Verifying " << (fPreverified ? "success" : "fail") << ": " << subject_name << "\n";
 
     X509_STORE_CTX* cts = ctx.native_handle();
 
