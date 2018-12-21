@@ -624,6 +624,7 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                             pEvent->data = payload;
                             pNetChannel->PostEvent(pEvent);
                         }
+                        return true;
                     }
 
                     return HandleRootPeerInv(pMvPeer->GetNonce(), hashFork, payload);
@@ -657,6 +658,7 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                             CancelTimer(pMvPeer->Responded(inv));
                             pNetChannel->PostEvent(pEvent);
                         }
+                        return true;
                     }
 
                     return HandleRootPeerTx(pMvPeer->GetNonce(), hashFork, payload);
@@ -692,6 +694,7 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                             CancelTimer(pMvPeer->Responded(inv));
                             pNetChannel->PostEvent(pEvent);
                         }
+                        return true;
                     }
 
                     return HandleRootPeerBlock(pMvPeer->GetNonce(), hashFork, payload);
