@@ -385,49 +385,49 @@ bool CMvPeerNet::DestroyPeerForForkNode(const CMvEventPeerDeactive& peerDeactive
     return false;
 }
 
-bool CMvPeerNet::HandleRootPeerSub(const uint64& nNonce, const uint256& hashFork)
+bool CMvPeerNet::HandleRootPeerSub(const uint64& nNonce, const uint256& hashFork, vector<uint256>& data)
 {
     (void)nNonce;
     (void)hashFork;
     return false;
 }
 
-bool CMvPeerNet::HandleRootPeerUnSub(const uint64& nNonce, const uint256& hashFork)
+bool CMvPeerNet::HandleRootPeerUnSub(const uint64& nNonce, const uint256& hashFork, vector<uint256>& data)
 {
     (void)nNonce;
     (void)hashFork;
     return false;
 }
 
-bool CMvPeerNet::HandleRootPeerGetBlocks(const uint64& nNonce, const uint256& hashFork)
+bool CMvPeerNet::HandleRootPeerGetBlocks(const uint64& nNonce, const uint256& hashFork, CBlockLocator& data)
 {
     (void)nNonce;
     (void)hashFork;
     return false;
 }
 
-bool CMvPeerNet::HandleRootPeerInv(const uint64& nNonce, const uint256& hashFork)
+bool CMvPeerNet::HandleRootPeerInv(const uint64& nNonce, const uint256& hashFork, vector<CInv>& data)
 {
     (void)nNonce;
     (void)hashFork;
     return false;
 }
 
-bool CMvPeerNet::HandleRootPeerGetData(const uint64& nNonce, const uint256& hashFork)
+bool CMvPeerNet::HandleRootPeerGetData(const uint64& nNonce, const uint256& hashFork, vector<CInv>& data)
 {
     (void)nNonce;
     (void)hashFork;
     return false;
 }
 
-bool CMvPeerNet::HandleRootPeerBlock(const uint64& nNonce, const uint256& hashFork)
+bool CMvPeerNet::HandleRootPeerBlock(const uint64& nNonce, const uint256& hashFork, CBlock& data)
 {
     (void)nNonce;
     (void)hashFork;
     return false;
 }
 
-bool CMvPeerNet::HandleRootPeerTx(const uint64& nNonce, const uint256& hashFork)
+bool CMvPeerNet::HandleRootPeerTx(const uint64& nNonce, const uint256& hashFork, CTransaction& data)
 {
     (void)nNonce;
     (void)hashFork;
@@ -512,9 +512,12 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                 CMvEventPeerSubscribe* pEvent = new CMvEventPeerSubscribe(pMvPeer->GetNonce(),hashFork);
                 if (pEvent != NULL)
                 {
-                    ssPayload >> pEvent->data;
+                    // ssPayload >> pEvent->data;
+                    vector<uint256> payload;
+                    ssPayload >> payload;
+                    pEvent->data = payload;
                     pNetChannel->PostEvent(pEvent);
-                    return HandleRootPeerSub(pMvPeer->GetNonce(),hashFork);
+                    return HandleRootPeerSub(pMvPeer->GetNonce(),hashFork, payload);
                 }
             }
             break;
@@ -523,9 +526,12 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                 CMvEventPeerUnsubscribe* pEvent = new CMvEventPeerUnsubscribe(pMvPeer->GetNonce(),hashFork);
                 if (pEvent != NULL)
                 {
-                    ssPayload >> pEvent->data;
+                    // ssPayload >> pEvent->data;
+                    vector<uint256> payload;
+                    ssPayload >> payload;
+                    pEvent->data = payload;
                     pNetChannel->PostEvent(pEvent);
-                    return HandleRootPeerUnSub(pMvPeer->GetNonce(),hashFork);
+                    return HandleRootPeerUnSub(pMvPeer->GetNonce(),hashFork, payload);
                 }
             }
             break;
@@ -534,18 +540,21 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                 // SuperNode
                 if(SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT == typeNode)
                 {
+                    CBlockLocator payload;
+                    ssPayload >> payload;
+
                     if(IsMainFork(hashFork))
                     {
                         CMvEventPeerGetBlocks* pEvent = new CMvEventPeerGetBlocks(pMvPeer->GetNonce(), hashFork);
                         if (pEvent != NULL)
                         {
-                            ssPayload >> pEvent->data;
+                            pEvent->data = payload;
                             pNetChannel->PostEvent(pEvent);
                             return true;
                         }
                     }
                     
-                    return HandleRootPeerGetBlocks(pMvPeer->GetNonce(), hashFork);
+                    return HandleRootPeerGetBlocks(pMvPeer->GetNonce(), hashFork, payload);
                 }
 
                 //FnFn
@@ -563,10 +572,13 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                 // SuperNode
                 if(SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT == typeNode)
                 {
+                    vector<CInv> payload;
+                    ssPayload >> payload;
+
                     if(IsMainFork(hashFork))
                     {
                         vector<CInv> vInv;
-                        ssPayload >> vInv;
+                        vInv = payload;
                         pMvPeer->AskFor(hashFork, vInv);
 
                         uint256 hashFork;
@@ -585,7 +597,7 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                         return true;
                     }
 
-                    return HandleRootPeerGetData(pMvPeer->GetNonce(), hashFork);
+                    return HandleRootPeerGetData(pMvPeer->GetNonce(), hashFork, payload);
                 }
 
                 //FnFn
@@ -601,17 +613,21 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                 // SuperNode
                 if(SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT == typeNode)
                 {
+                    vector<CInv> payload;
+                    ssPayload >> payload;
+
                     if(IsMainFork(hashFork))
                     {
                         CMvEventPeerInv* pEvent = new CMvEventPeerInv(pMvPeer->GetNonce(), hashFork);
                         if (pEvent != NULL)
                         {
-                            ssPayload >> pEvent->data;
+                            pEvent->data = payload;
                             pNetChannel->PostEvent(pEvent);
                         }
+                        return true;
                     }
 
-                    return HandleRootPeerInv(pMvPeer->GetNonce(), hashFork);
+                    return HandleRootPeerInv(pMvPeer->GetNonce(), hashFork, payload);
                 }
 
                 //FnFn
@@ -629,19 +645,23 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                 //SuperNode
                 if(SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT == typeNode)
                 {
+                    CTransaction payload;
+                    ssPayload >> payload;
+
                     if(IsMainFork(hashFork))
                     {
                         CMvEventPeerTx* pEvent = new CMvEventPeerTx(pMvPeer->GetNonce(), hashFork);
                         if (pEvent != NULL)
                         {
-                            ssPayload >> pEvent->data;
+                            pEvent->data = payload;
                             CInv inv(CInv::MSG_TX, pEvent->data.GetHash());
                             CancelTimer(pMvPeer->Responded(inv));
                             pNetChannel->PostEvent(pEvent);
                         }
+                        return true;
                     }
 
-                    return HandleRootPeerTx(pMvPeer->GetNonce(), hashFork);
+                    return HandleRootPeerTx(pMvPeer->GetNonce(), hashFork, payload);
                 }
 
                 //FnFn
@@ -661,19 +681,23 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                 //SuperNode
                 if(SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT == typeNode)
                 {
+                    CBlock payload;
+                    ssPayload >> payload;
+
                     if(IsMainFork(hashFork))
                     {
                         CMvEventPeerBlock* pEvent = new CMvEventPeerBlock(pMvPeer->GetNonce(), hashFork);
                         if (pEvent != NULL)
                         {
-                            ssPayload >> pEvent->data;
+                            pEvent->data = payload;
                             CInv inv(CInv::MSG_BLOCK, pEvent->data.GetHash());
                             CancelTimer(pMvPeer->Responded(inv));
                             pNetChannel->PostEvent(pEvent);
                         }
+                        return true;
                     }
 
-                    return HandleRootPeerBlock(pMvPeer->GetNonce(), hashFork);
+                    return HandleRootPeerBlock(pMvPeer->GetNonce(), hashFork, payload);
                 }
 
                 //FnFn
