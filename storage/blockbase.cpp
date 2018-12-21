@@ -1050,12 +1050,15 @@ bool CBlockBase::CheckConsistency(int nCheckLevel)
                 throw std::runtime_error("GetAllTx failed");
             }
 
+            uint256 txid;
+            CTxIndex* pTxIndex = nullptr;
+            CTransaction tx;
             for(const auto& p : vTxIndex)
             {
-                uint256 txid = p.first;
-                CTxIndex* pTxIndex = p.second;
-                CTransaction tx;
-                if (!tsBlock.Read(tx, pTxIndex->nFile, pTxIndex->nOffset))
+                txid = p.first;
+                pTxIndex = p.second;
+                tx.SetNull();
+                if (!tsBlock.ReadDirect(tx, pTxIndex->nFile, pTxIndex->nOffset))
                 {
                     throw std::runtime_error("Reading tx from file failed");
                 }
