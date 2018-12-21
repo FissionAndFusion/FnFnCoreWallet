@@ -745,6 +745,13 @@ void CDbpService::HandleSendEvent(CMvEventDbpMethod& event)
 
             if(IsRootNodeOfSuperNode())
             {
+                std::cout << "#############[rootnode] "  << "GetData Begin [dbpservice]\n";
+                for(const auto& inv : eventGetData.data)
+                {
+                    std::cout << "Get Data Inv Hash " << inv.nHash.ToString() << " \n";
+                }
+                
+                std::cout << "#############[rootnode] "  << "GetData End [dbpservice]\n";
                 eventGetData.flow = "up";
                 eventGetData.sender = "dbpservice";
                 pVirtualPeerNet->DispatchEvent(&eventGetData);
