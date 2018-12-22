@@ -349,7 +349,12 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerGetData& eventGetData)
 
         if(SENDER_DBPSVC == eventGetData.sender)
         {
-            if(IsMainFork(eventGetData.hashFork))
+            if (std::numeric_limits<uint64>::max() != eventGetData.nNonce)
+            {
+                return CMvPeerNet::HandleEvent(eventGetData);
+            }
+
+            if (std::numeric_limits<uint64>::max() == eventGetData.nNonce)
             {
                 network::CMvEventPeerGetData* pEvent = new network::CMvEventPeerGetData(eventGetData);
                 if (!pEvent)
@@ -360,8 +365,6 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerGetData& eventGetData)
                 pNetChannel->PostEvent(pEvent);
                 return true;
             }
-
-            return CMvPeerNet::HandleEvent(eventGetData);
         }
     }
 
