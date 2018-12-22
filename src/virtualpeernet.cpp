@@ -14,7 +14,7 @@ const std::string CVirtualPeerNet::SENDER_DBPSVC = "dbpservice";
 CVirtualPeerNet::CVirtualPeerNet()
 : CMvPeerNet("virtualpeernet")
 {
-    pDbpService = nullptr;
+    pDbpService = NULL;
     typeNode = SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN;
 }
 
@@ -66,7 +66,7 @@ void CVirtualPeerNet::WalleveHandleDeinitialize()
 {
     CMvPeerNet::WalleveHandleDeinitialize();
 
-    pDbpService = nullptr;
+    pDbpService = NULL;
 }
 
 //must be invoked by dbpservice only to notify netchannel
