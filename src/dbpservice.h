@@ -140,7 +140,7 @@ private:
     std::map<uint64, CMvDbpVirtualPeerNetEvent> mapPeerEvent;
 
     /*Event router*/
-    typedef std::pair<uint256, int> ForkNonceKeyType;
+    typedef std::pair<uint256, uint64> ForkNonceKeyType;
     std::map<ForkNonceKeyType, int> mapChildNodeForkCount;
     std::map<ForkNonceKeyType, int> mapThisNodeForkCount;
     std::map<ForkNonceKeyType, std::set<uint256>> mapThisNodeGetData; 
