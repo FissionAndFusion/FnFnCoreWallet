@@ -73,6 +73,7 @@ protected:
     virtual bool HandleRootPeerBlock(const uint64& nNonce, const uint256& hashFork, CBlock& data);
     virtual bool HandleRootPeerTx(const uint64& nNonce, const uint256& hashFork, CTransaction& data);
     virtual bool IsMainFork(const uint256& hashFork);
+    bool IsThisNodeData(const uint256& hashFork, uint64 nNonce, const uint256& dataHash);
 protected:
     bool WalleveHandleInitialize() override;
     void WalleveHandleDeinitialize() override;
@@ -110,6 +111,8 @@ protected:
     std::string subVersion;    
     std::set<boost::asio::ip::tcp::endpoint> setDNSeed;
     SUPER_NODE_TYPE typeNode;
+    typedef std::pair<uint256, uint64> ForkNonceKeyType;
+    std::map<ForkNonceKeyType, std::set<uint256>> mapThisNodeGetData; 
 };
 
 } // namespace network
