@@ -638,13 +638,6 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
 
                     if(IsMainFork(hashFork))
                     {
-                        CMvEventPeerInv* pEvent = new CMvEventPeerInv(pMvPeer->GetNonce(), hashFork);
-                        if (pEvent != NULL)
-                        {
-                            pEvent->data = payload;
-                            pNetChannel->PostEvent(pEvent);
-                        }
-                        
                         vector<CInv> vBlockInv;
                         for(auto inv = payload.cbegin(); inv != payload.cend(); ++inv)
                         {
@@ -653,6 +646,17 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                                 vBlockInv.push_back(*inv);
                             }
                         }
+                        
+                        
+                        CMvEventPeerInv* pEvent = new CMvEventPeerInv(pMvPeer->GetNonce(), hashFork);
+                        if (pEvent != NULL)
+                        {
+                            //pEvent->data = payload;
+                            pEvent->data = vBlockInv;
+                            pNetChannel->PostEvent(pEvent);
+                        }
+                        
+                       
 
                         if(!vBlockInv.empty())
                         {
