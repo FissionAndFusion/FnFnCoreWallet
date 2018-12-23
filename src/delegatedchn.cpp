@@ -12,6 +12,22 @@ using boost::asio::ip::tcp;
 
 #define BULLETIN_TIMEOUT          (500)
 
+
+//////////////////////////////
+// CDelegatedDataFilter
+
+class CDelegatedDataFilter : public walleve::CDataFilter<CDelegatedDataIdent>
+{
+public:
+    CDelegatedDataFilter(const std::set<uint256>& setAnchorIn) : setAnchor(setAnchorIn) {}
+    bool Ignored(const CDelegatedDataIdent& ident) const
+    {
+        return (setAnchor.count(ident.hashAnchor) == 0);
+    }
+protected:
+    std::set<uint256> setAnchor;
+};
+
 //////////////////////////////
 // CDelegatedChannelChain
 
@@ -335,7 +351,7 @@ bool CDelegatedChannel::HandleEvent(network::CMvEventPeerGetDelegated& eventGetD
   
     if (eventGetDelegated.data.nInvType == network::CInv::MSG_DISTRIBUTE)
     {
-        boost::shared_lock<boost::shared_mutex> wlock(rwPeer);
+        boost::shared_lock<boost::shared_mutex> rlock(rwPeer);
 
         network::CMvEventPeerDistribute eventDistribute(nNonce,hashAnchor);
         eventDistribute.data.destDelegate = dest;
@@ -346,7 +362,7 @@ bool CDelegatedChannel::HandleEvent(network::CMvEventPeerGetDelegated& eventGetD
     } 
     else if (eventGetDelegated.data.nInvType == network::CInv::MSG_PUBLISH)
     {
-        boost::shared_lock<boost::shared_mutex> wlock(rwPeer);
+        boost::shared_lock<boost::shared_mutex> rlock(rwPeer);
 
         network::CMvEventPeerPublish eventPublish(nNonce,hashAnchor);
         eventPublish.data.destDelegate = dest;
@@ -444,6 +460,7 @@ void CDelegatedChannel::PrimaryUpdate(int nStartHeight,
     {
         BroadcastBulletin(true);
     }
+    DispatchGetDelegated();
 }
 
 void CDelegatedChannel::BroadcastBulletin(bool fForced)
@@ -469,7 +486,10 @@ void CDelegatedChannel::BroadcastBulletin(bool fForced)
 bool CDelegatedChannel::DispatchGetDelegated()
 {
     vector<pair<uint64,CDelegatedDataIdent> > vAssigned;
-    schedPeer.Schedule(vAssigned);
+    {
+        list<uint256>& listHash = dataChain.GetHashList();
+        schedPeer.Schedule(vAssigned,CDelegatedDataFilter(set<uint256>(listHash.begin(),listHash.end())));
+    }
 
     for (size_t i = 0;i < vAssigned.size();i++)
     {
@@ -518,6 +538,7 @@ void CDelegatedChannel::PushBulletinTimerFunc(uint32 nTimerId)
     {
         if (fBulletin)
         {
+            boost::unique_lock<boost::shared_mutex> wlock(rwPeer);
             PushBulletin();
             fBulletin = false;
             nTimerBulletin = WalleveSetTimer(BULLETIN_TIMEOUT,boost::bind(&CDelegatedChannel::PushBulletinTimerFunc,this,_1));
