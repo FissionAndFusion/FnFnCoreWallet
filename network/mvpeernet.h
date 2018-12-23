@@ -88,6 +88,8 @@ protected:
     bool HandleEvent(CMvEventPeerGetDelegated& eventGetDelegated) override;
     bool HandleEvent(CMvEventPeerDistribute& eventDistribute) override;
     bool HandleEvent(CMvEventPeerPublish& eventPublish) override;
+
+    bool HandleEventForkNode(CMvEventPeerGetData& eventGetData);
     walleve::CPeer* CreatePeer(walleve::CIOClient *pClient,uint64 nNonce,bool fInBound) override;
     void DestroyPeer(walleve::CPeer* pPeer) override;
     walleve::CPeerInfo* GetPeerInfo(walleve::CPeer* pPeer,walleve::CPeerInfo* pInfo) override;

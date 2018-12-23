@@ -362,7 +362,7 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerGetData& eventGetData)
         {
             if(std::numeric_limits<uint64>::max() != eventGetData.nNonce)
             {
-                return CMvPeerNet::HandleEvent(eventGetData);
+                return CMvPeerNet::HandleEventForkNode(eventGetData);
             }
 
             if (std::numeric_limits<uint64>::max() == eventGetData.nNonce)
