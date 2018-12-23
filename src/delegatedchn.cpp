@@ -478,7 +478,7 @@ bool CDelegatedChannel::DispatchGetDelegated()
         network::CMvEventPeerGetDelegated eventGetDelegated(nNonce, ident.hashAnchor);
         eventGetDelegated.data.nInvType = ident.nInvType;
         eventGetDelegated.data.destDelegate = ident.destDelegated;
-       // pPeerNet->DispatchEvent(&eventGetDelegated);
+        pPeerNet->DispatchEvent(&eventGetDelegated);
     }
 
     return (!vAssigned.empty());
