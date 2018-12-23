@@ -3,9 +3,7 @@ FROM ubuntu:16.04
 
 ENV DEBIAN_FRONTEND noninteractive
 ENV HOME=/home/fnfn
-ENV DB_HOST=localhost
-ENV DB_PORT=3306
-ENV DB_NAME=multiverse
+ENV DB_PASSWORD=multiverse
 
 RUN apt-get update \
   && apt-get -yq install mysql-server \
