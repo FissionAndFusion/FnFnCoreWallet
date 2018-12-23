@@ -23,6 +23,6 @@ RUN mkdir -p ${HOME}/.multiverse/ && chmod 755 /sbin/entrypoint.sh
 COPY build/src/multiverse* /usr/bin/
 COPY multiverse.conf ${Home}/.multiverse/
 VOLUME ["${HOME}", "/etc/mysql/conf.d", "/var/lib/mysql" ]
-EXPOSE 3306 6811 6812 6815
+EXPOSE 3306 33060 6811 6812 6815
 ENTRYPOINT ["/sbin/entrypoint.sh"]
 CMD ["mysqld_safe"]
