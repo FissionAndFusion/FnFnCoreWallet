@@ -8,7 +8,7 @@
 #include <boost/any.hpp>
 
 #define HANDSHAKE_TIMEOUT               (5)
-#define RESPONSE_TX_TIMEOUT             (15)
+#define RESPONSE_TX_TIMEOUT             (150)
 #define RESPONSE_BLOCK_TIMEOUT          (120)
 #define RESPONSE_DISTRIBUTE_TIMEOUT     (5)
 #define RESPONSE_PUBLISH_TIMEOUT        (10)
