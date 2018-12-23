@@ -356,7 +356,8 @@ public:
         oss << "CBlockIndex : hash=" << GetBlockHash().ToString() 
                          << " prev=" << (pPrev ? pPrev->GetBlockHash().ToString() : "NULL")
                          << " height=" << nHeight
-                         << " type=" << GetBlockType();
+                         << " type=" << GetBlockType()
+                         << " time=" << nTimeStamp;
         return oss.str();
     }
 };

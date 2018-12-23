@@ -799,7 +799,7 @@ void CMvDbpClient::RemoveClientSocket(CMvDbpClientSocket* pClientSocket)
 
 CMvDbpClientSocket* CMvDbpClient::PickOneSessionSocket() const
 {
-    CMvDbpClientSocket* pClientSocket = nullptr;
+    CMvDbpClientSocket* pClientSocket = NULL;
     if(mapSessionProfile.size() > 0)
     {
         pClientSocket = mapSessionProfile.begin()->second.pClientSocket;

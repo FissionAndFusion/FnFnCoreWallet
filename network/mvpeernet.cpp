@@ -385,54 +385,80 @@ bool CMvPeerNet::DestroyPeerForForkNode(const CMvEventPeerDeactive& peerDeactive
     return false;
 }
 
-bool CMvPeerNet::HandleRootPeerSub(const uint64& nNonce, const uint256& hashFork)
+bool CMvPeerNet::HandleRootPeerSub(const uint64& nNonce, const uint256& hashFork, vector<uint256>& data)
 {
     (void)nNonce;
     (void)hashFork;
     return false;
 }
 
-bool CMvPeerNet::HandleRootPeerUnSub(const uint64& nNonce, const uint256& hashFork)
+bool CMvPeerNet::HandleRootPeerUnSub(const uint64& nNonce, const uint256& hashFork, vector<uint256>& data)
 {
     (void)nNonce;
     (void)hashFork;
     return false;
 }
 
-bool CMvPeerNet::HandleRootPeerGetBlocks(const uint64& nNonce, const uint256& hashFork)
+bool CMvPeerNet::HandleRootPeerGetBlocks(const uint64& nNonce, const uint256& hashFork, CBlockLocator& data)
 {
     (void)nNonce;
     (void)hashFork;
     return false;
 }
 
-bool CMvPeerNet::HandleRootPeerInv(const uint64& nNonce, const uint256& hashFork)
+bool CMvPeerNet::HandleRootPeerInv(const uint64& nNonce, const uint256& hashFork, vector<CInv>& data)
 {
     (void)nNonce;
     (void)hashFork;
     return false;
 }
 
-bool CMvPeerNet::HandleRootPeerGetData(const uint64& nNonce, const uint256& hashFork)
+bool CMvPeerNet::HandleRootPeerGetData(const uint64& nNonce, const uint256& hashFork, vector<CInv>& data)
 {
     (void)nNonce;
     (void)hashFork;
     return false;
 }
 
-bool CMvPeerNet::HandleRootPeerBlock(const uint64& nNonce, const uint256& hashFork)
+bool CMvPeerNet::HandleRootPeerBlock(const uint64& nNonce, const uint256& hashFork, CBlock& data)
 {
     (void)nNonce;
     (void)hashFork;
     return false;
 }
 
-bool CMvPeerNet::HandleRootPeerTx(const uint64& nNonce, const uint256& hashFork)
+bool CMvPeerNet::HandleRootPeerTx(const uint64& nNonce, const uint256& hashFork, CTransaction& data)
 {
     (void)nNonce;
     (void)hashFork;
     return false;
 }
+
+bool CMvPeerNet::IsMainFork(const uint256& hashFork)
+{
+    (void)hashFork;
+    return false;
+}
+
+bool CMvPeerNet::IsThisNodeData(const uint256& hashFork, uint64 nNonce, const uint256& dataHash)
+{
+    auto pairKey = std::make_pair(hashFork, nNonce);
+    if(mapThisNodeGetData.find(pairKey) == mapThisNodeGetData.end())
+    {
+        return false;
+    }
+
+    auto& setInvHash = mapThisNodeGetData[pairKey];
+    if(setInvHash.find(dataHash) == setInvHash.end())
+    {
+        return false;
+    }
+
+    // setInvHash.erase(dataHash);
+
+    return true;
+}
+
 
 bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CWalleveBufStream& ssPayload)
 {
@@ -506,9 +532,12 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                 CMvEventPeerSubscribe* pEvent = new CMvEventPeerSubscribe(pMvPeer->GetNonce(),hashFork);
                 if (pEvent != NULL)
                 {
-                    ssPayload >> pEvent->data;
+                    // ssPayload >> pEvent->data;
+                    vector<uint256> payload;
+                    ssPayload >> payload;
+                    pEvent->data = payload;
                     pNetChannel->PostEvent(pEvent);
-                    return HandleRootPeerSub(pMvPeer->GetNonce(),hashFork);
+                    return HandleRootPeerSub(pMvPeer->GetNonce(),hashFork, payload);
                 }
             }
             break;
@@ -517,45 +546,162 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                 CMvEventPeerUnsubscribe* pEvent = new CMvEventPeerUnsubscribe(pMvPeer->GetNonce(),hashFork);
                 if (pEvent != NULL)
                 {
-                    ssPayload >> pEvent->data;
+                    // ssPayload >> pEvent->data;
+                    vector<uint256> payload;
+                    ssPayload >> payload;
+                    pEvent->data = payload;
                     pNetChannel->PostEvent(pEvent);
-                    return HandleRootPeerUnSub(pMvPeer->GetNonce(),hashFork);
+                    return HandleRootPeerUnSub(pMvPeer->GetNonce(),hashFork, payload);
                 }
             }
             break;
         case MVPROTO_CMD_GETBLOCKS:
             {
+                // SuperNode
+                if(SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT == typeNode)
+                {
+                    CBlockLocator payload;
+                    ssPayload >> payload;
+
+                    if(IsMainFork(hashFork))
+                    {
+                        CMvEventPeerGetBlocks* pEvent = new CMvEventPeerGetBlocks(pMvPeer->GetNonce(), hashFork);
+                        if (pEvent != NULL)
+                        {
+                            pEvent->data = payload;
+                            pNetChannel->PostEvent(pEvent);
+                            return true;
+                        }
+                    }
+                    
+                    return HandleRootPeerGetBlocks(pMvPeer->GetNonce(), hashFork, payload);
+                }
+
+                //FnFn
                 CMvEventPeerGetBlocks* pEvent = new CMvEventPeerGetBlocks(pMvPeer->GetNonce(),hashFork);
                 if (pEvent != NULL)
                 {
                     ssPayload >> pEvent->data;
                     pNetChannel->PostEvent(pEvent);
-                    return HandleRootPeerGetBlocks(pMvPeer->GetNonce(),hashFork);
+                    return true;
                 } 
             }
             break;
         case MVPROTO_CMD_GETDATA:
             {
+                // SuperNode
+                if(SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT == typeNode)
+                {
+                    vector<CInv> payload;
+                    ssPayload >> payload;
+
+                    if(IsMainFork(hashFork))
+                    {
+                        vector<CInv> vInv;
+                        vInv = payload;
+                        pMvPeer->AskFor(hashFork, vInv);
+
+                        uint256 hashFork;
+                        CInv inv;
+                        CMvPeer* pMvPeer = static_cast<CMvPeer*>(pPeer);
+                        if (pMvPeer->FetchAskFor(hashFork, inv))
+                        {
+                            CMvEventPeerGetData* pEventGetData = new CMvEventPeerGetData(pMvPeer->GetNonce(), hashFork);
+                            if (pEventGetData != NULL)
+                            {
+                                pEventGetData->data.push_back(inv);
+                                pNetChannel->PostEvent(pEventGetData);
+                            }
+                        }
+
+                        return true;
+                    }
+
+                    return HandleRootPeerGetData(pMvPeer->GetNonce(), hashFork, payload);
+                }
+
+                //FnFn
                 vector<CInv> vInv;
                 ssPayload >> vInv;
                 pMvPeer->AskFor(hashFork,vInv);
                 ProcessAskFor(pPeer);
-                return HandleRootPeerGetData(pMvPeer->GetNonce(),hashFork);
+                return true;
             }
             break;
         case MVPROTO_CMD_INV:
             {
+                // SuperNode
+                if(SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT == typeNode)
+                {
+                    vector<CInv> payload;
+                    ssPayload >> payload;
+
+                    if(IsMainFork(hashFork))
+                    {
+                        CMvEventPeerInv* pEvent = new CMvEventPeerInv(pMvPeer->GetNonce(), hashFork);
+                        if (pEvent != NULL)
+                        {
+                            pEvent->data = payload;
+                            pNetChannel->PostEvent(pEvent);
+                        }
+                        
+                        vector<CInv> vBlockInv;
+                        for(auto inv = payload.cbegin(); inv != payload.cend(); ++inv)
+                        {
+                            if(CInv::MSG_BLOCK == (*inv).nType)
+                            {
+                                vBlockInv.push_back(*inv);
+                            }
+                        }
+
+                        if(!vBlockInv.empty())
+                        {
+                            return HandleRootPeerInv(pMvPeer->GetNonce(), hashFork, vBlockInv);
+                        }
+                        else
+                        {
+                            return true;
+                        }
+                    }
+
+                    return HandleRootPeerInv(pMvPeer->GetNonce(), hashFork, payload);
+                }
+
+                //FnFn
                 CMvEventPeerInv* pEvent = new CMvEventPeerInv(pMvPeer->GetNonce(),hashFork);
                 if (pEvent != NULL)
                 {
                     ssPayload >> pEvent->data;
                     pNetChannel->PostEvent(pEvent);
-                    return HandleRootPeerInv(pMvPeer->GetNonce(),hashFork);
+                    return true;
                 } 
             }
             break;
         case MVPROTO_CMD_TX:
             {
+                //SuperNode
+                if(SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT == typeNode)
+                {
+                    CTransaction payload;
+                    ssPayload >> payload;
+
+                    if(IsMainFork(hashFork) && IsThisNodeData(hashFork, pMvPeer->GetNonce(), payload.GetHash()))
+                    {
+                        CMvEventPeerTx* pEvent = new CMvEventPeerTx(pMvPeer->GetNonce(), hashFork);
+                        if (pEvent != NULL)
+                        {
+                            pEvent->data = payload;
+                            CInv inv(CInv::MSG_TX, pEvent->data.GetHash());
+                            CancelTimer(pMvPeer->Responded(inv));
+                            pNetChannel->PostEvent(pEvent);
+                        }
+                        return true;
+                    }
+
+                    return HandleRootPeerTx(pMvPeer->GetNonce(), hashFork, payload);
+                }
+
+                //FnFn
                 CMvEventPeerTx* pEvent = new CMvEventPeerTx(pMvPeer->GetNonce(),hashFork);
                 if (pEvent != NULL)
                 {
@@ -563,12 +709,34 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                     CInv inv(CInv::MSG_TX,pEvent->data.GetHash());
                     CancelTimer(pMvPeer->Responded(inv));
                     pNetChannel->PostEvent(pEvent);
-                    return HandleRootPeerTx(pMvPeer->GetNonce(),hashFork);
+                    return true;
                 }
             }
             break;
         case MVPROTO_CMD_BLOCK:
             {
+                //SuperNode
+                if(SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT == typeNode)
+                {
+                    CBlock payload;
+                    ssPayload >> payload;
+
+                    if(IsMainFork(hashFork) && IsThisNodeData(hashFork, pMvPeer->GetNonce(), payload.GetHash()))
+                    {
+                        CMvEventPeerBlock* pEvent = new CMvEventPeerBlock(pMvPeer->GetNonce(), hashFork);
+                        if (pEvent != NULL)
+                        {
+                            pEvent->data = payload;
+                            CInv inv(CInv::MSG_BLOCK, pEvent->data.GetHash());
+                            CancelTimer(pMvPeer->Responded(inv));
+                            pNetChannel->PostEvent(pEvent);
+                        }
+                    }
+
+                    return HandleRootPeerBlock(pMvPeer->GetNonce(), hashFork, payload);
+                }
+
+                //FnFn
                 CMvEventPeerBlock* pEvent = new CMvEventPeerBlock(pMvPeer->GetNonce(),hashFork);
                 if (pEvent != NULL)
                 {           
@@ -576,7 +744,7 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                     CInv inv(CInv::MSG_BLOCK,pEvent->data.GetHash());
                     CancelTimer(pMvPeer->Responded(inv));
                     pNetChannel->PostEvent(pEvent);
-                    return HandleRootPeerBlock(pMvPeer->GetNonce(),hashFork);
+                    return true;
                 }
             }
             break;

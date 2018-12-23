@@ -1528,6 +1528,8 @@ bool CDbpService::IsThisNodeBlock(CMvEventPeerBlock& eventBlock)
         return false;
     }
 
+    setInvHash.erase(blockHash);
+
     return true;
 }
 
@@ -1553,6 +1555,8 @@ bool CDbpService::IsThisNodeTx(CMvEventPeerTx& eventTx)
         std::cout << "txHash cannot find \n";
         return false;
     }
+
+    setInvHash.erase(txHash);
 
     return true;
 }
