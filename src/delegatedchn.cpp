@@ -478,7 +478,7 @@ bool CDelegatedChannel::DispatchGetDelegated()
         network::CMvEventPeerGetDelegated eventGetDelegated(nNonce, ident.hashAnchor);
         eventGetDelegated.data.nInvType = ident.nInvType;
         eventGetDelegated.data.destDelegate = ident.destDelegated;
-        pPeerNet->DispatchEvent(&eventGetDelegated);
+       // pPeerNet->DispatchEvent(&eventGetDelegated);
     }
 
     return (!vAssigned.empty());
@@ -506,8 +506,8 @@ void CDelegatedChannel::AddPeerKnownPublish(uint64 nNonce, const uint256& hashAn
 
 void CDelegatedChannel::DispatchMisbehaveEvent(uint64 nNonce, CEndpointManager::CloseReason reason)
 {
-    CWalleveEventPeerNetClose eventClose(nNonce);
-    eventClose.data = reason;
-    pPeerNet->DispatchEvent(&eventClose);
+   // CWalleveEventPeerNetClose eventClose(nNonce);
+   // eventClose.data = reason;
+   // pPeerNet->DispatchEvent(&eventClose);
 }
 
