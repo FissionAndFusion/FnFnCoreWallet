@@ -144,10 +144,9 @@ bool CIOInBound::Invoke(const tcp::endpoint& epListen,size_t nMaxConnection,cons
         acceptorService.bind(epListen, ec);
         if (ec)
         {
-            cerr << "IOInBound tcp bind fail, addr: " 
-                 << epListen.address().to_string() << ":" 
-                 << epListen.port() 
-                 << ", cause: " << ec.message() << endl;
+            StdError(__PRETTY_FUNCTION__, (string("IOInBound tcp bind fail, addr: ") + 
+                 epListen.address().to_string() + string(":") + to_string(epListen.port()) + 
+                 string(", cause: ") + ec.message()).c_str());
             return false;
         }
 
