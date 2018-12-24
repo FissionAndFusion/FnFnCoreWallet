@@ -423,6 +423,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerInv& eventInv)
 {
     uint64 nNonce = eventInv.nNonce;
     uint256& hashFork = eventInv.hashFork;
+
     try 
     {
         if (eventInv.data.size() > network::CInv::MAX_INV_COUNT)
@@ -476,6 +477,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerGetData& eventGetData)
             if("up" == flow)
             {
                 eventTx.nNonce = std::numeric_limits<uint64>::max();
+                eventTx.sender = "netchannel";
             }
 
             if (pTxPool->Get(inv.nHash,eventTx.data))
@@ -490,6 +492,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerGetData& eventGetData)
             if("up" == flow)
             {
                 eventBlock.nNonce = std::numeric_limits<uint64>::max();
+                eventBlock.sender = "netchannel";
             }
 
             if (pWorldLine->GetBlock(inv.nHash,eventBlock.data))
@@ -521,6 +524,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerGetBlocks& eventGetBlocks)
     if("up" == flow)
     {
         eventInv.nNonce = std::numeric_limits<uint64>::max();
+        eventInv.sender = "netchannel";
     }
 
     pPeerNet->DispatchEvent(&eventInv);
@@ -533,7 +537,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerTx& eventTx)
     uint256& hashFork = eventTx.hashFork;
     CTransaction& tx = eventTx.data;
     uint256 txid = tx.GetHash();
-    
+
     try
     {
         boost::recursive_mutex::scoped_lock scoped_lock(mtxSched);
