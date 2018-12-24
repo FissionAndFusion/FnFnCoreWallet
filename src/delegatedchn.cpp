@@ -10,6 +10,8 @@ using namespace walleve;
 using namespace multiverse;
 using boost::asio::ip::tcp;
 
+#define BULLETIN_TIMEOUT          (500)
+
 //////////////////////////////
 // CDelegatedChannelChain
 
@@ -250,11 +252,26 @@ void CDelegatedChannel::WalleveHandleDeinitialize()
 
 bool CDelegatedChannel::WalleveHandleInvoke()
 {
+    {
+        boost::unique_lock<boost::mutex> lock(mtxBulletin);
+        nTimerBulletin = 0;
+        fBulletin = false; 
+    }
     return network::IMvDelegatedChannel::WalleveHandleInvoke(); 
 }
 
 void CDelegatedChannel::WalleveHandleHalt()
 {
+    {
+        boost::unique_lock<boost::mutex> lock(mtxBulletin);
+        if (nTimerBulletin != 0)
+        {
+            WalleveCancelTimer(nTimerBulletin);
+            nTimerBulletin = 0;
+        }
+        fBulletin = false;
+    }
+
     network::IMvDelegatedChannel::WalleveHandleHalt();
     schedPeer.Clear();
     dataChain.Clear();
@@ -362,12 +379,12 @@ bool CDelegatedChannel::HandleEvent(network::CMvEventPeerDistribute& eventDistri
                 DispatchGetDelegated();
                 return true;
             }
-            if (pDispatcher->AddNewDistribute(hashAnchor,dest,vchData))
+            else if (pDispatcher->AddNewDistribute(hashAnchor,dest,vchData))
             {
                 bool fAssigned = DispatchGetDelegated();
-                if (dataChain.InsertDistributeData(hashAnchor,dest,vchData) && !fAssigned)
+                if (dataChain.InsertDistributeData(hashAnchor,dest,vchData))
                 {
-                    BroadcastBulletin();
+                    BroadcastBulletin(!fAssigned);
                 }
                 return true;
             }
@@ -401,9 +418,9 @@ bool CDelegatedChannel::HandleEvent(network::CMvEventPeerPublish& eventPublish)
             else if (pDispatcher->AddNewPublish(hashAnchor,dest,vchData))
             {
                 bool fAssigned = DispatchGetDelegated();
-                if (dataChain.InsertPublishData(hashAnchor,dest,vchData) && !fAssigned)
+                if (dataChain.InsertPublishData(hashAnchor,dest,vchData))
                 {
-                    BroadcastBulletin();
+                    BroadcastBulletin(!fAssigned);
                 }
                 return true;
             }
@@ -425,44 +442,27 @@ void CDelegatedChannel::PrimaryUpdate(int nStartHeight,
 
     if (!mapDistributeData.empty() || !mapPublishData.empty())
     {
-        BroadcastBulletin();
+        BroadcastBulletin(true);
     }
 }
 
-void CDelegatedChannel::BroadcastBulletin()
+void CDelegatedChannel::BroadcastBulletin(bool fForced)
 {
-    vector<uint64> vPeer;
-    schedPeer.GetPeerNonce(vPeer);
-
-    list<uint256>& listHash = dataChain.GetHashList();
-
-    if (!listHash.empty() && !vPeer.empty())
+    boost::unique_lock<boost::mutex> lock(mtxBulletin);
+    if (fForced && nTimerBulletin != 0)
     {
-        const uint256& hashAnchor = listHash.front();
-
-        network::CMvEventPeerBulletin eventBulletin(0ULL,hashAnchor);
-        eventBulletin.data.bmDistribute = dataChain.GetDistributeBitmap(hashAnchor);
-        eventBulletin.data.bmPublish = dataChain.GetPublishBitmap(hashAnchor);
-        for (list<uint256>::iterator it = ++listHash.begin(); it != listHash.end(); ++it)
-        {
-            const uint256& hash = (*it);
-            uint64 bitmap = dataChain.GetDistributeBitmap(hash);
-            if (bitmap != 0)
-            {
-                eventBulletin.data.AddBitmap(hash,bitmap);
-            }
-        }
-
-        BOOST_FOREACH(const uint64& nNonce, vPeer)
-        {
-            std::shared_ptr<CDelegatedChannelPeer> spPeer = GetPeer(nNonce);
-            if (spPeer != NULL && spPeer->HaveUnknown(hashAnchor,eventBulletin.data))
-            {
-                spPeer->Update(hashAnchor,eventBulletin.data);
-                eventBulletin.nNonce = nNonce;
-                pPeerNet->DispatchEvent(&eventBulletin);
-            }
-        }
+        WalleveCancelTimer(nTimerBulletin);
+        nTimerBulletin = 0;
+        fBulletin = false;
+    }
+    if (nTimerBulletin == 0)
+    {
+        PushBulletin();
+        nTimerBulletin = WalleveSetTimer(BULLETIN_TIMEOUT,boost::bind(&CDelegatedChannel::PushBulletinTimerFunc,this,_1));
+    }
+    else
+    {
+        fBulletin = true;
     }
 }
 
@@ -487,7 +487,7 @@ bool CDelegatedChannel::DispatchGetDelegated()
 void CDelegatedChannel::AddPeerKnownDistrubute(uint64 nNonce, const uint256& hashAnchor, uint64 bmDistrubute)
 {
     set<CDestination> setDestination;
-    dataChain.GetDistribute(hashAnchor, bmDistrubute, setDestination);
+    dataChain.AskForDistribute(hashAnchor, bmDistrubute, setDestination);
     BOOST_FOREACH(const CDestination& dest,setDestination)
     {
         schedPeer.AddKnownData(nNonce, CDelegatedDataIdent(hashAnchor, network::CInv::MSG_DISTRIBUTE, dest));
@@ -497,7 +497,7 @@ void CDelegatedChannel::AddPeerKnownDistrubute(uint64 nNonce, const uint256& has
 void CDelegatedChannel::AddPeerKnownPublish(uint64 nNonce, const uint256& hashAnchor, uint64 bmPublish)
 {
     set<CDestination> setDestination;
-    dataChain.GetPublish(hashAnchor, bmPublish, setDestination);
+    dataChain.AskForPublish(hashAnchor, bmPublish, setDestination);
     BOOST_FOREACH(const CDestination& dest, setDestination)
     {
         schedPeer.AddKnownData(nNonce, CDelegatedDataIdent(hashAnchor, network::CInv::MSG_PUBLISH, dest));
@@ -511,3 +511,56 @@ void CDelegatedChannel::DispatchMisbehaveEvent(uint64 nNonce, CEndpointManager::
     pPeerNet->DispatchEvent(&eventClose);
 }
 
+void CDelegatedChannel::PushBulletinTimerFunc(uint32 nTimerId)
+{
+    boost::unique_lock<boost::mutex> lock(mtxBulletin);
+    if (nTimerBulletin == nTimerId)
+    {
+        if (fBulletin)
+        {
+            PushBulletin();
+            fBulletin = false;
+            nTimerBulletin = WalleveSetTimer(BULLETIN_TIMEOUT,boost::bind(&CDelegatedChannel::PushBulletinTimerFunc,this,_1));
+        }
+        else
+        {
+            nTimerBulletin = 0;
+        }
+    }
+}
+
+void CDelegatedChannel::PushBulletin()
+{
+    vector<uint64> vPeer;
+    schedPeer.GetPeerNonce(vPeer);
+
+    list<uint256>& listHash = dataChain.GetHashList();
+
+    if (!listHash.empty() && !vPeer.empty())
+    {
+        const uint256& hashAnchor = listHash.front();
+
+        network::CMvEventPeerBulletin eventBulletin(0ULL,hashAnchor);
+        eventBulletin.data.bmDistribute = dataChain.GetDistributeBitmap(hashAnchor);
+        eventBulletin.data.bmPublish = dataChain.GetPublishBitmap(hashAnchor);
+        for (list<uint256>::iterator it = ++listHash.begin(); it != listHash.end(); ++it)
+        {
+            const uint256& hash = (*it);
+            uint64 bitmap = dataChain.GetDistributeBitmap(hash);
+            if (bitmap != 0)
+            {
+                eventBulletin.data.AddBitmap(hash,bitmap);
+            }
+        }
+        BOOST_FOREACH(const uint64& nNonce, vPeer)
+        {
+            std::shared_ptr<CDelegatedChannelPeer> spPeer = GetPeer(nNonce);
+            if (spPeer != NULL && spPeer->HaveUnknown(hashAnchor,eventBulletin.data))
+            {
+                spPeer->Update(hashAnchor,eventBulletin.data);
+                eventBulletin.nNonce = nNonce;
+                pPeerNet->DispatchEvent(&eventBulletin);
+            }
+        }
+    }
+}
