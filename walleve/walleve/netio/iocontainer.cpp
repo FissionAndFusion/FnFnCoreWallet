@@ -424,7 +424,10 @@ CIOClient* CIOSSLOutBound::ClientAlloc(const CIOSSLOption& optSSL)
             }
 
             CSSLClient *pSslClient = new CSSLClient(this,ioService,ctx,optSSL.fVerifyPeer ? optSSL.strPeerName : ""); 
-            pSslClient->SetVerifyPeer(optSSL.fVerifyPeer);
+            if (pSslClient)
+            {
+                pSslClient->SetVerifyPeer(optSSL.fVerifyPeer);
+            }
             return pSslClient;
         }
         catch (exception& e)

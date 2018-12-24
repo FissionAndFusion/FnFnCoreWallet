@@ -321,7 +321,7 @@ bool CSSLClient::VerifyCertificate(const string& strVerifyHost, bool fPreverifie
     char subject_name[256];
     X509* cert = X509_STORE_CTX_get_current_cert(ctx.native_handle());
     X509_NAME_oneline(X509_get_subject_name(cert), subject_name, 256);
-    std::cout << "Verifying " << (fPreverified ? "success" : "fail") << ": " << subject_name << "\n";
+    //std::cout << "Verifying " << (fPreverified ? "success" : "fail") << ": " << subject_name << "\n";
 
     X509_STORE_CTX* cts = ctx.native_handle();
 
@@ -334,30 +334,115 @@ bool CSSLClient::VerifyCertificate(const string& strVerifyHost, bool fPreverifie
 #else
     cts_error = cts->error;
 #endif
-    std::cout << "CTX ERROR : " << cts_error << std::endl;
+    //std::cout << "CTX ERROR : " << cts_error << std::endl;
 
     int32_t depth = X509_STORE_CTX_get_error_depth(cts);
-    std::cout << "CTX DEPTH : " << depth << std::endl;
+    //std::cout << "CTX DEPTH : " << depth << std::endl;
 
-    switch (cts_error)
+    string sLog;
+
+    if (fPreverified)
     {
-    case X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT:
-        cout << "X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT\n";
-        break;
-    case X509_V_ERR_CERT_NOT_YET_VALID:
-    case X509_V_ERR_ERROR_IN_CERT_NOT_BEFORE_FIELD:
-        cout << "Certificate not yet valid!!\n";
-        break;
-    case X509_V_ERR_CERT_HAS_EXPIRED:
-    case X509_V_ERR_ERROR_IN_CERT_NOT_AFTER_FIELD:
-        cout << "Certificate expired..\n";
-        break;
-    case X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN:
-        cout << "Self signed certificate in chain!!!\n";
-        //preverified = true;
-        break;
-    default:
-        break;
+        sLog = "SSL verify success, subject: ";
+        sLog += subject_name;
+
+        walleve::StdDebug("SSLVERIFY", sLog.c_str());
     }
+    else
+    {
+        string sErrorDesc;
+
+        switch (cts_error)
+        {
+        case X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT:
+            sErrorDesc = "CA certificate issued for this certificate could not be found.";
+            break;
+        case X509_V_ERR_UNABLE_TO_GET_CRL:
+            sErrorDesc = "The CRL associated with the certificate could not be found.";
+            break;
+        case X509_V_ERR_UNABLE_TO_DECRYPT_CERT_SIGNATURE:
+            sErrorDesc = "Unable to unscramble the signature in the certificate.";
+            break;
+        case X509_V_ERR_UNABLE_TO_DECRYPT_CRL_SIGNATURE:
+            sErrorDesc = "Cannot unscramble CRLs signature.";
+            break;
+            break;
+        case X509_V_ERR_UNABLE_TO_DECODE_ISSUER_PUBLIC_KEY:
+            sErrorDesc = "The public key information in the certificate could not be obtained.";
+            break;
+        case X509_V_ERR_CERT_SIGNATURE_FAILURE:
+            sErrorDesc = "Certificate signature is invalid.";
+            break;
+        case X509_V_ERR_CRL_SIGNATURE_FAILURE:
+            sErrorDesc = "Certificate-related CRL signatures are invalid.";
+            break;
+        case X509_V_ERR_CERT_NOT_YET_VALID:
+            sErrorDesc = "Certificates are not valid yet.";
+            break;
+        case X509_V_ERR_CRL_NOT_YET_VALID:
+            sErrorDesc = "Certificate-related CRLs do not yet have a valid start time.";
+            break;
+        case X509_V_ERR_CERT_HAS_EXPIRED:
+            sErrorDesc = "Certificate has expired.";
+            break;
+        case X509_V_ERR_CRL_HAS_EXPIRED:
+            sErrorDesc = "Certificate-related CRL expiration.";
+            break;
+        case X509_V_ERR_ERROR_IN_CERT_NOT_BEFORE_FIELD:
+            sErrorDesc = "The notBeforefield of the certificate is not in the correct format, that is, the time is in the illegal format.";
+            break;
+        case X509_V_ERR_ERROR_IN_CERT_NOT_AFTER_FIELD:
+            sErrorDesc = "The notAfter field of the certificate is not in the correct format, that is, the time is in the illegal format.";
+            break;
+        case X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT:
+            sErrorDesc = "The first certificate to be validated is the word signature certificate, which is not in the trust CA certificate list.";
+            break;
+        case X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN:
+            sErrorDesc = "Certificate chains can be established, but their roots cannot be found locally.";
+            break;
+        case X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY:
+            sErrorDesc = "One certificate issued by CA could not be found.";
+            break;
+        case X509_V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE:
+            sErrorDesc = "The certificate chain has only one item, but it is not a signed certificate.";
+            break;
+        case X509_V_ERR_CERT_CHAIN_TOO_LONG:
+            sErrorDesc = "Certificate chain is too long.";
+            break;
+        case X509_V_ERR_CERT_REVOKED:
+            sErrorDesc = "The certificate has been declared withdrawn by CA.";
+            break;
+        case X509_V_ERR_INVALID_CA:
+            sErrorDesc = "Certificate of a CA is invalid.";
+            break;
+        case X509_V_ERR_CERT_UNTRUSTED:
+            sErrorDesc = "Root CA certificates are not trusted if they are used for the purpose of requests.";
+            break;
+        case X509_V_ERR_CERT_REJECTED:
+            sErrorDesc = "CA certificates can not be used for requests at all.";
+            break;
+        case X509_V_ERR_SUBJECT_ISSUER_MISMATCH:
+            sErrorDesc = "The certificate issuer name is different from its CA owner name.";
+            break;
+        case X509_V_ERR_AKID_SKID_MISMATCH:
+            sErrorDesc = "The key flag of a certificate is different from the key flag designated for it by the CA issued by the certificate.";
+            break;
+        case X509_V_ERR_AKID_ISSUER_SERIAL_MISMATCH:
+            sErrorDesc = "Certificate serial number is different from the serial number designated by CA.";
+            break;
+        case X509_V_ERR_KEYUSAGE_NO_CERTSIGN:
+            sErrorDesc = "Certificate purposes of a CA do not include signing other certificates.";
+            break;
+        default:
+            sErrorDesc = "Other error.";
+            break;
+        }
+
+        sLog = string("SSL verify fail, subject: ") + subject_name + string(", cts_error: [") + to_string(cts_error) + 
+            string("]<") + to_string(depth) + string(">  ") + string(sErrorDesc);
+
+        walleve::StdDebug("SSLVERIFY", sLog.c_str());
+    }
+
     return fPreverified;
 }
