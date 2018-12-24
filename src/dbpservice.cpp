@@ -686,7 +686,8 @@ void CDbpService::HandleSendEvent(CMvEventDbpMethod& event)
         CMvEventPeerGetBlocks eventGetBlocks(0,uint256());
         ss >> eventGetBlocks;
 
-        if(IsMyFork(eventGetBlocks.hashFork))
+        if(IsMyFork(eventGetBlocks.hashFork) && 
+            eventGetBlocks.nNonce == std::numeric_limits<uint64>::max())
         {
             eventGetBlocks.flow = "up";
             eventGetBlocks.sender = "dbpservice";
@@ -716,7 +717,8 @@ void CDbpService::HandleSendEvent(CMvEventDbpMethod& event)
         CMvEventPeerGetData eventGetData(0,uint256());
         ss >> eventGetData;
 
-        if(IsMyFork(eventGetData.hashFork))
+        if(IsMyFork(eventGetData.hashFork)
+            && eventGetData.nNonce == std::numeric_limits<uint64>::max())
         {
             eventGetData.flow = "up";
             eventGetData.sender = "dbpservice";
