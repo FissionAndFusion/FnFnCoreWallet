@@ -183,6 +183,7 @@ bool CForkManager::AddNewForkContext(const CForkContext& ctxt,vector<uint256>& v
         if (ctxt.hashFork == pCoreProtocol->GetGenesisBlockHash())
         {
             vActive.push_back(ctxt.hashFork);
+            setForkIndex.insert(CForkLink(ctxt));
             return true;
         }
 
@@ -220,6 +221,15 @@ bool CForkManager::AddNewForkContext(const CForkContext& ctxt,vector<uint256>& v
     setForkIndex.insert(CForkLink(ctxt));
 
     return true;
+}
+
+void CForkManager::GetForkList(std::vector<uint256>& vFork)
+{
+    vFork.reserve(setForkIndex.size());
+    for (auto it = setForkIndex.begin(); it != setForkIndex.end(); it++)
+    {
+        vFork.push_back(it->hashFork);
+    }
 }
 
 bool CForkManager::IsAllowedFork(const uint256& hashFork,const uint256& hashParent) const

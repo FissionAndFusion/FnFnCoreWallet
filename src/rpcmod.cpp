@@ -491,8 +491,9 @@ CRPCResultPtr CRPCMod::RPCGetForkCount(CRPCParamPtr param)
 
 CRPCResultPtr CRPCMod::RPCListFork(CRPCParamPtr param)
 {
+    auto spParam = CastParamPtr<CListForkParam>(param);
     vector<pair<uint256,CProfile> > vFork;
-    pService->ListFork(vFork);
+    pService->ListFork(vFork, spParam->fAll);
 
     auto spResult = MakeCListForkResultPtr();
     for (size_t i = 0; i < vFork.size(); i++)
