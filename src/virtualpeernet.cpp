@@ -343,16 +343,32 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerGetData& eventGetData)
         return CMvPeerNet::HandleEvent(eventGetData);
     }
 
-    if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
+    if (typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)
     {
-        if(SENDER_NETCHN == eventGetData.sender)
+        if (SENDER_NETCHN == eventGetData.sender)
         {
+            uint64 nNonce = eventGetData.nNonce;
+            const uint256& hashFork = eventGetData.hashFork;
+
+            std::set<uint256> setInvHash;
+            for (const auto& inv : eventGetData.data)
+            {
+                setInvHash.insert(inv.nHash);
+            }
+
+            mapThisNodeGetData[std::make_pair(hashFork, nNonce)] = setInvHash;
+
             return CMvPeerNet::HandleEvent(eventGetData);
         }
 
         if(SENDER_DBPSVC == eventGetData.sender)
         {
-            if(IsMainFork(eventGetData.hashFork))
+            if(std::numeric_limits<uint64>::max() != eventGetData.nNonce)
+            {
+                return CMvPeerNet::HandleEvent(eventGetData);
+            }
+
+            if (std::numeric_limits<uint64>::max() == eventGetData.nNonce)
             {
                 network::CMvEventPeerGetData* pEvent = new network::CMvEventPeerGetData(eventGetData);
                 if (!pEvent)
@@ -364,7 +380,7 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerGetData& eventGetData)
                 return true;
             }
 
-            return CMvPeerNet::HandleEvent(eventGetData);
+            return true;
         }
     }
 

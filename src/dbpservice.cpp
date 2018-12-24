@@ -697,27 +697,29 @@ void CDbpService::HandleSendEvent(CMvEventDbpMethod& event)
         CMvEventPeerGetBlocks eventGetBlocks(0,uint256());
         ss >> eventGetBlocks;
 
-        if(IsMyFork(eventGetBlocks.hashFork))
+
+        if(IsRootNodeOfSuperNode())
         {
             eventGetBlocks.flow = "up";
             eventGetBlocks.sender = "dbpservice";
             pVirtualPeerNet->DispatchEvent(&eventGetBlocks);
         }
-        else
+
+        if(IsForkNodeOfSuperNode())
         {
-            if(IsForkNodeOfSuperNode())
+            if(IsMyFork(eventGetBlocks.hashFork)
+                && eventGetBlocks.nNonce == std::numeric_limits<uint64>::max())
+            {
+                eventGetBlocks.flow = "up";
+                eventGetBlocks.sender = "dbpservice";
+                pVirtualPeerNet->DispatchEvent(&eventGetBlocks);
+            }
+            else
             {
                 CMvDbpVirtualPeerNetEvent vpeerEvent;
                 vpeerEvent.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_GETBLOCKS;
                 vpeerEvent.data = std::vector<uint8>(eventData.begin(), eventData.end());
                 SendEventToParentNode(vpeerEvent);
-            }
-
-            if(IsRootNodeOfSuperNode())
-            {   
-                eventGetBlocks.flow = "up";
-                eventGetBlocks.sender = "dbpservice";
-                pVirtualPeerNet->DispatchEvent(&eventGetBlocks);
             }
         }
     }
@@ -727,15 +729,30 @@ void CDbpService::HandleSendEvent(CMvEventDbpMethod& event)
         CMvEventPeerGetData eventGetData(0,uint256());
         ss >> eventGetData;
 
-        if(IsMyFork(eventGetData.hashFork))
+        if(IsRootNodeOfSuperNode())
         {
+            std::cout << "#############[rootnode] "  << "GetData Begin [dbpservice]\n";
+            for(const auto& inv : eventGetData.data)
+            {
+                std::cout << "Get Data Inv Hash " << inv.nHash.ToString() << " \n";
+            }
+            std::cout << "#############[rootnode] "  << "GetData End [dbpservice]\n";
+               
             eventGetData.flow = "up";
             eventGetData.sender = "dbpservice";
             pVirtualPeerNet->DispatchEvent(&eventGetData);
         }
-        else
+
+        if(IsForkNodeOfSuperNode())
         {
-            if(IsForkNodeOfSuperNode())
+            if(IsMyFork(eventGetData.hashFork)
+                && eventGetData.nNonce == std::numeric_limits<uint64>::max())
+            {
+                eventGetData.flow = "up";
+                eventGetData.sender = "dbpservice";
+                pVirtualPeerNet->DispatchEvent(&eventGetData);
+            }
+            else
             {
                 CMvDbpVirtualPeerNetEvent vpeerEvent;
                 vpeerEvent.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_GETDATA;
@@ -743,19 +760,6 @@ void CDbpService::HandleSendEvent(CMvEventDbpMethod& event)
                 SendEventToParentNode(vpeerEvent);
             }
 
-            if(IsRootNodeOfSuperNode())
-            {
-                std::cout << "#############[rootnode] "  << "GetData Begin [dbpservice]\n";
-                for(const auto& inv : eventGetData.data)
-                {
-                    std::cout << "Get Data Inv Hash " << inv.nHash.ToString() << " \n";
-                }
-                
-                std::cout << "#############[rootnode] "  << "GetData End [dbpservice]\n";
-                eventGetData.flow = "up";
-                eventGetData.sender = "dbpservice";
-                pVirtualPeerNet->DispatchEvent(&eventGetData);
-            }
         }
     }
 
