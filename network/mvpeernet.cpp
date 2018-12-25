@@ -467,7 +467,7 @@ bool CMvPeerNet::IsThisNodeData(const uint256& hashFork, uint64 nNonce, const ui
         return false;
     }
 
-    // setInvHash.erase(dataHash);
+    setInvHash.erase(dataHash);
 
     return true;
 }
