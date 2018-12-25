@@ -9,7 +9,7 @@ using namespace std;
 
 namespace walleve
 {
-
+bool STD_DEBUG = false;
 
 } // namespace walleve
 

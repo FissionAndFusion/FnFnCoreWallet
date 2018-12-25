@@ -58,6 +58,14 @@ public:
 class CNetChannel : public network::IMvNetChannel
 {
 public:
+    enum class NODE_TYPE : int
+    {
+        NODE_TYPE_UNKN,
+        NODE_TYPE_FNFN = 0,
+        NODE_TYPE_ROOT,
+        NODE_TYPE_FORK
+    };
+
     CNetChannel();
     ~CNetChannel();
     int GetPrimaryChainHeight() override;
@@ -66,7 +74,9 @@ public:
     void BroadcastTxInv(const uint256& hashFork) override;
     void SubscribeFork(const uint256& hashFork) override;
     void UnsubscribeFork(const uint256& hashFork) override;
-    bool IsCotains(const uint256& hashFork) override;
+    bool IsContains(const uint256& hashFork) override;
+    void EnableSuperNode(bool fIsFork = false) override;
+
 protected:
     enum {MAX_GETBLOCKS_COUNT = 128};
     enum {MAX_PEER_SCHED_COUNT = 8};
@@ -101,6 +111,8 @@ protected:
                     std::set<uint64>& setSchedPeer,std::set<uint64>& setMisbehavePeer);
     void SetPeerSyncStatus(uint64 nNonce,const uint256& hashFork,bool fSync);
 
+    void PushTxTimerFunc(uint32 nTimerId);
+    void PushTxInv(const uint256& hashFork);
 protected:
     network::CMvPeerNet* pPeerNet;
     ICoreProtocol* pCoreProtocol;
@@ -108,12 +120,16 @@ protected:
     ITxPool* pTxPool;
     IDispatcher* pDispatcher;
     IService *pService;
-    IIOModule *pDbpService;
     mutable boost::shared_mutex rwNetPeer; 
     mutable boost::recursive_mutex mtxSched; 
     std::map<uint256,CSchedule> mapSched; 
     std::map<uint64,CNetChannelPeer> mapPeer;
-    
+
+    mutable boost::mutex mtxPushTx; 
+    uint32 nTimerPushTx;
+    std::set<uint256> setPushTxFork;
+
+    NODE_TYPE nodeType;
 };
 
 } // namespace multiverse

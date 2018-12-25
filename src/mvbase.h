@@ -225,6 +225,7 @@ public:
     virtual bool RemoveNode(const walleve::CNetHost& node) = 0;
     /* Worldline & Tx Pool*/
     virtual int  GetForkCount() = 0;
+    virtual bool  HaveFork(const uint256& hashFork) = 0;
     virtual int  GetForkHeight(const uint256& hashFork) = 0;
     virtual void ListFork(std::vector<std::pair<uint256,CProfile> >& vFork) = 0;
     virtual bool GetForkGenealogy(const uint256& hashFork,std::vector<std::pair<uint256,int> >& vAncestry,

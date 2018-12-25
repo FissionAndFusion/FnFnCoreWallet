@@ -289,7 +289,7 @@ void CIOOutBound::Timeout(uint32 nTimerId)
     map<uint32,CIOClient *>::iterator it = mapPending.find(nTimerId);
     if (it != mapPending.end())
     {
-        (*it).second->Close();
+        (*it).second->Shutdown();
         mapPending.erase(it);
     }
 }
@@ -478,7 +478,7 @@ void CIOSSLOutBound::Timeout(uint32 nTimerId)
     map<uint32,CIOClient *>::iterator it = mapPending.find(nTimerId);
     if (it != mapPending.end())
     {
-        (*it).second->Close();
+        (*it).second->Shutdown();
         mapPending.erase(it);
     }
 }

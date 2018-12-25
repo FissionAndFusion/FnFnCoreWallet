@@ -30,8 +30,8 @@ public:
     CDbpService();
     virtual ~CDbpService() noexcept;
 
-    void SetIsRootNode(bool isRootNode);
-    void SetIsFnFnNode(bool isFnFnNode);
+    void EnableForkNode(bool enable);
+    void EnableSuperNode(bool enable);
     void SetSupportForks(const std::vector<uint256>& vForks);
 
     bool HandleEvent(CMvEventDbpConnect& event) override;
@@ -99,12 +99,16 @@ private:
     void PushBlock(const std::string& forkid, const CMvDbpBlock& block);
     void PushTx(const std::string& forkid, const CMvDbpTransaction& dbptx);
     bool PushEvent(const CMvDbpVirtualPeerNetEvent& event);
-    void DeleteCache(uint64 nNonce, int type);
-
+   
     void SendEventToParentNode(CMvDbpVirtualPeerNetEvent& event);
     void UpdateGetDataEventRecord(const CMvEventPeerGetData& event);
     bool IsThisNodeBlock(CMvEventPeerBlock& eventBlock);
     bool IsThisNodeTx(CMvEventPeerTx& eventTx);
+
+    void FilterChildSubscribeFork(const CMvEventPeerSubscribe& in, CMvEventPeerSubscribe& out);
+    void FilterChildUnsubscribeFork(const CMvEventPeerUnsubscribe& in, CMvEventPeerUnsubscribe& out);
+    void FilterThisSubscribeFork(const CMvEventPeerSubscribe& in, CMvEventPeerSubscribe& out);
+    void FilterThisUnsubscribeFork(const CMvEventPeerUnsubscribe& in, CMvEventPeerUnsubscribe& out);
 
     void RespondFailed(CMvEventDbpConnect& event);
     void RespondConnected(CMvEventDbpConnect& event);
@@ -129,13 +133,14 @@ private:
 
     std::unordered_map<std::string, std::pair<uint256,uint256>> mapForkPoint; // fork point hash => (fork hash, fork point hash)
 
-    bool fIsRootNode;
-    bool fIsFnFnNode;
+    bool fEnableForkNode;
+    bool fEnableSuperNode;
 
-    std::vector<CMvDbpVirtualPeerNetEvent> vCacheEvent;
+    
+    std::map<uint64, CMvDbpVirtualPeerNetEvent> mapPeerEvent;
 
     /*Event router*/
-    typedef std::pair<uint256, int> ForkNonceKeyType;
+    typedef std::pair<uint256, uint64> ForkNonceKeyType;
     std::map<ForkNonceKeyType, int> mapChildNodeForkCount;
     std::map<ForkNonceKeyType, int> mapThisNodeForkCount;
     std::map<ForkNonceKeyType, std::set<uint256>> mapThisNodeGetData; 

@@ -127,15 +127,6 @@ public:
     CDelegateRoutine() : fPublishCompleted(false) {}
 };
 
-/* Proof */
-/*
-class CMPSSProof
-{
-public:
-    uint256 
-}
-*/
-
 /* Protocol & Event */
 class CNil
 {
@@ -158,7 +149,12 @@ public:
 class CBlockMakerAgreement
 {
 public:
+    CBlockMakerAgreement() : nAgreement(uint64(0)),nWeight(0) {}
     bool IsProofOfWork() const { return (vBallot.empty()); } 
+    bool operator==(const CBlockMakerAgreement& other)
+    {
+        return (nAgreement == other.nAgreement && nWeight == other.nWeight);
+    }
 public:
     uint256 nAgreement;
     std::size_t nWeight;

@@ -373,28 +373,32 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
                 return false;
             }
 
+            auto pNetChannelBase = walleveDocker.GetObject("netchannel");
+            if(!pNetChannelBase)
+            {
+                return false;
+            }
+
             auto pForkManagerBase = walleveDocker.GetObject("forkmanager");
             if(!pForkManagerBase)
             {
                 return false;
             }
             
-            dynamic_cast<CVirtualPeerNet*>(pVirtualPeerNetBase)->SetNodeTypeAsFnfn(config.fIsFnFnNode);
-            dynamic_cast<CVirtualPeerNet*>(pVirtualPeerNetBase)->SetNodeTypeAsSuperNode(config.fIsRootNode);
-            dynamic_cast<CMvDbpClient*>(pClientBase)->AddNewClient(config);
-            std::vector<std::string> vSupportForks = dynamic_cast<CForkManager*>(pForkManagerBase)->ForkConfig()->vFork;
-            std::vector<uint256> vForkHash;
-            for(const auto& fork : vSupportForks)
+            if(config.fEnableSuperNode)
             {
-                uint256 forkHash;
-                forkHash.SetHex(fork);
-                vForkHash.push_back(forkHash);
+                // dynamic_cast<CVirtualPeerNet*>(pVirtualPeerNetBase)->SetNodeTypeAsFnfn(!config.fEnableSuperNode);
+                // dynamic_cast<CVirtualPeerNet*>(pVirtualPeerNetBase)->SetNodeTypeAsSuperNode(!config.fEnableForkNode);
+                dynamic_cast<CVirtualPeerNet*>(pVirtualPeerNetBase)->EnableSuperNode(config.fEnableForkNode);
+
+                dynamic_cast<CNetChannel*>(pNetChannelBase)->EnableSuperNode(config.fEnableForkNode);
             }
+            
+            dynamic_cast<CMvDbpClient*>(pClientBase)->AddNewClient(config);
 
             CDbpService* pDbpService = new CDbpService();
-            pDbpService->SetIsFnFnNode(config.fIsFnFnNode);
-            pDbpService->SetIsRootNode(config.fIsRootNode);
-            pDbpService->SetSupportForks(vForkHash);
+            pDbpService->EnableSuperNode(config.fEnableSuperNode);
+            pDbpService->EnableForkNode(config.fEnableForkNode);
 
             if (!AttachModule(pDbpService))
             {
@@ -461,7 +465,7 @@ CDbpClientConfig CMvEntry::GetDbpClientConfig()
                         config->strDbpPKFile, config->strDbpCiphers);
     
     return CDbpClientConfig(config->epParentHost,config->strPrivateKey,sslDbp,"dbpservice", 
-            config->fIsRootNode, config->fIsFnFnNode);
+            config->fEnableForkNode, config->fEnableSuperNode);
 }
 
 void CMvEntry::PurgeStorage()

@@ -31,14 +31,14 @@ public:
                     const std::string& strPrivateKeyIn,
                     const CIOSSLOption& optSSLIn, 
                     const std::string& strIOModuleIn,
-                    bool isRootNode,
-                    bool isFnFnNode)
+                    bool enableForkNode,
+                    bool enableSuperNode)
     : epParentHost(epParentHostIn),
       strPrivateKey(strPrivateKeyIn),
       optSSL(optSSLIn),
       strIOModule(strIOModuleIn),
-      fIsRootNode(isRootNode),
-      fIsFnFnNode(isFnFnNode)
+      fEnableForkNode(enableForkNode),
+      fEnableSuperNode(enableSuperNode)
     {
     }
 public:
@@ -46,8 +46,8 @@ public:
     std::string strPrivateKey;
     CIOSSLOption optSSL;
     std::string strIOModule;
-    bool fIsRootNode;
-    bool fIsFnFnNode;
+    bool fEnableForkNode;
+    bool fEnableSuperNode;
 };
 
 class CDbpClientProfile

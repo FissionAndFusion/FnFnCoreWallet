@@ -92,11 +92,9 @@ const uint256 CMPOpenedBox::Polynomial(std::size_t nThresh,uint32_t nX) const
     }
 
     CSC25519 f = CSC25519(vCoeff[0].begin());
-    CSC25519 x(nX);
     for (size_t i = 1;i < nThresh;i++)
     {
-        f += CSC25519(vCoeff[i].begin()) * x;
-        x *= nX;
+        f += CSC25519(vCoeff[i].begin()) * CSC25519::naturalPowTable[nX-1][i-1];
     }
     return uint256(f.value);
 }
@@ -206,11 +204,9 @@ void CMPSealedBox::PrecalcPolynomial(size_t nThresh,size_t nLastIndex)
     for (uint32_t nX = 1; nX < nLastIndex; nX++)
     {
         CEdwards25519 P = vP[0];
-        CSC25519 x(nX);
         for (size_t i = 1;i < nThresh;i++)
         {
-            P += vP[i].ScalarMult(x);
-            x *= nX;
+            P += vP[i].ScalarMult(CSC25519::naturalPowTable[nX-1][i-1]);
         }
         P.Pack(vEncryptedShare[nX].begin());
     }

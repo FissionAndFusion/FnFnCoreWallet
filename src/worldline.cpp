@@ -263,7 +263,10 @@ bool CWorldLine::GetTxUnspent(const uint256& hashFork,const vector<CTxIn>& vInpu
     
     for (std::size_t i = 0;i < vInput.size();i++)
     {
-        view.RetrieveUnspent(vInput[i].prevout,vOutput[i]);
+        if (vOutput[i].IsNull())
+        {
+            view.RetrieveUnspent(vInput[i].prevout,vOutput[i]);
+        }
     }
     return true;
 }
@@ -406,8 +409,8 @@ MvErr CWorldLine::AddNewBlock(const CBlock& block,CWorldLineUpdate& update)
         return MV_ERR_SYS_STORAGE_ERROR;
     }
 
-    WalleveLog("AddNew Block : %s \n",hash.ToString().c_str());
-    WalleveLog("    %s\n",pIndexNew->ToString().c_str());
+    WalleveLog("AddNew Block : %s\n", pIndexNew->ToString().c_str());
+    WalleveDebug("New Block %s tx : %s\n",hash.ToString().c_str(), view.ToString().c_str());
 
     CBlockIndex* pIndexFork = NULL;
     if (cntrBlock.RetrieveFork(pIndexNew->GetOriginHash(),&pIndexFork)
