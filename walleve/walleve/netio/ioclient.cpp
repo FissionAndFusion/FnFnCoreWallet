@@ -339,14 +339,9 @@ bool CSSLClient::VerifyCertificate(const string& strVerifyHost, bool fPreverifie
     int32_t depth = X509_STORE_CTX_get_error_depth(cts);
     //std::cout << "CTX DEPTH : " << depth << std::endl;
 
-    string sLog;
-
     if (fPreverified)
     {
-        sLog = "SSL verify success, subject: ";
-        sLog += subject_name;
-
-        walleve::StdDebug("SSLVERIFY", sLog.c_str());
+        walleve::StdDebug("SSLVERIFY", (string("SSL verify success, subject: ") + subject_name).c_str());
     }
     else
     {
@@ -365,7 +360,6 @@ bool CSSLClient::VerifyCertificate(const string& strVerifyHost, bool fPreverifie
             break;
         case X509_V_ERR_UNABLE_TO_DECRYPT_CRL_SIGNATURE:
             sErrorDesc = "Cannot unscramble CRLs signature.";
-            break;
             break;
         case X509_V_ERR_UNABLE_TO_DECODE_ISSUER_PUBLIC_KEY:
             sErrorDesc = "The public key information in the certificate could not be obtained.";
@@ -438,10 +432,8 @@ bool CSSLClient::VerifyCertificate(const string& strVerifyHost, bool fPreverifie
             break;
         }
 
-        sLog = string("SSL verify fail, subject: ") + subject_name + string(", cts_error: [") + to_string(cts_error) + 
-            string("]<") + to_string(depth) + string(">  ") + string(sErrorDesc);
-
-        walleve::StdDebug("SSLVERIFY", sLog.c_str());
+        walleve::StdDebug("SSLVERIFY", (string("SSL verify fail, subject: ") + subject_name + string(", cts_error: [") + to_string(cts_error) + 
+            string("]<") + to_string(depth) + string(">  ") + string(sErrorDesc)).c_str());
     }
 
     return fPreverified;
