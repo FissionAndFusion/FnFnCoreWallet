@@ -406,6 +406,7 @@ bool CDelegatedChannel::HandleEvent(network::CMvEventPeerDistribute& eventDistri
             }
         }
 
+        std::cout << "distrubute DDOS [delegatenetchannle]\n";
         DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
     }
     return true;
@@ -442,6 +443,7 @@ bool CDelegatedChannel::HandleEvent(network::CMvEventPeerPublish& eventPublish)
             }
         }
 
+        std::cout << "publish DDOS [delegatenetchannle]\n";
         DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
     }
     return true;
@@ -526,9 +528,10 @@ void CDelegatedChannel::AddPeerKnownPublish(uint64 nNonce, const uint256& hashAn
 
 void CDelegatedChannel::DispatchMisbehaveEvent(uint64 nNonce, CEndpointManager::CloseReason reason)
 {
-   // CWalleveEventPeerNetClose eventClose(nNonce);
-   // eventClose.data = reason;
-   // pPeerNet->DispatchEvent(&eventClose);
+    std::cout << "net close thread id " << std::this_thread::get_id() << " [delegatenetchannel]\n";
+    CWalleveEventPeerNetClose eventClose(nNonce);
+    eventClose.data = reason;
+    pPeerNet->DispatchEvent(&eventClose);
 }
 
 void CDelegatedChannel::PushBulletinTimerFunc(uint32 nTimerId)

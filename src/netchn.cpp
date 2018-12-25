@@ -7,6 +7,7 @@
 #include "virtualpeernet.h"
 #include <boost/bind.hpp>
 #include <limits>
+#include <thread>
 
 using namespace std;
 using namespace walleve;
@@ -429,9 +430,15 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerInv& eventInv)
 {
     uint64 nNonce = eventInv.nNonce;
     uint256& hashFork = eventInv.hashFork;
+    
 
     std::cout << " PeerInv nonce " << nNonce << " [netchannel]\n";
     std::cout << " PeerInv hash fork " << hashFork.ToString() << " [netchannel]\n";
+
+    for(const auto& inv : eventInv.data)
+    {
+        std::cout << "Inv Hash " << inv.nHash.ToString() << " [netchannel]\n";
+    }
     
     try 
     {
@@ -451,6 +458,8 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerInv& eventInv)
                     || (inv.nType == network::CInv::MSG_BLOCK && !pWorldLine->Exists(inv.nHash)))
                 {
                     sched.AddNewInv(inv,nNonce);
+                    std::cout << "Add new Inv nonce " << nNonce << " hash " << inv.nHash.ToString() 
+                << " [netchannel]\n";
                     if (inv.nType == network::CInv::MSG_TX)
                     {
                         vTxHash.push_back(inv.nHash);
@@ -462,7 +471,10 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerInv& eventInv)
                 boost::unique_lock<boost::shared_mutex> wlock(rwNetPeer);
                 mapPeer[nNonce].AddKnownTx(hashFork,vTxHash);
             }
+           
             SchedulePeerInv(nNonce,hashFork,sched);
+            std::cout << "called SchedulePeerInv nonce " << nNonce << " hashfork " << hashFork.ToString() 
+                << " [netchannel]\n";
         }
     }
     catch (...)
@@ -699,12 +711,15 @@ void CNetChannel::SchedulePeerInv(uint64 nNonce,const uint256& hashFork,CSchedul
     bool fEmpty = true;
     if (sched.ScheduleBlockInv(nNonce,eventGetData.data,MAX_PEER_SCHED_COUNT,fMissingPrev,fEmpty))
     {
+        //std::cout << "ScheduleBlockInv return true [netchannel SchedulePeerInv]\n";
         if (fMissingPrev)
         {
             DispatchGetBlocksEvent(nNonce,hashFork);
+            std::cout << "called Dispatch GetBlocks [netchannel SchedulePeerInv]\n";
         }
         else if (eventGetData.data.empty())
         {
+           // std::cout << "eventGetData data is empty [netchannel SchedulePeerInv]\n";
             if (!sched.ScheduleTxInv(nNonce,eventGetData.data,MAX_PEER_SCHED_COUNT))
             {
                 if(nNonce != std::numeric_limits<uint64>::max())
@@ -714,10 +729,13 @@ void CNetChannel::SchedulePeerInv(uint64 nNonce,const uint256& hashFork,CSchedul
                 }
             }
         }
+
+        std::cout << "fEMpty " << fEmpty << " [netchannel SchedulePeerInv]\n";
         SetPeerSyncStatus(nNonce,hashFork,fEmpty);
     }
     else
     {
+        std::cout << "ScheduleBlockInv return false [netchannel SchedulePeerInv]\n";
         if(nNonce != std::numeric_limits<uint64>::max())
         {
             std::cout << "Dispatch Event DDOS (ScheduleBlockInv return false) [netchannel]\n";
@@ -727,6 +745,7 @@ void CNetChannel::SchedulePeerInv(uint64 nNonce,const uint256& hashFork,CSchedul
     if (!eventGetData.data.empty())
     {
         pPeerNet->DispatchEvent(&eventGetData);
+        std::cout << "called Dispatch GetData [netchannel SchedulePeerInv]\n";
     }
 }
 

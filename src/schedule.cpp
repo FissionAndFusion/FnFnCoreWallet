@@ -163,7 +163,12 @@ bool CSchedule::ReceiveBlock(uint64 nPeerNonce,const uint256& hash,const CBlock&
             {
                 state.objReceived = block;
                 setSchedPeer.insert(state.setKnownPeer.begin(),state.setKnownPeer.end());
+
+                std::cout << "#########completed nonce " << std::hex << nPeerNonce << " [schedule]\n";
                 mapPeer[nPeerNonce].Completed((*it).first);
+               
+            
+
                 return true;
             }
         }
@@ -173,7 +178,10 @@ bool CSchedule::ReceiveBlock(uint64 nPeerNonce,const uint256& hash,const CBlock&
             {
                 state.objReceived = block;
                 setSchedPeer.insert(state.setKnownPeer.begin(),state.setKnownPeer.end());
+                
+                std::cout << "#########completed nAssigned " << std::hex << state.nAssigned << " [schedule]\n";
                 mapPeer[state.nAssigned].Completed((*it).first);
+
                 return true;
             }
             else
@@ -320,14 +328,20 @@ bool CSchedule::ScheduleBlockInv(uint64 nPeerNonce,vector<network::CInv>& vInv,s
     fMissingPrev = false;
     fEmpty = true;
 
+    std::cout << "entry ScheduleBlockInv [schedule]\n";
+
+    std::cout << "nonce " << std::hex << nPeerNonce << " [schedule]\n";
+
     map<uint64,CInvPeer>::iterator it = mapPeer.find(nPeerNonce);
     if (it != mapPeer.end())
     {
+        std::cout << "mapPeer finded [schedule]\n";
         CInvPeer& peer = (*it).second;
         fEmpty = peer.Empty(network::CInv::MSG_BLOCK); 
         if (!peer.IsAssigned())
         {
             bool fReceivedAll;
+            std::cout << "is assigned false [schedule]\n";
         
             if (!ScheduleKnownInv(nPeerNonce,peer,network::CInv::MSG_BLOCK,vInv,nMaxCount,fReceivedAll))
             {
@@ -335,6 +349,14 @@ bool CSchedule::ScheduleBlockInv(uint64 nPeerNonce,vector<network::CInv>& vInv,s
                 return (!fReceivedAll || peer.GetCount(network::CInv::MSG_BLOCK) < MAX_PEER_BLOCK_INV_COUNT);
             }
         }
+        else
+        {
+             std::cout << "is assigned true [schedule]\n";
+        }
+    }
+    else
+    {
+         std::cout << "mapPeer not finded [schedule]\n";
     }
     return true;
 }
@@ -374,10 +396,18 @@ bool CSchedule::ScheduleKnownInv(uint64 nPeerNonce,CInvPeer& peer,uint32 type,
     size_t nReceived = 0;
     vInv.clear();
     list<uint256>& listKnown = peer.GetKnownList(type);
+
+    std::cout << " list known list size " << listKnown.size() << " [ScheduleKnownInv]\n";
+
     BOOST_FOREACH(const uint256& hash,listKnown)
     {
+        
+        std::cout << "  known hash " << hash.ToString() << " [ScheduleKnownInv]\n";
         network::CInv inv(type,hash);
         CInvState& state = mapState[inv];
+
+        std::cout << " state nAssigned " << std::hex << state.nAssigned << " [ScheduleKnownInv]\n";
+
         if (state.nAssigned == 0)
         {
             state.nAssigned = nPeerNonce;

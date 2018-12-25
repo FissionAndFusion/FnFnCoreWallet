@@ -731,6 +731,13 @@ void CDbpService::HandleSendEvent(CMvEventDbpMethod& event)
 
         if(IsRootNodeOfSuperNode())
         {
+            std::cout << "#############[rootnode] "  << "GetData Begin [dbpservice]\n";
+            for(const auto& inv : eventGetData.data)
+            {
+                std::cout << "Get Data Inv Hash " << inv.nHash.ToString() << " \n";
+            }
+            std::cout << "#############[rootnode] "  << "GetData End [dbpservice]\n";
+               
             eventGetData.flow = "up";
             eventGetData.sender = "dbpservice";
             pVirtualPeerNet->DispatchEvent(&eventGetData);
@@ -752,6 +759,7 @@ void CDbpService::HandleSendEvent(CMvEventDbpMethod& event)
                 vpeerEvent.data = std::vector<uint8>(eventData.begin(), eventData.end());
                 SendEventToParentNode(vpeerEvent);
             }
+
         }
     }
 
@@ -1333,7 +1341,7 @@ bool CDbpService::HandleEvent(CMvEventDbpVirtualPeerNet& event)
         boost::asio::ip::tcp::endpoint ep;
         eventActive.data.ssEndpoint.GetEndpoint(ep);
         std::cout << "recv active event address: " << ep.address().to_string() << " [dbpservice]\n";
-        std::cout << "recv active event nonce: " << eventActive.nNonce << "[dbpservice]\n";
+        std::cout << "recv active event nonce: " << std::hex << eventActive.nNonce << "[dbpservice]\n";
 
         pVirtualPeerNet->DispatchEvent(&eventActive);
 
@@ -1441,10 +1449,13 @@ bool CDbpService::HandleEvent(CMvEventDbpVirtualPeerNet& event)
         CMvEventPeerTx eventTx(0, uint256());
         ss >> eventTx;
 
+        std::cout << "[forknode] From up to down:  Peer Tx Hash " << eventTx.data.GetHash().ToString() << " [dbpservice]\n"; 
+        
         if(IsMyFork(eventTx.hashFork) && IsThisNodeTx(eventTx))
         {
             std::cout << "[forknode] [<] Peer Tx Fork " << eventTx.hashFork.ToString() << " [dbpservice]\n"; 
-            std::cout << "[forknode] [<] Peer Tx Nonce " << eventTx.nNonce << " [dbpservice]\n"; 
+            std::cout << "[forknode] [<] Peer Tx Nonce " << eventTx.nNonce << " [dbpservice]\n";
+            std::cout << "[forknode] [<] Peer Tx Hash " << eventTx.data.GetHash().ToString() << " [dbpservice]\n"; 
             
             eventTx.sender = "dbpservice";
             eventTx.flow = "down";
@@ -1459,10 +1470,13 @@ bool CDbpService::HandleEvent(CMvEventDbpVirtualPeerNet& event)
         CMvEventPeerBlock eventBlock(0, uint256());
         ss >> eventBlock;
 
+        std::cout << "[forknode] From up to down:  Peer Block Hash " << eventBlock.data.GetHash().ToString() << " [dbpservice]\n"; 
+        
         if(IsMyFork(eventBlock.hashFork) && IsThisNodeBlock(eventBlock))
         {
             std::cout << "[forknode] [<] Peer Block Fork " << eventBlock.hashFork.ToString() << " [dbpservice]\n"; 
-            std::cout << "[forknode] [<] Peer Block Nonce " << eventBlock.nNonce << " [dbpservice]\n"; 
+            std::cout << "[forknode] [<] Peer Block Nonce " << eventBlock.nNonce << " [dbpservice]\n";
+            std::cout << "[forknode] [<] Peer Block Hask " << eventBlock.data.GetHash().ToString() << " [dbpservice]\n"; 
             
             eventBlock.sender = "dbpservice";
             eventBlock.flow = "down";
@@ -1508,19 +1522,14 @@ bool CDbpService::IsThisNodeBlock(CMvEventPeerBlock& eventBlock)
     uint256 blockHash = eventBlock.data.GetHash();
     auto pairKey = std::make_pair(hashFork, nNonce);
     
-    std::cout << "Pair Key " << pairKey.first.ToString() << " , " << nNonce << " [dbpservice]\n";
-    std::cout << "Block Hash " << blockHash.ToString() << " \n";
-    
     if(mapThisNodeGetData.find(pairKey) == mapThisNodeGetData.end())
     {
-        std::cout << "pair key cannot find \n";
         return false;
     }
 
     auto& setInvHash = mapThisNodeGetData[pairKey];
     if(setInvHash.find(blockHash) == setInvHash.end())
     {
-        std::cout << "blockHash cannot find \n";
         return false;
     }
 
@@ -1536,19 +1545,14 @@ bool CDbpService::IsThisNodeTx(CMvEventPeerTx& eventTx)
     uint256 txHash = eventTx.data.GetHash();
     auto pairKey = std::make_pair(hashFork, nNonce);
 
-    std::cout << "Pair Key " << pairKey.first.ToString() << " , " << nNonce << " [dbpservice]\n";
-    std::cout << "Tx Hash " << txHash.ToString() << " \n";
-    
     if(mapThisNodeGetData.find(pairKey) == mapThisNodeGetData.end())
     {
-        std::cout << "pair key cannot find \n";
         return false;
     }
 
     auto& setInvHash = mapThisNodeGetData[pairKey];
     if(setInvHash.find(txHash) == setInvHash.end())
     {
-        std::cout << "txHash cannot find \n";
         return false;
     }
 

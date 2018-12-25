@@ -5,6 +5,8 @@
 #include "virtualpeernet.h"
 #include "walleve/peernet/peer.h"
 
+#include <thread>
+
 using namespace multiverse;
 using namespace walleve;
 
@@ -136,6 +138,7 @@ bool CVirtualPeerNet::HandleEvent(walleve::CWalleveEventPeerNetClose& eventClose
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT
        || typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN)
     {
+        std::cout << "net close thread id " << std::this_thread::get_id() << " [vpeernet]\n";
         return CPeerNet::HandleEvent(eventClose);
     }
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FORK)
