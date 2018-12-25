@@ -83,6 +83,7 @@ public:
     bool RetrieveEnroll(const uint256& hashAnchor,const std::set<uint256>& setBlockRange, 
                         std::map<CDestination,std::pair<uint32,uint32> >& mapEnrollTxPos);
     bool InnoDB();
+    bool GetAllDelegate(std::map<std::pair<uint256, CDestination>, int64>& mapDelegate);
 protected:
     int GetForkIndex(const uint256& hash)
     {

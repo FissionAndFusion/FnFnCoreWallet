@@ -983,7 +983,6 @@ bool CBlockDB::LoadFork()
     return true;
 }
 
-
 bool CBlockDB::InnoDB()
 {
     CMvDBInst db(&dbPool);
@@ -1011,3 +1010,25 @@ bool CBlockDB::InnoDB()
     return false;
 }
 
+bool CBlockDB::GetAllDelegate(std::map<std::pair<uint256, CDestination>, int64>& mapDelegate)
+{
+    CMvDBInst db(&dbPool);
+    if (!db.Available())
+    {
+        return false;
+    }
+
+    CMvDBRes res(*db, "SELECT block, dest, amount FROM delegate", true);
+    while (res.GetRow())
+    {
+        uint256 block;
+        CDestination dest;
+        int64 amount;
+        if (!res.GetField(0, block) || !res.GetField(1, dest) || !res.GetField(2, amount))
+        {
+            return false;
+        }
+        mapDelegate[make_pair(block, dest)] = amount;
+    }
+    return true;
+}
