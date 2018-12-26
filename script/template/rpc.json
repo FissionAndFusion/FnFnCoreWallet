@@ -1297,8 +1297,7 @@
             {
                 "request": "curl -d '{\"id\":5,\"method\":\"encryptkey\",\"jsonrpc\":\"2.0\",\"params\":{\"pubkey\":\"f4c3babec11363be80e7b6aa1d803d63206a11f36fc99b874b63a262110a0add\",\"passphrase\":\"456\",\"oldpassphrase\":\"123\"}}' http://127.0.0.1:6812",
                 "response": "{\"id\":5,\"jsonrpc\":\"2.0\",\"result\":\"Encrypt key successfully: f4c3babec11363be80e7b6aa1d803d63206a11f36fc99b874b63a262110a0add\"}"
-            },
-            "multiverse-cli encryptkey f4c3babec11363be80e7b6aa1d803d63206a11f36fc99b874b63a262110a0add 456 123"
+            }
         ],
         "error": [
             "{\"code\":-6,\"message\":\"Passphrase must be nonempty\"}",
@@ -1338,8 +1337,7 @@
             {
                 "request": "curl -d '{\"id\":1,\"method\":\"lockkey\",\"jsonrpc\":\"2.0\",\"params\":{\"pubkey\":\"2e05c9ee45fdf58f7b007458298042fc3d3ad416a2f9977ace16d14164a3e882\"}}' http://127.0.0.1:6812",
                 "response": "{\"id\":1,\"jsonrpc\":\"2.0\",\"result\":\"Lock key successfully: 2e05c9ee45fdf58f7b007458298042fc3d3ad416a2f9977ace16d14164a3e882\"}"
-            },
-            "multiverse-cli encryptkey 2e05c9ee45fdf58f7b007458298042fc3d3ad416a2f9977ace16d14164a3e882 456 123"
+            }
         ],
         "error": [
             "{\"code\":-4,\"message\":\"Unknown key\"}",
