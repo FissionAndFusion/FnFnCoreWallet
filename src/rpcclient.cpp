@@ -269,8 +269,8 @@ void CRPCClient::LaunchConsole()
         FD_ZERO(&fs);
         FD_SET(STDIN_FILENO, &fs);
 
-        timeout.tv_sec = 1;
-        timeout.tv_usec = 0;
+        timeout.tv_sec = 0;
+        timeout.tv_usec = 100000;
         int ret = select(1, &fs, NULL, NULL, &timeout);
         if (ret == -1)
         {
@@ -284,7 +284,7 @@ void CRPCClient::LaunchConsole()
             }
             catch (const boost::thread_interrupted&) 
             {
-                return;
+                break;
             }
         }
         else
@@ -341,6 +341,7 @@ void CRPCClient::ConsoleHandleLine(const string& strLine)
 {
     if (strLine == "quit")
     {
+        cout << "quiting...\n";
         MvShutdown();
         return;
     }
