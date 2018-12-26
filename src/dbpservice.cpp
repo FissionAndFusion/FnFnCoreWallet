@@ -834,15 +834,12 @@ bool CDbpService::HandleEvent(CMvEventDbpMethod& event)
 
 void CDbpService::PushBlock(const std::string& forkid, const CMvDbpBlock& block)
 {
-    const auto& allBlockIds = mapTopicIds[ALL_BLOCK_TOPIC];   
-    for (const auto& kv : mapIdSubedSession)
+    const auto& allBlockIds = mapTopicIds[ALL_BLOCK_TOPIC];
+    for(const auto& id : allBlockIds)
     {
-        std::string id = kv.first;
-        std::string session = kv.second;
-
-        if (allBlockIds.find(id) != allBlockIds.end())
+        if(mapIdSubedSession.find(id) != mapIdSubedSession.end())
         {
-            CMvEventDbpAdded eventAdded(session);
+            CMvEventDbpAdded eventAdded(mapIdSubedSession[id]);
             eventAdded.data.id = id;
             eventAdded.data.forkid = forkid;
             eventAdded.data.name = ALL_BLOCK_TOPIC;
@@ -855,14 +852,11 @@ void CDbpService::PushBlock(const std::string& forkid, const CMvDbpBlock& block)
 void CDbpService::PushTx(const std::string& forkid, const CMvDbpTransaction& dbptx)
 {
     const auto& allTxIds = mapTopicIds[ALL_TX_TOPIC];
-    for (const auto& kv : mapIdSubedSession)
+    for(const auto& id : allTxIds)
     {
-        std::string id = kv.first;
-        std::string session = kv.second;
-
-        if (allTxIds.find(id) != allTxIds.end())
+        if(mapIdSubedSession.find(id) != mapIdSubedSession.end())
         {
-            CMvEventDbpAdded eventAdded(session);
+            CMvEventDbpAdded eventAdded(mapIdSubedSession[id]);
             eventAdded.data.id = id;
             eventAdded.data.forkid = forkid;
             eventAdded.data.name = ALL_TX_TOPIC;
