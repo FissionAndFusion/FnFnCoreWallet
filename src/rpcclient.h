@@ -22,8 +22,7 @@ class CRPCClient : public walleve::IIOModule, virtual public walleve::CWalleveHt
 public:
     CRPCClient(bool fConsole = true);
     ~CRPCClient();
-    void DispatchLine(const std::string& strLine);
-
+    void ConsoleHandleLine(const std::string& strLine);;
 protected:
     bool WalleveHandleInitialize() override;
     void WalleveHandleDeinitialize() override;
@@ -39,15 +38,8 @@ protected:
     void LaunchCommand();
     void CancelCommand();
 
-    void WaitForChars();
-#if BOOST_VERSION < 106600
-    void HandleRead(const boost::system::error_code& err, size_t nTransferred);
-#else
-    void HandleRead(const boost::system::error_code& err);
-#endif
     void EnterLoop();
     void LeaveLoop();
-    void ConsoleHandleLine(const std::string& strLine);;
 
 protected:
     walleve::IIOProc *pHttpGet;
@@ -55,12 +47,6 @@ protected:
     std::vector<std::string> vArgs;
     uint64 nLastNonce;
     walleve::CIOCompletion ioComplt;
-    boost::asio::io_service ioService;
-    boost::asio::io_service::strand ioStrand;
-    stream_desc inStream;
-#if BOOST_VERSION < 106600
-    boost::asio::null_buffers bufRead;
-#endif
 };
 
 } // namespace multiverse
