@@ -837,9 +837,10 @@ void CDbpService::PushBlock(const std::string& forkid, const CMvDbpBlock& block)
     const auto& allBlockIds = mapTopicIds[ALL_BLOCK_TOPIC];
     for(const auto& id : allBlockIds)
     {
-        if(mapIdSubedSession.find(id) != mapIdSubedSession.end())
+        auto it = mapIdSubedSession.find(id);
+        if(it != mapIdSubedSession.end())
         {
-            CMvEventDbpAdded eventAdded(mapIdSubedSession[id]);
+            CMvEventDbpAdded eventAdded(it->second);
             eventAdded.data.id = id;
             eventAdded.data.forkid = forkid;
             eventAdded.data.name = ALL_BLOCK_TOPIC;
@@ -854,9 +855,10 @@ void CDbpService::PushTx(const std::string& forkid, const CMvDbpTransaction& dbp
     const auto& allTxIds = mapTopicIds[ALL_TX_TOPIC];
     for(const auto& id : allTxIds)
     {
-        if(mapIdSubedSession.find(id) != mapIdSubedSession.end())
+        auto it = mapIdSubedSession.find(id);
+        if(it != mapIdSubedSession.end())
         {
-            CMvEventDbpAdded eventAdded(mapIdSubedSession[id]);
+            CMvEventDbpAdded eventAdded(it->second);
             eventAdded.data.id = id;
             eventAdded.data.forkid = forkid;
             eventAdded.data.name = ALL_TX_TOPIC;
