@@ -236,7 +236,10 @@ void CNetChannel::BroadcastTxInv(const uint256& hashFork)
     boost::unique_lock<boost::mutex> lock(mtxPushTx);
     if (nTimerPushTx == 0)
     {
-        PushTxInv(hashFork);
+        if (!PushTxInv(hashFork))
+        {
+            setPushTxFork.insert(hashFork);
+        }
         nTimerPushTx = WalleveSetTimer(PUSHTX_TIMEOUT,boost::bind(&CNetChannel::PushTxTimerFunc,this,_1));
     }
     else
@@ -422,8 +425,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerInv& eventInv)
             vector<uint256> vTxHash;
             BOOST_FOREACH(const network::CInv& inv,eventInv.data)
             {
-                if ((inv.nType == network::CInv::MSG_TX && !pTxPool->Exists(inv.nHash) 
-                                                        && !pWorldLine->ExistsTx(inv.nHash))
+                if ((inv.nType == network::CInv::MSG_TX && !pTxPool->Exists(inv.nHash)) 
                     || (inv.nType == network::CInv::MSG_BLOCK && !pWorldLine->Exists(inv.nHash)))
                 {
                     sched.AddNewInv(inv,nNonce);
@@ -792,17 +794,7 @@ void CNetChannel::SetPeerSyncStatus(uint64 nNonce,const uint256& hashFork,bool f
     {
         if (fSync && fInverted)
         {
-            vector<uint256> vTxPool;
-            pTxPool->ListTx(hashFork,vTxPool);
-            if (!vTxPool.empty())
-            {
-                network::CMvEventPeerInv eventInv(nNonce,hashFork);
-                peer.MakeTxInv(hashFork,vTxPool,eventInv.data,network::CInv::MAX_INV_COUNT);
-                if (!eventInv.data.empty())
-                {
-                    pPeerNet->DispatchEvent(&eventInv);
-                }
-            }
+            BroadcastTxInv(hashFork);
         } 
     }
 }
@@ -814,12 +806,19 @@ void CNetChannel::PushTxTimerFunc(uint32 nTimerId)
     {
         if (!setPushTxFork.empty())
         {
-            BOOST_FOREACH(const uint256& hashFork,setPushTxFork)
+            set<uint256>::iterator it = setPushTxFork.begin();
+            while (it != setPushTxFork.end())
             {
-                PushTxInv(hashFork);
+                if (PushTxInv(*it))
+                {
+                    setPushTxFork.erase(it++);
+                }
+                else
+                {
+                    ++it;
+                }
             }
             nTimerPushTx = WalleveSetTimer(PUSHTX_TIMEOUT,boost::bind(&CNetChannel::PushTxTimerFunc,this,_1));
-            setPushTxFork.clear(); 
         }
         else
         {
@@ -828,8 +827,9 @@ void CNetChannel::PushTxTimerFunc(uint32 nTimerId)
     }
 }
 
-void CNetChannel::PushTxInv(const uint256& hashFork)
+bool CNetChannel::PushTxInv(const uint256& hashFork)
 {
+    bool fCompleted = true;
     vector<uint256> vTxPool;
     pTxPool->ListTx(hashFork,vTxPool);
     if (!vTxPool.empty() && !mapPeer.empty())
@@ -845,8 +845,13 @@ void CNetChannel::PushTxInv(const uint256& hashFork)
                 if (!eventInv.data.empty())
                 {
                     pPeerNet->DispatchEvent(&eventInv);
+                    if (fCompleted && eventInv.data.size() == network::CInv::MAX_INV_COUNT)
+                    {
+                        fCompleted = false;
+                    }
                 }
             }
         }
     }
+    return fCompleted;
 }

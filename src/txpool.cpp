@@ -113,6 +113,30 @@ void CTxPoolView::GetFilteredTx(map<size_t,pair<uint256,CPooledTx*> >& mapFilter
     }
 }
 
+void CTxPoolView::ArrangeBlockTx(std::vector<CTransaction>& vtx,int64& nTotalTxFee,std::size_t nMaxSize)
+{
+    nTotalTxFee = 0;
+
+    map<size_t,pair<uint256,CPooledTx*> > mapCandidate;
+    for (map<uint256,CPooledTx*>::iterator it = mapTx.begin();it != mapTx.end();++it)
+    {
+        mapCandidate.insert(make_pair((*it).second->nSequenceNumber,(*it)));
+    }
+    
+    size_t nTotalSize = 0;
+    for (map<size_t,pair<uint256,CPooledTx*> >::iterator it = mapCandidate.begin();
+         it != mapCandidate.end(); ++it)
+    {
+        if (nTotalSize + (*it).second.second->nSerializeSize > nMaxSize)
+        {
+            break;
+        }
+        vtx.push_back(*static_cast<CTransaction*>((*it).second.second));
+        nTotalSize += (*it).second.second->nSerializeSize;
+        nTotalTxFee += (*it).second.second->nTxFee; 
+    }
+}
+
 void CTxPoolView::ArrangeBlockTx(map<size_t,pair<uint256,CPooledTx*> >& mapArrangedTx,size_t nMaxSize)
 {
     size_t nTotalSize = 0;
@@ -126,7 +150,7 @@ void CTxPoolView::ArrangeBlockTx(map<size_t,pair<uint256,CPooledTx*> >& mapArran
         CTxPoolCandidate candidateTx(*it);
         mapCandidate.insert(make_pair(-candidateTx.GetTxFeePerKB(),candidateTx));
     }
-   
+
     if (nTotalSize > nMaxSize)
     {
         nTotalSize = 0;
@@ -422,15 +446,7 @@ void CTxPool::ArrangeBlockTx(const uint256& hashFork,size_t nMaxSize,vector<CTra
 {
     boost::shared_lock<boost::shared_mutex> rlock(rwAccess);
     CTxPoolView& txView = mapPoolView[hashFork];
-    map<size_t,pair<uint256,CPooledTx*> > mapArrangedTx;
-    txView.ArrangeBlockTx(mapArrangedTx,nMaxSize);
-    nTotalTxFee = 0;
-    for (map<size_t,pair<uint256,CPooledTx*> >::iterator it = mapArrangedTx.begin();
-         it != mapArrangedTx.end();++it)
-    {
-        vtx.push_back(*static_cast<CTransaction*>((*it).second.second));
-        nTotalTxFee += (*it).second.second->nTxFee;
-    }
+    txView.ArrangeBlockTx(vtx,nTotalTxFee,nMaxSize);
 }
 
 bool CTxPool::FetchInputs(const uint256& hashFork,const CTransaction& tx,vector<CTxOutput>& vUnspent)
