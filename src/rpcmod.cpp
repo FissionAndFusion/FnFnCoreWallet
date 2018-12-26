@@ -948,7 +948,7 @@ CRPCResultPtr CRPCMod::RPCImportPrivKey(CRPCParamPtr param)
     crypto::CKey key;
     if (!key.SetSecret(crypto::CCryptoKeyData(nPriv.begin(),nPriv.end())))
     {
-        throw CRPCException(RPC_INVALID_ADDRESS_OR_KEY,"Invalid private key");
+        throw CRPCException(RPC_INVALID_PARAMETER,"Invalid private key");
     }
     if (pService->HaveKey(key.GetPubKey()))
     {
