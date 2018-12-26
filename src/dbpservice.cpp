@@ -1319,6 +1319,10 @@ bool CDbpService::HandleEvent(CMvEventDbpVirtualPeerNet& event)
             eventSub.flow = "down";    
             pVirtualPeerNet->DispatchEvent(&eventSub);
         }
+        else
+        {
+            PushEvent(event.data);
+        }
     }
 
     if(event.data.type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_UNSUBSCRIBE)
@@ -1331,6 +1335,10 @@ bool CDbpService::HandleEvent(CMvEventDbpVirtualPeerNet& event)
             eventUnSub.flow = "down";
             eventUnSub.sender = "dbpservice";
             pVirtualPeerNet->DispatchEvent(&eventUnSub);
+        }
+        else
+        {
+            PushEvent(event.data);
         }
     }
 
@@ -1345,8 +1353,10 @@ bool CDbpService::HandleEvent(CMvEventDbpVirtualPeerNet& event)
             eventGetBlocks.flow = "down";
             pVirtualPeerNet->DispatchEvent(&eventGetBlocks);
         }
-
-        PushEvent(event.data);
+        else
+        {
+            PushEvent(event.data);
+        }
     }
 
     if(event.data.type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_GETDATA)
@@ -1360,8 +1370,10 @@ bool CDbpService::HandleEvent(CMvEventDbpVirtualPeerNet& event)
             eventGetData.flow = "down";
             pVirtualPeerNet->DispatchEvent(&eventGetData);
         }
-
-        PushEvent(event.data);
+        else
+        {
+            PushEvent(event.data);
+        }
     }
 
     if(event.data.type == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_INV)
