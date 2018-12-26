@@ -1384,7 +1384,8 @@ bool CDbpService::HandleEvent(CMvEventDbpVirtualPeerNet& event)
         CMvEventPeerTx eventTx(0, uint256());
         ss >> eventTx;
 
-        if(IsMyFork(eventTx.hashFork) && IsThisNodeTx(eventTx))
+        if(IsMyFork(eventTx.hashFork) && 
+            IsThisNodeData(eventTx.hashFork, eventTx.nNonce, eventTx.data.GetHash()))
         {
             eventTx.sender = "dbpservice";
             eventTx.flow = "down";
@@ -1399,7 +1400,8 @@ bool CDbpService::HandleEvent(CMvEventDbpVirtualPeerNet& event)
         CMvEventPeerBlock eventBlock(0, uint256());
         ss >> eventBlock;
 
-        if(IsMyFork(eventBlock.hashFork) && IsThisNodeBlock(eventBlock))
+        if(IsMyFork(eventBlock.hashFork) && 
+            IsThisNodeData(eventBlock.hashFork, eventBlock.nNonce, eventBlock.data.GetHash()))
         {
             eventBlock.sender = "dbpservice";
             eventBlock.flow = "down";
@@ -1426,19 +1428,14 @@ void CDbpService::UpdateGetDataEventRecord(const CMvEventPeerGetData& event)
     const uint256& hashFork = event.hashFork;
     
     std::set<uint256> setInvHash;
-    for(const auto& inv : event.data)
-    {
+    std::for_each(event.data.begin(), event.data.end(), [&](const CInv& inv) {
         setInvHash.insert(inv.nHash);
-    }
-
+    });
     mapThisNodeGetData[std::make_pair(hashFork, nNonce)] = setInvHash;
 }
 
-bool CDbpService::IsThisNodeBlock(CMvEventPeerBlock& eventBlock)
+bool CDbpService::IsThisNodeData(const uint256& hashFork, uint64 nNonce, const uint256& dataHash)
 {
-    uint64 nNonce = eventBlock.nNonce;
-    uint256& hashFork = eventBlock.hashFork;
-    uint256 blockHash = eventBlock.data.GetHash();
     auto pairKey = std::make_pair(hashFork, nNonce);
     if(mapThisNodeGetData.find(pairKey) == mapThisNodeGetData.end())
     {
@@ -1446,35 +1443,12 @@ bool CDbpService::IsThisNodeBlock(CMvEventPeerBlock& eventBlock)
     }
 
     auto& setInvHash = mapThisNodeGetData[pairKey];
-    if(setInvHash.find(blockHash) == setInvHash.end())
+    if(setInvHash.find(dataHash) == setInvHash.end())
     {
         return false;
     }
 
-    setInvHash.erase(blockHash);
+    setInvHash.erase(dataHash);
 
     return true;
 }
-
-bool CDbpService::IsThisNodeTx(CMvEventPeerTx& eventTx)
-{
-    uint64 nNonce = eventTx.nNonce;
-    uint256& hashFork = eventTx.hashFork;
-    uint256 txHash = eventTx.data.GetHash();
-    auto pairKey = std::make_pair(hashFork, nNonce);
-    if(mapThisNodeGetData.find(pairKey) == mapThisNodeGetData.end())
-    {
-        return false;
-    }
-
-    auto& setInvHash = mapThisNodeGetData[pairKey];
-    if(setInvHash.find(txHash) == setInvHash.end())
-    {
-        return false;
-    }
-
-    setInvHash.erase(txHash);
-
-    return true;
-}
-
