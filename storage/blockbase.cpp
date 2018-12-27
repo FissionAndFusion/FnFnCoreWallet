@@ -977,7 +977,7 @@ bool CBlockBase::CheckConsistency(int nCheckLevel)
     //TODO - remove it after done
     nLevel = 2;
 
-    //checking of level 0
+    //checking of level 0: fork/block
     if(nLevel >= 0)
     {
         //check field refblock of table fork must be in rows in table block
@@ -1033,7 +1033,7 @@ bool CBlockBase::CheckConsistency(int nCheckLevel)
         }
     }
 
-    //checking of level 1
+    //checking of level 1: transaction
     if(nLevel >= 1)
     {
         uint64 nTx = 0;
@@ -1094,73 +1094,82 @@ bool CBlockBase::CheckConsistency(int nCheckLevel)
         }
     }
 
-    //checking of level 2
+    //checking of level 2: delegate/enroll
     if(nLevel >= 2)
     {
-        vector<uint256> vFork;
-        if(!dbBlock.RetrieveFork(vFork))
+        uint256 hashMainFork;
+        bool fFoundMainFork = false;
+        for(const auto& i : mapFork)
+        {
+            const uint256& hashFork = i.first;
+            const CBlockFork& fork = i.second;
+            if(fork.GetOrigin()->IsPrimary())
+            {
+                hashMainFork = hashFork;
+                fFoundMainFork = true;
+                break;
+            }
+        }
+        if(!fFoundMainFork)
+        {
+            return false;
+        }
+
+        CBlockFork* pFork = GetFork(hashMainFork);
+        if(NULL == pFork)
+        {
+            return false;
+        }
+        CBlockIndex* pLastBlock = pFork->GetLast();
+        if(NULL == pLastBlock)
+        {
+            return false;
+        }
+        pFork->UpdateLast(pLastBlock);
+        CBlockIndex* pIndex = pFork->GetOrigin();
+        if(NULL == pIndex)
         {
             return false;
         }
 
         map<pair<uint256, CDestination>, int64> mapDelegate;
-        for(const auto& fork : vFork)
+        while(pIndex)
         {
-            CBlockFork* pFork = GetFork(fork);
-            if(NULL == pFork)
-            {
-                return false;
-            }
-            CBlockIndex* pLastBlock = pFork->GetLast();
-            if(NULL == pLastBlock)
-            {
-                return false;
-            }
-            pFork->UpdateLast(pLastBlock);
-            CBlockIndex* pIndex = pFork->GetOrigin();
-            if(NULL == pIndex)
+            CBlockEx block;
+            if(!Retrieve(pIndex, block))
             {
                 return false;
             }
 
-            while(pIndex)
+            uint256 hashBlock = block.GetHash();
+
+            if (block.txMint.nType == CTransaction::TX_STAKE)
             {
-                CBlockEx block;
-                if(!Retrieve(pIndex, block))
-                {
-                    return false;
-                }
+                mapDelegate[make_pair(hashBlock, block.txMint.sendTo)] += block.txMint.nAmount;
+            }
 
-                uint256 hashBlock = block.GetHash();
-
-                if (block.txMint.nType == CTransaction::TX_STAKE)
+            for (int i = 0; i < block.vtx.size(); i++)
+            {
+                CTransaction& tx = block.vtx[i];
                 {
-                    mapDelegate[make_pair(hashBlock, block.txMint.sendTo)] += block.txMint.nAmount;
-                }
-
-                for (int i = 0; i < block.vtx.size(); i++)
-                {
-                    CTransaction& tx = block.vtx[i];
+                    CTemplateId tid;
+                    if (tx.sendTo.GetTemplateId(tid) && tid.GetType() == TEMPLATE_DELEGATE)
                     {
-                        CTemplateId tid;
-                        if (tx.sendTo.GetTemplateId(tid) && tid.GetType() == TEMPLATE_DELEGATE)
-                        {
-                            mapDelegate[make_pair(hashBlock, tx.sendTo)] += tx.nAmount;
-                        }
-                    }
-
-                    CTxContxt& txContxt = block.vTxContxt[i];
-                    {
-                        CTemplateId tid;
-                        if (txContxt.destIn.GetTemplateId(tid) && tid.GetType() == TEMPLATE_DELEGATE)
-                        {
-                            mapDelegate[make_pair(hashBlock, txContxt.destIn)] -= tx.nAmount + tx.nTxFee;
-                        }
+                        mapDelegate[make_pair(hashBlock, tx.sendTo)] += tx.nAmount;
                     }
                 }
 
-                pIndex = pIndex->pNext;
+                CTxContxt& txContxt = block.vTxContxt[i];
+                {
+                    CTemplateId tid;
+                    if (txContxt.destIn.GetTemplateId(tid) && tid.GetType() == TEMPLATE_DELEGATE)
+                    {
+                        mapDelegate[make_pair(hashBlock, txContxt.destIn)] -= tx.nAmount + tx.nTxFee;
+                    }
+                }
             }
+
+            pIndex = pIndex->pNext;
         }
 
         //check table delegate
