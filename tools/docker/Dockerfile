@@ -5,24 +5,27 @@ ENV DEBIAN_FRONTEND noninteractive
 ENV HOME=/home/fnfn
 ENV DB_PASSWORD=multiverse
 
+RUN groupadd -r mysql && useradd -r -g mysql mysql
 RUN apt-get update \
-  && apt-get -yq install mysql-server \
-  && apt-get install -yq libssl-dev \
-  && apt-get install -yq libmysqlclient-dev \
-  && apt-get install -yq libsodium-dev \
-  && apt-get install -yq libreadline6-dev \
+  && apt-get install -yq mysql-server --no-install-recommends \
+  && apt-get install -yq libssl-dev --no-install-recommends \
+  && apt-get install -yq libmysqlclient-dev --no-install-recommends \
+  && apt-get install -yq libsodium-dev --no-install-recommends \
+  && apt-get install -yq libreadline6-dev --no-install-recommends \
   && rm -rf /var/lib/apt/lists/* \
-  && usermod -d /var/lib/mysql/ mysql \
+  && rm -rf /var/lib/mysql && mkdir -p /var/lib/mysql /var/run/mysqld \
+	&& chown -R mysql:mysql /var/lib/mysql /var/run/mysqld \
+  && chmod 777 /var/run/mysqld \
   && find /etc/mysql/ -name '*.cnf' -print0 \
   | xargs -0 grep -lZE '^(bind-address|log)' \
   | xargs -rt -0 sed -Ei 's/^(bind-address|log)/#&/' \
   && echo '[mysqld]\nskip-host-cache\nskip-name-resolve' > /etc/mysql/conf.d/docker.cnf
 
+VOLUME ["${HOME}", "/var/lib/mysql" ]
 COPY entrypoint.sh /sbin/
-RUN mkdir -p ${HOME}/.multiverse/ && chmod 755 /sbin/entrypoint.sh
-COPY build/src/multiverse* /usr/bin/
-COPY multiverse.conf ${HOME}/.multiverse/
-VOLUME ["${HOME}", "/etc/mysql/conf.d", "/var/lib/mysql" ]
+RUN chmod 755 /sbin/entrypoint.sh
+COPY build/multiverse* /usr/bin/
+COPY multiverse.conf /multiverse.conf
 EXPOSE 3306 33060 6811 6812 6815
 ENTRYPOINT ["/sbin/entrypoint.sh"]
-CMD ["mysqld_safe"]
+CMD ["multiverse"]
