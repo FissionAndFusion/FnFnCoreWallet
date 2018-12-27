@@ -17,7 +17,7 @@ class CNetChannelPeer
     class CNetChannelPeerFork
     {
     public:
-        CNetChannelPeerFork() : fSynchronized(true) {}
+        CNetChannelPeerFork() : fSynchronized(false) {}
         enum { NETCHANNEL_KNOWNINV_EXPIREDTIME = 5 * 60,NETCHANNEL_KNOWNINV_MAXCOUNT = 1024 * 256 };
         void AddKnownTx(const std::vector<uint256>& vTxHash);
         bool IsKnownTx(const uint256& txid) const {  return (!!setKnownTx.get<0>().count(txid)); }
@@ -106,10 +106,13 @@ protected:
     ITxPool* pTxPool;
     IDispatcher* pDispatcher;
     IService *pService;
-    mutable boost::shared_mutex rwNetPeer; 
+    
     mutable boost::recursive_mutex mtxSched; 
     std::map<uint256,CSchedule> mapSched; 
+
+    mutable boost::shared_mutex rwNetPeer; 
     std::map<uint64,CNetChannelPeer> mapPeer;
+    std::map<uint256, std::set<uint64> > mapUnsync;
 
     mutable boost::mutex mtxPushTx; 
     uint32 nTimerPushTx;
