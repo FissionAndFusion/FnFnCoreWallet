@@ -183,7 +183,7 @@ public:
     virtual bool SignTransaction(const CDestination& destIn, CTransaction& tx, bool& fCompleted) const = 0;
     virtual bool ArrangeInputs(const CDestination& destIn, const uint256& hashFork, int nForkHeight, CTransaction& tx) = 0;
     /* Update */
-    virtual bool SynchronizeTxSet(CTxSetChange& change) = 0;
+    virtual bool SynchronizeTxSet(const CTxSetChange& change) = 0;
     virtual bool UpdateTx(const uint256& hashFork, const CAssembledTx& tx) = 0;
     virtual bool ClearTx() = 0;
     virtual bool AddNewFork(const uint256& hashFork, const uint256& hashParent, int nOriginHeight) = 0;
