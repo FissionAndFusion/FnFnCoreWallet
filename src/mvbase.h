@@ -105,7 +105,7 @@ public:
     virtual bool FilterTx(CTxFilter& filter) = 0;
     virtual void ArrangeBlockTx(const uint256& hashFork, std::size_t nMaxSize, std::vector<CTransaction>& vtx, int64& nTotalTxFee) = 0;
     virtual bool FetchInputs(const uint256& hashFork, const CTransaction& tx, std::vector<CTxOutput>& vUnspent) = 0;
-    virtual bool SynchronizeWorldLine(CWorldLineUpdate& update, CTxSetChange& change) = 0;
+    virtual bool SynchronizeWorldLine(const CWorldLineUpdate& update, CTxSetChange& change) = 0;
     const CMvStorageConfig* StorageConfig()
     {
         return dynamic_cast<const CMvStorageConfig*>(walleve::IWalleveBase::WalleveConfig());
