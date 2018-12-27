@@ -202,15 +202,8 @@ int CNetChannel::GetPrimaryChainHeight()
 bool CNetChannel::IsForkSynchronized(const uint256& hashFork) const
 {
     boost::shared_lock<boost::shared_mutex> rlock(rwNetPeer);
-    for (map<uint64,CNetChannelPeer>::const_iterator it = mapPeer.begin();it != mapPeer.end();++it)
-    {
-        const CNetChannelPeer& peer = (*it).second; 
-        if (peer.IsSubscribed(hashFork) && !peer.IsSynchronized(hashFork))
-        {
-            return false;
-        }
-    }
-    return true;
+    map<uint256, set<uint64> >::const_iterator it = mapUnsync.find(hashFork);
+    return (it == mapUnsync.end()) || (*it).second.empty();
 }
 
 void CNetChannel::BroadcastBlockInv(const uint256& hashFork,const uint256& hashBlock,const set<uint64>& setKnownPeer)
@@ -321,6 +314,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerActive& eventActive)
     {
         boost::unique_lock<boost::shared_mutex> wlock(rwNetPeer);
         mapPeer[nNonce] = CNetChannelPeer(eventActive.data.nService,pCoreProtocol->GetGenesisBlockHash());
+        mapUnsync[pCoreProtocol->GetGenesisBlockHash()].insert(nNonce);
     }
     NotifyPeerUpdate(nNonce,true,eventActive.data);
     return true;
@@ -345,7 +339,16 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerDeactive& eventDeactive)
     }
     {
         boost::unique_lock<boost::shared_mutex> wlock(rwNetPeer);
-        mapPeer.erase(nNonce);
+
+        map<uint64,CNetChannelPeer>::iterator it = mapPeer.find(nNonce);
+        if (it != mapPeer.end())
+        {
+            for (auto& subFork: (*it).second.mapSubscribedFork)
+            {
+                mapUnsync[subFork.first].erase(nNonce);
+            }
+            mapPeer.erase(nNonce);
+        }
     }
     NotifyPeerUpdate(nNonce,false,eventDeactive.data);    
 
@@ -365,6 +368,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerSubscribe& eventSubscribe)
             BOOST_FOREACH(const uint256& hash,eventSubscribe.data)
             {
                 (*it).second.Subscribe(hash);
+                mapUnsync[hash].insert(nNonce);
 
                 {
                     boost::recursive_mutex::scoped_lock scoped_lock(mtxSched);
@@ -397,6 +401,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerUnsubscribe& eventUnsubscribe
             BOOST_FOREACH(const uint256& hash,eventUnsubscribe.data)
             {
                 (*it).second.Unsubscribe(hash);
+                mapUnsync[hash].erase(nNonce);
             }
         } 
     }
@@ -786,16 +791,27 @@ void CNetChannel::PostAddNew(const uint256& hashFork,CSchedule& sched,
 
 void CNetChannel::SetPeerSyncStatus(uint64 nNonce,const uint256& hashFork,bool fSync)
 {
-    boost::unique_lock<boost::shared_mutex> wlock(rwNetPeer);    
-
     bool fInverted = false;
-    CNetChannelPeer& peer = mapPeer[nNonce];
-    if (peer.SetSyncStatus(hashFork,fSync,fInverted))
     {
-        if (fSync && fInverted)
+        boost::unique_lock<boost::shared_mutex> wlock(rwNetPeer);    
+        CNetChannelPeer& peer = mapPeer[nNonce];
+        if (!peer.SetSyncStatus(hashFork,fSync,fInverted))
         {
+            return;
+        }
+    }
+
+    if (fInverted)
+    {
+        if (fSync)
+        {
+            mapUnsync[hashFork].erase(nNonce);
             BroadcastTxInv(hashFork);
-        } 
+        }
+        else
+        {
+            mapUnsync[hashFork].insert(nNonce);
+        }
     }
 }
 
@@ -829,6 +845,11 @@ void CNetChannel::PushTxTimerFunc(uint32 nTimerId)
 
 bool CNetChannel::PushTxInv(const uint256& hashFork)
 {
+    if (!IsForkSynchronized(hashFork))
+    {
+        return false;
+    }
+
     bool fCompleted = true;
     vector<uint256> vTxPool;
     pTxPool->ListTx(hashFork,vTxPool);
