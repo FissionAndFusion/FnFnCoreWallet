@@ -491,7 +491,7 @@ bool CTxPool::FetchInputs(const uint256& hashFork,const CTransaction& tx,vector<
     return true;
 }
 
-bool CTxPool::SynchronizeWorldLine(CWorldLineUpdate& update,CTxSetChange& change)
+bool CTxPool::SynchronizeWorldLine(const CWorldLineUpdate& update,CTxSetChange& change)
 {
     vector<pair<uint256,CAssembledTx> > vDBAddNew;
     vector<uint256> vDBRemove;
@@ -504,7 +504,7 @@ bool CTxPool::SynchronizeWorldLine(CWorldLineUpdate& update,CTxSetChange& change
     CTxPoolView& txView = mapPoolView[update.hashFork];
 
     int nHeight = update.nLastBlockHeight - update.vBlockAddNew.size() + 1;
-    BOOST_REVERSE_FOREACH(CBlockEx& block,update.vBlockAddNew)
+    BOOST_REVERSE_FOREACH(const CBlockEx& block,update.vBlockAddNew)
     {
         if (block.txMint.nAmount != 0)
         {
@@ -512,8 +512,8 @@ bool CTxPool::SynchronizeWorldLine(CWorldLineUpdate& update,CTxSetChange& change
         }
         for (std::size_t i = 0;i < block.vtx.size();i++)
         {
-            CTransaction& tx = block.vtx[i];
-            CTxContxt& txContxt = block.vTxContxt[i];
+            const CTransaction& tx = block.vtx[i];
+            const CTxContxt& txContxt = block.vTxContxt[i];
             uint256 txid = tx.GetHash();
             if (!update.setTxUpdate.count(txid))
             {
@@ -542,11 +542,11 @@ bool CTxPool::SynchronizeWorldLine(CWorldLineUpdate& update,CTxSetChange& change
     }
 
     vector<pair<uint256,vector<CTxIn> > > vTxRemove;
-    BOOST_FOREACH(CBlockEx& block,update.vBlockRemove)
+    BOOST_FOREACH(const CBlockEx& block,update.vBlockRemove)
     {
         for (int i = block.vtx.size() - 1; i >= 0; i--)
         {
-            CTransaction& tx = block.vtx[i];
+            const CTransaction& tx = block.vtx[i];
             uint256 txid = tx.GetHash();
             if (!update.setTxUpdate.count(txid))
             {
