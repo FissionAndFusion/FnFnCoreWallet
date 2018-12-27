@@ -82,7 +82,7 @@ private:
     CRPCResultPtr RPCGetBlockHash(CRPCParamPtr param);
     CRPCResultPtr RPCGetBlock(CRPCParamPtr param);
     CRPCResultPtr RPCGetTxPool(CRPCParamPtr param);
-    CRPCResultPtr RPCRemovePendingTx(CRPCParamPtr param);
+    // CRPCResultPtr RPCRemovePendingTx(CRPCParamPtr param);
     CRPCResultPtr RPCGetTransaction(CRPCParamPtr param);
     CRPCResultPtr RPCSendTransaction(CRPCParamPtr param);
     CRPCResultPtr RPCGetForkHeight(CRPCParamPtr param);
