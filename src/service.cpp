@@ -90,6 +90,12 @@ bool CService::WalleveHandleInitialize()
          return false;
     }
 
+    if (!WalleveGetObject("forkmanager", pForkManager))
+    {
+         WalleveError("Failed to request forkmanager\n");
+         return false;
+    }
+
     return true;
 }
 
@@ -234,18 +240,33 @@ int  CService::GetForkHeight(const uint256& hashFork)
     return 0;
 }
 
-void CService::ListFork(std::vector<std::pair<uint256,CProfile> >& vFork)
+void CService::ListFork(std::vector<std::pair<uint256,CProfile> >& vFork, bool fAll)
 {
-    vFork.reserve(mapForkStatus.size());
-
     boost::shared_lock<boost::shared_mutex> rlock(rwForkStatus);
-    
-    for (map<uint256,CForkStatus>::iterator it = mapForkStatus.begin();it != mapForkStatus.end();++it)
+    if (fAll)
     {
-        CProfile profile;
-        if (pWorldLine->GetForkProfile((*it).first,profile))
+        vector<uint256> vForkHash;
+        pForkManager->GetForkList(vForkHash);
+        vFork.reserve(vForkHash.size());
+        for (vector<uint256>::iterator it = vForkHash.begin(); it != vForkHash.end(); ++it)
         {
-            vFork.push_back(make_pair((*it).first,profile));
+            CForkContext ctx;
+            if (pWorldLine->GetForkContext(*it, ctx))
+            {
+                vFork.push_back(make_pair(*it, ctx.GetProfile()));
+            }
+        }
+    }
+    else
+    {
+        vFork.reserve(mapForkStatus.size());
+        for (map<uint256,CForkStatus>::iterator it = mapForkStatus.begin();it != mapForkStatus.end();++it)
+        {
+            CProfile profile;
+            if (pWorldLine->GetForkProfile((*it).first,profile))
+            {
+                vFork.push_back(make_pair((*it).first,profile));
+            }
         }
     }
 }

@@ -1,0 +1,63 @@
+version: '3'
+services:
+  db:
+    image: mysql:5.7
+    container_name: db 
+    restart: always
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: 'true'
+    volumes:
+      - './mysql/config:/etc/mysql/conf.d'
+      - './mysql/data:/var/lib/mysql'
+    networks:
+      - sn
+    ports:
+      - 13309:3306
+
+  root:
+    build: .
+    image: multiverse:latest
+    container_name: root
+    depends_on:
+      - db
+    environment:
+      DNSEED: '119.3.71.139'
+      DNSEED_PORT: 7611 
+      DB_HOST: db 
+      DB_PORT: 3306
+      DB_NAME: 'sn_root'
+    volumes:
+      - './apps:/home/apps'
+      - './nodes/root:/home/fnfn'
+    networks:
+      - sn
+    ports:
+      - 8150:6815
+      - 8120:6812
+
+  fork1:
+    image: multiverse:latest
+    container_name: fork1
+    environment:
+      HOME: '/home/fnfn'
+    volumes:
+      - './apps:/home/apps'
+      - './nodes/fork1:/home/fnfn'
+    ports:
+      - 8151:6815
+      - 8121:6812
+
+  fork2:
+    image: multiverse:latest
+    container_name: fork2
+    environment:
+      HOME: '/home/fnfn'
+    volumes:
+      - './apps:/home/apps'
+      - './nodes/fork2:/home/fnfn'
+    ports:
+      - 8152:6815
+      - 8122:6812
+
+networks:
+  sn:

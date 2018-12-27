@@ -634,10 +634,18 @@
     "listfork": {
         "type": "command",
         "name": "ListFork",
-        "desc": "Returns the list of forks.",
+        "desc": "If true list of all forks, or subscribed forks",
         "request": {
             "type": "object",
-            "content": {}
+            "content": {
+                "all": {
+                    "type": "bool",
+                    "desc": "list all forks or not",
+                    "opt": "a",
+                    "default": false,
+                    "required": false
+                }
+            }
         },
         "response": {
             "type": "array",

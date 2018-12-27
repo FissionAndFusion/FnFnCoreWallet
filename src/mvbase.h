@@ -120,6 +120,7 @@ public:
     virtual bool GetJoint(const uint256& hashFork,uint256& hashParent,uint256& hashJoint,int& nHeight) const = 0; 
     virtual bool LoadForkContext(std::vector<uint256>& vActive) = 0;
     virtual void ForkUpdate(const CWorldLineUpdate& update,std::vector<uint256>& vActive,std::vector<uint256>& vDeactive) = 0;
+    virtual void GetForkList(std::vector<uint256>& vFork) = 0;
     const CMvForkConfig* ForkConfig()
     {
         return dynamic_cast<const CMvForkConfig*>(walleve::IWalleveBase::WalleveConfig());
@@ -227,7 +228,7 @@ public:
     virtual int  GetForkCount() = 0;
     virtual bool  HaveFork(const uint256& hashFork) = 0;
     virtual int  GetForkHeight(const uint256& hashFork) = 0;
-    virtual void ListFork(std::vector<std::pair<uint256,CProfile> >& vFork) = 0;
+    virtual void ListFork(std::vector<std::pair<uint256,CProfile> >& vFork, bool fAll = false) = 0;
     virtual bool GetForkGenealogy(const uint256& hashFork,std::vector<std::pair<uint256,int> >& vAncestry,
                                                           std::vector<std::pair<int,uint256> >& vSubline) = 0;
     virtual bool GetBlockLocation(const uint256& hashBlock,uint256& hashFork,int& nHeight) = 0;

@@ -102,8 +102,7 @@ private:
    
     void SendEventToParentNode(CMvDbpVirtualPeerNetEvent& event);
     void UpdateGetDataEventRecord(const CMvEventPeerGetData& event);
-    bool IsThisNodeBlock(CMvEventPeerBlock& eventBlock);
-    bool IsThisNodeTx(CMvEventPeerTx& eventTx);
+    bool IsThisNodeData(const uint256& hashFork, uint64 nNonce, const uint256& dataHash);
 
     void FilterChildSubscribeFork(const CMvEventPeerSubscribe& in, CMvEventPeerSubscribe& out);
     void FilterChildUnsubscribeFork(const CMvEventPeerUnsubscribe& in, CMvEventPeerUnsubscribe& out);
