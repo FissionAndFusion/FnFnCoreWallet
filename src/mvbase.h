@@ -105,7 +105,7 @@ public:
     virtual bool FilterTx(CTxFilter& filter) = 0;
     virtual void ArrangeBlockTx(const uint256& hashFork, std::size_t nMaxSize, std::vector<CTransaction>& vtx, int64& nTotalTxFee) = 0;
     virtual bool FetchInputs(const uint256& hashFork, const CTransaction& tx, std::vector<CTxOutput>& vUnspent) = 0;
-    virtual bool SynchronizeWorldLine(CWorldLineUpdate& update, CTxSetChange& change) = 0;
+    virtual bool SynchronizeWorldLine(const CWorldLineUpdate& update, CTxSetChange& change) = 0;
     const CMvStorageConfig* StorageConfig()
     {
         return dynamic_cast<const CMvStorageConfig*>(walleve::IWalleveBase::WalleveConfig());
@@ -183,7 +183,7 @@ public:
     virtual bool SignTransaction(const CDestination& destIn, CTransaction& tx, bool& fCompleted) const = 0;
     virtual bool ArrangeInputs(const CDestination& destIn, const uint256& hashFork, int nForkHeight, CTransaction& tx) = 0;
     /* Update */
-    virtual bool SynchronizeTxSet(CTxSetChange& change) = 0;
+    virtual bool SynchronizeTxSet(const CTxSetChange& change) = 0;
     virtual bool UpdateTx(const uint256& hashFork, const CAssembledTx& tx) = 0;
     virtual bool ClearTx() = 0;
     virtual bool AddNewFork(const uint256& hashFork, const uint256& hashParent, int nOriginHeight) = 0;

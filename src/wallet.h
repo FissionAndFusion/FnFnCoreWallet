@@ -135,7 +135,7 @@ public:
     bool SignTransaction(const CDestination& destIn,CTransaction& tx,bool& fCompleted) const override;
     bool ArrangeInputs(const CDestination& destIn,const uint256& hashFork,int nForkHeight,CTransaction& tx) override;
     /* Update */
-    bool SynchronizeTxSet(CTxSetChange& change) override;
+    bool SynchronizeTxSet(const CTxSetChange& change) override;
     bool UpdateTx(const uint256& hashFork,const CAssembledTx& tx) override;
     bool ClearTx() override;
     bool LoadTx(const CWalletTx& wtx);
@@ -269,7 +269,7 @@ public:
         return false;
     }
     /* Update */
-    virtual bool SynchronizeTxSet(CTxSetChange& change) override
+    virtual bool SynchronizeTxSet(const CTxSetChange& change) override
     {
         return true;
     }

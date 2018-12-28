@@ -387,14 +387,6 @@
             "desc": "Accept connections from outside (default: 0)"
         },
         {
-            "name": "fBloom",
-            "type": "bool",
-            "opt": "bloom",
-            "default": true,
-            "format": "-nobloom",
-            "desc": ""
-        },
-        {
             "name": "nPortInt",
             "type": "int",
             "opt": "port",
