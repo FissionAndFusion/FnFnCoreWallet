@@ -378,19 +378,10 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
             {
                 return false;
             }
-
-            auto pForkManagerBase = walleveDocker.GetObject("forkmanager");
-            if(!pForkManagerBase)
-            {
-                return false;
-            }
             
             if(config.fEnableSuperNode)
             {
-                // dynamic_cast<CVirtualPeerNet*>(pVirtualPeerNetBase)->SetNodeTypeAsFnfn(!config.fEnableSuperNode);
-                // dynamic_cast<CVirtualPeerNet*>(pVirtualPeerNetBase)->SetNodeTypeAsSuperNode(!config.fEnableForkNode);
                 dynamic_cast<CVirtualPeerNet*>(pVirtualPeerNetBase)->EnableSuperNode(config.fEnableForkNode);
-
                 dynamic_cast<CNetChannel*>(pNetChannelBase)->EnableSuperNode(config.fEnableForkNode);
             }
             
