@@ -845,10 +845,10 @@ void CNetChannel::PushTxTimerFunc(uint32 nTimerId)
 
 bool CNetChannel::PushTxInv(const uint256& hashFork)
 {
-    if (!IsForkSynchronized(hashFork))
-    {
-        return false;
-    }
+    // if (!IsForkSynchronized(hashFork))
+    // {
+    //     return false;
+    // }
 
     bool fCompleted = true;
     vector<uint256> vTxPool;
