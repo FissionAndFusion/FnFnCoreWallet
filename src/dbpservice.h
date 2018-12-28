@@ -32,7 +32,6 @@ public:
 
     void EnableForkNode(bool enable);
     void EnableSuperNode(bool enable);
-    void SetSupportForks(const std::vector<uint256>& vForks);
 
     bool HandleEvent(CMvEventDbpConnect& event) override;
     bool HandleEvent(CMvEventDbpSub& event) override;
@@ -143,10 +142,6 @@ private:
     std::map<ForkNonceKeyType, int> mapChildNodeForkCount;
     std::map<ForkNonceKeyType, int> mapThisNodeForkCount;
     std::map<ForkNonceKeyType, std::set<uint256>> mapThisNodeGetData; 
-    
-    std::vector<uint256> vSupportFork;
-
-
 };
 
 } // namespace multiverse

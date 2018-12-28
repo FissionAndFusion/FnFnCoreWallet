@@ -107,11 +107,6 @@ void CDbpService::EnableSuperNode(bool enable)
     fEnableSuperNode = enable;
 }
 
-void CDbpService::SetSupportForks(const std::vector<uint256>& vForks)
-{
-    vSupportFork = vForks;
-}
-
 bool CDbpService::HandleEvent(CMvEventDbpPong& event)
 {
     (void)event;
