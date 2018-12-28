@@ -683,7 +683,7 @@
         "example": [
             {
                 "request": "multiverse-cli listfork",
-                "response": "1"
+                "response": "[{\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\",\"name\":\"Fission And Fusion Network\",\"symbol\":\"FnFn\",\"isolated\":true,\"private\":false,\"enclosed\":false,\"owner\":\"1mjw7aa0s7v9sv7x3thvcexxzjz4tq82j5qc12dy29ktqy84haa0j7dwb\"}]"
             },
             {
                 "request": "{\"id\":69,\"method\":\"listfork\",\"jsonrpc\":\"2.0\",\"params\":{}}",
@@ -1612,7 +1612,6 @@
         ],
         "error": [
             "{\"code\":-6,\"message\":\"Invalid address\"}",
-            "{\"code\":-6,\"message\":\"Invalid address, should be template address\"}",
             "{\"code\":-401,\"message\":\"Unkown template\"}"
         ]
     },
@@ -2229,7 +2228,6 @@
             "{\"code\":-401,\"message\":\"Failed to add key\"}",
             "{\"code\":-401,\"message\":\"Failed to sync wallet tx\"}",
             "{\"code\":-401,\"message\":\"Failed to add template\"}",
-            "{\"code\":-401,\"message\":\"Failed to sync wallet tx\"}",
             "{\"code\":-32602,\"message\":\"Failed to verify serialized key\"}",
             "{\"code\":-32602,\"message\":\"Can't import the key with empty passphrase\"}"
         ]

@@ -1078,7 +1078,7 @@ CRPCResultPtr CRPCMod::RPCExportTemplate(CRPCParamPtr param)
     CTemplateId tid;
     if (!address.GetTemplateId(tid))
     {
-        throw CRPCException(RPC_INVALID_PARAMETER, "Invalid address, should be template address");
+        throw CRPCException(RPC_INVALID_PARAMETER, "Invalid address");
     }
 
     CTemplatePtr ptr;
