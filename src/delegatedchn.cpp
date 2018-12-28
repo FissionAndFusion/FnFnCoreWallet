@@ -529,9 +529,11 @@ void CDelegatedChannel::AddPeerKnownPublish(uint64 nNonce, const uint256& hashAn
 void CDelegatedChannel::DispatchMisbehaveEvent(uint64 nNonce, CEndpointManager::CloseReason reason)
 {
     std::cout << "net close thread id " << std::this_thread::get_id() << " [delegatenetchannel]\n";
+/*
     CWalleveEventPeerNetClose eventClose(nNonce);
     eventClose.data = reason;
     pPeerNet->DispatchEvent(&eventClose);
+*/
 }
 
 void CDelegatedChannel::PushBulletinTimerFunc(uint32 nTimerId)

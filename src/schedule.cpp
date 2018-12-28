@@ -395,7 +395,8 @@ bool CSchedule::ScheduleKnownInv(uint64 nPeerNonce,CInvPeer& peer,uint32 type,
 {
     size_t nReceived = 0;
     vInv.clear();
-    list<uint256>& listKnown = peer.GetKnownList(type);
+
+    CUInt256List& listKnown = peer.GetKnownList(type);
 
     std::cout << " list known list size " << listKnown.size() << " [ScheduleKnownInv]\n";
 

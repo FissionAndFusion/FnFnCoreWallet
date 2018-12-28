@@ -17,6 +17,7 @@
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/member.hpp>
 #include <boost/multi_index/ordered_index.hpp>
+#include <boost/multi_index/sequenced_index.hpp>
 
 namespace multiverse
 {
@@ -182,6 +183,15 @@ typedef boost::multi_index_container<
 
 typedef CPeerKnownTxSet::nth_index<0>::type CPeerKnownTxSetById;
 typedef CPeerKnownTxSet::nth_index<1>::type CPeerKnownTxSetByTime;
+
+typedef boost::multi_index_container<
+  uint256,
+  boost::multi_index::indexed_by<
+    boost::multi_index::sequenced<>,
+    boost::multi_index::ordered_unique<boost::multi_index::identity<uint256> >
+  >
+> CUInt256List;
+typedef CUInt256List::nth_index<1>::type CUInt256ByValue;
 
 } // namespace multiverse
 

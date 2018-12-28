@@ -1130,7 +1130,7 @@ bool CBlockBase::UpdateDelegate(const uint256& hash,CBlockEx& block)
     return dbBlock.UpdateDelegate(hash,mapDelegate);
 }
 
-bool CBlockBase::UpdateEnroll(CBlockIndex* pIndexNew,vector<pair<uint256,CTxIndex> >& vTxNew)
+bool CBlockBase::UpdateEnroll(CBlockIndex* pIndexNew,const vector<pair<uint256,CTxIndex> >& vTxNew)
 {
     vector<pair<CTxIndex,uint256> > vEnroll;
     for (int i = 0;i < vTxNew.size();i++)

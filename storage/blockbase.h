@@ -227,7 +227,7 @@ protected:
     CBlockFork* AddNewFork(const CProfile& profileIn,CBlockIndex* pIndexLast);
     bool LoadForkProfile(const CBlockIndex* pIndexOrigin,CProfile& profile);
     bool UpdateDelegate(const uint256& hash,CBlockEx& block);
-    bool UpdateEnroll(CBlockIndex* pIndexNew,std::vector<std::pair<uint256,CTxIndex> >& vTxNew);
+    bool UpdateEnroll(CBlockIndex* pIndexNew,const std::vector<std::pair<uint256,CTxIndex> >& vTxNew);
     bool GetTxUnspent(const uint256 fork,const CTxOutPoint& out,CTxOutput& unspent);
     bool GetTxNewIndex(CBlockView& view,CBlockIndex* pIndexNew,std::vector<std::pair<uint256,CTxIndex> >& vTxNew);
     void ClearCache();

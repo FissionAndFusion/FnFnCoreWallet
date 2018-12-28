@@ -147,6 +147,7 @@ public:
     void GetFilteredTx(std::map<std::size_t,std::pair<uint256,CPooledTx*> >& mapFilteredTx,
                        const CDestination& sendTo=CDestination(),const CDestination& destIn=CDestination());
     void ArrangeBlockTx(std::map<std::size_t,std::pair<uint256,CPooledTx*> >& mapArrangedTx,std::size_t nMaxSize);
+    void ArrangeBlockTx(std::vector<CTransaction>& vtx,int64& nTotalTxFee,std::size_t nMaxSize);
 public:
     std::map<uint256,CPooledTx*> mapTx;
     std::map<CTxOutPoint,CSpent> mapSpent;
@@ -168,7 +169,7 @@ public:
     bool FilterTx(CTxFilter& filter) override;
     void ArrangeBlockTx(const uint256& hashFork,std::size_t nMaxSize,std::vector<CTransaction>& vtx,int64& nTotalTxFee) override;
     bool FetchInputs(const uint256& hashFork,const CTransaction& tx,std::vector<CTxOutput>& vUnspent) override;
-    bool SynchronizeWorldLine(CWorldLineUpdate& update,CTxSetChange& change) override;
+    bool SynchronizeWorldLine(const CWorldLineUpdate& update,CTxSetChange& change) override;
     bool LoadTx(const uint256& txid,const uint256& hashFork,const CAssembledTx& tx);
 protected:
     bool WalleveHandleInitialize() override;

@@ -1026,36 +1026,6 @@
             "{\"code\":-6,\"message\":\"Unknown fork\"}"
         ]
     },
-    "removependingtx": {
-        "type": "command",
-        "name": "RemovePendingTx",
-        "desc": "Removes tx whose id is <txid> from txpool.",
-        "request": {
-            "type": "object",
-            "content": {
-                "txid": {
-                    "type": "string",
-                    "desc": "transaction hash"
-                }
-            }
-        },
-        "response": {
-            "type": "string",
-            "name": "result",
-            "desc": "remove tx result"
-        },
-        "example": [
-            {
-                "request": "multiverse-cli removependingtx 01a9f3bb967f24396293903c856e99896a514756a220266afa347a8b8c7f0038",
-                "response": "Remove tx successfully: 01a9f3bb967f24396293903c856e99896a514756a220266afa347a8b8c7f0038"
-            },
-            {
-                "request": "curl -d '{\"id\":21,\"method\":\"removependingtx\",\"jsonrpc\":\"2.0\",\"params\":{\"txid\":\"01a9f3bb967f24396293903c856e99896a514756a220266afa347a8b8c7f0038\"}}' http://127.0.0.1:6812",
-                "response": "{\"id\":21,\"jsonrpc\":\"2.0\",\"result\":\"Remove tx successfully: 01a9f3bb967f24396293903c856e99896a514756a220266afa347a8b8c7f0038\"}"
-            }
-        ],
-        "error": "{\"code\":-6,\"message\":\"This transaction is not in tx pool.\"}"
-    },
     "gettransaction": {
         "type": "command",
         "name": "GetTransaction",
