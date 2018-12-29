@@ -19,6 +19,21 @@ public:
     virtual bool Walk(const CTxOutPoint& txout,const CTxOutput& output) = 0;
 };
 
+class CForkUnspentCheckWalker : public CForkUnspentDBWalker
+{
+public:
+    CForkUnspentCheckWalker() : nSum(0), mapUnspent() {};
+    bool Walk(const CTxOutPoint& txout,const CTxOutput& output) override
+    {
+        ++nSum;
+        mapUnspent.insert(std::make_pair(txout, output));
+    };
+
+public:
+    uint64 nSum;
+    std::map<CTxOutPoint, CTxOutput> mapUnspent;
+};
+
 class CForkUnspentDB : public walleve::CKVDB
 {
 public:

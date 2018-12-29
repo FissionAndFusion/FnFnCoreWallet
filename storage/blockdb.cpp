@@ -1007,32 +1007,17 @@ bool CBlockDB::GetUnspentSum(int forkIndex, uint64& nSum)
 
 bool CBlockDB::GetAllUnspentTx(int forkIndex, std::map<std::pair<uint256, uint8>, std::tuple<CDestination, int64, uint32>>& mapRes)
 {
-    CMvDBInst db(&dbPool);
-    if (!db.Available())
+    CForkUnspentCheckWalker walker;
+    if(!dbUnspent.WalkThrough(forkIndex, walker))
     {
         return false;
     }
 
+    mapRes.clear();
+    for(const auto& unspent : walker.mapUnspent)
     {
-        mapRes.clear();
-        ostringstream oss;
-        oss << "SELECT txid, nout, dest, amount, lockuntil FROM unspent" << forkIndex;
-        CMvDBRes res(*db,oss.str());
-        while(res.GetRow())
-        {
-            uint256 txid;
-            uint8 nout;
-            CDestination dest;
-            int64 nAmount;
-            uint32 nLockUntil;
-            if (!res.GetField(0, txid)  || !res.GetField(1, nout) || !res.GetField(2, dest)
-                || !res.GetField(3, nAmount) || !res.GetField(4, nLockUntil))
-            {
-                return false;
-            }
-            mapRes.insert(make_pair(make_pair(txid, nout), make_tuple(dest, nAmount, nLockUntil)));
-        }
+        mapRes.insert(make_pair(make_pair(unspent.first.hash, unspent.first.n)
+                , make_tuple(unspent.second.destTo, unspent.second.nAmount, unspent.second.nLockUntil)));
     }
-
     return true;
 }

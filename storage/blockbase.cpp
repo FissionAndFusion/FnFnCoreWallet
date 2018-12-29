@@ -1266,16 +1266,6 @@ bool CBlockBase::CheckConsistency(int nCheckLevel)
         }
 
         //check unspent
-        uint64 nTxUnspentSum = 0;
-        if(!dbBlock.GetUnspentSum(fork.nIndex, nTxUnspentSum))
-        {
-            return  false;
-        }
-        if(nTxUnspentSum != mapUnspent.size())
-        {
-            return false;
-        }
-
         map<pair<uint256, uint8>, tuple<CDestination, int64, uint32>> mapLhs;
         if(!dbBlock.GetAllUnspentTx(fork.nIndex, mapLhs))
         {
@@ -1287,7 +1277,7 @@ bool CBlockBase::CheckConsistency(int nCheckLevel)
             mapRhs.insert(make_pair(make_pair(tu.second.hash, tu.second.n)
                     , make_tuple(tu.second.output.destTo, tu.second.output.nAmount, tu.second.output.nLockUntil)));
         }
-        if(mapLhs !=mapRhs)
+        if(mapLhs.size() != mapRhs.size() || mapLhs != mapRhs)
         {
             return false;
         }
