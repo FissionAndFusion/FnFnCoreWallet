@@ -131,14 +131,24 @@ bool CIOInBound::Invoke(const tcp::endpoint& epListen,size_t nMaxConnection,cons
         BuildWhiteList(vAllowMask);
         epService = epListen;
 
-        if (!PrepareClient(nMaxConnection + 1))
+        if (!PrepareClient(nMaxConnection + 2))
         {
             return false;
         }
 
         acceptorService.open(epListen.protocol());
         acceptorService.set_option(tcp::acceptor::reuse_address(true));
-        acceptorService.bind(epListen);
+
+        //acceptorService.bind(epListen);
+        boost::system::error_code ec;
+        acceptorService.bind(epListen, ec);
+        if (ec)
+        {
+            throw runtime_error((string("IOInBound tcp bind fail, addr: ") + 
+                 epListen.address().to_string() + string(":") + to_string(epListen.port()) + 
+                 string(", cause: ") + ec.message()).c_str());
+        }
+
         acceptorService.listen();
 
         CIOClient *pClient = ClientAlloc();
@@ -410,6 +420,7 @@ CIOClient* CIOSSLOutBound::ClientAlloc(const CIOSSLOption& optSSL)
                 ctx.use_certificate_chain_file(optSSL.strPathCert);
                 ctx.use_private_key_file(optSSL.strPathPK,boost::asio::ssl::context::pem);
             }
+
             return new CSSLClient(this,ioService,ctx,optSSL.fVerifyPeer ? optSSL.strPeerName : ""); 
         }
         catch (exception& e)
