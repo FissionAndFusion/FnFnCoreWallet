@@ -1060,3 +1060,51 @@ bool CBlockDB::GetAllEnroll(std::map<std::pair<uint256, CDestination>, std::tupl
 
     return true;
 }
+
+bool CBlockDB::GetUnspentSum(int forkIndex, uint64& nSum)
+{
+    CMvDBInst db(&dbPool);
+    if (!db.Available())
+    {
+        return false;
+    }
+
+    {
+        ostringstream oss;
+        oss << "SELECT COUNT(id) FROM unspent" << forkIndex;
+        CMvDBRes res(*db,oss.str());
+        return (res.GetRow() && res.GetField(0, nSum));
+    }
+}
+
+bool CBlockDB::GetAllUnspentTx(int forkIndex, std::map<std::pair<uint256, uint8>, std::tuple<CDestination, int64, uint32>>& mapRes)
+{
+    CMvDBInst db(&dbPool);
+    if (!db.Available())
+    {
+        return false;
+    }
+
+    {
+        mapRes.clear();
+        ostringstream oss;
+        oss << "SELECT txid, nout, dest, amount, lockuntil FROM unspent" << forkIndex;
+        CMvDBRes res(*db,oss.str());
+        while(res.GetRow())
+        {
+            uint256 txid;
+            uint8 nout;
+            CDestination dest;
+            int64 nAmount;
+            uint32 nLockUntil;
+            if (!res.GetField(0, txid)  || !res.GetField(1, nout) || !res.GetField(2, dest)
+                || !res.GetField(3, nAmount) || !res.GetField(4, nLockUntil))
+            {
+                return false;
+            }
+            mapRes.insert(make_pair(make_pair(txid, nout), make_tuple(dest, nAmount, nLockUntil)));
+        }
+    }
+
+    return true;
+}

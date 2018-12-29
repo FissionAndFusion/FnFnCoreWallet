@@ -975,7 +975,7 @@ bool CBlockBase::CheckConsistency(int nCheckLevel)
     }
 
     //TODO - remove it after done
-    nLevel = 2;
+    //nLevel = 2;
 
     //checking of level 0: fork/block
     if(nLevel >= 0)
@@ -1216,206 +1216,82 @@ bool CBlockBase::CheckConsistency(int nCheckLevel)
         }
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    //retrieve all forks from db
+    //checking of level 3: unspent
     vector<CBlockDBFork> vFork;
     if(!dbBlock.FetchFork(vFork))
     {
         return false;
     }
 
-    for(const auto& f : vFork)
+    for(const auto& fork : vFork)
     {
-        //check at level 0 - block integration
-        //step 1, integration of rows in table fork with table block
-        //step 2, consistency of block structures in both table block and block files
-
-        //step 1 of level 0
-        if(!dbBlock.ExistBlock(f.hashRef))
+        CBlockFork* pFork = GetFork(fork.hashFork);
+        if(NULL == pFork)
+        {
+            return false;
+        }
+        CBlockIndex* pLastBlock = pFork->GetLast();
+        if(NULL == pLastBlock)
+        {
+            return false;
+        }
+        pFork->UpdateLast(pLastBlock);
+        CBlockIndex* pIndex = pFork->GetOrigin();
+        if(NULL == pIndex)
         {
             return false;
         }
 
-        //step 2 of level 0
-        uint256 posBlk = f.hashRef;
-        while(uint256() != posBlk)
-        {//go through the whole blocks on the fork chain
-            static int nCount = 0;
-            ++nCount;
-            CBlockOutline outline;
-            if(!dbBlock.GetBlock(posBlk, outline))
-            {
-                return false;
-            }
+        map<uint256, CTxUnspent> mapUnspent;
+        while(!pIndex)
+        {
             CBlockEx block;
-            if(!tsBlock.ReadDirect(block, outline.nFile, outline.nOffset))
+            if(!tsBlock.ReadDirect(block, pIndex->nFile, pIndex->nOffset))
             {
                 return false;
             }
-            //exclude the following calculated fields:
-            //nHeight, nMoneySupply, nChainTrust, nFile, nOffset
-            static auto lmdEqualBlock = [] (const CBlockOutline& lhs, const CBlock& rhs) -> bool {
-                CBlockIndex index(rhs, lhs.nFile, lhs.nOffset);
-/*                bool b1 = lhs.hashBlock == rhs.GetHash();
-                bool b2 = lhs.hashPrev == rhs.hashPrev;
-                bool b3 = lhs.txidMint == rhs.txMint.GetHash();
-                bool b4 = lhs.nMintType == rhs.txMint.nType;
-                bool b5 = lhs.nVersion == rhs.nVersion;
-                bool b6 = lhs.nType == rhs.nType;
-                bool b7 = lhs.nTimeStamp == rhs.nTimeStamp;
-                bool b8 = lhs.nRandBeacon == rhs.GetBlockBeacon();
-                //uint64 trust = rhs.GetBlockTrust();
-                //b = lhs.nChainTrust == rhs.GetBlockTrust();
-                bool b9 = lhs.nProofAlgo == index.nProofAlgo;
-                bool ba = lhs.nProofBits == index.nProofBits;
-                bool b = (lhs.hashBlock == rhs.GetHash() && lhs.hashPrev == rhs.hashPrev
-                        && (lhs.nMintType == 0 && lhs.nType == CBlock::BLOCK_VACANT ? true : lhs.txidMint == rhs.txMint.GetHash())
-                        && lhs.nMintType == rhs.txMint.nType
-                        && lhs.nVersion == rhs.nVersion && lhs.nType == rhs.nType
-                        && lhs.nTimeStamp == rhs.nTimeStamp && lhs.nRandBeacon == rhs.GetBlockBeacon()
-                        && lhs.nProofAlgo == index.nProofAlgo && lhs.nProofBits == index.nProofBits);
-                if (!b3)
-                {
-                    assert(b);
-                }*/
-                return (lhs.hashBlock == rhs.GetHash() && lhs.hashPrev == rhs.hashPrev
-                        //vacant block has no transaction
-                        && (lhs.nMintType == 0 && lhs.nType == CBlock::BLOCK_VACANT ?
-                            true : lhs.txidMint == rhs.txMint.GetHash())
-                        && lhs.nMintType == rhs.txMint.nType
-                        && lhs.nVersion == rhs.nVersion && lhs.nType == rhs.nType
-                        && lhs.nTimeStamp == rhs.nTimeStamp && lhs.nRandBeacon == rhs.GetBlockBeacon()
-                        && lhs.nProofAlgo == index.nProofAlgo && lhs.nProofBits == index.nProofBits
-                );
-            };
-            if(!lmdEqualBlock(outline, block))
+            mapUnspent[block.txMint.GetHash()] = CTxUnspent(CTxOutPoint(uint256(), 0)
+                    , CTxOutput(block.txMint.sendTo, block.txMint.nAmount, block.txMint.nLockUntil));
+
+            for(const auto& tx : block.vtx)
             {
-                return false;
-            }
-
-            //check at level 1 - transaction integration
-            if(1 == nLevel && !(outline.nMintType == 0 && outline.nType == CBlock::BLOCK_VACANT))   //vacant block has no transaction
-            {
-                static auto lmdEqualTx = [&](const uint256& hashTx) -> bool {
-                    CTxIndex txidx;
-                    CTransaction tx;
-                    tx.nAmount = 7; tx.nVersion = 7; tx.nLockUntil = 7; tx.nType = 7; tx.nTxFee = 7; tx.hashAnchor = 7;
-                    uint32 nFile = 0;
-                    uint32 nOffset = 0;
-                    if(!dbBlock.ExistsTx(hashTx)
-                       || !dbBlock.RetrieveTxIndex(hashTx, txidx)
-                       || !dbBlock.RetrieveTxPos(hashTx, nFile, nOffset)
-                       || !tsBlock.ReadDirect(tx, nFile, nOffset)
-                      )
-                    {
-                        return false;
-                    }
-/*
-                    uint16 nVersion;
-                    uint16 nType;
-                    uint32 nLockUntil;
-                    uint256 hashAnchor;
-                    CDestination sendTo;
-                    int64 nAmount;
-                    CDestination destIn;
-                    int64 nValueIn;
-                    int nBlockHeight;
-*/
-                    bool b1 = txidx.nVersion == tx.nVersion;
-                    bool b2 = txidx.nType == tx.nType;
-                    bool b3 = txidx.nLockUntil == tx.nLockUntil;
-                    bool b4 = txidx.hashAnchor == tx.hashAnchor;
-                    bool b5 = txidx.sendTo == tx.sendTo;
-                    bool b6 = txidx.nAmount == tx.nAmount;
-/*                    bool b7 = txidx.destIn == tx.destIn;
-                    bool b8 = txidx.nValueIn == tx.nValueIn;
-                    bool b9 = txidx.nBlockHeight == tx.nBlockHeight;*/
-                    bool ba = txidx.nBlockHeight == outline.nHeight;
-
-                    if(!(b1 && b2 && b3 && b4 && b5 && b6 && ba))
-                    {
-                        return true;
-                        assert(0);
-                    }
-
-                    //exclude the following calculated fields:
-                    //destIn, nValueIn
-                    return (txidx.nVersion == tx.nVersion
-                            && txidx.nType == tx.nType
-                            && txidx.nLockUntil == tx.nLockUntil
-                            && txidx.hashAnchor == tx.hashAnchor
-                            && txidx.sendTo == tx.sendTo
-                            && txidx.nAmount == tx.nAmount
-                            && txidx.nBlockHeight == outline.nHeight
-                    );
-                };
-
-                do
+                for(const auto& txin : tx.vInput)
                 {
-                    //bypass check for vacant block without any transaction
-                    if(outline.nMintType == 0 && outline.nType == CBlock::BLOCK_VACANT)
-                    {
-                        break;
-                    }
-
-                    //check mint transaction
-                    if(!lmdEqualTx(block.txMint.GetHash()))
-                    {
-                        return false;
-                    }
-
-                    //check other transactions following mint tx
-                    for(const auto& tx : block.vtx)
-                    {
-                        if(!lmdEqualTx(tx.GetHash()))
-                        {
-                            return false;
-                        }
-                    }
+                    mapUnspent.erase(txin.prevout.hash);
                 }
-                while(false);
+                mapUnspent[tx.GetHash()] = CTxUnspent(tx.vInput[0].prevout, CTxOutput(tx.sendTo, tx.nAmount, tx.nLockUntil));
             }
 
-            //check at level 2 - integration of delegate/enroll on main chain
-            if(2 == nLevel && 1 == f.nIndex)
-            {
-                ;
-            }
-
-            //check at level 3 - unspent against transaction
-            if(3 == nLevel)
-            {
-                ;
-            }
-
-            posBlk = outline.hashPrev;
+            pIndex = pIndex->pNext;
         }
-        static int nIdx = f.nIndex;
+
+        //check unspent
+        uint64 nTxUnspentSum = 0;
+        if(!dbBlock.GetUnspentSum(fork.nIndex, nTxUnspentSum))
+        {
+            return  false;
+        }
+        if(nTxUnspentSum != mapUnspent.size())
+        {
+            return false;
+        }
+
+        map<pair<uint256, uint8>, tuple<CDestination, int64, uint32>> mapLhs;
+        if(!dbBlock.GetAllUnspentTx(fork.nIndex, mapLhs))
+        {
+            return false;
+        }
+        map<pair<uint256, uint8>, tuple<CDestination, int64, uint32>> mapRhs;
+        for(const auto& tu : mapUnspent)
+        {
+            mapRhs.insert(make_pair(make_pair(tu.second.hash, tu.second.n)
+                    , make_tuple(tu.second.output.destTo, tu.second.output.nAmount, tu.second.output.nLockUntil)));
+        }
+        if(mapLhs !=mapRhs)
+        {
+            return false;
+        }
     }
-
-
-
 
     return true;
 }
