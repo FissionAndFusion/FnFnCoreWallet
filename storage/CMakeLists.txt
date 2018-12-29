@@ -14,6 +14,7 @@ set(sources
 	blockbase.cpp blockbase.h
 	walletdb.cpp walletdb.h
 	txpooldb.cpp txpooldb.h
+	unspentdb.cpp unspentdb.h
 	dnseeddb.cpp dnseeddb.h
 	purger.cpp purger.h
 	leveldbeng.cpp leveldbeng.h

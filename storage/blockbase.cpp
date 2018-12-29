@@ -258,7 +258,7 @@ bool CBlockBase::Initialize(const CMvDBConfig& dbConfig,int nMaxDBConn,const pat
         return false;
     }
 
-    if (!dbBlock.Initialize())
+    if (!dbBlock.Initialize(pathDataLocation))
     {
         Error("B","Failed to initialize block db\n");
         return false;

@@ -100,7 +100,7 @@ protected:
     void NotifyPeerUpdate(uint64 nNonce,bool fActive,const network::CAddress& addrPeer);
     void DispatchGetBlocksEvent(uint64 nNonce,const uint256& hashFork);
     void DispatchAwardEvent(uint64 nNonce,walleve::CEndpointManager::Bonus bonus);
-    void DispatchMisbehaveEvent(uint64 nNonce,walleve::CEndpointManager::CloseReason reason);
+    void DispatchMisbehaveEvent(uint64 nNonce,walleve::CEndpointManager::CloseReason reason,const std::string& strCaller = "");
     void SchedulePeerInv(uint64 nNonce,const uint256& hashFork,CSchedule& sched);
     bool GetMissingPrevTx(CTransaction& tx,std::set<uint256>& setMissingPrevTx);
     void AddNewBlock(const uint256& hashFork,const uint256& hash,CSchedule& sched,

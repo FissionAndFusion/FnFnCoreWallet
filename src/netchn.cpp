@@ -207,7 +207,7 @@ bool CNetChannel::IsForkSynchronized(const uint256& hashFork) const
 {
     boost::shared_lock<boost::shared_mutex> rlock(rwNetPeer);
     map<uint256, set<uint64> >::const_iterator it = mapUnsync.find(hashFork);
-    return (it == mapUnsync.end()) || (*it).second.empty();
+    return (it == mapUnsync.end() || (*it).second.empty());
 }
 
 void CNetChannel::BroadcastBlockInv(const uint256& hashFork,const uint256& hashBlock,const set<uint64>& setKnownPeer)
@@ -402,7 +402,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerSubscribe& eventSubscribe)
     else
     {
         std::cout << "DDOS in PeerSub [netchannel]\n";
-        DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
+        DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK,"eventSubscribe");
     }
 
     return true;
@@ -428,7 +428,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerUnsubscribe& eventUnsubscribe
     else
     {
         std::cout << "DDOS in UnSun [netchannel]\n";
-        DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
+        DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK,"eventUnsubscribe");
     }
 
     return true;
@@ -487,7 +487,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerInv& eventInv)
     catch (...)
     {
         std::cout << "DDOS in PeerInv [netchannel]\n";
-        DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
+        DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK,"eventInv");
     }
     return true;
 }
@@ -542,7 +542,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerGetBlocks& eventGetBlocks)
     if (!pWorldLine->GetBlockInv(hashFork,eventGetBlocks.data,vBlockHash,MAX_GETBLOCKS_COUNT))
     {
         std::cout << "DDOS in PeerGetBlocks [netchannel]\n";
-        DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
+        DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK,"eventGetBlocks");
         return true;
     }
     network::CMvEventPeerInv eventInv(nNonce,hashFork);
@@ -615,7 +615,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerTx& eventTx)
     catch (...)
     {
         std::cout << "DDOS in PeerTx [netchannel]\n";
-        DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
+        DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK,"eventTx");
     }
     return true;
     
@@ -664,7 +664,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerBlock& eventBlock)
     catch (...)
     {
         std::cout << "DDOS in PeerBlock [netchannel]\n";
-        DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
+        DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK,"eventBlock");
     }
     return true; 
 }
@@ -704,8 +704,13 @@ void CNetChannel::DispatchAwardEvent(uint64 nNonce,CEndpointManager::Bonus bonus
     pPeerNet->DispatchEvent(&eventReward);
 }
 
-void CNetChannel::DispatchMisbehaveEvent(uint64 nNonce,CEndpointManager::CloseReason reason)
+void CNetChannel::DispatchMisbehaveEvent(uint64 nNonce,CEndpointManager::CloseReason reason,const std::string& strCaller)
 {
+    if (!strCaller.empty())
+    {
+        WalleveLog("DispatchMisbehaveEvent : %s\n",strCaller.c_str());
+    }
+
     CWalleveEventPeerNetClose eventClose(nNonce);
     eventClose.data = reason;
     pPeerNet->DispatchEvent(&eventClose);
@@ -732,8 +737,9 @@ void CNetChannel::SchedulePeerInv(uint64 nNonce,const uint256& hashFork,CSchedul
                 if(nNonce != std::numeric_limits<uint64>::max())
                 {
                     std::cout << "Dispatch Event DDOS (ScheduleTxInv return false) [netchannel]\n";
-                    DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
+                    DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK,"SchedulePeerInv1");
                 }
+                
             }
         }
 
@@ -746,8 +752,9 @@ void CNetChannel::SchedulePeerInv(uint64 nNonce,const uint256& hashFork,CSchedul
         if(nNonce != std::numeric_limits<uint64>::max())
         {
             std::cout << "Dispatch Event DDOS (ScheduleBlockInv return false) [netchannel]\n";
-            DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
+            DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK,"SchedulePeerInv2");
         }
+        
     }
     if (!eventGetData.data.empty())
     {
@@ -877,7 +884,7 @@ void CNetChannel::PostAddNew(const uint256& hashFork,CSchedule& sched,
         if(nNonceMisbehave != std::numeric_limits<uint64>::max())
         {
             std::cout << "DDOS in PostAddNew [netchannel]\n";
-            DispatchMisbehaveEvent(nNonceMisbehave,CEndpointManager::DDOS_ATTACK);
+            DispatchMisbehaveEvent(nNonceMisbehave,CEndpointManager::DDOS_ATTACK,"PostAddNew");
         }
     }
 }
@@ -938,10 +945,10 @@ void CNetChannel::PushTxTimerFunc(uint32 nTimerId)
 
 bool CNetChannel::PushTxInv(const uint256& hashFork)
 {
-    if (!IsForkSynchronized(hashFork))
-    {
-        return false;
-    }
+    // if (!IsForkSynchronized(hashFork))
+    // {
+    //     return false;
+    // }
 
     bool fCompleted = true;
     vector<uint256> vTxPool;
