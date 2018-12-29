@@ -1133,6 +1133,7 @@ bool CBlockBase::CheckConsistency(int nCheckLevel)
         }
 
         map<pair<uint256, CDestination>, int64> mapDelegate;
+        map<pair<uint256, CDestination>, tuple<uint256, uint32, uint32>> mapEnroll;
         while(pIndex)
         {
             CBlockEx block;
@@ -1150,7 +1151,7 @@ bool CBlockBase::CheckConsistency(int nCheckLevel)
 
             for (int i = 0; i < block.vtx.size(); i++)
             {
-                CTransaction& tx = block.vtx[i];
+                const CTransaction& tx = block.vtx[i];
                 {
                     CTemplateId tid;
                     if (tx.sendTo.GetTemplateId(tid) && tid.GetType() == TEMPLATE_DELEGATE)
@@ -1159,13 +1160,28 @@ bool CBlockBase::CheckConsistency(int nCheckLevel)
                     }
                 }
 
-                CTxContxt& txContxt = block.vTxContxt[i];
+                const CTxContxt& txContxt = block.vTxContxt[i];
                 {
                     CTemplateId tid;
                     if (txContxt.destIn.GetTemplateId(tid) && tid.GetType() == TEMPLATE_DELEGATE)
                     {
                         mapDelegate[make_pair(hashBlock, txContxt.destIn)] -= tx.nAmount + tx.nTxFee;
                     }
+                }
+
+                if(tx.nType == CTransaction::TX_CERT)
+                {
+                    const uint256& anchor = tx.hashAnchor;
+                    const CDestination& dest = tx.sendTo;
+                    const uint256& blk = block.GetHash();
+                    CTxIndex txIdx;
+                    if(!dbBlock.RetrieveTxIndex(tx.GetHash(), txIdx))
+                    {
+                        return false;
+                    }
+                    const uint32& nFile = txIdx.nFile;
+                    const uint32& nOffset = txIdx.nOffset;
+                    mapEnroll[make_pair(anchor, dest)] = make_tuple(blk, nFile, nOffset);
                 }
             }
 
@@ -1179,6 +1195,17 @@ bool CBlockBase::CheckConsistency(int nCheckLevel)
             return false;
         }
         if(mapDelegate != mapDelegateComp)
+        {
+            return false;
+        }
+
+        //check table enroll
+        map<pair<uint256, CDestination>, tuple<uint256, uint32, uint32>> mapEnrollComp;
+        if(!dbBlock.GetAllEnroll(mapEnrollComp))
+        {
+            return false;
+        }
+        if(mapEnroll != mapEnrollComp)
         {
             return false;
         }

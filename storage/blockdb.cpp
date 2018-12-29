@@ -1032,3 +1032,31 @@ bool CBlockDB::GetAllDelegate(std::map<std::pair<uint256, CDestination>, int64>&
     }
     return true;
 }
+
+bool CBlockDB::GetAllEnroll(std::map<std::pair<uint256, CDestination>, std::tuple<uint256, uint32, uint32>>& mapEnroll)
+{
+    CMvDBInst db(&dbPool);
+    if (!db.Available())
+    {
+        return false;
+    }
+
+    CMvDBRes res(*db, "SELECT anchor, dest, block, file, offset FROM enroll", true);
+    mapEnroll.clear();
+    while (res.GetRow())
+    {
+        uint256 anchor;
+        CDestination dest;
+        uint256 block;
+        uint32 nFile;
+        uint32 nOffset;
+        if (!res.GetField(0, anchor)  || !res.GetField(1, dest) || !res.GetField(2, block)
+            || !res.GetField(3, nFile) || !res.GetField(4, nOffset))
+        {
+            return false;
+        }
+        mapEnroll[make_pair(anchor, dest)] = make_tuple(block, nFile, nOffset);
+    }
+
+    return true;
+}

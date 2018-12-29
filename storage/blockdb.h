@@ -84,6 +84,7 @@ public:
                         std::map<CDestination,std::pair<uint32,uint32> >& mapEnrollTxPos);
     bool InnoDB();
     bool GetAllDelegate(std::map<std::pair<uint256, CDestination>, int64>& mapDelegate);
+    bool GetAllEnroll(std::map<std::pair<uint256, CDestination>, std::tuple<uint256, uint32, uint32>>& mapEnroll);
 protected:
     int GetForkIndex(const uint256& hash)
     {
