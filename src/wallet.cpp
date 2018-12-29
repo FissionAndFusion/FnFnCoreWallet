@@ -576,7 +576,7 @@ bool CWallet::InsertKey(const crypto::CKey& key)
     return false;
 }
 
-bool CWallet::SynchronizeTxSet(CTxSetChange& change)
+bool CWallet::SynchronizeTxSet(const CTxSetChange& change)
 {
     boost::unique_lock<boost::shared_mutex> wlock(rwWalletTx);
 
@@ -585,7 +585,7 @@ bool CWallet::SynchronizeTxSet(CTxSetChange& change)
     
     for (std::size_t i = 0;i < change.vTxRemove.size();i++)
     {
-        uint256& txid = change.vTxRemove[i].first;
+        const uint256& txid = change.vTxRemove[i].first;
         std::shared_ptr<CWalletTx> spWalletTx = LoadWalletTx(txid);
         if (spWalletTx != NULL)
         {
@@ -595,7 +595,7 @@ bool CWallet::SynchronizeTxSet(CTxSetChange& change)
         }
     }
     
-    for (map<uint256,int>::iterator it = change.mapTxUpdate.begin();it != change.mapTxUpdate.end();++it)
+    for (map<uint256,int>::const_iterator it = change.mapTxUpdate.begin();it != change.mapTxUpdate.end();++it)
     {
         const uint256& txid = (*it).first;
         std::shared_ptr<CWalletTx> spWalletTx = LoadWalletTx(txid);
@@ -607,7 +607,7 @@ bool CWallet::SynchronizeTxSet(CTxSetChange& change)
     }
 
     map<int,vector<uint256> > mapPreFork;
-    BOOST_FOREACH(CAssembledTx& tx,change.vTxAddNew)
+    BOOST_FOREACH(const CAssembledTx& tx,change.vTxAddNew)
     {
         bool fIsMine = IsMine(tx.sendTo);
         bool fFromMe = IsMine(tx.destIn);

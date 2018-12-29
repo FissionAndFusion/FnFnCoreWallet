@@ -37,6 +37,16 @@ using namespace boost::posix_time;
     return ss.str();
 }
 
+class CTicks
+{
+public:
+    CTicks() : t(boost::posix_time::microsec_clock::universal_time()) {}
+    int64 operator- (const CTicks& ticks) const { return ((t - ticks.t).ticks()); }
+    int64 Elapse() const { return ((boost::posix_time::microsec_clock::universal_time() - t).ticks()); } 
+public:
+    boost::posix_time::ptime t;
+};
+
 inline void StdDebug(const char* pszName, const char* pszErr)
 {
     if (STD_DEBUG)

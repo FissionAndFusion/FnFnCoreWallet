@@ -174,6 +174,7 @@ protected:
 
 class CTxOutput
 {
+    friend class walleve::CWalleveStream;
 public:
     CDestination destTo;
     int64 nAmount;
@@ -203,6 +204,14 @@ public:
         std::ostringstream oss;
         oss << "TxOutput : (" << destTo.GetHex() << "," << nAmount << "," << nLockUntil << ")";
         return oss.str(); 
+    }
+protected:
+    template <typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s,O& opt)
+    {
+        s.Serialize(destTo,opt);
+        s.Serialize(nAmount,opt);
+        s.Serialize(nLockUntil,opt);
     }
 };
 

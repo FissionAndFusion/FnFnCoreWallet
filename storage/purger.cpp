@@ -15,11 +15,11 @@ using namespace walleve;
 //////////////////////////////
 // CPurger
 
-bool CPurger::ResetDB(const CMvDBConfig& dbConfig) const
+bool CPurger::ResetDB(const CMvDBConfig& dbConfig,const boost::filesystem::path& pathDataLocation) const
 {
     {
         CBlockDB dbBlock;
-        if (dbBlock.DBPoolInitialize(dbConfig,1) && dbBlock.Initialize())
+        if (dbBlock.DBPoolInitialize(dbConfig,1) && dbBlock.Initialize(pathDataLocation))
         {
             if (!dbBlock.RemoveAll())
             {

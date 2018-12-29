@@ -161,8 +161,10 @@ void CNetChannel::WalleveHandleDeinitialize()
 
 bool CNetChannel::WalleveHandleInvoke()
 {
-    nTimerPushTx = 0;
-
+    {
+        boost::unique_lock<boost::mutex> lock(mtxPushTx);
+        nTimerPushTx = 0;
+    }
     return network::IMvNetChannel::WalleveHandleInvoke(); 
 }
 
@@ -200,15 +202,8 @@ int CNetChannel::GetPrimaryChainHeight()
 bool CNetChannel::IsForkSynchronized(const uint256& hashFork) const
 {
     boost::shared_lock<boost::shared_mutex> rlock(rwNetPeer);
-    for (map<uint64,CNetChannelPeer>::const_iterator it = mapPeer.begin();it != mapPeer.end();++it)
-    {
-        const CNetChannelPeer& peer = (*it).second; 
-        if (peer.IsSubscribed(hashFork) && !peer.IsSynchronized(hashFork))
-        {
-            return false;
-        }
-    }
-    return true;
+    map<uint256, set<uint64> >::const_iterator it = mapUnsync.find(hashFork);
+    return (it == mapUnsync.end() || (*it).second.empty());
 }
 
 void CNetChannel::BroadcastBlockInv(const uint256& hashFork,const uint256& hashBlock,const set<uint64>& setKnownPeer)
@@ -234,7 +229,10 @@ void CNetChannel::BroadcastTxInv(const uint256& hashFork)
     boost::unique_lock<boost::mutex> lock(mtxPushTx);
     if (nTimerPushTx == 0)
     {
-        PushTxInv(hashFork);
+        if (!PushTxInv(hashFork))
+        {
+            setPushTxFork.insert(hashFork);
+        }
         nTimerPushTx = WalleveSetTimer(PUSHTX_TIMEOUT,boost::bind(&CNetChannel::PushTxTimerFunc,this,_1));
     }
     else
@@ -316,6 +314,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerActive& eventActive)
     {
         boost::unique_lock<boost::shared_mutex> wlock(rwNetPeer);
         mapPeer[nNonce] = CNetChannelPeer(eventActive.data.nService,pCoreProtocol->GetGenesisBlockHash());
+        mapUnsync[pCoreProtocol->GetGenesisBlockHash()].insert(nNonce);
     }
     NotifyPeerUpdate(nNonce,true,eventActive.data);
     return true;
@@ -340,7 +339,16 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerDeactive& eventDeactive)
     }
     {
         boost::unique_lock<boost::shared_mutex> wlock(rwNetPeer);
-        mapPeer.erase(nNonce);
+
+        map<uint64,CNetChannelPeer>::iterator it = mapPeer.find(nNonce);
+        if (it != mapPeer.end())
+        {
+            for (auto& subFork: (*it).second.mapSubscribedFork)
+            {
+                mapUnsync[subFork.first].erase(nNonce);
+            }
+            mapPeer.erase(nNonce);
+        }
     }
     NotifyPeerUpdate(nNonce,false,eventDeactive.data);    
 
@@ -360,6 +368,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerSubscribe& eventSubscribe)
             BOOST_FOREACH(const uint256& hash,eventSubscribe.data)
             {
                 (*it).second.Subscribe(hash);
+                mapUnsync[hash].insert(nNonce);
 
                 {
                     boost::recursive_mutex::scoped_lock scoped_lock(mtxSched);
@@ -373,7 +382,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerSubscribe& eventSubscribe)
     }
     else
     {
-        DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
+        DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK,"eventSubscribe");
     }
 
     return true;
@@ -392,12 +401,13 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerUnsubscribe& eventUnsubscribe
             BOOST_FOREACH(const uint256& hash,eventUnsubscribe.data)
             {
                 (*it).second.Unsubscribe(hash);
+                mapUnsync[hash].erase(nNonce);
             }
         } 
     }
     else
     {
-        DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
+        DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK,"eventUnsubscribe");
     }
 
     return true;
@@ -420,8 +430,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerInv& eventInv)
             vector<uint256> vTxHash;
             BOOST_FOREACH(const network::CInv& inv,eventInv.data)
             {
-                if ((inv.nType == network::CInv::MSG_TX && !pTxPool->Exists(inv.nHash) 
-                                                        && !pWorldLine->ExistsTx(inv.nHash))
+                if ((inv.nType == network::CInv::MSG_TX && !pTxPool->Exists(inv.nHash)) 
                     || (inv.nType == network::CInv::MSG_BLOCK && !pWorldLine->Exists(inv.nHash)))
                 {
                     sched.AddNewInv(inv,nNonce);
@@ -441,7 +450,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerInv& eventInv)
     }
     catch (...)
     {
-        DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
+        DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK,"eventInv");
     }
     return true;
 }
@@ -479,7 +488,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerGetBlocks& eventGetBlocks)
     vector<uint256> vBlockHash;
     if (!pWorldLine->GetBlockInv(hashFork,eventGetBlocks.data,vBlockHash,MAX_GETBLOCKS_COUNT))
     {
-        DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
+        DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK,"eventGetBlocks");
         return true;
     }
     network::CMvEventPeerInv eventInv(nNonce,hashFork);
@@ -544,7 +553,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerTx& eventTx)
     }
     catch (...)
     {
-        DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
+        DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK,"eventTx");
     }
     return true;
 }
@@ -590,7 +599,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerBlock& eventBlock)
     }
     catch (...)
     {
-        DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
+        DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK,"eventBlock");
     }
     return true;
 }
@@ -630,8 +639,13 @@ void CNetChannel::DispatchAwardEvent(uint64 nNonce,CEndpointManager::Bonus bonus
     pPeerNet->DispatchEvent(&eventReward);
 }
 
-void CNetChannel::DispatchMisbehaveEvent(uint64 nNonce,CEndpointManager::CloseReason reason)
+void CNetChannel::DispatchMisbehaveEvent(uint64 nNonce,CEndpointManager::CloseReason reason,const std::string& strCaller)
 {
+    if (!strCaller.empty())
+    {
+        WalleveLog("DispatchMisbehaveEvent : %s\n",strCaller.c_str());
+    }
+
     CWalleveEventPeerNetClose eventClose(nNonce);
     eventClose.data = reason;
     pPeerNet->DispatchEvent(&eventClose);
@@ -652,14 +666,14 @@ void CNetChannel::SchedulePeerInv(uint64 nNonce,const uint256& hashFork,CSchedul
         {
             if (!sched.ScheduleTxInv(nNonce,eventGetData.data,MAX_PEER_SCHED_COUNT))
             {
-                DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
+                DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK,"SchedulePeerInv1");
             }
         }
         SetPeerSyncStatus(nNonce,hashFork,fEmpty);
     }
     else
     {
-        DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
+        DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK,"SchedulePeerInv2");
     }
     if (!eventGetData.data.empty())
     {
@@ -776,32 +790,33 @@ void CNetChannel::PostAddNew(const uint256& hashFork,CSchedule& sched,
 
     BOOST_FOREACH(const uint64 nNonceMisbehave,setMisbehavePeer)
     {
-        DispatchMisbehaveEvent(nNonceMisbehave,CEndpointManager::DDOS_ATTACK);
+        DispatchMisbehaveEvent(nNonceMisbehave,CEndpointManager::DDOS_ATTACK,"PostAddNew");
     }
 }
 
 void CNetChannel::SetPeerSyncStatus(uint64 nNonce,const uint256& hashFork,bool fSync)
 {
-    boost::unique_lock<boost::shared_mutex> wlock(rwNetPeer);    
-
     bool fInverted = false;
-    CNetChannelPeer& peer = mapPeer[nNonce];
-    if (peer.SetSyncStatus(hashFork,fSync,fInverted))
     {
-        if (fSync && fInverted)
+        boost::unique_lock<boost::shared_mutex> wlock(rwNetPeer);    
+        CNetChannelPeer& peer = mapPeer[nNonce];
+        if (!peer.SetSyncStatus(hashFork,fSync,fInverted))
         {
-            vector<uint256> vTxPool;
-            pTxPool->ListTx(hashFork,vTxPool);
-            if (!vTxPool.empty())
-            {
-                network::CMvEventPeerInv eventInv(nNonce,hashFork);
-                peer.MakeTxInv(hashFork,vTxPool,eventInv.data,network::CInv::MAX_INV_COUNT);
-                if (!eventInv.data.empty())
-                {
-                    pPeerNet->DispatchEvent(&eventInv);
-                }
-            }
-        } 
+            return;
+        }
+    }
+
+    if (fInverted)
+    {
+        if (fSync)
+        {
+            mapUnsync[hashFork].erase(nNonce);
+            BroadcastTxInv(hashFork);
+        }
+        else
+        {
+            mapUnsync[hashFork].insert(nNonce);
+        }
     }
 }
 
@@ -812,12 +827,19 @@ void CNetChannel::PushTxTimerFunc(uint32 nTimerId)
     {
         if (!setPushTxFork.empty())
         {
-            BOOST_FOREACH(const uint256& hashFork,setPushTxFork)
+            set<uint256>::iterator it = setPushTxFork.begin();
+            while (it != setPushTxFork.end())
             {
-                PushTxInv(hashFork);
+                if (PushTxInv(*it))
+                {
+                    setPushTxFork.erase(it++);
+                }
+                else
+                {
+                    ++it;
+                }
             }
             nTimerPushTx = WalleveSetTimer(PUSHTX_TIMEOUT,boost::bind(&CNetChannel::PushTxTimerFunc,this,_1));
-            setPushTxFork.clear(); 
         }
         else
         {
@@ -826,8 +848,14 @@ void CNetChannel::PushTxTimerFunc(uint32 nTimerId)
     }
 }
 
-void CNetChannel::PushTxInv(const uint256& hashFork)
+bool CNetChannel::PushTxInv(const uint256& hashFork)
 {
+    // if (!IsForkSynchronized(hashFork))
+    // {
+    //     return false;
+    // }
+
+    bool fCompleted = true;
     vector<uint256> vTxPool;
     pTxPool->ListTx(hashFork,vTxPool);
     if (!vTxPool.empty() && !mapPeer.empty())
@@ -843,8 +871,13 @@ void CNetChannel::PushTxInv(const uint256& hashFork)
                 if (!eventInv.data.empty())
                 {
                     pPeerNet->DispatchEvent(&eventInv);
+                    if (fCompleted && eventInv.data.size() == network::CInv::MAX_INV_COUNT)
+                    {
+                        fCompleted = false;
+                    }
                 }
             }
         }
     }
+    return fCompleted;
 }

@@ -22,8 +22,7 @@ using namespace json_spirit;
 using namespace multiverse::rpc;
 using boost::asio::ip::tcp;
 
-static void Initialize_ReadLine();
-static void Uninitialize_ReadLine();
+static char** RPCCommand_Completion(const char* text, int start, int end);
 static void ReadlineCallback(char* line);
 extern void MvShutdown();
 
@@ -49,8 +48,6 @@ static const char* prompt = "multiverse> ";
 
 CRPCClient::CRPCClient(bool fConsole)
 : IIOModule("rpcclient"),
-  ioStrand(ioService),
-  inStream(ioService,::dup(STDIN_FILENO)),
   thrDispatch("rpcclient", boost::bind(fConsole ? &CRPCClient::LaunchConsole : &CRPCClient::LaunchCommand,this))
 {
     nLastNonce = 0;
@@ -91,11 +88,6 @@ void CRPCClient::WalleveHandleHalt()
     IIOModule::WalleveHandleHalt();
 
     pClient = NULL;
-    if (!ioService.stopped())
-    {
-        ioService.stop();
-    }
-
     if (thrDispatch.IsRunning())
     {
         CancelCommand();
@@ -184,7 +176,7 @@ bool CRPCClient::GetResponse(uint64 nNonce, const std::string& content)
     if (WalleveConfig()->fRPCSSLEnable)
     {
         httpGet.strProtocol = "https";
-        httpGet.fVerifyPeer = true;
+        httpGet.fVerifyPeer = WalleveConfig()->fRPCSSLVerify;
         httpGet.strPathCA   = WalleveConfig()->strRPCCAFile;
         httpGet.strPathCert = WalleveConfig()->strRPCCertFile;
         httpGet.strPathPK   = WalleveConfig()->strRPCPKFile;
@@ -267,19 +259,41 @@ bool CRPCClient::CallConsoleCommand(const vector<std::string>& vCommand)
 
 void CRPCClient::LaunchConsole()
 {
-    ioService.reset();
-
     EnterLoop();
 
-    WaitForChars();
-    ioService.run();
+    fd_set fs;
+    timeval timeout;
+    char* line = NULL;
+    while (true)
+    {
+        FD_ZERO(&fs);
+        FD_SET(STDIN_FILENO, &fs);
+
+        timeout.tv_sec = 0;
+        timeout.tv_usec = 100000;
+        int ret = select(1, &fs, NULL, NULL, &timeout);
+        if (ret == -1)
+        {
+            cerr << "select error" << endl;
+        }
+        else if (ret == 0)
+        {
+            try
+            {
+                boost::this_thread::interruption_point();
+            }
+            catch (const boost::thread_interrupted&) 
+            {
+                break;
+            }
+        }
+        else
+        {
+            rl_callback_read_char();
+        }
+    }
 
     LeaveLoop();
-}
-
-void CRPCClient::DispatchLine(const string& strLine)
-{
-    ioStrand.dispatch(boost::bind(&CRPCClient::ConsoleHandleLine, this, strLine));
 }
 
 void CRPCClient::LaunchCommand()
@@ -310,48 +324,24 @@ void CRPCClient::CancelCommand()
     }
 }
 
-void CRPCClient::WaitForChars()
-{
-#if BOOST_VERSION < 106600
-    // TODO: Just to be compilable. It works incorrect.
-    inStream.async_read_some(bufRead, boost::bind(&CRPCClient::HandleRead,this,
-                                                     boost::asio::placeholders::error,
-                                                     boost::asio::placeholders::bytes_transferred));
-#else
-    inStream.async_wait(boost::asio::posix::stream_descriptor::wait_read, boost::bind(&CRPCClient::HandleRead,this,
-                                                     boost::asio::placeholders::error));
-#endif
-}
-
-#if BOOST_VERSION < 106600
-void CRPCClient::HandleRead(const boost::system::error_code& err, size_t nTransferred)
-#else
-void CRPCClient::HandleRead(const boost::system::error_code& err)
-#endif
-{
-    if (err == boost::system::errc::success)
-    {
-        rl_callback_read_char();
-        WaitForChars();
-    }
-}
-
 void CRPCClient::EnterLoop()
 {
-    Initialize_ReadLine();
+    rl_catch_signals = 0;
+    rl_attempted_completion_function = RPCCommand_Completion;
+    rl_callback_handler_install(prompt, ReadlineCallback);
 }
 
 void CRPCClient::LeaveLoop()
 {
     cout << "\n";
-    Uninitialize_ReadLine();
+    rl_callback_handler_remove();
 }
 
 void CRPCClient::ConsoleHandleLine(const string& strLine)
 {
     if (strLine == "quit")
     {
-        Uninitialize_ReadLine();
+        cout << "quiting...\n";
         MvShutdown();
         return;
     }
@@ -441,7 +431,7 @@ void CRPCClient::ConsoleHandleLine(const string& strLine)
 ///////////////////////////////
 // readline
 
-static char * RPCCommand_Generator(const char* text,int state)
+static char* RPCCommand_Generator(const char* text,int state)
 {
     static int listIndex,len;
     if (!state)
@@ -465,7 +455,7 @@ static char * RPCCommand_Generator(const char* text,int state)
     return NULL;
 }
 
-static char ** RPCCommand_Completion(const char* text, int start, int end)
+static char** RPCCommand_Completion(const char* text, int start, int end)
 {
     (void)end;
     char **matches = NULL;
@@ -476,23 +466,11 @@ static char ** RPCCommand_Completion(const char* text, int start, int end)
     return matches;
 }
 
-static void Initialize_ReadLine()
-{
-    rl_catch_signals = 0;
-    rl_attempted_completion_function = RPCCommand_Completion;
-    rl_callback_handler_install(prompt, ReadlineCallback);
-}
-
-static void Uninitialize_ReadLine()
-{
-    rl_callback_handler_remove();
-}
-
 static void ReadlineCallback(char* line)
 {
     string strLine = line ? line : "quit";
     if (pClient)
     {
-        pClient->DispatchLine(strLine);
+        pClient->ConsoleHandleLine(strLine);
     }
 }

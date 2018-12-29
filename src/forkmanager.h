@@ -86,6 +86,7 @@ public:
     bool LoadForkContext(std::vector<uint256>& vActive) override;
     void ForkUpdate(const CWorldLineUpdate& update,std::vector<uint256>& vActive,std::vector<uint256>& vDeactive) override;
     bool AddNewForkContext(const CForkContext& ctxt,std::vector<uint256>& vActive);
+    void GetForkList(std::vector<uint256>& vFork) override;
 protected:
     bool WalleveHandleInitialize() override;
     void WalleveHandleDeinitialize() override;

@@ -34,6 +34,13 @@ private:
     bool fAssigned;
 };
 
+template <typename CDataIdent>
+class CDataFilter
+{
+public:
+    virtual bool Ignored(const CDataIdent& ident) const { return false; }
+};
+
 class CDataKnown
 {
 public:
@@ -135,7 +142,8 @@ public:
             mapData.erase(it);
         }
     }
-    void Schedule(typename std::vector<std::pair<uint64,CDataIdent> >& vAssigned)
+    void Schedule(typename std::vector<std::pair<uint64,CDataIdent> >& vAssigned,
+                  const CDataFilter<CDataIdent>& filter = CDataFilter<CDataIdent>())
     {
         for (typename std::map<uint64,CDataPeerPtr>::iterator it = mapPeer.begin();
              it != mapPeer.end();++it)
@@ -148,7 +156,7 @@ public:
                      li != spPeer->listDataIdent.end(); ++li)
                 {
                     CDataIdent& ident = (*li);
-                    if (mapData[ident].Assign(nNonce))
+                    if (!filter.Ignored(ident) && mapData[ident].Assign(nNonce))
                     {
                         spPeer->fAssigned = true;
                         vAssigned.push_back(std::make_pair(nNonce,ident));

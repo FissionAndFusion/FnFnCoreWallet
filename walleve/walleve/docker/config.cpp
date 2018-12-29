@@ -62,7 +62,8 @@ bool CWalleveConfig::Load(int argc,char *argv[],const fs::path& pathDefault,cons
         po::notify(vm);
         pathRoot = strRoot;
         pathConfile = strConfig;
-        STD_DEBUG = fDebug;
+        if (!STD_DEBUG)
+            STD_DEBUG = fDebug;
 
         if (fHelp)
         {

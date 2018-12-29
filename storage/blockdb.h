@@ -9,6 +9,7 @@
 #include "forkcontext.h"
 #include "block.h"
 #include "transaction.h"
+#include "unspentdb.h"
 
 namespace multiverse
 {
@@ -50,7 +51,7 @@ class CBlockDB
 public:
     CBlockDB();
     ~CBlockDB();
-    bool Initialize();
+    bool Initialize(const boost::filesystem::path& pathData);
     bool DBPoolInitialize(const CMvDBConfig& config,int nMaxDBConn);
     void Deinitialize();
     bool RemoveAll();
@@ -97,6 +98,7 @@ protected:
     bool LoadFork();
 protected:
     CMvDBPool dbPool;
+    CUnspentDB dbUnspent;
     std::map<uint256,int> mapForkIndex;
 };
 

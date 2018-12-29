@@ -30,8 +30,12 @@ bool CBlockDB::DBPoolInitialize(const CMvDBConfig& config,int nMaxDBConn)
     return true;
 }
 
-bool CBlockDB::Initialize()
+bool CBlockDB::Initialize(const boost::filesystem::path& pathData)
 {
+    if (!dbUnspent.Initialize(pathData))
+    {
+        return false;
+    }
 
     if (!CreateTable())
     {
@@ -44,6 +48,7 @@ bool CBlockDB::Initialize()
 void CBlockDB::Deinitialize()
 {
     dbPool.Deinitialize();
+    dbUnspent.Deinitialize();
     mapForkIndex.clear();
 }
 
@@ -54,14 +59,9 @@ bool CBlockDB::RemoveAll()
     {
         return false;
     }
+
     {
         CMvDBTxn txn(*db);
-        for (map<uint256,int>::iterator it = mapForkIndex.begin();it != mapForkIndex.end();++it)
-        {
-            ostringstream oss;
-            oss << "DROP TABLE IF EXISTS unspent" << (*it).second; 
-            txn.Query(oss.str());
-        }
         txn.Query("TRUNCATE TABLE forkcontext");
         txn.Query("TRUNCATE TABLE fork");
         txn.Query("TRUNCATE TABLE block");
@@ -73,6 +73,12 @@ bool CBlockDB::RemoveAll()
             return false;
         }
     }
+
+    for (map<uint256,int>::iterator it = mapForkIndex.begin();it != mapForkIndex.end();++it)
+    {
+        dbUnspent.Remove((*it).first);
+    }
+
     mapForkIndex.clear();
     return true;
 }
@@ -203,34 +209,15 @@ bool CBlockDB::AddNewFork(const uint256& hash)
             return false;
         }
     }
+
+    if (!dbUnspent.AddNew(hash))
     {
-        CMvDBTxn txn(*db);
-        {
-            ostringstream oss;
-            oss << "DROP TABLE IF EXISTS unspent" << nIndex; 
-            txn.Query(oss.str());
-        }
-        {
-            ostringstream oss;
-            oss << "CREATE TABLE unspent" << nIndex
-                << "(id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,"
-                <<   "txid BINARY(32) NOT NULL,"
-                <<   "nout TINYINT UNSIGNED NOT NULL,"
-                <<   "dest BINARY(33) NOT NULL,"
-                <<   "amount BIGINT NOT NULL,"
-                <<   "lockuntil INT UNSIGNED NOT NULL,"
-                <<   "UNIQUE KEY txid (txid,nout))"
-                <<   "ENGINE=InnoDB";
-            txn.Query(oss.str());
-        } 
-        if (!txn.Commit()) 
-        {
-            ostringstream del;
-            del << "DELETE FROM fork WHERE id = " << nIndex;
-            db->Query(del.str());
-            return false;
-        }
+        ostringstream del;
+        del << "DELETE FROM fork WHERE id = " << nIndex;
+        db->Query(del.str());
+        return false;
     }
+
     mapForkIndex.insert(make_pair(hash,nIndex));
     return true;
 }
@@ -248,25 +235,16 @@ bool CBlockDB::RemoveFork(const uint256& hash)
     {
         return false;
     }
+
+    dbUnspent.Remove(hash);
     
+    ostringstream oss;
+    oss << "DELETE FROM fork WHERE id = " << nIndex;
+    if (!db->Query(oss.str()))
     {
-        CMvDBTxn txn(*db);
-        {
-            ostringstream oss;
-            oss << "DELETE FROM fork WHERE id = " << nIndex;
-            txn.Query(oss.str());
-        }
-        {
-            ostringstream oss;
-            oss << "DROP TABLE IF EXISTS unspent" << nIndex; 
-            txn.Query(oss.str());
-        }
-        
-        if (!txn.Commit()) 
-        {
-            return false;
-        }
+        return false;
     }
+
     mapForkIndex.erase(hash);
     return true;
 }
@@ -306,7 +284,6 @@ bool CBlockDB::UpdateFork(const uint256& hash,const uint256& hashRefBlock,const 
         return false;
     }
     
-    bool fTrunc = false; 
     int nIndex = GetForkIndex(hash);
     if (nIndex < 0)
     {
@@ -319,16 +296,6 @@ bool CBlockDB::UpdateFork(const uint256& hash,const uint256& hashRefBlock,const 
         {
             return false;
         }
-
-        size_t count = 0;
-        ostringstream oss;
-        oss << "SELECT COUNT(*) FROM unspent" << nIndex;
-        CMvDBRes res(*db,oss.str());
-        if (!res.GetRow() || !res.GetField(0,count))
-        {
-            return false;
-        }
-        fTrunc = (count != 0);
     }
     {
         CMvDBTxn txn(*db);
@@ -364,39 +331,18 @@ bool CBlockDB::UpdateFork(const uint256& hash,const uint256& hashRefBlock,const 
                 << " ON DUPLICATE KEY UPDATE height = VALUES(height),file = VALUES(file),offset = VALUES(offset)";
             txn.Query(oss.str());
         }
-        if (fTrunc)
-        {
-            ostringstream oss;
-            oss << "TRUNCATE TABLE unspent" << nIndex;
-            txn.Query(oss.str());
-        }
         if (nIndexBased > 0)
         {
-            ostringstream oss;
-            oss << "INSERT unspent" << nIndex << " SELECT * FROM unspent" << nIndexBased; 
-            txn.Query(oss.str());
+            if (!dbUnspent.Copy(hashForkBased,hash))
+            {
+                txn.Abort();
+                return false;
+            }
         }
-        for (int i = 0;i < vAddNew.size();i++)
+        if (!dbUnspent.Update(hash,vAddNew,vRemove))
         {
-            const CTxUnspent& unspent = vAddNew[i];
-            ostringstream oss;
-            oss << "INSERT INTO unspent" << nIndex << "(txid,nout,dest,amount,lockuntil) "
-                      "VALUES("
-                <<            "\'" << db->ToEscString(unspent.hash) << "\',"
-                <<            ((int)unspent.n) << ","
-                <<            "\'" << db->ToEscString(unspent.output.destTo) << "\',"
-                <<            unspent.output.nAmount << ","
-                <<            unspent.output.nLockUntil << ")";
-            txn.Query(oss.str());
-        } 
-        for (int i = 0;i < vRemove.size();i++)
-        {
-            const CTxOutPoint& out = vRemove[i];
-            ostringstream oss;
-            oss << "DELETE FROM unspent" << nIndex
-                << " WHERE txid = \'" << db->ToEscString(out.hash) << "\' AND "
-                <<        "nout = " << ((int)out.n);
-            txn.Query(oss.str());
+            txn.Abort();
+            return false;
         }
         {
             ostringstream oss;
@@ -700,29 +646,7 @@ bool CBlockDB::RetrieveTxLocation(const uint256& txid,uint256& hashAnchor,int& n
 
 bool CBlockDB::RetrieveTxUnspent(const uint256& fork,const CTxOutPoint& out,CTxOutput& unspent)
 {
-    CMvDBInst db(&dbPool);
-    if (!db.Available())
-    {
-        return false;
-    }
-
-    map<uint256,int>::iterator it = mapForkIndex.find(fork);
-    if (it == mapForkIndex.end())
-    {
-        return false;
-    }
-    int nIndex = (*it).second;
-    
-    {
-        ostringstream oss;
-        oss << "SELECT dest,amount,lockuntil FROM unspent" << nIndex
-            << " WHERE txid = \'" << db->ToEscString(out.hash) << "\' AND "
-            <<        "nout = " << ((int)out.n);
-        CMvDBRes res(*db,oss.str());
-        return (res.GetRow() && res.GetField(0,unspent.destTo)
-                             && res.GetField(1,unspent.nAmount)
-                             && res.GetField(2,unspent.nLockUntil));
-    } 
+    return dbUnspent.Retrieve(fork,out,unspent);
 }
 
 bool CBlockDB::FilterTx(CBlockDBTxFilter& filter)
@@ -978,6 +902,10 @@ bool CBlockDB::LoadFork()
                 return false;
             }
             mapForkIndex.insert(make_pair(hash,id));
+            if (!dbUnspent.AddNew(hash))
+            {
+                return false;
+            }
         }
     }
     return true;

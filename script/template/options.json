@@ -127,23 +127,23 @@
             "name": "strRPCCAFile",
             "type": "string",
             "opt": "rpccafile",
-            "default": "ca.crt",
-            "format": "-rpccafile=<file.cert>",
+            "default": "",
+            "format": "-rpccafile=<file.crt>",
             "desc": "SSL CA file name (default ca.crt)"
         },
         {
             "name": "strRPCCertFile",
             "type": "string",
             "opt": "rpccertfile",
-            "default": "server.crt",
-            "format": "-rpccertfile=<file.cert>",
-            "desc": "Server certificate file (default: server.cert)"
+            "default": "",
+            "format": "-rpccertfile=<file.crt>",
+            "desc": "Server certificate file (default: server.crt)"
         },
         {
             "name": "strRPCPKFile",
             "type": "string",
             "opt": "rpcpkfile",
-            "default": "server.key",
+            "default": "",
             "format": "-rpcpkfile=<file.pem>",
             "desc": "Server private key (default: server.pem)"
         },
@@ -377,14 +377,6 @@
             "default": false,
             "format": "-listen",
             "desc": "Accept connections from outside (default: 0)"
-        },
-        {
-            "name": "fBloom",
-            "type": "bool",
-            "opt": "bloom",
-            "default": true,
-            "format": "-nobloom",
-            "desc": ""
         },
         {
             "name": "nPortInt",

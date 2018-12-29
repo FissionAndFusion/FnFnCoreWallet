@@ -16,12 +16,12 @@ namespace storage
 class CPurger
 {
 public:
-    bool ResetDB(const CMvDBConfig& dbConfig) const;
+    bool ResetDB(const CMvDBConfig& dbConfig,const boost::filesystem::path& pathDataLocation) const;
     bool ResetCache(const boost::filesystem::path& pathDataLocation) const;
     bool RemoveBlockFile(const boost::filesystem::path& pathDataLocation) const;
     bool operator() (const CMvDBConfig& dbConfig,const boost::filesystem::path& pathDataLocation) const
     {
-        return (ResetDB(dbConfig) && ResetCache(pathDataLocation) && RemoveBlockFile(pathDataLocation)); 
+        return (ResetDB(dbConfig,pathDataLocation) && ResetCache(pathDataLocation) && RemoveBlockFile(pathDataLocation)); 
     }
 };
 

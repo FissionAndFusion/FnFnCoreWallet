@@ -258,7 +258,7 @@ bool CBlockBase::Initialize(const CMvDBConfig& dbConfig,int nMaxDBConn,const pat
         return false;
     }
 
-    if (!dbBlock.Initialize())
+    if (!dbBlock.Initialize(pathDataLocation))
     {
         Error("B","Failed to initialize block db\n");
         return false;
@@ -1470,7 +1470,7 @@ bool CBlockBase::UpdateDelegate(const uint256& hash,CBlockEx& block)
     return dbBlock.UpdateDelegate(hash,mapDelegate);
 }
 
-bool CBlockBase::UpdateEnroll(CBlockIndex* pIndexNew,vector<pair<uint256,CTxIndex> >& vTxNew)
+bool CBlockBase::UpdateEnroll(CBlockIndex* pIndexNew,const vector<pair<uint256,CTxIndex> >& vTxNew)
 {
     vector<pair<CTxIndex,uint256> > vEnroll;
     for (int i = 0;i < vTxNew.size();i++)

@@ -52,7 +52,7 @@ CRPCMod::CRPCMod()
                 ("getblockhash",          &CRPCMod::RPCGetBlockHash)
                 ("getblock",              &CRPCMod::RPCGetBlock)
                 ("gettxpool",             &CRPCMod::RPCGetTxPool)
-                ("removependingtx",       &CRPCMod::RPCRemovePendingTx)
+                // ("removependingtx",       &CRPCMod::RPCRemovePendingTx)
                 ("gettransaction",        &CRPCMod::RPCGetTransaction)
                 ("sendtransaction",       &CRPCMod::RPCSendTransaction)
                 ("getforkheight",         &CRPCMod::RPCGetForkHeight)
@@ -491,8 +491,9 @@ CRPCResultPtr CRPCMod::RPCGetForkCount(CRPCParamPtr param)
 
 CRPCResultPtr CRPCMod::RPCListFork(CRPCParamPtr param)
 {
+    auto spParam = CastParamPtr<CListForkParam>(param);
     vector<pair<uint256,CProfile> > vFork;
-    pService->ListFork(vFork);
+    pService->ListFork(vFork, spParam->fAll);
 
     auto spResult = MakeCListForkResultPtr();
     for (size_t i = 0; i < vFork.size(); i++)
@@ -671,20 +672,20 @@ CRPCResultPtr CRPCMod::RPCGetTxPool(CRPCParamPtr param)
     return spResult;
 }
 
-CRPCResultPtr CRPCMod::RPCRemovePendingTx(CRPCParamPtr param)
-{
-    auto spParam = CastParamPtr<CRemovePendingTxParam>(param);
+// CRPCResultPtr CRPCMod::RPCRemovePendingTx(CRPCParamPtr param)
+// {
+//     auto spParam = CastParamPtr<CRemovePendingTxParam>(param);
 
-    uint256 txid;
-    txid.SetHex(spParam->strTxid);
+//     uint256 txid;
+//     txid.SetHex(spParam->strTxid);
 
-    if (!pService->RemovePendingTx(txid))
-    {
-        throw CRPCException(RPC_INVALID_REQUEST, "This transaction is not in tx pool");
-    }
+//     if (!pService->RemovePendingTx(txid))
+//     {
+//         throw CRPCException(RPC_INVALID_REQUEST, "This transaction is not in tx pool");
+//     }
 
-    return MakeCRemovePendingTxResultPtr(string("Remove tx successfully: ") + spParam->strTxid);
-}
+//     return MakeCRemovePendingTxResultPtr(string("Remove tx successfully: ") + spParam->strTxid);
+// }
 
 CRPCResultPtr CRPCMod::RPCGetTransaction(CRPCParamPtr param)
 {
@@ -948,7 +949,7 @@ CRPCResultPtr CRPCMod::RPCImportPrivKey(CRPCParamPtr param)
     crypto::CKey key;
     if (!key.SetSecret(crypto::CCryptoKeyData(nPriv.begin(),nPriv.end())))
     {
-        throw CRPCException(RPC_INVALID_ADDRESS_OR_KEY,"Invalid private key");
+        throw CRPCException(RPC_INVALID_PARAMETER,"Invalid private key");
     }
     if (pService->HaveKey(key.GetPubKey()))
     {
@@ -1078,7 +1079,7 @@ CRPCResultPtr CRPCMod::RPCExportTemplate(CRPCParamPtr param)
     CTemplateId tid;
     if (!address.GetTemplateId(tid))
     {
-        throw CRPCException(RPC_INVALID_PARAMETER, "Invalid address, should be template address");
+        throw CRPCException(RPC_INVALID_PARAMETER, "Invalid address");
     }
 
     CTemplatePtr ptr;
