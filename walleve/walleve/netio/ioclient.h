@@ -85,8 +85,6 @@ public:
                const std::string& strVerifyHost = "");
     ~CSSLClient();
 
-    void SetVerifyPeer(bool bIfVerify);
-
 protected:
     void AsyncAccept(boost::asio::ip::tcp::acceptor& acceptor, CallBackConn fnAccepted);
     void AsyncConnect(const boost::asio::ip::tcp::endpoint& epRemote, CallBackConn fnConnected);
@@ -105,8 +103,6 @@ protected:
 
 protected:
     boost::asio::ssl::stream<boost::asio::ip::tcp::socket> sslClient;
-    bool fIfVerifyPeer;
-    std::string sVerifyHost;
 };
 
 } // namespace walleve

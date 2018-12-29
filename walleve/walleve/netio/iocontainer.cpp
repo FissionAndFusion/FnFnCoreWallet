@@ -421,12 +421,7 @@ CIOClient* CIOSSLOutBound::ClientAlloc(const CIOSSLOption& optSSL)
                 ctx.use_private_key_file(optSSL.strPathPK,boost::asio::ssl::context::pem);
             }
 
-            CSSLClient *pSslClient = new CSSLClient(this,ioService,ctx,optSSL.fVerifyPeer ? optSSL.strPeerName : ""); 
-            if (pSslClient)
-            {
-                pSslClient->SetVerifyPeer(optSSL.fVerifyPeer);
-            }
-            return pSslClient;
+            return new CSSLClient(this,ioService,ctx,optSSL.fVerifyPeer ? optSSL.strPeerName : ""); 
         }
         catch (exception& e)
         {
