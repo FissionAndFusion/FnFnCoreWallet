@@ -14,7 +14,7 @@
 
 #define MV_VERSION_MAJOR       0
 #define MV_VERSION_MINOR       1
-#define MV_VERSION_REVISION    0
+#define MV_VERSION_REVISION    1
 
 std::string FormatVersion(int nVersion);
 
