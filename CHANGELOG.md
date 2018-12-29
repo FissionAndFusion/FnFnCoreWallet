@@ -1,5 +1,5 @@
 <a name="Version 0.1.0"></a>
-# Version 0.1.0
+# Version 0.1.0 (2018-12-29)
 
 ### Features
 
