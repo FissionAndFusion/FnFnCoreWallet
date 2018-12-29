@@ -203,7 +203,7 @@ bool CNetChannel::IsForkSynchronized(const uint256& hashFork) const
 {
     boost::shared_lock<boost::shared_mutex> rlock(rwNetPeer);
     map<uint256, set<uint64> >::const_iterator it = mapUnsync.find(hashFork);
-    return (it == mapUnsync.end()) || (*it).second.empty();
+    return (it == mapUnsync.end() || (*it).second.empty());
 }
 
 void CNetChannel::BroadcastBlockInv(const uint256& hashFork,const uint256& hashBlock,const set<uint64>& setKnownPeer)
@@ -382,7 +382,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerSubscribe& eventSubscribe)
     }
     else
     {
-        DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
+        DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK,"eventSubscribe");
     }
 
     return true;
@@ -407,7 +407,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerUnsubscribe& eventUnsubscribe
     }
     else
     {
-        DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
+        DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK,"eventUnsubscribe");
     }
 
     return true;
@@ -450,7 +450,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerInv& eventInv)
     }
     catch (...)
     {
-        DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
+        DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK,"eventInv");
     }
     return true;
 }
@@ -488,7 +488,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerGetBlocks& eventGetBlocks)
     vector<uint256> vBlockHash;
     if (!pWorldLine->GetBlockInv(hashFork,eventGetBlocks.data,vBlockHash,MAX_GETBLOCKS_COUNT))
     {
-        DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
+        DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK,"eventGetBlocks");
         return true;
     }
     network::CMvEventPeerInv eventInv(nNonce,hashFork);
@@ -553,7 +553,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerTx& eventTx)
     }
     catch (...)
     {
-        DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
+        DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK,"eventTx");
     }
     return true;
 }
@@ -599,7 +599,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerBlock& eventBlock)
     }
     catch (...)
     {
-        DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
+        DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK,"eventBlock");
     }
     return true;
 }
@@ -639,8 +639,13 @@ void CNetChannel::DispatchAwardEvent(uint64 nNonce,CEndpointManager::Bonus bonus
     pPeerNet->DispatchEvent(&eventReward);
 }
 
-void CNetChannel::DispatchMisbehaveEvent(uint64 nNonce,CEndpointManager::CloseReason reason)
+void CNetChannel::DispatchMisbehaveEvent(uint64 nNonce,CEndpointManager::CloseReason reason,const std::string& strCaller)
 {
+    if (!strCaller.empty())
+    {
+        WalleveLog("DispatchMisbehaveEvent : %s\n",strCaller.c_str());
+    }
+
     CWalleveEventPeerNetClose eventClose(nNonce);
     eventClose.data = reason;
     pPeerNet->DispatchEvent(&eventClose);
@@ -661,14 +666,14 @@ void CNetChannel::SchedulePeerInv(uint64 nNonce,const uint256& hashFork,CSchedul
         {
             if (!sched.ScheduleTxInv(nNonce,eventGetData.data,MAX_PEER_SCHED_COUNT))
             {
-                DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
+                DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK,"SchedulePeerInv1");
             }
         }
         SetPeerSyncStatus(nNonce,hashFork,fEmpty);
     }
     else
     {
-        DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK);
+        DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK,"SchedulePeerInv2");
     }
     if (!eventGetData.data.empty())
     {
@@ -785,7 +790,7 @@ void CNetChannel::PostAddNew(const uint256& hashFork,CSchedule& sched,
 
     BOOST_FOREACH(const uint64 nNonceMisbehave,setMisbehavePeer)
     {
-        DispatchMisbehaveEvent(nNonceMisbehave,CEndpointManager::DDOS_ATTACK);
+        DispatchMisbehaveEvent(nNonceMisbehave,CEndpointManager::DDOS_ATTACK,"PostAddNew");
     }
 }
 
