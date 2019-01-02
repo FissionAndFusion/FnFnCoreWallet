@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The Multiverse developers
+// Copyright (c) 2017-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -176,7 +176,7 @@ bool CRPCClient::GetResponse(uint64 nNonce, const std::string& content)
     if (WalleveConfig()->fRPCSSLEnable)
     {
         httpGet.strProtocol = "https";
-        httpGet.fVerifyPeer = true;
+        httpGet.fVerifyPeer = WalleveConfig()->fRPCSSLVerify;
         httpGet.strPathCA   = WalleveConfig()->strRPCCAFile;
         httpGet.strPathCert = WalleveConfig()->strRPCCertFile;
         httpGet.strPathPK   = WalleveConfig()->strRPCPKFile;

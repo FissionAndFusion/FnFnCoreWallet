@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The Multiverse developers
+// Copyright (c) 2017-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -949,7 +949,7 @@ CRPCResultPtr CRPCMod::RPCImportPrivKey(CRPCParamPtr param)
     crypto::CKey key;
     if (!key.SetSecret(crypto::CCryptoKeyData(nPriv.begin(),nPriv.end())))
     {
-        throw CRPCException(RPC_INVALID_ADDRESS_OR_KEY,"Invalid private key");
+        throw CRPCException(RPC_INVALID_PARAMETER,"Invalid private key");
     }
     if (pService->HaveKey(key.GetPubKey()))
     {
@@ -1079,7 +1079,7 @@ CRPCResultPtr CRPCMod::RPCExportTemplate(CRPCParamPtr param)
     CTemplateId tid;
     if (!address.GetTemplateId(tid))
     {
-        throw CRPCException(RPC_INVALID_PARAMETER, "Invalid address, should be template address");
+        throw CRPCException(RPC_INVALID_PARAMETER, "Invalid address");
     }
 
     CTemplatePtr ptr;
