@@ -32,7 +32,14 @@ bool CWalletDB::Initialize(const CMvDBConfig& config)
 
 void CWalletDB::Deinitialize()
 {
+    vector<CWalletTx> vWalletTx;
+    txCache.ListTx(0,-1,vWalletTx);
+    if (!vWalletTx.empty())
+    {
+        UpdateTx(vWalletTx);
+    }
     dbConn.Disconnect();
+    txCache.Clear();
 }
 
 bool CWalletDB::AddNewKey(const uint256& pubkey,int version,const crypto::CCryptoCipher& cipher)
@@ -106,6 +113,12 @@ bool CWalletDB::WalkThroughTemplate(CWalletDBTemplateWalker& walker)
 
 bool CWalletDB::AddNewTx(const CWalletTx& wtx)
 {
+    if (wtx.nBlockHeight < 0)
+    {
+        txCache.AddNew(wtx);
+        return true;
+    }
+
     walleve::CWalleveBufStream ss;
     ss << wtx.vInput;
     string strEscIn = dbConn.ToEscString(ss.GetData(),ss.GetSize());
@@ -157,18 +170,27 @@ bool CWalletDB::UpdateTx(const vector<CWalletTx>& vWalletTx,const vector<uint256
             <<  " ON DUPLICATE KEY UPDATE "
                           "height = VALUES(height),flags = VALUES(flags)";
         txn.Query(oss.str());
+
+        txCache.Remove(wtx.txid);
     }
     BOOST_FOREACH(const uint256& txid,vRemove)
     {
         ostringstream oss;
         oss << "DELETE FROM wallettx WHERE txid = \'" << dbConn.ToEscString(txid) << "\'";
         txn.Query(oss.str());
+
+        txCache.Remove(txid);
     }
     return txn.Commit();
 }
 
 bool CWalletDB::RetrieveTx(const uint256& txid,CWalletTx& wtx)
 {
+    if (txCache.Get(txid,wtx))
+    {
+        return true;
+    }
+
     wtx.txid = txid;
     wtx.nRefCount = 0;
     ostringstream oss;
@@ -189,6 +211,11 @@ bool CWalletDB::RetrieveTx(const uint256& txid,CWalletTx& wtx)
 
 bool CWalletDB::ExistsTx(const uint256& txid)
 {
+    if (txCache.Exists(txid))
+    {
+        return true;
+    }
+
     size_t count = 0;
     ostringstream oss;
     oss << "SELECT COUNT(*) FROM wallettx WHERE txid = \'" << dbConn.ToEscString(txid) << "\'";
@@ -204,10 +231,32 @@ std::size_t CWalletDB::GetTxCount()
     {
         res.GetField(0,count);
     }
-    return count;
+    return count + txCache.Count();
 }
 
 bool CWalletDB::ListTx(int nOffset,int nCount,std::vector<CWalletTx>& vWalletTx)
+{
+    std::size_t nDBTx = GetTxCount() - txCache.Count();
+
+    if (nOffset < nDBTx)
+    {
+        if (!ListDBTx(nOffset, nCount, vWalletTx))
+        {
+            return false;
+        }
+        if (vWalletTx.size() < nCount)
+        {
+            txCache.ListTx(0, nCount - vWalletTx.size(), vWalletTx);
+        }
+    }
+    else
+    {
+        txCache.ListTx(nOffset - nDBTx, nCount, vWalletTx); 
+    }
+    return true;
+}
+
+bool CWalletDB::ListDBTx(int nOffset,int nCount,std::vector<CWalletTx>& vWalletTx)
 {
     ostringstream oss;
     oss << "SELECT txid,version,type,lockuntil,sendto,amount,txfee,destin,valuein,height,flags,fork,txin FROM wallettx ORDER BY id LIMIT " << nOffset << "," << nCount;
@@ -232,10 +281,11 @@ bool CWalletDB::ListTx(int nOffset,int nCount,std::vector<CWalletTx>& vWalletTx)
             return false;
         }
     }
+
     return true;
 }
 
-bool CWalletDB::ListForkTx(const uint256& hashFork,int nMinHeight,vector<uint256>& vForkTx)
+bool CWalletDB::ListRollBackTx(const uint256& hashFork,int nMinHeight,vector<uint256>& vForkTx)
 {
     ostringstream oss;
     oss << "SELECT txid FROM wallettx"
@@ -256,6 +306,7 @@ bool CWalletDB::ListForkTx(const uint256& hashFork,int nMinHeight,vector<uint256
             return false;
         } 
     }
+    txCache.ListForkTx(hashFork,vForkTx);
     return true;
 }
 
@@ -284,6 +335,7 @@ bool CWalletDB::WalkThroughTx(CWalletDBTxWalker& walker)
 
 bool CWalletDB::ClearTx()
 {
+    txCache.Clear();
     return dbConn.Query("TRUNCATE TABLE wallettx");
 }
 
