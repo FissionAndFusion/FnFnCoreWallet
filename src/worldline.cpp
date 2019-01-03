@@ -643,7 +643,7 @@ bool CWorldLine::CheckContainer()
     {
         return false;
     }
-    return cntrBlock.CheckConsistency(StorageConfig()->nCheckLevel);
+    return cntrBlock.CheckConsistency(StorageConfig()->nCheckLevel, StorageConfig()->nCheckDepth);
 }
 
 bool CWorldLine::RebuildContainer()

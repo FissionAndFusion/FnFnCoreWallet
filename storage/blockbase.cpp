@@ -962,7 +962,7 @@ bool CBlockBase::GetForkBlockInv(const uint256& hashFork,const CBlockLocator& lo
     return true;
 }
 
-bool CBlockBase::CheckConsistency(int nCheckLevel)
+bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
 {
     int nLevel = nCheckLevel;
     if(nCheckLevel < 0)
@@ -973,126 +973,142 @@ bool CBlockBase::CheckConsistency(int nCheckLevel)
     {
         nLevel = 3;
     }
+    int nDepth = nCheckDepth;
 
-    //TODO - remove it after done
-    //nLevel = 2;
-
-    //checking of level 0: fork/block
-    if(nLevel >= 0)
+    vector<CBlockDBFork> vFork;
+    if(!dbBlock.FetchFork(vFork))
     {
-        //check field refblock of table fork must be in rows in table block
+        return false;
+    }
 
-        vector<CBlockDBFork> vFork;
-        if(!dbBlock.FetchFork(vFork))
+    for(const auto& fork : vFork)
+    {
+        //checking of level 0: fork/block
+
+        //check field refblock of table fork must be in rows in table block
+        CBlockIndex* pBlockRefIndex = GetIndex(fork.hashRef);
+        if(!pBlockRefIndex)
         {
             return false;
         }
 
-        for(const auto& fork : vFork)
+        CBlockFork* pFork = GetFork(fork.hashFork);
+        if(NULL == pFork)
         {
-            CBlockIndex* pBlockIndex = GetIndex(fork.hashRef);
-            if(!pBlockIndex)
-            {
-                return false;
-            }
+            return false;
+        }
+        CBlockIndex* pLastBlock = pFork->GetLast();
+        if(NULL == pLastBlock)
+        {
+            return false;
+        }
+        pFork->UpdateLast(pLastBlock);
+
+        bool fIsMainFork = pFork->GetOrigin()->IsPrimary();
+
+        if(0 == nDepth || pLastBlock->nHeight < nDepth)
+        {
+            nDepth = pLastBlock->nHeight;
         }
 
         //check table block
-
-        for(const auto& i : mapIndex)
+        CBlockIndex* pIndex = pLastBlock;
+        while(pIndex && pLastBlock->nHeight - pIndex->nHeight < nDepth)
         {
-            const uint256& hashBlock = i.first;
-            CBlockIndex* pBlockIndex = i.second;
-
             //be able to read from block files
             CBlockEx block;
-            if(!tsBlock.ReadDirect(block, pBlockIndex->nFile, pBlockIndex->nOffset))
+            if(!tsBlock.ReadDirect(block, pIndex->nFile, pIndex->nOffset))
             {
                 return false;
             }
 
             //consistent between database and block file
-            if(!(hashBlock == *(pBlockIndex->phashBlock)
-                && hashBlock == block.GetHash()
-                && pBlockIndex->pPrev->GetBlockHash() == block.hashPrev
-                && pBlockIndex->nVersion == block.nVersion
-                && pBlockIndex->nType == block.nType
-                && pBlockIndex->nTimeStamp == block.nTimeStamp
-                && ((pBlockIndex->nMintType == 0 ) ?
-                   block.IsVacant()
-                   : (!block.IsVacant() && pBlockIndex->txidMint == block.txMint.GetHash() && pBlockIndex->nMintType == block.txMint.nType))
-              ))
+            if(!(pIndex->GetBlockHash() == block.GetHash()
+                 && pIndex->pPrev->GetBlockHash() == block.hashPrev
+                 && pIndex->nVersion == block.nVersion
+                 && pIndex->nType == block.nType
+                 && pIndex->nTimeStamp == block.nTimeStamp
+                 && ((pIndex->nMintType == 0 ) ?
+                     block.IsVacant()
+                     : (!block.IsVacant() && pIndex->txidMint == block.txMint.GetHash() && pIndex->nMintType == block.txMint.nType))
+                ))
             {
                 return false;
             }
-        }
 
-        if(0 == nLevel)
-        {
-            return true;
-        }
-    }
-
-    //checking of level 1: transaction
-    if(nLevel >= 1)
-    {
-        uint64 nTx = 0;
-        if(!GetTxAmount(nTx))
-        {
-            return false;
-        }
-        std::vector<std::pair<uint256, CTxIndex*>> vTxIndex;
-        try
-        {
-            vTxIndex.reserve(nTx);
-            if(!dbBlock.GetAllTx(vTxIndex))
+            //checking of level 1: transaction
+            if(nLevel >= 1 && !pIndex->IsVacant())
             {
-                throw std::runtime_error("GetAllTx failed");
-            }
+                auto lmdChkTx = [&] (const uint256& txid, const CTxIndex& pTxIndex) -> bool {
+                    CTransaction tx;
+                    if (!tsBlock.ReadDirect(tx, pTxIndex.nFile, pTxIndex.nOffset))
+                    {
+                        return false;
+                    }
 
-            uint256 txid;
-            CTxIndex* pTxIndex = nullptr;
-            CTransaction tx;
-            for(const auto& p : vTxIndex)
-            {
-                txid = p.first;
-                pTxIndex = p.second;
-                tx.SetNull();
-                if (!tsBlock.ReadDirect(tx, pTxIndex->nFile, pTxIndex->nOffset))
+                    //consistent between database and block file
+                    if(!(txid == tx.GetHash()
+                          && pTxIndex.nVersion == tx.nVersion
+                          && pTxIndex.nType == tx.nType
+                          && pTxIndex.nLockUntil == tx.nLockUntil
+                          && pTxIndex.hashAnchor == tx.hashAnchor
+                          && pTxIndex.sendTo == tx.sendTo
+                          && pTxIndex.nAmount == tx.nAmount)
+                            )
+                    {
+                        return false;
+                    }
+
+                    return true;
+                };
+
+                CTxIndex pTxIdx;
+                if(!dbBlock.RetrieveTxIndex(pIndex->txidMint, pTxIdx))
                 {
-                    throw std::runtime_error("Reading tx from file failed");
+                    return false;
+                }
+                if(!lmdChkTx(pIndex->txidMint, pTxIdx))
+                {
+                    return false;
                 }
 
-                //consistent between database and block file
-                if( !(txid == tx.GetHash()
-                     && pTxIndex->nVersion == tx.nVersion
-                     && pTxIndex->nType == tx.nType
-                     && pTxIndex->nLockUntil == tx.nLockUntil
-                     && pTxIndex->hashAnchor == tx.hashAnchor
-                     && pTxIndex->sendTo == tx.sendTo
-                     && pTxIndex->nAmount == tx.nAmount)
-                  )
+                for(auto const& tx : block.vtx)
                 {
-                    throw std::runtime_error("Comparing db with file failed");
+                    pTxIdx.SetNull();
+                    if(!dbBlock.RetrieveTxIndex(tx.GetHash(), pTxIdx))
+                    {
+                        return false;
+                    }
+                    if(!lmdChkTx(pIndex->txidMint, pTxIdx))
+                    {
+                        return false;
+                    }
                 }
+
             }
 
-        }
-        catch(...)
-        {
-            for(auto pTx : vTxIndex)
+            //checking of level 2: delegate/enroll
+            if(nLevel >= 2 && fIsMainFork)
             {
-                delete pTx.second;
             }
-            vTxIndex.clear();
-            return false;
+
+            //checking of level 3: unspent
+            ;
+            pIndex = pIndex->pPrev;
         }
 
-        if(1 == nLevel)
-        {
-            return true;
-        }
+
+
+
+
     }
+
+
+
+
+
+
+
 
     //checking of level 2: delegate/enroll
     if(nLevel >= 2)
@@ -1217,7 +1233,7 @@ bool CBlockBase::CheckConsistency(int nCheckLevel)
     }
 
     //checking of level 3: unspent
-    vector<CBlockDBFork> vFork;
+/*    vector<CBlockDBFork> vFork;
     if(!dbBlock.FetchFork(vFork))
     {
         return false;
@@ -1282,7 +1298,7 @@ bool CBlockBase::CheckConsistency(int nCheckLevel)
             return false;
         }
     }
-
+*/
     return true;
 }
 
