@@ -120,7 +120,8 @@ public:
     virtual bool GetJoint(const uint256& hashFork,uint256& hashParent,uint256& hashJoint,int& nHeight) const = 0; 
     virtual bool LoadForkContext(std::vector<uint256>& vActive) = 0;
     virtual void ForkUpdate(const CWorldLineUpdate& update,std::vector<uint256>& vActive,std::vector<uint256>& vDeactive) = 0;
-    virtual void GetForkList(std::vector<uint256>& vFork) = 0;
+    virtual void GetForkList(std::vector<uint256>& vFork) const = 0;
+    virtual bool GetSubline(const uint256& hashFork, std::vector<std::pair<int, uint256> >& vSubline) const = 0;
     const CMvForkConfig* ForkConfig()
     {
         return dynamic_cast<const CMvForkConfig*>(walleve::IWalleveBase::WalleveConfig());
