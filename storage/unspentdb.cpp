@@ -188,6 +188,16 @@ bool CUnspentDB::Remove(const uint256& hashFork)
     return false;
 }
 
+void CUnspentDB::Clear()
+{
+    map<uint256,std::shared_ptr<CForkUnspentDB> >::iterator it = mapUnspenDB.begin();
+    while (it != mapUnspenDB.end())
+    {
+        (*it).second->RemoveAll();
+        mapUnspenDB.erase(it++);
+    }
+}
+
 bool CUnspentDB::Update(const uint256& hashFork,
                         const vector<CTxUnspent>& vAddNew,const vector<CTxOutPoint>& vRemove)
 {

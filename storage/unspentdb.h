@@ -43,8 +43,10 @@ class CUnspentDB
 public:
     bool Initialize(const boost::filesystem::path& pathData);
     void Deinitialize();
+    bool Exists(const uint256& hashFork) { return (!!mapUnspenDB.count(hashFork)); }
     bool AddNew(const uint256& hashFork);
     bool Remove(const uint256& hashFork);
+    void Clear();
     bool Update(const uint256& hashFork,
                 const std::vector<CTxUnspent>& vAddNew,const std::vector<CTxOutPoint>& vRemove);
     bool Retrieve(const uint256& hashFork,const CTxOutPoint& txout,CTxOutput& output);
