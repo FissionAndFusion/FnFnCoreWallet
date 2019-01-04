@@ -36,12 +36,14 @@ typedef boost::multi_index_container<
   boost::multi_index::indexed_by<
     boost::multi_index::ordered_unique<boost::multi_index::member<CForkLink,uint256,&CForkLink::hashFork> >,
     boost::multi_index::ordered_non_unique<boost::multi_index::member<CForkLink,uint256,&CForkLink::hashJoint> >,
-    boost::multi_index::ordered_non_unique<boost::multi_index::member<CForkLink,int,&CForkLink::nJointHeight> >
+    boost::multi_index::ordered_non_unique<boost::multi_index::member<CForkLink,int,&CForkLink::nJointHeight> >,
+    boost::multi_index::ordered_non_unique<boost::multi_index::member<CForkLink,uint256,&CForkLink::hashParent> >
   >
 > CForkLinkSet;
 typedef CForkLinkSet::nth_index<0>::type CForkLinkSetByFork;
 typedef CForkLinkSet::nth_index<1>::type CForkLinkSetByJoint;
 typedef CForkLinkSet::nth_index<2>::type CForkLinkSetByHeight;
+typedef CForkLinkSet::nth_index<3>::type CForkLinkSetByParent;
 
 
 class CForkSchedule
@@ -86,7 +88,8 @@ public:
     bool LoadForkContext(std::vector<uint256>& vActive) override;
     void ForkUpdate(const CWorldLineUpdate& update,std::vector<uint256>& vActive,std::vector<uint256>& vDeactive) override;
     bool AddNewForkContext(const CForkContext& ctxt,std::vector<uint256>& vActive);
-    void GetForkList(std::vector<uint256>& vFork) override;
+    void GetForkList(std::vector<uint256>& vFork) const override;
+    bool GetSubline(const uint256& hashFork, std::vector<std::pair<int, uint256> >& vSubline) const override;
 protected:
     bool WalleveHandleInitialize() override;
     void WalleveHandleDeinitialize() override;

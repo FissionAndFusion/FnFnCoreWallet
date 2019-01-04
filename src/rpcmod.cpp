@@ -530,7 +530,7 @@ CRPCResultPtr CRPCMod::RPCGetForkGenealogy(CRPCParamPtr param)
     {
         spResult->vecAncestry.push_back({vAncestry[i - 1].first.GetHex(), vAncestry[i - 1].second});
     }
-    for (std::size_t i = 0;i > vSubline.size();i++)
+    for (std::size_t i = 0;i < vSubline.size();i++)
     {
         spResult->vecSubline.push_back({vSubline[i].second.GetHex(), vSubline[i].first});
     }
@@ -1646,12 +1646,17 @@ CRPCResultPtr CRPCMod::RPCExportWallet(CRPCParamPtr param)
     try
     {
         std::ofstream ofs(pSave.string(), std::ios::out);
+        if (!ofs)
+        {
+            throw runtime_error("write error");
+        }
+
         write_stream(Value(aAddr), ofs, pretty_print);
         ofs.close();
     }
-    catch(const fs::filesystem_error& e)
+    catch(...)
     {
-        throw CRPCException(RPC_WALLET_ERROR, "filesystem_error");
+        throw CRPCException(RPC_WALLET_ERROR, "filesystem_error - failed to write.");
     }
 
     return MakeCExportWalletResultPtr(string("Wallet file has been saved at: ") + pSave.string());
@@ -1676,10 +1681,15 @@ CRPCResultPtr CRPCMod::RPCImportWallet(CRPCParamPtr param)
     try
     {
         fs::ifstream ifs(pLoad);
+        if (!ifs)
+        {
+            throw runtime_error("read error");
+        }
+
         read_stream(ifs, vWallet);
         ifs.close();
     }
-    catch(const fs::filesystem_error& e)
+    catch(...)
     {
         throw CRPCException(RPC_WALLET_ERROR, "Filesystem_error - failed to read.");
     }
@@ -2026,7 +2036,7 @@ CRPCResultPtr CRPCMod::RPCSubmitWork(CRPCParamPtr param)
     vector<unsigned char> vchWorkData(ParseHexString(spParam->strData));
     CMvAddress addrSpent(spParam->strSpent);
     uint256 nPriv(spParam->strPrivkey);
-    if (addrSpent.IsNull())
+    if (addrSpent.IsNull() || !addrSpent.IsPubKey())
     {
         throw CRPCException(RPC_INVALID_ADDRESS_OR_KEY,"Invalid spent address");
     }
