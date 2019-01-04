@@ -1013,6 +1013,8 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
 
         //check table block
         CBlockIndex* pIndex = pLastBlock;
+        map<CDestination, int64> mapNextBlockDelegate;
+        map<pair<uint256, CDestination>, tuple<uint256, uint32, uint32>> mapEnrollRanged;
         while(pIndex && pLastBlock->nHeight - pIndex->nHeight < nDepth)
         {
             //be able to read from block files
@@ -1090,12 +1092,90 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
             //checking of level 2: delegate/enroll
             if(nLevel >= 2 && fIsMainFork)
             {
+                static bool fIsLastBlock = true;
+
+                if(fIsLastBlock)
+                {
+                    if(!dbBlock.RetrieveDelegate(block.GetHash(), 0, mapNextBlockDelegate))
+                    {
+                        return false;
+                    }
+                    fIsLastBlock = false;
+                }
+                else
+                {   //compare delegate in this iteration with the previous one
+                    map<CDestination, int64> mapPrevBlockDelegate;
+                    if(!dbBlock.RetrieveDelegate(block.GetHash(), 0, mapPrevBlockDelegate))
+                    {
+                        return false;
+                    }
+                    if(mapNextBlockDelegate != mapPrevBlockDelegate)
+                    {
+                        return false;
+                    }
+                    mapNextBlockDelegate = mapPrevBlockDelegate;
+                }
+
+                if (block.txMint.nType == CTransaction::TX_STAKE
+                        && mapNextBlockDelegate.find(block.txMint.sendTo) != mapNextBlockDelegate.end())
+                {
+                    mapNextBlockDelegate[block.txMint.sendTo] -= block.txMint.nAmount;
+                }
+
+                for (int i = 0; i < block.vtx.size(); i++)
+                {
+                    const CTransaction& tx = block.vtx[i];
+                    {
+                        CTemplateId tid;
+                        if(tx.sendTo.GetTemplateId(tid) && tid.GetType() == TEMPLATE_DELEGATE
+                             && mapNextBlockDelegate.find(tx.sendTo) != mapNextBlockDelegate.end())
+                        {
+                            mapNextBlockDelegate[tx.sendTo] -= tx.nAmount;
+                        }
+                    }
+
+                    const CTxContxt& txContxt = block.vTxContxt[i];
+                    {
+                        CTemplateId tid;
+                        if(txContxt.destIn.GetTemplateId(tid) && tid.GetType() == TEMPLATE_DELEGATE
+                             && mapNextBlockDelegate.find(txContxt.destIn) != mapNextBlockDelegate.end())
+                        {
+                            mapNextBlockDelegate[txContxt.destIn] += tx.nAmount + tx.nTxFee;
+                        }
+                    }
+
+                    if(tx.nType == CTransaction::TX_CERT)
+                    {
+                        const uint256& anchor = tx.hashAnchor;
+                        const CDestination& dest = tx.sendTo;
+                        const uint256& blk = block.GetHash();
+                        CTxIndex txIdx;
+                        if(!dbBlock.RetrieveTxIndex(tx.GetHash(), txIdx))
+                        {
+                            return false;
+                        }
+                        const uint32& nFile = txIdx.nFile;
+                        const uint32& nOffset = txIdx.nOffset;
+                        mapEnrollRanged[make_pair(anchor, dest)] = make_tuple(blk, nFile, nOffset);
+                    }
+                }
+
+                for(const auto& delegate : mapNextBlockDelegate)
+                {
+                    if(delegate.second < 0)
+                    {
+                        return false;
+                    }
+                }
             }
 
             //checking of level 3: unspent
             ;
             pIndex = pIndex->pPrev;
         }
+
+        //compare enroll ranged in argument of nDepth with table enroll
+        ;
 
 
 
