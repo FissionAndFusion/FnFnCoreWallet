@@ -1116,8 +1116,7 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
                     mapNextBlockDelegate = mapPrevBlockDelegate;
                 }
 
-                if (block.txMint.nType == CTransaction::TX_STAKE
-                        && mapNextBlockDelegate.find(block.txMint.sendTo) != mapNextBlockDelegate.end())
+                if (block.txMint.nType == CTransaction::TX_STAKE)
                 {
                     mapNextBlockDelegate[block.txMint.sendTo] -= block.txMint.nAmount;
                 }
@@ -1127,8 +1126,7 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
                     const CTransaction& tx = block.vtx[i];
                     {
                         CTemplateId tid;
-                        if(tx.sendTo.GetTemplateId(tid) && tid.GetType() == TEMPLATE_DELEGATE
-                             && mapNextBlockDelegate.find(tx.sendTo) != mapNextBlockDelegate.end())
+                        if(tx.sendTo.GetTemplateId(tid) && tid.GetType() == TEMPLATE_DELEGATE)
                         {
                             mapNextBlockDelegate[tx.sendTo] -= tx.nAmount;
                         }
@@ -1137,8 +1135,7 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
                     const CTxContxt& txContxt = block.vTxContxt[i];
                     {
                         CTemplateId tid;
-                        if(txContxt.destIn.GetTemplateId(tid) && tid.GetType() == TEMPLATE_DELEGATE
-                             && mapNextBlockDelegate.find(txContxt.destIn) != mapNextBlockDelegate.end())
+                        if(txContxt.destIn.GetTemplateId(tid) && tid.GetType() == TEMPLATE_DELEGATE)
                         {
                             mapNextBlockDelegate[txContxt.destIn] += tx.nAmount + tx.nTxFee;
                         }
