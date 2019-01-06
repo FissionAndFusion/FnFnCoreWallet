@@ -92,12 +92,12 @@ public:
     {
         boost::unique_lock<boost::mutex> lock(mutex);
 
+        fUpgraded = true;
+
         while (nRead)
         {
             condUpgrade.wait(lock);
         }
-
-        fUpgraded = true;
     }
     void UpgradeUnlock()
     {
