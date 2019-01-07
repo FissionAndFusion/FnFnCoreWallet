@@ -239,10 +239,39 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
         }
         case EModuleType::DELEGATEDCHANNEL:
         {
-            if (!AttachModule(new CDelegatedChannel()))
+            auto config = GetDbpClientConfig();
+            
+            IMvDelegatedChannel *pDelegatedChn = NULL;
+            // fnfn node
+            if(!config.fEnableSuperNode)
             {
-                return false;
+                pDelegatedChn = new CDelegatedChannel();
+                if (!AttachModule(pDelegatedChn))
+                {
+                    return false;
+                }
             }
+
+            // root node for supernode
+            if(config.fEnableSuperNode && !config.fEnableForkNode)
+            {
+                pDelegatedChn = new CDelegatedChannel();
+                if (!AttachModule(pDelegatedChn))
+                {
+                    return false;
+                }
+            }
+
+            // fork node for supernode
+            if(config.fEnableSuperNode && config.fEnableForkNode)
+            {
+                pDelegatedChn = new CDummyDelegatedChannel();
+                if (!AttachModule(pDelegatedChn))
+                {
+                    return false;
+                }
+            }
+            
             break;
         }
         case EModuleType::NETWORK:
