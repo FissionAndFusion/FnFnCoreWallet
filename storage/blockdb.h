@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The Multiverse developers
+// Copyright (c) 2017-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -80,17 +80,11 @@ public:
                         std::map<CDestination,std::pair<uint32,uint32> >& mapEnrollTxPos);
     bool InnoDB();
 protected:
-    int GetForkIndex(const uint256& hash)
-    {
-        std::map<uint256,int>::iterator it = mapForkIndex.find(hash);
-        return  (it != mapForkIndex.end() ? (*it).second : -1);
-    }
     bool CreateTable();
     bool LoadFork();
 protected:
     CMvDBPool dbPool;
     CUnspentDB dbUnspent;
-    std::map<uint256,int> mapForkIndex;
 };
 
 } // namespace storage

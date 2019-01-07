@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The Multiverse developers
+// Copyright (c) 2017-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -739,7 +739,6 @@ void CNetChannel::SchedulePeerInv(uint64 nNonce,const uint256& hashFork,CSchedul
                     std::cout << "Dispatch Event DDOS (ScheduleTxInv return false) [netchannel]\n";
                     DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK,"SchedulePeerInv1");
                 }
-                
             }
         }
 
@@ -754,7 +753,6 @@ void CNetChannel::SchedulePeerInv(uint64 nNonce,const uint256& hashFork,CSchedul
             std::cout << "Dispatch Event DDOS (ScheduleBlockInv return false) [netchannel]\n";
             DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK,"SchedulePeerInv2");
         }
-        
     }
     if (!eventGetData.data.empty())
     {

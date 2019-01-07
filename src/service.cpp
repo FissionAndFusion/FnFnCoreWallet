@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The Multiverse developers
+// Copyright (c) 2017-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -275,20 +275,20 @@ bool CService::GetForkGenealogy(const uint256& hashFork,vector<pair<uint256,int>
 {
     boost::shared_lock<boost::shared_mutex> rlock(rwForkStatus);
     
-    map<uint256,CForkStatus>::iterator it = mapForkStatus.find(hashFork);
-    if (it == mapForkStatus.end())
+    uint256 hashParent, hashJoint;
+    int nJointHeight;
+    if (!pForkManager->GetJoint(hashFork, hashParent, hashJoint, nJointHeight))
     {
         return false;
     }
     
-    CForkStatus* pAncestry = &(*it).second;
-    while (pAncestry->hashParent != 0)
+    while (hashParent != 0)
     {
-        vAncestry.push_back(make_pair(pAncestry->hashParent,pAncestry->nOriginHeight));
-        pAncestry = &mapForkStatus[pAncestry->hashParent];
+        vAncestry.push_back(make_pair(hashParent, nJointHeight));
+        pForkManager->GetJoint(hashParent, hashParent, hashJoint, nJointHeight);
     }
 
-    vSubline.assign((*it).second.mapSubline.begin(),(*it).second.mapSubline.end());
+    pForkManager->GetSubline(hashFork, vSubline);
     return true;
 }
 

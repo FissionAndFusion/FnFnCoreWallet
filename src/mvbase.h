@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The Multiverse developers
+// Copyright (c) 2017-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -120,7 +120,8 @@ public:
     virtual bool GetJoint(const uint256& hashFork,uint256& hashParent,uint256& hashJoint,int& nHeight) const = 0; 
     virtual bool LoadForkContext(std::vector<uint256>& vActive) = 0;
     virtual void ForkUpdate(const CWorldLineUpdate& update,std::vector<uint256>& vActive,std::vector<uint256>& vDeactive) = 0;
-    virtual void GetForkList(std::vector<uint256>& vFork) = 0;
+    virtual void GetForkList(std::vector<uint256>& vFork) const = 0;
+    virtual bool GetSubline(const uint256& hashFork, std::vector<std::pair<int, uint256> >& vSubline) const = 0;
     const CMvForkConfig* ForkConfig()
     {
         return dynamic_cast<const CMvForkConfig*>(walleve::IWalleveBase::WalleveConfig());
@@ -184,6 +185,7 @@ public:
     virtual bool ArrangeInputs(const CDestination& destIn, const uint256& hashFork, int nForkHeight, CTransaction& tx) = 0;
     /* Update */
     virtual bool SynchronizeTxSet(const CTxSetChange& change) = 0;
+    virtual bool AddNewTx(const uint256& hashFork, const CAssembledTx& tx) = 0;
     virtual bool UpdateTx(const uint256& hashFork, const CAssembledTx& tx) = 0;
     virtual bool ClearTx() = 0;
     virtual bool AddNewFork(const uint256& hashFork, const uint256& hashParent, int nOriginHeight) = 0;
