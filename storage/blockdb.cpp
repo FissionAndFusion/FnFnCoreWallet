@@ -49,7 +49,6 @@ void CBlockDB::Deinitialize()
 {
     dbPool.Deinitialize();
     dbUnspent.Deinitialize();
-    mapForkIndex.clear();
 }
 
 bool CBlockDB::RemoveAll()
@@ -74,12 +73,8 @@ bool CBlockDB::RemoveAll()
         }
     }
 
-    for (map<uint256,int>::iterator it = mapForkIndex.begin();it != mapForkIndex.end();++it)
-    {
-        dbUnspent.Remove((*it).first);
-    }
+    dbUnspent.Clear();
 
-    mapForkIndex.clear();
     return true;
 }
 
@@ -186,7 +181,6 @@ bool CBlockDB::AddNewFork(const uint256& hash)
         return false;
     }
   
-    int nIndex = 0; 
     string strEscHash = db->ToEscString(hash);
     {
         ostringstream oss;
@@ -200,25 +194,14 @@ bool CBlockDB::AddNewFork(const uint256& hash)
         }
     }
 
-    {
-        ostringstream oss;
-        oss << "SELECT id FROM fork WHERE hash = \'" << strEscHash << "\'";
-        CMvDBRes res(*db,oss.str());
-        if (!res.GetRow() || !res.GetField(0,nIndex))
-        {
-            return false;
-        }
-    }
-
     if (!dbUnspent.AddNew(hash))
     {
         ostringstream del;
-        del << "DELETE FROM fork WHERE id = " << nIndex;
+        del << "DELETE FROM fork WHERE hash = \'" << strEscHash << "\'";
         db->Query(del.str());
         return false;
     }
 
-    mapForkIndex.insert(make_pair(hash,nIndex));
     return true;
 }
 
@@ -230,22 +213,18 @@ bool CBlockDB::RemoveFork(const uint256& hash)
         return false;
     }
 
-    int nIndex = GetForkIndex(hash);
-    if (nIndex < 0)
+    if (!dbUnspent.Remove(hash))
     {
         return false;
     }
-
-    dbUnspent.Remove(hash);
     
     ostringstream oss;
-    oss << "DELETE FROM fork WHERE id = " << nIndex;
+    oss << "DELETE FROM fork WHERE hash = \'" << db->ToEscString(hash) << "\'";
     if (!db->Query(oss.str()))
     {
         return false;
     }
 
-    mapForkIndex.erase(hash);
     return true;
 }
 
@@ -283,23 +262,25 @@ bool CBlockDB::UpdateFork(const uint256& hash,const uint256& hashRefBlock,const 
     {
         return false;
     }
-    
-    int nIndex = GetForkIndex(hash);
-    if (nIndex < 0)
+   
+    if (!dbUnspent.Exists(hash))
     {
         return false;
     }
-    int nIndexBased = -1;
+
+    bool fIgnoreTxDel = false;
     if (hashForkBased != hash && hashForkBased != 0)
     {
-        if ((nIndexBased = GetForkIndex(hashForkBased)) < 0)
+        if (!dbUnspent.Copy(hashForkBased,hash))
         {
             return false;
         }
+        fIgnoreTxDel = true;
     }
+
     {
         CMvDBTxn txn(*db);
-        if (nIndexBased < 0)
+        if (!fIgnoreTxDel)
         {
             for (int i = 0;i < vTxDel.size();i++)
             {
@@ -331,25 +312,20 @@ bool CBlockDB::UpdateFork(const uint256& hash,const uint256& hashRefBlock,const 
                 << " ON DUPLICATE KEY UPDATE height = VALUES(height),file = VALUES(file),offset = VALUES(offset)";
             txn.Query(oss.str());
         }
-        if (nIndexBased > 0)
-        {
-            if (!dbUnspent.Copy(hashForkBased,hash))
-            {
-                txn.Abort();
-                return false;
-            }
-        }
-        if (!dbUnspent.Update(hash,vAddNew,vRemove))
-        {
-            txn.Abort();
-            return false;
-        }
+
         {
             ostringstream oss;
             oss << "UPDATE fork SET refblock = \'" << db->ToEscString(hashRefBlock) << "\' "
                                 "WHERE hash = \'" << db->ToEscString(hash) << "\'"; 
             txn.Query(oss.str());
         }
+
+        if (!dbUnspent.Update(hash,vAddNew,vRemove))
+        {
+            txn.Abort();
+            return false;
+        }
+
         if (!txn.Commit()) 
         {
             return false;
@@ -774,16 +750,14 @@ bool CBlockDB::LoadFork()
         return false;
     }
     {
-        CMvDBRes res(*db,"SELECT id,hash FROM fork",true);
+        CMvDBRes res(*db,"SELECT hash FROM fork",true);
         while (res.GetRow())
         {
-            int id;
             uint256 hash;
-            if (!res.GetField(0,id) || !res.GetField(1,hash))
+            if (!res.GetField(0,hash))
             {
                 return false;
             }
-            mapForkIndex.insert(make_pair(hash,id));
             if (!dbUnspent.AddNew(hash))
             {
                 return false;

@@ -7,7 +7,6 @@
 
 #include <boost/noncopyable.hpp>
 #include <boost/thread/thread.hpp>
-#include <boost/atomic.hpp>
 
 namespace walleve
 {
@@ -15,45 +14,59 @@ namespace walleve
 class CWalleveRWAccess : public boost::noncopyable
 {
 public:
-    CWalleveRWAccess() : nRead(0),nWrite(0),nWriting(0) {}
+    CWalleveRWAccess() : nRead(0),nWrite(0),fExclusive(false),fUpgraded(false) {}
 
     void ReadLock()
     {
-        boost::shared_lock<boost::shared_mutex> lock(mutex);
-        while (nWrite)
+        boost::unique_lock<boost::mutex> lock(mutex);
+        while (nWrite || fUpgraded)
         {
             condRead.wait(lock);
         }
-        nRead.fetch_add(1);
+        ++nRead;
     }
     void ReadUnlock()
     {
-        bool fNotifyWrite = false;
+        bool fNotifyWrite   = false;
+        bool fNotifyUpgrade = false;
         {
-            boost::shared_lock<boost::shared_mutex> lock(mutex);
-            fNotifyWrite = (nRead.fetch_sub(1) == 1 && nWrite);
+            boost::unique_lock<boost::mutex> lock(mutex);
+            
+            if (--nRead == 0)
+            {
+                fNotifyWrite   = (nWrite != 0);
+                fNotifyUpgrade = fExclusive;
+            }
         }
-        if (fNotifyWrite)
+        if (fNotifyUpgrade)
+        {
+            condUpgrade.notify_one();
+        }
+        else if (fNotifyWrite)
         {
             condWrite.notify_one();
         }
     }
     void WriteLock()
     {
-        boost::unique_lock<boost::shared_mutex> lock(mutex);
-        if (nWrite.fetch_add(1) || nRead)
+        boost::unique_lock<boost::mutex> lock(mutex);
+
+        ++nWrite;
+
+        while (nRead || fExclusive)
         {
-            do { condWrite.wait(lock); } while (nRead || nWriting);
+            condWrite.wait(lock);
         }
-        nWriting.fetch_add(1);
+
+        fExclusive = true;
     }
     void WriteUnlock()
     {
         bool fNotifyWrite = false;
         {
-            boost::unique_lock<boost::shared_mutex> lock(mutex);
-            fNotifyWrite = (nWrite.fetch_sub(1) != 1);
-            nWriting.fetch_sub(1);
+            boost::unique_lock<boost::mutex> lock(mutex);
+            fNotifyWrite = (--nWrite != 0);
+            fExclusive = false;
         }
         if (fNotifyWrite)
         {
@@ -64,13 +77,63 @@ public:
             condRead.notify_all();
         }
     }
+    void UpgradeLock()
+    {
+        boost::unique_lock<boost::mutex> lock(mutex);
+
+        while (fExclusive)
+        {
+            condRead.wait(lock);
+        }
+
+        fExclusive = true;
+    }
+    void UpgradeToWriteLock()
+    {
+        boost::unique_lock<boost::mutex> lock(mutex);
+
+        fUpgraded = true;
+
+        while (nRead)
+        {
+            condUpgrade.wait(lock);
+        }
+    }
+    void UpgradeUnlock()
+    {
+        bool fNotifyWrite = false;
+        {
+            boost::unique_lock<boost::mutex> lock(mutex);
+
+            fNotifyWrite = (nWrite != 0);
+
+            if (!fUpgraded)
+            {
+                fNotifyWrite = (fNotifyWrite && nRead == 0);
+            }
+
+            fExclusive = false;
+            fUpgraded = false;
+        } 
+
+        if (fNotifyWrite)
+        {
+            condWrite.notify_one();
+        }
+        else
+        {
+            condRead.notify_all();
+        }
+    }
 protected:
-    boost::atomic<int> nRead;
-    boost::atomic<int> nWrite;
-    boost::atomic<int> nWriting;
-    boost::shared_mutex mutex;
+    int nRead;
+    int nWrite;
+    bool fExclusive;
+    bool fUpgraded;
+    boost::mutex mutex;
     boost::condition_variable_any condRead;
     boost::condition_variable_any condWrite;
+    boost::condition_variable_any condUpgrade;
 };
 
 class CWalleveReadLock
@@ -105,6 +168,25 @@ protected:
     CWalleveRWAccess& _access;
 };
 
+class CWalleveUpgradeLock
+{
+public:
+    CWalleveUpgradeLock(CWalleveRWAccess& access) 
+    : _access(access)
+    {
+        _access.UpgradeLock();
+    }
+    ~CWalleveUpgradeLock()
+    {
+        _access.UpgradeUnlock();
+    }
+    void Upgrade()
+    {
+        _access.UpgradeToWriteLock();
+    }
+protected:
+    CWalleveRWAccess& _access;
+};
 } // namespace walleve
 
 #endif //WALLEVE_RWLOCK_H

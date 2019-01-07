@@ -19,8 +19,8 @@ public:
     int64 nTxFee;
     CDestination destIn;
     int64 nValueIn;
-    int nBlockHeight;
-    int nFlags;
+    mutable int nBlockHeight;
+    mutable int nFlags;
     uint256 txid;
     uint256 hashFork;
     // memory only
