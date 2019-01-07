@@ -1014,7 +1014,6 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
         //check table block
         CBlockIndex* pIndex = pLastBlock;
         map<CDestination, int64> mapNextBlockDelegate;
-        map<pair<uint256, CDestination>, tuple<uint256, uint32, uint32>> mapEnrollRanged;
         while(pIndex && pLastBlock->nHeight - pIndex->nHeight < nDepth)
         {
             //be able to read from block files
@@ -1121,6 +1120,7 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
                     mapNextBlockDelegate[block.txMint.sendTo] -= block.txMint.nAmount;
                 }
 
+                map<pair<uint256, CDestination>, tuple<uint256, uint32, uint32>> mapEnrollRanged;
                 for (int i = 0; i < block.vtx.size(); i++)
                 {
                     const CTransaction& tx = block.vtx[i];
@@ -1164,6 +1164,28 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
                         return false;
                     }
                 }
+
+                //compare enroll ranged in argument of nDepth with table enroll
+                set<uint256> setBlockRange;
+                setBlockRange.insert(block.GetHash());
+                map<CDestination, pair<uint32, uint32>> mapRes;
+                if(!dbBlock.RetrieveEnroll(block.hashPrev, setBlockRange, mapRes))
+                {
+                    return false;
+                }
+                map<CDestination, pair<uint32, uint32>> mapResComp;
+                for(const auto& enroll : mapEnrollRanged)
+                {
+                    const CDestination& dest = enroll.first.second;
+                    const tuple<uint256, uint32, uint32>& pos = enroll.second;
+                    const uint32& file = get<1>(pos);
+                    const uint32& offset = get<2>(pos);
+                    mapResComp.insert(make_pair(dest, make_pair(file, offset)));
+                }
+                if(mapRes != mapResComp)
+                {
+                    return false;
+                }
             }
 
             //checking of level 3: unspent
@@ -1171,8 +1193,6 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
             pIndex = pIndex->pPrev;
         }
 
-        //compare enroll ranged in argument of nDepth with table enroll
-        ;
 
 
 
