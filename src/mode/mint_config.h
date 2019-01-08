@@ -37,6 +37,24 @@ public:
 
 };
 
+class CMvForkNodeMintConfig : virtual public CMvBasicConfig,
+                      virtual public CMvForkNodeMintConfigOption
+{
+public:
+    CMvForkNodeMintConfig();
+    virtual ~CMvForkNodeMintConfig();
+    virtual bool PostLoad();
+    virtual std::string ListConfig() const;
+    virtual std::string Help() const;
+protected:
+    void ExtractMintParamPair(const std::string& strAddress,
+                              const std::string& strKey, CDestination& dest,
+                              uint256& privkey);
+public:
+    CDestination destMPVss;
+    uint256 keyMPVss;
+};
+
 }  // namespace multiverse
 
 #endif  // MULTIVERSE_MINT_CONFIG_H
