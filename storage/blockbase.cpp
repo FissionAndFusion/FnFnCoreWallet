@@ -1227,10 +1227,13 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
             pIndex = pIndex->pPrev;
         }
 
-        //compare unspent with transaction
-        if(!dbBlock.CompareRangedUnspentTx(fork.hashFork, mapUnspent))
+        if(nLevel >= 3)
         {
-            return false;
+            //compare unspent with transaction
+            if(!dbBlock.CompareRangedUnspentTx(fork.hashFork, mapUnspent))
+            {
+                return false;
+            }
         }
 
     }
