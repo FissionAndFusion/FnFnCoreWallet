@@ -77,7 +77,18 @@ CForkBlockMaker::~CForkBlockMaker()
     
 bool CForkBlockMaker::HandleEvent(CMvEventBlockMakerUpdate& eventUpdate)
 {
-    return false;
+    {
+        boost::unique_lock<boost::mutex> lock(mutex);
+        nMakerStatus = ForkMakerStatus::MAKER_RESET;
+        hashLastBlock = eventUpdate.data.hashBlock;
+        nLastBlockTime = eventUpdate.data.nBlockTime;
+        nLastBlockHeight = eventUpdate.data.nBlockHeight;
+        nLastAgreement = eventUpdate.data.nAgreement;
+        nLastWeight = eventUpdate.data.nWeight;
+    }
+    cond.notify_all();
+    
+    return true;
 }
 
 bool CForkBlockMaker::WalleveHandleInitialize()
