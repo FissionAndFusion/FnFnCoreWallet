@@ -16,6 +16,7 @@
 #include "rpcmod.h"
 #include "service.h"
 #include "blockmaker.h"
+#include "forkblockmaker.h"
 #include "rpcclient.h"
 #include "miner.h"
 #include "dbpservice.h"
@@ -183,10 +184,41 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
         }
         case EModuleType::BLOCKMAKER:
         {
-            if (!AttachModule(new CBlockMaker()))
+            
+            auto config = GetDbpClientConfig();
+            
+            IBlockMaker* pBlockMaker = NULL;
+            
+            // fnfn node
+            if(!config.fEnableSuperNode)
             {
-                return false;
+                pBlockMaker = new CBlockMaker();
+                if (!AttachModule(pBlockMaker))
+                {
+                    return false;
+                }
             }
+
+            // root node for supernode
+            if(config.fEnableSuperNode && !config.fEnableForkNode)
+            {
+                pBlockMaker = new CBlockMaker();
+                if (!AttachModule(pBlockMaker))
+                {
+                    return false;
+                }
+            }
+
+            // fork node for supernode
+            if(config.fEnableSuperNode && config.fEnableForkNode)
+            {
+                pBlockMaker = new CForkBlockMaker();
+                if (!AttachModule(pBlockMaker))
+                {
+                    return false;
+                }
+            }
+            
             break;
         }
         case EModuleType::COREPROTOCOL:
