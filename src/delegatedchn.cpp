@@ -603,6 +603,8 @@ void CDummyDelegatedChannel::PrimaryUpdate(int nStartHeight,
                        const std::map<CDestination,std::vector<unsigned char> >& mapDistributeData,
                        const std::map<CDestination,std::vector<unsigned char> >& mapPublishData)
 {
-    boost::unique_lock<boost::shared_mutex> wlock(rwPeer);
-    dataChain.Update(nStartHeight, vEnrolledWeight, mapDistributeData, mapPublishData);
+    (void)nStartHeight;
+    (void)vEnrolledWeight;
+    (void)mapDistributeData;
+    (void)mapPublishData;
 }
