@@ -1011,9 +1011,12 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
             nDepth = pLastBlock->nHeight;
         }
 
-        //check table block
         CBlockIndex* pIndex = pLastBlock;
         map<CDestination, int64> mapNextBlockDelegate;
+
+        map<uint256, CTxUnspent> mapUnspent;
+        vector<uint256> vSpentTx;
+
         while(pIndex && pLastBlock->nHeight - pIndex->nHeight < nDepth)
         {
             //be able to read from block files
@@ -1189,213 +1192,49 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
             }
 
             //checking of level 3: unspent
-            ;
+            if(nLevel >= 3)
+            {
+                mapUnspent[block.txMint.GetHash()] = CTxUnspent(CTxOutPoint(uint256(), 0)
+                        , CTxOutput(block.txMint.sendTo, block.txMint.nAmount, block.txMint.nLockUntil));
+
+                for(const auto& tx : block.vtx)
+                {
+                    mapUnspent[tx.GetHash()] = CTxUnspent(tx.vInput[0].prevout, CTxOutput(tx.sendTo, tx.nAmount, tx.nLockUntil));
+                    for(const auto& txin : tx.vInput)
+                    {
+                        vSpentTx.push_back(txin.prevout.hash);
+                    }
+                }
+
+                vector<uint256> vTxRemoved;
+                for(const auto& spent : vSpentTx)
+                {
+                    if(mapUnspent.find(spent) != mapUnspent.end())
+                    {
+                        mapUnspent.erase(spent);
+                        vTxRemoved.push_back(spent);
+                    }
+                }
+
+                for(const auto& txDel : vTxRemoved)
+                {
+                    const auto& pos = find(vSpentTx.begin(), vSpentTx.end(), txDel);
+                    vSpentTx.erase(pos);
+                }
+
+            }
+
             pIndex = pIndex->pPrev;
         }
 
-
-
-
-
+        //compare unspent with transaction
+        if(!dbBlock.CompareRangedUnspentTx(fork.hashFork, mapUnspent))
+        {
+            return false;
+        }
 
     }
 
-
-
-
-
-
-
-
-    //checking of level 2: delegate/enroll
-    if(nLevel >= 2)
-    {
-        uint256 hashMainFork;
-        bool fFoundMainFork = false;
-        for(const auto& i : mapFork)
-        {
-            const uint256& hashFork = i.first;
-            const CBlockFork& fork = i.second;
-            if(fork.GetOrigin()->IsPrimary())
-            {
-                hashMainFork = hashFork;
-                fFoundMainFork = true;
-                break;
-            }
-        }
-        if(!fFoundMainFork)
-        {
-            return false;
-        }
-
-        CBlockFork* pFork = GetFork(hashMainFork);
-        if(NULL == pFork)
-        {
-            return false;
-        }
-        CBlockIndex* pLastBlock = pFork->GetLast();
-        if(NULL == pLastBlock)
-        {
-            return false;
-        }
-        pFork->UpdateLast(pLastBlock);
-        CBlockIndex* pIndex = pFork->GetOrigin();
-        if(NULL == pIndex)
-        {
-            return false;
-        }
-
-        map<pair<uint256, CDestination>, int64> mapDelegate;
-        map<pair<uint256, CDestination>, tuple<uint256, uint32, uint32>> mapEnroll;
-        while(pIndex)
-        {
-            CBlockEx block;
-            if(!Retrieve(pIndex, block))
-            {
-                return false;
-            }
-
-            uint256 hashBlock = block.GetHash();
-
-            if (block.txMint.nType == CTransaction::TX_STAKE)
-            {
-                mapDelegate[make_pair(hashBlock, block.txMint.sendTo)] += block.txMint.nAmount;
-            }
-
-            for (int i = 0; i < block.vtx.size(); i++)
-            {
-                const CTransaction& tx = block.vtx[i];
-                {
-                    CTemplateId tid;
-                    if (tx.sendTo.GetTemplateId(tid) && tid.GetType() == TEMPLATE_DELEGATE)
-                    {
-                        mapDelegate[make_pair(hashBlock, tx.sendTo)] += tx.nAmount;
-                    }
-                }
-
-                const CTxContxt& txContxt = block.vTxContxt[i];
-                {
-                    CTemplateId tid;
-                    if (txContxt.destIn.GetTemplateId(tid) && tid.GetType() == TEMPLATE_DELEGATE)
-                    {
-                        mapDelegate[make_pair(hashBlock, txContxt.destIn)] -= tx.nAmount + tx.nTxFee;
-                    }
-                }
-
-                if(tx.nType == CTransaction::TX_CERT)
-                {
-                    const uint256& anchor = tx.hashAnchor;
-                    const CDestination& dest = tx.sendTo;
-                    const uint256& blk = block.GetHash();
-                    CTxIndex txIdx;
-                    if(!dbBlock.RetrieveTxIndex(tx.GetHash(), txIdx))
-                    {
-                        return false;
-                    }
-                    const uint32& nFile = txIdx.nFile;
-                    const uint32& nOffset = txIdx.nOffset;
-                    mapEnroll[make_pair(anchor, dest)] = make_tuple(blk, nFile, nOffset);
-                }
-            }
-
-            pIndex = pIndex->pNext;
-        }
-
-        //check table delegate
-        map<pair<uint256, CDestination>, int64> mapDelegateComp;
-        if(!dbBlock.GetAllDelegate(mapDelegateComp))
-        {
-            return false;
-        }
-        if(mapDelegate != mapDelegateComp)
-        {
-            return false;
-        }
-
-        //check table enroll
-        map<pair<uint256, CDestination>, tuple<uint256, uint32, uint32>> mapEnrollComp;
-        if(!dbBlock.GetAllEnroll(mapEnrollComp))
-        {
-            return false;
-        }
-        if(mapEnroll != mapEnrollComp)
-        {
-            return false;
-        }
-
-        if(2 == nLevel)
-        {
-            return true;
-        }
-    }
-
-    //checking of level 3: unspent
-/*    vector<CBlockDBFork> vFork;
-    if(!dbBlock.FetchFork(vFork))
-    {
-        return false;
-    }
-
-    for(const auto& fork : vFork)
-    {
-        CBlockFork* pFork = GetFork(fork.hashFork);
-        if(NULL == pFork)
-        {
-            return false;
-        }
-        CBlockIndex* pLastBlock = pFork->GetLast();
-        if(NULL == pLastBlock)
-        {
-            return false;
-        }
-        pFork->UpdateLast(pLastBlock);
-        CBlockIndex* pIndex = pFork->GetOrigin();
-        if(NULL == pIndex)
-        {
-            return false;
-        }
-
-        map<uint256, CTxUnspent> mapUnspent;
-        while(!pIndex)
-        {
-            CBlockEx block;
-            if(!tsBlock.ReadDirect(block, pIndex->nFile, pIndex->nOffset))
-            {
-                return false;
-            }
-            mapUnspent[block.txMint.GetHash()] = CTxUnspent(CTxOutPoint(uint256(), 0)
-                    , CTxOutput(block.txMint.sendTo, block.txMint.nAmount, block.txMint.nLockUntil));
-
-            for(const auto& tx : block.vtx)
-            {
-                for(const auto& txin : tx.vInput)
-                {
-                    mapUnspent.erase(txin.prevout.hash);
-                }
-                mapUnspent[tx.GetHash()] = CTxUnspent(tx.vInput[0].prevout, CTxOutput(tx.sendTo, tx.nAmount, tx.nLockUntil));
-            }
-
-            pIndex = pIndex->pNext;
-        }
-
-        //check unspent
-        map<pair<uint256, uint8>, tuple<CDestination, int64, uint32>> mapLhs;
-        if(!dbBlock.GetAllUnspentTx(fork.nIndex, mapLhs))
-        {
-            return false;
-        }
-        map<pair<uint256, uint8>, tuple<CDestination, int64, uint32>> mapRhs;
-        for(const auto& tu : mapUnspent)
-        {
-            mapRhs.insert(make_pair(make_pair(tu.second.hash, tu.second.n)
-                    , make_tuple(tu.second.output.destTo, tu.second.output.nAmount, tu.second.output.nLockUntil)));
-        }
-        if(mapLhs.size() != mapRhs.size() || mapLhs != mapRhs)
-        {
-            return false;
-        }
-    }
-*/
     return true;
 }
 

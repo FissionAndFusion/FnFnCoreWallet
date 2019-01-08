@@ -86,8 +86,7 @@ public:
     bool InnoDB();
     bool GetAllDelegate(std::map<std::pair<uint256, CDestination>, int64>& mapDelegate);
     bool GetAllEnroll(std::map<std::pair<uint256, CDestination>, std::tuple<uint256, uint32, uint32>>& mapEnroll);
-    bool GetUnspentSum(int forkIndex, uint64& nSum);
-    bool GetAllUnspentTx(int forkIndex, std::map<std::pair<uint256, uint8>, std::tuple<CDestination, int64, uint32>>& mapRes);
+    bool CompareRangedUnspentTx(const uint256& forkIndex, const std::map<uint256, CTxUnspent>& mapUnspent);
 protected:
     int GetForkIndex(const uint256& hash)
     {

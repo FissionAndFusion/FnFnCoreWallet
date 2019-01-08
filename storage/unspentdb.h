@@ -22,16 +22,26 @@ public:
 class CForkUnspentCheckWalker : public CForkUnspentDBWalker
 {
 public:
-    CForkUnspentCheckWalker() : nSum(0), mapUnspent() {};
-    bool Walk(const CTxOutPoint& txout,const CTxOutput& output) override
+    CForkUnspentCheckWalker(const std::map<uint256, CTxUnspent>& mapUnspent)
+            : nMatch(0), mapUnspentTx(mapUnspent) {};
+    bool Walk(const CTxOutPoint& txout, const CTxOutput& output) override
     {
-        ++nSum;
-        mapUnspent.insert(std::make_pair(txout, output));
+        for(const auto& item : mapUnspentTx)
+        {
+            const CTxUnspent& unspent = item.second;
+            if(unspent.hash == txout.hash && unspent.n == txout.n
+                    && unspent.output.destTo == output.destTo
+                    && unspent.output.nAmount == output.nAmount
+                    && unspent.output.nLockUntil == output.nLockUntil)
+            {
+                ++nMatch;
+            }
+        }
     };
 
 public:
-    uint64 nSum;
-    std::map<CTxOutPoint, CTxOutput> mapUnspent;
+    uint64 nMatch;
+    const std::map<uint256, CTxUnspent>& mapUnspentTx;
 };
 
 class CForkUnspentDB : public walleve::CKVDB

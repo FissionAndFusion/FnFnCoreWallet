@@ -989,35 +989,18 @@ bool CBlockDB::GetAllEnroll(std::map<std::pair<uint256, CDestination>, std::tupl
     return true;
 }
 
-bool CBlockDB::GetUnspentSum(int forkIndex, uint64& nSum)
+bool CBlockDB::CompareRangedUnspentTx(const uint256& forkIndex, const std::map<uint256, CTxUnspent>& mapUnspent)
 {
-    CMvDBInst db(&dbPool);
-    if (!db.Available())
-    {
-        return false;
-    }
-
-    {
-        ostringstream oss;
-        oss << "SELECT COUNT(id) FROM unspent" << forkIndex;
-        CMvDBRes res(*db,oss.str());
-        return (res.GetRow() && res.GetField(0, nSum));
-    }
-}
-
-bool CBlockDB::GetAllUnspentTx(int forkIndex, std::map<std::pair<uint256, uint8>, std::tuple<CDestination, int64, uint32>>& mapRes)
-{
-    CForkUnspentCheckWalker walker;
+    CForkUnspentCheckWalker walker(mapUnspent);
     if(!dbUnspent.WalkThrough(forkIndex, walker))
     {
         return false;
     }
 
-    mapRes.clear();
-    for(const auto& unspent : walker.mapUnspent)
+    if(walker.nMatch < mapUnspent.size())
     {
-        mapRes.insert(make_pair(make_pair(unspent.first.hash, unspent.first.n)
-                , make_tuple(unspent.second.destTo, unspent.second.nAmount, unspent.second.nLockUntil)));
+        return false;
     }
+
     return true;
 }
