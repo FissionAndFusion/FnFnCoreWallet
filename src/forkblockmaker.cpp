@@ -257,50 +257,180 @@ bool CForkBlockMaker::DispatchBlock(CBlock& block)
     return true;
 }
     
-bool CForkBlockMaker::CreateProofOfWorkBlock(CBlock& block)
-{
-    return false;
-}
+
     
 void CForkBlockMaker::ProcessDelegatedProofOfStake(CBlock& block,const CBlockMakerAgreement& agreement,int nPrevHeight)
 {
-
+    map<CDestination,CForkBlockMakerProfile>::iterator it = mapDelegatedProfile.find(agreement.vBallot[0]);
+    if (it != mapDelegatedProfile.end())
+    {
+        CForkBlockMakerProfile& profile = (*it).second;
+        if (CreateDelegatedBlock(block,pCoreProtocol->GetGenesisBlockHash(),profile,agreement.nWeight))
+        {
+            if (DispatchBlock(block))
+            {
+                CreatePiggyback(profile,agreement,block,nPrevHeight);
+            }
+        }
+    }
 }
     
 void CForkBlockMaker::ProcessExtended(const CBlockMakerAgreement& agreement,const uint256& hashPrimaryBlock,
                                                                int64 nPrimaryBlockTime,int nPrimaryBlockHeight)
 {
+    vector<CForkBlockMakerProfile*> vProfile;
+    set<uint256> setFork;
 
+    if (!GetAvailiableDelegatedProfile(agreement.vBallot,vProfile) || !GetAvailiableExtendedFork(setFork))
+    {
+        return;
+    }
+
+    int64 nTime = nPrimaryBlockTime + EXTENDED_BLOCK_SPACING * 
+                  ((WalleveGetNetTime() - nPrimaryBlockTime + (EXTENDED_BLOCK_SPACING - 1)) / EXTENDED_BLOCK_SPACING);
+    if (nTime < nPrimaryBlockTime + EXTENDED_BLOCK_SPACING)
+    {
+        nTime = nPrimaryBlockTime + EXTENDED_BLOCK_SPACING;
+    }
+    while (nTime - nPrimaryBlockTime < BLOCK_TARGET_SPACING)
+    {
+        int nIndex = (nTime - nPrimaryBlockTime) / EXTENDED_BLOCK_SPACING;
+        const CForkBlockMakerProfile* pProfile = vProfile[nIndex % vProfile.size()];
+        if (pProfile != NULL)
+        {
+            if (!Wait(nTime - WalleveGetNetTime(),hashPrimaryBlock))
+            {
+                return;
+            }
+            CreateExtended(*pProfile,agreement,setFork,nPrimaryBlockHeight,nTime);
+        }
+        nTime += EXTENDED_BLOCK_SPACING;
+    }
 }
     
 bool CForkBlockMaker::CreateDelegatedBlock(CBlock& block,const uint256& hashFork,const CForkBlockMakerProfile& profile,std::size_t nWeight)
 {
-    return false;
-}
-    
-bool CForkBlockMaker::CreateProofOfWork(CBlock& block,CForkBlockMakerHashAlgo* pHashAlgo)
-{
-    return false;
+    CDestination destSendTo = profile.GetDestination();
+
+    int64 nReward;
+    if (!pWorldLine->GetDelegatedProofOfStakeReward(block.hashPrev,nWeight,nReward))
+    {
+        return false;
+    }
+
+    CTransaction& txMint = block.txMint;
+    txMint.nType = CTransaction::TX_STAKE;
+    txMint.hashAnchor = block.hashPrev;
+    txMint.sendTo = destSendTo;
+    txMint.nAmount = nReward;
+        
+    ArrangeBlockTx(block,hashFork,profile);
+
+    return SignBlock(block,profile);
 }
     
 void CForkBlockMaker::CreatePiggyback(const CForkBlockMakerProfile& profile,const CBlockMakerAgreement& agreement,const CBlock& refblock,int nPrevHeight)
 {
+    CProofOfPiggyback proof;
+    proof.nWeight = agreement.nWeight;
+    proof.nAgreement = agreement.nAgreement;
+    proof.hashRefBlock = refblock.GetHash();
 
+    map<uint256,CForkStatus> mapForkStatus;
+    pWorldLine->GetForkStatus(mapForkStatus);
+    for (map<uint256,CForkStatus>::iterator it = mapForkStatus.begin();it != mapForkStatus.end();++it)
+    {
+        const uint256& hashFork = (*it).first;
+        CForkStatus& status = (*it).second;
+        if (hashFork != pCoreProtocol->GetGenesisBlockHash() 
+            && status.nLastBlockHeight == nPrevHeight
+            && status.nLastBlockTime < refblock.nTimeStamp)
+        {
+            CBlock block;
+            block.nType = CBlock::BLOCK_SUBSIDIARY;
+            block.nTimeStamp = refblock.nTimeStamp;
+            block.hashPrev = status.hashLastBlock;
+            proof.Save(block.vchProof);
+
+            if (CreateDelegatedBlock(block,hashFork,profile,agreement.nWeight))
+            {
+                DispatchBlock(block);
+            }
+        }
+    }
 }
     
 void CForkBlockMaker::CreateExtended(const CForkBlockMakerProfile& profile,const CBlockMakerAgreement& agreement,const std::set<uint256>& setFork,int nPrimaryBlockHeight,int64 nTime)
 {
-
+    CProofOfSecretShare proof;
+    proof.nWeight = agreement.nWeight;
+    proof.nAgreement = agreement.nAgreement;
+    BOOST_FOREACH(const uint256& hashFork,setFork)
+    {
+        uint256 hashLastBlock;
+        int nLastBlockHeight;
+        int64 nLastBlockTime;
+        if (pTxPool->Count(hashFork) 
+            && pWorldLine->GetLastBlock(hashFork,hashLastBlock,nLastBlockHeight,nLastBlockTime)
+            && nPrimaryBlockHeight == nLastBlockHeight
+            && nLastBlockTime < nTime)
+        {
+            CBlock block;
+            block.nType = CBlock::BLOCK_EXTENDED;
+            block.nTimeStamp = nTime;
+            block.hashPrev = hashLastBlock;
+            proof.Save(block.vchProof);
+            CTransaction& txMint = block.txMint;
+            txMint.nType = CTransaction::TX_STAKE;
+            txMint.hashAnchor = hashLastBlock;
+            txMint.sendTo = profile.GetDestination();
+            txMint.nAmount = 0;
+            ArrangeBlockTx(block,hashFork,profile);
+            if (!block.vtx.empty() && SignBlock(block,profile))
+            {
+                DispatchBlock(block);
+            }
+        }
+    }
 }
     
 bool CForkBlockMaker::GetAvailiableDelegatedProfile(const std::vector<CDestination>& vBallot,std::vector<CForkBlockMakerProfile*>& vProfile)
 {
-    return false;
+    int nAvailProfile = 0;
+    vProfile.reserve(vBallot.size());
+    BOOST_FOREACH(const CDestination& dest,vBallot)
+    {
+        map<CDestination,CForkBlockMakerProfile>::iterator it = mapDelegatedProfile.find(dest);
+        if (it != mapDelegatedProfile.end())
+        {
+            vProfile.push_back(&(*it).second);
+            ++nAvailProfile;
+        }
+        else
+        {
+            vProfile.push_back((CForkBlockMakerProfile*)NULL);
+        }
+    }
+    
+    return (!!nAvailProfile);
 }
     
 bool CForkBlockMaker::GetAvailiableExtendedFork(std::set<uint256>& setFork)
 {
-    return false;
+    map<uint256,CForkStatus> mapForkStatus;
+    pWorldLine->GetForkStatus(mapForkStatus);
+    for (map<uint256,CForkStatus>::iterator it = mapForkStatus.begin();it != mapForkStatus.end();++it)
+    {
+        CProfile profile;
+        const uint256& hashFork = (*it).first;
+        if (hashFork != pCoreProtocol->GetGenesisBlockHash() 
+            && pForkManager->IsAllowed(hashFork)
+            && pWorldLine->GetForkProfile(hashFork,profile) && !profile.IsEnclosed())
+        {
+            setFork.insert(hashFork);
+        }
+    }
+    return (!setFork.empty());
 }
 
 void CForkBlockMaker::BlockMakerThreadFunc()
