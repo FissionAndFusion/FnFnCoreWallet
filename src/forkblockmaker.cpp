@@ -206,22 +206,55 @@ bool CForkBlockMaker::Wait(long nSeconds,const uint256& hashPrimaryBlock)
     
 void CForkBlockMaker::PrepareBlock(CBlock& block,const uint256& hashPrev,int64 nPrevTime,int nPrevHeight,const CBlockMakerAgreement& agreement)
 {
-
+    block.SetNull();
+    block.nType = CBlock::BLOCK_PRIMARY;
+    block.nTimeStamp = nPrevTime + BLOCK_TARGET_SPACING;
+    block.hashPrev = hashPrev;
+    CProofOfSecretShare proof; 
+    proof.nWeight = agreement.nWeight;
+    proof.nAgreement = agreement.nAgreement;
+    proof.Save(block.vchProof);
+    if (agreement.nAgreement != 0)
+    {
+        // TODO
+        // pConsensus->GetProof(nPrevHeight + 1,block.vchProof);
+    }
 }
     
 void CForkBlockMaker::ArrangeBlockTx(CBlock& block,const uint256& hashFork,const CForkBlockMakerProfile& profile)
 {
-
+    size_t nMaxTxSize = MAX_BLOCK_SIZE - GetSerializeSize(block) - profile.GetSignatureSize();
+    int64 nTotalTxFee = 0;
+    pTxPool->ArrangeBlockTx(hashFork,nMaxTxSize,block.vtx,nTotalTxFee); 
+    block.hashMerkle = block.CalcMerkleTreeRoot();
+    block.txMint.nAmount += nTotalTxFee;
 }
     
 bool CForkBlockMaker::SignBlock(CBlock& block,const CForkBlockMakerProfile& profile)
 {
-    return false;
+    uint256 hashSig = block.GetHash();
+    vector<unsigned char> vchMintSig;
+    if (!profile.keyMint.Sign(hashSig,vchMintSig))
+    {
+        return false;
+    }
+    return profile.templMint->BuildBlockSignature(hashSig,vchMintSig,block.vchSig);
 }
     
 bool CForkBlockMaker::DispatchBlock(CBlock& block)
 {
-    return false;
+    int nWait = block.nTimeStamp - WalleveGetNetTime();
+    if (nWait > 0 && !Wait(nWait))
+    {
+        return false;
+    }
+    MvErr err = pDispatcher->AddNewBlock(block);
+    if (err != MV_OK)
+    {
+        WalleveError("Dispatch new block failed (%d) : %s in ForkNode \n", err, MvErrString(err));
+        return false;
+    }
+    return true;
 }
     
 bool CForkBlockMaker::CreateProofOfWorkBlock(CBlock& block)
