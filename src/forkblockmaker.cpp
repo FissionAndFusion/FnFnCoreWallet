@@ -257,20 +257,16 @@ bool CForkBlockMaker::DispatchBlock(CBlock& block)
     return true;
 }
     
-
-    
 void CForkBlockMaker::ProcessDelegatedProofOfStake(CBlock& block,const CBlockMakerAgreement& agreement,int nPrevHeight)
 {
     map<CDestination,CForkBlockMakerProfile>::iterator it = mapDelegatedProfile.find(agreement.vBallot[0]);
     if (it != mapDelegatedProfile.end())
     {
         CForkBlockMakerProfile& profile = (*it).second;
-        if (CreateDelegatedBlock(block,pCoreProtocol->GetGenesisBlockHash(),profile,agreement.nWeight))
+        bool waitNextPrimaryRecvSuccess = false;
+        if (waitNextPrimaryRecvSuccess)
         {
-            if (DispatchBlock(block))
-            {
-                CreatePiggyback(profile,agreement,block,nPrevHeight);
-            }
+            CreatePiggyback(profile,agreement,block,nPrevHeight);
         }
     }
 }
@@ -435,7 +431,111 @@ bool CForkBlockMaker::GetAvailiableExtendedFork(std::set<uint256>& setFork)
 
 void CForkBlockMaker::BlockMakerThreadFunc()
 {
+    const char* ConsensusMethodName[CM_MAX] = {"mpvss","blake512"};
+    WalleveLog("Fork Block maker started\n");
+    
+    for (map<CDestination,CForkBlockMakerProfile>::iterator it = mapDelegatedProfile.begin();
+         it != mapDelegatedProfile.end();++it)
+    {
+        CForkBlockMakerProfile& profile = (*it).second;
+        WalleveLog("Profile [%s] : dest=%s,pubkey=%s\n",
+                   ConsensusMethodName[CM_MPVSS],
+                   CMvAddress(profile.destMint).ToString().c_str(),
+                   profile.keyMint.GetPubKey().GetHex().c_str());
+    }
 
+    uint256 hashPrimaryBlock = uint64(0);
+    int64 nPrimaryBlockTime  = 0;
+    int nPrimaryBlockHeight  = 0;
+
+    {
+        boost::unique_lock<boost::mutex> lock(mutex);
+        hashPrimaryBlock    = hashLastBlock;
+        nPrimaryBlockTime   = nLastBlockTime;
+        nPrimaryBlockHeight = nLastBlockHeight; 
+    }
+
+    for (;;)
+    {
+        CBlockMakerAgreement agree;
+        {
+            boost::unique_lock<boost::mutex> lock(mutex);
+
+            int64 nWaitBlockTime = nPrimaryBlockTime + WAIT_NEWBLOCK_TIME - WalleveGetNetTime();
+            boost::system_time const toWaitBlock = boost::get_system_time() + boost::posix_time::seconds(nWaitBlockTime);
+            
+            while (hashPrimaryBlock == hashLastBlock && nMakerStatus == ForkMakerStatus::MAKER_HOLD)
+            {
+                if (!cond.timed_wait(lock,toWaitBlock))
+                {
+                    break;
+                }
+            }
+
+            if (nMakerStatus == ForkMakerStatus::MAKER_EXIT)
+            {
+                break;
+            }
+        
+            if (hashPrimaryBlock != hashLastBlock)
+            {
+                hashPrimaryBlock     = hashLastBlock;
+                nPrimaryBlockTime    = nLastBlockTime;
+                nPrimaryBlockHeight  = nLastBlockHeight; 
+                int64 nWaitAgreement = nPrimaryBlockTime + WAIT_AGREEMENT_TIME - WalleveGetNetTime();
+                boost::system_time const toWaitAgree = boost::get_system_time() + boost::posix_time::seconds(nWaitAgreement);
+                while (hashPrimaryBlock == hashLastBlock && nMakerStatus != ForkMakerStatus::MAKER_EXIT)
+                {
+                    if (!cond.timed_wait(lock,toWaitAgree))
+                    {
+                        // TODO
+                        pConsensus->GetAgreement(nLastBlockHeight + 1,agree.nAgreement,agree.nWeight,agree.vBallot);
+                        currentAgreement = agree;
+                        WalleveLog("GetAgreement : %s at height=%d, weight=%lu\n",agree.nAgreement.GetHex().c_str(),
+                                                                                  nPrimaryBlockHeight,agree.nWeight); 
+                        break;
+                    }
+                }
+                if (nMakerStatus == ForkMakerStatus::MAKER_EXIT)
+                {
+                    break;
+                }
+                if (hashPrimaryBlock != hashLastBlock)
+                {
+                    continue;
+                }
+            }
+            nMakerStatus = ForkMakerStatus::MAKER_RUN;
+        }
+
+        CBlock block;
+        try
+        {
+            ForkMakerStatus nNextStatus = ForkMakerStatus::MAKER_HOLD;
+            
+            PrepareBlock(block,hashPrimaryBlock,nPrimaryBlockTime,nPrimaryBlockHeight,agree);
+            
+            if (!agree.IsProofOfWork())
+            {
+                ProcessDelegatedProofOfStake(block,agree,nPrimaryBlockHeight); 
+            }
+
+            {
+                boost::unique_lock<boost::mutex> lock(mutex);
+                if (nMakerStatus == ForkMakerStatus::MAKER_RUN)
+                {
+                    nMakerStatus = nNextStatus;
+                }
+            }
+        }
+        catch (const exception& e)
+        {
+            WalleveError("Fork Block maker error: %s\n", e.what());
+            break;
+        }
+    } 
+
+    WalleveLog(" Fork Block maker exited\n");
 }
     
 void CForkBlockMaker::ExtendedMakerThreadFunc()
@@ -484,7 +584,7 @@ void CForkBlockMaker::ExtendedMakerThreadFunc()
         {
             ProcessExtended(agree,hashPrimaryBlock,nPrimaryBlockTime,nPrimaryBlockHeight);
         }
-        catch (exception& e)
+        catch (const exception& e)
         {
             WalleveError("Extended fork block maker error: %s\n", e.what());
             break;
