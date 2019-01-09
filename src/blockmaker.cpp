@@ -115,7 +115,7 @@ bool CBlockMaker::WalleveHandleInitialize()
 
     if (!MintConfig()->destMPVss.IsNull() && MintConfig()->keyMPVss != 0)
     { 
-        CBlockMakerProfile profile(0,MintConfig()->destMPVss,MintConfig()->keyMPVss);
+        CBlockMakerProfile profile(CM_MPVSS,MintConfig()->destMPVss,MintConfig()->keyMPVss);
         if (profile.IsValid())
         {
             mapDelegatedProfile.insert(make_pair(profile.GetDestination(),profile));

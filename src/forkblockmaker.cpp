@@ -68,32 +68,130 @@ CForkBlockMaker::CForkBlockMaker()
 
 CForkBlockMaker::~CForkBlockMaker()
 {
-
+    for (map<int,CForkBlockMakerHashAlgo*>::iterator it = mapHashAlgo.begin();it != mapHashAlgo.end();++it)
+    {
+        delete ((*it).second);
+    }
+    mapHashAlgo.clear();
 }
     
 bool CForkBlockMaker::HandleEvent(CMvEventBlockMakerUpdate& eventUpdate)
 {
-    return false;
+    {
+        boost::unique_lock<boost::mutex> lock(mutex);
+        nMakerStatus = ForkMakerStatus::MAKER_RESET;
+        hashLastBlock = eventUpdate.data.hashBlock;
+        nLastBlockTime = eventUpdate.data.nBlockTime;
+        nLastBlockHeight = eventUpdate.data.nBlockHeight;
+        nLastAgreement = eventUpdate.data.nAgreement;
+        nLastWeight = eventUpdate.data.nWeight;
+    }
+    cond.notify_all();
+    
+    return true;
 }
 
 bool CForkBlockMaker::WalleveHandleInitialize()
 {
-    return false;
+    if (!WalleveGetObject("coreprotocol",pCoreProtocol))
+    {
+        WalleveError("Failed to request coreprotocol\n");
+        return false;
+    }
+
+    if (!WalleveGetObject("worldline",pWorldLine))
+    {
+        WalleveError("Failed to request worldline\n");
+        return false;
+    }
+
+    if (!WalleveGetObject("forkmanager",pForkManager))
+    {
+        WalleveError("Failed to request forkmanager\n");
+        return false;
+    }
+
+    if (!WalleveGetObject("txpool",pTxPool))
+    {
+        WalleveError("Failed to request txpool\n");
+        return false;
+    }
+
+    if (!WalleveGetObject("dispatcher",pDispatcher))
+    {
+        WalleveError("Failed to request dispatcher\n");
+        return false;
+    }
+
+    if (!WalleveGetObject("consensus",pConsensus))
+    {
+        WalleveError("Failed to request consensus\n");
+        return false;
+    }
+
+    if (!ForkNodeMintConfig()->destMPVss.IsNull() && ForkNodeMintConfig()->keyMPVss != 0)
+    { 
+        CForkBlockMakerProfile profile(CM_MPVSS,ForkNodeMintConfig()->destMPVss,ForkNodeMintConfig()->keyMPVss);
+        if (profile.IsValid())
+        {
+            mapDelegatedProfile.insert(make_pair(profile.GetDestination(),profile));
+        }
+    }
+
+    return true;
 }
     
 void CForkBlockMaker::WalleveHandleDeinitialize()
 {
+    pCoreProtocol = NULL;
+    pWorldLine = NULL;
+    pForkManager = NULL;
+    pTxPool = NULL;
+    pDispatcher = NULL;
+    pConsensus = NULL;
 
+    mapDelegatedProfile.clear();
 }
     
 bool CForkBlockMaker::WalleveHandleInvoke()
 {
+    if (!IBlockMaker::WalleveHandleInvoke())
+    {
+        return false;
+    }
 
+    if (!pWorldLine->GetLastBlock(pCoreProtocol->GetGenesisBlockHash(),hashLastBlock,nLastBlockHeight,nLastBlockTime))
+    {
+        return false;
+    }
+
+    if (!mapDelegatedProfile.empty())
+    {
+        nMakerStatus = ForkMakerStatus::MAKER_HOLD;
+
+        if (!WalleveThreadDelayStart(thrMaker))
+        {
+            return false;
+        }
+        if (!WalleveThreadDelayStart(thrExtendedMaker))
+        {
+            return false;
+        }
+    }
+
+    return true;
 }
     
 void CForkBlockMaker::WalleveHandleHalt()
 {
-
+    {
+        boost::unique_lock<boost::mutex> lock(mutex);
+        nMakerStatus = ForkMakerStatus::MAKER_EXIT;
+    }
+    cond.notify_all();
+    WalleveThreadExit(thrMaker);
+    WalleveThreadExit(thrExtendedMaker);
+    IBlockMaker::WalleveHandleHalt();
 }
     
 bool CForkBlockMaker::Wait(long nSeconds)
@@ -108,22 +206,55 @@ bool CForkBlockMaker::Wait(long nSeconds,const uint256& hashPrimaryBlock)
     
 void CForkBlockMaker::PrepareBlock(CBlock& block,const uint256& hashPrev,int64 nPrevTime,int nPrevHeight,const CBlockMakerAgreement& agreement)
 {
-
+    block.SetNull();
+    block.nType = CBlock::BLOCK_PRIMARY;
+    block.nTimeStamp = nPrevTime + BLOCK_TARGET_SPACING;
+    block.hashPrev = hashPrev;
+    CProofOfSecretShare proof; 
+    proof.nWeight = agreement.nWeight;
+    proof.nAgreement = agreement.nAgreement;
+    proof.Save(block.vchProof);
+    if (agreement.nAgreement != 0)
+    {
+        // TODO
+        // pConsensus->GetProof(nPrevHeight + 1,block.vchProof);
+    }
 }
     
 void CForkBlockMaker::ArrangeBlockTx(CBlock& block,const uint256& hashFork,const CForkBlockMakerProfile& profile)
 {
-
+    size_t nMaxTxSize = MAX_BLOCK_SIZE - GetSerializeSize(block) - profile.GetSignatureSize();
+    int64 nTotalTxFee = 0;
+    pTxPool->ArrangeBlockTx(hashFork,nMaxTxSize,block.vtx,nTotalTxFee); 
+    block.hashMerkle = block.CalcMerkleTreeRoot();
+    block.txMint.nAmount += nTotalTxFee;
 }
     
 bool CForkBlockMaker::SignBlock(CBlock& block,const CForkBlockMakerProfile& profile)
 {
-    return false;
+    uint256 hashSig = block.GetHash();
+    vector<unsigned char> vchMintSig;
+    if (!profile.keyMint.Sign(hashSig,vchMintSig))
+    {
+        return false;
+    }
+    return profile.templMint->BuildBlockSignature(hashSig,vchMintSig,block.vchSig);
 }
     
 bool CForkBlockMaker::DispatchBlock(CBlock& block)
 {
-    return false;
+    int nWait = block.nTimeStamp - WalleveGetNetTime();
+    if (nWait > 0 && !Wait(nWait))
+    {
+        return false;
+    }
+    MvErr err = pDispatcher->AddNewBlock(block);
+    if (err != MV_OK)
+    {
+        WalleveError("Dispatch new block failed (%d) : %s in ForkNode \n", err, MvErrString(err));
+        return false;
+    }
+    return true;
 }
     
 bool CForkBlockMaker::CreateProofOfWorkBlock(CBlock& block)

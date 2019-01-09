@@ -97,7 +97,6 @@ protected:
     std::size_t nLastWeight;
     CBlockMakerAgreement currentAgreement;
     std::map<int,CForkBlockMakerHashAlgo*> mapHashAlgo;
-    std::map<int,CForkBlockMakerProfile> mapWorkProfile;
     std::map<CDestination,CForkBlockMakerProfile> mapDelegatedProfile;
     ICoreProtocol* pCoreProtocol;
     IWorldLine* pWorldLine;
