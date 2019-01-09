@@ -440,5 +440,56 @@ void CForkBlockMaker::BlockMakerThreadFunc()
     
 void CForkBlockMaker::ExtendedMakerThreadFunc()
 {
+    uint256 hashPrimaryBlock = uint64(0);
+    int64 nPrimaryBlockTime  = 0;
+    int nPrimaryBlockHeight  = 0;
 
+    {
+        boost::unique_lock<boost::mutex> lock(mutex);
+        hashPrimaryBlock = hashLastBlock;
+    }
+
+    WalleveLog("Extened fork block maker started, initial primary block hash = %s\n",hashPrimaryBlock.GetHex().c_str());
+
+    for (;;)
+    {
+        CBlockMakerAgreement agree; 
+        {
+            boost::unique_lock<boost::mutex> lock(mutex);
+            
+            while (hashPrimaryBlock == hashLastBlock && nMakerStatus !=  ForkMakerStatus::MAKER_EXIT)
+            {
+                cond.wait(lock);
+            }
+            if (nMakerStatus == ForkMakerStatus::MAKER_EXIT)
+            {
+                break;
+            }
+
+            if (currentAgreement.IsProofOfWork()
+                || currentAgreement.nAgreement != nLastAgreement 
+                || currentAgreement.nWeight != nLastWeight) 
+            {
+                hashPrimaryBlock = hashLastBlock;
+                continue;
+            }
+
+            agree = currentAgreement;
+            hashPrimaryBlock = hashLastBlock;
+            nPrimaryBlockTime = nLastBlockTime;
+            nPrimaryBlockHeight = nLastBlockHeight;
+        }
+
+        try
+        {
+            ProcessExtended(agree,hashPrimaryBlock,nPrimaryBlockTime,nPrimaryBlockHeight);
+        }
+        catch (exception& e)
+        {
+            WalleveError("Extended fork block maker error: %s\n", e.what());
+            break;
+        }
+    } // end for loop
+
+    WalleveLog("Extended fork block maker exited \n");
 }
