@@ -80,6 +80,7 @@ public:
     virtual bool GetBlockInv(const uint256& hashFork,const CBlockLocator& locator,std::vector<uint256>& vBlockHash,std::size_t nMaxCount) = 0;
     virtual bool GetBlockDelegateEnrolled(const uint256& hashBlock,std::map<CDestination,std::size_t>& mapWeight,
                                                                    std::map<CDestination,std::vector<unsigned char> >& mapEnrollData) = 0;
+    virtual bool GetBlockDelegateAgreement(const uint256& hashBlock,uint256& nAgreement,size_t& nWeight,std::vector<CDestination>& vBallot) = 0;
     const CMvBasicConfig* WalleveConfig()
     {
         return dynamic_cast<const CMvBasicConfig*>(walleve::IWalleveBase::WalleveConfig());
