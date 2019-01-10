@@ -54,7 +54,7 @@ bool CBlockMakerProfile::BuildTemplate()
 CBlockMaker::CBlockMaker()
 : thrMaker("blockmaker",boost::bind(&CBlockMaker::BlockMakerThreadFunc,this)), 
   thrExtendedMaker("extendedmaker",boost::bind(&CBlockMaker::ExtendedMakerThreadFunc,this)), 
-  nMakerStatus(MakerStatus::MAKER_HOLD),hashLastBlock(uint64(0)),nLastBlockTime(0),
+  nMakerStatus(MAKER_HOLD),hashLastBlock(uint64(0)),nLastBlockTime(0),
   nLastBlockHeight(uint64(0)),nLastAgreement(uint64(0)),nLastWeight(0)
 {
     pCoreProtocol = NULL;
@@ -161,7 +161,7 @@ bool CBlockMaker::WalleveHandleInvoke()
 
     if (!mapWorkProfile.empty() || !mapDelegatedProfile.empty())
     {
-        nMakerStatus = MakerStatus::MAKER_HOLD;
+        nMakerStatus = MAKER_HOLD;
 
         if (!WalleveThreadDelayStart(thrMaker))
         {
@@ -180,7 +180,7 @@ void CBlockMaker::WalleveHandleHalt()
 {
     {
         boost::unique_lock<boost::mutex> lock(mutex);
-        nMakerStatus = MakerStatus::MAKER_EXIT;
+        nMakerStatus = MAKER_EXIT;
     }
     cond.notify_all();
     WalleveThreadExit(thrMaker);
@@ -192,7 +192,7 @@ bool CBlockMaker::HandleEvent(CMvEventBlockMakerUpdate& eventUpdate)
 {
     {
         boost::unique_lock<boost::mutex> lock(mutex);
-        nMakerStatus = MakerStatus::MAKER_RESET;
+        nMakerStatus = MAKER_RESET;
         hashLastBlock = eventUpdate.data.hashBlock;
         nLastBlockTime = eventUpdate.data.nBlockTime;
         nLastBlockHeight = eventUpdate.data.nBlockHeight;
@@ -209,14 +209,14 @@ bool CBlockMaker::Wait(long nSeconds)
     boost::system_time const timeout = boost::get_system_time()
                                        + boost::posix_time::seconds(nSeconds);
     boost::unique_lock<boost::mutex> lock(mutex);
-    while (nMakerStatus == MakerStatus::MAKER_RUN)
+    while (nMakerStatus == MAKER_RUN)
     {
         if (!cond.timed_wait(lock,timeout))
         {
             break;
         }
     }
-    return (nMakerStatus == MakerStatus::MAKER_RUN);
+    return (nMakerStatus == MAKER_RUN);
 }
 
 bool CBlockMaker::Wait(long nSeconds,const uint256& hashPrimaryBlock)
@@ -224,11 +224,11 @@ bool CBlockMaker::Wait(long nSeconds,const uint256& hashPrimaryBlock)
     boost::system_time const timeout = boost::get_system_time()
                                        + boost::posix_time::seconds(nSeconds);
     boost::unique_lock<boost::mutex> lock(mutex);
-    while (hashPrimaryBlock == hashLastBlock && nMakerStatus != MakerStatus::MAKER_EXIT)
+    while (hashPrimaryBlock == hashLastBlock && nMakerStatus != MAKER_EXIT)
     {
         if (!cond.timed_wait(lock,timeout))
         {
-            return (hashPrimaryBlock == hashLastBlock && nMakerStatus != MakerStatus::MAKER_EXIT);
+            return (hashPrimaryBlock == hashLastBlock && nMakerStatus != MAKER_EXIT);
         }
     } 
     return false;
@@ -605,7 +605,7 @@ void CBlockMaker::BlockMakerThreadFunc()
             int64 nWaitBlockTime = nPrimaryBlockTime + WAIT_NEWBLOCK_TIME - WalleveGetNetTime();
             boost::system_time const toWaitBlock = boost::get_system_time() + boost::posix_time::seconds(nWaitBlockTime);
             
-            while (hashPrimaryBlock == hashLastBlock && nMakerStatus == MakerStatus::MAKER_HOLD)
+            while (hashPrimaryBlock == hashLastBlock && nMakerStatus == MAKER_HOLD)
             {
                 if (!cond.timed_wait(lock,toWaitBlock))
                 {
@@ -613,7 +613,7 @@ void CBlockMaker::BlockMakerThreadFunc()
                 }
             }
 
-            if (nMakerStatus == MakerStatus::MAKER_EXIT)
+            if (nMakerStatus == MAKER_EXIT)
             {
                 break;
             }
@@ -625,7 +625,7 @@ void CBlockMaker::BlockMakerThreadFunc()
                 nPrimaryBlockHeight  = nLastBlockHeight; 
                 int64 nWaitAgreement = nPrimaryBlockTime + WAIT_AGREEMENT_TIME - WalleveGetNetTime();
                 boost::system_time const toWaitAgree = boost::get_system_time() + boost::posix_time::seconds(nWaitAgreement);
-                while (hashPrimaryBlock == hashLastBlock && nMakerStatus != MakerStatus::MAKER_EXIT)
+                while (hashPrimaryBlock == hashLastBlock && nMakerStatus != MAKER_EXIT)
                 {
                     if (!cond.timed_wait(lock,toWaitAgree))
                     {
@@ -636,7 +636,7 @@ void CBlockMaker::BlockMakerThreadFunc()
                         break;
                     }
                 }
-                if (nMakerStatus == MakerStatus::MAKER_EXIT)
+                if (nMakerStatus == MAKER_EXIT)
                 {
                     break;
                 }
@@ -645,13 +645,13 @@ void CBlockMaker::BlockMakerThreadFunc()
                     continue;
                 }
             }
-            nMakerStatus = MakerStatus::MAKER_RUN;
+            nMakerStatus = MAKER_RUN;
         }
 
         CBlock block;
         try
         {
-            MakerStatus nNextStatus = MakerStatus::MAKER_HOLD;
+            int nNextStatus = MAKER_HOLD;
             
             PrepareBlock(block,hashPrimaryBlock,nPrimaryBlockTime,nPrimaryBlockHeight,agree);
             
@@ -661,7 +661,7 @@ void CBlockMaker::BlockMakerThreadFunc()
                 {
                     if (!DispatchBlock(block))
                     {
-                        nNextStatus = MakerStatus::MAKER_RESET;
+                        nNextStatus = MAKER_RESET;
                     }
                 }
             }
@@ -672,7 +672,7 @@ void CBlockMaker::BlockMakerThreadFunc()
 
             {
                 boost::unique_lock<boost::mutex> lock(mutex);
-                if (nMakerStatus == MakerStatus::MAKER_RUN)
+                if (nMakerStatus == MAKER_RUN)
                 {
                     nMakerStatus = nNextStatus;
                 }
@@ -707,11 +707,11 @@ void CBlockMaker::ExtendedMakerThreadFunc()
         {
             boost::unique_lock<boost::mutex> lock(mutex);
             
-            while (hashPrimaryBlock == hashLastBlock && nMakerStatus !=  MakerStatus::MAKER_EXIT)
+            while (hashPrimaryBlock == hashLastBlock && nMakerStatus !=  MAKER_EXIT)
             {
                 cond.wait(lock);
             }
-            if (nMakerStatus == MakerStatus::MAKER_EXIT)
+            if (nMakerStatus == MAKER_EXIT)
             {
                 break;
             }

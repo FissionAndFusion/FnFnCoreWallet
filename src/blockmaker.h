@@ -60,7 +60,7 @@ protected:
     void WalleveHandleDeinitialize() override;
     bool WalleveHandleInvoke() override;
     void WalleveHandleHalt() override;
-    bool Interrupted() { return (nMakerStatus != MakerStatus::MAKER_RUN); }
+    bool Interrupted() { return (nMakerStatus != MAKER_RUN); }
     bool Wait(long nSeconds);
     bool Wait(long nSeconds,const uint256& hashPrimaryBlock);
     void PrepareBlock(CBlock& block,const uint256& hashPrev,int64 nPrevTime,int nPrevHeight,const CBlockMakerAgreement& agreement);
@@ -78,7 +78,7 @@ protected:
     bool GetAvailiableDelegatedProfile(const std::vector<CDestination>& vBallot,std::vector<CBlockMakerProfile*>& vProfile);
     bool GetAvailiableExtendedFork(std::set<uint256>& setFork);
 private:
-    enum class MakerStatus : int {MAKER_RUN=0,MAKER_RESET=1,MAKER_EXIT=2,MAKER_HOLD=3};
+    enum {MAKER_RUN=0,MAKER_RESET=1,MAKER_EXIT=2,MAKER_HOLD=3};
     void BlockMakerThreadFunc();
     void ExtendedMakerThreadFunc();
 protected:
@@ -87,7 +87,7 @@ protected:
     walleve::CWalleveThread thrExtendedMaker;
     boost::mutex mutex;
     boost::condition_variable cond;
-    MakerStatus nMakerStatus;
+    int nMakerStatus;
     uint256 hashLastBlock;
     int64 nLastBlockTime;
     int nLastBlockHeight;
