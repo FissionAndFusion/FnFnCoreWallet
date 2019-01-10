@@ -533,7 +533,6 @@ void CForkBlockMaker::BlockMakerThreadFunc()
                 if (nMakerStatus == ForkMakerStatus::MAKER_RUN)
                 {
                     nMakerStatus = nNextStatus;
-                    cond.notify_all();
                 }
             }
         }
