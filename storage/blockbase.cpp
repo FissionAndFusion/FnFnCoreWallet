@@ -1002,7 +1002,6 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
         {
             return false;
         }
-        pFork->UpdateLast(pLastBlock);
 
         bool fIsMainFork = pFork->GetOrigin()->IsPrimary();
 
