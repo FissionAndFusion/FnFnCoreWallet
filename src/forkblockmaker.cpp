@@ -513,6 +513,7 @@ void CForkBlockMaker::BlockMakerThreadFunc()
 
             pWorldLine->GetBlockDelegateAgreement(hashLastBlock, agree.nAgreement, 
                 agree.nWeight, agree.vBallot);
+            currentAgreement = agree;
 
 
             nMakerStatus = ForkMakerStatus::MAKER_RUN;
