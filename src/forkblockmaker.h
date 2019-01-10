@@ -65,7 +65,6 @@ protected:
     bool Interrupted() { return (nMakerStatus != ForkMakerStatus::MAKER_RUN); }
     bool Wait(long nSeconds);
     bool Wait(long nSeconds,const uint256& hashPrimaryBlock);
-    void PrepareBlock(CBlock& block,const uint256& hashPrev,int64 nPrevTime,int nPrevHeight,const CBlockMakerAgreement& agreement);
     void ArrangeBlockTx(CBlock& block,const uint256& hashFork,const CForkBlockMakerProfile& profile);
     bool SignBlock(CBlock& block,const CForkBlockMakerProfile& profile);
     bool DispatchBlock(CBlock& block);
@@ -81,6 +80,7 @@ private:
     enum class ForkMakerStatus : int {MAKER_RUN=0,MAKER_RESET=1,MAKER_EXIT=2,MAKER_HOLD=3};
     void BlockMakerThreadFunc();
     void ExtendedMakerThreadFunc();
+
 protected:
     mutable boost::shared_mutex rwAccess;
     walleve::CWalleveThread thrMaker;

@@ -196,29 +196,32 @@ void CForkBlockMaker::WalleveHandleHalt()
     
 bool CForkBlockMaker::Wait(long nSeconds)
 {
-    return false;
+    boost::system_time const timeout = boost::get_system_time()
+                                       + boost::posix_time::seconds(nSeconds);
+    boost::unique_lock<boost::mutex> lock(mutex);
+    while (nMakerStatus == ForkMakerStatus::MAKER_RUN)
+    {
+        if (!cond.timed_wait(lock,timeout))
+        {
+            break;
+        }
+    }
+    return (nMakerStatus == ForkMakerStatus::MAKER_RUN);
 }
     
 bool CForkBlockMaker::Wait(long nSeconds,const uint256& hashPrimaryBlock)
 {
-    return false;
-}
-    
-void CForkBlockMaker::PrepareBlock(CBlock& block,const uint256& hashPrev,int64 nPrevTime,int nPrevHeight,const CBlockMakerAgreement& agreement)
-{
-    block.SetNull();
-    block.nType = CBlock::BLOCK_PRIMARY;
-    block.nTimeStamp = nPrevTime + BLOCK_TARGET_SPACING;
-    block.hashPrev = hashPrev;
-    CProofOfSecretShare proof; 
-    proof.nWeight = agreement.nWeight;
-    proof.nAgreement = agreement.nAgreement;
-    proof.Save(block.vchProof);
-    if (agreement.nAgreement != 0)
+    boost::system_time const timeout = boost::get_system_time()
+                                       + boost::posix_time::seconds(nSeconds);
+    boost::unique_lock<boost::mutex> lock(mutex);
+    while (hashPrimaryBlock == hashLastBlock && nMakerStatus != ForkMakerStatus::MAKER_EXIT)
     {
-        // TODO
-        // pConsensus->GetProof(nPrevHeight + 1,block.vchProof);
-    }
+        if (!cond.timed_wait(lock,timeout))
+        {
+            return (hashPrimaryBlock == hashLastBlock && nMakerStatus != ForkMakerStatus::MAKER_EXIT);
+        }
+    } 
+    return false;
 }
     
 void CForkBlockMaker::ArrangeBlockTx(CBlock& block,const uint256& hashFork,const CForkBlockMakerProfile& profile)
@@ -263,11 +266,7 @@ void CForkBlockMaker::ProcessDelegatedProofOfStake(CBlock& block,const CBlockMak
     if (it != mapDelegatedProfile.end())
     {
         CForkBlockMakerProfile& profile = (*it).second;
-        bool waitNextPrimaryRecvSuccess = false;
-        if (waitNextPrimaryRecvSuccess)
-        {
-            CreatePiggyback(profile,agreement,block,nPrevHeight);
-        }
+        CreatePiggyback(profile,agreement,block,nPrevHeight);
     }
 }
     
@@ -317,7 +316,7 @@ bool CForkBlockMaker::CreateDelegatedBlock(CBlock& block,const uint256& hashFork
     CTransaction& txMint = block.txMint;
     txMint.nType = CTransaction::TX_STAKE;
     txMint.hashAnchor = block.hashPrev;
-    txMint.sendTo = destSendTo;
+    txMint.sendTo = destSendTo;  // to mpvss template address
     txMint.nAmount = nReward;
         
     ArrangeBlockTx(block,hashFork,profile);
@@ -455,13 +454,14 @@ void CForkBlockMaker::BlockMakerThreadFunc()
         nPrimaryBlockHeight = nLastBlockHeight; 
     }
 
+    // run state machine
     for (;;)
-    {
+    {   
         CBlockMakerAgreement agree;
         {
             boost::unique_lock<boost::mutex> lock(mutex);
 
-            int64 nWaitBlockTime = nPrimaryBlockTime + WAIT_NEWBLOCK_TIME - WalleveGetNetTime();
+            /*int64 nWaitBlockTime = nPrimaryBlockTime + WAIT_NEWBLOCK_TIME - WalleveGetNetTime();
             boost::system_time const toWaitBlock = boost::get_system_time() + boost::posix_time::seconds(nWaitBlockTime);
             
             while (hashPrimaryBlock == hashLastBlock && nMakerStatus == ForkMakerStatus::MAKER_HOLD)
@@ -470,6 +470,11 @@ void CForkBlockMaker::BlockMakerThreadFunc()
                 {
                     break;
                 }
+            }*/
+
+            while(nMakerStatus == ForkMakerStatus::MAKER_HOLD)
+            {
+                cond.wait(lock);
             }
 
             if (nMakerStatus == ForkMakerStatus::MAKER_EXIT)
@@ -477,7 +482,7 @@ void CForkBlockMaker::BlockMakerThreadFunc()
                 break;
             }
         
-            if (hashPrimaryBlock != hashLastBlock)
+            /*if (hashPrimaryBlock != hashLastBlock)
             {
                 hashPrimaryBlock     = hashLastBlock;
                 nPrimaryBlockTime    = nLastBlockTime;
@@ -504,7 +509,9 @@ void CForkBlockMaker::BlockMakerThreadFunc()
                 {
                     continue;
                 }
-            }
+            }*/
+
+
             nMakerStatus = ForkMakerStatus::MAKER_RUN;
         }
 
@@ -513,18 +520,20 @@ void CForkBlockMaker::BlockMakerThreadFunc()
         {
             ForkMakerStatus nNextStatus = ForkMakerStatus::MAKER_HOLD;
             
-            PrepareBlock(block,hashPrimaryBlock,nPrimaryBlockTime,nPrimaryBlockHeight,agree);
-            
-            if (!agree.IsProofOfWork())
+            if(pWorldLine->GetBlock(hashLastBlock, block))
             {
-                ProcessDelegatedProofOfStake(block,agree,nPrimaryBlockHeight); 
+                if (!agree.IsProofOfWork())
+                {
+                    ProcessDelegatedProofOfStake(block,agree,nPrimaryBlockHeight); 
+                }
             }
-
+            
             {
                 boost::unique_lock<boost::mutex> lock(mutex);
                 if (nMakerStatus == ForkMakerStatus::MAKER_RUN)
                 {
                     nMakerStatus = nNextStatus;
+                    cond.notify_all();
                 }
             }
         }
@@ -533,7 +542,7 @@ void CForkBlockMaker::BlockMakerThreadFunc()
             WalleveError("Fork Block maker error: %s\n", e.what());
             break;
         }
-    } 
+    } // end for loop
 
     WalleveLog(" Fork Block maker exited\n");
 }
@@ -557,10 +566,21 @@ void CForkBlockMaker::ExtendedMakerThreadFunc()
         {
             boost::unique_lock<boost::mutex> lock(mutex);
             
-            while (hashPrimaryBlock == hashLastBlock && nMakerStatus !=  ForkMakerStatus::MAKER_EXIT)
+            // Wait Next
+           /* while (hashPrimaryBlock == hashLastBlock && nMakerStatus !=  ForkMakerStatus::MAKER_EXIT)
             {
                 cond.wait(lock);
             }
+            if (nMakerStatus == ForkMakerStatus::MAKER_EXIT)
+            {
+                break;
+            }*/
+
+            while(nMakerStatus != ForkMakerStatus::MAKER_HOLD)
+            {
+                cond.wait(lock);
+            }
+
             if (nMakerStatus == ForkMakerStatus::MAKER_EXIT)
             {
                 break;
