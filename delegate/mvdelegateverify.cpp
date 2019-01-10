@@ -17,7 +17,7 @@ CMvDelegateVerify::CMvDelegateVerify(const map<CDestination,size_t>& mapWeight,
     Enroll(mapWeight,mapEnrollData);
 }   
 
-bool CMvDelegateVerify::VerifyProof(const vector<unsigned char>& vchProof,
+bool CMvDelegateVerify::VerifyProof(const vector<unsigned char>& vchProof,uint256& nAgreement,
                                     size_t& nWeight,map<CDestination,size_t>& mapBallot)
 {
     uint256 nAgreementParse;
@@ -49,7 +49,6 @@ bool CMvDelegateVerify::VerifyProof(const vector<unsigned char>& vchProof,
         return false;
     } 
 
-    uint256 nAgreement;
     GetAgreement(nAgreement,nWeight,mapBallot);
     
     return (nAgreement == nAgreementParse);

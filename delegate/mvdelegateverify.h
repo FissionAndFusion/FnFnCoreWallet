@@ -17,7 +17,7 @@ class CMvDelegateVerify : public CMvDelegateVote
 public:
     CMvDelegateVerify(const std::map<CDestination,std::size_t>& mapWeight,
                       const std::map<CDestination,std::vector<unsigned char> >& mapEnrollData);
-    bool VerifyProof(const std::vector<unsigned char>& vchProof,
+    bool VerifyProof(const std::vector<unsigned char>& vchProof,uint256& nAgreement,
                      std::size_t& nWeight,std::map<CDestination,std::size_t>& mapBallot);
 };
 
