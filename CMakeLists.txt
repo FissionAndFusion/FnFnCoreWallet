@@ -55,6 +55,8 @@ if(WIN32)
     add_definitions(-DWIN32_LEAN_AND_MEAN)
     find_library(WS2_32_LIB NAMES ws2_32)
     find_library(WSSOCK32_LIB NAMES wsock32)
+elseif(UNIX AND NOT APPLE)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -lrt")
 endif()
 
 # sub directories
