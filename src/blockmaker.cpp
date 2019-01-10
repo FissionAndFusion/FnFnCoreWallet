@@ -400,7 +400,7 @@ bool CBlockMaker::CreateDelegatedBlock(CBlock& block,const uint256& hashFork,con
 }
 
 void CBlockMaker::CreatePiggyback(const CBlockMakerProfile& profile,const CBlockMakerAgreement& agreement,
-                         const uint256& hashRefBlock,int64 nRefBlockTime,int nPrevHeight)
+                                  const uint256& hashRefBlock,int64 nRefBlockTime,int nPrevHeight)
 {
     CProofOfPiggyback proof;
     proof.nWeight = agreement.nWeight;
