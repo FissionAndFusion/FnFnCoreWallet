@@ -65,16 +65,13 @@ protected:
     bool Interrupted() { return (nMakerStatus != ForkMakerStatus::MAKER_RUN); }
     bool Wait(long nSeconds);
     bool Wait(long nSeconds,const uint256& hashPrimaryBlock);
-    void PrepareBlock(CBlock& block,const uint256& hashPrev,int64 nPrevTime,int nPrevHeight,const CBlockMakerAgreement& agreement);
     void ArrangeBlockTx(CBlock& block,const uint256& hashFork,const CForkBlockMakerProfile& profile);
     bool SignBlock(CBlock& block,const CForkBlockMakerProfile& profile);
     bool DispatchBlock(CBlock& block);
-    bool CreateProofOfWorkBlock(CBlock& block);
     void ProcessDelegatedProofOfStake(CBlock& block,const CBlockMakerAgreement& agreement,int nPrevHeight);
     void ProcessExtended(const CBlockMakerAgreement& agreement,const uint256& hashPrimaryBlock,
                                                                int64 nPrimaryBlockTime,int nPrimaryBlockHeight);
     bool CreateDelegatedBlock(CBlock& block,const uint256& hashFork,const CForkBlockMakerProfile& profile,std::size_t nWeight);
-    bool CreateProofOfWork(CBlock& block,CForkBlockMakerHashAlgo* pHashAlgo);
     void CreatePiggyback(const CForkBlockMakerProfile& profile,const CBlockMakerAgreement& agreement,const CBlock& refblock,int nPrevHeight); 
     void CreateExtended(const CForkBlockMakerProfile& profile,const CBlockMakerAgreement& agreement,const std::set<uint256>& setFork,int nPrimaryBlockHeight,int64 nTime); 
     bool GetAvailiableDelegatedProfile(const std::vector<CDestination>& vBallot,std::vector<CForkBlockMakerProfile*>& vProfile);
@@ -83,6 +80,7 @@ private:
     enum class ForkMakerStatus : int {MAKER_RUN=0,MAKER_RESET=1,MAKER_EXIT=2,MAKER_HOLD=3};
     void BlockMakerThreadFunc();
     void ExtendedMakerThreadFunc();
+
 protected:
     mutable boost::shared_mutex rwAccess;
     walleve::CWalleveThread thrMaker;
