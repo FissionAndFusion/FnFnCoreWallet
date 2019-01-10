@@ -67,8 +67,6 @@ public:
     bool FetchFork(std::vector<CBlockDBFork>& vFork);
     bool AddNewBlock(const CBlockOutline& outline);
     bool RemoveBlock(const uint256& hash);
-    bool ExistBlock(const uint256& hash);
-    bool GetBlock(const uint256& hash, CBlockOutline& outline);
     bool UpdateDelegate(const uint256& hash,const std::map<CDestination,int64>& mapDelegate);
     bool UpdateEnroll(std::vector<std::pair<CTxIndex,uint256> >& vEnroll);
     bool WalkThroughBlock(CBlockDBWalker& walker);
@@ -78,14 +76,10 @@ public:
     bool RetrieveTxLocation(const uint256& txid,uint256& hashAnchor,int& nBlockHeight);
     bool RetrieveTxUnspent(const uint256& fork,const CTxOutPoint& out,CTxOutput& unspent);
     bool FilterTx(CBlockDBTxFilter& filter);
-    bool GetTxAmount(uint64& nAmount);
-    bool GetAllTx(std::vector<std::pair<uint256, CTxIndex*>>& vTxIndex);
     bool RetrieveDelegate(const uint256& hash,int64 nMinAmount,std::map<CDestination,int64>& mapDelegate);
     bool RetrieveEnroll(const uint256& hashAnchor,const std::set<uint256>& setBlockRange, 
                         std::map<CDestination,std::pair<uint32,uint32> >& mapEnrollTxPos);
     bool InnoDB();
-    bool GetAllDelegate(std::map<std::pair<uint256, CDestination>, int64>& mapDelegate);
-    bool GetAllEnroll(std::map<std::pair<uint256, CDestination>, std::tuple<uint256, uint32, uint32>>& mapEnroll);
     bool CompareRangedUnspentTx(const uint256& forkIndex, const std::map<uint256, CTxUnspent>& mapUnspent);
 protected:
     int GetForkIndex(const uint256& hash)

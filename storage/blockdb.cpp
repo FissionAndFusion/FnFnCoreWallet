@@ -426,54 +426,6 @@ bool CBlockDB::RemoveBlock(const uint256& hash)
     return db->Query(oss.str());
 }
 
-bool CBlockDB::ExistBlock(const uint256& hash)
-{
-    CMvDBInst db(&dbPool);
-    if (!db.Available())
-    {
-        return false;
-    }
-    {
-        CMvDBRes res(*db, "SELECT id FROM block WHERE hash=\'" + db->ToEscString(hash) + "\'", true);
-        if (!res.GetRow())
-        {
-            return false;
-        }
-    }
-    return true;
-}
-
-bool CBlockDB::GetBlock(const uint256& hash, CBlockOutline& outline)
-{
-    CMvDBInst db(&dbPool);
-    if (!db.Available())
-    {
-        return false;
-    }
-
-    {
-        CMvDBRes res(*db, "SELECT hash, prev, txid, minttype, version, type, time, height, "
-                          "beacon, trust, supply, algo, bits, file, offset "
-                          "FROM block WHERE hash=\'" + db.operator->()->ToEscString(hash) + "\'", true);
-        if (res.GetRow())
-        {
-            if (!res.GetField(0,outline.hashBlock)       || !res.GetField(1,outline.hashPrev)
-               || !res.GetField(2,outline.txidMint)      || !res.GetField(3,outline.nMintType)
-               || !res.GetField(4,outline.nVersion)      || !res.GetField(5,outline.nType)
-               || !res.GetField(6,outline.nTimeStamp)    || !res.GetField(7,outline.nHeight)
-               || !res.GetField(8,outline.nRandBeacon)   || !res.GetField(9,outline.nChainTrust)
-               || !res.GetField(10,outline.nMoneySupply) || !res.GetField(11,outline.nProofAlgo)
-               || !res.GetField(12,outline.nProofBits)   || !res.GetField(13,outline.nFile)
-               || !res.GetField(14,outline.nOffset))
-            {
-                return false;
-            }
-        }
-    }
-
-    return true;
-}
-
 bool CBlockDB::UpdateDelegate(const uint256& hash,const map<CDestination,int64>& mapDelegate)
 {
     CMvDBInst db(&dbPool);
@@ -692,50 +644,6 @@ bool CBlockDB::FilterTx(CBlockDBTxFilter& filter)
     return true;
 }
 
-bool CBlockDB::GetTxAmount(uint64& nAmount)
-{
-    nAmount = 0;
-    CMvDBInst db(&dbPool);
-    if (!db.Available())
-    {
-        return false;
-    }
-    {
-        std::string sqlQuery("SELECT COUNT(id) FROM transaction");
-        CMvDBRes res(*db, sqlQuery);
-        return (res.GetRow() && res.GetField(0, nAmount));
-    }
-}
-
-bool CBlockDB::GetAllTx(std::vector<std::pair<uint256, CTxIndex*>>& vTxIndex)
-{
-    vTxIndex.clear();
-
-    CMvDBInst db(&dbPool);
-    if (!db.Available())
-    {
-        return false;
-    }
-    {
-        CMvDBRes res(*db, "SELECT txid, version, type, lockuntil, anchor, sendto, amount, file, offset FROM transaction ORDER BY id DESC", true);
-        while (res.GetRow())
-        {
-            uint256 txid;
-            CTxIndex* pTx = new CTxIndex();
-            if (    !res.GetField(0, txid)            || !res.GetField(1, pTx->nVersion)
-                 || !res.GetField(2, pTx->nType)      || !res.GetField(3, pTx->nLockUntil)
-                 || !res.GetField(4, pTx->hashAnchor) || !res.GetField(5, pTx->sendTo)
-                 || !res.GetField(6, pTx->nAmount)    || !res.GetField(7, pTx->nFile)
-                 || !res.GetField(8, pTx->nOffset))
-            {
-                return false;
-            }
-            vTxIndex.push_back(std::make_pair(txid, pTx));
-        }
-    }
-    return true;
-}
-
 bool CBlockDB::RetrieveDelegate(const uint256& hash,int64 nMinAmount,map<CDestination,int64>& mapDelegate)
 {
     CMvDBInst db(&dbPool);
@@ -936,57 +844,6 @@ bool CBlockDB::InnoDB()
     }
 
     return false;
-}
-
-bool CBlockDB::GetAllDelegate(std::map<std::pair<uint256, CDestination>, int64>& mapDelegate)
-{
-    CMvDBInst db(&dbPool);
-    if (!db.Available())
-    {
-        return false;
-    }
-
-    CMvDBRes res(*db, "SELECT block, dest, amount FROM delegate", true);
-    while (res.GetRow())
-    {
-        uint256 block;
-        CDestination dest;
-        int64 amount;
-        if (!res.GetField(0, block) || !res.GetField(1, dest) || !res.GetField(2, amount))
-        {
-            return false;
-        }
-        mapDelegate[make_pair(block, dest)] = amount;
-    }
-    return true;
-}
-
-bool CBlockDB::GetAllEnroll(std::map<std::pair<uint256, CDestination>, std::tuple<uint256, uint32, uint32>>& mapEnroll)
-{
-    CMvDBInst db(&dbPool);
-    if (!db.Available())
-    {
-        return false;
-    }
-
-    CMvDBRes res(*db, "SELECT anchor, dest, block, file, offset FROM enroll", true);
-    mapEnroll.clear();
-    while (res.GetRow())
-    {
-        uint256 anchor;
-        CDestination dest;
-        uint256 block;
-        uint32 nFile;
-        uint32 nOffset;
-        if (!res.GetField(0, anchor)  || !res.GetField(1, dest) || !res.GetField(2, block)
-            || !res.GetField(3, nFile) || !res.GetField(4, nOffset))
-        {
-            return false;
-        }
-        mapEnroll[make_pair(anchor, dest)] = make_tuple(block, nFile, nOffset);
-    }
-
-    return true;
 }
 
 bool CBlockDB::CompareRangedUnspentTx(const uint256& forkIndex, const std::map<uint256, CTxUnspent>& mapUnspent)

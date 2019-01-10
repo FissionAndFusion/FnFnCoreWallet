@@ -1241,11 +1241,6 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
     return true;
 }
 
-bool CBlockBase::GetTxAmount(uint64& nAmount)
-{
-    return dbBlock.GetTxAmount(nAmount);
-}
-
 CBlockIndex* CBlockBase::GetIndex(const uint256& hash) const
 {
     map<uint256,CBlockIndex*>::const_iterator mi = mapIndex.find(hash);
