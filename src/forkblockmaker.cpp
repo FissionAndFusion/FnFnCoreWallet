@@ -329,7 +329,7 @@ void CForkBlockMaker::CreatePiggyback(const CForkBlockMakerProfile& profile,cons
     CProofOfPiggyback proof;
     proof.nWeight = agreement.nWeight;
     proof.nAgreement = agreement.nAgreement;
-    proof.hashRefBlock = refblock.GetHash();
+    proof.hashRefBlock = hashLastBlock;
 
     map<uint256,CForkStatus> mapForkStatus;
     pWorldLine->GetForkStatus(mapForkStatus);
@@ -339,11 +339,11 @@ void CForkBlockMaker::CreatePiggyback(const CForkBlockMakerProfile& profile,cons
         CForkStatus& status = (*it).second;
         if (hashFork != pCoreProtocol->GetGenesisBlockHash() 
             && status.nLastBlockHeight == nPrevHeight
-            && status.nLastBlockTime < refblock.nTimeStamp)
+            && status.nLastBlockTime < nLastBlockTime)
         {
             CBlock block;
             block.nType = CBlock::BLOCK_SUBSIDIARY;
-            block.nTimeStamp = refblock.nTimeStamp;
+            block.nTimeStamp = nLastBlockTime;
             block.hashPrev = status.hashLastBlock;
             proof.Save(block.vchProof);
 
@@ -461,17 +461,6 @@ void CForkBlockMaker::BlockMakerThreadFunc()
         {
             boost::unique_lock<boost::mutex> lock(mutex);
 
-            /*int64 nWaitBlockTime = nPrimaryBlockTime + WAIT_NEWBLOCK_TIME - WalleveGetNetTime();
-            boost::system_time const toWaitBlock = boost::get_system_time() + boost::posix_time::seconds(nWaitBlockTime);
-            
-            while (hashPrimaryBlock == hashLastBlock && nMakerStatus == ForkMakerStatus::MAKER_HOLD)
-            {
-                if (!cond.timed_wait(lock,toWaitBlock))
-                {
-                    break;
-                }
-            }*/
-
             while(nMakerStatus == ForkMakerStatus::MAKER_HOLD)
             {
                 cond.wait(lock);
@@ -482,39 +471,9 @@ void CForkBlockMaker::BlockMakerThreadFunc()
                 break;
             }
         
-            /*if (hashPrimaryBlock != hashLastBlock)
-            {
-                hashPrimaryBlock     = hashLastBlock;
-                nPrimaryBlockTime    = nLastBlockTime;
-                nPrimaryBlockHeight  = nLastBlockHeight; 
-                int64 nWaitAgreement = nPrimaryBlockTime + WAIT_AGREEMENT_TIME - WalleveGetNetTime();
-                boost::system_time const toWaitAgree = boost::get_system_time() + boost::posix_time::seconds(nWaitAgreement);
-                while (hashPrimaryBlock == hashLastBlock && nMakerStatus != ForkMakerStatus::MAKER_EXIT)
-                {
-                    if (!cond.timed_wait(lock,toWaitAgree))
-                    {
-                        // TODO
-                        pConsensus->GetAgreement(nLastBlockHeight + 1,agree.nAgreement,agree.nWeight,agree.vBallot);
-                        currentAgreement = agree;
-                        WalleveLog("GetAgreement : %s at height=%d, weight=%lu\n",agree.nAgreement.GetHex().c_str(),
-                                                                                  nPrimaryBlockHeight,agree.nWeight); 
-                        break;
-                    }
-                }
-                if (nMakerStatus == ForkMakerStatus::MAKER_EXIT)
-                {
-                    break;
-                }
-                if (hashPrimaryBlock != hashLastBlock)
-                {
-                    continue;
-                }
-            }*/
-
             pWorldLine->GetBlockDelegateAgreement(hashLastBlock, agree.nAgreement, 
                 agree.nWeight, agree.vBallot);
             currentAgreement = agree;
-
 
             nMakerStatus = ForkMakerStatus::MAKER_RUN;
         }
@@ -524,12 +483,9 @@ void CForkBlockMaker::BlockMakerThreadFunc()
         {
             ForkMakerStatus nNextStatus = ForkMakerStatus::MAKER_HOLD;
             
-            if(pWorldLine->GetBlock(hashLastBlock, block))
+            if (!agree.IsProofOfWork())
             {
-                if (!agree.IsProofOfWork())
-                {
-                    ProcessDelegatedProofOfStake(block,agree,nPrimaryBlockHeight); 
-                }
+                ProcessDelegatedProofOfStake(block,agree,nPrimaryBlockHeight - 1); 
             }
             
             {
@@ -569,16 +525,6 @@ void CForkBlockMaker::ExtendedMakerThreadFunc()
         {
             boost::unique_lock<boost::mutex> lock(mutex);
             
-            // Wait Next
-           /* while (hashPrimaryBlock == hashLastBlock && nMakerStatus !=  ForkMakerStatus::MAKER_EXIT)
-            {
-                cond.wait(lock);
-            }
-            if (nMakerStatus == ForkMakerStatus::MAKER_EXIT)
-            {
-                break;
-            }*/
-
             while(nMakerStatus != ForkMakerStatus::MAKER_HOLD)
             {
                 cond.wait(lock);
