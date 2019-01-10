@@ -339,7 +339,7 @@ void CBlockMaker::ProcessDelegatedProofOfStake(CBlock& block,const CBlockMakerAg
         {
             if (DispatchBlock(block))
             {
-                CreatePiggyback(profile,agreement,block,nPrevHeight);
+                CreatePiggyback(profile,agreement,block.GetHash(),block.GetBlockTime(),nPrevHeight);
             }
         }
     }
