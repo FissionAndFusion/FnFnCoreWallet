@@ -341,6 +341,11 @@ bool CWalletDB::ClearTx()
 
 bool CWalletDB::CheckWalletTx()
 {
+    //judge if wallet tx is null
+    if(IsWalletTxNull())
+    {
+        return true;
+    }
     //check if wallettx table only contains Tx's
     //which occurred on addresses owned by the wallet
     int rows = -1;
@@ -476,6 +481,16 @@ bool CWalletDB::CheckWalletTx()
         {
             return false;
         }
+    }
+    return true;
+}
+
+bool CWalletDB::IsWalletTxNull()
+{
+    CMvDBRes res(dbConn, "SELECT id FROM wallettx limit 1");
+    if (res.GetRow())
+    {
+        return false;
     }
     return true;
 }

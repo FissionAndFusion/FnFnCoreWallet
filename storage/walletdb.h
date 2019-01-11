@@ -144,6 +144,7 @@ public:
     bool WalkThroughTx(CWalletDBTxWalker& walker);
     bool ClearTx();
     bool CheckWalletTx();
+    bool IsWalletTxNull();
 protected:
     bool ListDBTx(int nOffset,int nCount,std::vector<CWalletTx>& vWalletTx);
     bool ParseTxIn(const std::vector<unsigned char>& vchTxIn,CWalletTx& wtx);
