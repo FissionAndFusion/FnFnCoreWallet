@@ -1036,18 +1036,18 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
             return false;
         }
 
-        CBlockFork* pFork = GetFork(fork.hashFork);
-        if(NULL == pFork)
+        boost::shared_ptr<CBlockFork> spFork = GetFork(fork.hashFork);
+        if(NULL == spFork)
         {
             return false;
         }
-        CBlockIndex* pLastBlock = pFork->GetLast();
+        CBlockIndex* pLastBlock = spFork->GetLast();
         if(NULL == pLastBlock)
         {
             return false;
         }
 
-        bool fIsMainFork = pFork->GetOrigin()->IsPrimary();
+        bool fIsMainFork = spFork->GetOrigin()->IsPrimary();
 
         if(0 == nDepth || pLastBlock->nHeight < nDepth)
         {
