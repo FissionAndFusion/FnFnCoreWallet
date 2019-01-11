@@ -400,12 +400,12 @@ bool CBlockMaker::CreateDelegatedBlock(CBlock& block,const uint256& hashFork,con
 }
 
 void CBlockMaker::CreatePiggyback(const CBlockMakerProfile& profile,const CBlockMakerAgreement& agreement,
-                                  const CBlock& refblock,int nPrevHeight)
+                                  const uint256& hashRefBlock,int64 nRefBlockTime,int nPrevHeight)
 {
     CProofOfPiggyback proof;
     proof.nWeight = agreement.nWeight;
     proof.nAgreement = agreement.nAgreement;
-    proof.hashRefBlock = refblock.GetHash();
+    proof.hashRefBlock = hashRefBlock;
 
     map<uint256,CForkStatus> mapForkStatus;
     pWorldLine->GetForkStatus(mapForkStatus);
@@ -415,11 +415,11 @@ void CBlockMaker::CreatePiggyback(const CBlockMakerProfile& profile,const CBlock
         CForkStatus& status = (*it).second;
         if (hashFork != pCoreProtocol->GetGenesisBlockHash() 
             && status.nLastBlockHeight == nPrevHeight
-            && status.nLastBlockTime < refblock.nTimeStamp)
+            && status.nLastBlockTime < nRefBlockTime)
         {
             CBlock block;
             block.nType = CBlock::BLOCK_SUBSIDIARY;
-            block.nTimeStamp = refblock.nTimeStamp;
+            block.nTimeStamp = nRefBlockTime;
             block.hashPrev = status.hashLastBlock;
             proof.Save(block.vchProof);
 
