@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The Multiverse developers
+// Copyright (c) 2017-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -73,7 +73,8 @@ protected:
                                                                int64 nPrimaryBlockTime,int nPrimaryBlockHeight);
     bool CreateDelegatedBlock(CBlock& block,const uint256& hashFork,const CBlockMakerProfile& profile,std::size_t nWeight);
     bool CreateProofOfWork(CBlock& block,CBlockMakerHashAlgo* pHashAlgo);
-    void CreatePiggyback(const CBlockMakerProfile& profile,const CBlockMakerAgreement& agreement,const CBlock& refblock,int nPrevHeight); 
+    void CreatePiggyback(const CBlockMakerProfile& profile,const CBlockMakerAgreement& agreement,
+                         const uint256& hashRefBlock,int64 nRefBlockTime,int nPrevHeight); 
     void CreateExtended(const CBlockMakerProfile& profile,const CBlockMakerAgreement& agreement,const std::set<uint256>& setFork,int nPrimaryBlockHeight,int64 nTime); 
     bool GetAvailiableDelegatedProfile(const std::vector<CDestination>& vBallot,std::vector<CBlockMakerProfile*>& vProfile);
     bool GetAvailiableExtendedFork(std::set<uint256>& setFork);

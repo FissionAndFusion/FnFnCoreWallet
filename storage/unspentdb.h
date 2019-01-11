@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The Multiverse developers
+// Copyright (c) 2017-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -68,8 +68,10 @@ class CUnspentDB
 public:
     bool Initialize(const boost::filesystem::path& pathData);
     void Deinitialize();
+    bool Exists(const uint256& hashFork) { return (!!mapUnspenDB.count(hashFork)); }
     bool AddNew(const uint256& hashFork);
     bool Remove(const uint256& hashFork);
+    void Clear();
     bool Update(const uint256& hashFork,
                 const std::vector<CTxUnspent>& vAddNew,const std::vector<CTxOutPoint>& vRemove);
     bool Retrieve(const uint256& hashFork,const CTxOutPoint& txout,CTxOutput& output);

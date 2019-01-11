@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The Multiverse developers
+// Copyright (c) 2017-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -115,7 +115,7 @@ bool CBlockMaker::WalleveHandleInitialize()
 
     if (!MintConfig()->destMPVss.IsNull() && MintConfig()->keyMPVss != 0)
     { 
-        CBlockMakerProfile profile(0,MintConfig()->destMPVss,MintConfig()->keyMPVss);
+        CBlockMakerProfile profile(CM_MPVSS,MintConfig()->destMPVss,MintConfig()->keyMPVss);
         if (profile.IsValid())
         {
             mapDelegatedProfile.insert(make_pair(profile.GetDestination(),profile));
@@ -339,7 +339,7 @@ void CBlockMaker::ProcessDelegatedProofOfStake(CBlock& block,const CBlockMakerAg
         {
             if (DispatchBlock(block))
             {
-                CreatePiggyback(profile,agreement,block,nPrevHeight);
+                CreatePiggyback(profile,agreement,block.GetHash(),block.GetBlockTime(),nPrevHeight);
             }
         }
     }
@@ -400,12 +400,12 @@ bool CBlockMaker::CreateDelegatedBlock(CBlock& block,const uint256& hashFork,con
 }
 
 void CBlockMaker::CreatePiggyback(const CBlockMakerProfile& profile,const CBlockMakerAgreement& agreement,
-                                  const CBlock& refblock,int nPrevHeight)
+                                  const uint256& hashRefBlock,int64 nRefBlockTime,int nPrevHeight)
 {
     CProofOfPiggyback proof;
     proof.nWeight = agreement.nWeight;
     proof.nAgreement = agreement.nAgreement;
-    proof.hashRefBlock = refblock.GetHash();
+    proof.hashRefBlock = hashRefBlock;
 
     map<uint256,CForkStatus> mapForkStatus;
     pWorldLine->GetForkStatus(mapForkStatus);
@@ -415,11 +415,11 @@ void CBlockMaker::CreatePiggyback(const CBlockMakerProfile& profile,const CBlock
         CForkStatus& status = (*it).second;
         if (hashFork != pCoreProtocol->GetGenesisBlockHash() 
             && status.nLastBlockHeight == nPrevHeight
-            && status.nLastBlockTime < refblock.nTimeStamp)
+            && status.nLastBlockTime < nRefBlockTime)
         {
             CBlock block;
             block.nType = CBlock::BLOCK_SUBSIDIARY;
-            block.nTimeStamp = refblock.nTimeStamp;
+            block.nTimeStamp = nRefBlockTime;
             block.hashPrev = status.hashLastBlock;
             proof.Save(block.vchProof);
 

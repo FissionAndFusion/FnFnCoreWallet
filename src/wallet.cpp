@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The Multiverse developers
+// Copyright (c) 2017-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -486,7 +486,7 @@ bool CWallet::AddNewFork(const uint256& hashFork,const uint256& hashParent,int n
                 unspent.Dup(hashParent,hashFork);
             }
             vector<uint256> vForkTx;
-            if (!dbWallet.ListForkTx(hashParent,nOriginHeight + 1,vForkTx))
+            if (!dbWallet.ListRollBackTx(hashParent,nOriginHeight + 1,vForkTx))
             {
                 return false;
             }
@@ -645,8 +645,35 @@ bool CWallet::SynchronizeTxSet(const CTxSetChange& change)
     return true;
 }
 
+bool CWallet::AddNewTx(const uint256& hashFork,const CAssembledTx& tx)
+{
+    boost::unique_lock<boost::shared_mutex> wlock(rwWalletTx);
+
+    bool fIsMine = IsMine(tx.sendTo);
+    bool fFromMe = IsMine(tx.destIn);
+    if (fFromMe || fIsMine)
+    {
+        uint256 txid = tx.GetHash();
+        std::shared_ptr<CWalletTx> spWalletTx = InsertWalletTx(txid,tx,hashFork,fIsMine,fFromMe);
+        if (spWalletTx != NULL)
+        {
+            vector<uint256> vFork;
+            GetWalletTxFork(hashFork,tx.nBlockHeight,vFork);
+            AddNewWalletTx(spWalletTx,vFork);
+            if (!spWalletTx->GetRefCount())
+            {
+                mapWalletTx.erase(txid);
+            }
+            return dbWallet.AddNewTx(*spWalletTx);
+        }
+    }
+    return true;
+}
+
 bool CWallet::UpdateTx(const uint256& hashFork,const CAssembledTx& tx)
 {
+    boost::unique_lock<boost::shared_mutex> wlock(rwWalletTx);
+
     vector<CWalletTx> vWalletTx;
     bool fIsMine = IsMine(tx.sendTo);
     bool fFromMe = IsMine(tx.destIn);

@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The Multiverse developers
+// Copyright (c) 2017-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -82,17 +82,11 @@ public:
     bool InnoDB();
     bool CompareRangedUnspentTx(const uint256& forkIndex, const std::map<uint256, CTxUnspent>& mapUnspent);
 protected:
-    int GetForkIndex(const uint256& hash)
-    {
-        std::map<uint256,int>::iterator it = mapForkIndex.find(hash);
-        return  (it != mapForkIndex.end() ? (*it).second : -1);
-    }
     bool CreateTable();
     bool LoadFork();
 protected:
     CMvDBPool dbPool;
     CUnspentDB dbUnspent;
-    std::map<uint256,int> mapForkIndex;
 };
 
 } // namespace storage

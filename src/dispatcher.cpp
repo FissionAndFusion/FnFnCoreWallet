@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The Multiverse developers
+// Copyright (c) 2017-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -241,7 +241,7 @@ MvErr CDispatcher::AddNewTx(const CTransaction& tx,uint64 nNonce)
     }
 
     CAssembledTx assembledTx(tx,-1,destIn,nValueIn);
-    if (!pWallet->UpdateTx(hashFork,assembledTx))
+    if (!pWallet->AddNewTx(hashFork,assembledTx))
     {
         return MV_ERR_SYS_DATABASE_ERROR;
     }

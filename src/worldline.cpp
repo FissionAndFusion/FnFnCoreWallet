@@ -1,9 +1,10 @@
-// Copyright (c) 2017-2018 The Multiverse developers
+// Copyright (c) 2017-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "worldline.h"
 #include "mvdelegatecomm.h"
+#include "mvdelegateverify.h"
 
 using namespace std;
 using namespace walleve;
@@ -629,6 +630,37 @@ bool CWorldLine::GetBlockDelegateEnrolled(const uint256& hashBlock,map<CDestinat
             mapEnrollData.insert((*mi));
         }
     }
+
+    return true;
+}
+
+bool CWorldLine::GetBlockDelegateAgreement(const uint256& hashBlock,uint256& nAgreement,size_t& nWeight,vector<CDestination>& vBallot)
+{
+    CBlock block;
+    if (!cntrBlock.Retrieve(hashBlock,block))
+    {
+        WalleveLog("GetBlockDelegateAgreement : Retrieve block Error: %s \n",hashBlock.ToString().c_str());
+        return false;
+    }
+
+    map<CDestination,size_t> mapWeight;
+    map<CDestination,vector<unsigned char> > mapEnrollData;
+
+    if (!GetBlockDelegateEnrolled(hashBlock,mapWeight,mapEnrollData))
+    {
+        return false;
+    }
+
+    map<CDestination,size_t> mapBallot;
+
+    delegate::CMvDelegateVerify verifier(mapWeight,mapEnrollData);
+    if (!verifier.VerifyProof(block.vchProof,nAgreement,nWeight,mapBallot))
+    {
+        WalleveLog("GetBlockDelegateAgreement : Invalid block proof : %s \n",hashBlock.ToString().c_str());
+        return false;
+    }
+    
+    pCoreProtocol->GetDelegatedBallot(nAgreement,nWeight,mapBallot,vBallot); 
 
     return true;
 }

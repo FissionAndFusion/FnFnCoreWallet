@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The Multiverse developers
+// Copyright (c) 2017-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -136,6 +136,7 @@ public:
     bool ArrangeInputs(const CDestination& destIn,const uint256& hashFork,int nForkHeight,CTransaction& tx) override;
     /* Update */
     bool SynchronizeTxSet(const CTxSetChange& change) override;
+    bool AddNewTx(const uint256& hashFork,const CAssembledTx& tx) override;
     bool UpdateTx(const uint256& hashFork,const CAssembledTx& tx) override;
     bool ClearTx() override;
     bool LoadTx(const CWalletTx& wtx);
@@ -270,6 +271,10 @@ public:
     }
     /* Update */
     virtual bool SynchronizeTxSet(const CTxSetChange& change) override
+    {
+        return true;
+    }
+    virtual bool AddNewTx(const uint256& hashFork,const CAssembledTx& tx) override
     {
         return true;
     }

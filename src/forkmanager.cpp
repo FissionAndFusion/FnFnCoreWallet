@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The Multiverse developers
+// Copyright (c) 2017-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -223,13 +223,38 @@ bool CForkManager::AddNewForkContext(const CForkContext& ctxt,vector<uint256>& v
     return true;
 }
 
-void CForkManager::GetForkList(std::vector<uint256>& vFork)
+void CForkManager::GetForkList(std::vector<uint256>& vFork) const
 {
+    boost::shared_lock<boost::shared_mutex> rlock(rwAccess);
+
     vFork.reserve(setForkIndex.size());
     for (auto it = setForkIndex.begin(); it != setForkIndex.end(); it++)
     {
         vFork.push_back(it->hashFork);
     }
+}
+
+bool CForkManager::GetSubline(const uint256& hashFork, vector<pair<int, uint256> >& vSubline) const
+{
+    boost::shared_lock<boost::shared_mutex> rlock(rwAccess);
+
+    const CForkLinkSetByParent& idxParent = setForkIndex.get<3>();
+    CForkLinkSetByParent::const_iterator itBegin = idxParent.lower_bound(hashFork);
+    CForkLinkSetByParent::const_iterator itEnd = idxParent.upper_bound(hashFork);
+    if (itBegin == itEnd)
+    {
+        return false;
+    }
+
+    multimap<int, uint256> mapSubline;
+    for (;itBegin != itEnd; ++itBegin)
+    {
+        mapSubline.insert(make_pair(itBegin->nJointHeight, itBegin->hashFork));
+    }
+
+    vSubline.assign(mapSubline.begin(), mapSubline.end());
+
+    return true;
 }
 
 bool CForkManager::IsAllowedFork(const uint256& hashFork,const uint256& hashParent) const
