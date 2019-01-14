@@ -63,7 +63,9 @@ CBlockMaker::CBlockMaker()
     pTxPool = NULL;
     pDispatcher = NULL;
     pConsensus = NULL;
-    mapHashAlgo[CM_BLAKE512] = new CHashAlgo_Blake512(INITIAL_HASH_RATE);    
+    mapHashAlgo[CM_BLAKE512] = new CHashAlgo_Blake512(INITIAL_HASH_RATE);
+
+    std::cout << "[block maker] root node: Constructor called \n"; 
 }
 
 CBlockMaker::~CBlockMaker()

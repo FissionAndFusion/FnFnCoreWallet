@@ -63,7 +63,9 @@ CForkBlockMaker::CForkBlockMaker()
     pTxPool = NULL;
     pDispatcher = NULL;
     pConsensus = NULL;
-    mapHashAlgo[CM_MPVSS] = new CHashAlgo_MPVSS(INITIAL_HASH_RATE); 
+    mapHashAlgo[CM_MPVSS] = new CHashAlgo_MPVSS(INITIAL_HASH_RATE);
+
+    std::cout << "[ for block maker] fork node: Constructor called \n"; 
 }
 
 CForkBlockMaker::~CForkBlockMaker()
