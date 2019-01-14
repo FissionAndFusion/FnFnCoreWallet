@@ -590,3 +590,24 @@ void CDelegatedChannel::PushBulletin()
         }
     }
 }
+
+CDummyDelegatedChannel::CDummyDelegatedChannel()
+{
+
+}
+
+CDummyDelegatedChannel::~CDummyDelegatedChannel()
+{
+
+}
+
+void CDummyDelegatedChannel::PrimaryUpdate(int nStartHeight,
+                       const std::vector<std::pair<uint256,std::map<CDestination,size_t> > >& vEnrolledWeight,
+                       const std::map<CDestination,std::vector<unsigned char> >& mapDistributeData,
+                       const std::map<CDestination,std::vector<unsigned char> >& mapPublishData)
+{
+    (void)nStartHeight;
+    (void)vEnrolledWeight;
+    (void)mapDistributeData;
+    (void)mapPublishData;
+}
