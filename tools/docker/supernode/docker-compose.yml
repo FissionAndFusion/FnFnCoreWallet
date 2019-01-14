@@ -21,11 +21,14 @@ services:
     depends_on:
       - db
     environment:
-      DNSEED: '119.3.71.139'
-      DNSEED_PORT: 7611 
+      DNSEED: '192.168.199.50'
+      DNSEED_PORT: 6811 
       DB_HOST: db 
       DB_PORT: 3306
       DB_NAME: 'sn_root'
+      DBP_ALLOW_IP: '*.*.*.*' 
+      ENABLE_SN: 'true'
+      ENABLE_FN: 'false'
     volumes:
       - './apps:/home/apps'
       - './nodes/root:/home/fnfn'
@@ -38,26 +41,49 @@ services:
   fork1:
     image: multiverse:latest
     container_name: fork1
+    depends_on:
+      - db
+      - root
     environment:
-      HOME: '/home/fnfn'
+      DB_HOST: db 
+      DB_PORT: 3306
+      DB_NAME: 'sn_fork1'
+      DBP_R_HOST: root 
+      DBP_ALLOW_IP: '*.*.*.*' 
+      ENABLE_SN: 'true'
+      ENABLE_FN: 'true' 
+      FORK_ID: 'c002847f7a3a74869c6e5ac9ba04553cb832540337292df67e03af60b43f21c0'
     volumes:
       - './apps:/home/apps'
       - './nodes/fork1:/home/fnfn'
+    networks:
+      - sn
     ports:
-      - 8151:6815
-      - 8121:6812
+      - 9151:6815
+      - 9121:6812
 
   fork2:
     image: multiverse:latest
     container_name: fork2
+    depends_on:
+      - db
     environment:
-      HOME: '/home/fnfn'
+      DB_HOST: db 
+      DB_PORT: 3306
+      DB_NAME: 'sn_fork2'
+      DBP_R_HOST: fork1
+      DBP_ALLOW_IP: '*.*.*.*' 
+      ENABLE_SN: 'true' 
+      ENABLE_FN: 'true'
+      FORK_ID: '6c78270ac6d5892deb4b33ec9123289b24067a8649937ccfe43a98e68992a8ea'
     volumes:
       - './apps:/home/apps'
       - './nodes/fork2:/home/fnfn'
+    networks:
+      - sn
     ports:
-      - 8152:6815
-      - 8122:6812
+      - 5152:6815
+      - 5122:6812
 
 networks:
   sn:
