@@ -27,17 +27,21 @@ class CBlockBase;
 class CBlockFork
 {
 public:
-    CBlockFork(const CProfile& profileIn=CProfile(),CBlockIndex* pIndexLastIn=NULL) 
-    : forkProfile(profileIn),pIndexLast(pIndexLastIn),spAccess(new walleve::CWalleveRWAccess())
+    CBlockFork(const CProfile& profileIn,CBlockIndex* pIndexLastIn) 
+    : forkProfile(profileIn),pIndexLast(pIndexLastIn),pIndexOrigin(pIndexLast->pOrigin)
     {
     }
-    void ReadLock() { spAccess->ReadLock(); }
-    void WriteLock() { spAccess->WriteLock(); }
-    void ReadUnlock() { spAccess->ReadUnlock(); }
-    void WriteUnlock() { spAccess->WriteUnlock(); }
+    void ReadLock()       { rwAccess.ReadLock();      }
+    void ReadUnlock()     { rwAccess.ReadUnlock();    }
+    void WriteLock()      { rwAccess.WriteLock();     }
+    void WriteUnlock()    { rwAccess.WriteUnlock();   }
+    void UpgradeLock()    { rwAccess.UpgradeLock();   }
+    void UpgradeUnlock()  { rwAccess.UpgradeUnlock(); }
+    void UpgradeToWrite() { rwAccess.UpgradeToWriteLock() ; }
+    walleve::CWalleveRWAccess& GetRWAccess() const { return rwAccess; }
     const CProfile& GetProfile() const { return forkProfile; }
     CBlockIndex* GetLast() const { return pIndexLast; }
-    CBlockIndex* GetOrigin() const { return pIndexLast->pOrigin; }
+    CBlockIndex* GetOrigin() const { return pIndexOrigin; }
     void UpdateLast(CBlockIndex* pIndexLastIn) { pIndexLast = pIndexLastIn; UpdateNext(); }
     void UpdateNext()
     {
@@ -62,49 +66,11 @@ public:
             }
         }
     }
-    void InsertAncestry(CBlockIndex* pAncestry) 
-    {
-        mapAncestry.insert(std::make_pair(pAncestry->GetOriginHash(),pAncestry)); 
-    }
-    void InsertSubline(int nHeight,const uint256& hash)
-    {
-        mapSubline.insert(std::make_pair(nHeight,hash));
-    }
-    void GetSubline(int nStart,std::vector<uint256>& vSubline) const
-    {
-        for (std::multimap<int,uint256>::const_iterator it = mapSubline.lower_bound(nStart);it != mapSubline.end();++it)
-        {
-            vSubline.push_back((*it).second);
-        }
-    }
-    bool Have(CBlockIndex* pIndex) const
-    {
-        if (!pIndex)
-        {
-            return false;
-        }
-        uint256 hashFork = pIndex->GetOriginHash();
-        CBlockIndex* p = NULL;
-        if (hashFork == pIndexLast->GetOriginHash())
-        {
-            p = pIndexLast;
-        }
-        else
-        {
-            std::map<uint256,CBlockIndex*>::const_iterator it = mapAncestry.find(hashFork);
-            if (it != mapAncestry.end())
-            {
-                p = (*it).second;
-            }
-        }
-        return (pIndex->pNext != NULL || p == pIndex);
-    }
 protected:
+    mutable walleve::CWalleveRWAccess rwAccess;
     CProfile forkProfile;
     CBlockIndex* pIndexLast;
-    boost::shared_ptr<walleve::CWalleveRWAccess> spAccess;
-    std::map<uint256,CBlockIndex*> mapAncestry;
-    std::multimap<int,uint256> mapSubline;
+    CBlockIndex* pIndexOrigin;
 };
 
 class CBlockView
@@ -123,11 +89,11 @@ public:
     };
     CBlockView();
     ~CBlockView();
-    void Initialize(CBlockBase* pBlockBaseIn,CBlockFork* pBlockForkIn,
+    void Initialize(CBlockBase* pBlockBaseIn,boost::shared_ptr<CBlockFork> spForkIn,
                     const uint256& hashForkIn,bool fCommittableIn);
     void Deinitialize();
     bool IsCommittable() const { return fCommittable; }
-    CBlockFork* GetFork() const { return pBlockFork; };
+    boost::shared_ptr<CBlockFork> GetFork() const { return spFork; };
     const uint256& GetForkHash() const { return hashFork; };
     bool ExistsTx(const uint256& txid) const;
     bool RetrieveTx(const uint256& txid,CTransaction& tx);
@@ -165,7 +131,7 @@ public:
     }
 protected:
     CBlockBase* pBlockBase;
-    CBlockFork* pBlockFork;
+    boost::shared_ptr<CBlockFork> spFork;
     uint256 hashFork;
     bool fCommittable;
     std::map<uint256,CTransaction> mapTx;
@@ -219,12 +185,12 @@ public:
     bool GetForkBlockInv(const uint256& hashFork,const CBlockLocator& locator,std::vector<uint256>& vBlockHash,size_t nMaxCount);
 protected:
     CBlockIndex* GetIndex(const uint256& hash) const;
-    CBlockFork* GetFork(const uint256& hash);
-    CBlockFork* GetFork(const std::string& strName);
     CBlockIndex* GetBranch(CBlockIndex* pIndexRef,CBlockIndex* pIndex,std::vector<CBlockIndex*>& vPath);
     CBlockIndex* GetOriginIndex(const uint256& txidMint) const;
     CBlockIndex* AddNewIndex(const uint256& hash,const CBlock& block,uint32 nFile,uint32 nOffset);
-    CBlockFork* AddNewFork(const CProfile& profileIn,CBlockIndex* pIndexLast);
+    boost::shared_ptr<CBlockFork> GetFork(const uint256& hash);
+    boost::shared_ptr<CBlockFork> GetFork(const std::string& strName);
+    boost::shared_ptr<CBlockFork> AddNewFork(const CProfile& profileIn,CBlockIndex* pIndexLast);
     bool LoadForkProfile(const CBlockIndex* pIndexOrigin,CProfile& profile);
     bool UpdateDelegate(const uint256& hash,CBlockEx& block);
     bool UpdateEnroll(CBlockIndex* pIndexNew,const std::vector<std::pair<uint256,CTxIndex> >& vTxNew);
@@ -271,7 +237,7 @@ protected:
     CBlockDB dbBlock;
     CTimeSeries tsBlock;
     std::map<uint256,CBlockIndex*> mapIndex;
-    std::map<uint256,CBlockFork> mapFork;
+    std::map<uint256,boost::shared_ptr<CBlockFork> > mapFork;
 };
 
 } // namespace storage

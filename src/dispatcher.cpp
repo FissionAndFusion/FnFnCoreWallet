@@ -133,8 +133,6 @@ void CDispatcher::WalleveHandleHalt()
 
 MvErr CDispatcher::AddNewBlock(const CBlock& block,uint64 nNonce)
 {
-    boost::recursive_mutex::scoped_lock scoped_lock(mtxDispatcher);
-
     MvErr err = MV_OK;
     if (!pWorldLine->Exists(block.hashPrev))
     {
@@ -209,8 +207,6 @@ MvErr CDispatcher::AddNewBlock(const CBlock& block,uint64 nNonce)
 
 MvErr CDispatcher::AddNewTx(const CTransaction& tx,uint64 nNonce)
 {
-    boost::recursive_mutex::scoped_lock scoped_lock(mtxDispatcher);
-
     MvErr err = MV_OK;
     err = pCoreProtocol->ValidateTransaction(tx);
     if (err != MV_OK)
