@@ -1122,11 +1122,12 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
                 for(auto const& tx : block.vtx)
                 {
                     pTxIdx.SetNull();
-                    if(!dbBlock.RetrieveTxIndex(tx.GetHash(), pTxIdx))
+                    const uint256& txid = tx.GetHash();
+                    if(!dbBlock.RetrieveTxIndex(txid, pTxIdx))
                     {
                         return false;
                     }
-                    if(!lmdChkTx(pIndex->txidMint, pTxIdx))
+                    if(!lmdChkTx(txid, pTxIdx))
                     {
                         return false;
                     }
