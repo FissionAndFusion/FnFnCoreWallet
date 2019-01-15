@@ -564,12 +564,8 @@ void CForkBlockMaker::ExtendedMakerThreadFunc()
             
             while(nMakerStatus != ForkMakerStatus::MAKER_HOLD && nMakerStatus != ForkMakerStatus::MAKER_EXIT)
             {
-                std::cout << "Waitting MAKER  HOLD start\n";
                 cond.wait(lock);
-                std::cout << "Waitting MAKER  HOLD end\n";
             }
-
-            std::cout << "Waitting MAKER  HOLD finished\n";
 
             if (nMakerStatus == ForkMakerStatus::MAKER_EXIT)
             {
