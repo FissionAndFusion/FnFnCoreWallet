@@ -133,7 +133,8 @@ public:
                                 EConfigType::RPCSERVER, 
                                 EConfigType::STORAGE,
                                 EConfigType::DBPSERVER,
-                                EConfigType::DBPCLIENT
+                                EConfigType::DBPCLIENT,
+                                EConfigType::FORKMINT
                              >(cmd);
             }
             case EModeType::CONSOLE:
