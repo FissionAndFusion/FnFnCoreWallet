@@ -471,9 +471,14 @@ void CForkBlockMaker::BlockMakerThreadFunc()
                 break;
             }
         
-            pWorldLine->GetBlockDelegateAgreement(hashLastBlock, agree.nAgreement, 
-                agree.nWeight, agree.vBallot);
+            if(!pWorldLine->GetBlockDelegateAgreement(hashLastBlock, agree.nAgreement, 
+                agree.nWeight, agree.vBallot))
+            {
+                continue;
+            }
+
             currentAgreement = agree;
+
 
             nMakerStatus = ForkMakerStatus::MAKER_RUN;
         }
@@ -496,7 +501,7 @@ void CForkBlockMaker::BlockMakerThreadFunc()
                 }
             }
         }
-        catch (const exception& e)
+        catch (const std::exception& e)
         {
             WalleveError("Fork Block maker error: %s\n", e.what());
             break;
@@ -553,7 +558,7 @@ void CForkBlockMaker::ExtendedMakerThreadFunc()
         {
             ProcessExtended(agree,hashPrimaryBlock,nPrimaryBlockTime,nPrimaryBlockHeight);
         }
-        catch (const exception& e)
+        catch (const std::exception& e)
         {
             WalleveError("Extended fork block maker error: %s\n", e.what());
             break;
