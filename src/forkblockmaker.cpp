@@ -470,7 +470,7 @@ void CForkBlockMaker::BlockMakerThreadFunc()
         boost::unique_lock<boost::mutex> lock(mutex);
         hashPrimaryBlock    = hashLastBlock;
         nPrimaryBlockTime   = nLastBlockTime;
-        nPrimaryBlockHeight = nLastBlockHeight; 
+        nPrimaryBlockHeight = nLastBlockHeight;
     }
 
     // run state machine
@@ -483,7 +483,7 @@ void CForkBlockMaker::BlockMakerThreadFunc()
         {
             boost::unique_lock<boost::mutex> lock(mutex);
 
-            while(nMakerStatus == ForkMakerStatus::MAKER_HOLD)
+            while(nMakerStatus == ForkMakerStatus::MAKER_HOLD && nMakerStatus != ForkMakerStatus::MAKER_EXIT)
             {
                 std::cout << "Waitting MAKER not HOLD start\n";
                 cond.wait(lock);
@@ -566,7 +566,7 @@ void CForkBlockMaker::ExtendedMakerThreadFunc()
         {
             boost::unique_lock<boost::mutex> lock(mutex);
             
-            while(nMakerStatus != ForkMakerStatus::MAKER_HOLD)
+            while(nMakerStatus != ForkMakerStatus::MAKER_HOLD && nMakerStatus != ForkMakerStatus::MAKER_EXIT)
             {
                 std::cout << "Waitting MAKER  HOLD start\n";
                 cond.wait(lock);
