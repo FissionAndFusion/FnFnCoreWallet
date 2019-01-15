@@ -1008,6 +1008,8 @@ bool CBlockBase::GetForkBlockInv(const uint256& hashFork,const CBlockLocator& lo
 
 bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
 {
+    CWalleveReadLock rlock(rwAccess);
+
     int nLevel = nCheckLevel;
     if(nCheckLevel < 0)
     {
