@@ -478,7 +478,6 @@ void CForkBlockMaker::BlockMakerThreadFunc()
     std::cout << "Run non-extend block state machine \n";
     for (;;)
     {   
-        std::cout << "########################################### \n";
         CBlockMakerAgreement agree;
         {
             boost::unique_lock<boost::mutex> lock(mutex);
@@ -538,8 +537,6 @@ void CForkBlockMaker::BlockMakerThreadFunc()
             WalleveError("Fork Block maker error: %s\n", e.what());
             break;
         }
-
-        std::cout << "########################################### \n";
     } // end for loop
 
     WalleveLog(" Fork Block maker exited\n");
@@ -561,7 +558,6 @@ void CForkBlockMaker::ExtendedMakerThreadFunc()
     std::cout << "Run extend block state machine \n";
     for (;;)
     {
-        std::cout << "########################################### \n";
         CBlockMakerAgreement agree; 
         {
             boost::unique_lock<boost::mutex> lock(mutex);
@@ -572,6 +568,8 @@ void CForkBlockMaker::ExtendedMakerThreadFunc()
                 cond.wait(lock);
                 std::cout << "Waitting MAKER  HOLD end\n";
             }
+
+            std::cout << "Waitting MAKER  HOLD finished\n";
 
             if (nMakerStatus == ForkMakerStatus::MAKER_EXIT)
             {
@@ -602,7 +600,6 @@ void CForkBlockMaker::ExtendedMakerThreadFunc()
             WalleveError("Extended fork block maker error: %s\n", e.what());
             break;
         }
-        std::cout << "########################################### \n";
     } // end for loop
 
     WalleveLog("Extended fork block maker exited \n");
