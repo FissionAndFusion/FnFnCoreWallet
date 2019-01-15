@@ -262,6 +262,7 @@ bool CMPSecretShare::Collect(const uint256& nIdentFrom,const map<uint256,vector<
 
     if (!GetParticipantRange(nIdentFrom,nIndexFrom,nWeightFrom))
     {
+        std::cout << "GetParticipantRange false\n";
         return false;
     }
 
@@ -272,6 +273,7 @@ bool CMPSecretShare::Collect(const uint256& nIdentFrom,const map<uint256,vector<
         const vector<uint256>& vShare = (*mi).second;
         if (nWeightFrom != vShare.size())
         {
+            std::cout << "nWeightFrom != vShare.size()\n";
             return false;
         } 
 
@@ -281,6 +283,7 @@ bool CMPSecretShare::Collect(const uint256& nIdentFrom,const map<uint256,vector<
             {
                 if (myBox.Polynomial(nThresh,nIndexFrom + i) != vShare[i])
                 {
+                    std::cout << "myBox.Polynomial(nThresh,nIndexFrom + i) != vShare[i]\n";
                     return false;
                 } 
             }
@@ -290,6 +293,7 @@ bool CMPSecretShare::Collect(const uint256& nIdentFrom,const map<uint256,vector<
         map<uint256,CMPParticipant>::iterator it = mapParticipant.find((*mi).first);
         if (it == mapParticipant.end())
         {
+            std::cout << "mapParticipant cannot finded\n";
             return false;
         }
 
@@ -302,6 +306,7 @@ bool CMPSecretShare::Collect(const uint256& nIdentFrom,const map<uint256,vector<
                 return p->VerifyShare(nThresh, nIndexFrom, *pVecShare);
             }))
     {
+        std::cout << "computer.ExecuteUntil false\n";
         return false;
     }
 

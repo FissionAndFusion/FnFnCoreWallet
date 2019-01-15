@@ -643,6 +643,11 @@ bool CWorldLine::GetBlockDelegateAgreement(const uint256& hashBlock,uint256& nAg
         return false;
     }
 
+    if(block.IsProofOfWork())
+    {
+        return false;
+    }
+
     map<CDestination,size_t> mapWeight;
     map<CDestination,vector<unsigned char> > mapEnrollData;
 
@@ -654,6 +659,7 @@ bool CWorldLine::GetBlockDelegateAgreement(const uint256& hashBlock,uint256& nAg
     map<CDestination,size_t> mapBallot;
 
     delegate::CMvDelegateVerify verifier(mapWeight,mapEnrollData);
+    std::cout << "block vchProof size " << block.vchProof.size() << '\n';
     if (!verifier.VerifyProof(block.vchProof,nAgreement,nWeight,mapBallot))
     {
         WalleveLog("GetBlockDelegateAgreement : Invalid block proof : %s \n",hashBlock.ToString().c_str());
