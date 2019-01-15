@@ -476,6 +476,7 @@ void CForkBlockMaker::BlockMakerThreadFunc()
     // run state machine
 
     std::cout << "Run non-extend block state machine \n";
+    uint256 preHashPrimaryBlock;
     for (;;)
     {   
         CBlockMakerAgreement agree;
@@ -491,12 +492,25 @@ void CForkBlockMaker::BlockMakerThreadFunc()
             {
                 break;
             }
+
+            
+            while(preHashPrimaryBlock == hashLastBlock && nMakerStatus != ForkMakerStatus::MAKER_EXIT)
+            {
+                cond.wait(lock);
+            }
+
+            if (nMakerStatus == ForkMakerStatus::MAKER_EXIT)
+            {
+                break;
+            }
+
         
             if(!pWorldLine->GetBlockDelegateAgreement(hashLastBlock, agree.nAgreement, 
                 agree.nWeight, agree.vBallot))
             {
                 std::cout << "called GetBlockDelegateAgreement failed: " << 
                     hashLastBlock.ToString() << '\n';
+                preHashPrimaryBlock = hashLastBlock;
                 continue;
             }
 
@@ -533,6 +547,8 @@ void CForkBlockMaker::BlockMakerThreadFunc()
                     nMakerStatus = nNextStatus;
                 }
             }
+
+            preHashPrimaryBlock = hashLastBlock;
         }
         catch (const std::exception& e)
         {
