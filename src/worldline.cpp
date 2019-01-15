@@ -645,6 +645,7 @@ bool CWorldLine::GetBlockDelegateAgreement(const uint256& hashBlock,uint256& nAg
 
     if(block.IsProofOfWork())
     {
+        std::cout << "block is PoW \n";
         return false;
     }
 
