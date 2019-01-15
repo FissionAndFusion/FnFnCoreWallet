@@ -45,13 +45,13 @@ static const auto ___ConfigTypeTemplate = std::make_tuple(
     (CMvBasicConfig*)NULL,
     (CMvForkConfig*)NULL, 
     (CMvMintConfig*)NULL,
-    (CMvForkNodeMintConfig*)NULL, 
     (CMvNetworkConfig*)NULL,
     (CMvRPCServerConfig*)NULL, 
     (CMvRPCClientConfig*)NULL, 
     (CMvStorageConfig*)NULL,
     (CMvDbpServerConfig*)NULL,
-    (CMvDbpClientConfig*)NULL);
+    (CMvDbpClientConfig*)NULL,
+    (CMvForkNodeMintConfig*)NULL);
 }  // namespace config_type
 
 }  // namespace multiverse
