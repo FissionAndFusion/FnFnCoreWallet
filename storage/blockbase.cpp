@@ -1010,6 +1010,8 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
 {
     CWalleveReadLock rlock(rwAccess);
 
+    Log("B", "Check consistency with parameters check-level:%d and check-depth:%d.\n", nCheckLevel, nCheckDepth);
+
     int nLevel = nCheckLevel;
     if(nCheckLevel < 0)
     {
@@ -1024,6 +1026,7 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
     vector<CBlockDBFork> vFork;
     if(!dbBlock.FetchFork(vFork))
     {
+        Error("B", "Fetch fork failed.\n");
         return false;
     }
 
@@ -1035,17 +1038,20 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
         CBlockIndex* pBlockRefIndex = GetIndex(fork.hashRef);
         if(!pBlockRefIndex)
         {
+            Error("B", "Get referenced block index failed.\n");
             return false;
         }
 
         boost::shared_ptr<CBlockFork> spFork = GetFork(fork.hashFork);
         if(NULL == spFork)
         {
+            Error("B", "Get fork failed.\n");
             return false;
         }
         CBlockIndex* pLastBlock = spFork->GetLast();
         if(NULL == pLastBlock)
         {
+            Error("B", "Get last block index of current fork failed.\n");
             return false;
         }
 
@@ -1068,6 +1074,7 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
             CBlockEx block;
             if(!tsBlock.ReadDirect(block, pIndex->nFile, pIndex->nOffset))
             {
+                Error("B", "Retrieve block from file directly failed.\n");
                 return false;
             }
 
@@ -1082,6 +1089,7 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
                      : (!block.IsVacant() && pIndex->txidMint == block.txMint.GetHash() && pIndex->nMintType == block.txMint.nType))
                 ))
             {
+                Error("B", "Block info are not consistent in db and file.\n");
                 return false;
             }
 
@@ -1092,6 +1100,7 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
                     CTransaction tx;
                     if (!tsBlock.ReadDirect(tx, pTxIndex.nFile, pTxIndex.nOffset))
                     {
+                        Error("B", "Retrieve tx from file directly failed.\n");
                         return false;
                     }
 
@@ -1114,10 +1123,12 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
                 CTxIndex pTxIdx;
                 if(!dbBlock.RetrieveTxIndex(pIndex->txidMint, pTxIdx))
                 {
+                    Error("B", "Retrieve mint tx index from db failed.\n");
                     return false;
                 }
                 if(!lmdChkTx(pIndex->txidMint, pTxIdx))
                 {
+                    Error("B", "Mint tx info are not consistent in db and file.\n");
                     return false;
                 }
 
@@ -1127,10 +1138,12 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
                     const uint256& txid = tx.GetHash();
                     if(!dbBlock.RetrieveTxIndex(txid, pTxIdx))
                     {
+                        Error("B", "Retrieve token tx index from db failed.\n");
                         return false;
                     }
                     if(!lmdChkTx(txid, pTxIdx))
                     {
+                        Error("B", "Token tx info are not consistent in db and file.\n");
                         return false;
                     }
                 }
@@ -1146,6 +1159,7 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
                 {
                     if(!dbBlock.RetrieveDelegate(block.GetHash(), 0, mapNextBlockDelegate))
                     {
+                        Error("B", "Retrieve the latest delegate record from db failed.\n");
                         return false;
                     }
                     fIsLastBlock = false;
@@ -1155,10 +1169,12 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
                     map<CDestination, int64> mapPrevBlockDelegate;
                     if(!dbBlock.RetrieveDelegate(block.GetHash(), 0, mapPrevBlockDelegate))
                     {
+                        Error("B", "Retrieve the following previous delegate record from db failed.\n");
                         return false;
                     }
                     if(mapNextBlockDelegate != mapPrevBlockDelegate)
                     {
+                        Error("B", "Delegate records followed one by one do not match.\n");
                         return false;
                     }
                     mapNextBlockDelegate = mapPrevBlockDelegate;
@@ -1198,6 +1214,7 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
                         CTxIndex txIdx;
                         if(!dbBlock.RetrieveTxIndex(tx.GetHash(), txIdx))
                         {
+                            Error("B", "Retrieve enroll tx index from table transaction failed.\n");
                             return false;
                         }
                         const uint32& nFile = txIdx.nFile;
@@ -1210,6 +1227,7 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
                 {
                     if(delegate.second < 0)
                     {
+                        Error("B", "Amount on delegate template address must not be less than zero.\n");
                         return false;
                     }
                 }
@@ -1220,6 +1238,7 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
                 map<CDestination, pair<uint32, uint32>> mapRes;
                 if(!dbBlock.RetrieveEnroll(block.hashPrev, setBlockRange, mapRes))
                 {
+                    Error("B", "Retrieve enroll tx records from table enroll failed.\n");
                     return false;
                 }
                 map<CDestination, pair<uint32, uint32>> mapResComp;
@@ -1233,6 +1252,7 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
                 }
                 if(mapRes != mapResComp)
                 {
+                    Error("B", "Enroll transactions in tables enroll and transaction do not match.\n");
                     return false;
                 }
             }
@@ -1278,12 +1298,14 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
             //compare unspent with transaction
             if(!dbBlock.CompareRangedUnspentTx(fork.hashFork, mapUnspent))
             {
+                Error("B", "Ranged unspent records do not match with full collection of unspent.\n");
                 return false;
             }
         }
 
     }
 
+    Log("B", "Data consistency verified.\n");
     return true;
 }
 
