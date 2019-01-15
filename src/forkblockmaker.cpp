@@ -496,11 +496,17 @@ void CForkBlockMaker::BlockMakerThreadFunc()
                 break;
             }
         
-            pWorldLine->GetBlockDelegateAgreement(hashLastBlock, agree.nAgreement, 
-                agree.nWeight, agree.vBallot);
+            if(!pWorldLine->GetBlockDelegateAgreement(hashLastBlock, agree.nAgreement, 
+                agree.nWeight, agree.vBallot))
+            {
+                std::cout << "called GetBlockDelegateAgreement failed: " << 
+                    hashLastBlock.ToString() << '\n';
+                continue;
+            }
+
             currentAgreement = agree;
 
-            std::cout << "called GetBlockDelegateAgreement result: \n";
+            std::cout << "called GetBlockDelegateAgreement success: \n";
             std::cout << "Agreement: " << agree.nAgreement.ToString() << '\n';
             std::cout << "Weight: " << agree.nWeight << '\n';
             std::cout << "vBallot size: " << agree.vBallot.size() << '\n';
@@ -532,7 +538,7 @@ void CForkBlockMaker::BlockMakerThreadFunc()
                 }
             }
         }
-        catch (const exception& e)
+        catch (const std::exception& e)
         {
             WalleveError("Fork Block maker error: %s\n", e.what());
             break;
@@ -591,7 +597,7 @@ void CForkBlockMaker::ExtendedMakerThreadFunc()
             std::cout << "start Process Extended Block\n";
             ProcessExtended(agree,hashPrimaryBlock,nPrimaryBlockTime,nPrimaryBlockHeight);
         }
-        catch (const exception& e)
+        catch (const std::exception& e)
         {
             WalleveError("Extended fork block maker error: %s\n", e.what());
             break;
