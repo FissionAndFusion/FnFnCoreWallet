@@ -35,7 +35,8 @@ enum class EConfigType
     RPCCLIENT,  // CMvRPCClientConfig
     STORAGE,    // CMvStorageConfig
     DBPSERVER,  // CMvDbpServerConfig
-    DBPCLIENT   // CMvDbpClientConfig
+    DBPCLIENT,  // CMvDbpClientConfig
+    FORKMINT    // CMvForkNodeMintConfig
 };
 
 namespace config_type
