@@ -38,6 +38,7 @@ public:
                 ++nMatch;
             }
         }
+        return true;
     };
 
 public:
