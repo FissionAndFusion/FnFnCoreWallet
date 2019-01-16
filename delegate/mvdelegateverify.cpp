@@ -33,6 +33,12 @@ bool CMvDelegateVerify::VerifyProof(const vector<unsigned char>& vchProof,uint25
         }
         is >> vPublish;
         bool fCompleted = false;
+
+
+    for (auto& x: vPublish)
+    {
+        cout << "+++++++++ " << x.ToString() << endl;
+    }
         for (int i = 0;i < vPublish.size();i++)
         {
             const CMvDelegateData& delegateData = vPublish[i];
