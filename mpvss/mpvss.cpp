@@ -384,6 +384,7 @@ bool CMPSecretShare::VerifySignature(const uint256& nIdentFrom,const uint256& ha
     map<uint256,CMPParticipant>::iterator it = mapParticipant.find(nIdentFrom);
     if (it == mapParticipant.end())
     {
+        std::cout << "Cannot find  mapParticipant in VerifySignature \n";
         return false;
     }
     CMPParticipant& participant = (*it).second;

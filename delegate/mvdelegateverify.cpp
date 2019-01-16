@@ -39,6 +39,7 @@ bool CMvDelegateVerify::VerifyProof(const vector<unsigned char>& vchProof,uint25
             if (!VerifySignature(delegateData) 
                 || !witness.Collect(delegateData.nIdentFrom,delegateData.mapShare,fCompleted))
             {
+                std::cout << "VerifySignature return false or Collect return false\n";
                 return false;
             }
         }
@@ -46,10 +47,12 @@ bool CMvDelegateVerify::VerifyProof(const vector<unsigned char>& vchProof,uint25
     catch (exception& e) 
     {
         StdError(__PRETTY_FUNCTION__, e.what());
+        std::cout << "CMvDelegateVerify::VerifyProof exception " << e.what() << '\n';
         return false;
     } 
 
     GetAgreement(nAgreement,nWeight,mapBallot);
     
+    std::cout << " nAgreement == nAgreementParse : " << (nAgreement == nAgreementParse) << '\n';
     return (nAgreement == nAgreementParse);
 }

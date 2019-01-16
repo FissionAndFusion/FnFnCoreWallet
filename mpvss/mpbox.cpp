@@ -42,8 +42,10 @@ static inline bool MPEccVerify(const uint256& pubkey,const uint256& rG,const uin
     if (P.Unpack(pubkey.begin()) && R.Unpack(rG.begin()))
     {
         S.Generate(signature);
+        std::cout << "S == (P + R.ScalarMult(hash)): " << (S == (P + R.ScalarMult(hash))) << '\n';
         return (S == (P + R.ScalarMult(hash)));
     }
+    std::cout << "MPEccVerify return false \n";
     return false;
 }
 
@@ -176,6 +178,7 @@ bool CMPSealedBox::VerifySignature(const uint256& hash,const uint256& nSignR,con
 {
     if (IsNull())
     {
+        std::cout << "isNUll in CMPSealedBox::VerifySignature\n";
         return false;
     }
     return MPEccVerify(PubKey(),nSignR,nSignS,hash);
