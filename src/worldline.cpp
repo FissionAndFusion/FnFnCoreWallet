@@ -643,6 +643,11 @@ bool CWorldLine::GetBlockDelegateAgreement(const uint256& hashBlock,uint256& nAg
         return false;
     }
 
+    if(block.IsProofOfWork())
+    {
+        return false;
+    }
+
     map<CDestination,size_t> mapWeight;
     map<CDestination,vector<unsigned char> > mapEnrollData;
 
