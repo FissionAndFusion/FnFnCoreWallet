@@ -50,7 +50,7 @@ bool CWorldLine::WalleveHandleInvoke()
     }
 
     if (!CheckContainer())
-    {
+    {assert(0);
         cntrBlock.Clear();
         WalleveLog("Block container is invalid,try rebuild from block storage\n");
         // Rebuild ... 

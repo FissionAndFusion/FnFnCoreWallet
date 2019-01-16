@@ -4,6 +4,8 @@
 
 #include "blockbase.h"
 #include "template.h"
+#include <boost/timer.hpp>
+#include <boost/progress.hpp>
 
 using namespace std;
 using namespace boost::filesystem;
@@ -1008,7 +1010,14 @@ bool CBlockBase::GetForkBlockInv(const uint256& hashFork,const CBlockLocator& lo
 
 bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
 {
+    boost::progress_timer pt;
+    boost::timer t_lock;
+
     CWalleveReadLock rlock(rwAccess);
+
+    Log("B", "Getting lock duration: {%d}s.\n", t_lock.elapsed());
+
+    boost::timer t_check;
 
     Log("B", "Check consistency with parameters check-level:%d and check-depth:%d.\n", nCheckLevel, nCheckDepth);
 
@@ -1022,6 +1031,8 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
         nLevel = 3;
     }
     int nDepth = nCheckDepth;
+
+    Log("B", "Consistency checking level is %d\n", nLevel);
 
     vector<CBlockDBFork> vFork;
     if(!dbBlock.FetchFork(vFork))
@@ -1060,6 +1071,7 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
         if(0 == nDepth || pLastBlock->nHeight < nDepth)
         {
             nDepth = pLastBlock->nHeight;
+            Log("B", "Consistency checking depth is {%d} for fork:{%s}\n", nDepth, fork.hashFork.ToString().c_str());
         }
 
         CBlockIndex* pIndex = pLastBlock;
@@ -1306,6 +1318,9 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
     }
 
     Log("B", "Data consistency verified.\n");
+
+    Log("B", "Checking duration: {%d}s.\n", t_check.elapsed());
+
     return true;
 }
 
