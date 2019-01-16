@@ -461,7 +461,8 @@ void CForkBlockMaker::BlockMakerThreadFunc()
         {
             boost::unique_lock<boost::mutex> lock(mutex);
 
-            while(nMakerStatus == ForkMakerStatus::MAKER_HOLD && nMakerStatus != ForkMakerStatus::MAKER_EXIT)
+            while((nMakerStatus == ForkMakerStatus::MAKER_HOLD || nMakerStatus == ForkMakerStatus::MAKER_SKIP)
+                && nMakerStatus != ForkMakerStatus::MAKER_EXIT)
             {
                 cond.wait(lock);
             }
@@ -474,12 +475,12 @@ void CForkBlockMaker::BlockMakerThreadFunc()
             if(!pWorldLine->GetBlockDelegateAgreement(hashLastBlock, agree.nAgreement, 
                 agree.nWeight, agree.vBallot))
             {
+                nMakerStatus = ForkMakerStatus::MAKER_SKIP;
                 continue;
             }
 
             currentAgreement = agree;
-
-
+            
             nMakerStatus = ForkMakerStatus::MAKER_RUN;
         }
 
