@@ -36,10 +36,17 @@ bool CMvDelegateVerify::VerifyProof(const vector<unsigned char>& vchProof,uint25
         for (int i = 0;i < vPublish.size();i++)
         {
             const CMvDelegateData& delegateData = vPublish[i];
-            if (!VerifySignature(delegateData) 
-                || !witness.Collect(delegateData.nIdentFrom,delegateData.mapShare,fCompleted))
+            bool bVerify = VerifySignature(delegateData);
+            if(!bVerify)
             {
-                std::cout << "VerifySignature return false or Collect return false\n";
+                std::cout << "VerifySignature return: false\n";
+                return false;
+            }
+            
+            bool bCollect = witness.Collect(delegateData.nIdentFrom,delegateData.mapShare,fCompleted);
+            if (!bCollect)
+            {
+                std::cout << "witness.Collect return false\n";
                 return false;
             }
         }
