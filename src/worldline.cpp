@@ -595,6 +595,8 @@ bool CWorldLine::GetBlockDelegateEnrolled(const uint256& hashBlock,map<CDestinat
         WalleveLog("GetBlockDelegateEnrolled : Retrieve block Index Error: %s \n",hashBlock.ToString().c_str());
         return false;
     }
+
+    std::cout << "GetEnrolled height " << pIndex->nHeight << std::endl;
     int64 nDelegateWeightRatio = (pIndex->GetMoneySupply() + DELEGATE_THRESH - 1) / DELEGATE_THRESH;
 
     if (pIndex->GetBlockHeight() < MV_CONSENSUS_ENROLL_INTERVAL)
@@ -619,7 +621,6 @@ bool CWorldLine::GetBlockDelegateEnrolled(const uint256& hashBlock,map<CDestinat
         WalleveLog("GetBlockDelegateEnrolled : Retrieve Enroll Error: %s \n",hashBlock.ToString().c_str());
         return false;
     }
-    std::cout << "GetEnrolled " << pIndex->GetBlockHash().ToString() << std::endl;
 
     for (map<CDestination,int64>::iterator it = mapDelegate.begin();it != mapDelegate.end();++it)
     {

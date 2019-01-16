@@ -158,7 +158,7 @@ void CMvDelegate::GetAgreement(int nTargetHeight,uint256& nAgreement,size_t& nWe
 {
     nAgreement = 0;
     nWeight = 0;
-
+std::cout << "CMvDelegate::GetAgreement height: " << nTargetHeight;
     map<int,CMvDelegateVote>::iterator it = mapVote.find(nTargetHeight);
     if (it != mapVote.end())
     {
