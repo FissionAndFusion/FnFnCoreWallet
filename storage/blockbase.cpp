@@ -4,8 +4,7 @@
 
 #include "blockbase.h"
 #include "template.h"
-#include <boost/timer.hpp>
-#include <boost/progress.hpp>
+#include <boost/timer/timer.hpp>
 
 using namespace std;
 using namespace boost::filesystem;
@@ -1010,14 +1009,15 @@ bool CBlockBase::GetForkBlockInv(const uint256& hashFork,const CBlockLocator& lo
 
 bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
 {
-    boost::progress_timer pt;
-    boost::timer t_lock;
+    boost::timer::cpu_timer t_lock;
+    t_lock.start();
 
     CWalleveReadLock rlock(rwAccess);
 
-    Log("B", "Getting lock duration: {%d}s.\n", t_lock.elapsed());
+    Log("B", "Getting lock duration: {%s}.\n", t_lock.format().c_str());
 
-    boost::timer t_check;
+    boost::timer::cpu_timer t_check;
+    t_check.start();
 
     Log("B", "Check consistency with parameters check-level:%d and check-depth:%d.\n", nCheckLevel, nCheckDepth);
 
@@ -1043,11 +1043,8 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
 
     for(const auto& fork : vFork)
     {
-        boost::timer t_fork;
-
-        sleep(2);
-
-        Log("B", "testing timer: {%.9f}s. max(%.9f)s-min(%.9f)s\n", t_fork.elapsed(), t_fork.elapsed_max(), t_fork.elapsed_min());
+        boost::timer::cpu_timer t_fork;
+        t_fork.start();
 
         //checking of level 0: fork/block
 
@@ -1319,7 +1316,7 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
 
             pIndex = pIndex->pPrev;
         }
-        Log("B", "Checking duration before comparing unspent: {%d}s.\n", t_fork.elapsed());
+        Log("B", "Checking duration before comparing unspent: {%s}.\n", t_fork.format().c_str());
         if(nLevel >= 3)
         {
             //compare unspent with transaction
@@ -1330,12 +1327,12 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
             }
         }
 
-        Log("B", "Checking duration of fork{%s} : {%d}s.\n", fork.hashFork.ToString().c_str(), t_fork.elapsed());
+        Log("B", "Checking duration of fork{%s} : {%s}.\n", fork.hashFork.ToString().c_str(), t_fork.format().c_str());
     }
 
     Log("B", "Data consistency verified.\n");
 
-    Log("B", "Checking duration: {%d}s.\n", t_check.elapsed());
+    Log("B", "Checking duration: {%s}s.\n", t_check.format().c_str());
 
     return true;
 }
