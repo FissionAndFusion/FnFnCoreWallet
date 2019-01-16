@@ -1235,6 +1235,7 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
                     }
                 }
 
+                vector<CDestination> vDestNull;
                 for(const auto& delegate : mapNextBlockDelegate)
                 {
                     if(delegate.second < 0)
@@ -1242,6 +1243,14 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
                         Error("B", "Amount on delegate template address must not be less than zero.\n");
                         return false;
                     }
+                    if(delegate.second == 0)
+                    {
+                        vDestNull.push_back(delegate.first);
+                    }
+                }
+                for(const auto& dest : vDestNull)
+                {
+                    mapNextBlockDelegate.erase(dest);
                 }
 
                 //compare enroll ranged in argument of nDepth with table enroll
