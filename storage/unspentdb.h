@@ -23,9 +23,10 @@ class CForkUnspentCheckWalker : public CForkUnspentDBWalker
 {
 public:
     CForkUnspentCheckWalker(const std::map<uint256, CTxUnspent>& mapUnspent)
-            : nMatch(0), mapUnspentTx(mapUnspent) {};
+            : nMatch(0), nAll(0), nRanged(mapUnspent.size()), mapUnspentTx(mapUnspent) {};
     bool Walk(const CTxOutPoint& txout, const CTxOutput& output) override
     {
+        ++nAll;
         for(const auto& item : mapUnspentTx)
         {
             const CTxUnspent& unspent = item.second;
@@ -41,6 +42,8 @@ public:
 
 public:
     uint64 nMatch;
+    uint64 nAll;
+    uint64 nRanged;
     const std::map<uint256, CTxUnspent>& mapUnspentTx;
 };
 

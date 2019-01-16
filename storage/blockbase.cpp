@@ -1043,6 +1043,12 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
 
     for(const auto& fork : vFork)
     {
+        boost::timer t_fork;
+
+        sleep(2);
+
+        Log("B", "testing timer: {%.9f}s. max(%.9f)s-min(%.9f)s\n", t_fork.elapsed(), t_fork.elapsed_max(), t_fork.elapsed_min());
+
         //checking of level 0: fork/block
 
         //check field refblock of table fork must be in rows in table block
@@ -1313,17 +1319,18 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
 
             pIndex = pIndex->pPrev;
         }
-
+        Log("B", "Checking duration before comparing unspent: {%d}s.\n", t_fork.elapsed());
         if(nLevel >= 3)
         {
             //compare unspent with transaction
             if(!dbBlock.CompareRangedUnspentTx(fork.hashFork, mapUnspent))
             {
-                Error("B", "Ranged unspent records do not match with full collection of unspent.\n");
+                Error("B", "{%d} ranged unspent records do not match with full collection of unspent.\n", mapUnspent.size());
                 return false;
             }
         }
 
+        Log("B", "Checking duration of fork{%s} : {%d}s.\n", fork.hashFork.ToString().c_str(), t_fork.elapsed());
     }
 
     Log("B", "Data consistency verified.\n");

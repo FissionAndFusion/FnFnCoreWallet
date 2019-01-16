@@ -37,6 +37,7 @@ find_package(Boost 1.58.0 REQUIRED COMPONENTS
     date_time
     regex
     unit_test_framework
+    timer
 )
 find_package(OpenSSL 1.0.0 REQUIRED) 
 find_package(MySQL 5.7.20 REQUIRED)

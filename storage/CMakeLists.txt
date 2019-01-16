@@ -36,5 +36,6 @@ target_link_libraries(storage
 	crypto
 	common
 	${MYSQL_LIB}
-        leveldb	
+        leveldb
+	Boost::timer
 )
