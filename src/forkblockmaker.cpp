@@ -92,6 +92,7 @@ bool CForkBlockMaker::HandleEvent(CMvEventBlockMakerUpdate& eventUpdate)
 
     std::cout << "Handle Event ForkBlockMaker \n";
     std::cout << "UpdateEvent Block hash " << hashLastBlock.ToString() << '\n';
+    std::cout << "UpdateEvent Block Time " << nLastBlockTime << '\n';
     std::cout << "UpdateEvent Block Height " << nLastBlockHeight << '\n';
     std::cout << "UpdateEvent Block agreement " << nLastAgreement.ToString() << '\n';
     std::cout << "UpdateEvent Block weight " << nLastWeight << '\n';
