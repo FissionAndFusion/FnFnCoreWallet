@@ -4,6 +4,10 @@
 
 #include "blockdb.h"
 #include "walleve/stream/datastream.h"
+#include <string>
+#include <iostream>
+#include <fstream>
+#include <iomanip>
 
 using namespace std;
 using namespace multiverse::storage;
@@ -822,6 +826,23 @@ bool CBlockDB::InnoDB()
 
 bool CBlockDB::CompareRangedUnspentTx(const uint256& forkIndex, const std::map<uint256, CTxUnspent>& mapUnspent)
 {
+    std::ofstream ranged_unspent("ranged_unspent.txt", std::ios::out | std::ios::app | std::ios::ate);
+    if(!ranged_unspent)
+    {
+        assert(0);
+    }
+    for(const auto& it : mapUnspent)
+    {
+        const CTxUnspent& unspent = it.second;
+
+        ranged_unspent << std::setw(64) << unspent.hash.ToString() << " "
+                    << std::setw(2) << std::to_string(unspent.n) << " "
+                    << std::setw(57) << unspent.output.destTo.GetHex() << " "
+                    << std::setw(20) << std::to_string(unspent.output.nAmount) << " "
+                    << std::setw(4) << std::to_string(unspent.output.nLockUntil)
+                    << std::endl;
+    }
+
     CForkUnspentCheckWalker walker(mapUnspent);
     if(!dbUnspent.WalkThrough(forkIndex, walker))
     {

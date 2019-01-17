@@ -9,6 +9,11 @@
 #include "walleve/stream/stream.h"
 #include <boost/thread.hpp>
 #include <boost/function.hpp>
+#include <string>
+#include <iostream>
+#include <fstream>
+#include <iomanip>
+#include <transaction.h>
 
 namespace walleve
 {
@@ -260,15 +265,41 @@ protected:
 
             if (!dbEngine->MoveFirst())
                 return false;
-            
+
+            std::ofstream all_unspent("all_unspent.txt", std::ios::out | std::ios::app | std::ios::ate);
+            if(!all_unspent)
+            {
+                assert(0);
+            }
             for (;;)
             { 
                 CWalleveBufStream ssKey,ssValue;
                 if (!dbEngine->MoveNext(ssKey,ssValue))
                     break;
 
-                if (!fnWalker(ssKey,ssValue))
-                    break;                               
+/*                if (!fnWalker(ssKey,ssValue))
+                    break;          */
+                //dump all unspent to file
+                CTxOutPoint outpoint;
+                CTxOutput output;
+                ssKey >> outpoint;
+                ssValue >> output;
+                all_unspent << std::setw(64) << outpoint.hash.ToString() << " "
+                           << std::setw(2) << std::to_string(outpoint.n) << " "
+                           << std::setw(57) << output.destTo.GetHex() << " "
+                           << std::setw(20) << std::to_string(output.nAmount) << " "
+                           << std::setw(4) << std::to_string(output.nLockUntil)
+                           << std::endl;
+                //CMvAddress addr(output.destTo);
+                if(output.destTo.IsPubKey())
+                {
+                    //std::cout << "IsPubKey" << std::endl;
+                    all_unspent << "output.destTo<IsPubKey>:" << output.destTo.GetHex() << std::endl;
+                } else if(output.destTo.IsTemplate())
+                {
+                    //std::cout << "IsTemplate" << std::endl;
+                }
+                //break;
             }
             return true;
         }

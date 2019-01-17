@@ -1014,7 +1014,7 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
 
     CWalleveReadLock rlock(rwAccess);
 
-    Log("B", "Getting lock duration: {%s}.\n", t_lock.format().c_str());
+    Log("B", "Getting lock duration ===> %s.\n", t_lock.format().c_str());
 
     boost::timer::cpu_timer t_check;
     t_check.start();
@@ -1316,7 +1316,7 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
 
             pIndex = pIndex->pPrev;
         }
-        Log("B", "Checking duration before comparing unspent: {%s}.\n", t_fork.format().c_str());
+        Log("B", "Checking duration before comparing unspent ===> %s\n", t_fork.format().c_str());
         if(nLevel >= 3)
         {
             //compare unspent with transaction
@@ -1327,12 +1327,12 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
             }
         }
 
-        Log("B", "Checking duration of fork{%s} : {%s}.\n", fork.hashFork.ToString().c_str(), t_fork.format().c_str());
+        Log("B", "Checking duration of fork{%s} ===> %s\n", fork.hashFork.ToString().c_str(), t_fork.format().c_str());
     }
 
     Log("B", "Data consistency verified.\n");
 
-    Log("B", "Checking duration: {%s}s.\n", t_check.format().c_str());
+    Log("B", "Checking duration ===> %s\n", t_check.format().c_str());
 
     return true;
 }
