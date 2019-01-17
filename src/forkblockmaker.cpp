@@ -350,6 +350,7 @@ void CForkBlockMaker::CreatePiggyback(const CForkBlockMakerProfile& profile,cons
     {
         const uint256& hashFork = (*it).first;
         CForkStatus& status = (*it).second;
+        std::cout << std::dec;
         std::cout << "Fork Hash " << hashFork.ToString() << '\n';
         std::cout << "Fork status last block height " << status.nLastBlockHeight << '\n';
         std::cout << "Fork status last block time " << status.nLastBlockTime << '\n';
