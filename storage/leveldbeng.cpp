@@ -184,6 +184,22 @@ bool CLevelDBEngine::MoveFirst()
     return true;
 }
 
+bool CLevelDBEngine::MoveTo(CWalleveBufStream& ssKey)
+{
+    delete piter;
+
+    leveldb::Slice slKey(ssKey.GetData(), ssKey.GetSize());
+
+    if ((piter = pdb->NewIterator(readoptions)) == NULL)
+    {
+        return false;
+    }
+    
+    piter->Seek(slKey);
+
+    return true;
+}
+
 bool CLevelDBEngine::MoveNext(CWalleveBufStream& ssKey,CWalleveBufStream& ssValue)
 {
     if (piter == NULL || !piter->Valid())
