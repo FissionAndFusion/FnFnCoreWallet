@@ -491,7 +491,7 @@ void CForkBlockMaker::BlockMakerThreadFunc()
             
             if (!agree.IsProofOfWork())
             {
-                ProcessDelegatedProofOfStake(block,agree,nPrimaryBlockHeight - 1); 
+                ProcessDelegatedProofOfStake(block,agree,nLastBlockHeight - 1); 
             }
             
             {
