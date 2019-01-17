@@ -42,6 +42,7 @@ public:
     bool Remove(walleve::CWalleveBufStream& ssKey);
     bool RemoveAll();
     bool MoveFirst();
+    bool MoveTo(walleve::CWalleveBufStream& ssKey);
     bool MoveNext(walleve::CWalleveBufStream& ssKey,walleve::CWalleveBufStream& ssValue);
 protected:
     std::string path;
