@@ -531,7 +531,7 @@ void CForkBlockMaker::BlockMakerThreadFunc()
             if (!agree.IsProofOfWork())
             {
                 std::cout << "start Process DPoS \n";
-                ProcessDelegatedProofOfStake(block,agree,nPrimaryBlockHeight - 1); 
+                ProcessDelegatedProofOfStake(block,agree,nLastBlockHeight - 1); 
             }
             
             {

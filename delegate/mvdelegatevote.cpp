@@ -246,11 +246,6 @@ void CMvDelegateVote::GetProof(vector<unsigned char>& vchProof)
 {
     CWalleveODataStream os(vchProof);
     os << vCollected;
-
-    for (auto& x: vCollected)
-    {
-        cout << "---------- " << x.ToString() << endl;
-    }
 }
 
 bool CMvDelegateVote::VerifySignature(const CMvDelegateData& delegateData)
