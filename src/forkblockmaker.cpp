@@ -350,8 +350,11 @@ void CForkBlockMaker::CreatePiggyback(const CForkBlockMakerProfile& profile,cons
     {
         const uint256& hashFork = (*it).first;
         CForkStatus& status = (*it).second;
+        std::cout << "Fork Hash " << hashFork.ToString() << '\n';
         std::cout << "Fork status last block height " << status.nLastBlockHeight << '\n';
         std::cout << "Fork status last block time " << status.nLastBlockTime << '\n';
+        std::cout << "nLastBlockTime " << nLastBlockTime << '\n';
+        std::cout << "nPrevHeight " << nPrevHeight << '\n';
         if (hashFork != pCoreProtocol->GetGenesisBlockHash() 
             && status.nLastBlockHeight == nPrevHeight
             && status.nLastBlockTime < nLastBlockTime)
