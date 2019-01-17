@@ -824,9 +824,9 @@ bool CBlockDB::InnoDB()
     return false;
 }
 
-bool CBlockDB::CompareRangedUnspentTx(const uint256& forkIndex, const std::map<uint256, CTxUnspent>& mapUnspent)
+bool CBlockDB::CompareRangedUnspentTx(const uint256& forkIndex, const std::map<CTxOutPoint, CTxUnspent>& mapUnspent)
 {
-    std::ofstream ranged_unspent("ranged_unspent.txt", std::ios::out | std::ios::app | std::ios::ate);
+/*    std::ofstream ranged_unspent("ranged_unspent.txt", std::ios::out | std::ios::app | std::ios::ate);
     if(!ranged_unspent)
     {
         assert(0);
@@ -842,7 +842,7 @@ bool CBlockDB::CompareRangedUnspentTx(const uint256& forkIndex, const std::map<u
                     << std::setw(4) << std::to_string(unspent.output.nLockUntil)
                     << std::endl;
     }
-
+*/
     CForkUnspentCheckWalker walker(mapUnspent);
     if(!dbUnspent.WalkThrough(forkIndex, walker))
     {

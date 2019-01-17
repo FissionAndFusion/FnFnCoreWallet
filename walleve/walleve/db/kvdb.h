@@ -277,10 +277,10 @@ protected:
                 if (!dbEngine->MoveNext(ssKey,ssValue))
                     break;
 
-/*                if (!fnWalker(ssKey,ssValue))
-                    break;          */
+                if (!fnWalker(ssKey,ssValue))
+                    break;
                 //dump all unspent to file
-                CTxOutPoint outpoint;
+/*                CTxOutPoint outpoint;
                 CTxOutput output;
                 ssKey >> outpoint;
                 ssValue >> output;
@@ -298,7 +298,7 @@ protected:
                 } else if(output.destTo.IsTemplate())
                 {
                     //std::cout << "IsTemplate" << std::endl;
-                }
+                }*/
                 //break;
             }
             return true;

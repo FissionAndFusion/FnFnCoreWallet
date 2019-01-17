@@ -22,7 +22,7 @@ public:
 class CForkUnspentCheckWalker : public CForkUnspentDBWalker
 {
 public:
-    CForkUnspentCheckWalker(const std::map<uint256, CTxUnspent>& mapUnspent)
+    CForkUnspentCheckWalker(const std::map<CTxOutPoint, CTxUnspent>& mapUnspent)
             : nMatch(0), nAll(0), nRanged(mapUnspent.size()), mapUnspentTx(mapUnspent) {};
     bool Walk(const CTxOutPoint& txout, const CTxOutput& output) override
     {
@@ -45,7 +45,7 @@ public:
     uint64 nMatch;
     uint64 nAll;
     uint64 nRanged;
-    const std::map<uint256, CTxUnspent>& mapUnspentTx;
+    const std::map<CTxOutPoint, CTxUnspent>& mapUnspentTx;
 };
 
 class CForkUnspentDB : public walleve::CKVDB

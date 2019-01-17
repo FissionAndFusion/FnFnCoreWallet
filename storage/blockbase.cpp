@@ -1080,8 +1080,8 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
         CBlockIndex* pIndex = pLastBlock;
         map<CDestination, int64> mapNextBlockDelegate;
 
-        map<uint256, CTxUnspent> mapUnspent;
-        vector<uint256> vSpentTx;
+        map<CTxOutPoint, CTxUnspent> mapUnspentUTXO;
+        vector<CTxOutPoint> vSpentUTXO;
 
         while(pIndex && pLastBlock->nHeight - pIndex->nHeight < nDepth)
         {
@@ -1284,32 +1284,32 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
             //checking of level 3: unspent
             if(nLevel >= 3)
             {
-                mapUnspent[block.txMint.GetHash()] = CTxUnspent(CTxOutPoint(uint256(), 0)
-                        , CTxOutput(block.txMint.sendTo, block.txMint.nAmount, block.txMint.nLockUntil));
+                mapUnspentUTXO.insert(make_pair(CTxOutPoint(block.txMint.GetHash(), 0), CTxUnspent(CTxOutPoint(block.txMint.GetHash(), 0)
+                                     , CTxOutput(block.txMint.sendTo, block.txMint.nAmount, block.txMint.nLockUntil))));
 
                 for(const auto& tx : block.vtx)
                 {
-                    mapUnspent[tx.GetHash()] = CTxUnspent(tx.vInput[0].prevout, CTxOutput(tx.sendTo, tx.nAmount, tx.nLockUntil));
+                    mapUnspentUTXO.insert(make_pair(tx.vInput[0].prevout, CTxUnspent(tx.vInput[0].prevout, CTxOutput(tx.sendTo, tx.nAmount, tx.nLockUntil))));
                     for(const auto& txin : tx.vInput)
                     {
-                        vSpentTx.push_back(txin.prevout.hash);
+                        vSpentUTXO.push_back(txin.prevout);
                     }
                 }
 
-                vector<uint256> vTxRemoved;
-                for(const auto& spent : vSpentTx)
+                vector<CTxOutPoint> vRemovedUTXO;
+                for(const auto& spent : vSpentUTXO)
                 {
-                    if(mapUnspent.find(spent) != mapUnspent.end())
+                    if(mapUnspentUTXO.find(spent) != mapUnspentUTXO.end())
                     {
-                        mapUnspent.erase(spent);
-                        vTxRemoved.push_back(spent);
+                        mapUnspentUTXO.erase(spent);
+                        vRemovedUTXO.push_back(spent);
                     }
                 }
 
-                for(const auto& txDel : vTxRemoved)
+                for(const auto& txDel : vRemovedUTXO)
                 {
-                    const auto& pos = find(vSpentTx.begin(), vSpentTx.end(), txDel);
-                    vSpentTx.erase(pos);
+                    const auto& pos = find(vSpentUTXO.begin(), vSpentUTXO.end(), txDel);
+                    vSpentUTXO.erase(pos);
                 }
 
             }
@@ -1320,9 +1320,11 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
         if(nLevel >= 3)
         {
             //compare unspent with transaction
-            if(!dbBlock.CompareRangedUnspentTx(fork.hashFork, mapUnspent))
+            if(!dbBlock.CompareRangedUnspentTx(fork.hashFork, mapUnspentUTXO))
             {
-                Error("B", "{%d} ranged unspent records do not match with full collection of unspent.\n", mapUnspent.size());
+
+
+                Error("B", "{%d} ranged unspent records do not match with full collection of unspent.\n", mapUnspentUTXO.size());
                 return false;
             }
         }

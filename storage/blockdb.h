@@ -80,7 +80,7 @@ public:
     bool RetrieveEnroll(const uint256& hashAnchor,const std::set<uint256>& setBlockRange, 
                         std::map<CDestination,std::pair<uint32,uint32> >& mapEnrollTxPos);
     bool InnoDB();
-    bool CompareRangedUnspentTx(const uint256& forkIndex, const std::map<uint256, CTxUnspent>& mapUnspent);
+    bool CompareRangedUnspentTx(const uint256& forkIndex, const std::map<CTxOutPoint, CTxUnspent>& mapUnspent);
 protected:
     bool CreateTable();
     bool LoadFork();
