@@ -179,7 +179,7 @@ public:
     bool CommitBlockView(CBlockView& view,CBlockIndex* pIndexNew);
     bool LoadIndex(CBlockOutline& diskIndex);
     bool LoadTx(CTransaction& tx,uint32 nTxFile,uint32 nTxOffset,uint256& hashFork);
-    bool FilterTx(CTxFilter& filter);
+    bool FilterTx(const uint256& hashFork,CTxFilter& filter);
     bool FilterForkContext(CForkContextFilter& filter);
     bool GetForkBlockLocator(const uint256& hashFork,CBlockLocator& locator);
     bool GetForkBlockInv(const uint256& hashFork,const CBlockLocator& locator,std::vector<uint256>& vBlockHash,size_t nMaxCount);
@@ -235,7 +235,7 @@ protected:
     walleve::CWalleveLog walleveLog;
     bool fDebugLog;
     CBlockDB dbBlock;
-    CTimeSeries tsBlock;
+    CTimeSeriesCached tsBlock;
     std::map<uint256,CBlockIndex*> mapIndex;
     std::map<uint256,boost::shared_ptr<CBlockFork> > mapFork;
 };

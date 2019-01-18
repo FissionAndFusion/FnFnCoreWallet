@@ -272,9 +272,9 @@ bool CWorldLine::GetTxUnspent(const uint256& hashFork,const vector<CTxIn>& vInpu
     return true;
 }
 
-bool CWorldLine::FilterTx(CTxFilter& filter)
+bool CWorldLine::FilterTx(const uint256& hashFork,CTxFilter& filter)
 {
-    return cntrBlock.FilterTx(filter);
+    return cntrBlock.FilterTx(hashFork,filter);
 }
 
 bool CWorldLine::FilterForkContext(CForkContextFilter& filter)
