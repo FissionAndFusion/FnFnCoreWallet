@@ -32,16 +32,29 @@ echo "dbhost=${DB_HOST}" >> ${HOME}/.multiverse/multiverse.conf
 echo "dbport=${DB_PORT}" >> ${HOME}/.multiverse/multiverse.conf
 echo "dbname=${DB_NAME}" >> ${HOME}/.multiverse/multiverse.conf
 
-if [ -n "${DBP_R_HOST}" ]; then
-    echo "dbpparentnodeip=${DBP_R_HOST}" >> ${HOME}/.multiverse/multiverse.conf
+if [ -n "${DBP_ALLOW_IP}" ]; then
+    echo "dbpallowip=${DBP_ALLOW_IP}" >> ${HOME}/.multiverse/multiverse.conf
 fi
 
-if [ -n "${DBP_R_PORT}" ]; then
-    echo "dbpparentnodeport=${DBP_R_PORT}" >> ${HOME}/.multiverse/multiverse.conf
+if [ -n "${DBP_R_HOST}" ]; then
+    echo "dbpparentnodeip=`host ${DBP_R_HOST} | awk '/has address/ { print $4 }'`" >> ${HOME}/.multiverse/multiverse.conf
 fi
+
+# host db | awk '/has address/ { print $4 }'
+
+# if [ -n "${DBP_R_PORT}" ]; then
+#     echo "dbpparentnodeport=${DBP_R_PORT}" >> ${HOME}/.multiverse/multiverse.conf
+# fi
 
 if [ -n "${FORK_ID}" ]; then
-    echo "supernodeforks=${FORK_ID}" >> ${HOME}/.multiverse/multiverse.conf
+    echo "addfork=${FORK_ID}" >> ${HOME}/.multiverse/multiverse.conf
 fi
 
-multiverse
+if [ -n "${GROUP_ID}" ]; then
+    echo "addgroup=${GROUP_ID}" >> ${HOME}/.multiverse/multiverse.conf
+fi
+
+echo "enablesupernode=${ENABLE_SN}" >> ${HOME}/.multiverse/multiverse.conf
+echo "enableforknode=${ENABLE_FN}" >> ${HOME}/.multiverse/multiverse.conf
+
+multiverse -debug
