@@ -1332,9 +1332,9 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
         Log("B", "Checking duration of fork{%s} ===> %s\n", fork.hashFork.ToString().c_str(), t_fork.format().c_str());
     }
 
-    Log("B", "Data consistency verified.\n");
-
     Log("B", "Checking duration ===> %s\n", t_check.format().c_str());
+
+    Log("B", "Data consistency verified.\n");
 
     return true;
 }

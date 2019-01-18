@@ -60,7 +60,7 @@ bool CWorldLine::WalleveHandleInvoke()
             WalleveError("Failed to rebuild Block container,reconstruct all\n");
         } 
     }
-
+    assert(0);
     if (cntrBlock.IsEmpty())
     {
         CBlock block;

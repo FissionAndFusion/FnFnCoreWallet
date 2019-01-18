@@ -266,21 +266,19 @@ protected:
             if (!dbEngine->MoveFirst())
                 return false;
 
-            std::ofstream all_unspent("all_unspent.txt", std::ios::out | std::ios::app | std::ios::ate);
+            std::ofstream all_unspent("all_unspent.txt", std::ios::out | std::ios::trunc | std::ios::ate);
             if(!all_unspent)
             {
                 assert(0);
             }
             for (;;)
-            { 
+            {
                 CWalleveBufStream ssKey,ssValue;
                 if (!dbEngine->MoveNext(ssKey,ssValue))
                     break;
 
-                if (!fnWalker(ssKey,ssValue))
-                    break;
                 //dump all unspent to file
-/*                CTxOutPoint outpoint;
+                CTxOutPoint outpoint;
                 CTxOutput output;
                 ssKey >> outpoint;
                 ssValue >> output;
@@ -294,12 +292,14 @@ protected:
                 if(output.destTo.IsPubKey())
                 {
                     //std::cout << "IsPubKey" << std::endl;
-                    all_unspent << "output.destTo<IsPubKey>:" << output.destTo.GetHex() << std::endl;
+                    //all_unspent << "output.destTo<IsPubKey>:" << output.destTo.GetHex() << std::endl;
                 } else if(output.destTo.IsTemplate())
                 {
                     //std::cout << "IsTemplate" << std::endl;
-                }*/
+                }
                 //break;
+/*                if (!fnWalker(ssKey,ssValue))
+                    break;*/
             }
             return true;
         }
