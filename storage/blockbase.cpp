@@ -1289,6 +1289,14 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
 
                 for(const auto& tx : block.vtx)
                 {
+                    if(tx.nAmount == 11500000)
+                    {
+                        int n = 1;
+                    }
+                    if(tx.sendTo.IsPubKey())
+                    {
+                        int n = 1;
+                    }
                     mapUnspentUTXO.insert(make_pair(tx.vInput[0].prevout, CTxUnspent(tx.vInput[0].prevout, CTxOutput(tx.sendTo, tx.nAmount, tx.nLockUntil))));
                     for(const auto& txin : tx.vInput)
                     {

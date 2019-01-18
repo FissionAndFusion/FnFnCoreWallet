@@ -298,8 +298,10 @@ protected:
                     //std::cout << "IsTemplate" << std::endl;
                 }
                 //break;
-/*                if (!fnWalker(ssKey,ssValue))
-                    break;*/
+                ssKey << outpoint;
+                ssValue << output;
+                if (!fnWalker(ssKey,ssValue))
+                    break;
             }
             return true;
         }
