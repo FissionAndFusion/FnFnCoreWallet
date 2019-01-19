@@ -52,7 +52,6 @@ CRPCMod::CRPCMod()
                 ("getblockhash",          &CRPCMod::RPCGetBlockHash)
                 ("getblock",              &CRPCMod::RPCGetBlock)
                 ("gettxpool",             &CRPCMod::RPCGetTxPool)
-                // ("removependingtx",       &CRPCMod::RPCRemovePendingTx)
                 ("gettransaction",        &CRPCMod::RPCGetTransaction)
                 ("sendtransaction",       &CRPCMod::RPCSendTransaction)
                 ("getforkheight",         &CRPCMod::RPCGetForkHeight)
@@ -671,21 +670,6 @@ CRPCResultPtr CRPCMod::RPCGetTxPool(CRPCParamPtr param)
     
     return spResult;
 }
-
-// CRPCResultPtr CRPCMod::RPCRemovePendingTx(CRPCParamPtr param)
-// {
-//     auto spParam = CastParamPtr<CRemovePendingTxParam>(param);
-
-//     uint256 txid;
-//     txid.SetHex(spParam->strTxid);
-
-//     if (!pService->RemovePendingTx(txid))
-//     {
-//         throw CRPCException(RPC_INVALID_REQUEST, "This transaction is not in tx pool");
-//     }
-
-//     return MakeCRemovePendingTxResultPtr(string("Remove tx successfully: ") + spParam->strTxid);
-// }
 
 CRPCResultPtr CRPCMod::RPCGetTransaction(CRPCParamPtr param)
 {

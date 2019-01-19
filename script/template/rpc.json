@@ -225,6 +225,10 @@
                 "type": "string",
                 "desc": "transaction type"
             },
+            "time": {
+                "type": "uint",
+                "desc": "transaction timestamp"
+            },
             "lockuntil": {
                 "type": "uint",
                 "desc": "unlock time"
@@ -304,6 +308,10 @@
             "type": {
                 "type": "string",
                 "desc": "transaction type"
+            },
+            "time": {
+                "type": "uint",
+                "desc": "transaction timestamp"
             },
             "send": {
                 "type": "bool",
