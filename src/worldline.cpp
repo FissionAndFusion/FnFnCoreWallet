@@ -721,7 +721,7 @@ MvErr CWorldLine::GetTxContxt(storage::CBlockView& view,const CTransaction& tx,C
         {
             return MV_ERR_TRANSACTION_INVALID;
         }
-        txContxt.vInputValue.push_back(make_pair(output.nAmount,output.nLockUntil));
+        txContxt.vin.push_back(CTxInContxt(output));
     }
     return MV_OK; 
 }

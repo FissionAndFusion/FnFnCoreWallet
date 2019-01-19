@@ -97,11 +97,11 @@ public:
     {
         if (n == 0)
         {
-            return CTxOutput(sendTo,nAmount,nLockUntil);
+            return CTxOutput(sendTo,nAmount,nTimeStamp,nLockUntil);
         }
         else if (n == 1)
         {
-            return CTxOutput(destIn,GetChange(),0);
+            return CTxOutput(destIn,GetChange(),nTimeStamp,0);
         }
         return CTxOutput();
     }

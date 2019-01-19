@@ -83,7 +83,11 @@ public:
     public:
         CUnspent() : nOpt(0) {}
         void Enable(const CTxOutput& output) 
-        { destTo = output.destTo; nAmount = output.nAmount; nLockUntil = output.nLockUntil; nOpt++; }
+        { 
+            destTo = output.destTo; nAmount = output.nAmount; 
+            nTxTime = output.nTxTime; nLockUntil = output.nLockUntil; 
+            nOpt++; 
+        }
         void Disable() { SetNull(); nOpt--; }
         bool IsModified() const { return (nOpt != 0); }
     };
