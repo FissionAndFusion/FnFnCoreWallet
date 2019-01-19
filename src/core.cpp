@@ -287,6 +287,10 @@ MvErr CMvCoreProtocol::VerifyTransaction(const CTransaction& tx,const vector<CTx
         {
             return DEBUG(MV_ERR_TRANSACTION_INPUT_INVALID,"input destination mismatched\n");
         }
+        if (output.nTxTime > tx.nTimeStamp)
+        {
+            return DEBUG(MV_ERR_TRANSACTION_INPUT_INVALID,"tx time is ahead of input tx\n");
+        }
         if (output.nLockUntil != 0 && output.nLockUntil < nForkHeight)
         {
             return DEBUG(MV_ERR_TRANSACTION_INPUT_INVALID,"input is still locked\n");
