@@ -79,9 +79,10 @@ void CMvCoreProtocol::GetGenesisBlock(CBlock& block)
     block.hashPrev   = 0;
     
     CTransaction& tx = block.txMint;
-    tx.nType   = CTransaction::TX_GENESIS;
-    tx.sendTo  = destOwner;
-    tx.nAmount = 745000000 * COIN; // 745000000 is initial number of token
+    tx.nType         = CTransaction::TX_GENESIS;
+    tx.nTimeStamp    = block.nTimeStamp;
+    tx.sendTo        = destOwner;
+    tx.nAmount       = 745000000 * COIN; // 745000000 is initial number of token
 
     CProfile profile;
     profile.strName = "Fission And Fusion Network";
@@ -466,9 +467,10 @@ void CMvTestNetCoreProtocol::GetGenesisBlock(CBlock& block)
     block.hashPrev   = 0;
     
     CTransaction& tx = block.txMint;
-    tx.nType   = CTransaction::TX_GENESIS;
-    tx.sendTo  = destOwner;
-    tx.nAmount = 745000000 * COIN; // 745000000 is initial number of token
+    tx.nType         = CTransaction::TX_GENESIS;
+    tx.nTimeStamp    = block.nTimeStamp;
+    tx.sendTo        = destOwner;
+    tx.nAmount       = 745000000 * COIN; // 745000000 is initial number of token
 
     CProfile profile;
     profile.strName = "Fission And Fusion Test Network";

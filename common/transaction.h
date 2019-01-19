@@ -72,6 +72,7 @@ class CTransaction
 public:
     uint16 nVersion;
     uint16 nType;
+    uint32 nTimeStamp;
     uint32 nLockUntil;
     uint256 hashAnchor;
     std::vector<CTxIn> vInput;
@@ -96,6 +97,7 @@ public:
     {
         nVersion = 1;
         nType = 0;
+        nTimeStamp = 0;
         nLockUntil = 0;
         hashAnchor = 0;
         vInput.clear();
@@ -122,6 +124,10 @@ public:
         if (nType == TX_WORK) return std::string("work");
         return std::string("undefined");
     }
+    int64 GetTxTime() const
+    {
+        return ((int64)nTimeStamp);
+    }
     uint256 GetHash() const
     {
         walleve::CWalleveBufStream ss;
@@ -131,7 +137,7 @@ public:
     uint256 GetSignatureHash() const
     {
         walleve::CWalleveBufStream ss;
-        ss << nVersion << nType << nLockUntil << hashAnchor << vInput << sendTo << nAmount << nTxFee << vchData;
+        ss << nVersion << nType << nTimeStamp << nLockUntil << hashAnchor << vInput << sendTo << nAmount << nTxFee << vchData;
         return multiverse::crypto::CryptoHash(ss.GetData(),ss.GetSize());
     }
 
@@ -143,6 +149,7 @@ public:
     {
         return (a.nVersion   == b.nVersion    &&
                 a.nType      == b.nType       &&
+                a.nTimeStamp == b.nTimeStamp  &&
                 a.nLockUntil == b.nLockUntil  &&
                 a.hashAnchor == b.hashAnchor  &&
                 a.vInput     == b.vInput      &&
@@ -162,6 +169,7 @@ protected:
     {
         s.Serialize(nVersion,opt);
         s.Serialize(nType,opt);
+        s.Serialize(nTimeStamp,opt);
         s.Serialize(nLockUntil,opt);
         s.Serialize(hashAnchor,opt);
         s.Serialize(vInput,opt);

@@ -12,6 +12,7 @@ class CWalletTx
 public:
     uint16 nVersion;
     uint16 nType;
+    uint32 nTimeStamp;
     uint32 nLockUntil;
     std::vector<CTxIn> vInput;
     CDestination sendTo;
@@ -32,6 +33,7 @@ public:
     {
         nVersion     = tx.nVersion;
         nType        = tx.nType;
+        nTimeStamp   = tx.nTimeStamp;
         nLockUntil   = tx.nLockUntil;
         vInput       = tx.vInput;
         sendTo       = tx.sendTo;
@@ -49,6 +51,7 @@ public:
     {
         nVersion     = 0;
         nType        = 0;
+        nTimeStamp   = 0;
         nLockUntil   = 0;
         sendTo.SetNull();
         nAmount      = 0;
@@ -77,6 +80,10 @@ public:
         if (nType == CTransaction::TX_STAKE) return std::string("stake");
         if (nType == CTransaction::TX_WORK) return std::string("work");
         return std::string("undefined");
+    }
+    int64 GetTxTime() const
+    {
+        return (int64)nTimeStamp;
     }
     void SetFlags(bool fIsMine,bool fFromMe)
     {
@@ -112,6 +119,7 @@ public:
     bool IsLocked(int nHeight) const { return (n == 0 && spWalletTx->nLockUntil > 0 && spWalletTx->nLockUntil < nHeight); }
     int GetDepth(int nHeight) const { return (spWalletTx->nBlockHeight >= 0 ? nHeight - spWalletTx->nBlockHeight + 1 : 0); }
     int64 GetAmount() const { return (n == 0 ? spWalletTx->nAmount : spWalletTx->GetChange()); }
+    int64 GetTxTime() const { return spWalletTx->GetTxTime(); }
     CTxOutPoint GetTxOutPoint() const { return CTxOutPoint(spWalletTx->txid,n); }
     void AddRef() const { ++spWalletTx->nRefCount; }
     void Release() const { --spWalletTx->nRefCount; }

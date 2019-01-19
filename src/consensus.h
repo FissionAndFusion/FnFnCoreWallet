@@ -16,6 +16,7 @@ class CDelegateTx
 public:
     uint16 nVersion;
     uint16 nType;
+    uint32 nTimeStamp;
     uint32 nLockUntil;
     int64  nAmount;
     int64  nChange;
@@ -26,6 +27,7 @@ public:
     {
         nVersion     = tx.nVersion;
         nType        = tx.nType;
+        nTimeStamp   = tx.nTimeStamp;
         nLockUntil   = tx.nLockUntil;
         nAmount      = tx.nAmount;
         nChange      = tx.GetChange();
@@ -35,6 +37,7 @@ public:
     {
         nVersion     = 0;
         nType        = 0;
+        nTimeStamp   = 0;
         nLockUntil   = 0;
         nAmount      = 0;
         nChange      = 0;
@@ -43,7 +46,11 @@ public:
     bool IsNull() const
     {
         return (nVersion == 0);
-    };
+    }
+    int64 GetTxTime() const
+    {
+        return ((int64)nTimeStamp);
+    }
 };
 
 class CDelegateContext
@@ -55,8 +62,8 @@ public:
     const CDestination GetDestination() const { return destDelegate; }
     void ChangeTxSet(const CTxSetChange& change);
     void AddNewTx(const CAssembledTx& tx);
-    bool BuildEnrollTx(CTransaction& tx,int nBlockHeight,const uint256& hashAnchor,int64 nTxFee,
-                                                         const std::vector<unsigned char>& vchData);
+    bool BuildEnrollTx(CTransaction& tx,int nBlockHeight,int64 nTime,
+                       const uint256& hashAnchor,int64 nTxFee,const std::vector<unsigned char>& vchData);
 protected:
     CDestination destDelegate;
     crypto::CKey keyDelegate;

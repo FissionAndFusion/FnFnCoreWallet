@@ -476,7 +476,7 @@ bool CWallet::ArrangeInputs(const CDestination& destIn,const uint256& hashFork,i
     vector<CTxOutPoint> vCoins;
     {
         boost::shared_lock<boost::shared_mutex> rlock(rwWalletTx);
-        int64 nValueIn = SelectCoins(destIn,hashFork,nForkHeight,nTargeValue,nMaxInput,vCoins);
+        int64 nValueIn = SelectCoins(destIn,hashFork,nForkHeight,tx.GetTxTime(),nTargeValue,nMaxInput,vCoins);
         if (nValueIn < nTargeValue)
         {
             return false;
@@ -824,7 +824,8 @@ std::shared_ptr<CWalletTx> CWallet::LoadWalletTx(const uint256& txid)
     return (!spWalletTx->IsNull() ? spWalletTx : NULL);
 }
 
-std::shared_ptr<CWalletTx> CWallet::InsertWalletTx(const uint256& txid,const CAssembledTx &tx,const uint256& hashFork,bool fIsMine,bool fFromMe)
+std::shared_ptr<CWalletTx> CWallet::InsertWalletTx(const uint256& txid,const CAssembledTx &tx,const uint256& hashFork,
+                                                   bool fIsMine,bool fFromMe)
 {
     std::shared_ptr<CWalletTx> spWalletTx;
     map<uint256,std::shared_ptr<CWalletTx> >::iterator it = mapWalletTx.find(txid);
@@ -843,7 +844,7 @@ std::shared_ptr<CWalletTx> CWallet::InsertWalletTx(const uint256& txid,const CAs
 }
 
 int64 CWallet::SelectCoins(const CDestination& dest,const uint256& hashFork,int nForkHeight,
-                           int64 nTargetValue,size_t nMaxInput,vector<CTxOutPoint>& vCoins)
+                           int64 nTxTime,int64 nTargetValue,size_t nMaxInput,vector<CTxOutPoint>& vCoins)
 {
     vCoins.clear();
 
@@ -861,7 +862,7 @@ int64 CWallet::SelectCoins(const CDestination& dest,const uint256& hashFork,int 
 
     BOOST_FOREACH(const CWalletTxOut& out,walletCoins.setCoins)
     {
-        if (out.IsLocked(nForkHeight))
+        if (out.IsLocked(nForkHeight) || out.GetTxTime() > nTxTime)
         {
             continue;
         }
