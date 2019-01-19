@@ -154,6 +154,10 @@ public:
     {
         return dynamic_cast<const CMvMintConfig*>(walleve::IWalleveBase::WalleveConfig());
     }
+    const CMvForkNodeMintConfig* ForkNodeMintConfig()
+    {
+        return dynamic_cast<const CMvForkNodeMintConfig*>(walleve::IWalleveBase::WalleveConfig());
+    }
 };
 
 class IWallet : public walleve::IWalleveBase

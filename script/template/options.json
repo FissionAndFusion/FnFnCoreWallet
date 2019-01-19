@@ -83,6 +83,24 @@
             "desc": "POW blake512 key"
         }
     ],
+    "CMvForkNodeMintConfigOption": [
+        {
+            "access": "protected",
+            "name": "strForkNodeAddressMPVss",
+            "type": "string",
+            "opt": "forkmpvssaddress",
+            "format": "-forkmpvssaddress=<address>",
+            "desc": "MPVSS address for forknode"
+        },
+        {
+            "access": "protected",
+            "name": "strForkNodeKeyMPVss",
+            "type": "string",
+            "opt": "forkmpvsskey",
+            "format": "-forkmpvsskey=<key>",
+            "desc": "MPVSS key for forknode"
+        }
+    ],
     "CMvRPCBasicConfigOption": [
         {
             "access": "protected",

@@ -636,24 +636,44 @@ bool CWorldLine::GetBlockDelegateEnrolled(const uint256& hashBlock,map<CDestinat
 
 bool CWorldLine::GetBlockDelegateAgreement(const uint256& hashBlock,uint256& nAgreement,size_t& nWeight,vector<CDestination>& vBallot)
 {
+    CBlockIndex* pIndex = NULL;
+    if (!cntrBlock.RetrieveIndex(hashBlock,&pIndex))
+    {
+        WalleveLog("GetBlockDelegateAgreement : Retrieve block Index Error: %s \n",hashBlock.ToString().c_str());
+        return false;
+    }
+
+    if (pIndex->GetBlockHeight() < MV_CONSENSUS_INTERVAL)
+    {
+        return true;
+    }
+
     CBlock block;
-    if (!cntrBlock.Retrieve(hashBlock,block))
+    if (!cntrBlock.Retrieve(pIndex,block))
     {
         WalleveLog("GetBlockDelegateAgreement : Retrieve block Error: %s \n",hashBlock.ToString().c_str());
         return false;
     }
 
+    if(block.IsProofOfWork())
+    {
+        return false;
+    }
+    
+    for (int i = 0;i < MV_CONSENSUS_DISTRIBUTE_INTERVAL + 1;i++)
+    {
+        pIndex = pIndex->pPrev;
+    }
+
     map<CDestination,size_t> mapWeight;
     map<CDestination,vector<unsigned char> > mapEnrollData;
-
-    if (!GetBlockDelegateEnrolled(hashBlock,mapWeight,mapEnrollData))
+    if (!GetBlockDelegateEnrolled(pIndex->GetBlockHash(),mapWeight,mapEnrollData))
     {
         return false;
     }
 
-    map<CDestination,size_t> mapBallot;
-
     delegate::CMvDelegateVerify verifier(mapWeight,mapEnrollData);
+    map<CDestination,size_t> mapBallot;
     if (!verifier.VerifyProof(block.vchProof,nAgreement,nWeight,mapBallot))
     {
         WalleveLog("GetBlockDelegateAgreement : Invalid block proof : %s \n",hashBlock.ToString().c_str());
