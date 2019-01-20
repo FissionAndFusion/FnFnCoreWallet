@@ -760,7 +760,6 @@ void CNetChannel::SchedulePeerInv(uint64 nNonce,const uint256& hashFork,CSchedul
             std::cout << "Dispatch Event DDOS (ScheduleBlockInv return false) [netchannel]\n";
             DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK,"SchedulePeerInv2");
         }
-        
     }
     if (!eventGetData.data.empty())
     {

@@ -33,12 +33,21 @@ bool CMvDelegateVerify::VerifyProof(const vector<unsigned char>& vchProof,uint25
         }
         is >> vPublish;
         bool fCompleted = false;
+
         for (int i = 0;i < vPublish.size();i++)
         {
             const CMvDelegateData& delegateData = vPublish[i];
-            if (!VerifySignature(delegateData) 
-                || !witness.Collect(delegateData.nIdentFrom,delegateData.mapShare,fCompleted))
+            bool bVerify = VerifySignature(delegateData);
+            if(!bVerify)
             {
+                std::cout << "VerifySignature return: false\n";
+                return false;
+            }
+            
+            bool bCollect = witness.Collect(delegateData.nIdentFrom,delegateData.mapShare,fCompleted);
+            if (!bCollect)
+            {
+                std::cout << "witness.Collect return false\n";
                 return false;
             }
         }
@@ -46,10 +55,12 @@ bool CMvDelegateVerify::VerifyProof(const vector<unsigned char>& vchProof,uint25
     catch (exception& e) 
     {
         StdError(__PRETTY_FUNCTION__, e.what());
+        std::cout << "CMvDelegateVerify::VerifyProof exception " << e.what() << '\n';
         return false;
     } 
 
     GetAgreement(nAgreement,nWeight,mapBallot);
     
+    std::cout << " nAgreement == nAgreementParse : " << (nAgreement == nAgreementParse) << '\n';
     return (nAgreement == nAgreementParse);
 }

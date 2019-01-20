@@ -63,7 +63,9 @@ CForkBlockMaker::CForkBlockMaker()
     pTxPool = NULL;
     pDispatcher = NULL;
     pConsensus = NULL;
-    mapHashAlgo[CM_MPVSS] = new CHashAlgo_MPVSS(INITIAL_HASH_RATE); 
+    mapHashAlgo[CM_MPVSS] = new CHashAlgo_MPVSS(INITIAL_HASH_RATE);
+
+    std::cout << "[ for block maker] fork node: Constructor called \n"; 
 }
 
 CForkBlockMaker::~CForkBlockMaker()
@@ -87,6 +89,13 @@ bool CForkBlockMaker::HandleEvent(CMvEventBlockMakerUpdate& eventUpdate)
         nLastWeight = eventUpdate.data.nWeight;
     }
     cond.notify_all();
+
+    std::cout << "Handle Event ForkBlockMaker \n";
+    std::cout << "UpdateEvent Block hash " << hashLastBlock.ToString() << '\n';
+    std::cout << "UpdateEvent Block Time " << nLastBlockTime << '\n';
+    std::cout << "UpdateEvent Block Height " << nLastBlockHeight << '\n';
+    std::cout << "UpdateEvent Block agreement " << nLastAgreement.ToString() << '\n';
+    std::cout << "UpdateEvent Block weight " << nLastWeight << '\n';
     
     return true;
 }
@@ -266,6 +275,7 @@ void CForkBlockMaker::ProcessDelegatedProofOfStake(CBlock& block,const CBlockMak
     if (it != mapDelegatedProfile.end())
     {
         CForkBlockMakerProfile& profile = (*it).second;
+        std::cout << "start create piggyback\n";
         CreatePiggyback(profile,agreement,block,nPrevHeight);
     }
 }
@@ -278,6 +288,7 @@ void CForkBlockMaker::ProcessExtended(const CBlockMakerAgreement& agreement,cons
 
     if (!GetAvailiableDelegatedProfile(agreement.vBallot,vProfile) || !GetAvailiableExtendedFork(setFork))
     {
+        std::cout << "Get Availiable failed\n";
         return;
     }
 
@@ -295,8 +306,10 @@ void CForkBlockMaker::ProcessExtended(const CBlockMakerAgreement& agreement,cons
         {
             if (!Wait(nTime - WalleveGetNetTime(),hashPrimaryBlock))
             {
+                std::cout << "Wait primary block failed\n";
                 return;
             }
+            std::cout << "start create extended\n";
             CreateExtended(*pProfile,agreement,setFork,nPrimaryBlockHeight,nTime);
         }
         nTime += EXTENDED_BLOCK_SPACING;
@@ -337,6 +350,12 @@ void CForkBlockMaker::CreatePiggyback(const CForkBlockMakerProfile& profile,cons
     {
         const uint256& hashFork = (*it).first;
         CForkStatus& status = (*it).second;
+        std::cout << std::dec;
+        std::cout << "Fork Hash " << hashFork.ToString() << '\n';
+        std::cout << "Fork status last block height " << status.nLastBlockHeight << '\n';
+        std::cout << "Fork status last block time " << status.nLastBlockTime << '\n';
+        std::cout << "nLastBlockTime " << nLastBlockTime << '\n';
+        std::cout << "nPrevHeight " << nPrevHeight << '\n';
         if (hashFork != pCoreProtocol->GetGenesisBlockHash() 
             && status.nLastBlockHeight == nPrevHeight
             && status.nLastBlockTime < nLastBlockTime)
@@ -349,6 +368,7 @@ void CForkBlockMaker::CreatePiggyback(const CForkBlockMakerProfile& profile,cons
 
             if (CreateDelegatedBlock(block,hashFork,profile,agreement.nWeight))
             {
+                std::cout << "Create DPos Block success\n";
                 DispatchBlock(block);
             }
         }
@@ -360,11 +380,13 @@ void CForkBlockMaker::CreateExtended(const CForkBlockMakerProfile& profile,const
     CProofOfSecretShare proof;
     proof.nWeight = agreement.nWeight;
     proof.nAgreement = agreement.nAgreement;
+    std::cout << "set fork size " << setFork.size() << '\n';
     BOOST_FOREACH(const uint256& hashFork,setFork)
     {
         uint256 hashLastBlock;
         int nLastBlockHeight;
         int64 nLastBlockTime;
+        std::cout << "fork hash " << hashFork.ToString() << '\n';
         if (pTxPool->Count(hashFork) 
             && pWorldLine->GetLastBlock(hashFork,hashLastBlock,nLastBlockHeight,nLastBlockTime)
             && nPrimaryBlockHeight == nLastBlockHeight
@@ -381,8 +403,10 @@ void CForkBlockMaker::CreateExtended(const CForkBlockMakerProfile& profile,const
             txMint.sendTo = profile.GetDestination();
             txMint.nAmount = 0;
             ArrangeBlockTx(block,hashFork,profile);
+            std::cout << "extended block vtx size " << block.vtx.size() << '\n';
             if (!block.vtx.empty() && SignBlock(block,profile))
             {
+                std::cout << "Dispatched extended block " << block.GetHash().ToString() << '\n';
                 DispatchBlock(block);
             }
         }
@@ -455,6 +479,8 @@ void CForkBlockMaker::BlockMakerThreadFunc()
     }
 
     // run state machine
+
+    std::cout << "Run non-extend block state machine \n";
     for (;;)
     {   
         CBlockMakerAgreement agree;
@@ -471,16 +497,29 @@ void CForkBlockMaker::BlockMakerThreadFunc()
             {
                 break;
             }
+
         
             if(!pWorldLine->GetBlockDelegateAgreement(hashLastBlock, agree.nAgreement, 
                 agree.nWeight, agree.vBallot))
             {
+                std::cout << "called GetBlockDelegateAgreement failed: " << 
+                    hashLastBlock.ToString() << '\n';
                 nMakerStatus = ForkMakerStatus::MAKER_SKIP;
                 continue;
             }
 
             currentAgreement = agree;
-            
+
+            std::cout << "called GetBlockDelegateAgreement success: \n";
+            std::cout << "Agreement: " << agree.nAgreement.ToString() << '\n';
+            std::cout << "Weight: " << agree.nWeight << '\n';
+            std::cout << "vBallot size: " << agree.vBallot.size() << '\n';
+
+            for(const auto& ballot : agree.vBallot)
+            {
+                std::cout << "ballot hex: " << ballot.GetHex() << '\n';
+            }
+
             nMakerStatus = ForkMakerStatus::MAKER_RUN;
         }
 
@@ -491,6 +530,7 @@ void CForkBlockMaker::BlockMakerThreadFunc()
             
             if (!agree.IsProofOfWork())
             {
+                std::cout << "start Process DPoS \n";
                 ProcessDelegatedProofOfStake(block,agree,nLastBlockHeight - 1); 
             }
             
@@ -525,6 +565,7 @@ void CForkBlockMaker::ExtendedMakerThreadFunc()
 
     WalleveLog("Extened fork block maker started, initial primary block hash = %s\n",hashPrimaryBlock.GetHex().c_str());
 
+    std::cout << "Run extend block state machine \n";
     for (;;)
     {
         CBlockMakerAgreement agree; 
@@ -559,6 +600,7 @@ void CForkBlockMaker::ExtendedMakerThreadFunc()
 
         try
         {
+            std::cout << "start Process Extended Block\n";
             ProcessExtended(agree,hashPrimaryBlock,nPrimaryBlockTime,nPrimaryBlockHeight);
         }
         catch (const std::exception& e)

@@ -595,6 +595,8 @@ bool CWorldLine::GetBlockDelegateEnrolled(const uint256& hashBlock,map<CDestinat
         WalleveLog("GetBlockDelegateEnrolled : Retrieve block Index Error: %s \n",hashBlock.ToString().c_str());
         return false;
     }
+
+    std::cout << "GetEnrolled height " << pIndex->nHeight << std::endl;
     int64 nDelegateWeightRatio = (pIndex->GetMoneySupply() + DELEGATE_THRESH - 1) / DELEGATE_THRESH;
 
     if (pIndex->GetBlockHeight() < MV_CONSENSUS_ENROLL_INTERVAL)
@@ -657,9 +659,10 @@ bool CWorldLine::GetBlockDelegateAgreement(const uint256& hashBlock,uint256& nAg
 
     if(block.IsProofOfWork())
     {
+        std::cout << "block is PoW \n";
         return false;
     }
-    
+
     for (int i = 0;i < MV_CONSENSUS_DISTRIBUTE_INTERVAL + 1;i++)
     {
         pIndex = pIndex->pPrev;
@@ -673,6 +676,7 @@ bool CWorldLine::GetBlockDelegateAgreement(const uint256& hashBlock,uint256& nAg
     }
 
     delegate::CMvDelegateVerify verifier(mapWeight,mapEnrollData);
+    std::cout << "block vchProof size " << block.vchProof.size() << '\n';
     map<CDestination,size_t> mapBallot;
     if (!verifier.VerifyProof(block.vchProof,nAgreement,nWeight,mapBallot))
     {
@@ -681,6 +685,8 @@ bool CWorldLine::GetBlockDelegateAgreement(const uint256& hashBlock,uint256& nAg
     }
     
     pCoreProtocol->GetDelegatedBallot(nAgreement,nWeight,mapBallot,vBallot); 
+
+    std::cout << "GetBlockDelegateAgreement return true \n";
 
     return true;
 }
