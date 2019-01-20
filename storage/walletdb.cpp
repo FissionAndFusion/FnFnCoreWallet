@@ -124,11 +124,12 @@ bool CWalletDB::AddNewTx(const CWalletTx& wtx)
     string strEscIn = dbConn.ToEscString(ss.GetData(),ss.GetSize());
 
     ostringstream oss;
-    oss << "INSERT INTO wallettx(txid,version,type,lockuntil,sendto,amount,txfee,destin,valuein,height,flags,fork,txin) "
+    oss << "INSERT INTO wallettx(txid,version,type,timestamp,lockuntil,sendto,amount,txfee,destin,valuein,height,flags,fork,txin) "
               "VALUES("
         <<            "\'" << dbConn.ToEscString(wtx.txid) << "\',"
         <<            wtx.nVersion << ","
         <<            wtx.nType << ","
+        <<            wtx.nTimeStamp << ","
         <<            wtx.nLockUntil << ","
         <<            "\'" << dbConn.ToEscString(wtx.sendTo) << "\',"
         <<            wtx.nAmount << ","
@@ -152,11 +153,12 @@ bool CWalletDB::UpdateTx(const vector<CWalletTx>& vWalletTx,const vector<uint256
         string strEscIn = dbConn.ToEscString(ss.GetData(),ss.GetSize());
 
         ostringstream oss;
-        oss << "INSERT INTO wallettx(txid,version,type,lockuntil,sendto,amount,txfee,destin,valuein,height,flags,fork,txin) "
+        oss << "INSERT INTO wallettx(txid,version,type,timestamp,lockuntil,sendto,amount,txfee,destin,valuein,height,flags,fork,txin) "
                   "VALUES("
             <<            "\'" << dbConn.ToEscString(wtx.txid) << "\',"
             <<            wtx.nVersion << ","
             <<            wtx.nType << ","
+            <<            wtx.nTimeStamp << ","
             <<            wtx.nLockUntil << ","
             <<            "\'" << dbConn.ToEscString(wtx.sendTo) << "\',"
             <<            wtx.nAmount << ","
@@ -194,19 +196,20 @@ bool CWalletDB::RetrieveTx(const uint256& txid,CWalletTx& wtx)
     wtx.txid = txid;
     wtx.nRefCount = 0;
     ostringstream oss;
-    oss << "SELECT version,type,lockuntil,sendto,amount,txfee,destin,valuein,height,flags,fork,txin FROM wallettx WHERE txid = "
-        <<            "\'" << dbConn.ToEscString(txid) << "\'";
+    oss << "SELECT version,type,timestamp,lockuntil,sendto,amount,txfee,destin,valuein,height,flags,fork,txin "
+        <<         "FROM wallettx WHERE txid = \'" << dbConn.ToEscString(txid) << "\'";
 
     vector<unsigned char> vchTxIn;
     CMvDBRes res(dbConn,oss.str());
 
     return (res.GetRow()
-            && res.GetField(0,wtx.nVersion) && res.GetField(1,wtx.nType)
-            && res.GetField(2,wtx.nLockUntil) && res.GetField(3,wtx.sendTo)
-            && res.GetField(4,wtx.nAmount) && res.GetField(5,wtx.nTxFee)
-            && res.GetField(6,wtx.destIn) && res.GetField(7,wtx.nValueIn)
-            && res.GetField(8,wtx.nBlockHeight) && res.GetField(9,wtx.nFlags)
-            && res.GetField(10,wtx.hashFork) && res.GetField(11,vchTxIn) && ParseTxIn(vchTxIn,wtx));
+            && res.GetField(0,wtx.nVersion)     && res.GetField(1,wtx.nType)
+            && res.GetField(2,wtx.nTimeStamp)   && res.GetField(3,wtx.nLockUntil) 
+            && res.GetField(4,wtx.sendTo)       && res.GetField(5,wtx.nAmount) 
+            && res.GetField(6,wtx.nTxFee)       && res.GetField(7,wtx.destIn) 
+            && res.GetField(8,wtx.nValueIn)     && res.GetField(9,wtx.nBlockHeight) 
+            && res.GetField(10,wtx.nFlags)      && res.GetField(11,wtx.hashFork) 
+            && res.GetField(12,vchTxIn)         && ParseTxIn(vchTxIn,wtx));
 }
 
 bool CWalletDB::ExistsTx(const uint256& txid)
@@ -259,20 +262,21 @@ bool CWalletDB::ListTx(int nOffset,int nCount,std::vector<CWalletTx>& vWalletTx)
 bool CWalletDB::ListDBTx(int nOffset,int nCount,std::vector<CWalletTx>& vWalletTx)
 {
     ostringstream oss;
-    oss << "SELECT txid,version,type,lockuntil,sendto,amount,txfee,destin,valuein,height,flags,fork,txin FROM wallettx ORDER BY id LIMIT " << nOffset << "," << nCount;
+    oss << "SELECT txid,version,type,timestamp,lockuntil,sendto,amount,txfee,destin,valuein,height,flags,fork,txin "
+        << "FROM wallettx ORDER BY id LIMIT " << nOffset << "," << nCount;
     vector<unsigned char> vchTxIn;
     CMvDBRes res(dbConn,oss.str(),true);
     while (res.GetRow())
     {
         CWalletTx wtx;
         if (res.GetField(0,wtx.txid) 
-            && res.GetField(1,wtx.nVersion) && res.GetField(2,wtx.nType)
-            && res.GetField(3,wtx.nLockUntil) && res.GetField(4,wtx.sendTo)
-            && res.GetField(5,wtx.nAmount) && res.GetField(6,wtx.nTxFee)
-            && res.GetField(7,wtx.destIn) && res.GetField(8,wtx.nValueIn)
-            && res.GetField(9,wtx.nBlockHeight) && res.GetField(10,wtx.nFlags)
-            && res.GetField(11,wtx.hashFork) && res.GetField(12,vchTxIn)
-            && ParseTxIn(vchTxIn,wtx))
+            && res.GetField(1,wtx.nVersion)     && res.GetField(2,wtx.nType)
+            && res.GetField(3,wtx.nTimeStamp)   && res.GetField(4,wtx.nLockUntil) 
+            && res.GetField(5,wtx.sendTo)       && res.GetField(6,wtx.nAmount) 
+            && res.GetField(7,wtx.nTxFee)       && res.GetField(8,wtx.destIn) 
+            && res.GetField(9,wtx.nValueIn)     && res.GetField(10,wtx.nBlockHeight) 
+            && res.GetField(11,wtx.nFlags)      && res.GetField(12,wtx.hashFork) 
+            && res.GetField(13,vchTxIn)         && ParseTxIn(vchTxIn,wtx))
         {
             vWalletTx.push_back(wtx);
         }
@@ -312,7 +316,9 @@ bool CWalletDB::ListRollBackTx(const uint256& hashFork,int nMinHeight,vector<uin
 
 bool CWalletDB::WalkThroughTx(CWalletDBTxWalker& walker)
 {
-    string strSelectUnspent = string("SELECT txid,version,type,lockuntil,sendto,amount,txfee,destin,valuein,height,flags,fork,txin FROM wallettx ORDER BY id");
+    string strSelectUnspent = string("SELECT txid,version,type,timestamp,lockuntil,sendto,"
+                                             "amount,txfee,destin,valuein,height,flags,fork,txin "
+                                     "FROM wallettx ORDER BY id");
     vector<unsigned char> vchTxIn;
     CMvDBRes res(dbConn,strSelectUnspent,true);
     while (res.GetRow())
@@ -320,11 +326,12 @@ bool CWalletDB::WalkThroughTx(CWalletDBTxWalker& walker)
         CWalletTx wtx;
         if (!res.GetField(0,wtx.txid) 
             || !res.GetField(1,wtx.nVersion)     || !res.GetField(2,wtx.nType)
-            || !res.GetField(3,wtx.nLockUntil)   || !res.GetField(4,wtx.sendTo)
-            || !res.GetField(5,wtx.nAmount)      || !res.GetField(6,wtx.nTxFee)
-            || !res.GetField(7,wtx.destIn)       || !res.GetField(8,wtx.nValueIn)
-            || !res.GetField(9,wtx.nBlockHeight) || !res.GetField(10,wtx.nFlags)
-            || !res.GetField(11,wtx.hashFork)    || !res.GetField(12,vchTxIn)
+            || !res.GetField(3,wtx.nTimeStamp)   || !res.GetField(4,wtx.nLockUntil)
+            || !res.GetField(5,wtx.sendTo)       || !res.GetField(6,wtx.nAmount)      
+            || !res.GetField(7,wtx.nTxFee)       || !res.GetField(8,wtx.destIn)       
+            || !res.GetField(9,wtx.nValueIn)     || !res.GetField(10,wtx.nBlockHeight) 
+            || !res.GetField(11,wtx.nFlags)      || !res.GetField(12,wtx.hashFork)    
+            || !res.GetField(13,vchTxIn)         
             || !ParseTxIn(vchTxIn,wtx)           || !walker.Walk(wtx))
         {
             return false;
@@ -380,6 +387,7 @@ bool CWalletDB::CreateTable()
                           "txid BINARY(32) NOT NULL UNIQUE KEY,"
                           "version SMALLINT UNSIGNED NOT NULL,"
                           "type SMALLINT UNSIGNED NOT NULL,"
+                          "timestamp INT UNSIGNED NOT NULL,"
                           "lockuntil INT UNSIGNED NOT NULL,"
                           "sendto BINARY(33) NOT NULL,"
                           "amount BIGINT NOT NULL,"

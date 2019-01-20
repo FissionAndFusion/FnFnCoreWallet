@@ -145,8 +145,8 @@ void CBlockView::RemoveTx(const uint256& txid,const CTransaction& tx,const CTxCo
     vTxRemove.push_back(txid);
     for (int i = 0;i < tx.vInput.size();i++)
     {
-        const pair<int64,uint32>& input = txContxt.vInputValue[i];
-        mapUnspent[tx.vInput[i].prevout].Enable(CTxOutput(txContxt.destIn,input.first,input.second));
+        const CTxInContxt& in = txContxt.vin[i];
+        mapUnspent[tx.vInput[i].prevout].Enable(CTxOutput(txContxt.destIn,in.nAmount,in.nTxTime,in.nLockUntil));
     }    
     mapUnspent[CTxOutPoint(txid,0)].Disable();
     mapUnspent[CTxOutPoint(txid,1)].Disable();
@@ -448,7 +448,7 @@ bool CBlockBase::Retrieve(const uint256& hash,CBlock& block)
             return false;
         }
     }
-    if (!tsBlock.Read(block,pIndex->nFile,pIndex->nOffset))
+    if (!tsBlock.Read(block,pIndex->nFile,pIndex->nOffset,false))
     {
         return false;
     }
@@ -459,7 +459,7 @@ bool CBlockBase::Retrieve(const CBlockIndex* pIndex,CBlock& block)
 {
     block.SetNull();
 
-    if (!tsBlock.Read(block,pIndex->nFile,pIndex->nOffset))
+    if (!tsBlock.Read(block,pIndex->nFile,pIndex->nOffset,false))
     {
         return false;
     }

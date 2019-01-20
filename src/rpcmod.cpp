@@ -52,7 +52,6 @@ CRPCMod::CRPCMod()
                 ("getblockhash",          &CRPCMod::RPCGetBlockHash)
                 ("getblock",              &CRPCMod::RPCGetBlock)
                 ("gettxpool",             &CRPCMod::RPCGetTxPool)
-                // ("removependingtx",       &CRPCMod::RPCRemovePendingTx)
                 ("gettransaction",        &CRPCMod::RPCGetTransaction)
                 ("sendtransaction",       &CRPCMod::RPCSendTransaction)
                 ("getforkheight",         &CRPCMod::RPCGetForkHeight)
@@ -671,21 +670,6 @@ CRPCResultPtr CRPCMod::RPCGetTxPool(CRPCParamPtr param)
     
     return spResult;
 }
-
-// CRPCResultPtr CRPCMod::RPCRemovePendingTx(CRPCParamPtr param)
-// {
-//     auto spParam = CastParamPtr<CRemovePendingTxParam>(param);
-
-//     uint256 txid;
-//     txid.SetHex(spParam->strTxid);
-
-//     if (!pService->RemovePendingTx(txid))
-//     {
-//         throw CRPCException(RPC_INVALID_REQUEST, "This transaction is not in tx pool");
-//     }
-
-//     return MakeCRemovePendingTxResultPtr(string("Remove tx successfully: ") + spParam->strTxid);
-// }
 
 CRPCResultPtr CRPCMod::RPCGetTransaction(CRPCParamPtr param)
 {
@@ -1830,9 +1814,10 @@ CRPCResultPtr CRPCMod::RPCMakeOrigin(CRPCParamPtr param)
     profile.Save(block.vchProof);
 
     CTransaction& tx = block.txMint;
-    tx.nType = CTransaction::TX_GENESIS;
-    tx.sendTo  = destOwner;
-    tx.nAmount = nAmount;
+    tx.nType         = CTransaction::TX_GENESIS;
+    tx.nTimeStamp    = block.nTimeStamp;
+    tx.sendTo        = destOwner;
+    tx.nAmount       = nAmount;
     tx.vchData.assign(profile.strName.begin(),profile.strName.end());
 
     crypto::CPubKey pubkey;

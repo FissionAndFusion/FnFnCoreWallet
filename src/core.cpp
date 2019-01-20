@@ -79,9 +79,10 @@ void CMvCoreProtocol::GetGenesisBlock(CBlock& block)
     block.hashPrev   = 0;
     
     CTransaction& tx = block.txMint;
-    tx.nType   = CTransaction::TX_GENESIS;
-    tx.sendTo  = destOwner;
-    tx.nAmount = 745000000 * COIN; // 745000000 is initial number of token
+    tx.nType         = CTransaction::TX_GENESIS;
+    tx.nTimeStamp    = block.nTimeStamp;
+    tx.sendTo        = destOwner;
+    tx.nAmount       = 745000000 * COIN; // 745000000 is initial number of token
 
     CProfile profile;
     profile.strName = "Fission And Fusion Network";
@@ -286,6 +287,10 @@ MvErr CMvCoreProtocol::VerifyTransaction(const CTransaction& tx,const vector<CTx
         {
             return DEBUG(MV_ERR_TRANSACTION_INPUT_INVALID,"input destination mismatched\n");
         }
+        if (output.nTxTime > tx.nTimeStamp)
+        {
+            return DEBUG(MV_ERR_TRANSACTION_INPUT_INVALID,"tx time is ahead of input tx\n");
+        }
         if (output.nLockUntil != 0 && output.nLockUntil < nForkHeight)
         {
             return DEBUG(MV_ERR_TRANSACTION_INPUT_INVALID,"input is still locked\n");
@@ -424,7 +429,7 @@ bool CMvCoreProtocol::CheckBlockSignature(const CBlock& block)
 
 MvErr CMvCoreProtocol::ValidateVacantBlock(const CBlock& block)
 {
-    if (block.hashMerkle != 0 || !block.txMint.IsNull() || !block.vtx.empty())
+    if (block.hashMerkle != 0 || block.txMint != CTransaction() || !block.vtx.empty())
     {
         return DEBUG(MV_ERR_BLOCK_TRANSACTIONS_INVALID,"vacant block tx is not empty.");
     }
@@ -466,9 +471,10 @@ void CMvTestNetCoreProtocol::GetGenesisBlock(CBlock& block)
     block.hashPrev   = 0;
     
     CTransaction& tx = block.txMint;
-    tx.nType   = CTransaction::TX_GENESIS;
-    tx.sendTo  = destOwner;
-    tx.nAmount = 745000000 * COIN; // 745000000 is initial number of token
+    tx.nType         = CTransaction::TX_GENESIS;
+    tx.nTimeStamp    = block.nTimeStamp;
+    tx.sendTo        = destOwner;
+    tx.nAmount       = 745000000 * COIN; // 745000000 is initial number of token
 
     CProfile profile;
     profile.strName = "Fission And Fusion Test Network";

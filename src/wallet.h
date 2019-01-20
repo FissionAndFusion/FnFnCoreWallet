@@ -154,7 +154,7 @@ protected:
     void Clear();
     bool ClearTx();
     bool InsertKey(const crypto::CKey& key);
-    int64 SelectCoins(const CDestination& dest,const uint256& hashFork,int nForkHeight,
+    int64 SelectCoins(const CDestination& dest,const uint256& hashFork,int nForkHeight,int64 nTxTime,
                       int64 nTargetValue,std::size_t nMaxInput,std::vector<CTxOutPoint>& vCoins);
 
     std::shared_ptr<CWalletTx> LoadWalletTx(const uint256& txid);

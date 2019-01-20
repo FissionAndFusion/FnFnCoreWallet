@@ -123,14 +123,17 @@ void CTxPoolView::GetInvolvedTx(map<size_t,pair<uint256,CPooledTx*> >& mapInvolv
     }
 }
 
-void CTxPoolView::ArrangeBlockTx(vector<CTransaction>& vtx,int64& nTotalTxFee,size_t nMaxSize)
+void CTxPoolView::ArrangeBlockTx(vector<CTransaction>& vtx,int64& nTotalTxFee,int64 nBlockTime,size_t nMaxSize)
 {
     nTotalTxFee = 0;
 
     map<size_t,pair<uint256,CPooledTx*> > mapCandidate;
     for (map<uint256,CPooledTx*>::iterator it = mapTx.begin();it != mapTx.end();++it)
     {
-        mapCandidate.insert(make_pair((*it).second->nSequenceNumber,(*it)));
+        if ((*it).second->GetTxTime() <= nBlockTime)
+        {
+            mapCandidate.insert(make_pair((*it).second->nSequenceNumber,(*it)));
+        }
     }
     
     size_t nTotalSize = 0;
@@ -457,11 +460,12 @@ bool CTxPool::FilterTx(const uint256& hashFork,CTxFilter& filter)
     return true;
 }
 
-void CTxPool::ArrangeBlockTx(const uint256& hashFork,size_t nMaxSize,vector<CTransaction>& vtx,int64& nTotalTxFee)
+void CTxPool::ArrangeBlockTx(const uint256& hashFork,int64 nBlockTime,size_t nMaxSize,
+                             vector<CTransaction>& vtx,int64& nTotalTxFee)
 {
     boost::shared_lock<boost::shared_mutex> rlock(rwAccess);
     CTxPoolView& txView = mapPoolView[hashFork];
-    txView.ArrangeBlockTx(vtx,nTotalTxFee,nMaxSize);
+    txView.ArrangeBlockTx(vtx,nTotalTxFee,nBlockTime,nMaxSize);
 }
 
 bool CTxPool::FetchInputs(const uint256& hashFork,const CTransaction& tx,vector<CTxOutput>& vUnspent)

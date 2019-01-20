@@ -72,6 +72,7 @@ class CTransaction
 public:
     uint16 nVersion;
     uint16 nType;
+    uint32 nTimeStamp;
     uint32 nLockUntil;
     uint256 hashAnchor;
     std::vector<CTxIn> vInput;
@@ -96,6 +97,7 @@ public:
     {
         nVersion = 1;
         nType = 0;
+        nTimeStamp = 0;
         nLockUntil = 0;
         hashAnchor = 0;
         vInput.clear();
@@ -122,16 +124,23 @@ public:
         if (nType == TX_WORK) return std::string("work");
         return std::string("undefined");
     }
+    int64 GetTxTime() const
+    {
+        return ((int64)nTimeStamp);
+    }
     uint256 GetHash() const
     {
         walleve::CWalleveBufStream ss;
         ss << (*this);
-        return multiverse::crypto::CryptoHash(ss.GetData(),ss.GetSize());
+        
+        uint256 hash = multiverse::crypto::CryptoHash(ss.GetData(),ss.GetSize());
+
+        return uint256(nTimeStamp,uint224(hash));
     }
     uint256 GetSignatureHash() const
     {
         walleve::CWalleveBufStream ss;
-        ss << nVersion << nType << nLockUntil << hashAnchor << vInput << sendTo << nAmount << nTxFee << vchData;
+        ss << nVersion << nType << nTimeStamp << nLockUntil << hashAnchor << vInput << sendTo << nAmount << nTxFee << vchData;
         return multiverse::crypto::CryptoHash(ss.GetData(),ss.GetSize());
     }
 
@@ -143,6 +152,7 @@ public:
     {
         return (a.nVersion   == b.nVersion    &&
                 a.nType      == b.nType       &&
+                a.nTimeStamp == b.nTimeStamp  &&
                 a.nLockUntil == b.nLockUntil  &&
                 a.hashAnchor == b.hashAnchor  &&
                 a.vInput     == b.vInput      &&
@@ -162,6 +172,7 @@ protected:
     {
         s.Serialize(nVersion,opt);
         s.Serialize(nType,opt);
+        s.Serialize(nTimeStamp,opt);
         s.Serialize(nLockUntil,opt);
         s.Serialize(hashAnchor,opt);
         s.Serialize(vInput,opt);
@@ -179,31 +190,34 @@ class CTxOutput
 public:
     CDestination destTo;
     int64 nAmount;
+    uint32 nTxTime;
     uint32 nLockUntil;
 public:
     CTxOutput() { SetNull(); }
-    CTxOutput(const CDestination destToIn,int64 nAmountIn,uint32 nLockUntilIn) 
-    : destTo(destToIn),nAmount(nAmountIn),nLockUntil(nLockUntilIn) {}
+    CTxOutput(const CDestination destToIn,int64 nAmountIn,uint32 nTxTimeIn,uint32 nLockUntilIn) 
+    : destTo(destToIn),nAmount(nAmountIn),nTxTime(nTxTimeIn),nLockUntil(nLockUntilIn) {}
     CTxOutput(const CTransaction& tx)
     {
-        destTo = tx.sendTo; nAmount = tx.nAmount; nLockUntil = tx.nLockUntil;
+        destTo = tx.sendTo; nAmount = tx.nAmount; nTxTime = tx.nTimeStamp; nLockUntil = tx.nLockUntil;
     }
     CTxOutput(const CTransaction& tx,const CDestination& destToIn,int64 nValueIn)
     {
-        destTo = destToIn; nAmount = tx.GetChange(nValueIn); nLockUntil = 0;
+        destTo = destToIn; nAmount = tx.GetChange(nValueIn); nTxTime = tx.nTimeStamp; nLockUntil = 0;
     }
     void SetNull()
     {
         destTo.SetNull();
-        nAmount = 0;
-        nLockUntil =  0;
+        nAmount    = 0;
+        nTxTime    = 0;
+        nLockUntil = 0;
     }
     bool IsNull() const { return (destTo.IsNull() || nAmount <= 0); }
     bool IsLocked(int nBlockHeight) const { return (nBlockHeight < nLockUntil); } 
+    int64 GetTxTime() const { return nTxTime; }
     std::string ToString() const 
     {
         std::ostringstream oss;
-        oss << "TxOutput : (" << destTo.GetHex() << "," << nAmount << "," << nLockUntil << ")";
+        oss << "TxOutput : (" << destTo.GetHex() << "," << nAmount << "," << nTxTime << "," << nLockUntil << ")";
         return oss.str(); 
     }
 protected:
@@ -212,6 +226,7 @@ protected:
     {
         s.Serialize(destTo,opt);
         s.Serialize(nAmount,opt);
+        s.Serialize(nTxTime,opt);
         s.Serialize(nLockUntil,opt);
     }
 };
@@ -258,11 +273,11 @@ public:
     {
         if (n == 0)
         {
-            return CTxOutput(sendTo,nAmount,nLockUntil);
+            return CTxOutput(sendTo,nAmount,nTimeStamp,nLockUntil);
         }
         else if (n == 1)
         {
-            return CTxOutput(destIn,GetChange(),0);
+            return CTxOutput(destIn,GetChange(),nTimeStamp,0);
         }
         return CTxOutput();
     }
@@ -277,32 +292,62 @@ protected:
     }
 };
 
+class CTxInContxt
+{
+    friend class walleve::CWalleveStream;
+public:
+    int64 nAmount;
+    uint32 nTxTime;
+    uint32 nLockUntil;
+public:
+    CTxInContxt()
+    {
+        nAmount    = 0;
+        nTxTime    = 0;
+        nLockUntil = 0;
+    }
+    CTxInContxt(const CTxOutput& prevOutput)
+    {
+        nAmount    = prevOutput.nAmount;
+        nTxTime    = prevOutput.nTxTime;
+        nLockUntil = prevOutput.nLockUntil;
+    }
+protected:
+    template <typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s,O& opt)
+    {
+        s.Serialize(nAmount,opt);
+        s.Serialize(nTxTime,opt);
+        s.Serialize(nLockUntil,opt);
+    }
+};
+
 class CTxContxt
 {
     friend class walleve::CWalleveStream;
 public:
     CDestination destIn;
-    std::vector<std::pair<int64,uint32> > vInputValue;
+    std::vector<CTxInContxt> vin;
     int64 GetValueIn() const
     {
         int64 nValueIn = 0;
-        for (std::size_t i = 0;i < vInputValue.size();i++)
+        for (std::size_t i = 0;i < vin.size();i++)
         {
-            nValueIn += vInputValue[i].first;
+            nValueIn += vin[i].nAmount;
         }
         return nValueIn;
     }
     void SetNull()
     {
         destIn.SetNull();
-        vInputValue.clear();
+        vin.clear();
     }
 protected:
     template <typename O>
     void WalleveSerialize(walleve::CWalleveStream& s,O& opt)
     {
         s.Serialize(destIn,opt);
-        s.Serialize(vInputValue,opt);
+        s.Serialize(vin,opt);
     }
 };
 

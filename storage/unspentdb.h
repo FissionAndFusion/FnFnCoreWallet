@@ -31,7 +31,6 @@ public:
     bool Copy(CForkUnspentDB& dbUnspent);
     bool WalkThroughUnspent(CForkUnspentDBWalker& walker); 
 protected:
-    bool DBWalker(walleve::CWalleveBufStream& ssKey, walleve::CWalleveBufStream& ssValue) { return false; }
     bool CopyWalker(walleve::CWalleveBufStream& ssKey, walleve::CWalleveBufStream& ssValue,
                     CForkUnspentDB& dbUnspent);
     bool LoadWalker(walleve::CWalleveBufStream& ssKey, walleve::CWalleveBufStream& ssValue,

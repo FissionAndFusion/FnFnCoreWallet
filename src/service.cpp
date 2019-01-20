@@ -516,6 +516,7 @@ bool CService::CreateTransaction(const uint256& hashFork,const CDestination& des
         txNew.hashAnchor = (*it).second.hashLastBlock;
     }
     txNew.nType = CTransaction::TX_TOKEN;
+    txNew.nTimeStamp = WalleveGetNetTime();
     txNew.nLockUntil = 0;
     txNew.sendTo = destSendTo;
     txNew.nAmount = nAmount;
@@ -604,15 +605,16 @@ MvErr CService::SubmitWork(const vector<unsigned char>& vchWorkData,CTemplatePtr
     }
 
     CTransaction& txMint = block.txMint;
-    txMint.nType = CTransaction::TX_WORK;
-    txMint.hashAnchor = block.hashPrev;
-    txMint.sendTo = CDestination(templMint->GetTemplateId());
-    txMint.nAmount = nReward;
+    txMint.nType         = CTransaction::TX_WORK;
+    txMint.nTimeStamp    = block.nTimeStamp;
+    txMint.hashAnchor    = block.hashPrev;
+    txMint.sendTo        = CDestination(templMint->GetTemplateId());
+    txMint.nAmount       = nReward;
 
     size_t nSigSize = templMint->GetTemplateDataSize() + 64 + 2;
     size_t nMaxTxSize = MAX_BLOCK_SIZE - GetSerializeSize(block) - nSigSize;
     int64 nTotalTxFee = 0;
-    pTxPool->ArrangeBlockTx(pCoreProtocol->GetGenesisBlockHash(),nMaxTxSize,block.vtx,nTotalTxFee);
+    pTxPool->ArrangeBlockTx(pCoreProtocol->GetGenesisBlockHash(),block.nTimeStamp,nMaxTxSize,block.vtx,nTotalTxFee);
     block.hashMerkle = block.CalcMerkleTreeRoot();
     block.txMint.nAmount += nTotalTxFee;
 
