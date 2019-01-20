@@ -1814,9 +1814,10 @@ CRPCResultPtr CRPCMod::RPCMakeOrigin(CRPCParamPtr param)
     profile.Save(block.vchProof);
 
     CTransaction& tx = block.txMint;
-    tx.nType = CTransaction::TX_GENESIS;
-    tx.sendTo  = destOwner;
-    tx.nAmount = nAmount;
+    tx.nType         = CTransaction::TX_GENESIS;
+    tx.nTimeStamp    = block.nTimeStamp;
+    tx.sendTo        = destOwner;
+    tx.nAmount       = nAmount;
     tx.vchData.assign(profile.strName.begin(),profile.strName.end());
 
     crypto::CPubKey pubkey;
