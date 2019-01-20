@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The Multiverse developers
+// Copyright (c) 2017-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -133,8 +133,6 @@ void CDispatcher::WalleveHandleHalt()
 
 MvErr CDispatcher::AddNewBlock(const CBlock& block,uint64 nNonce)
 {
-    boost::recursive_mutex::scoped_lock scoped_lock(mtxDispatcher);
-
     MvErr err = MV_OK;
     if (!pWorldLine->Exists(block.hashPrev))
     {
@@ -209,8 +207,6 @@ MvErr CDispatcher::AddNewBlock(const CBlock& block,uint64 nNonce)
 
 MvErr CDispatcher::AddNewTx(const CTransaction& tx,uint64 nNonce)
 {
-    boost::recursive_mutex::scoped_lock scoped_lock(mtxDispatcher);
-
     MvErr err = MV_OK;
     err = pCoreProtocol->ValidateTransaction(tx);
     if (err != MV_OK)
@@ -241,7 +237,7 @@ MvErr CDispatcher::AddNewTx(const CTransaction& tx,uint64 nNonce)
     }
 
     CAssembledTx assembledTx(tx,-1,destIn,nValueIn);
-    if (!pWallet->UpdateTx(hashFork,assembledTx))
+    if (!pWallet->AddNewTx(hashFork,assembledTx))
     {
         return MV_ERR_SYS_DATABASE_ERROR;
     }

@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The Multiverse developers
+// Copyright (c) 2017-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -206,6 +206,22 @@ protected:
     mutable boost::mutex mtxBulletin;
     bool fBulletin;
     uint32 nTimerBulletin;
+};
+
+// dummy delegated channel for forknode of supernode
+class CDummyDelegatedChannel : public network::IMvDelegatedChannel
+{
+public:
+    CDummyDelegatedChannel();
+    ~CDummyDelegatedChannel();
+
+    void PrimaryUpdate(int nStartHeight,
+                       const std::vector<std::pair<uint256,std::map<CDestination,size_t> > >& vEnrolledWeight,
+                       const std::map<CDestination,std::vector<unsigned char> >& mapDistributeData,
+                       const std::map<CDestination,std::vector<unsigned char> >& mapPublishData) override;
+protected:
+    mutable boost::shared_mutex rwPeer;
+    CDelegatedChannelChain dataChain;
 };
 
 } // namespace multiverse

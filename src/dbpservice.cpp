@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The Multiverse developers
+// Copyright (c) 2017-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -185,6 +185,26 @@ bool CDbpService::HandleEvent(CMvEventDbpConnect& event)
                 CMvEventDbpAdded eventAdd(session);
                 eventAdd.data.name = "event";
                 eventAdd.data.anyAddedObj = virtualevent.second;
+                return pDbpServer->DispatchEvent(&eventAdd);
+            }
+
+            if(mapPeerEvent.size() == 0)
+            {
+                CWalleveBufStream ss;
+                CMvEventPeerActive eventAct(std::numeric_limits<uint64>::max());
+                eventAct.data.nService = network::NODE_NETWORK;
+                ss << eventAct;
+                std::string data(ss.GetData(), ss.GetSize());
+        
+                CMvDbpVirtualPeerNetEvent eventVPeer;
+                eventVPeer.nNonce = event.nNonce;
+                eventVPeer.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_ACTIVE;
+                eventVPeer.data = std::vector<uint8>(data.begin(), data.end());
+
+                std::string session(event.strSessionId);
+                CMvEventDbpAdded eventAdd(session);
+                eventAdd.data.name = "event";
+                eventAdd.data.anyAddedObj = eventVPeer;
                 return pDbpServer->DispatchEvent(&eventAdd);
             }
         }

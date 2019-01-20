@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2018 The LoMoCoin developers
+// Copyright (c) 2016-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -28,6 +28,7 @@ public:
     virtual bool Remove(CWalleveBufStream& ssKey) = 0;
     virtual bool RemoveAll() = 0;
     virtual bool MoveFirst() = 0;
+    virtual bool MoveTo(CWalleveBufStream& ssKey) = 0;
     virtual bool MoveNext(CWalleveBufStream& ssKey,CWalleveBufStream& ssValue) = 0;
 };
 
@@ -132,8 +133,7 @@ public:
     }
 
 protected:
-    virtual bool DBWalker(CWalleveBufStream& ssKey, CWalleveBufStream& ssValue) = 0;
-
+    virtual bool DBWalker(CWalleveBufStream& ssKey, CWalleveBufStream& ssValue) { return false; }
     template<typename K, typename T>
     bool Read(const K& key, T& value) 
     {
@@ -259,6 +259,41 @@ protected:
                 return false;
 
             if (!dbEngine->MoveFirst())
+                return false;
+            
+            for (;;)
+            { 
+                CWalleveBufStream ssKey,ssValue;
+                if (!dbEngine->MoveNext(ssKey,ssValue))
+                    break;
+
+                if (!fnWalker(ssKey,ssValue))
+                    break;                               
+            }
+            return true;
+        }
+        catch (std::exception& e)
+        {
+            StdError(__PRETTY_FUNCTION__, e.what());
+        }
+
+        return false;
+    } 
+
+    template<typename K>
+    bool WalkThrough(WalkerFunc fnWalker,const K& keyBegin)
+    {
+        try
+        {
+            boost::recursive_mutex::scoped_lock lock(mtx);
+
+            if (dbEngine == NULL)
+                return false;
+
+            CWalleveBufStream ssKeyBegin;
+            ssKeyBegin << keyBegin;
+
+            if (!dbEngine->MoveTo(ssKeyBegin))
                 return false;
             
             for (;;)

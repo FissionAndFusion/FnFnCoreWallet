@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The Multiverse developers
+// Copyright (c) 2017-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -19,8 +19,8 @@ public:
     int64 nTxFee;
     CDestination destIn;
     int64 nValueIn;
-    int nBlockHeight;
-    int nFlags;
+    mutable int nBlockHeight;
+    mutable int nFlags;
     uint256 txid;
     uint256 hashFork;
     // memory only

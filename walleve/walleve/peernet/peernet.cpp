@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2018 The LoMoCoin developers
+// Copyright (c) 2016-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -171,7 +171,7 @@ CPeer* CPeerNet::AddNewPeer(CIOClient *pClient,bool fInBound)
 {
     uint64 nNonce;
     RAND_bytes((unsigned char*)&nNonce, sizeof(nNonce));
-    while(mapPeer.count(nNonce) || nNonce <= 0xFF)
+    while(mapPeer.count(nNonce) || nNonce <= 0xFF || nNonce == std::numeric_limits<uint64>::max())
     {
         RAND_bytes((unsigned char*)&nNonce, sizeof(nNonce));
     }

@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The Multiverse developers
+// Copyright (c) 2017-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -52,6 +52,58 @@ std::string CMvMintConfig::Help() const
 }
 
 void CMvMintConfig::ExtractMintParamPair(const std::string& strAddress,
+                                         const std::string& strKey,
+                                         CDestination& dest, uint256& privkey)
+{
+    CMvAddress address;
+    if (address.ParseString(strAddress) && !address.IsNull() &&
+        strKey.size() == 64)
+    {
+        dest = address;
+        privkey.SetHex(strKey);
+    }
+}
+
+////  CMvForkNodeMintConfig ///////////
+
+CMvForkNodeMintConfig::CMvForkNodeMintConfig()
+{
+    po::options_description desc("ForkNodeMint");
+
+    CMvForkNodeMintConfigOption::AddOptionsImpl(desc);
+
+    AddOptions(desc);
+}
+
+CMvForkNodeMintConfig::~CMvForkNodeMintConfig() {}
+
+bool CMvForkNodeMintConfig::PostLoad()
+{
+    if (fHelp)
+    {
+        return true;
+    }
+
+    ExtractMintParamPair(strForkNodeAddressMPVss, strForkNodeKeyMPVss, destMPVss, keyMPVss);
+  
+    return true;
+}
+
+std::string CMvForkNodeMintConfig::ListConfig() const
+{
+    std::ostringstream oss;
+    oss << CMvForkNodeMintConfigOption::ListConfigImpl();
+    oss << "destMPVss: " << destMPVss.GetHex() << "\n";
+    oss << "keyMPVss: " << keyMPVss.GetHex() << "\n";
+    return oss.str();
+}
+
+std::string CMvForkNodeMintConfig::Help() const
+{
+    return CMvForkNodeMintConfigOption::HelpImpl();
+}
+
+void CMvForkNodeMintConfig::ExtractMintParamPair(const std::string& strAddress,
                                          const std::string& strKey,
                                          CDestination& dest, uint256& privkey)
 {

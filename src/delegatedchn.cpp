@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The Multiverse developers
+// Copyright (c) 2017-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -589,4 +589,25 @@ void CDelegatedChannel::PushBulletin()
             }
         }
     }
+}
+
+CDummyDelegatedChannel::CDummyDelegatedChannel()
+{
+
+}
+
+CDummyDelegatedChannel::~CDummyDelegatedChannel()
+{
+
+}
+
+void CDummyDelegatedChannel::PrimaryUpdate(int nStartHeight,
+                       const std::vector<std::pair<uint256,std::map<CDestination,size_t> > >& vEnrolledWeight,
+                       const std::map<CDestination,std::vector<unsigned char> >& mapDistributeData,
+                       const std::map<CDestination,std::vector<unsigned char> >& mapPublishData)
+{
+    (void)nStartHeight;
+    (void)vEnrolledWeight;
+    (void)mapDistributeData;
+    (void)mapPublishData;
 }

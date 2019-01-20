@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The Multiverse developers
+// Copyright (c) 2017-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -17,7 +17,7 @@ CMvDelegateVerify::CMvDelegateVerify(const map<CDestination,size_t>& mapWeight,
     Enroll(mapWeight,mapEnrollData);
 }   
 
-bool CMvDelegateVerify::VerifyProof(const vector<unsigned char>& vchProof,
+bool CMvDelegateVerify::VerifyProof(const vector<unsigned char>& vchProof,uint256& nAgreement,
                                     size_t& nWeight,map<CDestination,size_t>& mapBallot)
 {
     uint256 nAgreementParse;
@@ -49,7 +49,6 @@ bool CMvDelegateVerify::VerifyProof(const vector<unsigned char>& vchProof,
         return false;
     } 
 
-    uint256 nAgreement;
     GetAgreement(nAgreement,nWeight,mapBallot);
     
     return (nAgreement == nAgreementParse);

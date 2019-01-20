@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The Multiverse developers
+// Copyright (c) 2017-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -35,6 +35,24 @@ public:
     CDestination destBlake512;
     uint256 keyBlake512;
 
+};
+
+class CMvForkNodeMintConfig : virtual public CMvBasicConfig,
+                      virtual public CMvForkNodeMintConfigOption
+{
+public:
+    CMvForkNodeMintConfig();
+    virtual ~CMvForkNodeMintConfig();
+    virtual bool PostLoad();
+    virtual std::string ListConfig() const;
+    virtual std::string Help() const;
+protected:
+    void ExtractMintParamPair(const std::string& strAddress,
+                              const std::string& strKey, CDestination& dest,
+                              uint256& privkey);
+public:
+    CDestination destMPVss;
+    uint256 keyMPVss;
 };
 
 }  // namespace multiverse

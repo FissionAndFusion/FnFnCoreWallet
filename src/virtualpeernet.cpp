@@ -274,7 +274,10 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerInv& eventInv)
 {
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN)
     {
-        return CMvPeerNet::HandleEvent(eventInv);
+        if(eventInv.nNonce != std::numeric_limits<uint64>::max())
+        {
+            return CMvPeerNet::HandleEvent(eventInv);
+        }
     }
 
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_ROOT)

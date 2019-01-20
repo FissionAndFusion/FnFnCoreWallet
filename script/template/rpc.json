@@ -691,7 +691,7 @@
         "example": [
             {
                 "request": "multiverse-cli listfork",
-                "response": "1"
+                "response": "[{\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\",\"name\":\"Fission And Fusion Network\",\"symbol\":\"FnFn\",\"isolated\":true,\"private\":false,\"enclosed\":false,\"owner\":\"1mjw7aa0s7v9sv7x3thvcexxzjz4tq82j5qc12dy29ktqy84haa0j7dwb\"}]"
             },
             {
                 "request": "{\"id\":69,\"method\":\"listfork\",\"jsonrpc\":\"2.0\",\"params\":{}}",
@@ -1275,8 +1275,7 @@
             {
                 "request": "curl -d '{\"id\":5,\"method\":\"encryptkey\",\"jsonrpc\":\"2.0\",\"params\":{\"pubkey\":\"f4c3babec11363be80e7b6aa1d803d63206a11f36fc99b874b63a262110a0add\",\"passphrase\":\"456\",\"oldpassphrase\":\"123\"}}' http://127.0.0.1:6812",
                 "response": "{\"id\":5,\"jsonrpc\":\"2.0\",\"result\":\"Encrypt key successfully: f4c3babec11363be80e7b6aa1d803d63206a11f36fc99b874b63a262110a0add\"}"
-            },
-            "multiverse-cli encryptkey f4c3babec11363be80e7b6aa1d803d63206a11f36fc99b874b63a262110a0add 456 123"
+            }
         ],
         "error": [
             "{\"code\":-6,\"message\":\"Passphrase must be nonempty\"}",
@@ -1316,8 +1315,7 @@
             {
                 "request": "curl -d '{\"id\":1,\"method\":\"lockkey\",\"jsonrpc\":\"2.0\",\"params\":{\"pubkey\":\"2e05c9ee45fdf58f7b007458298042fc3d3ad416a2f9977ace16d14164a3e882\"}}' http://127.0.0.1:6812",
                 "response": "{\"id\":1,\"jsonrpc\":\"2.0\",\"result\":\"Lock key successfully: 2e05c9ee45fdf58f7b007458298042fc3d3ad416a2f9977ace16d14164a3e882\"}"
-            },
-            "multiverse-cli encryptkey 2e05c9ee45fdf58f7b007458298042fc3d3ad416a2f9977ace16d14164a3e882 456 123"
+            }
         ],
         "error": [
             "{\"code\":-4,\"message\":\"Unknown key\"}",
@@ -1417,7 +1415,6 @@
         "error": [
             "{\"code\":-6,\"message\":\"Invalid private key\"}",
             "{\"code\":-6,\"message\":\"Passphrase must be nonempty\"}",
-            "{\"code\":-4,\"message\":\"Invalid private key\"}",
             "{\"code\":-401,\"message\":\"Already have key\"}",
             "{\"code\":-401,\"message\":\"Failed to add key\"}",
             "{\"code\":-401,\"message\":\"Failed to sync wallet tx\"}"
@@ -1593,7 +1590,6 @@
         ],
         "error": [
             "{\"code\":-6,\"message\":\"Invalid address\"}",
-            "{\"code\":-6,\"message\":\"Invalid address, should be template address\"}",
             "{\"code\":-401,\"message\":\"Unkown template\"}"
         ]
     },
@@ -2210,7 +2206,6 @@
             "{\"code\":-401,\"message\":\"Failed to add key\"}",
             "{\"code\":-401,\"message\":\"Failed to sync wallet tx\"}",
             "{\"code\":-401,\"message\":\"Failed to add template\"}",
-            "{\"code\":-401,\"message\":\"Failed to sync wallet tx\"}",
             "{\"code\":-32602,\"message\":\"Failed to verify serialized key\"}",
             "{\"code\":-32602,\"message\":\"Can't import the key with empty passphrase\"}"
         ]

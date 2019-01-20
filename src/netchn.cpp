@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The Multiverse developers
+// Copyright (c) 2017-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -213,7 +213,12 @@ bool CNetChannel::IsForkSynchronized(const uint256& hashFork) const
 void CNetChannel::BroadcastBlockInv(const uint256& hashFork,const uint256& hashBlock,const set<uint64>& setKnownPeer)
 {
     network::CMvEventPeerInv eventInv(0,hashFork);
+    eventInv.sender = "netchannel";
     eventInv.data.push_back(network::CInv(network::CInv::MSG_BLOCK,hashBlock));
+
+    network::CMvEventPeerInv eventDownInv(std::numeric_limits<uint64>::max(), hashFork);
+    eventDownInv.sender = "netchannel";
+    eventDownInv.data.push_back(network::CInv(network::CInv::MSG_BLOCK,hashBlock));
     {
         boost::shared_lock<boost::shared_mutex> rlock(rwNetPeer);
         for (map<uint64,CNetChannelPeer>::iterator it = mapPeer.begin();it != mapPeer.end();++it)
@@ -225,6 +230,8 @@ void CNetChannel::BroadcastBlockInv(const uint256& hashFork,const uint256& hashB
                 pPeerNet->DispatchEvent(&eventInv);
             }
         }
+
+        pPeerNet->DispatchEvent(&eventDownInv);
     }
 }
 
