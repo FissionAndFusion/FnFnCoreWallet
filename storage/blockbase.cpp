@@ -448,7 +448,7 @@ bool CBlockBase::Retrieve(const uint256& hash,CBlock& block)
             return false;
         }
     }
-    if (!tsBlock.Read(block,pIndex->nFile,pIndex->nOffset))
+    if (!tsBlock.Read(block,pIndex->nFile,pIndex->nOffset,false))
     {
         return false;
     }
@@ -459,7 +459,7 @@ bool CBlockBase::Retrieve(const CBlockIndex* pIndex,CBlock& block)
 {
     block.SetNull();
 
-    if (!tsBlock.Read(block,pIndex->nFile,pIndex->nOffset))
+    if (!tsBlock.Read(block,pIndex->nFile,pIndex->nOffset,false))
     {
         return false;
     }

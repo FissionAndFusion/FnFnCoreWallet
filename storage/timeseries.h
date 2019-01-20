@@ -71,7 +71,7 @@ public:
     bool Initialize(const boost::filesystem::path& pathLocationIn,const std::string& strPrefixIn);
     void Deinitialize();
     template <typename T>
-    bool Write(const T& t,uint32& nFile,uint32& nOffset)
+    bool Write(const T& t,uint32& nFile,uint32& nOffset,bool fWriteCache = true)
     {
         boost::unique_lock<boost::mutex> lock(mtxCache);
 
@@ -94,14 +94,17 @@ public:
             walleve::StdError(__PRETTY_FUNCTION__, e.what());
             return false;
         }
-        if (!WriteToCache(t,CDiskPos(nFile,nOffset)))
+        if (fWriteCache)
         {
-            ResetCache();
+            if (!WriteToCache(t,CDiskPos(nFile,nOffset)))
+            {
+                ResetCache();
+            }
         }
         return true;
     }
     template <typename T>
-    bool Read(T& t,uint32 nFile,uint32 nOffset)
+    bool Read(T& t,uint32 nFile,uint32 nOffset,bool fWriteCache = true)
     {
         boost::unique_lock<boost::mutex> lock(mtxCache);
 
@@ -128,9 +131,12 @@ public:
             return false;
         }
 
-        if (!WriteToCache(t,CDiskPos(nFile,nOffset)))
+        if (fWriteCache)
         {
-            ResetCache();
+            if (!WriteToCache(t,CDiskPos(nFile,nOffset)))
+            {
+                ResetCache();
+            }
         }
         return true;
     }
