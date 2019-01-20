@@ -16,34 +16,10 @@ namespace multiverse
 namespace storage
 {
 
-class CBlockDBFork
-{
-public:
-    CBlockDBFork(const uint256& hashForkIn=uint64(0),const uint256 hashRefIn=uint64(0),int nIndexIn=0)
-    : hashFork(hashForkIn),hashRef(hashRefIn),nIndex(nIndexIn) {}
-    uint256 hashFork;
-    uint256 hashRef;
-    int nIndex;
-};
-
 class CBlockDBWalker
 {
 public:
     virtual bool Walk(CBlockOutline& outline) = 0;
-};
-
-class CBlockDBTxFilter
-{
-public:
-    CBlockDBTxFilter(CTxFilter& filterIn) 
-    : filter(filterIn),destIn(filterIn.destIn),sendTo(filterIn.sendTo)
-    {
-    }
-    virtual bool FoundTxIndex(const CDestination& destTxIn,int64 nValueTxIn,int nBlockHeight,uint32 nFile,uint32 nOffset) = 0;
-public:
-    CTxFilter& filter;
-    CDestination& destIn;
-    CDestination& sendTo;
 };
 
 class CBlockDB
@@ -74,7 +50,6 @@ public:
     bool RetrieveTxPos(const uint256& txid,uint32& nFile,uint32& nOffset);
     bool RetrieveTxLocation(const uint256& txid,uint256& hashAnchor,int& nBlockHeight);
     bool RetrieveTxUnspent(const uint256& fork,const CTxOutPoint& out,CTxOutput& unspent);
-    bool FilterTx(CBlockDBTxFilter& filter);
     bool RetrieveDelegate(const uint256& hash,int64 nMinAmount,std::map<CDestination,int64>& mapDelegate);
     bool RetrieveEnroll(const uint256& hashAnchor,const std::set<uint256>& setBlockRange, 
                         std::map<CDestination,std::pair<uint32,uint32> >& mapEnrollTxPos);

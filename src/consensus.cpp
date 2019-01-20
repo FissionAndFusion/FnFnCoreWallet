@@ -14,20 +14,16 @@ using namespace multiverse;
 class CDelegateTxFilter : public CTxFilter
 {
 public:
-    CDelegateTxFilter(const uint256& hashForkIn,CDelegateContext& ctxtIn)
-    : CTxFilter(ctxtIn.GetDestination(),ctxtIn.GetDestination()),hashFork(hashForkIn),ctxt(ctxtIn)
+    CDelegateTxFilter(CDelegateContext& ctxtIn)
+    : CTxFilter(ctxtIn.GetDestination()),ctxt(ctxtIn)
     {
     }
-    bool FoundTx(const uint256& hashForkIn,const CAssembledTx& tx)
+    bool FoundTx(const uint256& hashFork,const CAssembledTx& tx)
     {
-        if (hashFork == hashForkIn)
-        {
-            ctxt.AddNewTx(tx);
-        }
+        ctxt.AddNewTx(tx);
         return true;
     }
 protected:
-    uint256 hashFork;
     CDelegateContext& ctxt;
 }; 
 
@@ -384,10 +380,11 @@ void CConsensus::GetProof(int nTargetHeight,vector<unsigned char>& vchProof)
 
 bool CConsensus::LoadDelegateTx()
 {
+    const uint256 hashGenesis = pCoreProtocol->GetGenesisBlockHash();
     for (map<CDestination,CDelegateContext>::iterator it = mapContext.begin();it != mapContext.end();++it)
     {
-        CDelegateTxFilter txFilter(pCoreProtocol->GetGenesisBlockHash(),(*it).second);
-        if (!pWorldLine->FilterTx(txFilter) || !pTxPool->FilterTx(txFilter))
+        CDelegateTxFilter txFilter((*it).second);
+        if (!pWorldLine->FilterTx(hashGenesis,txFilter) || !pTxPool->FilterTx(hashGenesis,txFilter))
         {
             return false;
         }

@@ -551,49 +551,6 @@ bool CBlockDB::RetrieveTxUnspent(const uint256& fork,const CTxOutPoint& out,CTxO
     return dbUnspent.Retrieve(fork,out,unspent);
 }
 
-bool CBlockDB::FilterTx(CBlockDBTxFilter& filter)
-{
-    CMvDBInst db(&dbPool);
-    if (!db.Available())
-    {
-        return false;
-    }
-    ostringstream oss;
-    oss << "SELECT destin,valuein,height,file,offset FROM transaction";
-    if (filter.destIn.IsNull())
-    {
-        if (!filter.sendTo.IsNull())
-        {
-            oss << " WHERE sendto = \'" << db->ToEscString(filter.sendTo) << "\'";
-        }
-    }
-    else
-    {
-        oss << " WHERE destin = \'" << db->ToEscString(filter.destIn) << "\'";
-        if (!filter.sendTo.IsNull())
-        {
-            oss << " OR sendto = \'" << db->ToEscString(filter.sendTo) << "\'";
-        }
-    }
-    oss << " ORDER BY id";
-
-    CMvDBRes res(*db,oss.str(),true);
-    while (res.GetRow())
-    {
-        CDestination destIn;
-        int64 nValueIn;
-        int nHeight;
-        uint32 nFile,nOffset;
-        if (   !res.GetField(0,destIn) || !res.GetField(1,nValueIn) || !res.GetField(2,nHeight) 
-            || !res.GetField(3,nFile)  || !res.GetField(4,nOffset)
-            || !filter.FoundTxIndex(destIn,nValueIn,nHeight,nFile,nOffset))
-        {
-            return false;
-        }
-    }
-    return true;
-}
-
 bool CBlockDB::RetrieveDelegate(const uint256& hash,int64 nMinAmount,map<CDestination,int64>& mapDelegate)
 {
     CMvDBInst db(&dbPool);
