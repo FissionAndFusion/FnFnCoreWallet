@@ -274,7 +274,7 @@ bool CWalletDB::ListDBTx(int nOffset,int nCount,std::vector<CWalletTx>& vWalletT
             && res.GetField(3,wtx.nTimeStamp)   && res.GetField(4,wtx.nLockUntil) 
             && res.GetField(5,wtx.sendTo)       && res.GetField(6,wtx.nAmount) 
             && res.GetField(7,wtx.nTxFee)       && res.GetField(8,wtx.destIn) 
-            && res.GetField(9,wtx.nValueIn)     && res.GetField(9,wtx.nBlockHeight) 
+            && res.GetField(9,wtx.nValueIn)     && res.GetField(10,wtx.nBlockHeight) 
             && res.GetField(11,wtx.nFlags)      && res.GetField(12,wtx.hashFork) 
             && res.GetField(13,vchTxIn)         && ParseTxIn(vchTxIn,wtx))
         {
