@@ -429,7 +429,7 @@ bool CMvCoreProtocol::CheckBlockSignature(const CBlock& block)
 
 MvErr CMvCoreProtocol::ValidateVacantBlock(const CBlock& block)
 {
-    if (block.hashMerkle != 0 || !block.txMint.IsNull() || !block.vtx.empty())
+    if (block.hashMerkle != 0 || block.txMint != CTransaction() || !block.vtx.empty())
     {
         return DEBUG(MV_ERR_BLOCK_TRANSACTIONS_INVALID,"vacant block tx is not empty.");
     }

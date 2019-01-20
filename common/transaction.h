@@ -132,7 +132,10 @@ public:
     {
         walleve::CWalleveBufStream ss;
         ss << (*this);
-        return multiverse::crypto::CryptoHash(ss.GetData(),ss.GetSize());
+        
+        uint256 hash = multiverse::crypto::CryptoHash(ss.GetData(),ss.GetSize());
+
+        return uint256(nTimeStamp,uint224(hash));
     }
     uint256 GetSignatureHash() const
     {
