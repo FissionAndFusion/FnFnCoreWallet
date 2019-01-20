@@ -1289,17 +1289,53 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
 
                 for(const auto& tx : block.vtx)
                 {
+                    static vector<pair<uint256, uint64> > preout;   //txid vs. height
+                    CTxIndex TxIdx;
+                    if(!dbBlock.RetrieveTxIndex(tx.GetHash(), TxIdx))
+                    {
+                        assert(0);
+                    }
+                    int64 nCharge = TxIdx.nValueIn - TxIdx.nAmount - tx.nTxFee;
+                    if(nCharge > 0 && tx.sendTo.IsTemplate())
+                    {
+                        cout << "there is a charge with template address: " << tx.sendTo.GetHex() << endl;
+                    }
+                    if(nCharge > 0)
+                    {
+                        cout << "there is a charge with " << (tx.sendTo.IsPubKey() ? "pubkey " : "tempkey ") << tx.sendTo.GetHex() << endl;
+                        int n = 1;
+                    }
                     if(tx.nAmount == 11500000)
                     {
                         int n = 1;
                     }
                     if(tx.sendTo.IsPubKey())
                     {
-                        int n = 1;
+                        cout << "send to a pubkey address of " << tx.sendTo.GetHex() << endl;
+                        preout.push_back(make_pair(tx.GetHash(), TxIdx.nBlockHeight));
                     }
                     mapUnspentUTXO.insert(make_pair(tx.vInput[0].prevout, CTxUnspent(tx.vInput[0].prevout, CTxOutput(tx.sendTo, tx.nAmount, tx.nLockUntil))));
+                    if(nCharge > 0)
+                    {
+                        if(tx.vInput.size() != 1)
+                        {
+                            Error("B", "Tx with charge: input must be a single address.\n");
+                            return false;
+                        }
+                        else
+                        {
+                            mapUnspentUTXO.insert(make_pair(CTxOutPoint(tx.GetHash(), 1), CTxUnspent(CTxOutPoint(tx.GetHash(), 1), CTxOutput(TxIdx.destIn, nCharge, tx.nLockUntil))));
+                        }
+                    }
                     for(const auto& txin : tx.vInput)
                     {
+                        for(const auto& po : preout)
+                        {
+                            if(txin.prevout.hash == po.first)
+                            {
+                                int n = 1;
+                            }
+                        }
                         vSpentUTXO.push_back(txin.prevout);
                     }
                 }
