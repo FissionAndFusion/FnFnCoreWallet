@@ -93,6 +93,22 @@ public:
     std::vector<uint8> data;
 };
 
+class CMvDbpRPCRouteEvent
+{
+public:
+    enum EventType : int
+    {
+        DBP_EVENT_RPC_ROUTE_STOP = 0,
+    };
+
+public:
+    int type;
+};
+
+class CMvDbpRPCRouteStopEvent
+{
+};
+
 class CMvDbpTxIn
 {
 public:

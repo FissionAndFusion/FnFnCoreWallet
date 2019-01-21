@@ -2060,3 +2060,61 @@ CRPCResultPtr CRPCMod::RPCSubmitWork(CRPCParamPtr param)
 
     return MakeCSubmitWorkResultPtr(hashBlock.GetHex());
 }
+
+CRPCResultPtr CRPCMod::SnRPCStop(CRPCParamPtr param)
+{
+    (void)param;
+    return NULL;
+}
+
+CSnRPCMod::CSnRPCMod()
+{
+    mapRPCFunc["stop"] = &CRPCMod::SnRPCStop;
+}
+
+CSnRPCMod::~CSnRPCMod()
+{
+}
+
+bool CSnRPCMod::WalleveHandleInitialize()
+{
+    CRPCMod::WalleveHandleInitialize();
+
+    if (!WalleveGetObject("dbpservice", pDbpService))
+    {
+        WalleveLog("Failed to request DBP service\n");
+        return false;
+    }
+
+    return true;
+}
+
+void CSnRPCMod::WalleveHandleDeinitialize()
+{
+    CRPCMod::WalleveHandleDeinitialize();
+    pDbpService = NULL;
+}
+
+CRPCResultPtr CSnRPCMod::SnRPCStop(CRPCParamPtr param)
+{
+    CMvEventDbpRPCRoute *pEvent = new CMvEventDbpRPCRoute(0);
+    if(!pEvent)
+    {
+        return NULL;
+    }
+    pDbpService->PostEvent(pEvent);
+
+    // ioComplt.Reset();
+    // bool fResult = false;
+    // ioComplt.WaitForComplete(fResult);
+    pService->Shutdown();
+    return MakeCStopResultPtr("multiverse server stopping[supernode]");
+}
+
+bool CSnRPCMod::HandleEvent(CMvEventDbpRPCRouteStop& event)
+{
+
+    std::cout << "++++++++++++++++++++++" << std::endl;
+    // ioComplt.Completed(false);
+    return true;
+}

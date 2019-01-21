@@ -62,6 +62,9 @@ public:
     // from up node
     bool HandleEvent(CMvEventDbpVirtualPeerNet& event) override;
 
+    //RPC Route
+    bool HandleEvent(CMvEventDbpRPCRoute& event) override;
+
 protected:
     bool WalleveHandleInitialize() override;
     void WalleveHandleDeinitialize() override;
@@ -122,6 +125,7 @@ protected:
     ICoreProtocol* pCoreProtocol;
     IWallet* pWallet;
     IMvNetChannel* pNetChannel;
+    walleve::IIOModule* pRPCMod;
 
 private:
     std::map<std::string, ForksType> mapSessionChildNodeForks; // session => child node forks

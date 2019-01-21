@@ -12,6 +12,7 @@
 #include "json/json_spirit.h"
 #include "rpcjson.h"
 #include "rpc/rpc.h"
+#include "event.h"
 
 namespace multiverse
 {
@@ -121,13 +122,33 @@ private:
     CRPCResultPtr RPCGetWork(CRPCParamPtr param);
     CRPCResultPtr RPCSubmitWork(CRPCParamPtr param);
 
+public:
+    virtual CRPCResultPtr SnRPCStop(CRPCParamPtr param);
+
 protected:
     walleve::IIOProc *pHttpServer;
     ICoreProtocol *pCoreProtocol;
     IService *pService;
 
-private:
+protected:
     std::map<std::string, RPCFunc> mapRPCFunc;
+};
+
+class CSnRPCMod : public CRPCMod, virtual public CDBPEventListener
+{
+public:
+    CSnRPCMod();
+    ~CSnRPCMod();
+    CRPCResultPtr SnRPCStop(CRPCParamPtr param) override;
+    bool HandleEvent(CMvEventDbpRPCRouteStop& event) override;
+
+protected:
+    bool WalleveHandleInitialize() override;
+    void WalleveHandleDeinitialize() override;
+
+protected:
+    walleve::CIOCompletion ioComplt;
+    walleve::IIOModule* pDbpService;
 };
 
 } // namespace multiverse

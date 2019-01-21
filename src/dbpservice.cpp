@@ -20,6 +20,7 @@ CDbpService::CDbpService()
     pDbpServer = NULL;
     pNetChannel = NULL;
     pVirtualPeerNet = NULL;
+    pRPCMod = NULL;
 
     std::unordered_map<std::string, IdsType> temp_map = 
         boost::assign::map_list_of(ALL_BLOCK_TOPIC, std::set<std::string>())
@@ -81,6 +82,12 @@ bool CDbpService::WalleveHandleInitialize()
     if (!WalleveGetObject("virtualpeernet",pVirtualPeerNet))
     {
         WalleveLog("Failed to request virtual peer net\n");
+        return false;
+    }
+
+    if(!WalleveGetObject("rpcmod", pRPCMod))
+    {
+        WalleveLog("Failed to request rpc mod\n");
         return false;
     }
 
@@ -1453,5 +1460,17 @@ bool CDbpService::IsThisNodeData(const uint256& hashFork, uint64 nNonce, const u
 
     setInvHash.erase(dataHash);
 
+    return true;
+}
+
+bool CDbpService::HandleEvent(CMvEventDbpRPCRoute& event)
+{
+    std::cout << "=========================" << std::endl;
+    // CMvEventDbpRPCRouteStop *pEvent = new CMvEventDbpRPCRouteStop(1);
+    // if(!pEvent)
+    // {
+    //     return false;
+    // }
+    // pRPCMod->PostEvent(pEvent);
     return true;
 }
