@@ -99,21 +99,31 @@ void CTxPoolView::InvalidateSpent(const CTxOutPoint& out,vector<uint256>& vInvol
     }
 }
  
-void CTxPoolView::GetFilteredTx(map<size_t,pair<uint256,CPooledTx*> >& mapFilteredTx,
-                                const CDestination& sendTo,const CDestination& destIn)
+void CTxPoolView::GetSortedTx(map<size_t,pair<uint256,CPooledTx*> >& mapSortedTx)
 {
     for (map<uint256,CPooledTx*>::iterator mi = mapTx.begin();mi != mapTx.end(); ++mi)
     {
         CPooledTx* pPooledTx = (*mi).second;
-        if ((destIn.IsNull() && sendTo.IsNull()) || sendTo == pPooledTx->sendTo
-            || (!pPooledTx->destIn.IsNull() && destIn == pPooledTx->destIn))
         {
-            mapFilteredTx.insert(make_pair(pPooledTx->nSequenceNumber,(*mi)));
+            mapSortedTx.insert(make_pair(pPooledTx->nSequenceNumber,(*mi)));
         }
     }
 }
 
-void CTxPoolView::ArrangeBlockTx(std::vector<CTransaction>& vtx,int64& nTotalTxFee,std::size_t nMaxSize)
+void CTxPoolView::GetInvolvedTx(map<size_t,pair<uint256,CPooledTx*> >& mapInvolvedTx,
+                                set<CDestination>& setDest)
+{
+    for (map<uint256,CPooledTx*>::iterator mi = mapTx.begin();mi != mapTx.end(); ++mi)
+    {
+        CPooledTx* pPooledTx = (*mi).second;
+        if (setDest.count(pPooledTx->sendTo) || setDest.count(pPooledTx->destIn))
+        {
+            mapInvolvedTx.insert(make_pair(pPooledTx->nSequenceNumber,(*mi)));
+        }
+    }
+}
+
+void CTxPoolView::ArrangeBlockTx(vector<CTransaction>& vtx,int64& nTotalTxFee,size_t nMaxSize)
 {
     nTotalTxFee = 0;
 
@@ -396,7 +406,7 @@ void CTxPool::ListTx(const uint256& hashFork,vector<pair<uint256,size_t> >& vTxP
     {
         CTxPoolView& txView = (*it).second;
         map<size_t,pair<uint256,CPooledTx*> > mapFilteredTx;
-        txView.GetFilteredTx(mapFilteredTx);
+        txView.GetSortedTx(mapFilteredTx);
         for (map<size_t,pair<uint256,CPooledTx*> >::iterator mi = mapFilteredTx.begin();
              mi != mapFilteredTx.end();++mi)
         {
@@ -413,7 +423,7 @@ void CTxPool::ListTx(const uint256& hashFork,vector<uint256>& vTxPool)
     {
         CTxPoolView& txView = (*it).second;
         map<size_t,pair<uint256,CPooledTx*> > mapFilteredTx;
-        txView.GetFilteredTx(mapFilteredTx);
+        txView.GetSortedTx(mapFilteredTx);
         for (map<size_t,pair<uint256,CPooledTx*> >::iterator mi = mapFilteredTx.begin();
              mi != mapFilteredTx.end();++mi)
         {
@@ -422,21 +432,26 @@ void CTxPool::ListTx(const uint256& hashFork,vector<uint256>& vTxPool)
     }
 }
 
-bool CTxPool::FilterTx(CTxFilter& filter)
+bool CTxPool::FilterTx(const uint256& hashFork,CTxFilter& filter)
 {
     boost::shared_lock<boost::shared_mutex> rlock(rwAccess);
-    for (map<uint256,CTxPoolView>::iterator it = mapPoolView.begin();it != mapPoolView.end();++it)
+
+    map<uint256,CTxPoolView>::iterator it = mapPoolView.find(hashFork);
+    if (it == mapPoolView.end())
     {
-        CTxPoolView& txView = (*it).second;
-        map<size_t,pair<uint256,CPooledTx*> > mapFilteredTx;
-        txView.GetFilteredTx(mapFilteredTx,filter.sendTo,filter.destIn);
-        for (map<size_t,pair<uint256,CPooledTx*> >::iterator mi = mapFilteredTx.begin();
-             mi != mapFilteredTx.end();++mi)
+        return true;
+    }
+    
+    CTxPoolView& txView = (*it).second;
+    map<size_t,pair<uint256,CPooledTx*> > mapFilteredTx;
+    txView.GetInvolvedTx(mapFilteredTx,filter.setDest);
+
+    for (map<size_t,pair<uint256,CPooledTx*> >::iterator mi = mapFilteredTx.begin();
+         mi != mapFilteredTx.end();++mi)
+    {
+        if (!filter.FoundTx(hashFork,*static_cast<CAssembledTx*>((*mi).second.second)))
         {
-            if (!filter.FoundTx((*it).first,*static_cast<CAssembledTx*>((*mi).second.second)))
-            {
-                return false;
-            }
+            return false;
         }
     }
     return true;

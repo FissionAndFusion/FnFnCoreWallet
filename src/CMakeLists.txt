@@ -43,6 +43,7 @@ set(src
 	rpcmod.cpp rpcmod.h
 	consensus.cpp consensus.h
 	blockmaker.cpp blockmaker.h
+	forkblockmaker.cpp forkblockmaker.h
 	rpcclient.cpp rpcclient.h
 	miner.cpp miner.h
 	dbptype.h

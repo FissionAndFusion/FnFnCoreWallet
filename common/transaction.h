@@ -9,6 +9,7 @@
 #include "destination.h"
 #include "crypto.h"
 
+#include <set>
 #include <walleve/stream/stream.h>
 #include <walleve/stream/datastream.h>
 
@@ -359,23 +360,23 @@ public:
     };
 };
 
-/*
-    if destIn = null and sendTo = null, select all txs
-    if destIn = null and sendTo != null, select tx which tx.sendTo = sendTo
-    if sendTo = null and destIn != null, select tx which tx.destIn = destIn
-    if destIn != null and sendTo != null, select tx which tx.destIn = destIn or tx.sendTo = sendTo
-*/
 class CTxFilter
 {
 public:
-    CDestination destIn;
-    CDestination sendTo;
+    std::set<CDestination> setDest;
 public:
-    CTxFilter(const CDestination& destInIn,const CDestination& sendToIn)
-    : destIn(destInIn),sendTo(sendToIn) 
-    {
-    }
+    CTxFilter(const CDestination& destIn) { setDest.insert(destIn); }
+    CTxFilter(const std::set<CDestination> setDestIn) : setDest(setDestIn) {}
     virtual bool FoundTx(const uint256& hashFork,const CAssembledTx& tx) = 0;
 };
+
+class CTxId : public uint256
+{
+public:
+    CTxId(const uint256& txid = uint256()) : uint256(txid) {}
+    int64 GetTxTime() const { return ((int64)Get32(7)); }
+    uint224 GetTxHash() const { return uint224(*this); } 
+};
+
 #endif //MULTIVERSE_TRANSACTION_H
 

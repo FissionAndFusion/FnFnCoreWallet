@@ -12,23 +12,6 @@ using namespace multiverse;
 extern void MvShutdown();
 
 //////////////////////////////
-// CServiceWalletTxFilter
-class CServiceWalletTxFilter : public CTxFilter
-{
-public:
-    CServiceWalletTxFilter(IWallet* pWalletIn,const CDestination& destNew)
-    : CTxFilter(destNew,destNew),pWallet(pWalletIn)
-    {
-    }
-    bool FoundTx(const uint256& hashFork,const CAssembledTx& tx)
-    {
-        return pWallet->UpdateTx(hashFork,tx);
-    }
-public:
-    IWallet* pWallet;
-};
-
-//////////////////////////////
 // CService 
 
 CService::CService()
@@ -544,36 +527,12 @@ bool CService::CreateTransaction(const uint256& hashFork,const CDestination& des
 
 bool CService::SynchronizeWalletTx(const CDestination& destNew)
 {
-    CServiceWalletTxFilter txFilter(pWallet,destNew);
-    return (pWorldLine->FilterTx(txFilter) && pTxPool->FilterTx(txFilter));
+    return pWallet->SynchronizeWalletTx(destNew);
 }
 
 bool CService::ResynchronizeWalletTx()
 {
-    if (!pWallet->ClearTx())
-    {
-        return false;
-    }
-    
-    set<crypto::CPubKey> setPubKey;
-    pWallet->GetPubKeys(setPubKey);
-    BOOST_FOREACH(const crypto::CPubKey& pubkey,setPubKey)
-    {
-        if (!SynchronizeWalletTx(CDestination(pubkey)))
-        {
-            return false;
-        }
-    }
-    set<CTemplateId> setTemplateId;
-    pWallet->GetTemplateIds(setTemplateId);
-    BOOST_FOREACH(const CTemplateId& tid,setTemplateId)
-    {
-        if (!SynchronizeWalletTx(CDestination(tid)))
-        {
-            return false;
-        }
-    }
-    return true;
+    return pWallet->ResynchronizeWalletTx();
 }
 
 bool CService::GetWork(vector<unsigned char>& vchWorkData,uint256& hashPrev,uint32& nPrevTime,int& nAlgo,int& nBits)

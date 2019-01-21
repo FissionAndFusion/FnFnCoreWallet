@@ -26,30 +26,6 @@ public:
 };
 
 //////////////////////////////
-// CBlockTxFilter
-
-class CBlockTxFilter : public CBlockDBTxFilter
-{
-public:
-    CBlockTxFilter(CBlockBase* pBlockBaseIn,CTxFilter& filterIn) 
-    : CBlockDBTxFilter(filterIn),pBlockBase(pBlockBaseIn) 
-    {
-    }
-    bool FoundTxIndex(const CDestination& destTxIn,int64 nValueTxIn,int nBlockHeight,uint32 nFile,uint32 nOffset)
-    {
-        uint256 hashFork;
-        CTransaction tx;
-        if (!pBlockBase->LoadTx(tx,nFile,nOffset,hashFork))
-        {
-            return false;
-        }
-        return filter.FoundTx(hashFork,CAssembledTx(tx,nBlockHeight,destTxIn,nValueTxIn));
-    }
-public:
-    CBlockBase* pBlockBase;
-};
-
-//////////////////////////////
 // CBlockView
  
 CBlockView::CBlockView()
@@ -337,7 +313,7 @@ bool CBlockBase::Initiate(const uint256& hashGenesis,const CBlock& blockGenesis)
         return false;
     }
     uint32 nFile,nOffset;
-    if (!tsBlock.Write(blockGenesis,nFile,nOffset))
+    if (!tsBlock.Write(CBlockEx(blockGenesis),nFile,nOffset))
     {
         return false;
     }
@@ -917,10 +893,48 @@ bool CBlockBase::LoadTx(CTransaction& tx,uint32 nTxFile,uint32 nTxOffset,uint256
     return true;
 }
 
-bool CBlockBase::FilterTx(CTxFilter& filter)
+bool CBlockBase::FilterTx(const uint256& hashFork,CTxFilter& filter)
 {
-    CBlockTxFilter txFilter(this,filter); 
-    return dbBlock.FilterTx(txFilter);
+    CWalleveReadLock rlock(rwAccess);
+
+    boost::shared_ptr<CBlockFork> spFork = GetFork(hashFork);
+    if (spFork == NULL)
+    {
+        return false;
+    }
+
+    CWalleveReadLock rForkLock(spFork->GetRWAccess());
+
+    for (CBlockIndex* pIndex = spFork->GetOrigin(); pIndex != NULL; pIndex = pIndex->pNext)
+    {    
+        CBlockEx block;
+        if (!tsBlock.Read(block,pIndex->nFile,pIndex->nOffset))
+        {
+            return false;
+        }
+        int nBlockHeight = pIndex->GetBlockHeight();
+        if (filter.setDest.count(block.txMint.sendTo))
+        {
+            if (!filter.FoundTx(hashFork,CAssembledTx(block.txMint,nBlockHeight)))
+            {
+                return false;
+            }
+        }
+        for (int i = 0; i < block.vtx.size();i++)
+        {
+            CTransaction& tx = block.vtx[i];
+            CTxContxt& ctxt = block.vTxContxt[i];
+
+            if (filter.setDest.count(tx.sendTo) || filter.setDest.count(ctxt.destIn))
+            {
+                if (!filter.FoundTx(hashFork,CAssembledTx(tx,nBlockHeight,ctxt.destIn,ctxt.GetValueIn())))
+                {
+                    return false;
+                }
+            }
+        }
+    }
+    return true;
 }
 
 bool CBlockBase::FilterForkContext(CForkContextFilter& filter)
