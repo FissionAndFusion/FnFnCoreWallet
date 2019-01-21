@@ -17,6 +17,7 @@ static const std::string BLOCK_CMD_TOPIC("block-cmd");
 static const std::string TX_CMD_TOPIC("tx-cmd");
 static const std::string CHANGED_TOPIC("changed");
 static const std::string REMOVED_TOPIC("removed");
+static const std::string RPC_CMD_TOPIC("rpc-cmd");
 
 class CMvDbpContent
 {

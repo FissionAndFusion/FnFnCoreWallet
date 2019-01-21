@@ -1483,6 +1483,8 @@ bool CDbpService::IsThisNodeData(const uint256& hashFork, uint64 nNonce, const u
     return true;
 }
 
+// rpc route
+
 bool CDbpService::HandleEvent(CMvEventRPCRouteStop& event)
 {
     std::cout << "=========================" << std::endl;

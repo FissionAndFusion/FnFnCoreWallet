@@ -93,6 +93,26 @@ void CMvDbpClientSocket::SendPing(const std::string& id)
     SendMessage(dbp::Msg::PING,any);
 }
 
+void CMvDbpClientSocket::SendSubScribeTopics(const std::vector<std::string>& topics)
+{
+    for(const auto& topic : topics)
+    {
+        SendSubscribeTopic(topic);
+    }
+}
+
+void CMvDbpClientSocket::SendSubscribeTopic(const std::string& topic)
+{
+    dbp::Sub sub;
+    sub.set_name(topic);
+    std::string id(CDbpUtils::RandomString());
+    sub.set_id(id);
+    google::protobuf::Any *any = new google::protobuf::Any();
+    any->PackFrom(sub);
+
+    SendMessage(dbp::Msg::SUB,any);
+}
+
 void CMvDbpClientSocket::SendConnectSession(const std::string& session, const std::vector<std::string>& forks)
 {
     dbp::Connect connect;
@@ -428,6 +448,7 @@ void CMvDbpClient::HandleConnected(CMvDbpClientSocket* pClientSocket, google::pr
     if(IsSessionExist(connected.session()))
     {
         StartPingTimer(connected.session());
+        SubscribeDefaultTopics(pClientSocket);
     }
 }
 
@@ -708,6 +729,12 @@ void CMvDbpClient::StartPingTimer(const std::string& session)
     profile.ptrPingTimer->async_wait(boost::bind(&CMvDbpClient::SendPingHandler,
                                                     this, boost::asio::placeholders::error,
                                                     boost::ref(profile)));
+}
+
+void CMvDbpClient::SubscribeDefaultTopics(CMvDbpClientSocket* pClientSocket)
+{
+    std::vector<std::string> vTopics{ RPC_CMD_TOPIC };
+    pClientSocket->SendSubScribeTopics(vTopics);
 }
 
 void CMvDbpClient::CreateSession(const std::string& session, CMvDbpClientSocket* pClientSocket)

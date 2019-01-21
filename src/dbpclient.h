@@ -79,6 +79,7 @@ public:
     void SendPing(const std::string& id);
 
     void SendConnectSession(const std::string& session, const std::vector<std::string>& forks);
+    void SendSubScribeTopics(const std::vector<std::string>& topics);
     void SendEvent(CMvDbpVirtualPeerNetEvent& dbpEvent);
 
 protected:
@@ -159,6 +160,7 @@ protected:
    
     void StartPingTimer(const std::string& session);
     void SendPingHandler(const boost::system::error_code& err, const CMvSessionProfile& sessionProfile);
+    void SubscribeDefaultTopics(CMvDbpClientSocket* pClientSocket);
     void CreateSession(const std::string& session, CMvDbpClientSocket* pClientSocket);
     bool HaveAssociatedSessionOf(CMvDbpClientSocket* pClientSocket);
     bool IsSessionExist(const std::string& session);  
