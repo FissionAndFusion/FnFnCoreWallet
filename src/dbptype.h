@@ -93,19 +93,13 @@ public:
     std::vector<uint8> data;
 };
 
-class CMvDbpRPCRouteEvent
+class CMvRPCRouteStopEvent
 {
 public:
-    enum EventType : int
-    {
-        DBP_EVENT_RPC_ROUTE_STOP = 0,
-    };
-
-public:
-    int type;
+    walleve::CIOCompletion *ioComplt;
 };
 
-class CMvDbpRPCRouteStopEvent
+class CMvRPCRouteStopResult
 {
 };
 

@@ -44,7 +44,6 @@ enum
 
     /*super node*/
     MV_EVENT_DBP_VPEERNET,
-    MV_EVENT_DBP_RPCROUTE,
     MV_EVENT_RPCROUTE_STOP,
 
     MV_EVENT_DBP_PING,
@@ -117,6 +116,9 @@ class CDBPEventListener;
 #define TYPE_DBP_EVENT(type, body) \
     walleve::CWalleveEventCategory<type, CDBPEventListener, body, bool>
 
+#define TYPE_RPCROUTE_EVENT(type, body, result) \
+    walleve::CWalleveEventCategory<type, CDBPEventListener, body, result>
+
 typedef TYPE_DBPEVENT(MV_EVENT_DBP_SOCKET_ADD_NEW_BLOCK, CBlockEx) CMvEventDbpUpdateNewBlock;
 typedef TYPE_DBPEVENT(MV_EVENT_DBP_SOCKET_ADD_NEW_TX, CTransaction) CMvEventDbpUpdateNewTx;
 
@@ -137,8 +139,7 @@ typedef TYPE_DBP_EVENT(MV_EVENT_DBP_REMOVE_SESSION, CMvDbpRemoveSession) CMvEven
 
 /*supernode*/
 typedef TYPE_DBP_EVENT(MV_EVENT_DBP_VPEERNET, CMvDbpVirtualPeerNetEvent) CMvEventDbpVirtualPeerNet;
-typedef TYPE_DBP_EVENT(MV_EVENT_DBP_RPCROUTE, CMvDbpRPCRouteEvent) CMvEventDbpRPCRoute;
-typedef TYPE_DBP_EVENT(MV_EVENT_RPCROUTE_STOP, CMvDbpRPCRouteStopEvent) CMvEventDbpRPCRouteStop;
+typedef TYPE_RPCROUTE_EVENT(MV_EVENT_RPCROUTE_STOP, CMvRPCRouteStopEvent, CMvRPCRouteStopResult) CMvEventRPCRouteStop;
 
 // HeartBeats
 typedef TYPE_DBP_EVENT(MV_EVENT_DBP_PING, CMvDbpPing) CMvEventDbpPing;
@@ -173,8 +174,7 @@ public:
 
     /*supernode*/
     DECLARE_EVENTHANDLER(CMvEventDbpVirtualPeerNet);
-    DECLARE_EVENTHANDLER(CMvEventDbpRPCRoute);
-    DECLARE_EVENTHANDLER(CMvEventDbpRPCRouteStop);
+    DECLARE_EVENTHANDLER(CMvEventRPCRouteStop);
 
     DECLARE_EVENTHANDLER(CMvEventDbpPing);
     DECLARE_EVENTHANDLER(CMvEventDbpPong);

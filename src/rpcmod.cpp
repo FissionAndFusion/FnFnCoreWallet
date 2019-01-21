@@ -2097,24 +2097,18 @@ void CSnRPCMod::WalleveHandleDeinitialize()
 
 CRPCResultPtr CSnRPCMod::SnRPCStop(CRPCParamPtr param)
 {
-    CMvEventDbpRPCRoute *pEvent = new CMvEventDbpRPCRoute(0);
+    CMvEventRPCRouteStop *pEvent = new CMvEventRPCRouteStop("");
+    pEvent->data.ioComplt = &ioComplt;
+
     if(!pEvent)
     {
         return NULL;
     }
     pDbpService->PostEvent(pEvent);
 
-    // ioComplt.Reset();
-    // bool fResult = false;
-    // ioComplt.WaitForComplete(fResult);
+    ioComplt.Reset();
+    bool fResult = false;
+    ioComplt.WaitForComplete(fResult);
     pService->Shutdown();
     return MakeCStopResultPtr("multiverse server stopping[supernode]");
-}
-
-bool CSnRPCMod::HandleEvent(CMvEventDbpRPCRouteStop& event)
-{
-
-    std::cout << "++++++++++++++++++++++" << std::endl;
-    // ioComplt.Completed(false);
-    return true;
 }

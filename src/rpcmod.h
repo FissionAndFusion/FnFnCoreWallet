@@ -140,7 +140,6 @@ public:
     CSnRPCMod();
     ~CSnRPCMod();
     CRPCResultPtr SnRPCStop(CRPCParamPtr param) override;
-    bool HandleEvent(CMvEventDbpRPCRouteStop& event) override;
 
 protected:
     bool WalleveHandleInitialize() override;

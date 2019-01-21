@@ -1483,14 +1483,11 @@ bool CDbpService::IsThisNodeData(const uint256& hashFork, uint64 nNonce, const u
     return true;
 }
 
-bool CDbpService::HandleEvent(CMvEventDbpRPCRoute& event)
+bool CDbpService::HandleEvent(CMvEventRPCRouteStop& event)
 {
     std::cout << "=========================" << std::endl;
-    // CMvEventDbpRPCRouteStop *pEvent = new CMvEventDbpRPCRouteStop(1);
-    // if(!pEvent)
-    // {
-    //     return false;
-    // }
-    // pRPCMod->PostEvent(pEvent);
+    CMvRPCRouteStopEvent e = event.data;
+    walleve::CIOCompletion *ioComplt = event.data.ioComplt;
+    ioComplt->Completed(false);
     return true;
 }
