@@ -1298,11 +1298,11 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
                     int64 nCharge = TxIdx.nValueIn - TxIdx.nAmount - tx.nTxFee;
                     if(nCharge > 0 && tx.sendTo.IsTemplate())
                     {
-                        cout << "there is a charge with template address: " << tx.sendTo.GetHex() << endl;
+                        cout << "there is a change with template address: " << tx.sendTo.GetHex() << endl;
                     }
                     if(nCharge > 0)
                     {
-                        cout << "there is a charge with " << (tx.sendTo.IsPubKey() ? "pubkey " : "tempkey ") << tx.sendTo.GetHex() << endl;
+                        cout << "there is a change with " << (tx.sendTo.IsPubKey() ? "pubkey " : "tempkey ") << tx.sendTo.GetHex() << endl;
                         int n = 1;
                     }
                     if(tx.nAmount == 11500000)
@@ -1317,14 +1317,10 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
                     mapUnspentUTXO.insert(make_pair(CTxOutPoint(tx.GetHash(), 0), CTxUnspent(CTxOutPoint(tx.GetHash(), 0), CTxOutput(tx.sendTo, tx.nAmount, tx.nLockUntil))));
                     if(nCharge > 0)
                     {
-                        if(tx.vInput.size() != 1)
+                        if(!CheckInputSingleAddressForTxWithChange(tx.GetHash()))
                         {
-                            Error("B", "Tx(%s) with charge: input must be a single address.\n", tx.GetHash().ToString().c_str());
-                            for(const auto& i : tx.vInput)
-                            {
-                                Error("B", "Tx(%s) with charge: %s-%d.\n", tx.GetHash().ToString().c_str(), i.prevout.hash.ToString().c_str(), i.prevout.n);
-                            }
-                            //return false;
+                            Error("B", "Tx(%s) with change: input must be a single address.\n", tx.GetHash().ToString().c_str());
+                            return false;
                         }
                         else
                         {
@@ -1385,6 +1381,86 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
     Log("B", "Data consistency verified.\n");
 
     return true;
+}
+
+bool CBlockBase::CheckInputSingleAddressForTxWithChange(const uint256& txid)
+{
+    CTransaction tx;
+    if(!RetrieveTx(txid, tx))
+    {
+        return false;
+    }
+    //validate if this is a transaction which has a change
+    CTxIndex TxIdx;
+    if(!dbBlock.RetrieveTxIndex(tx.GetHash(), TxIdx))
+    {
+        assert(0);
+    }
+    int64 nChange = TxIdx.nValueIn - TxIdx.nAmount - tx.nTxFee;
+    if(nChange <= 0)
+    {
+        Error("B", "Tx(%s) is not a transaction with change.\n", txid);
+        assert(0);
+    }
+
+    //get all inputs whose index is 0 if any
+    vector<CDestination> vDestNoChange;
+    vector<uint256> vTxExistChange;
+    for(const auto& i : tx.vInput)
+    {
+        if(i.prevout.n == 0)
+        {
+            CTxIndex txIdx;
+            if(!dbBlock.RetrieveTxIndex(i.prevout.hash, txIdx))
+            {
+                return false;
+            }
+            vDestNoChange.push_back(txIdx.sendTo);
+        }
+        else
+        {
+            vTxExistChange.push_back(i.prevout.hash);
+        }
+    }
+    sort(vDestNoChange.begin(), vDestNoChange.end());
+    unique(vDestNoChange.begin(), vDestNoChange.end());
+
+    //if destinations are not equal, return false
+    if(vDestNoChange.size() > 1)
+    {
+        return false;
+    }
+
+    //if destination from input is not equal to output, return false
+    if(vDestNoChange.size() == 1)
+    {
+        CTxIndex txIdx;
+        if(!dbBlock.RetrieveTxIndex(txid, txIdx))
+        {
+            return false;
+        }
+        CDestination dest = *(vDestNoChange.begin());
+        if(dest != txIdx.sendTo)
+        {
+            return false;
+        }
+    }
+
+    //if exist output index is 1, recur the process
+    vector<bool> vRes;
+    for(const auto& i : vTxExistChange)
+    {
+        vRes.push_back(CheckInputSingleAddressForTxWithChange(i));
+    }
+
+    if(!vRes.empty())
+    {
+        return count(vRes.begin(), vRes.end(), false) <= 0;
+    }
+    else
+    {
+        return true;
+    }
 }
 
 CBlockIndex* CBlockBase::GetIndex(const uint256& hash) const

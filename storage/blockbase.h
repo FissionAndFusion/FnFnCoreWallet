@@ -184,6 +184,7 @@ public:
     bool GetForkBlockLocator(const uint256& hashFork,CBlockLocator& locator);
     bool GetForkBlockInv(const uint256& hashFork,const CBlockLocator& locator,std::vector<uint256>& vBlockHash,size_t nMaxCount);
     bool CheckConsistency(int nCheckLevel, int nCheckDepth);
+    bool CheckInputSingleAddressForTxWithChange(const uint256& txid);
 protected:
     CBlockIndex* GetIndex(const uint256& hash) const;
     CBlockIndex* GetBranch(CBlockIndex* pIndexRef,CBlockIndex* pIndex,std::vector<CBlockIndex*>& vPath);
