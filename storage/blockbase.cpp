@@ -1314,13 +1314,17 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
                         cout << "send to a pubkey address of " << tx.sendTo.GetHex() << endl;
                         preout.push_back(make_pair(tx.GetHash(), TxIdx.nBlockHeight));
                     }
-                    mapUnspentUTXO.insert(make_pair(tx.vInput[0].prevout, CTxUnspent(tx.vInput[0].prevout, CTxOutput(tx.sendTo, tx.nAmount, tx.nLockUntil))));
+                    mapUnspentUTXO.insert(make_pair(CTxOutPoint(tx.GetHash(), 0), CTxUnspent(CTxOutPoint(tx.GetHash(), 0), CTxOutput(tx.sendTo, tx.nAmount, tx.nLockUntil))));
                     if(nCharge > 0)
                     {
                         if(tx.vInput.size() != 1)
                         {
-                            Error("B", "Tx with charge: input must be a single address.\n");
-                            return false;
+                            Error("B", "Tx(%s) with charge: input must be a single address.\n", tx.GetHash().ToString().c_str());
+                            for(const auto& i : tx.vInput)
+                            {
+                                Error("B", "Tx(%s) with charge: %s-%d.\n", tx.GetHash().ToString().c_str(), i.prevout.hash.ToString().c_str(), i.prevout.n);
+                            }
+                            //return false;
                         }
                         else
                         {
