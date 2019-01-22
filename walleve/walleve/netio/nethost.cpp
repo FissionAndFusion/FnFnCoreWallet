@@ -60,15 +60,29 @@ const tcp::endpoint CNetHost::ToEndPoint() const
 unsigned short CNetHost::PortFromString(const string& strHostIn,unsigned short nPortDefault)
 {
     int port = 0;
-    size_t s = strHostIn.find(':');
-    if (s != string::npos)
+    if(IsV4FromString(strHostIn))
     {
-        port = atoi(strHostIn.substr(s + 1).c_str());
+        size_t s = strHostIn.find(':');
+        if (s != string::npos)
+        {
+            port = atoi(strHostIn.substr(s + 1).c_str());
+        }
     }
+    else
+    {
+        size_t s = strHostIn.find("]:");
+        if (s != string::npos)
+        {
+            port = atoi(strHostIn.substr(s + 2).c_str());
+        }
+    }
+    
     if (port <= 0 || port > 0xFFFF)
     {
         port = nPortDefault;
     }
+   
+   
     return (unsigned short)port;
 }
 
