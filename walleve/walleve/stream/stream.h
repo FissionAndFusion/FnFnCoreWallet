@@ -128,6 +128,14 @@ protected:
     template<typename K, typename V, typename C, typename A>
     CWalleveStream& Serialize(std::map<K, V, C, A>& t,ObjectType&,std::size_t& serSize);
 
+    /* std::multimap */
+    template<typename K, typename V, typename C, typename A>
+    CWalleveStream& Serialize(std::multimap<K, V, C, A>& t,ObjectType&,SaveType&);
+    template<typename K, typename V, typename C, typename A>
+    CWalleveStream& Serialize(std::multimap<K, V, C, A>& t,ObjectType&,LoadType&);
+    template<typename K, typename V, typename C, typename A>
+    CWalleveStream& Serialize(std::multimap<K, V, C, A>& t,ObjectType&,std::size_t& serSize);
+
     /* std::pair */
     template<typename P1, typename P2,typename O>
     CWalleveStream& Serialize(std::pair<P1, P2>& t,ObjectType&,O& o);
@@ -474,6 +482,44 @@ CWalleveStream& CWalleveStream::Serialize(std::map<K, V, C, A>& t,ObjectType&,st
     CVarInt var(t.size());
     serSize += GetSerializeSize(var);
     for (typename std::map<K, V, C, A>::iterator it = t.begin(); it != t.end(); ++it)
+    {
+        serSize += GetSerializeSize(*it);
+    }
+    return (*this);
+}
+
+/* CWalleveStream multimap serialize impl */
+template<typename K, typename V, typename C, typename A>
+CWalleveStream& CWalleveStream::Serialize(std::multimap<K, V, C, A>& t,ObjectType&,SaveType&)
+{
+    *this << CVarInt(t.size());
+    for (typename std::multimap<K, V, C, A>::iterator it = t.begin(); it != t.end(); ++it)
+    {
+        *this << (*it);
+    }
+    return (*this);
+}
+
+template<typename K, typename V, typename C, typename A>
+CWalleveStream& CWalleveStream::Serialize(std::multimap<K, V, C, A>& t,ObjectType&,LoadType&)
+{
+    CVarInt var;
+    *this >> var;
+    for (uint64 i = 0;i < var.nValue;i++)
+    {
+        std::pair<K, V> item;
+        *this >> item;
+        t.insert(item); 
+    }
+    return (*this);
+}
+
+template<typename K, typename V, typename C, typename A>
+CWalleveStream& CWalleveStream::Serialize(std::multimap<K, V, C, A>& t,ObjectType&,std::size_t& serSize)
+{
+    CVarInt var(t.size());
+    serSize += GetSerializeSize(var);
+    for (typename std::multimap<K, V, C, A>::iterator it = t.begin(); it != t.end(); ++it)
     {
         serSize += GetSerializeSize(*it);
     }
