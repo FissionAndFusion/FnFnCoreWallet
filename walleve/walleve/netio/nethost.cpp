@@ -18,7 +18,7 @@ CNetHost::CNetHost()
     
 CNetHost::CNetHost(const string& strHostIn,unsigned short nPortIn,const string& strNameIn,
                    const boost::any& dataIn)
-: strHost(strHostIn.substr(0,strHostIn.find(':'))), 
+: strHost(HostFromString(strHostIn)), 
   nPort(PortFromString(strHostIn,nPortIn)),
   strName(!strNameIn.empty() ? strNameIn : strHost),
   data(dataIn)
@@ -35,7 +35,18 @@ CNetHost::CNetHost(const tcp::endpoint& ep,const string& strNameIn,const boost::
 const string CNetHost::ToString() const
 {
     stringstream ss;
-    ss << strHost << ":" << nPort;
+
+    boost::asio::ip::address addr(boost::asio::ip::address::from_string(strHost));
+    if(addr.is_v4())
+    {
+        ss << strHost << ":" << nPort;
+    }
+
+    if(addr.is_v6())
+    {
+        ss << "[" << strHost << "]" << ":" << nPort;
+    }
+    
     return ss.str();
 }
 
@@ -59,4 +70,37 @@ unsigned short CNetHost::PortFromString(const string& strHostIn,unsigned short n
         port = nPortDefault;
     }
     return (unsigned short)port;
+}
+
+std::string CNetHost::HostFromString(const std::string& strHostIn)
+{
+    // IPv6 [host]:port
+    // IPv4 host:port
+    // refer to https://stackoverflow.com/questions/186829/how-do-ports-work-with-ipv6
+    std::string host;
+    if(IsV4FromString(strHostIn))
+    {
+        // IPv4
+        host = strHostIn.substr(0,strHostIn.find(':'));
+    }
+    else
+    {
+        // IPv6
+        host = strHostIn.substr(1,strHostIn.find("]:"));
+    }
+
+    return host;
+}
+
+bool CNetHost::IsV4FromString(const std::string& strHostIn)
+{
+    auto dotDelim = strHostIn.find('.');
+    if(dotDelim != std::string::npos)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
 }
