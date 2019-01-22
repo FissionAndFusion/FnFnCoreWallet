@@ -139,8 +139,8 @@ typedef TYPE_DBP_EVENT(MV_EVENT_DBP_REMOVE_SESSION, CMvDbpRemoveSession) CMvEven
 
 /*supernode*/
 typedef TYPE_DBP_EVENT(MV_EVENT_DBP_VPEERNET, CMvDbpVirtualPeerNetEvent) CMvEventDbpVirtualPeerNet;
-typedef TYPE_RPCROUTE_EVENT(MV_EVENT_RPCROUTE_STOP, CMvRPCRouteStopEvent, bool) CMvEventRPCRouteStop;
-typedef TYPE_DBP_EVENT(MV_EVENT_DBP_ADDED, CMvRPCRouteAdded) CMvEventRPCRouteAdded;
+typedef TYPE_RPCROUTE_EVENT(MV_EVENT_RPCROUTE_STOP, CMvRPCRoute, bool) CMvEventRPCRoute;
+typedef TYPE_RPCROUTE_EVENT(MV_EVENT_DBP_ADDED, CMvRPCRouteAdded, bool) CMvEventRPCRouteAdded;
 
 // HeartBeats
 typedef TYPE_DBP_EVENT(MV_EVENT_DBP_PING, CMvDbpPing) CMvEventDbpPing;
@@ -175,7 +175,7 @@ public:
 
     /*supernode*/
     DECLARE_EVENTHANDLER(CMvEventDbpVirtualPeerNet);
-    DECLARE_EVENTHANDLER(CMvEventRPCRouteStop);
+    DECLARE_EVENTHANDLER(CMvEventRPCRoute);
     DECLARE_EVENTHANDLER(CMvEventRPCRouteAdded);
 
     DECLARE_EVENTHANDLER(CMvEventDbpPing);

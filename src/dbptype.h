@@ -105,14 +105,10 @@ public:
     boost::any anyAddedObj;
 };
 
-class CMvRPCRouteEvent
+class CMvRPCRoute
 {
 public:
     walleve::CIOCompletion *ioComplt;
-};
-
-class CMvRPCRouteStopEvent : public CMvRPCRouteEvent
-{
 };
 
 //

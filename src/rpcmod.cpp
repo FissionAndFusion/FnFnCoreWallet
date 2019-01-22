@@ -2097,7 +2097,7 @@ void CSnRPCMod::WalleveHandleDeinitialize()
 
 CRPCResultPtr CSnRPCMod::SnRPCStop(CRPCParamPtr param)
 {
-    CMvEventRPCRouteStop *pEvent = new CMvEventRPCRouteStop("");
+    CMvEventRPCRoute *pEvent = new CMvEventRPCRoute("");
     pEvent->data.ioComplt = &ioComplt;
 
     if(!pEvent)
