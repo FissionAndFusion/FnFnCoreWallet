@@ -253,6 +253,18 @@ void CDbpClient::SendResponse(const std::string& client, CMvDbpMethodResult& bod
     SendMessage(dbp::Msg::RESULT,anyResult);
 }
 
+void CDbpClient::SendResponse(const std::string& client, CMvRPCRouteAdded& body)
+{
+    dbp::Added addedMsg;
+    addedMsg.set_id(body.id);
+    addedMsg.set_name(body.name);
+
+    google::protobuf::Any* anyAdded = new google::protobuf::Any();
+    anyAdded->PackFrom(addedMsg);
+
+    SendMessage(dbp::Msg::ADDED,anyAdded);
+}
+
 void CDbpClient::SendPong(const std::string& id)
 {
     dbp::Pong msg;
@@ -1076,6 +1088,32 @@ bool CDbpServer::HandleEvent(CMvEventDbpMethodResult& event)
 
     return true;
 }
+
+//rpc route
+
+bool CDbpServer::HandleEvent(CMvEventRPCRouteAdded & event)
+{
+    if(!event.strSessionId.empty())
+    {
+        auto it = mapSessionProfile.find(event.strSessionId);
+        if (it == mapSessionProfile.end())
+        {
+            std::cerr << "cannot find session [Added] " << event.strSessionId << std::endl;
+            return false;
+        }
+
+        if(it->second.strClient == "supernode")
+        {
+            CDbpClient* pDbpClient = (*it).second.pDbpClient;
+            CMvRPCRouteAdded addedBody = event.data;
+            pDbpClient->SendResponse(it->second.strClient, addedBody);
+        }
+    }
+
+    return true;
+}
+
+//
 
 bool CDbpServer::IsSessionTimeOut(CDbpClient* pDbpClient)
 {

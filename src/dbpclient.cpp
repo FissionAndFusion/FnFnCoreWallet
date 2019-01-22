@@ -525,6 +525,15 @@ void CMvDbpClient::HandleAdded(CMvDbpClientSocket* pClientSocket, google::protob
         dbpEvent->data.data = std::vector<uint8>(event.data().begin(), event.data().end());
         pDbpService->PostEvent(dbpEvent);
     }
+
+    if(added.name() == RPC_CMD_TOPIC)
+    {
+        CMvEventRPCRouteAdded* pEvent = new CMvEventRPCRouteAdded("");
+        pEvent->data.id = added.id();
+        pEvent->data.name = added.name();
+        pEvent->data.anyAddedObj = added.object();
+        pDbpService->PostEvent(pEvent);
+    }
 }
 
 void CMvDbpClient::HandleReady(CMvDbpClientSocket* pClientSocket, google::protobuf::Any* any)

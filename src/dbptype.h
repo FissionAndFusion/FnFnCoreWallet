@@ -94,15 +94,28 @@ public:
     std::vector<uint8> data;
 };
 
-class CMvRPCRouteStopEvent
+//rpc route
+
+class CMvRPCRouteAdded : public CMvDbpRespond
+{
+public:
+    std::string name;
+    std::string id;
+    std::string rpc;
+    boost::any anyAddedObj;
+};
+
+class CMvRPCRouteEvent
 {
 public:
     walleve::CIOCompletion *ioComplt;
 };
 
-class CMvRPCRouteStopResult
+class CMvRPCRouteStopEvent : public CMvRPCRouteEvent
 {
 };
+
+//
 
 class CMvDbpTxIn
 {

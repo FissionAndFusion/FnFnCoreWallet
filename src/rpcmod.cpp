@@ -2110,5 +2110,6 @@ CRPCResultPtr CSnRPCMod::SnRPCStop(CRPCParamPtr param)
     bool fResult = false;
     ioComplt.WaitForComplete(fResult);
     pService->Shutdown();
-    return MakeCStopResultPtr("multiverse server stopping[supernode]");
+    std::string reason = "multiverse server stopping[supernode]";
+    return MakeCStopResultPtr(reason);
 }

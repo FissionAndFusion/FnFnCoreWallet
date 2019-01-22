@@ -29,7 +29,8 @@ CDbpService::CDbpService()
                                   (TX_CMD_TOPIC,    std::set<std::string>())
                                   (BLOCK_CMD_TOPIC, std::set<std::string>())
                                   (CHANGED_TOPIC,   std::set<std::string>())
-                                  (REMOVED_TOPIC,   std::set<std::string>());
+                                  (REMOVED_TOPIC,   std::set<std::string>())
+                                  (RPC_CMD_TOPIC,   std::set<std::string>());
 
     mapTopicIds = temp_map;
 
@@ -890,6 +891,26 @@ void CDbpService::PushTx(const std::string& forkid, const CMvDbpTransaction& dbp
     }
 }
 
+//rpc route
+
+void CDbpService::PushRpcCmdStop()
+{
+    const auto& allTxIds = mapTopicIds[RPC_CMD_TOPIC];
+    for(const auto& id : allTxIds)
+    {
+        auto it = mapIdSubedSession.find(id);
+        if(it != mapIdSubedSession.end())
+        {
+            CMvEventRPCRouteAdded eventAdded(it->second);
+            eventAdded.data.id = id;
+            eventAdded.data.name = RPC_CMD_TOPIC;
+            pDbpServer->DispatchEvent(&eventAdded);
+        }
+    }
+}
+
+//
+
 bool CDbpService::PushEvent(const CMvDbpVirtualPeerNetEvent& event)
 {
     std::string session;
@@ -1487,9 +1508,18 @@ bool CDbpService::IsThisNodeData(const uint256& hashFork, uint64 nNonce, const u
 
 bool CDbpService::HandleEvent(CMvEventRPCRouteStop& event)
 {
-    std::cout << "=========================" << std::endl;
     CMvRPCRouteStopEvent e = event.data;
     walleve::CIOCompletion *ioComplt = event.data.ioComplt;
+    PushRpcCmdStop();
     ioComplt->Completed(false);
     return true;
 }
+
+bool CDbpService::HandleEvent(CMvEventRPCRouteAdded& event)
+{
+    PushRpcCmdStop();
+    pService->Shutdown();
+    return true;
+}
+
+// 

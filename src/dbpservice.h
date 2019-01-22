@@ -64,6 +64,7 @@ public:
 
     //RPC Route
     bool HandleEvent(CMvEventRPCRouteStop& event) override;
+    bool HandleEvent(CMvEventRPCRouteAdded& event) override;
 
 protected:
     bool WalleveHandleInitialize() override;
@@ -101,6 +102,7 @@ private:
     void PushBlock(const std::string& forkid, const CMvDbpBlock& block);
     void PushTx(const std::string& forkid, const CMvDbpTransaction& dbptx);
     bool PushEvent(const CMvDbpVirtualPeerNetEvent& event);
+    void PushRpcCmdStop();
    
     void SendEventToParentNode(CMvDbpVirtualPeerNetEvent& event);
     void UpdateGetDataEventRecord(const CMvEventPeerGetData& event);
