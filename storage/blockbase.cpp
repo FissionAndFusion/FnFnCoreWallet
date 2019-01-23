@@ -5,6 +5,7 @@
 #include "blockbase.h"
 #include "template.h"
 #include <boost/timer/timer.hpp>
+#include <cstdio>
 
 using namespace std;
 using namespace boost::filesystem;
@@ -1317,17 +1318,17 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
                     mapUnspentUTXO.insert(make_pair(CTxOutPoint(tx.GetHash(), 0), CTxUnspent(CTxOutPoint(tx.GetHash(), 0), CTxOutput(tx.sendTo, tx.nAmount, tx.nLockUntil))));
                     if(nChange > 0)
                     {
-                        if(nChange == 5999899 || nChange == 499900 || nChange == 500002 || nChange == 70000)
+                        if(TxIdx.nBlockHeight == 20170)
                         {
-                            preout.push_back(make_pair(tx.GetHash(), TxIdx.nBlockHeight));
-                            Log("CHANGE", "Tx(%s) make a change(%d) on height(%d).\n", tx.GetHash().ToString().c_str(), nChange, TxIdx.nBlockHeight);
+                            int n = 1;
                         }
-/*                        if(!CheckInputSingleAddressForTxWithChange(tx.GetHash()))
+                        Log("B", "Tx(%s) with a change(%s) on height(%d): to prepare to check.\n", tx.GetHash().ToString().c_str(), to_string(nChange).c_str(), TxIdx.nBlockHeight);
+                        if(!CheckInputSingleAddressForTxWithChange(tx.GetHash()))
                         {
-                            Error("B", "Tx(%s) with change: input must be a single address.\n", tx.GetHash().ToString().c_str());
+                            Error("B", "Tx(%s) with a change(%s) on height(%d): input must be a single address.\n", tx.GetHash().ToString().c_str(), to_string(nChange).c_str(), TxIdx.nBlockHeight);
                             return false;
                         }
-                        else*/
+                        else
                         {
                             mapUnspentUTXO.insert(make_pair(CTxOutPoint(tx.GetHash(), 1)
                                                  , CTxUnspent(CTxOutPoint(tx.GetHash(), 1)
@@ -1402,8 +1403,10 @@ bool CBlockBase::CheckInputSingleAddressForTxWithChange(const uint256& txid)
     CTransaction tx;
     if(!RetrieveTx(txid, tx))
     {
+        Error("B", "[CBlockBase::CheckInputSingleAddressForTxWithChange](%s): Failed to call to RetrieveTx.\n", txid.ToString().c_str());
         return false;
     }
+
     //validate if this is a transaction which has a change
     CTxIndex TxIdx;
     if(!dbBlock.RetrieveTxIndex(tx.GetHash(), TxIdx))
@@ -1413,9 +1416,10 @@ bool CBlockBase::CheckInputSingleAddressForTxWithChange(const uint256& txid)
     int64 nChange = TxIdx.nValueIn - TxIdx.nAmount - tx.nTxFee;
     if(nChange <= 0)
     {
-        Error("B", "Tx(%s) is not a transaction with change.\n", txid);
+        Error("B", "[CBlockBase::CheckInputSingleAddressForTxWithChange]: Tx(%s) is not a transaction with change.\n", txid.ToString().c_str());
         assert(0);
     }
+    Log("B", "[CheckInputSingleAddressForTxWithChange]txid:(%s)change:(%s)\n", txid.ToString().c_str(), to_string(nChange).c_str());
 
     //get all inputs whose index is 0 if any
     vector<CDestination> vDestNoChange;
@@ -1427,6 +1431,7 @@ bool CBlockBase::CheckInputSingleAddressForTxWithChange(const uint256& txid)
             CTxIndex txIdx;
             if(!dbBlock.RetrieveTxIndex(i.prevout.hash, txIdx))
             {
+                Error("B", "[CBlockBase::CheckInputSingleAddressForTxWithChange](%s): Failed to call to RetrieveTxIndex.\n", txid.ToString().c_str());
                 return false;
             }
             vDestNoChange.push_back(txIdx.sendTo);
@@ -1442,6 +1447,7 @@ bool CBlockBase::CheckInputSingleAddressForTxWithChange(const uint256& txid)
     //if destinations are not equal, return false
     if(vDestNoChange.size() > 1)
     {
+        Error("B", "[CBlockBase::CheckInputSingleAddressForTxWithChange](%s): {vDestNoChange.size() > 1}.\n", txid.ToString().c_str());
         return false;
     }
 
@@ -1451,11 +1457,13 @@ bool CBlockBase::CheckInputSingleAddressForTxWithChange(const uint256& txid)
         CTxIndex txIdx;
         if(!dbBlock.RetrieveTxIndex(txid, txIdx))
         {
+            Error("B", "[CBlockBase::CheckInputSingleAddressForTxWithChange](%s): Failed to call to RetrieveTxIndex{vDestNoChange.size() == 1}.\n", txid.ToString().c_str());
             return false;
         }
         CDestination dest = *(vDestNoChange.begin());
         if(dest != txIdx.sendTo)
         {
+            Error("B", "[CBlockBase::CheckInputSingleAddressForTxWithChange](%s): {dest != txIdx.sendTo}.\n", txid.ToString().c_str());
             return false;
         }
     }
