@@ -363,12 +363,20 @@
     ],
     "CMvNetworkConfigOption": [
         {
-            "name": "fListen",
+            "name": "fListen4",
             "type": "bool",
-            "opt": "listen",
+            "opt": "listen4",
             "default": false,
-            "format": "-listen",
-            "desc": "Accept connections from outside (default: 0)"
+            "format": "-listen4",
+            "desc": "Accept IPv4 connections from outside (default: 0)"
+        },
+        {
+            "name": "fListen6",
+            "type": "bool",
+            "opt": "listen6",
+            "default": false,
+            "format": "-listen6",
+            "desc": "Accept IPv6 connections from outside (default: 0)"
         },
         {
             "name": "nPortInt",
