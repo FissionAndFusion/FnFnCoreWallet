@@ -609,6 +609,10 @@ void CDbpServer::HandleClientMethod(CDbpClient* pDbpClient, google::protobuf::An
         methodBody.params.insert(std::make_pair("type", event.type()));
         methodBody.params.insert(std::make_pair("data", event.data()));
     }
+    else if(methodMsg.method() == "rpcroute")
+    {
+        std::cout << "############rpcroute has called." << std::endl;
+    }
     else
     {
         delete pEventDbpMethod;

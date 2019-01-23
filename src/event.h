@@ -44,6 +44,8 @@ enum
 
     /*super node*/
     MV_EVENT_DBP_VPEERNET,
+    MV_EVENT_RPCROUTE_ADDED,
+    MV_EVENT_RPCROUTE_RESULT,
     MV_EVENT_RPCROUTE_STOP,
 
     MV_EVENT_DBP_PING,
@@ -139,8 +141,9 @@ typedef TYPE_DBP_EVENT(MV_EVENT_DBP_REMOVE_SESSION, CMvDbpRemoveSession) CMvEven
 
 /*supernode*/
 typedef TYPE_DBP_EVENT(MV_EVENT_DBP_VPEERNET, CMvDbpVirtualPeerNetEvent) CMvEventDbpVirtualPeerNet;
-typedef TYPE_RPCROUTE_EVENT(MV_EVENT_RPCROUTE_STOP, CMvRPCRoute, bool) CMvEventRPCRoute;
-typedef TYPE_RPCROUTE_EVENT(MV_EVENT_DBP_ADDED, CMvRPCRouteAdded, bool) CMvEventRPCRouteAdded;
+typedef TYPE_RPCROUTE_EVENT(MV_EVENT_RPCROUTE_STOP, CMvRPCRouteStop, bool) CMvEventRPCRouteStop;
+typedef TYPE_RPCROUTE_EVENT(MV_EVENT_RPCROUTE_ADDED, CMvRPCRouteAdded, bool) CMvEventRPCRouteAdded;
+typedef TYPE_RPCROUTE_EVENT(MV_EVENT_RPCROUTE_RESULT, CMvRPCRouteResult, bool) CMvEventRPCRouteResult;
 
 // HeartBeats
 typedef TYPE_DBP_EVENT(MV_EVENT_DBP_PING, CMvDbpPing) CMvEventDbpPing;
@@ -175,8 +178,9 @@ public:
 
     /*supernode*/
     DECLARE_EVENTHANDLER(CMvEventDbpVirtualPeerNet);
-    DECLARE_EVENTHANDLER(CMvEventRPCRoute);
+    DECLARE_EVENTHANDLER(CMvEventRPCRouteStop);
     DECLARE_EVENTHANDLER(CMvEventRPCRouteAdded);
+    DECLARE_EVENTHANDLER(CMvEventRPCRouteResult);
 
     DECLARE_EVENTHANDLER(CMvEventDbpPing);
     DECLARE_EVENTHANDLER(CMvEventDbpPong);

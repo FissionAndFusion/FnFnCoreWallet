@@ -526,6 +526,8 @@ void CMvDbpClient::HandleAdded(CMvDbpClientSocket* pClientSocket, google::protob
         pDbpService->PostEvent(dbpEvent);
     }
 
+    // rpc route
+
     if(added.name() == RPC_CMD_TOPIC)
     {
         CMvEventRPCRouteAdded* pEvent = new CMvEventRPCRouteAdded("");
@@ -845,4 +847,35 @@ bool CMvDbpClient::HandleEvent(CMvEventDbpVirtualPeerNet& event)
     return true;
 }
 
+// rpc route
+
+void CMvDbpClientSocket::SendRPCRouteResult(CMvRPCRouteResult& result)
+{
+    dbp::Method method;
+    method.set_id(CDbpUtils::RandomString());
+    method.set_method("rpcroute");
+
+    google::protobuf::Any *params = new google::protobuf::Any();
+    // sn::VPeerNetEvent event;
+    // event.set_type(dbpEvent.type);
+    // event.set_data(std::string(dbpEvent.data.begin(), dbpEvent.data.end()));
+    // params->PackFrom(event);
+    method.set_allocated_params(params);
+
+    google::protobuf::Any *any = new google::protobuf::Any();
+    any->PackFrom(method);
+
+    SendMessage(dbp::Msg::METHOD, any);
+}
+
+bool CMvDbpClient::HandleEvent(CMvEventRPCRouteResult& event)
+{
+    CMvDbpClientSocket* pClientSocket = PickOneSessionSocket();
+    if(!pClientSocket) return false;
+    
+    pClientSocket->SendRPCRouteResult(event.data);
+    return true;
+}
+
+//
 } // namespace multiverse

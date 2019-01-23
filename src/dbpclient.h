@@ -81,6 +81,7 @@ public:
     void SendConnectSession(const std::string& session, const std::vector<std::string>& forks);
     void SendSubScribeTopics(const std::vector<std::string>& topics);
     void SendEvent(CMvDbpVirtualPeerNetEvent& dbpEvent);
+    void SendRPCRouteResult(CMvRPCRouteResult& result);
 
 protected:
     void StartReadHeader();
@@ -143,6 +144,9 @@ public:
     void HandleNoSub(CMvDbpClientSocket* pClientSocket, google::protobuf::Any* any);
 
     bool HandleEvent(CMvEventDbpVirtualPeerNet& event) override;
+
+    // rpc route
+    bool HandleEvent(CMvEventRPCRouteResult& event) override;
 
 protected:
     bool WalleveHandleInitialize() override;

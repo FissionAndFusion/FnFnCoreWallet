@@ -63,7 +63,8 @@ public:
     bool HandleEvent(CMvEventDbpVirtualPeerNet& event) override;
 
     //RPC Route
-    bool HandleEvent(CMvEventRPCRoute& event) override;
+    bool HandleEvent(CMvEventRPCRouteStop& event) override;
+    void SendRPCResult(CMvRPCRouteResult& result);
     bool HandleEvent(CMvEventRPCRouteAdded& event) override;
 
 protected:

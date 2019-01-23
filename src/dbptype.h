@@ -111,6 +111,14 @@ public:
     walleve::CIOCompletion *ioComplt;
 };
 
+class CMvRPCRouteStop : public CMvRPCRoute
+{
+};
+
+class CMvRPCRouteResult
+{
+};
+
 //
 
 class CMvDbpTxIn

@@ -1506,7 +1506,7 @@ bool CDbpService::IsThisNodeData(const uint256& hashFork, uint64 nNonce, const u
 
 // rpc route
 
-bool CDbpService::HandleEvent(CMvEventRPCRoute& event)
+bool CDbpService::HandleEvent(CMvEventRPCRouteStop& event)
 {
     CMvRPCRoute e = event.data;
     walleve::CIOCompletion *ioComplt = event.data.ioComplt;
@@ -1515,10 +1515,17 @@ bool CDbpService::HandleEvent(CMvEventRPCRoute& event)
     return true;
 }
 
+void CDbpService::SendRPCResult(CMvRPCRouteResult& result)
+{
+    CMvEventRPCRouteResult event(""); 
+    pDbpClient->DispatchEvent(&event);
+}
+
 bool CDbpService::HandleEvent(CMvEventRPCRouteAdded& event)
 {
     PushRpcCmdStop();
-    std::cout << "~~~~~~~~~~~" << std::endl;
+    CMvRPCRouteResult result;
+    SendRPCResult(result);
     pService->Shutdown();
     return true;
 }
