@@ -106,7 +106,7 @@ bool CMvRPCServerConfig::PostLoad()
 
     CMvRPCBasicConfig::PostLoad();
 
-    if(fRPCListen4)
+    if(fRPCListen4 || (!fRPCListen4 && !fRPCListen6))
     {
         epRPC = tcp::endpoint(!vRPCAllowIP.empty()
                               ? boost::asio::ip::address_v4::any()
