@@ -21,6 +21,7 @@ CDbpService::CDbpService()
     pNetChannel = NULL;
     pVirtualPeerNet = NULL;
     pRPCMod = NULL;
+    pIoComplt = NULL;
 
     std::unordered_map<std::string, IdsType> temp_map = 
         boost::assign::map_list_of(ALL_BLOCK_TOPIC, std::set<std::string>())
@@ -891,26 +892,6 @@ void CDbpService::PushTx(const std::string& forkid, const CMvDbpTransaction& dbp
     }
 }
 
-//rpc route
-
-void CDbpService::PushRpcCmdStop()
-{
-    const auto& allTxIds = mapTopicIds[RPC_CMD_TOPIC];
-    for(const auto& id : allTxIds)
-    {
-        auto it = mapIdSubedSession.find(id);
-        if(it != mapIdSubedSession.end())
-        {
-            CMvEventRPCRouteAdded eventAdded(it->second);
-            eventAdded.data.id = id;
-            eventAdded.data.name = RPC_CMD_TOPIC;
-            pDbpServer->DispatchEvent(&eventAdded);
-        }
-    }
-}
-
-//
-
 bool CDbpService::PushEvent(const CMvDbpVirtualPeerNetEvent& event)
 {
     std::string session;
@@ -1504,14 +1485,55 @@ bool CDbpService::IsThisNodeData(const uint256& hashFork, uint64 nNonce, const u
     return true;
 }
 
-// rpc route
+//rpc route
+
+void CDbpService::RootPushRPCStop(CMvRPCRouteStop& stop)
+{
+    const auto& allIds = mapTopicIds[RPC_CMD_TOPIC];
+    for(const auto& id : allIds)
+    {
+        auto it = mapIdSubedSession.find(id);
+        if(it != mapIdSubedSession.end())
+        {
+            CMvEventRPCRouteAdded eventAdded(it->second);
+            eventAdded.data.id = id;
+            eventAdded.data.name = RPC_CMD_TOPIC;
+            pDbpServer->DispatchEvent(&eventAdded);
+        }
+    }
+
+    std::set<std::string> setSession;
+    for(const auto& pos : mapIdSubedSession)
+    {
+        setSession.insert(pos.second);
+    }
+
+    if (setSession.size() == 0)
+    {
+        pIoComplt->Completed(false);
+    }
+}
+
+void CDbpService::ForkPushRPCStop(CMvRPCRouteStop& stop)
+{
+    const auto& allIds = mapTopicIds[RPC_CMD_TOPIC];
+    for(const auto& id : allIds)
+    {
+        auto it = mapIdSubedSession.find(id);
+        if(it != mapIdSubedSession.end())
+        {
+            CMvEventRPCRouteAdded eventAdded(it->second);
+            eventAdded.data.id = id;
+            eventAdded.data.name = RPC_CMD_TOPIC;
+            pDbpServer->DispatchEvent(&eventAdded);
+        }
+    }
+}
 
 bool CDbpService::HandleEvent(CMvEventRPCRouteStop& event)
 {
-    CMvRPCRoute e = event.data;
-    walleve::CIOCompletion *ioComplt = event.data.ioComplt;
-    PushRpcCmdStop();
-    ioComplt->Completed(false);
+    pIoComplt = event.data.ioComplt;
+    RootPushRPCStop(event.data);
     return true;
 }
 
@@ -1523,7 +1545,10 @@ void CDbpService::SendRPCResult(CMvRPCRouteResult& result)
 
 bool CDbpService::HandleEvent(CMvEventRPCRouteAdded& event)
 {
-    PushRpcCmdStop();
+    //stop rpc
+    CMvRPCRouteStop stop;
+    ForkPushRPCStop(stop);
+
     CMvRPCRouteResult result;
     SendRPCResult(result);
     pService->Shutdown();

@@ -103,7 +103,8 @@ private:
     void PushBlock(const std::string& forkid, const CMvDbpBlock& block);
     void PushTx(const std::string& forkid, const CMvDbpTransaction& dbptx);
     bool PushEvent(const CMvDbpVirtualPeerNetEvent& event);
-    void PushRpcCmdStop();
+    void RootPushRPCStop(CMvRPCRouteStop& stop);
+    void ForkPushRPCStop(CMvRPCRouteStop& stop);
    
     void SendEventToParentNode(CMvDbpVirtualPeerNetEvent& event);
     void UpdateGetDataEventRecord(const CMvEventPeerGetData& event);
@@ -129,6 +130,7 @@ protected:
     IWallet* pWallet;
     IMvNetChannel* pNetChannel;
     walleve::IIOModule* pRPCMod;
+    walleve::CIOCompletion* pIoComplt;
 
 private:
     std::map<std::string, ForksType> mapSessionChildNodeForks; // session => child node forks
