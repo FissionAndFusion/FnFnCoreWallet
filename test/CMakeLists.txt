@@ -13,6 +13,7 @@ set(sources
 	rpc_tests.cpp
 	version_tests.cpp
 	mpvss_tests.cpp
+	whitelist_tests.cpp
 )
 
 add_executable(test_fnfn ${sources})
