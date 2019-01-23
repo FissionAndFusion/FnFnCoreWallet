@@ -97,10 +97,21 @@ bool CMvDbpServerConfig::PostLoad()
 
     CMvDbpBasicConfig::PostLoad();
 
-    epDbp = tcp::endpoint(!vDbpAllowIP.empty()
+    if(fDbpListen4)
+    {
+        epDbp = tcp::endpoint(!vDbpAllowIP.empty()
                               ? boost::asio::ip::address_v4::any()
                               : boost::asio::ip::address_v4::loopback(),
                           nDbpPort);
+    }
+
+    if(fDbpListen6)
+    {
+        epDbp = tcp::endpoint(!vDbpAllowIP.empty()
+                              ? boost::asio::ip::address_v6::any()
+                              : boost::asio::ip::address_v6::loopback(),
+                          nDbpPort);
+    }
     
     return true;
 }

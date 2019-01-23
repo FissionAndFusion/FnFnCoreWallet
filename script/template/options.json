@@ -94,6 +94,22 @@
             "desc": "Listen for JSON-RPC connections on <port> (default: 6812 or testnet: 6814))"
         },
         {
+            "name": "fRPCListen4",
+            "type": "bool",
+            "opt": "rpclisten4",
+            "default": false,
+            "format": "-rpclisten4",
+            "desc": "Accept RPC IPv4 connections (default: 0)"
+        },
+        {
+            "name": "fRPCListen6",
+            "type": "bool",
+            "opt": "rpclisten6",
+            "default": false,
+            "format": "-rpclisten6",
+            "desc": "Accept RPC IPv6 connections (default: 0)"
+        },
+        {
             "name": "strRPCUser",
             "type": "string",
             "opt": "rpcuser",
@@ -246,6 +262,22 @@
             "default": 0,
             "format": "-dbpport=port",
             "desc": "Listen for DBP connections on <port> (default: 6815)"
+        },
+        {
+            "name": "fDbpListen4",
+            "type": "bool",
+            "opt": "dbplisten4",
+            "default": false,
+            "format": "-dbplisten4",
+            "desc": "Accept DBP IPv4 connections (default: 0)"
+        },
+        {
+            "name": "fDbpListen6",
+            "type": "bool",
+            "opt": "dbplisten6",
+            "default": false,
+            "format": "-dbplisten6",
+            "desc": "Accept DBP IPv6 connections (default: 0)"
         },
         {
             "name": "strDbpUser",
