@@ -105,6 +105,7 @@ private:
     void PushTx(const std::string& forkid, const CMvDbpTransaction& dbptx);
     bool PushEvent(const CMvDbpVirtualPeerNetEvent& event);
     void PushRPCStop(CMvRPCRouteStop& stop);
+    void PushRPCCmd(CMvRPCRoute* route);
     void RPCRouteOwnProcessing();
    
     void SendEventToParentNode(CMvDbpVirtualPeerNetEvent& event);

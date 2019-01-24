@@ -108,10 +108,23 @@ public:
 class CMvRPCRoute
 {
 public:
+    enum EventType : int
+    {
+        DBP_RPCROUTE_STOP = 0,
+        DBP_RPCROUTE_GET_FORK_COUNT = 1
+    };
+
     walleve::CIOCompletion *ioComplt;
+    EventType type;
 };
 
 class CMvRPCRouteStop : public CMvRPCRoute
+{
+public:
+    std::string rpc;
+};
+
+class CMvRPCRouteGetForkCount : public CMvRPCRoute
 {
 };
 

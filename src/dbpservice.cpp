@@ -1511,6 +1511,46 @@ void CDbpService::RPCRouteOwnProcessing()
     }
 }
 
+void CDbpService::PushRPCCmd(CMvRPCRoute* route)
+{
+    boost::any anyAddedObj;
+
+    if (route->type == CMvRPCRoute::DBP_RPCROUTE_STOP)
+    {
+        CMvRPCRouteStop* stop = (CMvRPCRouteStop*)route;
+        CMvRPCRouteStop newStop;
+        newStop.type = stop->type;
+        anyAddedObj = newStop;
+    }
+    if (route->type == CMvRPCRoute::DBP_RPCROUTE_GET_FORK_COUNT)
+    {
+        CMvRPCRouteGetForkCount* forkCount = (CMvRPCRouteGetForkCount*)route;
+    }
+
+    const auto& allIds = mapTopicIds[RPC_CMD_TOPIC];
+    for (const auto& id : allIds)
+    {
+        auto it = mapIdSubedSession.find(id);
+        if (it != mapIdSubedSession.end())
+        {
+            CMvEventRPCRouteAdded eventAdded(it->second);
+            eventAdded.data.id = id;
+            eventAdded.data.name = RPC_CMD_TOPIC;
+            eventAdded.data.anyAddedObj = anyAddedObj;
+            pDbpServer->DispatchEvent(&eventAdded);
+        }
+    }
+
+    std::set<std::string> setSession;
+    for (const auto& pos : mapIdSubedSession)
+    {
+        setSession.insert(pos.second);
+    }
+
+    sessionCount = setSession.size();
+    RPCRouteOwnProcessing();
+}
+
 void CDbpService::PushRPCStop(CMvRPCRouteStop& stop)
 {
     const auto& allIds = mapTopicIds[RPC_CMD_TOPIC];
@@ -1533,28 +1573,14 @@ void CDbpService::PushRPCStop(CMvRPCRouteStop& stop)
     }
 
     sessionCount = setSession.size();
-
-    // if (sessionCount == 0 && pIoComplt != NULL)
-    // {
-    //     pIoComplt->Completed(false);
-    //     pService->Shutdown();
-    //     return;
-    // }
-
-    // if (sessionCount == 0)
-    // {
-    //     CMvRPCRouteResult result;
-    //     SendRPCResult(result);
-    //     pService->Shutdown();
-    //     return;
-    // }
     RPCRouteOwnProcessing();
 }
 
 bool CDbpService::HandleEvent(CMvEventRPCRouteStop& event)
 {
     pIoComplt = event.data.ioComplt;
-    PushRPCStop(event.data);
+    PushRPCCmd(&event.data);
+    // PushRPCStop(event.data);
     return true;
 }
 
@@ -1567,28 +1593,16 @@ void CDbpService::SendRPCResult(CMvRPCRouteResult& result)
 bool CDbpService::HandleEvent(CMvEventRPCRouteAdded& event)
 {
     CMvRPCRouteStop stop;
-    PushRPCStop(stop);
+    stop.type = CMvRPCRoute::DBP_RPCROUTE_STOP;
+    stop.rpc = "stop";
+    // PushRPCStop(stop);
+    PushRPCCmd(&stop);
     return true;
 }
 
 void CDbpService::HandleRPCRoute(CMvEventDbpMethod& event)
 {
     sessionCount--;
-
-    // if (sessionCount == 0 && pIoComplt != NULL)
-    // {
-    //     pIoComplt->Completed(false);
-    //     pService->Shutdown();
-    //     return;
-    // }
-
-    // if(sessionCount == 0)
-    // {
-    //     CMvRPCRouteResult result;
-    //     SendRPCResult(result);
-    //     pService->Shutdown();
-    //     return;
-    // }
     RPCRouteOwnProcessing();
 }
 
