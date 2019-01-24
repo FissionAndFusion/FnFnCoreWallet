@@ -161,14 +161,29 @@ bool CMvRPCClientConfig::PostLoad()
 
     CMvRPCBasicConfig::PostLoad();
 
-    if(fRPCListen4 || (!fRPCListen4 && !fRPCListen6))
+    try
     {
-        strRPCConnect = boost::asio::ip::address_v4::loopback().to_string();
-    }
+        boost::asio::ip::address addr(boost::asio::ip::address::from_string(strRPCConnect));
+        if(fRPCListen4 || (!fRPCListen4 && !fRPCListen6))
+        {
+            if(addr.is_loopback())
+            {
+                strRPCConnect = boost::asio::ip::address_v4::loopback().to_string();
+            }
+        }
 
-    if(fRPCListen6)
+        if(fRPCListen6)
+        {
+            if(addr.is_loopback())
+            {
+                strRPCConnect = boost::asio::ip::address_v6::loopback().to_string();
+            }
+        }
+    }
+    catch(const std::exception& e)
     {
-        strRPCConnect = boost::asio::ip::address_v6::loopback().to_string();
+        std::cerr << e.what() << std::endl;
+        return false;
     }
 
     if (nRPCConnectTimeout == 0)
