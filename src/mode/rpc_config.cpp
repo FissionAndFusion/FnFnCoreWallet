@@ -161,6 +161,16 @@ bool CMvRPCClientConfig::PostLoad()
 
     CMvRPCBasicConfig::PostLoad();
 
+    if(fRPCListen4 || (!fRPCListen4 && !fRPCListen6))
+    {
+        strRPCConnect = boost::asio::ip::address_v4::loopback().to_string();
+    }
+
+    if(fRPCListen6)
+    {
+        strRPCConnect = boost::asio::ip::address_v6::loopback().to_string();
+    }
+
     if (nRPCConnectTimeout == 0)
     {
         nRPCConnectTimeout = 1;
