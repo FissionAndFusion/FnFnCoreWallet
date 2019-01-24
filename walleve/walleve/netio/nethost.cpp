@@ -100,7 +100,15 @@ std::string CNetHost::HostFromString(const std::string& strHostIn)
     else
     {
         // IPv6
-        host = strHostIn.substr(1,strHostIn.find("]:") -1);
+        size_t s = strHostIn.find("]:");
+        if(s != std::string::npos)
+        {
+            host = strHostIn.substr(1,s - 1);
+        }
+        else
+        {
+            host = strHostIn;
+        }
     }
 
     return host;
