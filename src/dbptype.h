@@ -195,7 +195,8 @@ public:
 
     enum SnMethod : uint32_t
     {
-        SEND_EVENT = 0x03
+        SEND_EVENT = 0x03,
+        RPC_ROUTE = 0x04
     };
     
     enum  LwsMethod : uint32_t

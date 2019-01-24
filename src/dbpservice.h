@@ -66,6 +66,7 @@ public:
     bool HandleEvent(CMvEventRPCRouteStop& event) override;
     void SendRPCResult(CMvRPCRouteResult& result);
     bool HandleEvent(CMvEventRPCRouteAdded& event) override;
+    void HandleRPCRoute(CMvEventDbpMethod& event);
 
 protected:
     bool WalleveHandleInitialize() override;
@@ -131,6 +132,7 @@ protected:
     IMvNetChannel* pNetChannel;
     walleve::IIOModule* pRPCMod;
     walleve::CIOCompletion* pIoComplt;
+    int sessionCount;
 
 private:
     std::map<std::string, ForksType> mapSessionChildNodeForks; // session => child node forks

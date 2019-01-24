@@ -611,7 +611,7 @@ void CDbpServer::HandleClientMethod(CDbpClient* pDbpClient, google::protobuf::An
     }
     else if(methodMsg.method() == "rpcroute")
     {
-        std::cout << "############rpcroute has called." << std::endl;
+        methodBody.method = CMvDbpMethod::SnMethod::RPC_ROUTE;
     }
     else
     {

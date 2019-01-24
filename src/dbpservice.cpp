@@ -21,7 +21,6 @@ CDbpService::CDbpService()
     pNetChannel = NULL;
     pVirtualPeerNet = NULL;
     pRPCMod = NULL;
-    pIoComplt = NULL;
 
     std::unordered_map<std::string, IdsType> temp_map = 
         boost::assign::map_list_of(ALL_BLOCK_TOPIC, std::set<std::string>())
@@ -37,6 +36,8 @@ CDbpService::CDbpService()
 
     fEnableSuperNode = false;
     fEnableForkNode = false;
+    pIoComplt = NULL;
+    sessionCount = 0;
 }
 
 CDbpService::~CDbpService() noexcept
@@ -848,6 +849,11 @@ bool CDbpService::HandleEvent(CMvEventDbpMethod& event)
     {
         HandleSendEvent(event);
     }
+    else if (event.data.method == CMvDbpMethod::SnMethod::RPC_ROUTE)
+    {
+        std::cout << "############rpcroute has called." << std::endl;
+        HandleRPCRoute(event);
+    }
     else
     {
         return false;
@@ -1490,10 +1496,10 @@ bool CDbpService::IsThisNodeData(const uint256& hashFork, uint64 nNonce, const u
 void CDbpService::RootPushRPCStop(CMvRPCRouteStop& stop)
 {
     const auto& allIds = mapTopicIds[RPC_CMD_TOPIC];
-    for(const auto& id : allIds)
+    for (const auto& id : allIds)
     {
         auto it = mapIdSubedSession.find(id);
-        if(it != mapIdSubedSession.end())
+        if (it != mapIdSubedSession.end())
         {
             CMvEventRPCRouteAdded eventAdded(it->second);
             eventAdded.data.id = id;
@@ -1503,12 +1509,13 @@ void CDbpService::RootPushRPCStop(CMvRPCRouteStop& stop)
     }
 
     std::set<std::string> setSession;
-    for(const auto& pos : mapIdSubedSession)
+    for (const auto& pos : mapIdSubedSession)
     {
         setSession.insert(pos.second);
     }
 
-    if (setSession.size() == 0)
+    sessionCount = setSession.size();
+    if (sessionCount == 0 && pIoComplt != NULL)
     {
         pIoComplt->Completed(false);
     }
@@ -1553,6 +1560,15 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteAdded& event)
     SendRPCResult(result);
     pService->Shutdown();
     return true;
+}
+
+void CDbpService::HandleRPCRoute(CMvEventDbpMethod& event)
+{
+    sessionCount--;
+    if (sessionCount == 0 && pIoComplt != NULL)
+    {
+        pIoComplt->Completed(false);
+    }
 }
 
 // 
