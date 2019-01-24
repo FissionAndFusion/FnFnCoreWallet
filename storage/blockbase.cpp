@@ -340,6 +340,12 @@ bool CBlockBase::Initiate(const uint256& hashGenesis,const CBlock& blockGenesis)
             return false;
         }
 
+        CDelegateContext ctxtDelegate;
+        if (!dbBlock.UpdateDelegateContext(hashGenesis,ctxtDelegate))
+        {
+            return false;
+        }
+
         CProfile profile;
         if (!profile.Load(blockGenesis.vchProof))
         {
@@ -408,7 +414,7 @@ bool CBlockBase::AddNew(const uint256& hash,CBlockEx& block,CBlockIndex** ppInde
         
         if (pIndexNew->IsPrimary())
         {
-            if (!UpdateDelegate(hash,block))
+            if (!UpdateDelegate(hash,block,CDiskPos(nFile,nOffset)))
             {
                 dbBlock.RemoveBlock(hash);
                 mapIndex.erase(hash);
@@ -648,44 +654,40 @@ bool CBlockBase::RetrieveTxLocation(const uint256& txid,uint256& hashFork,int& n
     return true;
 }
 
-bool CBlockBase::RetrieveDelegate(const uint256& hash,int64 nMinAmount,map<CDestination,int64>& mapDelegate)
+bool CBlockBase::RetrieveAvailDelegate(const uint256& hash,const uint256& hashAnchor,const vector<uint256>& vBlockRange,
+                                                           int64 nDelegateWeightRatio,
+                                                           map<CDestination,size_t>& mapWeight,
+                                                           map<CDestination,vector<unsigned char> >& mapEnrollData)
 {
-    return dbBlock.RetrieveDelegate(hash,nMinAmount,mapDelegate);
-}
-
-bool CBlockBase::RetrieveEnroll(const uint256& hashAnchor,const uint256& hashEnrollEnd,
-                                map<CDestination,vector<unsigned char> >& mapEnrollData)
-{
-    CWalleveReadLock rlock(rwAccess);
-
-    CBlockIndex* pIndex = GetIndex(hashEnrollEnd);
-    set<uint256> setBlockRange;
-    while (pIndex != NULL && pIndex->GetBlockHash() != hashAnchor)
-    {
-        setBlockRange.insert(pIndex->GetBlockHash());
-        pIndex = pIndex->pPrev;
-    }
-    
-    if (pIndex == NULL)
+    map<CDestination,int64> mapVote;
+    if (!dbBlock.RetrieveDelegate(hash,mapVote))
     {
         return false;
     }
 
-    map<CDestination,pair<uint32,uint32> > mapEnrollTxPos;
-    if (!dbBlock.RetrieveEnroll(hashAnchor,setBlockRange,mapEnrollTxPos))
+    map<CDestination,CDiskPos> mapEnrollTxPos;
+    if (!dbBlock.RetrieveEnroll(hashAnchor,vBlockRange,mapEnrollTxPos))
     {
         return false;
     }
-    
-    for (map<CDestination,pair<uint32,uint32> >::iterator it = mapEnrollTxPos.begin();
-         it != mapEnrollTxPos.end();++it)
+
+    for (map<CDestination,int64>::iterator it = mapVote.begin();it != mapVote.end();++it)
     {
-        CTransaction tx;
-        if (!tsBlock.Read(tx,(*it).second.first,(*it).second.second))
+        if ((*it).second >= nDelegateWeightRatio)
         {
-            return false;
+            const CDestination& dest = (*it).first;
+            map<CDestination,CDiskPos>::iterator mi = mapEnrollTxPos.find(dest);
+            if (mi != mapEnrollTxPos.end())
+            {
+                CTransaction tx;
+                if (!tsBlock.Read(tx,(*mi).second))
+                {
+                    return false;
+                }
+                mapWeight.insert(make_pair(dest,size_t((*it).second / nDelegateWeightRatio)));
+                mapEnrollData.insert(make_pair(dest,tx.vchData)); 
+            }
         }
-        mapEnrollData.insert(make_pair((*it).first,tx.vchData)); 
     }
     return true;
 }
@@ -822,14 +824,6 @@ bool CBlockBase::CommitBlockView(CBlockView& view,CBlockIndex* pIndexNew)
     vector<CTxUnspent> vAddNew;
     vector<CTxOutPoint> vRemove;
     view.GetUnspentChanges(vAddNew,vRemove);
-
-    if (pIndexNew->IsPrimary())
-    {
-        if (!UpdateEnroll(pIndexNew,vTxNew))
-        {
-            return false;
-        }
-    }
 
     if (hashFork == view.GetForkHash())
     {
@@ -1146,18 +1140,23 @@ bool CBlockBase::LoadForkProfile(const CBlockIndex* pIndexOrigin,CProfile& profi
     return true;
 }
 
-bool CBlockBase::UpdateDelegate(const uint256& hash,CBlockEx& block)
+bool CBlockBase::UpdateDelegate(const uint256& hash,CBlockEx& block,const CDiskPos& posBlock)
 {
-    map<CDestination,int64> mapDelegate;
-    if (!dbBlock.RetrieveDelegate(block.hashPrev,0,mapDelegate))
+    CDelegateContext ctxtDelegate;
+    
+    map<CDestination,int64>& mapDelegate = ctxtDelegate.mapVote;
+    map<uint256,map<CDestination,CDiskPos> >& mapEnrollTx = ctxtDelegate.mapEnrollTx;
+
+    if (!dbBlock.RetrieveDelegate(block.hashPrev,mapDelegate))
     {
         return false;
     }
-    
-    if (block.txMint.nType == CTransaction::TX_STAKE)
-    {
-        mapDelegate[block.txMint.sendTo] += block.txMint.nAmount;
-    }
+
+    CWalleveBufStream ss;
+    CVarInt var(block.vtx.size());
+    uint32 nOffset = posBlock.nOffset + block.GetTxSerializedOffset() 
+                                      + ss.GetSerializeSize(block.txMint)
+                                      + ss.GetSerializeSize(var);
 
     for (int i = 0;i < block.vtx.size();i++)
     {
@@ -1178,28 +1177,14 @@ bool CBlockBase::UpdateDelegate(const uint256& hash,CBlockEx& block)
                 mapDelegate[txContxt.destIn] -= tx.nAmount + tx.nTxFee;
             }
         }
-    }
 
-    return dbBlock.UpdateDelegate(hash,mapDelegate);
-}
-
-bool CBlockBase::UpdateEnroll(CBlockIndex* pIndexNew,const vector<pair<uint256,CTxIndex> >& vTxNew)
-{
-    vector<pair<CTxIndex,uint256> > vEnroll;
-    for (int i = 0;i < vTxNew.size();i++)
-    {
-        const CTxIndex& txIndex = vTxNew[i].second;
-        if (txIndex.nType == CTransaction::TX_CERT)
+        if (tx.nType == CTransaction::TX_CERT)
         {
-            CBlockIndex* pIndex = pIndexNew;
-            while (pIndex->GetBlockHeight() > txIndex.nBlockHeight)
-            {
-                pIndex = pIndex->pPrev;
-            }
-            vEnroll.push_back(make_pair(txIndex,pIndex->GetBlockHash()));
+            mapEnrollTx[tx.hashAnchor].insert(make_pair(txContxt.destIn,CDiskPos(posBlock.nFile,nOffset)));
         }
+        nOffset += ss.GetSerializeSize(tx);
     }
-    return (vEnroll.empty() || dbBlock.UpdateEnroll(vEnroll));
+    return dbBlock.UpdateDelegateContext(hash,ctxtDelegate);
 }
 
 bool CBlockBase::GetTxUnspent(const uint256 fork,const CTxOutPoint& out,CTxOutput& unspent)

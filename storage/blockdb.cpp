@@ -37,6 +37,11 @@ bool CBlockDB::Initialize(const boost::filesystem::path& pathData)
         return false;
     }
 
+    if (!dbDelegate.Initialize(pathData))
+    {
+        return false;
+    }
+    
     if (!CreateTable())
     {
         return false;
@@ -49,6 +54,7 @@ void CBlockDB::Deinitialize()
 {
     dbPool.Deinitialize();
     dbUnspent.Deinitialize();
+    dbDelegate.Deinitialize();
 }
 
 bool CBlockDB::RemoveAll()
@@ -65,8 +71,6 @@ bool CBlockDB::RemoveAll()
         txn.Query("TRUNCATE TABLE fork");
         txn.Query("TRUNCATE TABLE block");
         txn.Query("TRUNCATE TABLE transaction");
-        txn.Query("TRUNCATE TABLE delegate");
-        txn.Query("TRUNCATE TABLE enroll");
         if (!txn.Commit())
         {
             return false;
@@ -74,6 +78,7 @@ bool CBlockDB::RemoveAll()
     }
 
     dbUnspent.Clear();
+    dbDelegate.Clear();
 
     return true;
 }
@@ -376,71 +381,9 @@ bool CBlockDB::RemoveBlock(const uint256& hash)
     return db->Query(oss.str());
 }
 
-bool CBlockDB::UpdateDelegate(const uint256& hash,const map<CDestination,int64>& mapDelegate)
+bool CBlockDB::UpdateDelegateContext(const uint256& hash,const CDelegateContext& ctxtDelegate)
 {
-    CMvDBInst db(&dbPool);
-    if (!db.Available())
-    {
-        return false;
-    }
-
-    {
-        CMvDBTxn txn(*db);
-        
-        for (map<CDestination,int64>::const_iterator it = mapDelegate.begin();it != mapDelegate.end();++it)
-        {
-            if ((*it).second != 0)
-            {
-                ostringstream oss;
-                oss << "INSERT INTO delegate(block,dest,amount) " 
-                          "VALUES("
-                    <<            "\'" << db->ToEscString(hash) << "\',"
-                    <<            "\'" << db->ToEscString((*it).first) << "\',"
-                    <<            (*it).second << ")";
-                txn.Query(oss.str());
-            }
-        }
-
-        if (!txn.Commit()) 
-        {
-            return false;
-        }
-    }
-    return true;
-}
-
-bool CBlockDB::UpdateEnroll(vector<pair<CTxIndex,uint256> >& vEnroll)
-{
-    CMvDBInst db(&dbPool);
-    if (!db.Available())
-    {
-        return false;
-    }
-
-    {
-        CMvDBTxn txn(*db);
-        for (int i = 0;i < vEnroll.size();i++)
-        {
-            const CTxIndex& txIndex = vEnroll[i].first;
-            const uint256& hash = vEnroll[i].second;
-            ostringstream oss;
-            oss << "INSERT INTO enroll(anchor,dest,block,file,offset) "
-                      "VALUES("
-                <<            "\'" << db->ToEscString(txIndex.hashAnchor) << "\',"
-                <<            "\'" << db->ToEscString(txIndex.destIn) << "\',"
-                <<            "\'" << db->ToEscString(hash) << "\',"
-                <<            txIndex.nFile << ","
-                <<            txIndex.nOffset << ")"
-                <<  " ON DUPLICATE KEY UPDATE "
-                              "block = VALUES(block),file = VALUES(file),offset = VALUES(offset)";
-                txn.Query(oss.str());
-        }
-        if (!txn.Commit()) 
-        {
-            return false;
-        }
-    }
-    return true;
+    return dbDelegate.AddNew(hash,ctxtDelegate);
 }
 
 bool CBlockDB::WalkThroughBlock(CBlockDBWalker& walker)
@@ -551,62 +494,15 @@ bool CBlockDB::RetrieveTxUnspent(const uint256& fork,const CTxOutPoint& out,CTxO
     return dbUnspent.Retrieve(fork,out,unspent);
 }
 
-bool CBlockDB::RetrieveDelegate(const uint256& hash,int64 nMinAmount,map<CDestination,int64>& mapDelegate)
+bool CBlockDB::RetrieveDelegate(const uint256& hash,map<CDestination,int64>& mapDelegate)
 {
-    CMvDBInst db(&dbPool);
-    if (!db.Available())
-    {
-        return false;
-    }
-    ostringstream oss;
-    oss << "SELECT dest,amount FROM delegate" 
-           " WHERE block = \'" << db->ToEscString(hash) << "\'"
-           " AND amount >= " << nMinAmount; 
-    
-    CMvDBRes res(*db,oss.str(),true);
-    while (res.GetRow())
-    {
-        CDestination dest;
-        int64 amount;
-        if (!res.GetField(0,dest) || !res.GetField(1,amount))
-        {
-            return false;
-        }
-        mapDelegate.insert(make_pair(dest,amount));
-    }
-    return true;
+    return dbDelegate.RetrieveDelegatedVote(hash,mapDelegate);
 }
 
-bool CBlockDB::RetrieveEnroll(const uint256& hashAnchor,const set<uint256>& setBlockRange, 
-                                                        map<CDestination,pair<uint32,uint32> >& mapEnrollTxPos)
+bool CBlockDB::RetrieveEnroll(const uint256& hashAnchor,const vector<uint256>& vBlockRange, 
+                                                        map<CDestination,CDiskPos>& mapEnrollTxPos)
 {
-    CMvDBInst db(&dbPool);
-    if (!db.Available())
-    {
-        return false;
-    }
-    ostringstream oss;
-    oss << "SELECT dest,block,file,offset FROM enroll" 
-           " WHERE anchor = \'" << db->ToEscString(hashAnchor) << "\'";
-    
-    CMvDBRes res(*db,oss.str(),true);
-    while (res.GetRow())
-    {
-        CDestination dest;
-        uint256 hash;
-        pair<uint32,uint32> pos;
-        uint32 nFile,nOffset;
-        if (!res.GetField(0,dest)  || !res.GetField(1,hash)
-            || !res.GetField(2,pos.first) || !res.GetField(3,pos.second))
-        {
-            return false;
-        }
-        if (setBlockRange.count(hash))
-        {
-            mapEnrollTxPos.insert(make_pair(dest,pos));
-        }
-    }
-    return true;
+    return dbDelegate.RetrieveEnrollTx(hashAnchor,vBlockRange,mapEnrollTxPos);
 }
 
 bool CBlockDB::CreateTable()
@@ -677,25 +573,6 @@ bool CBlockDB::CreateTable()
                     "offset INT UNSIGNED NOT NULL,"
                     "INDEX(txid),INDEX(id))"
                     "ENGINE=InnoDB PARTITION BY KEY(txid) PARTITIONS 256")
-           &&
-        db->Query("CREATE TABLE IF NOT EXISTS delegate("
-                    "id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,"
-                    "block BINARY(32) NOT NULL,"
-                    "dest BINARY(33) NOT NULL,"
-                    "amount BIGINT UNSIGNED NOT NULL,"
-                    "INDEX(block,amount))"
-                    "ENGINE=InnoDB")
-           &&
-        db->Query("CREATE TABLE IF NOT EXISTS enroll("
-                    "id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,"
-                    "anchor BINARY(32) NOT NULL,"
-                    "dest BINARY(33) NOT NULL,"
-                    "block BINARY(32) NOT NULL,"
-                    "file INT UNSIGNED NOT NULL,"
-                    "offset INT UNSIGNED NOT NULL,"
-                    "UNIQUE KEY enroll (anchor,dest),"
-                    "INDEX(anchor))"
-                    "ENGINE=InnoDB")
             );
 }
 

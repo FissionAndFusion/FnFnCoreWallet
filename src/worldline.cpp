@@ -601,34 +601,18 @@ bool CWorldLine::GetBlockDelegateEnrolled(const uint256& hashBlock,map<CDestinat
     {
         return true;
     }
+    vector<uint256> vBlockRange;
     for (int i = 0;i < MV_CONSENSUS_ENROLL_INTERVAL;i++)
     {
+        vBlockRange.push_back(pIndex->GetBlockHash());
         pIndex = pIndex->pPrev;
     }
-    
-    map<CDestination,int64> mapDelegate;
-    if (!cntrBlock.RetrieveDelegate(hashBlock,nDelegateWeightRatio,mapDelegate))
-    {
-        WalleveLog("GetBlockDelegateEnrolled : Retrieve Delegate Error: %s \n",hashBlock.ToString().c_str());
-        return false;
-    }
 
-    map<CDestination,vector<unsigned char> > mapEnrollDataAll;
-    if (!cntrBlock.RetrieveEnroll(pIndex->GetBlockHash(),hashBlock,mapEnrollDataAll))
+    if (!cntrBlock.RetrieveAvailDelegate(hashBlock,pIndex->GetBlockHash(),vBlockRange,nDelegateWeightRatio,
+                                                   mapWeight,mapEnrollData))
     {
-        WalleveLog("GetBlockDelegateEnrolled : Retrieve Enroll Error: %s \n",hashBlock.ToString().c_str());
+        WalleveLog("GetBlockDelegateEnrolled : Retrieve Avail Delegate Error: %s \n",hashBlock.ToString().c_str());
         return false;
-    }
-
-    for (map<CDestination,int64>::iterator it = mapDelegate.begin();it != mapDelegate.end();++it)
-    {
-        const CDestination& dest = (*it).first;
-        map<CDestination,vector<unsigned char> >::iterator mi = mapEnrollDataAll.find(dest);
-        if (mi != mapEnrollDataAll.end())
-        {
-            mapWeight.insert(make_pair(dest,size_t((*it).second / nDelegateWeightRatio)));
-            mapEnrollData.insert((*mi));
-        }
     }
 
     return true;

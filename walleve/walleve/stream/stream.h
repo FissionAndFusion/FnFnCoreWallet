@@ -114,30 +114,42 @@ protected:
 
     /* std::vector */
     template<typename T, typename A>
+    CWalleveStream& Serialize(const std::vector<T, A>& t,ObjectType&,SaveType&);
+    template<typename T, typename A>
     CWalleveStream& Serialize(std::vector<T, A>& t,ObjectType&,SaveType&);
     template<typename T, typename A>
     CWalleveStream& Serialize(std::vector<T, A>& t,ObjectType&,LoadType&);
+    template<typename T, typename A>
+    CWalleveStream& Serialize(const std::vector<T, A>& t,ObjectType&,std::size_t& serSize);
     template<typename T, typename A>
     CWalleveStream& Serialize(std::vector<T, A>& t,ObjectType&,std::size_t& serSize);
 
     /* std::map */
     template<typename K, typename V, typename C, typename A>
+    CWalleveStream& Serialize(const std::map<K, V, C, A>& t,ObjectType&,SaveType&);
+    template<typename K, typename V, typename C, typename A>
     CWalleveStream& Serialize(std::map<K, V, C, A>& t,ObjectType&,SaveType&);
     template<typename K, typename V, typename C, typename A>
     CWalleveStream& Serialize(std::map<K, V, C, A>& t,ObjectType&,LoadType&);
+    template<typename K, typename V, typename C, typename A>
+    CWalleveStream& Serialize(const std::map<K, V, C, A>& t,ObjectType&,std::size_t& serSize);
     template<typename K, typename V, typename C, typename A>
     CWalleveStream& Serialize(std::map<K, V, C, A>& t,ObjectType&,std::size_t& serSize);
 
     /* std::multimap */
     template<typename K, typename V, typename C, typename A>
+    CWalleveStream& Serialize(const std::multimap<K, V, C, A>& t,ObjectType&,SaveType&);
+    template<typename K, typename V, typename C, typename A>
     CWalleveStream& Serialize(std::multimap<K, V, C, A>& t,ObjectType&,SaveType&);
     template<typename K, typename V, typename C, typename A>
     CWalleveStream& Serialize(std::multimap<K, V, C, A>& t,ObjectType&,LoadType&);
     template<typename K, typename V, typename C, typename A>
+    CWalleveStream& Serialize(const std::multimap<K, V, C, A>& t,ObjectType&,std::size_t& serSize);
+    template<typename K, typename V, typename C, typename A>
     CWalleveStream& Serialize(std::multimap<K, V, C, A>& t,ObjectType&,std::size_t& serSize);
 
     /* std::pair */
-    template<typename P1, typename P2,typename O>
+    template<typename P1, typename P2, typename O>
     CWalleveStream& Serialize(std::pair<P1, P2>& t,ObjectType&,O& o);
 protected:
     std::iostream ios;
@@ -394,6 +406,24 @@ protected:
 
 /* CWalleveStream vector serialize impl */
 template<typename T, typename A>
+CWalleveStream& CWalleveStream::Serialize(const std::vector<T, A>& t,ObjectType&,SaveType&)
+{
+    *this << CVarInt(t.size());
+    if (boost::is_fundamental<T>::value)
+    {
+        Write((char *)&t[0],sizeof(T) * t.size());
+    }
+    else
+    {
+        for (uint64 i = 0;i < t.size();i++)
+        {
+            *this << t[i];
+        }
+    }
+    return (*this);
+}
+
+template<typename T, typename A>
 CWalleveStream& CWalleveStream::Serialize(std::vector<T, A>& t,ObjectType&,SaveType&)
 {
     *this << CVarInt(t.size());
@@ -432,6 +462,25 @@ CWalleveStream& CWalleveStream::Serialize(std::vector<T, A>& t,ObjectType&,LoadT
 }
 
 template<typename T, typename A>
+CWalleveStream& CWalleveStream::Serialize(const std::vector<T, A>& t,ObjectType&,std::size_t& serSize)
+{
+    CVarInt var(t.size());
+    serSize += GetSerializeSize(var);
+    if (boost::is_fundamental<T>::value)
+    {
+        serSize += sizeof(T) * t.size();
+    }
+    else
+    {
+        for (uint64 i = 0;i < t.size();i++)
+        {
+            serSize += GetSerializeSize(t[i]);
+        }
+    }
+    return (*this);
+}
+
+template<typename T, typename A>
 CWalleveStream& CWalleveStream::Serialize(std::vector<T, A>& t,ObjectType&,std::size_t& serSize)
 {
     CVarInt var(t.size());
@@ -451,6 +500,17 @@ CWalleveStream& CWalleveStream::Serialize(std::vector<T, A>& t,ObjectType&,std::
 }
 
 /* CWalleveStream map serialize impl */
+template<typename K, typename V, typename C, typename A>
+CWalleveStream& CWalleveStream::Serialize(const std::map<K, V, C, A>& t,ObjectType&,SaveType&)
+{
+    *this << CVarInt(t.size());
+    for (typename std::map<K, V, C, A>::const_iterator it = t.begin(); it != t.end(); ++it)
+    {
+        *this << (*it);
+    }
+    return (*this);
+}
+
 template<typename K, typename V, typename C, typename A>
 CWalleveStream& CWalleveStream::Serialize(std::map<K, V, C, A>& t,ObjectType&,SaveType&)
 {
@@ -477,6 +537,18 @@ CWalleveStream& CWalleveStream::Serialize(std::map<K, V, C, A>& t,ObjectType&,Lo
 }
 
 template<typename K, typename V, typename C, typename A>
+CWalleveStream& CWalleveStream::Serialize(const std::map<K, V, C, A>& t,ObjectType&,std::size_t& serSize)
+{
+    CVarInt var(t.size());
+    serSize += GetSerializeSize(var);
+    for (typename std::map<K, V, C, A>::const_iterator it = t.begin(); it != t.end(); ++it)
+    {
+        serSize += GetSerializeSize(*it);
+    }
+    return (*this);
+}
+
+template<typename K, typename V, typename C, typename A>
 CWalleveStream& CWalleveStream::Serialize(std::map<K, V, C, A>& t,ObjectType&,std::size_t& serSize)
 {
     CVarInt var(t.size());
@@ -489,6 +561,17 @@ CWalleveStream& CWalleveStream::Serialize(std::map<K, V, C, A>& t,ObjectType&,st
 }
 
 /* CWalleveStream multimap serialize impl */
+template<typename K, typename V, typename C, typename A>
+CWalleveStream& CWalleveStream::Serialize(const std::multimap<K, V, C, A>& t,ObjectType&,SaveType&)
+{
+    *this << CVarInt(t.size());
+    for (typename std::multimap<K, V, C, A>::const_iterator it = t.begin(); it != t.end(); ++it)
+    {
+        *this << (*it);
+    }
+    return (*this);
+}
+
 template<typename K, typename V, typename C, typename A>
 CWalleveStream& CWalleveStream::Serialize(std::multimap<K, V, C, A>& t,ObjectType&,SaveType&)
 {
@@ -515,6 +598,18 @@ CWalleveStream& CWalleveStream::Serialize(std::multimap<K, V, C, A>& t,ObjectTyp
 }
 
 template<typename K, typename V, typename C, typename A>
+CWalleveStream& CWalleveStream::Serialize(const std::multimap<K, V, C, A>& t,ObjectType&,std::size_t& serSize)
+{
+    CVarInt var(t.size());
+    serSize += GetSerializeSize(var);
+    for (typename std::multimap<K, V, C, A>::const_iterator it = t.begin(); it != t.end(); ++it)
+    {
+        serSize += GetSerializeSize(*it);
+    }
+    return (*this);
+}
+
+template<typename K, typename V, typename C, typename A>
 CWalleveStream& CWalleveStream::Serialize(std::multimap<K, V, C, A>& t,ObjectType&,std::size_t& serSize)
 {
     CVarInt var(t.size());
@@ -527,7 +622,7 @@ CWalleveStream& CWalleveStream::Serialize(std::multimap<K, V, C, A>& t,ObjectTyp
 }
 
 /* CWalleveStream pair serialize impl */
-template<typename P1, typename P2,typename O>
+template<typename P1, typename P2, typename O>
 CWalleveStream& CWalleveStream::Serialize(std::pair<P1, P2>& t,ObjectType&,O& o)
 {
     return Serialize(t.first,o).Serialize(t.second,o);

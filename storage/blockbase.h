@@ -173,9 +173,10 @@ public:
     bool RetrieveOrigin(const uint256& hash,CBlock& block);
     bool RetrieveTx(const uint256& txid,CTransaction& tx);
     bool RetrieveTxLocation(const uint256& txid,uint256& hashFork,int& nHeight);
-    bool RetrieveDelegate(const uint256& hash,int64 nMinAmount,std::map<CDestination,int64>& mapDelegate);
-    bool RetrieveEnroll(const uint256& hashAnchor,const uint256& hashEnrollEnd,
-                        std::map<CDestination,std::vector<unsigned char> >& mapEnrollData);
+    bool RetrieveAvailDelegate(const uint256& hash,const uint256& hashAnchor,const std::vector<uint256>& vBlockRange,
+                                                   int64 nDelegateWeightRatio,
+                                                   std::map<CDestination,std::size_t>& mapWeight,
+                                                   std::map<CDestination,std::vector<unsigned char> >& mapEnrollData);
     void ListForkIndex(std::multimap<int,CBlockIndex*>& mapForkIndex);
     bool GetBlockView(CBlockView& view);
     bool GetBlockView(const uint256& hash,CBlockView& view,bool fCommitable=false);
@@ -196,8 +197,7 @@ protected:
     boost::shared_ptr<CBlockFork> GetFork(const std::string& strName);
     boost::shared_ptr<CBlockFork> AddNewFork(const CProfile& profileIn,CBlockIndex* pIndexLast);
     bool LoadForkProfile(const CBlockIndex* pIndexOrigin,CProfile& profile);
-    bool UpdateDelegate(const uint256& hash,CBlockEx& block);
-    bool UpdateEnroll(CBlockIndex* pIndexNew,const std::vector<std::pair<uint256,CTxIndex> >& vTxNew);
+    bool UpdateDelegate(const uint256& hash,CBlockEx& block,const CDiskPos& posBlock);
     bool GetTxUnspent(const uint256 fork,const CTxOutPoint& out,CTxOutput& unspent);
     bool GetTxNewIndex(CBlockView& view,CBlockIndex* pIndexNew,std::vector<std::pair<uint256,CTxIndex> >& vTxNew);
     void ClearCache();
