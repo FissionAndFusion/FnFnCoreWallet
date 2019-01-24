@@ -14,7 +14,6 @@ enum class EModeType
     SERVER,     // server
     CONSOLE,    // console
     MINER,      // miner
-    DNSEED,     // dnseed
 };
 
 }  // namespace multiverse

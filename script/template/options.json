@@ -409,22 +409,6 @@
             "desc": "Connect only to the specified node"
         },
         {
-            "name": "nDNSeedPort",
-            "type": "int",
-            "opt": "dnseedport",
-            "default": "DEFAULT_DNSEED_PORT",
-            "format": "-dnseedport=<port>",
-            "desc": "Listen for dnseed connections on <port> (default: 6816)"
-        },
-        {
-            "name": "nMaxTimes2ConnectFail",
-            "type": "unsigned int",
-            "opt": "dnseedmaxtimes",
-            "default": "DNSEED_DEFAULT_MAX_TIMES_CONNECT_FAIL",
-            "format": "-dnseedmaxtimes=<times>",
-            "desc": "Max <times> dnseed attempt to connect node"
-        },
-        {
             "name": "strTrustAddress",
             "type": "string",
             "opt": "confidentAddress",

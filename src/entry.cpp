@@ -20,7 +20,6 @@
 #include "miner.h"
 #include "dbpservice.h"
 #include "dbpclient.h"
-#include "dnseed.h"
 #include "version.h"
 #include "purger.h"
 
@@ -135,7 +134,7 @@ bool CMvEntry::Initialize(int argc, char *argv[])
     }
 
     // log
-    if ((mvConfig.GetModeType() == EModeType::SERVER || mvConfig.GetModeType() == EModeType::MINER || mvConfig.GetModeType() == EModeType::DNSEED) && !walleveLog.SetLogFilePath((pathData / "multiverse.log").string()))
+    if ((mvConfig.GetModeType() == EModeType::SERVER || mvConfig.GetModeType() == EModeType::MINER) && !walleveLog.SetLogFilePath((pathData / "multiverse.log").string()))
     {
         cerr << "Failed to open log file : " << (pathData / "multiverse.log") << "\n";
         return false;
@@ -367,14 +366,6 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
             dynamic_cast<CMvDbpClient*>(pClientBase)->AddNewClient(GetDbpClientConfig());
 
             if (!AttachModule(new CDbpService()))
-            {
-                return false;
-            }
-            break;
-        }
-        case EModuleType::DNSEED:
-        {
-            if (!AttachModule(new CDNSeed()))
             {
                 return false;
             }

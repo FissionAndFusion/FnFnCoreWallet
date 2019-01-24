@@ -148,13 +148,6 @@ public:
                                 EConfigType::RPCCLIENT
                              >(cmd);
             }
-            case EModeType::DNSEED:
-            {
-                return Create<
-                                EConfigType::NETWORK,
-                                EConfigType::STORAGE
-                             >(cmd);
-            }
             // Add new mode-module relationship here.
             default:
             {
@@ -204,13 +197,6 @@ public:
                 {
                     EModuleType::HTTPGET,
                     EModuleType::MINER
-                }
-            },
-            {
-                EModeType::DNSEED, 
-                {
-                    EModuleType::LOCK,
-                    EModuleType::DNSEED,
                 }
             }
             // Add new mode-config relationship here.
