@@ -70,7 +70,7 @@ public:
                                                       std::vector<CTxOutput>& vOutput) = 0;
     virtual bool ExistsTx(const uint256& txid) = 0;
     virtual bool FilterTx(const uint256& hashFork,CTxFilter& filter) = 0;
-    virtual bool FilterForkContext(CForkContextFilter& filter) = 0;
+    virtual bool ListForkContext(std::vector<CForkContext>& vForkCtxt) = 0;
     virtual MvErr AddNewForkContext(const CTransaction& txFork,CForkContext& ctxt) = 0;
     virtual MvErr AddNewBlock(const CBlock& block,CWorldLineUpdate& update) = 0;    
     virtual MvErr AddNewOrigin(const CBlock& block,CWorldLineUpdate& update) = 0;    

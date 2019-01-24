@@ -931,9 +931,9 @@ bool CBlockBase::FilterTx(const uint256& hashFork,CTxFilter& filter)
     return true;
 }
 
-bool CBlockBase::FilterForkContext(CForkContextFilter& filter)
+bool CBlockBase::ListForkContext(std::vector<CForkContext>& vForkCtxt)
 {
-    return dbBlock.FilterForkContext(filter);
+    return dbBlock.ListForkContext(vForkCtxt);
 }
 
 bool CBlockBase::GetForkBlockLocator(const uint256& hashFork,CBlockLocator& locator)
@@ -1261,15 +1261,15 @@ bool CBlockBase::LoadDB()
         return false;
     }
 
-    vector<uint256> vFork;
-    if (!dbBlock.RetrieveFork(vFork))
+    vector<pair<uint256,uint256> > vFork;
+    if (!dbBlock.ListFork(vFork))
     {
         ClearCache();
         return false;
     }
     for (int i = 0;i < vFork.size();i++)
     {   
-        CBlockIndex* pIndex = GetIndex(vFork[i]);
+        CBlockIndex* pIndex = GetIndex(vFork[i].second);
         if (pIndex == NULL)
         {
             ClearCache();

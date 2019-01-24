@@ -277,9 +277,9 @@ bool CWorldLine::FilterTx(const uint256& hashFork,CTxFilter& filter)
     return cntrBlock.FilterTx(hashFork,filter);
 }
 
-bool CWorldLine::FilterForkContext(CForkContextFilter& filter)
+bool CWorldLine::ListForkContext(vector<CForkContext>& vForkCtxt)
 {
-    return cntrBlock.FilterForkContext(filter);
+    return cntrBlock.ListForkContext(vForkCtxt);
 }
 
 MvErr CWorldLine::AddNewForkContext(const CTransaction& txFork,CForkContext& ctxt)

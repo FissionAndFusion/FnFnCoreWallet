@@ -9,6 +9,7 @@
 #include "forkcontext.h"
 #include "block.h"
 #include "transaction.h"
+#include "forkdb.h"
 #include "unspentdb.h"
 #include "delegatedb.h"
 
@@ -34,10 +35,10 @@ public:
     bool RemoveAll();
     bool AddNewForkContext(const CForkContext& ctxt);
     bool RetrieveForkContext(const uint256& hash,CForkContext& ctxt);
-    bool FilterForkContext(CForkContextFilter& filer);
+    bool ListForkContext(std::vector<CForkContext>& vForkCtxt);
     bool AddNewFork(const uint256& hash);
     bool RemoveFork(const uint256& hash);
-    bool RetrieveFork(std::vector<uint256>& vFork);
+    bool ListFork(std::vector<std::pair<uint256,uint256> >& vFork);
     bool UpdateFork(const uint256& hash,const uint256& hashRefBlock,const uint256& hashForkBased,
                     const std::vector<std::pair<uint256,CTxIndex> >& vTxNew,const std::vector<uint256>& vTxDel,
                     const std::vector<CTxUnspent>& vAddNew,const std::vector<CTxOutPoint>& vRemove);
@@ -58,8 +59,9 @@ protected:
     bool CreateTable();
     bool LoadFork();
 protected:
-    CMvDBPool dbPool;
-    CUnspentDB dbUnspent;
+    CMvDBPool   dbPool;
+    CForkDB     dbFork;
+    CUnspentDB  dbUnspent;
     CDelegateDB dbDelegate;
 };
 
