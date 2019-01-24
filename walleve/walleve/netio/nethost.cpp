@@ -116,13 +116,5 @@ std::string CNetHost::HostFromString(const std::string& strHostIn)
 
 bool CNetHost::IsV4FromString(const std::string& strHostIn)
 {
-    auto dotDelim = strHostIn.find('.');
-    if(dotDelim != std::string::npos)
-    {
-        return true;
-    }
-    else
-    {
-        return false;
-    }
+    return (strHostIn.find('.') != std::string::npos) ? true : false;
 }
