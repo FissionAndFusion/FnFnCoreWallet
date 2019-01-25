@@ -528,12 +528,26 @@ void CMvDbpClient::HandleAdded(CMvDbpClientSocket* pClientSocket, google::protob
 
     // rpc route
 
-    if(added.name() == RPC_CMD_TOPIC)
+    if (added.name() == RPC_CMD_TOPIC)
     {
         CMvEventRPCRouteAdded* pEvent = new CMvEventRPCRouteAdded("");
         pEvent->data.id = added.id();
         pEvent->data.name = added.name();
-        pEvent->data.anyAddedObj = added.object();
+        // pEvent->data.anyAddedObj = added.object();
+
+        if (added.object().Is<sn::RouteStop>())
+        {
+            CMvRPCRouteStop stop;
+            stop.type = CMvRPCRoute::EventType::DBP_RPCROUTE_STOP;
+            pEvent->data.anyAddedObj = stop;
+        }
+        if (added.object().Is<sn::RouteGetForkCount>())
+        {
+            CMvRPCRouteGetForkCount forkCount;
+            forkCount.type = CMvRPCRoute::EventType::DBP_RPCROUTE_GET_FORK_COUNT;
+            pEvent->data.anyAddedObj = forkCount;
+        }
+
         pDbpService->PostEvent(pEvent);
     }
 }

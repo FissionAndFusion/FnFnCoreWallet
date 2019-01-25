@@ -1491,23 +1491,30 @@ bool CDbpService::IsThisNodeData(const uint256& hashFork, uint64 nNonce, const u
     return true;
 }
 
-//rpc rout
+//rpc route
 
-void CDbpService::RPCRouteOwnProcessing()
+void CDbpService::RPCRouteOwnProcessing(CMvRPCRoute* route)
 {
-    if (sessionCount == 0 && pIoComplt != NULL)
+    if (route->type == CMvRPCRoute::EventType::DBP_RPCROUTE_STOP)
     {
-        pIoComplt->Completed(false);
-        pService->Shutdown();
-        return;
+        if (sessionCount == 0 && pIoComplt != NULL)
+        {
+            pIoComplt->Completed(false);
+            pService->Shutdown();
+            return;
+        }
+
+        if (sessionCount == 0)
+        {
+            CMvRPCRouteResult result;
+            SendRPCResult(result);
+            pService->Shutdown();
+            return;
+        }
     }
 
-    if (sessionCount == 0)
+    if(route->type == CMvRPCRoute::EventType::DBP_RPCROUTE_GET_FORK_COUNT)
     {
-        CMvRPCRouteResult result;
-        SendRPCResult(result);
-        pService->Shutdown();
-        return;
     }
 }
 
@@ -1515,16 +1522,19 @@ void CDbpService::PushRPCCmd(CMvRPCRoute* route)
 {
     boost::any anyAddedObj;
 
-    if (route->type == CMvRPCRoute::DBP_RPCROUTE_STOP)
+    if (route->type == CMvRPCRoute::EventType::DBP_RPCROUTE_STOP)
     {
         CMvRPCRouteStop* stop = (CMvRPCRouteStop*)route;
         CMvRPCRouteStop newStop;
-        newStop.type = stop->type;
+        newStop.type = route->type;
         anyAddedObj = newStop;
     }
-    if (route->type == CMvRPCRoute::DBP_RPCROUTE_GET_FORK_COUNT)
+    if (route->type == CMvRPCRoute::EventType::DBP_RPCROUTE_GET_FORK_COUNT)
     {
         CMvRPCRouteGetForkCount* forkCount = (CMvRPCRouteGetForkCount*)route;
+        CMvRPCRouteGetForkCount newForkCount;
+        newForkCount.type = route->type; 
+        anyAddedObj = newForkCount;
     }
 
     const auto& allIds = mapTopicIds[RPC_CMD_TOPIC];
@@ -1548,39 +1558,13 @@ void CDbpService::PushRPCCmd(CMvRPCRoute* route)
     }
 
     sessionCount = setSession.size();
-    RPCRouteOwnProcessing();
-}
-
-void CDbpService::PushRPCStop(CMvRPCRouteStop& stop)
-{
-    const auto& allIds = mapTopicIds[RPC_CMD_TOPIC];
-    for (const auto& id : allIds)
-    {
-        auto it = mapIdSubedSession.find(id);
-        if (it != mapIdSubedSession.end())
-        {
-            CMvEventRPCRouteAdded eventAdded(it->second);
-            eventAdded.data.id = id;
-            eventAdded.data.name = RPC_CMD_TOPIC;
-            pDbpServer->DispatchEvent(&eventAdded);
-        }
-    }
-
-    std::set<std::string> setSession;
-    for (const auto& pos : mapIdSubedSession)
-    {
-        setSession.insert(pos.second);
-    }
-
-    sessionCount = setSession.size();
-    RPCRouteOwnProcessing();
+    RPCRouteOwnProcessing(route);
 }
 
 bool CDbpService::HandleEvent(CMvEventRPCRouteStop& event)
 {
     pIoComplt = event.data.ioComplt;
     PushRPCCmd(&event.data);
-    // PushRPCStop(event.data);
     return true;
 }
 
@@ -1592,18 +1576,31 @@ void CDbpService::SendRPCResult(CMvRPCRouteResult& result)
 
 bool CDbpService::HandleEvent(CMvEventRPCRouteAdded& event)
 {
-    CMvRPCRouteStop stop;
-    stop.type = CMvRPCRoute::DBP_RPCROUTE_STOP;
-    stop.rpc = "stop";
-    // PushRPCStop(stop);
-    PushRPCCmd(&stop);
+    CMvRPCRoute *pRoute = NULL;
+    if (event.data.anyAddedObj.type() == typeid(CMvRPCRouteStop))
+    {
+        CMvRPCRouteStop stop;
+        stop.type = CMvRPCRoute::DBP_RPCROUTE_STOP;
+        stop.rpc = "stop";
+        pRoute = &stop;
+    }
+    if (event.data.anyAddedObj.type() == typeid(CMvRPCRouteGetForkCount))
+    {
+    }
+
+    if (pRoute != NULL)
+    {
+        PushRPCCmd(pRoute);
+    }
+
     return true;
 }
 
 void CDbpService::HandleRPCRoute(CMvEventDbpMethod& event)
 {
     sessionCount--;
-    RPCRouteOwnProcessing();
+    CMvRPCRoute route;
+    RPCRouteOwnProcessing(&route);
 }
 
 // 

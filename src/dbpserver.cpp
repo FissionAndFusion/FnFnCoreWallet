@@ -259,10 +259,23 @@ void CDbpClient::SendResponse(const std::string& client, CMvRPCRouteAdded& body)
     addedMsg.set_id(body.id);
     addedMsg.set_name(body.name);
 
+    if (body.anyAddedObj.type() == typeid(CMvRPCRouteStop))
+    {
+        CMvRPCRouteStop stop = boost::any_cast<CMvRPCRouteStop>(body.anyAddedObj);
+        google::protobuf::Any* anyStop = new google::protobuf::Any();
+        sn::RouteStop routeStop;
+        anyStop->PackFrom(routeStop);
+        addedMsg.set_allocated_object(anyStop);
+    }
+    else if (body.anyAddedObj.type() == typeid(CMvRPCRouteGetForkCount))
+    {
+        CMvRPCRouteGetForkCount forkCount = boost::any_cast<CMvRPCRouteGetForkCount>(body.anyAddedObj);
+    }
+
     google::protobuf::Any* anyAdded = new google::protobuf::Any();
     anyAdded->PackFrom(addedMsg);
 
-    SendMessage(dbp::Msg::ADDED,anyAdded);
+    SendMessage(dbp::Msg::ADDED, anyAdded);
 }
 
 void CDbpClient::SendPong(const std::string& id)
