@@ -31,7 +31,7 @@ bool CPurger::ResetDB(const CMvDBConfig& dbConfig,const boost::filesystem::path&
 
     {
         CWalletDB dbWallet;
-        if (dbWallet.Initialize(dbConfig))
+        if (dbWallet.Initialize(pathDataLocation / "wallet"))
         {
             if (!dbWallet.ClearTx())
             {

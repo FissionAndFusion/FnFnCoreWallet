@@ -19,6 +19,9 @@ bool CForkDB::Initialize(const boost::filesystem::path& pathData)
     CLevelDBArguments args;
     args.path = (pathData / "fork").string();
     args.syncwrite = false;
+    args.files = 16;
+    args.cache = 2 << 20;
+
     CLevelDBEngine *engine = new CLevelDBEngine(args);
 
     if (!Open(engine))
