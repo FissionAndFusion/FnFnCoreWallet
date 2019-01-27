@@ -5,7 +5,6 @@
 #ifndef MULTIVERSE_PURGER_H
 #define MULTIVERSE_PURGER_H
 
-#include "dbconn.h"
 #include <boost/filesystem.hpp>
 
 namespace multiverse
