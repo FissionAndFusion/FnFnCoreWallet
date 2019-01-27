@@ -24,7 +24,7 @@ set(sources
 
 add_library(storage ${sources})
 
-include_directories(../walleve ../crypto ../common ../leveldb/include)
+include_directories(../walleve ../crypto ../common ../leveldb/include ../snappy)
 target_link_libraries(storage
 	Boost::system
 	Boost::filesystem
@@ -39,4 +39,5 @@ target_link_libraries(storage
 	common
 	${MYSQL_LIB}
         leveldb	
+        snappy	
 )
