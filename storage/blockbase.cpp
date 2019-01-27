@@ -844,30 +844,38 @@ bool CBlockBase::CommitBlockView(CBlockView& view,CBlockIndex* pIndexNew)
 bool CBlockBase::LoadIndex(CBlockOutline& outline)
 {
     uint256 hash = outline.GetBlockHash();
-    CBlockIndex* pIndexNew = new CBlockIndex(static_cast<CBlockIndex&>(outline));
-    if (pIndexNew == NULL)
+    CBlockIndex* pIndexNew = NULL;
+
+    map<uint256, CBlockIndex*>::iterator mi = mapIndex.find(hash);
+    if (mi != mapIndex.end())
     {
-        return false;
+        pIndexNew = (*mi).second;
+        *pIndexNew = static_cast<CBlockIndex&>(outline);
     }
-    map<uint256, CBlockIndex*>::iterator mi;
-    mi = mapIndex.insert(make_pair(hash, pIndexNew)).first;
+    else
+    {
+        pIndexNew = new CBlockIndex(static_cast<CBlockIndex&>(outline));
+        if (pIndexNew == NULL)
+        {
+            return false;
+        }
+        mi = mapIndex.insert(make_pair(hash, pIndexNew)).first;
+    }
+
     pIndexNew->phashBlock = &((*mi).first);
     pIndexNew->pPrev = NULL;
     pIndexNew->pOrigin = pIndexNew;
+
     if (outline.hashPrev != 0)
     {
-        pIndexNew->pPrev = GetIndex(outline.hashPrev);
-        if (pIndexNew->pPrev == NULL)
-        {
-            mapIndex.erase(hash);
-            delete pIndexNew;
-            return false;
-        }
-        if (!pIndexNew->IsOrigin())
-        {
-            pIndexNew->pOrigin = pIndexNew->pPrev->pOrigin;
-        }
+        pIndexNew->pPrev = GetOrCreateIndex(outline.hashPrev);
     }
+    
+    if (!pIndexNew->IsOrigin())
+    {
+        pIndexNew->pOrigin = GetOrCreateIndex(outline.hashOrigin);
+    }
+ 
     return true;
 }
 
@@ -1018,6 +1026,16 @@ CBlockIndex* CBlockBase::GetIndex(const uint256& hash) const
 {
     map<uint256,CBlockIndex*>::const_iterator mi = mapIndex.find(hash);
     return (mi != mapIndex.end() ? (*mi).second : NULL);
+}
+
+CBlockIndex* CBlockBase::GetOrCreateIndex(const uint256& hash)
+{
+    map<uint256,CBlockIndex*>::const_iterator mi = mapIndex.find(hash);
+    if (mi == mapIndex.end())
+    {
+        mi = mapIndex.insert(make_pair(hash,new CBlockIndex())).first;
+    }
+    return ((*mi).second);
 }
 
 CBlockIndex* CBlockBase::GetBranch(CBlockIndex* pIndexRef,CBlockIndex* pIndex,vector<CBlockIndex*>& vPath)

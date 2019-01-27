@@ -12,6 +12,7 @@ set(sources
 	dbpool.cpp dbpool.h
 	blockdb.cpp blockdb.h
 	blockbase.cpp blockbase.h
+	blockindexdb.cpp blockindexdb.h
 	walletdb.cpp walletdb.h
 	txpooldb.cpp txpooldb.h
 	unspentdb.cpp unspentdb.h

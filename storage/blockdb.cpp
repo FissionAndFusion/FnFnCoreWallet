@@ -37,6 +37,11 @@ bool CBlockDB::Initialize(const boost::filesystem::path& pathData)
         return false;
     }
 
+    if (!dbBlockIndex.Initialize(pathData))
+    {
+        return false;
+    }
+
     if (!dbUnspent.Initialize(pathData))
     {
         return false;
@@ -60,6 +65,7 @@ void CBlockDB::Deinitialize()
     dbPool.Deinitialize();
     dbDelegate.Deinitialize();
     dbUnspent.Deinitialize();
+    dbBlockIndex.Deinitialize();
     dbFork.Deinitialize();
 }
 
@@ -73,7 +79,6 @@ bool CBlockDB::RemoveAll()
 
     {
         CMvDBTxn txn(*db);
-        txn.Query("TRUNCATE TABLE block");
         txn.Query("TRUNCATE TABLE transaction");
         if (!txn.Commit())
         {
@@ -83,6 +88,7 @@ bool CBlockDB::RemoveAll()
 
     dbDelegate.Clear();
     dbUnspent.Clear();
+    dbBlockIndex.Clear();
     dbFork.Clear();
 
     return true;
@@ -219,44 +225,12 @@ bool CBlockDB::UpdateFork(const uint256& hash,const uint256& hashRefBlock,const 
 
 bool CBlockDB::AddNewBlock(const CBlockOutline& outline)
 {
-    CMvDBInst db(&dbPool);
-    if (!db.Available())
-    {
-        return false;
-    }
-    
-    ostringstream oss;
-    oss << "INSERT INTO block(hash,prev,txid,minttype,version,type,time,height,beacon,trust,supply,algo,bits,file,offset) "
-              "VALUES("
-        <<            "\'" << db->ToEscString(outline.hashBlock) << "\',"
-        <<            "\'" << db->ToEscString(outline.hashPrev) << "\',"
-        <<            "\'" << db->ToEscString(outline.txidMint) << "\',"
-        <<            outline.nMintType << ","
-        <<            outline.nVersion << ","
-        <<            outline.nType << ","
-        <<            outline.nTimeStamp << ","
-        <<            outline.nHeight << ","
-        <<            outline.nRandBeacon << ","
-        <<            outline.nChainTrust << ","
-        <<            outline.nMoneySupply << ","
-        <<            (int)outline.nProofAlgo << ","
-        <<            (int)outline.nProofBits << ","
-        <<            outline.nFile << ","
-        <<            outline.nOffset << ")";
-    return db->Query(oss.str());
+    return dbBlockIndex.AddNewBlock(outline);
 }
 
 bool CBlockDB::RemoveBlock(const uint256& hash)
 {
-    CMvDBInst db(&dbPool);
-    if (!db.Available())
-    {
-        return false;
-    }
-
-    ostringstream oss;
-    oss << "DELETE FROM block" << " WHERE hash = \'" << db->ToEscString(hash) << "\'";
-    return db->Query(oss.str());
+    return dbBlockIndex.RemoveBlock(hash);
 }
 
 bool CBlockDB::UpdateDelegateContext(const uint256& hash,const CDelegateContext& ctxtDelegate)
@@ -266,30 +240,7 @@ bool CBlockDB::UpdateDelegateContext(const uint256& hash,const CDelegateContext&
 
 bool CBlockDB::WalkThroughBlock(CBlockDBWalker& walker)
 {
-    CMvDBInst db(&dbPool);
-    if (!db.Available())
-    {
-        return false;
-    }
-    {
-        CMvDBRes res(*db,"SELECT hash,prev,txid,minttype,version,type,time,height,beacon,trust,supply,algo,bits,file,offset FROM block ORDER BY id",true);
-        while (res.GetRow())
-        {
-            CBlockOutline outline;
-            if (   !res.GetField(0,outline.hashBlock)     || !res.GetField(1,outline.hashPrev)
-                || !res.GetField(2,outline.txidMint)      || !res.GetField(3,outline.nMintType)
-                || !res.GetField(4,outline.nVersion)      || !res.GetField(5,outline.nType)
-                || !res.GetField(6,outline.nTimeStamp)    || !res.GetField(7,outline.nHeight)      
-                || !res.GetField(8,outline.nRandBeacon)   || !res.GetField(9,outline.nChainTrust)  
-                || !res.GetField(10,outline.nMoneySupply) || !res.GetField(11,outline.nProofAlgo)
-                || !res.GetField(12,outline.nProofBits)   || !res.GetField(13,outline.nFile)       
-                || !res.GetField(14,outline.nOffset)      || !walker.Walk(outline))
-            {
-                return false;
-            }
-        }
-    }
-    return true;
+    return dbBlockIndex.WalkThroughBlock(walker);
 }
 
 bool CBlockDB::ExistsTx(const uint256& txid)
@@ -392,26 +343,6 @@ bool CBlockDB::CreateTable()
     }
 
     return (
-        db->Query("CREATE TABLE IF NOT EXISTS block("
-                    "id INT NOT NULL AUTO_INCREMENT,"
-                    "hash BINARY(32) NOT NULL UNIQUE KEY,"
-                    "prev BINARY(32) NOT NULL,"
-                    "txid BINARY(32) NOT NULL,"
-                    "minttype SMALLINT UNSIGNED NOT NULL,"
-                    "version SMALLINT UNSIGNED NOT NULL,"
-                    "type SMALLINT UNSIGNED NOT NULL,"
-                    "time INT UNSIGNED NOT NULL,"
-                    "height INT UNSIGNED NOT NULL,"
-                    "beacon BIGINT UNSIGNED NOT NULL,"
-                    "trust BIGINT UNSIGNED NOT NULL,"
-                    "supply BIGINT NOT NULL,"
-                    "algo TINYINT UNSIGNED NOT NULL,"
-                    "bits TINYINT UNSIGNED NOT NULL,"
-                    "file INT UNSIGNED NOT NULL,"
-                    "offset INT UNSIGNED NOT NULL,"
-                    "INDEX(id))"
-                    "ENGINE=InnoDB PARTITION BY KEY(hash) PARTITIONS 16")
-           &&
         db->Query("CREATE TABLE IF NOT EXISTS transaction("
                     "id INT NOT NULL AUTO_INCREMENT,"
                     "txid BINARY(32) NOT NULL UNIQUE KEY,"

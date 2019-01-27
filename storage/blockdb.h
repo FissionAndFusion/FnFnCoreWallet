@@ -9,6 +9,7 @@
 #include "forkcontext.h"
 #include "block.h"
 #include "transaction.h"
+#include "blockindexdb.h"
 #include "forkdb.h"
 #include "unspentdb.h"
 #include "delegatedb.h"
@@ -17,12 +18,6 @@ namespace multiverse
 {
 namespace storage
 {
-
-class CBlockDBWalker
-{
-public:
-    virtual bool Walk(CBlockOutline& outline) = 0;
-};
 
 class CBlockDB
 {
@@ -59,10 +54,11 @@ protected:
     bool CreateTable();
     bool LoadFork();
 protected:
-    CMvDBPool   dbPool;
-    CForkDB     dbFork;
-    CUnspentDB  dbUnspent;
-    CDelegateDB dbDelegate;
+    CMvDBPool     dbPool;
+    CForkDB       dbFork;
+    CBlockIndexDB dbBlockIndex;
+    CUnspentDB    dbUnspent;
+    CDelegateDB   dbDelegate;
 };
 
 } // namespace storage
