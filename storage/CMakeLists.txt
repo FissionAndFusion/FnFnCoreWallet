@@ -8,8 +8,6 @@
 
 set(sources
 	timeseries.cpp timeseries.h
-	dbconn.cpp dbconn.h
-	dbpool.cpp dbpool.h
 	blockdb.cpp blockdb.h
 	blockbase.cpp blockbase.h
 	blockindexdb.cpp blockindexdb.h
@@ -20,6 +18,8 @@ set(sources
 	forkdb.cpp forkdb.h
 	purger.cpp purger.h
 	leveldbeng.cpp leveldbeng.h
+        txindexdb.cpp txindexdb.h
+        ctsdb.cpp ctsdb.h
 )
 
 add_library(storage ${sources})
@@ -37,7 +37,6 @@ target_link_libraries(storage
 	walleve
 	crypto
 	common
-	${MYSQL_LIB}
         leveldb	
         snappy	
 )

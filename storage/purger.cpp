@@ -15,11 +15,11 @@ using namespace walleve;
 //////////////////////////////
 // CPurger
 
-bool CPurger::ResetDB(const CMvDBConfig& dbConfig,const boost::filesystem::path& pathDataLocation) const
+bool CPurger::ResetDB(const boost::filesystem::path& pathDataLocation) const
 {
     {
         CBlockDB dbBlock;
-        if (dbBlock.DBPoolInitialize(dbConfig,1) && dbBlock.Initialize(pathDataLocation))
+        if (dbBlock.Initialize(pathDataLocation))
         {
             if (!dbBlock.RemoveAll())
             {
@@ -41,11 +41,6 @@ bool CPurger::ResetDB(const CMvDBConfig& dbConfig,const boost::filesystem::path&
         }
     }
 
-    return true;
-}
-
-bool CPurger::ResetCache(const path& pathDataLocation) const
-{
     {
         CTxPoolDB dbTxPool;
         if (dbTxPool.Initialize(pathDataLocation))
@@ -57,6 +52,7 @@ bool CPurger::ResetCache(const path& pathDataLocation) const
             dbTxPool.Deinitialize();
         }
     }
+
     return true;
 }
 

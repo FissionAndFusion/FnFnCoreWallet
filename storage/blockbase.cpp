@@ -214,7 +214,7 @@ CBlockBase::~CBlockBase()
     tsBlock.Deinitialize();
 }
 
-bool CBlockBase::Initialize(const CMvDBConfig& dbConfig,int nMaxDBConn,const path& pathDataLocation,bool fDebug,bool fRenewDB)
+bool CBlockBase::Initialize(const path& pathDataLocation,bool fDebug,bool fRenewDB)
 {
     if (!SetupLog(pathDataLocation,fDebug))
     {
@@ -222,17 +222,6 @@ bool CBlockBase::Initialize(const CMvDBConfig& dbConfig,int nMaxDBConn,const pat
     }
 
     Log("B","Initializing... (Path : %s)\n",pathDataLocation.string().c_str());
-
-    if (!dbBlock.DBPoolInitialize(dbConfig,nMaxDBConn))
-    {
-        Error("B","Failed MySQL not connect\n");
-        return false;
-    }
-
-    if (!dbBlock.InnoDB()){
-        Error("B","Failed MySQL not Support InnoDB\n");
-        return false;
-    }
 
     if (!dbBlock.Initialize(pathDataLocation))
     {
@@ -288,7 +277,9 @@ bool CBlockBase::Exists(const uint256& hash) const
 
 bool CBlockBase::ExistsTx(const uint256& txid)
 {
-    return dbBlock.ExistsTx(txid);
+    uint256 hashFork;
+    CTxIndex txIndex;
+    return dbBlock.RetrieveTxIndex(txid,txIndex,hashFork);
 }
 
 bool CBlockBase::IsEmpty() const
@@ -322,7 +313,7 @@ bool CBlockBase::Initiate(const uint256& hashGenesis,const CBlock& blockGenesis)
     uint256 txidMintTx = blockGenesis.txMint.GetHash();
 
     vector<pair<uint256,CTxIndex> > vTxNew;
-    vTxNew.push_back(make_pair(txidMintTx,CTxIndex(blockGenesis.txMint,CDestination(),0,0,nFile,nTxOffset)));
+    vTxNew.push_back(make_pair(txidMintTx,CTxIndex(0,nFile,nTxOffset)));
 
     vector<CTxUnspent> vAddNew;
     vAddNew.push_back(CTxUnspent(CTxOutPoint(txidMintTx,0),CTxOutput(blockGenesis.txMint)));
@@ -619,14 +610,31 @@ bool CBlockBase::RetrieveOrigin(const uint256& hash,CBlock& block)
 bool CBlockBase::RetrieveTx(const uint256& txid,CTransaction& tx)
 {
     tx.SetNull();
-
-    uint32 nTxFile,nTxOffset;
-    if (!dbBlock.RetrieveTxPos(txid,nTxFile,nTxOffset))
+    uint256 hashFork;
+    CTxIndex txIndex;
+    if (!dbBlock.RetrieveTxIndex(txid,txIndex,hashFork))
     {
         return false;
     }
 
-    if (!tsBlock.Read(tx,nTxFile,nTxOffset))
+    if (!tsBlock.Read(tx,txIndex.nFile,txIndex.nOffset))
+    {
+        return false;
+    }
+    return true;
+}
+
+bool CBlockBase::RetrieveTx(const uint256& hashFork,const uint256& txid,CTransaction& tx)
+{
+    tx.SetNull();
+
+    CTxIndex txIndex;
+    if (!dbBlock.RetrieveTxIndex(hashFork,txid,txIndex))
+    {
+        return false;
+    }
+
+    if (!tsBlock.Read(tx,txIndex.nFile,txIndex.nOffset))
     {
         return false;
     }
@@ -635,22 +643,13 @@ bool CBlockBase::RetrieveTx(const uint256& txid,CTransaction& tx)
 
 bool CBlockBase::RetrieveTxLocation(const uint256& txid,uint256& hashFork,int& nHeight)
 {
-    uint256 hashAnchor;
-    if (!dbBlock.RetrieveTxLocation(txid,hashAnchor,nHeight))
+    CTxIndex txIndex;
+    if (!dbBlock.RetrieveTxIndex(txid,txIndex,hashFork))
     {
         return false;
     }
 
-    {
-        CWalleveReadLock rlock(rwAccess);
-        CBlockIndex* pIndex = (hashAnchor != 0 ? GetIndex(hashAnchor) : GetOriginIndex(txid));
-        if (pIndex == NULL)
-        {
-            return false;
-        }
-        hashFork = pIndex->GetOriginHash();
-    }
-
+    nHeight = txIndex.nBlockHeight;
     return true;
 }
 
@@ -1236,7 +1235,7 @@ bool CBlockBase::GetTxNewIndex(CBlockView& view,CBlockIndex* pIndexNew,vector<pa
 
         if (!block.txMint.IsNull())
         {
-            CTxIndex txIndex(block.txMint,CDestination(),0,nHeight,pIndex->nFile,nOffset);
+            CTxIndex txIndex(nHeight,pIndex->nFile,nOffset);
             vTxNew.push_back(make_pair(block.txMint.GetHash(),txIndex));
         }
         nOffset += ss.GetSerializeSize(block.txMint);
@@ -1248,7 +1247,7 @@ bool CBlockBase::GetTxNewIndex(CBlockView& view,CBlockIndex* pIndexNew,vector<pa
             CTransaction& tx = block.vtx[i];
             CTxContxt& txCtxt = block.vTxContxt[i];
             uint256 txid = tx.GetHash();
-            CTxIndex txIndex(tx,txCtxt.destIn,txCtxt.GetValueIn(),nHeight,pIndex->nFile,nOffset);
+            CTxIndex txIndex(nHeight,pIndex->nFile,nOffset);
             vTxNew.push_back(make_pair(txid,txIndex));
             nOffset += ss.GetSerializeSize(tx);
         }

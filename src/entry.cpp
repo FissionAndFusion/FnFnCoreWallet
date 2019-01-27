@@ -435,11 +435,8 @@ void CMvEntry::PurgeStorage()
         return;
     }
 
-    const CMvStorageConfig* config = CastConfigPtr<CMvStorageConfig*>(mvConfig.GetConfig());
-    storage::CMvDBConfig dbConfig(config->strDBHost,config->nDBPort,
-                                  config->strDBName,config->strDBUser,config->strDBPass);
     storage::CPurger purger;
-    if (purger(dbConfig,pathData))
+    if (purger(pathData))
     {
         cout << "Reset database and removed blockfiles\n";
     }

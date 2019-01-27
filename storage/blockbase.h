@@ -150,8 +150,7 @@ class CBlockBase
 public:
     CBlockBase();
     ~CBlockBase();
-    bool Initialize(const CMvDBConfig& dbConfig,int nMaxDBConn,
-                    const boost::filesystem::path& pathDataLocation,bool fDebug,bool fRenewDB=false);
+    bool Initialize(const boost::filesystem::path& pathDataLocation,bool fDebug,bool fRenewDB=false);
     void Deinitialize();
     void Clear();
     bool IsEmpty() const;
@@ -172,6 +171,7 @@ public:
     bool RetrieveAncestry(const uint256& hash,std::vector<std::pair<uint256,uint256> > vAncestry);
     bool RetrieveOrigin(const uint256& hash,CBlock& block);
     bool RetrieveTx(const uint256& txid,CTransaction& tx);
+    bool RetrieveTx(const uint256& hashFork,const uint256& txid,CTransaction& tx);
     bool RetrieveTxLocation(const uint256& txid,uint256& hashFork,int& nHeight);
     bool RetrieveAvailDelegate(const uint256& hash,const uint256& hashAnchor,const std::vector<uint256>& vBlockRange,
                                                    int64 nDelegateWeightRatio,

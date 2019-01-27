@@ -214,19 +214,6 @@ MvErr CDispatcher::AddNewTx(const CTransaction& tx,uint64 nNonce)
         return err;
     }
 
-    set<uint256> setMissingPrevTx;
-    BOOST_FOREACH(const CTxIn& txin,tx.vInput)
-    {
-        if (!pTxPool->Exists(txin.prevout.hash) && !pWorldLine->ExistsTx(txin.prevout.hash))
-        {
-            setMissingPrevTx.insert(txin.prevout.hash);
-        }
-    }
-    if (!setMissingPrevTx.empty())
-    {
-        return MV_ERR_MISSING_PREV;
-    }
-
     uint256 hashFork;
     CDestination destIn;
     int64 nValueIn;

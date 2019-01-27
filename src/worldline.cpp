@@ -40,10 +40,7 @@ void CWorldLine::WalleveHandleDeinitialize()
 
 bool CWorldLine::WalleveHandleInvoke()
 {
-    storage::CMvDBConfig dbConfig(StorageConfig()->strDBHost,StorageConfig()->nDBPort,
-                                  StorageConfig()->strDBName,StorageConfig()->strDBUser,StorageConfig()->strDBPass);
-
-    if (!cntrBlock.Initialize(dbConfig,StorageConfig()->nDBConn,WalleveConfig()->pathData,WalleveConfig()->fDebug))
+    if (!cntrBlock.Initialize(WalleveConfig()->pathData,WalleveConfig()->fDebug))
     {
         WalleveError("Failed to initalize container\n");
         return false;

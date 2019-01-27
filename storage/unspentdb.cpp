@@ -159,7 +159,7 @@ void CUnspentDB::Deinitialize()
     mapUnspenDB.clear();
 }
 
-bool CUnspentDB::AddNew(const uint256& hashFork)
+bool CUnspentDB::AddNewFork(const uint256& hashFork)
 {
     map<uint256,std::shared_ptr<CForkUnspentDB> >::iterator it = mapUnspenDB.find(hashFork);
     if (it != mapUnspenDB.end())
@@ -176,7 +176,7 @@ bool CUnspentDB::AddNew(const uint256& hashFork)
     return true;
 }
 
-bool CUnspentDB::Remove(const uint256& hashFork)
+bool CUnspentDB::RemoveFork(const uint256& hashFork)
 {
     map<uint256,std::shared_ptr<CForkUnspentDB> >::iterator it = mapUnspenDB.find(hashFork);
     if (it != mapUnspenDB.end())
