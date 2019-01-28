@@ -9,6 +9,7 @@
 
 class CWalletTx
 {
+    friend class walleve::CWalleveStream;
 public:
     uint16 nVersion;
     uint16 nType;
@@ -53,6 +54,7 @@ public:
         nType        = 0;
         nTimeStamp   = 0;
         nLockUntil   = 0;
+        vInput.clear()  ;
         sendTo.SetNull();
         nAmount      = 0;
         nTxFee       = 0;
@@ -108,6 +110,25 @@ public:
     int GetRefCount() const
     {
         return nRefCount;
+    }
+protected:
+    template <typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s,O& opt)
+    {
+        s.Serialize(nVersion,opt);
+        s.Serialize(nType,opt);
+        s.Serialize(nTimeStamp,opt);
+        s.Serialize(nLockUntil,opt);
+        s.Serialize(vInput,opt);
+        s.Serialize(sendTo,opt);
+        s.Serialize(nAmount,opt);
+        s.Serialize(nTxFee,opt);
+        s.Serialize(destIn,opt);
+        s.Serialize(nValueIn,opt);
+        s.Serialize(nBlockHeight,opt);
+        s.Serialize(nFlags,opt);
+        s.Serialize(txid,opt);
+        s.Serialize(hashFork,opt);
     }
 };
 
