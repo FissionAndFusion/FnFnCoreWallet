@@ -34,7 +34,6 @@ protected:
     void SyncForkHeight(int nPrimaryHeight);
 
 protected:
-    mutable boost::recursive_mutex mtxDispatcher;
     ICoreProtocol* pCoreProtocol;
     IWorldLine* pWorldLine;
     ITxPool* pTxPool;

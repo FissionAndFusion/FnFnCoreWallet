@@ -10,24 +10,19 @@ using namespace multiverse::storage;
 using namespace walleve;
 
 //////////////////////////////
-// CTimeSeries
+// CTimeSeriesBase
 
-const uint32 CTimeSeries::nMagicNum = 0x5E33A1EF;
-
-CTimeSeries::CTimeSeries()
-: cacheStream(FILE_CACHE_SIZE)
+CTimeSeriesBase::CTimeSeriesBase()
 {
     nLastFile = 0;
 }
 
-CTimeSeries::~CTimeSeries()
+CTimeSeriesBase::~CTimeSeriesBase()
 {
 }
 
-bool CTimeSeries::Initialize(const path& pathLocationIn,const string& strPrefixIn)
+bool CTimeSeriesBase::Initialize(const path& pathLocationIn,const string& strPrefixIn)
 {
-    boost::unique_lock<boost::mutex> lock(mtxFile);
-
     if (!exists(pathLocationIn))
     {
         create_directories(pathLocationIn);
@@ -37,36 +32,32 @@ bool CTimeSeries::Initialize(const path& pathLocationIn,const string& strPrefixI
     {
         return false;
     }
+
     pathLocation = pathLocationIn;
     strPrefix = strPrefixIn;
     nLastFile = 1;
 
-    ResetCache();
-
     return CheckDiskSpace();
 }
 
-void CTimeSeries::Deinitialize()
+void CTimeSeriesBase::Deinitialize()
 {
-    boost::unique_lock<boost::mutex> lock(mtxFile);
-
-    ResetCache();
 }
 
-bool CTimeSeries::CheckDiskSpace()
+bool CTimeSeriesBase::CheckDiskSpace()
 {
     // 15M
     return (space(pathLocation).available > 15000000);
 }
 
-const std::string CTimeSeries::FileName(uint32 nFile)
+const std::string CTimeSeriesBase::FileName(uint32 nFile)
 {
     ostringstream oss;
-    oss << strPrefix << "_" << setfill('0') << setw(4) << nFile << ".dat";
+    oss << strPrefix << "_" << setfill('0') << setw(6) << nFile << ".dat";
     return oss.str();
 }
 
-bool CTimeSeries::GetFilePath(uint32 nFile,string& strPath)
+bool CTimeSeriesBase::GetFilePath(uint32 nFile,string& strPath)
 {
     path current = pathLocation / FileName(nFile);
     if (exists(current) && is_regular_file(current))
@@ -77,7 +68,7 @@ bool CTimeSeries::GetFilePath(uint32 nFile,string& strPath)
     return false;
 }
 
-bool CTimeSeries::GetLastFilePath(uint32& nFile,std::string& strPath)
+bool CTimeSeriesBase::GetLastFilePath(uint32& nFile,std::string& strPath)
 {
     for (;;)
     {
@@ -102,13 +93,50 @@ bool CTimeSeries::GetLastFilePath(uint32& nFile,std::string& strPath)
     return false;
 }
 
-void CTimeSeries::ResetCache()
+//////////////////////////////
+// CTimeSeriesCached
+
+const uint32 CTimeSeriesCached::nMagicNum = 0x5E33A1EF;
+
+CTimeSeriesCached::CTimeSeriesCached()
+: cacheStream(FILE_CACHE_SIZE)
+{
+}
+
+CTimeSeriesCached::~CTimeSeriesCached()
+{
+}
+
+bool CTimeSeriesCached::Initialize(const path& pathLocationIn,const string& strPrefixIn)
+{
+
+    if (!CTimeSeriesBase::Initialize(pathLocationIn,strPrefixIn))
+    {
+        return false;
+    }
+
+    {
+        boost::unique_lock<boost::mutex> lock(mtxCache);
+
+        ResetCache();
+    }
+    return true;
+}
+
+void CTimeSeriesCached::Deinitialize()
+{
+    boost::unique_lock<boost::mutex> lock(mtxCache);
+
+    ResetCache();
+}
+
+void CTimeSeriesCached::ResetCache()
 {
     cacheStream.Clear();
     mapCachePos.clear(); 
 }
 
-bool CTimeSeries::VacateCache(uint32 nNeeded)
+bool CTimeSeriesCached::VacateCache(uint32 nNeeded)
 {
     const size_t nHdrSize = 12;
 
@@ -133,3 +161,17 @@ bool CTimeSeries::VacateCache(uint32 nNeeded)
     }
     return true;
 }
+
+//////////////////////////////
+// CTimeSeriesChunk
+
+const uint32 CTimeSeriesChunk::nMagicNum = 0x5E33A1EF;
+
+CTimeSeriesChunk::CTimeSeriesChunk()
+{
+}
+
+CTimeSeriesChunk::~CTimeSeriesChunk()
+{
+}
+

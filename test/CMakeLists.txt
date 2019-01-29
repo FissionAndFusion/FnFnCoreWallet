@@ -25,3 +25,11 @@ target_link_libraries(test_fnfn
 	Boost::thread
 	mpvss
 )
+
+add_executable(test_ctsdb test_fnfn_main.cpp test_fnfn.h test_fnfn.cpp ctsdb_test.cpp)
+target_link_libraries(test_ctsdb
+        Boost::unit_test_framework
+        Boost::system
+        Boost::thread
+        storage
+)

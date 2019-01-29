@@ -133,8 +133,6 @@ void CDispatcher::WalleveHandleHalt()
 
 MvErr CDispatcher::AddNewBlock(const CBlock& block,uint64 nNonce)
 {
-    boost::recursive_mutex::scoped_lock scoped_lock(mtxDispatcher);
-
     MvErr err = MV_OK;
     if (!pWorldLine->Exists(block.hashPrev))
     {
@@ -209,26 +207,11 @@ MvErr CDispatcher::AddNewBlock(const CBlock& block,uint64 nNonce)
 
 MvErr CDispatcher::AddNewTx(const CTransaction& tx,uint64 nNonce)
 {
-    boost::recursive_mutex::scoped_lock scoped_lock(mtxDispatcher);
-
     MvErr err = MV_OK;
     err = pCoreProtocol->ValidateTransaction(tx);
     if (err != MV_OK)
     {
         return err;
-    }
-
-    set<uint256> setMissingPrevTx;
-    BOOST_FOREACH(const CTxIn& txin,tx.vInput)
-    {
-        if (!pTxPool->Exists(txin.prevout.hash) && !pWorldLine->ExistsTx(txin.prevout.hash))
-        {
-            setMissingPrevTx.insert(txin.prevout.hash);
-        }
-    }
-    if (!setMissingPrevTx.empty())
-    {
-        return MV_ERR_MISSING_PREV;
     }
 
     uint256 hashFork;

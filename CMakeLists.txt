@@ -40,7 +40,6 @@ find_package(Boost 1.58.0 REQUIRED COMPONENTS
     timer
 )
 find_package(OpenSSL 1.0.0 REQUIRED) 
-find_package(MySQL 5.7.20 REQUIRED)
 find_package(sodium 1.0.8 REQUIRED)
 find_package(Readline 5.0 REQUIRED)
 
@@ -71,3 +70,4 @@ add_subdirectory(network)
 add_subdirectory(test)
 add_subdirectory(delegate)
 add_subdirectory(leveldb)
+add_subdirectory(snappy)
