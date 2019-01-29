@@ -408,7 +408,10 @@ MvErr CWorldLine::AddNewBlock(const CBlock& block,CWorldLineUpdate& update)
     }
 
     WalleveLog("AddNew Block : %s\n", pIndexNew->ToString().c_str());
-    WalleveDebug("New Block %s tx : %s\n",hash.ToString().c_str(), view.ToString().c_str());
+    if (WalleveConfig()->fDebug)
+    {
+        WalleveDebug("New Block %s tx : %s\n",hash.ToString().c_str(), view.ToString().c_str());
+    }
 
     CBlockIndex* pIndexFork = NULL;
     if (cntrBlock.RetrieveFork(pIndexNew->GetOriginHash(),&pIndexFork)
@@ -431,6 +434,7 @@ MvErr CWorldLine::AddNewBlock(const CBlock& block,CWorldLineUpdate& update)
         WalleveLog("AddNewBlock Storage GetBlockChanges Error : %s \n",hash.ToString().c_str());
         return MV_ERR_SYS_STORAGE_ERROR;
     } 
+
     return MV_OK;
 }
 

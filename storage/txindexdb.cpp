@@ -10,7 +10,7 @@ using namespace std;
 using namespace walleve;
 using namespace multiverse::storage;
 
-#define FLUSH_INTERVAL			(3600)    
+#define TXINDEX_FLUSH_INTERVAL			(3600)    
 //////////////////////////////
 // CTxIndexDB
 
@@ -98,6 +98,7 @@ bool CTxIndexDB::Update(const uint256& hashFork,const vector<pair<uint256,CTxInd
                                                 const vector<uint256>& vTxDel)
 {
     CWalleveReadLock rlock(rwAccess);
+
     map<uint256,std::shared_ptr<CForkTxDB> >::iterator it = mapTxDB.find(hashFork);
     if (it == mapTxDB.end())
     {
@@ -178,7 +179,7 @@ void CTxIndexDB::FlushProc()
     boost::unique_lock<boost::mutex> lock(mtxFlush);
     while (!fStopFlush)
     {
-        timeout += boost::posix_time::seconds(FLUSH_INTERVAL);
+        timeout += boost::posix_time::seconds(TXINDEX_FLUSH_INTERVAL);
 
         while (!fStopFlush)
         {
@@ -191,6 +192,7 @@ void CTxIndexDB::FlushProc()
         if (!fStopFlush)
         {
             vector<std::shared_ptr<CForkTxDB> > vTxDB;
+            vTxDB.reserve(mapTxDB.size());
             {
                 CWalleveReadLock rlock(rwAccess);
 
