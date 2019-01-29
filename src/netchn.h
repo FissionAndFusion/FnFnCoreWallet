@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The Multiverse developers
+// Copyright (c) 2017-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -17,8 +17,8 @@ class CNetChannelPeer
     class CNetChannelPeerFork
     {
     public:
-        CNetChannelPeerFork() : fSynchronized(true) {}
-        enum { NETCHANNEL_KNOWNINV_EXPIREDTIME = 10 * 60,NETCHANNEL_KNOWNINV_MAXCOUNT = 1024 * 8 };
+        CNetChannelPeerFork() : fSynchronized(false) {}
+        enum { NETCHANNEL_KNOWNINV_EXPIREDTIME = 5 * 60,NETCHANNEL_KNOWNINV_MAXCOUNT = 1024 * 256 };
         void AddKnownTx(const std::vector<uint256>& vTxHash);
         bool IsKnownTx(const uint256& txid) const {  return (!!setKnownTx.get<0>().count(txid)); }
     protected:
@@ -87,7 +87,7 @@ protected:
     void NotifyPeerUpdate(uint64 nNonce,bool fActive,const network::CAddress& addrPeer);
     void DispatchGetBlocksEvent(uint64 nNonce,const uint256& hashFork);
     void DispatchAwardEvent(uint64 nNonce,walleve::CEndpointManager::Bonus bonus);
-    void DispatchMisbehaveEvent(uint64 nNonce,walleve::CEndpointManager::CloseReason reason);
+    void DispatchMisbehaveEvent(uint64 nNonce,walleve::CEndpointManager::CloseReason reason,const std::string& strCaller = "");
     void SchedulePeerInv(uint64 nNonce,const uint256& hashFork,CSchedule& sched);
     bool GetMissingPrevTx(CTransaction& tx,std::set<uint256>& setMissingPrevTx);
     void AddNewBlock(const uint256& hashFork,const uint256& hash,CSchedule& sched,
@@ -97,6 +97,8 @@ protected:
     void PostAddNew(const uint256& hashFork,CSchedule& sched,
                     std::set<uint64>& setSchedPeer,std::set<uint64>& setMisbehavePeer);
     void SetPeerSyncStatus(uint64 nNonce,const uint256& hashFork,bool fSync);
+    void PushTxTimerFunc(uint32 nTimerId);
+    bool PushTxInv(const uint256& hashFork);
 protected:
     network::CMvPeerNet* pPeerNet;
     ICoreProtocol* pCoreProtocol;
@@ -104,10 +106,17 @@ protected:
     ITxPool* pTxPool;
     IDispatcher* pDispatcher;
     IService *pService;
-    mutable boost::shared_mutex rwNetPeer; 
+    
     mutable boost::recursive_mutex mtxSched; 
     std::map<uint256,CSchedule> mapSched; 
+
+    mutable boost::shared_mutex rwNetPeer; 
     std::map<uint64,CNetChannelPeer> mapPeer;
+    std::map<uint256, std::set<uint64> > mapUnsync;
+
+    mutable boost::mutex mtxPushTx; 
+    uint32 nTimerPushTx;
+    std::set<uint256> setPushTxFork;
 };
 
 } // namespace multiverse

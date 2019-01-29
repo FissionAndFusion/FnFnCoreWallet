@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2018 The LoMoCoin developers
+// Copyright (c) 2016-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -32,6 +32,13 @@ public:
 private:
     std::list<CDataIdent> listDataIdent;
     bool fAssigned;
+};
+
+template <typename CDataIdent>
+class CDataFilter
+{
+public:
+    virtual bool Ignored(const CDataIdent& ident) const { return false; }
 };
 
 class CDataKnown
@@ -135,7 +142,8 @@ public:
             mapData.erase(it);
         }
     }
-    void Schedule(typename std::vector<std::pair<uint64,CDataIdent> >& vAssigned)
+    void Schedule(typename std::vector<std::pair<uint64,CDataIdent> >& vAssigned,
+                  const CDataFilter<CDataIdent>& filter = CDataFilter<CDataIdent>())
     {
         for (typename std::map<uint64,CDataPeerPtr>::iterator it = mapPeer.begin();
              it != mapPeer.end();++it)
@@ -148,7 +156,7 @@ public:
                      li != spPeer->listDataIdent.end(); ++li)
                 {
                     CDataIdent& ident = (*li);
-                    if (mapData[ident].Assign(nNonce))
+                    if (!filter.Ignored(ident) && mapData[ident].Assign(nNonce))
                     {
                         spPeer->fAssigned = true;
                         vAssigned.push_back(std::make_pair(nNonce,ident));

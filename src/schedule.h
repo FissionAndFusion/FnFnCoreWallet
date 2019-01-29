@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The Multiverse developers
+// Copyright (c) 2017-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -22,7 +22,7 @@ class CInvPeer
     class CInvPeerState
     {
     public:
-        std::list<uint256> listKnown;
+        CUInt256List listKnown;
         std::set<uint256> setAssigned;
     };
 public:
@@ -34,7 +34,7 @@ public:
     { 
         return GetKnownList(type).size(); 
     }
-    std::list<uint256>& GetKnownList(uint32 type)
+    CUInt256List& GetKnownList(uint32 type)
     {
         return invKnown[type - network::CInv::MSG_TX].listKnown;
     }
@@ -55,13 +55,16 @@ public:
     }
     void AddNewInv(const network::CInv& inv)
     {
-        std::list<uint256>& listKnown = GetKnownList(inv.nType);
-        listKnown.remove(inv.nHash);
+        CUInt256List& listKnown = GetKnownList(inv.nType);
+        CUInt256ByValue& idxByValue = listKnown.get<1>();
+        idxByValue.erase(inv.nHash);
         listKnown.push_back(inv.nHash);
     }
     void RemoveInv(const network::CInv& inv)
     {
-        GetKnownList(inv.nType).remove(inv.nHash);
+        CUInt256List& listKnown = GetKnownList(inv.nType);
+        CUInt256ByValue& idxByValue = listKnown.get<1>();
+        idxByValue.erase(inv.nHash);
         GetAssigned(inv.nType).erase(inv.nHash);
     }
     void Assign(const network::CInv& inv)
@@ -130,7 +133,7 @@ protected:
     bool ScheduleKnownInv(uint64 nPeerNonce,CInvPeer& peer,uint32 type,
                                             std::vector<network::CInv>& vInv,std::size_t nMaxCount,bool& fReceivedAll);
 protected:
-    enum {MAX_INV_COUNT = 409600,MAX_PEER_BLOCK_INV_COUNT = 256,MAX_PEER_TX_INV_COUNT = 8192};
+    enum {MAX_INV_COUNT = 1024 * 256,MAX_PEER_BLOCK_INV_COUNT = 1024,MAX_PEER_TX_INV_COUNT = 1024 * 256};
     COrphan orphanBlock;
     COrphan orphanTx;
     std::map<uint64,CInvPeer> mapPeer;

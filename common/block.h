@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The Multiverse developers
+// Copyright (c) 2017-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -356,26 +356,31 @@ public:
         oss << "CBlockIndex : hash=" << GetBlockHash().ToString() 
                          << " prev=" << (pPrev ? pPrev->GetBlockHash().ToString() : "NULL")
                          << " height=" << nHeight
-                         << " type=" << GetBlockType();
+                         << " type=" << GetBlockType()
+                         << " time=" << nTimeStamp;
         return oss.str();
     }
 };
 
 class CBlockOutline : public CBlockIndex
 {
+    friend class walleve::CWalleveStream;
 public:
     uint256 hashBlock;
     uint256 hashPrev;
+    uint256 hashOrigin;
 public:
     CBlockOutline()
     {
         hashBlock = 0;
         hashPrev = 0;
+        hashOrigin = 0;
     }
     CBlockOutline(const CBlockIndex* pIndex) : CBlockIndex(*pIndex)
     {
-        hashBlock = pIndex->GetBlockHash();
-        hashPrev = (pPrev ? pPrev->GetBlockHash() : uint64(0));
+        hashBlock  = pIndex->GetBlockHash();
+        hashPrev   = (pPrev ? pPrev->GetBlockHash() : uint64(0));
+        hashOrigin = pOrigin->GetBlockHash();
     }
     uint256 GetBlockHash() const
     {
@@ -390,6 +395,27 @@ public:
                              << " type=" << GetBlockType();
         return oss.str();
     }
+protected:
+    template <typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s,O& opt)
+    {
+        s.Serialize(hashBlock,opt);
+        s.Serialize(hashPrev,opt);
+        s.Serialize(hashOrigin,opt);
+        s.Serialize(txidMint,opt);
+        s.Serialize(nMintType,opt);
+        s.Serialize(nVersion,opt);
+        s.Serialize(nType,opt);
+        s.Serialize(nTimeStamp,opt);
+        s.Serialize(nHeight,opt);
+        s.Serialize(nRandBeacon,opt);
+        s.Serialize(nChainTrust,opt);
+        s.Serialize(nMoneySupply,opt);
+        s.Serialize(nProofAlgo,opt);
+        s.Serialize(nProofBits,opt);
+        s.Serialize(nFile,opt);
+        s.Serialize(nOffset,opt);
+    }    
 };
 
 class CBlockLocator

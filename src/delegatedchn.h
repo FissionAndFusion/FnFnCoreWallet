@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The Multiverse developers
+// Copyright (c) 2017-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -183,11 +183,13 @@ protected:
     bool HandleEvent(network::CMvEventPeerDistribute& eventDistribute) override;
     bool HandleEvent(network::CMvEventPeerPublish& eventPublish) override;
 
-    void BroadcastBulletin();
+    void BroadcastBulletin(bool fForced = false);
     bool DispatchGetDelegated();
     void AddPeerKnownDistrubute(uint64 nNonce, const uint256& hashAnchor, uint64 bmDistrubute);
     void AddPeerKnownPublish(uint64 nNonce, const uint256& hashAnchor, uint64 bmPublish);
     void DispatchMisbehaveEvent(uint64 nNonce, walleve::CEndpointManager::CloseReason reason);
+    void PushBulletinTimerFunc(uint32 nTimerId);
+    void PushBulletin();
     std::shared_ptr<CDelegatedChannelPeer> GetPeer(uint64 nNonce)
     {
         return std::static_pointer_cast<CDelegatedChannelPeer>(schedPeer.GetPeer(nNonce));
@@ -200,6 +202,10 @@ protected:
     mutable boost::shared_mutex rwPeer; 
     walleve::CDataScheduler<CDelegatedDataIdent> schedPeer;
     CDelegatedChannelChain dataChain;
+
+    mutable boost::mutex mtxBulletin;
+    bool fBulletin;
+    uint32 nTimerBulletin;
 };
 
 } // namespace multiverse

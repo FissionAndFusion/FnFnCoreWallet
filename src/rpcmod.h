@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The Multiverse developers
+// Copyright (c) 2017-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -82,7 +82,7 @@ private:
     CRPCResultPtr RPCGetBlockHash(CRPCParamPtr param);
     CRPCResultPtr RPCGetBlock(CRPCParamPtr param);
     CRPCResultPtr RPCGetTxPool(CRPCParamPtr param);
-    CRPCResultPtr RPCRemovePendingTx(CRPCParamPtr param);
+    // CRPCResultPtr RPCRemovePendingTx(CRPCParamPtr param);
     CRPCResultPtr RPCGetTransaction(CRPCParamPtr param);
     CRPCResultPtr RPCSendTransaction(CRPCParamPtr param);
     CRPCResultPtr RPCGetForkHeight(CRPCParamPtr param);

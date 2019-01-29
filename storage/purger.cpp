@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The Multiverse developers
+// Copyright (c) 2017-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -15,11 +15,11 @@ using namespace walleve;
 //////////////////////////////
 // CPurger
 
-bool CPurger::ResetDB(const CMvDBConfig& dbConfig) const
+bool CPurger::ResetDB(const boost::filesystem::path& pathDataLocation) const
 {
     {
         CBlockDB dbBlock;
-        if (dbBlock.DBPoolInitialize(dbConfig,1) && dbBlock.Initialize())
+        if (dbBlock.Initialize(pathDataLocation))
         {
             if (!dbBlock.RemoveAll())
             {
@@ -31,7 +31,7 @@ bool CPurger::ResetDB(const CMvDBConfig& dbConfig) const
 
     {
         CWalletDB dbWallet;
-        if (dbWallet.Initialize(dbConfig))
+        if (dbWallet.Initialize(pathDataLocation / "wallet"))
         {
             if (!dbWallet.ClearTx())
             {
@@ -41,11 +41,6 @@ bool CPurger::ResetDB(const CMvDBConfig& dbConfig) const
         }
     }
 
-    return true;
-}
-
-bool CPurger::ResetCache(const path& pathDataLocation) const
-{
     {
         CTxPoolDB dbTxPool;
         if (dbTxPool.Initialize(pathDataLocation))
@@ -57,6 +52,7 @@ bool CPurger::ResetCache(const path& pathDataLocation) const
             dbTxPool.Deinitialize();
         }
     }
+
     return true;
 }
 

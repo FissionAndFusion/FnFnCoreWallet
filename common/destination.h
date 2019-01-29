@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The Multiverse developers
+// Copyright (c) 2017-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -127,8 +127,13 @@ public:
         return (std::string(1,(char)(prefix + '0')) + walleve::ToHexString(data.begin(),sizeof(uint256)));
     }
 protected:
+    void WalleveSerialize(walleve::CWalleveStream& s,walleve::LoadType& opt)
+    {
+        s.Serialize(prefix,opt);
+        s.Serialize(data,opt);
+    } 
     template <typename O>
-    void WalleveSerialize(walleve::CWalleveStream& s,O& opt)
+    void WalleveSerialize(walleve::CWalleveStream& s,O& opt) const
     {
         s.Serialize(prefix,opt);
         s.Serialize(data,opt);

@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The Multiverse developers
+// Copyright (c) 2017-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -8,25 +8,6 @@
 using namespace std;
 using namespace walleve;
 using namespace multiverse;
-
-//////////////////////////////
-// CForkManagerFilter
-
-class CForkManagerFilter : public CForkContextFilter
-{
-public:
-    CForkManagerFilter(CForkManager* pForkManagerIn,vector<uint256>& vActiveIn) 
-    : pForkManager(pForkManagerIn), vActive(vActiveIn) 
-    {
-    }
-    bool FoundForkContext(const CForkContext& ctxt)
-    {
-        return pForkManager->AddNewForkContext(ctxt,vActive);
-    }
-protected:
-    CForkManager* pForkManager;
-    vector<uint256>& vActive;
-}; 
 
 //////////////////////////////
 // CForkManager 
@@ -130,9 +111,22 @@ bool CForkManager::GetJoint(const uint256& hashFork,uint256& hashParent,uint256&
 bool CForkManager::LoadForkContext(vector<uint256>& vActive)
 {
     boost::unique_lock<boost::shared_mutex> wlock(rwAccess);
+    
+    vector<CForkContext> vForkCtxt;
+    if (!pWorldLine->ListForkContext(vForkCtxt))
+    {
+        return false;
+    }
 
-    CForkManagerFilter filter(this,vActive);
-    return pWorldLine->FilterForkContext(filter);
+    BOOST_FOREACH(const CForkContext& ctxt,vForkCtxt)
+    {
+        if (!AddNewForkContext(ctxt,vActive))
+        {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 void CForkManager::ForkUpdate(const CWorldLineUpdate& update,vector<uint256>& vActive,vector<uint256>& vDeactive)
@@ -183,6 +177,7 @@ bool CForkManager::AddNewForkContext(const CForkContext& ctxt,vector<uint256>& v
         if (ctxt.hashFork == pCoreProtocol->GetGenesisBlockHash())
         {
             vActive.push_back(ctxt.hashFork);
+            setForkIndex.insert(CForkLink(ctxt));
             return true;
         }
 
@@ -218,6 +213,40 @@ bool CForkManager::AddNewForkContext(const CForkContext& ctxt,vector<uint256>& v
     }
 
     setForkIndex.insert(CForkLink(ctxt));
+
+    return true;
+}
+
+void CForkManager::GetForkList(std::vector<uint256>& vFork) const
+{
+    boost::shared_lock<boost::shared_mutex> rlock(rwAccess);
+
+    vFork.reserve(setForkIndex.size());
+    for (auto it = setForkIndex.begin(); it != setForkIndex.end(); it++)
+    {
+        vFork.push_back(it->hashFork);
+    }
+}
+
+bool CForkManager::GetSubline(const uint256& hashFork, vector<pair<int, uint256> >& vSubline) const
+{
+    boost::shared_lock<boost::shared_mutex> rlock(rwAccess);
+
+    const CForkLinkSetByParent& idxParent = setForkIndex.get<3>();
+    CForkLinkSetByParent::const_iterator itBegin = idxParent.lower_bound(hashFork);
+    CForkLinkSetByParent::const_iterator itEnd = idxParent.upper_bound(hashFork);
+    if (itBegin == itEnd)
+    {
+        return false;
+    }
+
+    multimap<int, uint256> mapSubline;
+    for (;itBegin != itEnd; ++itBegin)
+    {
+        mapSubline.insert(make_pair(itBegin->nJointHeight, itBegin->hashFork));
+    }
+
+    vSubline.assign(mapSubline.begin(), mapSubline.end());
 
     return true;
 }

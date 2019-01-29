@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The Multiverse developers
+// Copyright (c) 2017-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 //
@@ -148,13 +148,6 @@ public:
                                 EConfigType::RPCCLIENT
                              >(cmd);
             }
-            case EModeType::DNSEED:
-            {
-                return Create<
-                                EConfigType::NETWORK,
-                                EConfigType::STORAGE
-                             >(cmd);
-            }
             // Add new mode-module relationship here.
             default:
             {
@@ -204,13 +197,6 @@ public:
                 {
                     EModuleType::HTTPGET,
                     EModuleType::MINER
-                }
-            },
-            {
-                EModeType::DNSEED, 
-                {
-                    EModuleType::LOCK,
-                    EModuleType::DNSEED,
                 }
             }
             // Add new mode-config relationship here.

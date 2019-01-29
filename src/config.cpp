@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The Multiverse developers
+// Copyright (c) 2017-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -53,10 +53,6 @@ bool CMvConfig::Load(int argc, char* argv[], const fs::path& pathDefault,
     {
         emMode = EModeType::MINER;
     }
-    else if (exec == "multiverse-dnseed")
-    {
-        emMode = EModeType::DNSEED;
-    }
     else if (exec == "multiverse-cli")
     {
         emMode = EModeType::CONSOLE;
@@ -80,11 +76,6 @@ bool CMvConfig::Load(int argc, char* argv[], const fs::path& pathDefault,
         else if (cmd == "miner")
         {
             emMode = EModeType::MINER;
-            ignoreCmd = 1;
-        }
-        else if (cmd == "dnseed")
-        {
-            emMode = EModeType::DNSEED;
             ignoreCmd = 1;
         }
         else

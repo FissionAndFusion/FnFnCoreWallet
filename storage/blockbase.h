@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The Multiverse developers
+// Copyright (c) 2017-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -13,6 +13,7 @@
 #include "walleve/walleve.h"
 
 #include <map>
+#include <numeric>
 #include <boost/thread/thread.hpp>
 #include <boost/smart_ptr/shared_ptr.hpp>
 
@@ -26,17 +27,21 @@ class CBlockBase;
 class CBlockFork
 {
 public:
-    CBlockFork(const CProfile& profileIn=CProfile(),CBlockIndex* pIndexLastIn=NULL) 
-    : forkProfile(profileIn),pIndexLast(pIndexLastIn),spAccess(new walleve::CWalleveRWAccess())
+    CBlockFork(const CProfile& profileIn,CBlockIndex* pIndexLastIn) 
+    : forkProfile(profileIn),pIndexLast(pIndexLastIn),pIndexOrigin(pIndexLast->pOrigin)
     {
     }
-    void ReadLock() { spAccess->ReadLock(); }
-    void WriteLock() { spAccess->WriteLock(); }
-    void ReadUnlock() { spAccess->ReadUnlock(); }
-    void WriteUnlock() { spAccess->WriteUnlock(); }
+    void ReadLock()       { rwAccess.ReadLock();      }
+    void ReadUnlock()     { rwAccess.ReadUnlock();    }
+    void WriteLock()      { rwAccess.WriteLock();     }
+    void WriteUnlock()    { rwAccess.WriteUnlock();   }
+    void UpgradeLock()    { rwAccess.UpgradeLock();   }
+    void UpgradeUnlock()  { rwAccess.UpgradeUnlock(); }
+    void UpgradeToWrite() { rwAccess.UpgradeToWriteLock() ; }
+    walleve::CWalleveRWAccess& GetRWAccess() const { return rwAccess; }
     const CProfile& GetProfile() const { return forkProfile; }
     CBlockIndex* GetLast() const { return pIndexLast; }
-    CBlockIndex* GetOrigin() const { return pIndexLast->pOrigin; }
+    CBlockIndex* GetOrigin() const { return pIndexOrigin; }
     void UpdateLast(CBlockIndex* pIndexLastIn) { pIndexLast = pIndexLastIn; UpdateNext(); }
     void UpdateNext()
     {
@@ -61,49 +66,11 @@ public:
             }
         }
     }
-    void InsertAncestry(CBlockIndex* pAncestry) 
-    {
-        mapAncestry.insert(std::make_pair(pAncestry->GetOriginHash(),pAncestry)); 
-    }
-    void InsertSubline(int nHeight,const uint256& hash)
-    {
-        mapSubline.insert(std::make_pair(nHeight,hash));
-    }
-    void GetSubline(int nStart,std::vector<uint256>& vSubline) const
-    {
-        for (std::multimap<int,uint256>::const_iterator it = mapSubline.lower_bound(nStart);it != mapSubline.end();++it)
-        {
-            vSubline.push_back((*it).second);
-        }
-    }
-    bool Have(CBlockIndex* pIndex) const
-    {
-        if (!pIndex)
-        {
-            return false;
-        }
-        uint256 hashFork = pIndex->GetOriginHash();
-        CBlockIndex* p = NULL;
-        if (hashFork == pIndexLast->GetOriginHash())
-        {
-            p = pIndexLast;
-        }
-        else
-        {
-            std::map<uint256,CBlockIndex*>::const_iterator it = mapAncestry.find(hashFork);
-            if (it != mapAncestry.end())
-            {
-                p = (*it).second;
-            }
-        }
-        return (pIndex->pNext != NULL || p == pIndex);
-    }
 protected:
+    mutable walleve::CWalleveRWAccess rwAccess;
     CProfile forkProfile;
     CBlockIndex* pIndexLast;
-    boost::shared_ptr<walleve::CWalleveRWAccess> spAccess;
-    std::map<uint256,CBlockIndex*> mapAncestry;
-    std::multimap<int,uint256> mapSubline;
+    CBlockIndex* pIndexOrigin;
 };
 
 class CBlockView
@@ -116,17 +83,21 @@ public:
     public:
         CUnspent() : nOpt(0) {}
         void Enable(const CTxOutput& output) 
-        { destTo = output.destTo; nAmount = output.nAmount; nLockUntil = output.nLockUntil; nOpt++; }
+        { 
+            destTo = output.destTo; nAmount = output.nAmount; 
+            nTxTime = output.nTxTime; nLockUntil = output.nLockUntil; 
+            nOpt++; 
+        }
         void Disable() { SetNull(); nOpt--; }
         bool IsModified() const { return (nOpt != 0); }
     };
     CBlockView();
     ~CBlockView();
-    void Initialize(CBlockBase* pBlockBaseIn,CBlockFork* pBlockForkIn,
+    void Initialize(CBlockBase* pBlockBaseIn,boost::shared_ptr<CBlockFork> spForkIn,
                     const uint256& hashForkIn,bool fCommittableIn);
     void Deinitialize();
     bool IsCommittable() const { return fCommittable; }
-    CBlockFork* GetFork() const { return pBlockFork; };
+    boost::shared_ptr<CBlockFork> GetFork() const { return spFork; };
     const uint256& GetForkHash() const { return hashFork; };
     bool ExistsTx(const uint256& txid) const;
     bool RetrieveTx(const uint256& txid,CTransaction& tx);
@@ -137,9 +108,34 @@ public:
     void GetUnspentChanges(std::vector<CTxUnspent>& vAddNew,std::vector<CTxOutPoint>& vRemove);
     void GetTxUpdated(std::set<uint256>& setUpdate);
     void GetTxRemoved(std::vector<uint256>& vRemove);
+    std::string ToString() const
+    {
+        std::ostringstream oss;
+        
+        oss << "CBlockView : Add=(";
+        if (!vTxAddNew.empty())
+        {
+            oss << std::accumulate(vTxAddNew.begin() + 1, vTxAddNew.end(), vTxAddNew.front().GetHex(),
+                        [](std::string lhs, const uint256& rhs)
+                        {
+                            return std::move(lhs) + "," + rhs.GetHex();
+                        });
+        }
+        oss << ") Remove=(";
+        if (!vTxRemove.empty())
+        {
+            oss << std::accumulate(vTxRemove.begin() + 1, vTxRemove.end(), vTxRemove.front().GetHex(),
+                        [](std::string lhs, const uint256& rhs)
+                        {
+                            return std::move(lhs) + "," + rhs.GetHex();
+                        });
+        }
+        oss << ")";
+        return oss.str();
+    }
 protected:
     CBlockBase* pBlockBase;
-    CBlockFork* pBlockFork;
+    boost::shared_ptr<CBlockFork> spFork;
     uint256 hashFork;
     bool fCommittable;
     std::map<uint256,CTransaction> mapTx;
@@ -154,8 +150,7 @@ class CBlockBase
 public:
     CBlockBase();
     ~CBlockBase();
-    bool Initialize(const CMvDBConfig& dbConfig,int nMaxDBConn,
-                    const boost::filesystem::path& pathDataLocation,bool fDebug,bool fRenewDB=false);
+    bool Initialize(const boost::filesystem::path& pathDataLocation,bool fDebug,bool fRenewDB=false);
     void Deinitialize();
     void Clear();
     bool IsEmpty() const;
@@ -176,10 +171,12 @@ public:
     bool RetrieveAncestry(const uint256& hash,std::vector<std::pair<uint256,uint256> > vAncestry);
     bool RetrieveOrigin(const uint256& hash,CBlock& block);
     bool RetrieveTx(const uint256& txid,CTransaction& tx);
+    bool RetrieveTx(const uint256& hashFork,const uint256& txid,CTransaction& tx);
     bool RetrieveTxLocation(const uint256& txid,uint256& hashFork,int& nHeight);
-    bool RetrieveDelegate(const uint256& hash,int64 nMinAmount,std::map<CDestination,int64>& mapDelegate);
-    bool RetrieveEnroll(const uint256& hashAnchor,const uint256& hashEnrollEnd,
-                        std::map<CDestination,std::vector<unsigned char> >& mapEnrollData);
+    bool RetrieveAvailDelegate(const uint256& hash,const uint256& hashAnchor,const std::vector<uint256>& vBlockRange,
+                                                   int64 nDelegateWeightRatio,
+                                                   std::map<CDestination,std::size_t>& mapWeight,
+                                                   std::map<CDestination,std::vector<unsigned char> >& mapEnrollData);
     void ListForkIndex(std::multimap<int,CBlockIndex*>& mapForkIndex);
     bool GetBlockView(CBlockView& view);
     bool GetBlockView(const uint256& hash,CBlockView& view,bool fCommitable=false);
@@ -187,21 +184,21 @@ public:
     bool CommitBlockView(CBlockView& view,CBlockIndex* pIndexNew);
     bool LoadIndex(CBlockOutline& diskIndex);
     bool LoadTx(CTransaction& tx,uint32 nTxFile,uint32 nTxOffset,uint256& hashFork);
-    bool FilterTx(CTxFilter& filter);
-    bool FilterForkContext(CForkContextFilter& filter);
+    bool FilterTx(const uint256& hashFork,CTxFilter& filter);
+    bool ListForkContext(std::vector<CForkContext>& vForkCtxt);
     bool GetForkBlockLocator(const uint256& hashFork,CBlockLocator& locator);
     bool GetForkBlockInv(const uint256& hashFork,const CBlockLocator& locator,std::vector<uint256>& vBlockHash,size_t nMaxCount);
 protected:
     CBlockIndex* GetIndex(const uint256& hash) const;
-    CBlockFork* GetFork(const uint256& hash);
-    CBlockFork* GetFork(const std::string& strName);
+    CBlockIndex* GetOrCreateIndex(const uint256& hash);
     CBlockIndex* GetBranch(CBlockIndex* pIndexRef,CBlockIndex* pIndex,std::vector<CBlockIndex*>& vPath);
     CBlockIndex* GetOriginIndex(const uint256& txidMint) const;
     CBlockIndex* AddNewIndex(const uint256& hash,const CBlock& block,uint32 nFile,uint32 nOffset);
-    CBlockFork* AddNewFork(const CProfile& profileIn,CBlockIndex* pIndexLast);
+    boost::shared_ptr<CBlockFork> GetFork(const uint256& hash);
+    boost::shared_ptr<CBlockFork> GetFork(const std::string& strName);
+    boost::shared_ptr<CBlockFork> AddNewFork(const CProfile& profileIn,CBlockIndex* pIndexLast);
     bool LoadForkProfile(const CBlockIndex* pIndexOrigin,CProfile& profile);
-    bool UpdateDelegate(const uint256& hash,CBlockEx& block);
-    bool UpdateEnroll(CBlockIndex* pIndexNew,std::vector<std::pair<uint256,CTxIndex> >& vTxNew);
+    bool UpdateDelegate(const uint256& hash,CBlockEx& block,const CDiskPos& posBlock);
     bool GetTxUnspent(const uint256 fork,const CTxOutPoint& out,CTxOutput& unspent);
     bool GetTxNewIndex(CBlockView& view,CBlockIndex* pIndexNew,std::vector<std::pair<uint256,CTxIndex> >& vTxNew);
     void ClearCache();
@@ -243,9 +240,9 @@ protected:
     walleve::CWalleveLog walleveLog;
     bool fDebugLog;
     CBlockDB dbBlock;
-    CTimeSeries tsBlock;
+    CTimeSeriesCached tsBlock;
     std::map<uint256,CBlockIndex*> mapIndex;
-    std::map<uint256,CBlockFork> mapFork;
+    std::map<uint256,boost::shared_ptr<CBlockFork> > mapFork;
 };
 
 } // namespace storage

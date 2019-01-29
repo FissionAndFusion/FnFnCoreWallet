@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The Multiverse developers
+// Copyright (c) 2017-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -14,7 +14,7 @@
 
 #define MV_VERSION_MAJOR       0
 #define MV_VERSION_MINOR       1
-#define MV_VERSION_REVISION    0
+#define MV_VERSION_REVISION    2
 
 std::string FormatVersion(int nVersion);
 

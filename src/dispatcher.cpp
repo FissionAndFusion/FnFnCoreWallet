@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The Multiverse developers
+// Copyright (c) 2017-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -214,19 +214,6 @@ MvErr CDispatcher::AddNewTx(const CTransaction& tx,uint64 nNonce)
         return err;
     }
 
-    set<uint256> setMissingPrevTx;
-    BOOST_FOREACH(const CTxIn& txin,tx.vInput)
-    {
-        if (!pTxPool->Exists(txin.prevout.hash) && !pWorldLine->ExistsTx(txin.prevout.hash))
-        {
-            setMissingPrevTx.insert(txin.prevout.hash);
-        }
-    }
-    if (!setMissingPrevTx.empty())
-    {
-        return MV_ERR_MISSING_PREV;
-    }
-
     uint256 hashFork;
     CDestination destIn;
     int64 nValueIn;
@@ -237,7 +224,7 @@ MvErr CDispatcher::AddNewTx(const CTransaction& tx,uint64 nNonce)
     }
 
     CAssembledTx assembledTx(tx,-1,destIn,nValueIn);
-    if (!pWallet->UpdateTx(hashFork,assembledTx))
+    if (!pWallet->AddNewTx(hashFork,assembledTx))
     {
         return MV_ERR_SYS_DATABASE_ERROR;
     }
@@ -380,7 +367,7 @@ void CDispatcher::SyncForkHeight(int nPrimaryHeight)
     {
         const uint256& hashFork = (*it).first;
         CForkStatus& status = (*it).second;
-        if (!pForkManager->IsAllowed(hashFork))
+        if (!pForkManager->IsAllowed(hashFork) || !pNetChannel->IsForkSynchronized(hashFork))
         {
             continue;
         }

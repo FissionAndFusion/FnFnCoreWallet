@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The Multiverse developers
+// Copyright (c) 2017-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -187,7 +187,7 @@ BOOST_AUTO_TEST_CASE( interpolation )
 BOOST_AUTO_TEST_CASE( mpvss )
 {
     srand(time(0));
-    for (size_t count = 1; count <= 20; count++)
+    for (size_t count = 41; count <= 50; count++)
     {
         uint256 nInitValue;
         std::vector<uint256> vID;

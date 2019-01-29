@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The Multiverse developers
+// Copyright (c) 2017-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -79,9 +79,10 @@ void CMvCoreProtocol::GetGenesisBlock(CBlock& block)
     block.hashPrev   = 0;
     
     CTransaction& tx = block.txMint;
-    tx.nType   = CTransaction::TX_GENESIS;
-    tx.sendTo  = destOwner;
-    tx.nAmount = 745000000 * COIN; // 745000000 is initial number of token
+    tx.nType         = CTransaction::TX_GENESIS;
+    tx.nTimeStamp    = block.nTimeStamp;
+    tx.sendTo        = destOwner;
+    tx.nAmount       = 745000000 * COIN; // 745000000 is initial number of token
 
     CProfile profile;
     profile.strName = "Fission And Fusion Network";
@@ -98,6 +99,34 @@ void CMvCoreProtocol::GetGenesisBlock(CBlock& block)
 MvErr CMvCoreProtocol::ValidateTransaction(const CTransaction& tx)
 {
     // Basic checks that don't depend on any context
+    if(tx.nType == CTransaction::TX_TOKEN
+       && (tx.sendTo.IsPubKey()
+           || (tx.sendTo.IsTemplate()
+               && (tx.sendTo.GetTemplateId() == TEMPLATE_WEIGHTED || tx.sendTo.GetTemplateId() == TEMPLATE_MULTISIG)))
+       && !tx.vchData.empty())
+    {
+        if(tx.vchData.size() < 21)
+        {   //vchData must contain 3 fields of UUID, timestamp, szDescription at least
+            return DEBUG(MV_ERR_TRANSACTION_INVALID, "tx vchData is less than 21 bytes.\n");
+        }
+        //check description field
+        uint16 nPos = 20;
+        uint8 szDesc = tx.vchData[nPos];
+        if(szDesc > 0)
+        {
+            if((nPos + 1 + szDesc) > tx.vchData.size())
+            {
+                return DEBUG(MV_ERR_TRANSACTION_INVALID, "tx vchData is overflow.\n");
+            }
+            std::string strDescEncodedBase64(tx.vchData.begin() + nPos, tx.vchData.begin() + nPos + szDesc);
+            walleve::CHttpUtil util;
+            std::string strDescDecodedBase64;
+            if(!util.Base64Decode(strDescEncodedBase64, strDescDecodedBase64))
+            {
+                return DEBUG(MV_ERR_TRANSACTION_INVALID, "tx vchData description base64 is not available.\n");
+            }
+        }
+    }
     if (tx.vInput.empty() && tx.nType != CTransaction::TX_GENESIS && tx.nType != CTransaction::TX_WORK && tx.nType != CTransaction::TX_STAKE)
     {
         return DEBUG(MV_ERR_TRANSACTION_INVALID,"tx vin is empty\n");
@@ -258,6 +287,10 @@ MvErr CMvCoreProtocol::VerifyTransaction(const CTransaction& tx,const vector<CTx
         {
             return DEBUG(MV_ERR_TRANSACTION_INPUT_INVALID,"input destination mismatched\n");
         }
+        if (output.nTxTime > tx.nTimeStamp)
+        {
+            return DEBUG(MV_ERR_TRANSACTION_INPUT_INVALID,"tx time is ahead of input tx\n");
+        }
         if (output.nLockUntil != 0 && output.nLockUntil < nForkHeight)
         {
             return DEBUG(MV_ERR_TRANSACTION_INPUT_INVALID,"input is still locked\n");
@@ -396,7 +429,7 @@ bool CMvCoreProtocol::CheckBlockSignature(const CBlock& block)
 
 MvErr CMvCoreProtocol::ValidateVacantBlock(const CBlock& block)
 {
-    if (block.hashMerkle != 0 || !block.txMint.IsNull() || !block.vtx.empty())
+    if (block.hashMerkle != 0 || block.txMint != CTransaction() || !block.vtx.empty())
     {
         return DEBUG(MV_ERR_BLOCK_TRANSACTIONS_INVALID,"vacant block tx is not empty.");
     }
@@ -438,9 +471,10 @@ void CMvTestNetCoreProtocol::GetGenesisBlock(CBlock& block)
     block.hashPrev   = 0;
     
     CTransaction& tx = block.txMint;
-    tx.nType   = CTransaction::TX_GENESIS;
-    tx.sendTo  = destOwner;
-    tx.nAmount = 745000000 * COIN; // 745000000 is initial number of token
+    tx.nType         = CTransaction::TX_GENESIS;
+    tx.nTimeStamp    = block.nTimeStamp;
+    tx.sendTo        = destOwner;
+    tx.nAmount       = 745000000 * COIN; // 745000000 is initial number of token
 
     CProfile profile;
     profile.strName = "Fission And Fusion Test Network";

@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The Multiverse developers
+// Copyright (c) 2017-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -99,17 +99,54 @@ void CTxPoolView::InvalidateSpent(const CTxOutPoint& out,vector<uint256>& vInvol
     }
 }
  
-void CTxPoolView::GetFilteredTx(map<size_t,pair<uint256,CPooledTx*> >& mapFilteredTx,
-                                const CDestination& sendTo,const CDestination& destIn)
+void CTxPoolView::GetSortedTx(map<size_t,pair<uint256,CPooledTx*> >& mapSortedTx)
 {
     for (map<uint256,CPooledTx*>::iterator mi = mapTx.begin();mi != mapTx.end(); ++mi)
     {
         CPooledTx* pPooledTx = (*mi).second;
-        if ((destIn.IsNull() && sendTo.IsNull()) || sendTo == pPooledTx->sendTo
-            || (!pPooledTx->destIn.IsNull() && destIn == pPooledTx->destIn))
         {
-            mapFilteredTx.insert(make_pair(pPooledTx->nSequenceNumber,(*mi)));
+            mapSortedTx.insert(make_pair(pPooledTx->nSequenceNumber,(*mi)));
         }
+    }
+}
+
+void CTxPoolView::GetInvolvedTx(map<size_t,pair<uint256,CPooledTx*> >& mapInvolvedTx,
+                                set<CDestination>& setDest)
+{
+    for (map<uint256,CPooledTx*>::iterator mi = mapTx.begin();mi != mapTx.end(); ++mi)
+    {
+        CPooledTx* pPooledTx = (*mi).second;
+        if (setDest.count(pPooledTx->sendTo) || setDest.count(pPooledTx->destIn))
+        {
+            mapInvolvedTx.insert(make_pair(pPooledTx->nSequenceNumber,(*mi)));
+        }
+    }
+}
+
+void CTxPoolView::ArrangeBlockTx(vector<CTransaction>& vtx,int64& nTotalTxFee,int64 nBlockTime,size_t nMaxSize)
+{
+    nTotalTxFee = 0;
+
+    map<size_t,pair<uint256,CPooledTx*> > mapCandidate;
+    for (map<uint256,CPooledTx*>::iterator it = mapTx.begin();it != mapTx.end();++it)
+    {
+        if ((*it).second->GetTxTime() <= nBlockTime)
+        {
+            mapCandidate.insert(make_pair((*it).second->nSequenceNumber,(*it)));
+        }
+    }
+    
+    size_t nTotalSize = 0;
+    for (map<size_t,pair<uint256,CPooledTx*> >::iterator it = mapCandidate.begin();
+         it != mapCandidate.end(); ++it)
+    {
+        if (nTotalSize + (*it).second.second->nSerializeSize > nMaxSize)
+        {
+            break;
+        }
+        vtx.push_back(*static_cast<CTransaction*>((*it).second.second));
+        nTotalSize += (*it).second.second->nSerializeSize;
+        nTotalTxFee += (*it).second.second->nTxFee; 
     }
 }
 
@@ -126,7 +163,7 @@ void CTxPoolView::ArrangeBlockTx(map<size_t,pair<uint256,CPooledTx*> >& mapArran
         CTxPoolCandidate candidateTx(*it);
         mapCandidate.insert(make_pair(-candidateTx.GetTxFeePerKB(),candidateTx));
     }
-   
+
     if (nTotalSize > nMaxSize)
     {
         nTotalSize = 0;
@@ -372,7 +409,7 @@ void CTxPool::ListTx(const uint256& hashFork,vector<pair<uint256,size_t> >& vTxP
     {
         CTxPoolView& txView = (*it).second;
         map<size_t,pair<uint256,CPooledTx*> > mapFilteredTx;
-        txView.GetFilteredTx(mapFilteredTx);
+        txView.GetSortedTx(mapFilteredTx);
         for (map<size_t,pair<uint256,CPooledTx*> >::iterator mi = mapFilteredTx.begin();
              mi != mapFilteredTx.end();++mi)
         {
@@ -389,7 +426,7 @@ void CTxPool::ListTx(const uint256& hashFork,vector<uint256>& vTxPool)
     {
         CTxPoolView& txView = (*it).second;
         map<size_t,pair<uint256,CPooledTx*> > mapFilteredTx;
-        txView.GetFilteredTx(mapFilteredTx);
+        txView.GetSortedTx(mapFilteredTx);
         for (map<size_t,pair<uint256,CPooledTx*> >::iterator mi = mapFilteredTx.begin();
              mi != mapFilteredTx.end();++mi)
         {
@@ -398,75 +435,82 @@ void CTxPool::ListTx(const uint256& hashFork,vector<uint256>& vTxPool)
     }
 }
 
-bool CTxPool::FilterTx(CTxFilter& filter)
+bool CTxPool::FilterTx(const uint256& hashFork,CTxFilter& filter)
 {
     boost::shared_lock<boost::shared_mutex> rlock(rwAccess);
-    for (map<uint256,CTxPoolView>::iterator it = mapPoolView.begin();it != mapPoolView.end();++it)
+
+    map<uint256,CTxPoolView>::iterator it = mapPoolView.find(hashFork);
+    if (it == mapPoolView.end())
     {
-        CTxPoolView& txView = (*it).second;
-        map<size_t,pair<uint256,CPooledTx*> > mapFilteredTx;
-        txView.GetFilteredTx(mapFilteredTx,filter.sendTo,filter.destIn);
-        for (map<size_t,pair<uint256,CPooledTx*> >::iterator mi = mapFilteredTx.begin();
-             mi != mapFilteredTx.end();++mi)
+        return true;
+    }
+    
+    CTxPoolView& txView = (*it).second;
+    map<size_t,pair<uint256,CPooledTx*> > mapFilteredTx;
+    txView.GetInvolvedTx(mapFilteredTx,filter.setDest);
+
+    for (map<size_t,pair<uint256,CPooledTx*> >::iterator mi = mapFilteredTx.begin();
+         mi != mapFilteredTx.end();++mi)
+    {
+        if (!filter.FoundTx(hashFork,*static_cast<CAssembledTx*>((*mi).second.second)))
         {
-            if (!filter.FoundTx((*it).first,*static_cast<CAssembledTx*>((*mi).second.second)))
-            {
-                return false;
-            }
+            return false;
         }
     }
     return true;
 }
 
-void CTxPool::ArrangeBlockTx(const uint256& hashFork,size_t nMaxSize,vector<CTransaction>& vtx,int64& nTotalTxFee)
+void CTxPool::ArrangeBlockTx(const uint256& hashFork,int64 nBlockTime,size_t nMaxSize,
+                             vector<CTransaction>& vtx,int64& nTotalTxFee)
 {
     boost::shared_lock<boost::shared_mutex> rlock(rwAccess);
     CTxPoolView& txView = mapPoolView[hashFork];
-    map<size_t,pair<uint256,CPooledTx*> > mapArrangedTx;
-    txView.ArrangeBlockTx(mapArrangedTx,nMaxSize);
-    nTotalTxFee = 0;
-    for (map<size_t,pair<uint256,CPooledTx*> >::iterator it = mapArrangedTx.begin();
-         it != mapArrangedTx.end();++it)
-    {
-        vtx.push_back(*static_cast<CTransaction*>((*it).second.second));
-        nTotalTxFee += (*it).second.second->nTxFee;
-    }
+    txView.ArrangeBlockTx(vtx,nTotalTxFee,nBlockTime,nMaxSize);
 }
 
 bool CTxPool::FetchInputs(const uint256& hashFork,const CTransaction& tx,vector<CTxOutput>& vUnspent)
 {
+    boost::shared_lock<boost::shared_mutex> rlock(rwAccess);
+    CTxPoolView& txView = mapPoolView[hashFork];
+
+    vUnspent.resize(tx.vInput.size());
+
+    for (std::size_t i = 0;i < tx.vInput.size();i++)
+    {
+        if (txView.IsSpent(tx.vInput[i].prevout))
+        {
+            return false;
+        }
+        txView.GetUnspent(tx.vInput[i].prevout,vUnspent[i]);
+    }
+
     if (!pWorldLine->GetTxUnspent(hashFork,tx.vInput,vUnspent))
     {
         return false;
     }
+
+    CDestination destIn;
+    for (std::size_t i = 0;i < tx.vInput.size();i++)
     {
-        boost::shared_lock<boost::shared_mutex> rlock(rwAccess);
-        CTxPoolView& txView = mapPoolView[hashFork];
-        CDestination destIn;
-        for (std::size_t i = 0;i < tx.vInput.size();i++)
+        if (vUnspent[i].IsNull())
         {
-            if (txView.IsSpent(tx.vInput[i].prevout))
-            {
-                return false;
-            }
-            if (vUnspent[i].IsNull() && !txView.GetUnspent(tx.vInput[i].prevout,vUnspent[i]))
-            {
-                return false;
-            }
-            if (destIn.IsNull())
-            {
-                destIn = vUnspent[i].destTo;
-            }
-            else if (destIn != vUnspent[i].destTo)
-            {
-                return false;
-            }
+            return false;
+        }
+        
+        if (destIn.IsNull())
+        {
+            destIn = vUnspent[i].destTo;
+        }
+        else if (destIn != vUnspent[i].destTo)
+        {
+            return false;
         }
     }
+    
     return true;
 }
 
-bool CTxPool::SynchronizeWorldLine(CWorldLineUpdate& update,CTxSetChange& change)
+bool CTxPool::SynchronizeWorldLine(const CWorldLineUpdate& update,CTxSetChange& change)
 {
     vector<pair<uint256,CAssembledTx> > vDBAddNew;
     vector<uint256> vDBRemove;
@@ -479,7 +523,7 @@ bool CTxPool::SynchronizeWorldLine(CWorldLineUpdate& update,CTxSetChange& change
     CTxPoolView& txView = mapPoolView[update.hashFork];
 
     int nHeight = update.nLastBlockHeight - update.vBlockAddNew.size() + 1;
-    BOOST_REVERSE_FOREACH(CBlockEx& block,update.vBlockAddNew)
+    BOOST_REVERSE_FOREACH(const CBlockEx& block,update.vBlockAddNew)
     {
         if (block.txMint.nAmount != 0)
         {
@@ -487,8 +531,8 @@ bool CTxPool::SynchronizeWorldLine(CWorldLineUpdate& update,CTxSetChange& change
         }
         for (std::size_t i = 0;i < block.vtx.size();i++)
         {
-            CTransaction& tx = block.vtx[i];
-            CTxContxt& txContxt = block.vTxContxt[i];
+            const CTransaction& tx = block.vtx[i];
+            const CTxContxt& txContxt = block.vTxContxt[i];
             uint256 txid = tx.GetHash();
             if (!update.setTxUpdate.count(txid))
             {
@@ -517,11 +561,11 @@ bool CTxPool::SynchronizeWorldLine(CWorldLineUpdate& update,CTxSetChange& change
     }
 
     vector<pair<uint256,vector<CTxIn> > > vTxRemove;
-    BOOST_FOREACH(CBlockEx& block,update.vBlockRemove)
+    BOOST_FOREACH(const CBlockEx& block,update.vBlockRemove)
     {
         for (int i = block.vtx.size() - 1; i >= 0; i--)
         {
-            CTransaction& tx = block.vtx[i];
+            const CTransaction& tx = block.vtx[i];
             uint256 txid = tx.GetHash();
             if (!update.setTxUpdate.count(txid))
             {
@@ -592,18 +636,25 @@ bool CTxPool::LoadDB()
 MvErr CTxPool::AddNew(CTxPoolView& txView,const uint256& txid,const CTransaction& tx,const uint256& hashFork,int nForkHeight)
 {
     vector<CTxOutput> vPrevOutput;
-    if (!pWorldLine->GetTxUnspent(hashFork,tx.vInput,vPrevOutput))
-    {
-        return MV_ERR_SYS_STORAGE_ERROR;
-    }
-    int64 nValueIn = 0;
+    vPrevOutput.resize(tx.vInput.size());
     for (int i = 0;i < tx.vInput.size();i++)
     {
         if (txView.IsSpent(tx.vInput[i].prevout))
         {
             return MV_ERR_TRANSACTION_CONFLICTING_INPUT;
         }
-        if (vPrevOutput[i].IsNull() && !txView.GetUnspent(tx.vInput[i].prevout,vPrevOutput[i]))
+        txView.GetUnspent(tx.vInput[i].prevout,vPrevOutput[i]);
+    }
+ 
+    if (!pWorldLine->GetTxUnspent(hashFork,tx.vInput,vPrevOutput))
+    {
+        return MV_ERR_SYS_STORAGE_ERROR;
+    }
+
+    int64 nValueIn = 0;
+    for (int i = 0;i < tx.vInput.size();i++)
+    {
+        if (vPrevOutput[i].IsNull())
         {
             return MV_ERR_TRANSACTION_CONFLICTING_INPUT;
         }

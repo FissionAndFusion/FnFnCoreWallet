@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2018 The LoMoCoin developers
+// Copyright (c) 2016-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -11,6 +11,7 @@
 
 namespace walleve
 {
+extern bool STD_DEBUG;
 
 inline int64 GetTime()
 {
@@ -36,9 +37,27 @@ using namespace boost::posix_time;
     return ss.str();
 }
 
+class CTicks
+{
+public:
+    CTicks() : t(boost::posix_time::microsec_clock::universal_time()) {}
+    int64 operator- (const CTicks& ticks) const { return ((t - ticks.t).ticks()); }
+    int64 Elapse() const { return ((boost::posix_time::microsec_clock::universal_time() - t).ticks()); } 
+public:
+    boost::posix_time::ptime t;
+};
+
+inline void StdDebug(const char* pszName, const char* pszErr)
+{
+    if (STD_DEBUG)
+    {
+        std::cout << GetLocalTime() << " [DEBUG] <" << pszName << "> " << pszErr << std::endl;
+    }
+}
+
 inline void StdLog(const char* pszName, const char* pszErr)
 {
-    std::cerr << GetLocalTime() << " [INFO] <" << pszName << "> " << pszErr << std::endl;
+    std::cout << GetLocalTime() << " [INFO] <" << pszName << "> " << pszErr << std::endl;
 }
 
 inline void StdWarn(const char* pszName, const char* pszErr)

@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The Multiverse developers
+// Copyright (c) 2017-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -42,6 +42,7 @@ public:
     bool Remove(walleve::CWalleveBufStream& ssKey);
     bool RemoveAll();
     bool MoveFirst();
+    bool MoveTo(walleve::CWalleveBufStream& ssKey);
     bool MoveNext(walleve::CWalleveBufStream& ssKey,walleve::CWalleveBufStream& ssValue);
 protected:
     std::string path;

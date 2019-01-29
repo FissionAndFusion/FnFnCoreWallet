@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The Multiverse developers
+// Copyright (c) 2017-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -9,9 +9,11 @@
 
 class CWalletTx
 {
+    friend class walleve::CWalleveStream;
 public:
     uint16 nVersion;
     uint16 nType;
+    uint32 nTimeStamp;
     uint32 nLockUntil;
     std::vector<CTxIn> vInput;
     CDestination sendTo;
@@ -19,8 +21,8 @@ public:
     int64 nTxFee;
     CDestination destIn;
     int64 nValueIn;
-    int nBlockHeight;
-    int nFlags;
+    mutable int nBlockHeight;
+    mutable int nFlags;
     uint256 txid;
     uint256 hashFork;
     // memory only
@@ -32,6 +34,7 @@ public:
     {
         nVersion     = tx.nVersion;
         nType        = tx.nType;
+        nTimeStamp   = tx.nTimeStamp;
         nLockUntil   = tx.nLockUntil;
         vInput       = tx.vInput;
         sendTo       = tx.sendTo;
@@ -49,7 +52,9 @@ public:
     {
         nVersion     = 0;
         nType        = 0;
+        nTimeStamp   = 0;
         nLockUntil   = 0;
+        vInput.clear()  ;
         sendTo.SetNull();
         nAmount      = 0;
         nTxFee       = 0;
@@ -78,6 +83,10 @@ public:
         if (nType == CTransaction::TX_WORK) return std::string("work");
         return std::string("undefined");
     }
+    int64 GetTxTime() const
+    {
+        return (int64)nTimeStamp;
+    }
     void SetFlags(bool fIsMine,bool fFromMe)
     {
         nFlags = (fIsMine ? WTX_ISMINE : 0) | (fFromMe ? WTX_FROMME : 0);
@@ -90,17 +99,36 @@ public:
     {
         if (n == 0)
         {
-            return CTxOutput(sendTo,nAmount,nLockUntil);
+            return CTxOutput(sendTo,nAmount,nTimeStamp,nLockUntil);
         }
         else if (n == 1)
         {
-            return CTxOutput(destIn,GetChange(),0);
+            return CTxOutput(destIn,GetChange(),nTimeStamp,0);
         }
         return CTxOutput();
     }
     int GetRefCount() const
     {
         return nRefCount;
+    }
+protected:
+    template <typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s,O& opt)
+    {
+        s.Serialize(nVersion,opt);
+        s.Serialize(nType,opt);
+        s.Serialize(nTimeStamp,opt);
+        s.Serialize(nLockUntil,opt);
+        s.Serialize(vInput,opt);
+        s.Serialize(sendTo,opt);
+        s.Serialize(nAmount,opt);
+        s.Serialize(nTxFee,opt);
+        s.Serialize(destIn,opt);
+        s.Serialize(nValueIn,opt);
+        s.Serialize(nBlockHeight,opt);
+        s.Serialize(nFlags,opt);
+        s.Serialize(txid,opt);
+        s.Serialize(hashFork,opt);
     }
 };
 
@@ -112,6 +140,7 @@ public:
     bool IsLocked(int nHeight) const { return (n == 0 && spWalletTx->nLockUntil > 0 && spWalletTx->nLockUntil < nHeight); }
     int GetDepth(int nHeight) const { return (spWalletTx->nBlockHeight >= 0 ? nHeight - spWalletTx->nBlockHeight + 1 : 0); }
     int64 GetAmount() const { return (n == 0 ? spWalletTx->nAmount : spWalletTx->GetChange()); }
+    int64 GetTxTime() const { return spWalletTx->GetTxTime(); }
     CTxOutPoint GetTxOutPoint() const { return CTxOutPoint(spWalletTx->txid,n); }
     void AddRef() const { ++spWalletTx->nRefCount; }
     void Release() const { --spWalletTx->nRefCount; }

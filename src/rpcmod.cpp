@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The Multiverse developers
+// Copyright (c) 2017-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -52,7 +52,6 @@ CRPCMod::CRPCMod()
                 ("getblockhash",          &CRPCMod::RPCGetBlockHash)
                 ("getblock",              &CRPCMod::RPCGetBlock)
                 ("gettxpool",             &CRPCMod::RPCGetTxPool)
-                ("removependingtx",       &CRPCMod::RPCRemovePendingTx)
                 ("gettransaction",        &CRPCMod::RPCGetTransaction)
                 ("sendtransaction",       &CRPCMod::RPCSendTransaction)
                 ("getforkheight",         &CRPCMod::RPCGetForkHeight)
@@ -491,8 +490,9 @@ CRPCResultPtr CRPCMod::RPCGetForkCount(CRPCParamPtr param)
 
 CRPCResultPtr CRPCMod::RPCListFork(CRPCParamPtr param)
 {
+    auto spParam = CastParamPtr<CListForkParam>(param);
     vector<pair<uint256,CProfile> > vFork;
-    pService->ListFork(vFork);
+    pService->ListFork(vFork, spParam->fAll);
 
     auto spResult = MakeCListForkResultPtr();
     for (size_t i = 0; i < vFork.size(); i++)
@@ -529,7 +529,7 @@ CRPCResultPtr CRPCMod::RPCGetForkGenealogy(CRPCParamPtr param)
     {
         spResult->vecAncestry.push_back({vAncestry[i - 1].first.GetHex(), vAncestry[i - 1].second});
     }
-    for (std::size_t i = 0;i > vSubline.size();i++)
+    for (std::size_t i = 0;i < vSubline.size();i++)
     {
         spResult->vecSubline.push_back({vSubline[i].second.GetHex(), vSubline[i].first});
     }
@@ -669,21 +669,6 @@ CRPCResultPtr CRPCMod::RPCGetTxPool(CRPCParamPtr param)
     }
     
     return spResult;
-}
-
-CRPCResultPtr CRPCMod::RPCRemovePendingTx(CRPCParamPtr param)
-{
-    auto spParam = CastParamPtr<CRemovePendingTxParam>(param);
-
-    uint256 txid;
-    txid.SetHex(spParam->strTxid);
-
-    if (!pService->RemovePendingTx(txid))
-    {
-        throw CRPCException(RPC_INVALID_REQUEST, "This transaction is not in tx pool");
-    }
-
-    return MakeCRemovePendingTxResultPtr(string("Remove tx successfully: ") + spParam->strTxid);
 }
 
 CRPCResultPtr CRPCMod::RPCGetTransaction(CRPCParamPtr param)
@@ -948,7 +933,7 @@ CRPCResultPtr CRPCMod::RPCImportPrivKey(CRPCParamPtr param)
     crypto::CKey key;
     if (!key.SetSecret(crypto::CCryptoKeyData(nPriv.begin(),nPriv.end())))
     {
-        throw CRPCException(RPC_INVALID_ADDRESS_OR_KEY,"Invalid private key");
+        throw CRPCException(RPC_INVALID_PARAMETER,"Invalid private key");
     }
     if (pService->HaveKey(key.GetPubKey()))
     {
@@ -1078,7 +1063,7 @@ CRPCResultPtr CRPCMod::RPCExportTemplate(CRPCParamPtr param)
     CTemplateId tid;
     if (!address.GetTemplateId(tid))
     {
-        throw CRPCException(RPC_INVALID_PARAMETER, "Invalid address, should be template address");
+        throw CRPCException(RPC_INVALID_PARAMETER, "Invalid address");
     }
 
     CTemplatePtr ptr;
@@ -1585,6 +1570,10 @@ CRPCResultPtr CRPCMod::RPCExportWallet(CRPCParamPtr param)
     {
         throw CRPCException(RPC_WALLET_ERROR, "File has been existed.");
     }
+    if(pSave.filename() == "." || pSave.filename() == "..")
+    {
+        throw CRPCException(RPC_WALLET_ERROR, "Cannot export to a folder.");
+    }
 
     if(!exists(pSave.parent_path()) && !create_directories(pSave.parent_path()))
     {
@@ -1641,12 +1630,17 @@ CRPCResultPtr CRPCMod::RPCExportWallet(CRPCParamPtr param)
     try
     {
         std::ofstream ofs(pSave.string(), std::ios::out);
+        if (!ofs)
+        {
+            throw runtime_error("write error");
+        }
+
         write_stream(Value(aAddr), ofs, pretty_print);
         ofs.close();
     }
-    catch(const fs::filesystem_error& e)
+    catch(...)
     {
-        throw CRPCException(RPC_WALLET_ERROR, "filesystem_error");
+        throw CRPCException(RPC_WALLET_ERROR, "filesystem_error - failed to write.");
     }
 
     return MakeCExportWalletResultPtr(string("Wallet file has been saved at: ") + pSave.string());
@@ -1671,10 +1665,15 @@ CRPCResultPtr CRPCMod::RPCImportWallet(CRPCParamPtr param)
     try
     {
         fs::ifstream ifs(pLoad);
+        if (!ifs)
+        {
+            throw runtime_error("read error");
+        }
+
         read_stream(ifs, vWallet);
         ifs.close();
     }
-    catch(const fs::filesystem_error& e)
+    catch(...)
     {
         throw CRPCException(RPC_WALLET_ERROR, "Filesystem_error - failed to read.");
     }
@@ -1697,6 +1696,11 @@ CRPCResultPtr CRPCMod::RPCImportWallet(CRPCParamPtr param)
         string sHex = oAddr.get_obj()[1].value_.get_str();  //"hex" field
 
         CMvAddress addr(sAddr);
+        if (addr.IsNull())
+        {
+            throw CRPCException(RPC_WALLET_ERROR, "Data format is not correct, check it and try again.");
+        }
+
         //import keys
         if(addr.IsPubKey())
         {
@@ -1810,9 +1814,10 @@ CRPCResultPtr CRPCMod::RPCMakeOrigin(CRPCParamPtr param)
     profile.Save(block.vchProof);
 
     CTransaction& tx = block.txMint;
-    tx.nType = CTransaction::TX_GENESIS;
-    tx.sendTo  = destOwner;
-    tx.nAmount = nAmount;
+    tx.nType         = CTransaction::TX_GENESIS;
+    tx.nTimeStamp    = block.nTimeStamp;
+    tx.sendTo        = destOwner;
+    tx.nAmount       = nAmount;
     tx.vchData.assign(profile.strName.begin(),profile.strName.end());
 
     crypto::CPubKey pubkey;
@@ -1854,6 +1859,7 @@ CRPCResultPtr CRPCMod::RPCVerifyMessage(CRPCParamPtr param)
 {
     auto spParam = CastParamPtr<CVerifyMessageParam>(param);
 
+    //verifymessage <"pubkey"> <"message"> <"sig">
     crypto::CPubKey pubkey;
     if (pubkey.SetHex(spParam->strPubkey) != spParam->strPubkey.size())
     {
@@ -1870,11 +1876,6 @@ CRPCResultPtr CRPCMod::RPCVerifyMessage(CRPCParamPtr param)
     if (vchSig.size() == 0)
     {
         throw CRPCException(RPC_INVALID_PARAMETER, "Invalid sig");
-    }
-
-    if (!pService->HaveKey(pubkey))
-    {
-        throw CRPCException(RPC_INVALID_ADDRESS_OR_KEY, "Unknown pubkey");
     }
 
     const string strMessageMagic = "Multiverse Signed Message:\n";
@@ -1903,11 +1904,9 @@ CRPCResultPtr CRPCMod::RPCGetPubKeyAddress(CRPCParamPtr param)
 {
     auto spParam = CastParamPtr<CGetPubkeyAddressParam>(param);
     crypto::CPubKey pubkey;
-    pubkey.SetHex(spParam->strPubkey);
-
-    if (!pService->HaveKey(pubkey))
+    if (pubkey.SetHex(spParam->strPubkey) != spParam->strPubkey.size())
     {
-        throw CRPCException(RPC_INVALID_ADDRESS_OR_KEY, "Unknown pubkey");
+        throw CRPCException(RPC_INVALID_PARAMETER, "Invalid pubkey");
     }
 
     CDestination dest(pubkey);
@@ -1919,20 +1918,9 @@ CRPCResultPtr CRPCMod::RPCGetTemplateAddress(CRPCParamPtr param)
 {
     auto spParam = CastParamPtr<CGetTemplateAddressParam>(param);
     CTemplateId tid;
-    if (spParam->strTid.empty())
+    if (tid.SetHex(spParam->strTid) != spParam->strTid.size())
     {
         throw CRPCException(RPC_INVALID_PARAMETER, "Invalid tid");
-    }
-
-    tid.SetHex(spParam->strTid);
-    if (tid == 0)
-    {
-        throw CRPCException(RPC_INVALID_PARAMETER, "Invalid tid");
-    }
-
-    if (!pService->HaveTemplate(tid))
-    {
-        throw CRPCException(RPC_INVALID_PARAMETER, "Unknown tid");
     }
 
     CDestination dest(tid);
@@ -2033,7 +2021,7 @@ CRPCResultPtr CRPCMod::RPCSubmitWork(CRPCParamPtr param)
     vector<unsigned char> vchWorkData(ParseHexString(spParam->strData));
     CMvAddress addrSpent(spParam->strSpent);
     uint256 nPriv(spParam->strPrivkey);
-    if (addrSpent.IsNull())
+    if (addrSpent.IsNull() || !addrSpent.IsPubKey())
     {
         throw CRPCException(RPC_INVALID_ADDRESS_OR_KEY,"Invalid spent address");
     }

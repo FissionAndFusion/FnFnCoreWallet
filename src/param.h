@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The Multiverse developers
+// Copyright (c) 2017-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -21,7 +21,7 @@ static const unsigned int EXTENDED_BLOCK_SPACING = 1;
 static const unsigned int PROOF_OF_WORK_DECAY_STEP = BLOCK_TARGET_SPACING; 
 
 static const unsigned int MINT_MATURITY        = 120;   // 120 blocks about 2 hours
-static const unsigned int MIN_TOKEN_TX_SIZE    = 192;
+static const unsigned int MIN_TOKEN_TX_SIZE    = 196;
 
 static const unsigned int DELEGATE_THRESH      = 50;
 

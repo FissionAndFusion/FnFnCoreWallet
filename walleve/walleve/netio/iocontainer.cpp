@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2017 The LoMoCoin developers
+// Copyright (c) 2016-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -131,14 +131,24 @@ bool CIOInBound::Invoke(const tcp::endpoint& epListen,size_t nMaxConnection,cons
         BuildWhiteList(vAllowMask);
         epService = epListen;
 
-        if (!PrepareClient(nMaxConnection + 1))
+        if (!PrepareClient(nMaxConnection + 2))
         {
             return false;
         }
 
         acceptorService.open(epListen.protocol());
         acceptorService.set_option(tcp::acceptor::reuse_address(true));
-        acceptorService.bind(epListen);
+
+        //acceptorService.bind(epListen);
+        boost::system::error_code ec;
+        acceptorService.bind(epListen, ec);
+        if (ec)
+        {
+            throw runtime_error((string("IOInBound tcp bind fail, addr: ") + 
+                 epListen.address().to_string() + string(":") + to_string(epListen.port()) + 
+                 string(", cause: ") + ec.message()).c_str());
+        }
+
         acceptorService.listen();
 
         CIOClient *pClient = ClientAlloc();
@@ -289,7 +299,7 @@ void CIOOutBound::Timeout(uint32 nTimerId)
     map<uint32,CIOClient *>::iterator it = mapPending.find(nTimerId);
     if (it != mapPending.end())
     {
-        (*it).second->Close();
+        (*it).second->Shutdown();
         mapPending.erase(it);
     }
 }
@@ -410,6 +420,7 @@ CIOClient* CIOSSLOutBound::ClientAlloc(const CIOSSLOption& optSSL)
                 ctx.use_certificate_chain_file(optSSL.strPathCert);
                 ctx.use_private_key_file(optSSL.strPathPK,boost::asio::ssl::context::pem);
             }
+
             return new CSSLClient(this,ioService,ctx,optSSL.fVerifyPeer ? optSSL.strPeerName : ""); 
         }
         catch (exception& e)
@@ -478,7 +489,7 @@ void CIOSSLOutBound::Timeout(uint32 nTimerId)
     map<uint32,CIOClient *>::iterator it = mapPending.find(nTimerId);
     if (it != mapPending.end())
     {
-        (*it).second->Close();
+        (*it).second->Shutdown();
         mapPending.erase(it);
     }
 }

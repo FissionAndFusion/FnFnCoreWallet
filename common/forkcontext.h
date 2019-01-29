@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The Multiverse developers
+// Copyright (c) 2017-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -9,9 +9,11 @@
 #include "destination.h"
 #include "profile.h"
 #include <string>
+#include <walleve/stream/stream.h>
 
 class CForkContext
 {
+    friend class walleve::CWalleveStream;
 public:
     std::string strName;
     std::string strSymbol;
@@ -91,26 +93,23 @@ public:
         profile.nJointHeight = nJointHeight;
         return profile;
     }
-};
-
-/*
-    if hashParent = 0 and strSymnol is empty, select all fork,
-    if hashParent != 0, select subline of given parent,
-    if strSymnol is not empty, select fork whose symbol = strSymbol,
-    if hashParent != 0 and strSymnol is not empty, select subline whose symbol = strSymbol,
-*/
-class CForkContextFilter
-{
-public:
-    CForkContextFilter() : hashParent(uint64(0)) {}
-    CForkContextFilter(const uint256& hashParentIn, const std::string& strSymbolIn )
-    : hashParent(hashParentIn),strSymbol(strSymbolIn)
+protected:
+    template <typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s,O& opt)
     {
+        s.Serialize(strName,opt);
+        s.Serialize(strSymbol,opt);
+        s.Serialize(hashFork,opt);
+        s.Serialize(hashParent,opt);
+        s.Serialize(hashJoint,opt);
+        s.Serialize(txidEmbedded,opt);
+        s.Serialize(nVersion,opt);
+        s.Serialize(nFlag,opt);
+        s.Serialize(nMintReward,opt);
+        s.Serialize(nMinTxFee,opt);
+        s.Serialize(nJointHeight,opt);
+        s.Serialize(destOwner,opt);
     }
-    virtual bool FoundForkContext(const CForkContext& ctxt) = 0;
-public:
-    const uint256 hashParent;
-    const std::string strSymbol;
 };
 
 #endif //MULTIVERSE_FORKCONTEXT_H

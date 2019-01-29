@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The Multiverse developers
+// Copyright (c) 2017-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -29,8 +29,6 @@
 #define DEFAULT_MAX_INBOUNDS 125
 #define DEFAULT_MAX_OUTBOUNDS 10
 #define DEFAULT_CONNECT_TIMEOUT 5
-#define DEFAULT_DNSEED_PORT 6816
-#define DNSEED_DEFAULT_MAX_TIMES_CONNECT_FAIL 5
 
 // storage config
 #define DEFAULT_DB_CONNECTION 8

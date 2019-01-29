@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2018 The LoMoCoin developers
+// Copyright (c) 2016-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -62,6 +62,8 @@ bool CWalleveConfig::Load(int argc,char *argv[],const fs::path& pathDefault,cons
         po::notify(vm);
         pathRoot = strRoot;
         pathConfile = strConfig;
+        if (!STD_DEBUG)
+            STD_DEBUG = fDebug;
 
         if (fHelp)
         {

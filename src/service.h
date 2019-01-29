@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The Multiverse developers
+// Copyright (c) 2017-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -33,7 +33,7 @@ public:
     int  GetForkCount() override;
     bool HaveFork(const uint256& hashFork) override;
     int  GetForkHeight(const uint256& hashFork) override;
-    void ListFork(std::vector<std::pair<uint256,CProfile> >& vFork) override;
+    void ListFork(std::vector<std::pair<uint256,CProfile> >& vFork, bool fAll = false) override;
     bool GetForkGenealogy(const uint256& hashFork,std::vector<std::pair<uint256,int> >& vAncestry,
                                                   std::vector<std::pair<int,uint256> >& vSubline) override;
     bool GetBlockLocation(const uint256& hashBlock,uint256& hashFork,int& nHeight) override;
@@ -88,6 +88,7 @@ protected:
     IWallet* pWallet;
     CNetwork* pNetwork;
     walleve::IIOModule* pDbpSocket;
+    IForkManager* pForkManager;
     mutable boost::shared_mutex rwForkStatus;
     std::map<uint256,CForkStatus> mapForkStatus;
 };

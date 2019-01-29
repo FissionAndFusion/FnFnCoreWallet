@@ -17,7 +17,14 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_DIR})
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED OFF)
 set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2")
+
+if(CMAKE_BUILD_TYPE STREQUAL Release)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2")
+elseif(CMAKE_BUILD_TYPE STREQUAL Debug)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0")
+else()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2")
+endif()
 
 # packages
 set(Boost_USE_STATIC_LIBS ON)
@@ -32,7 +39,6 @@ find_package(Boost 1.58.0 REQUIRED COMPONENTS
     unit_test_framework
 )
 find_package(OpenSSL 1.0.0 REQUIRED) 
-find_package(MySQL 5.7.20 REQUIRED)
 find_package(sodium 1.0.8 REQUIRED)
 find_package(Readline 5.0 REQUIRED)
 
@@ -48,6 +54,8 @@ if(WIN32)
     add_definitions(-DWIN32_LEAN_AND_MEAN)
     find_library(WS2_32_LIB NAMES ws2_32)
     find_library(WSSOCK32_LIB NAMES wsock32)
+elseif(UNIX AND NOT APPLE)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -lrt")
 endif()
 
 # sub directories
@@ -61,3 +69,4 @@ add_subdirectory(network)
 add_subdirectory(test)
 add_subdirectory(delegate)
 add_subdirectory(leveldb)
+add_subdirectory(snappy)

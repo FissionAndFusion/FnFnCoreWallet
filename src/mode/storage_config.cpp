@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The Multiverse developers
+// Copyright (c) 2017-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -28,14 +28,6 @@ bool CMvStorageConfig::PostLoad()
         return true;
     }
 
-    if (fTestNet)
-    {
-        strDBName = "multiverse_test";
-    }
-    if (nDBPort < 0 || nDBPort > 0xFFFF)
-    {
-        nDBPort = 0;
-    }
     return true;
 }
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The Multiverse developers
+// Copyright (c) 2017-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -36,8 +36,8 @@ public:
     bool GetTxLocation(const uint256& txid,uint256& hashFork,int& nHeight) override;
     bool GetTxUnspent(const uint256& hashFork,const std::vector<CTxIn>& vInput,
                                                     std::vector<CTxOutput>& vOutput) override;
-    bool FilterTx(CTxFilter& filter) override;
-    bool FilterForkContext(CForkContextFilter& filter) override;
+    bool FilterTx(const uint256& hashFork,CTxFilter& filter) override;
+    bool ListForkContext(std::vector<CForkContext>& vForkCtxt) override;
     MvErr AddNewForkContext(const CTransaction& txFork,CForkContext& ctxt) override;
     MvErr AddNewBlock(const CBlock& block,CWorldLineUpdate& update) override;
     MvErr AddNewOrigin(const CBlock& block,CWorldLineUpdate& update) override;
@@ -47,6 +47,7 @@ public:
     bool GetBlockInv(const uint256& hashFork,const CBlockLocator& locator,std::vector<uint256>& vBlockHash,std::size_t nMaxCount) override;
     bool GetBlockDelegateEnrolled(const uint256& hashBlock,std::map<CDestination,std::size_t>& mapWeight,
                                                            std::map<CDestination,std::vector<unsigned char> >& mapEnrollData) override;
+    bool GetBlockDelegateAgreement(const uint256& hashBlock,uint256& nAgreement,size_t& nWeight,std::vector<CDestination>& vBallot) override;
 protected:
     bool WalleveHandleInitialize() override;
     void WalleveHandleDeinitialize() override;

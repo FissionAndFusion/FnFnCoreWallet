@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The Multiverse developers
+// Copyright (c) 2017-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -10,23 +10,6 @@ using namespace walleve;
 using namespace multiverse;
 
 extern void MvShutdown();
-
-//////////////////////////////
-// CServiceWalletTxFilter
-class CServiceWalletTxFilter : public CTxFilter
-{
-public:
-    CServiceWalletTxFilter(IWallet* pWalletIn,const CDestination& destNew)
-    : CTxFilter(destNew,destNew),pWallet(pWalletIn)
-    {
-    }
-    bool FoundTx(const uint256& hashFork,const CAssembledTx& tx)
-    {
-        return pWallet->UpdateTx(hashFork,tx);
-    }
-public:
-    IWallet* pWallet;
-};
 
 //////////////////////////////
 // CService 
@@ -87,6 +70,12 @@ bool CService::WalleveHandleInitialize()
     if (!WalleveGetObject("dbpservice", pDbpSocket))
     {
          WalleveError("Failed to request DbpSocket\n");
+         return false;
+    }
+
+    if (!WalleveGetObject("forkmanager", pForkManager))
+    {
+         WalleveError("Failed to request forkmanager\n");
          return false;
     }
 
@@ -234,18 +223,33 @@ int  CService::GetForkHeight(const uint256& hashFork)
     return 0;
 }
 
-void CService::ListFork(std::vector<std::pair<uint256,CProfile> >& vFork)
+void CService::ListFork(std::vector<std::pair<uint256,CProfile> >& vFork, bool fAll)
 {
-    vFork.reserve(mapForkStatus.size());
-
     boost::shared_lock<boost::shared_mutex> rlock(rwForkStatus);
-    
-    for (map<uint256,CForkStatus>::iterator it = mapForkStatus.begin();it != mapForkStatus.end();++it)
+    if (fAll)
     {
-        CProfile profile;
-        if (pWorldLine->GetForkProfile((*it).first,profile))
+        vector<uint256> vForkHash;
+        pForkManager->GetForkList(vForkHash);
+        vFork.reserve(vForkHash.size());
+        for (vector<uint256>::iterator it = vForkHash.begin(); it != vForkHash.end(); ++it)
         {
-            vFork.push_back(make_pair((*it).first,profile));
+            CForkContext ctx;
+            if (pWorldLine->GetForkContext(*it, ctx))
+            {
+                vFork.push_back(make_pair(*it, ctx.GetProfile()));
+            }
+        }
+    }
+    else
+    {
+        vFork.reserve(mapForkStatus.size());
+        for (map<uint256,CForkStatus>::iterator it = mapForkStatus.begin();it != mapForkStatus.end();++it)
+        {
+            CProfile profile;
+            if (pWorldLine->GetForkProfile((*it).first,profile))
+            {
+                vFork.push_back(make_pair((*it).first,profile));
+            }
         }
     }
 }
@@ -254,20 +258,20 @@ bool CService::GetForkGenealogy(const uint256& hashFork,vector<pair<uint256,int>
 {
     boost::shared_lock<boost::shared_mutex> rlock(rwForkStatus);
     
-    map<uint256,CForkStatus>::iterator it = mapForkStatus.find(hashFork);
-    if (it == mapForkStatus.end())
+    uint256 hashParent, hashJoint;
+    int nJointHeight;
+    if (!pForkManager->GetJoint(hashFork, hashParent, hashJoint, nJointHeight))
     {
         return false;
     }
     
-    CForkStatus* pAncestry = &(*it).second;
-    while (pAncestry->hashParent != 0)
+    while (hashParent != 0)
     {
-        vAncestry.push_back(make_pair(pAncestry->hashParent,pAncestry->nOriginHeight));
-        pAncestry = &mapForkStatus[pAncestry->hashParent];
+        vAncestry.push_back(make_pair(hashParent, nJointHeight));
+        pForkManager->GetJoint(hashParent, hashParent, hashJoint, nJointHeight);
     }
 
-    vSubline.assign((*it).second.mapSubline.begin(),(*it).second.mapSubline.end());
+    pForkManager->GetSubline(hashFork, vSubline);
     return true;
 }
 
@@ -512,6 +516,7 @@ bool CService::CreateTransaction(const uint256& hashFork,const CDestination& des
         txNew.hashAnchor = (*it).second.hashLastBlock;
     }
     txNew.nType = CTransaction::TX_TOKEN;
+    txNew.nTimeStamp = WalleveGetNetTime();
     txNew.nLockUntil = 0;
     txNew.sendTo = destSendTo;
     txNew.nAmount = nAmount;
@@ -523,36 +528,12 @@ bool CService::CreateTransaction(const uint256& hashFork,const CDestination& des
 
 bool CService::SynchronizeWalletTx(const CDestination& destNew)
 {
-    CServiceWalletTxFilter txFilter(pWallet,destNew);
-    return (pWorldLine->FilterTx(txFilter) && pTxPool->FilterTx(txFilter));
+    return pWallet->SynchronizeWalletTx(destNew);
 }
 
 bool CService::ResynchronizeWalletTx()
 {
-    if (!pWallet->ClearTx())
-    {
-        return false;
-    }
-    
-    set<crypto::CPubKey> setPubKey;
-    pWallet->GetPubKeys(setPubKey);
-    BOOST_FOREACH(const crypto::CPubKey& pubkey,setPubKey)
-    {
-        if (!SynchronizeWalletTx(CDestination(pubkey)))
-        {
-            return false;
-        }
-    }
-    set<CTemplateId> setTemplateId;
-    pWallet->GetTemplateIds(setTemplateId);
-    BOOST_FOREACH(const CTemplateId& tid,setTemplateId)
-    {
-        if (!SynchronizeWalletTx(CDestination(tid)))
-        {
-            return false;
-        }
-    }
-    return true;
+    return pWallet->ResynchronizeWalletTx();
 }
 
 bool CService::GetWork(vector<unsigned char>& vchWorkData,uint256& hashPrev,uint32& nPrevTime,int& nAlgo,int& nBits)
@@ -624,15 +605,16 @@ MvErr CService::SubmitWork(const vector<unsigned char>& vchWorkData,CTemplatePtr
     }
 
     CTransaction& txMint = block.txMint;
-    txMint.nType = CTransaction::TX_WORK;
-    txMint.hashAnchor = block.hashPrev;
-    txMint.sendTo = CDestination(templMint->GetTemplateId());
-    txMint.nAmount = nReward;
+    txMint.nType         = CTransaction::TX_WORK;
+    txMint.nTimeStamp    = block.nTimeStamp;
+    txMint.hashAnchor    = block.hashPrev;
+    txMint.sendTo        = CDestination(templMint->GetTemplateId());
+    txMint.nAmount       = nReward;
 
     size_t nSigSize = templMint->GetTemplateDataSize() + 64 + 2;
     size_t nMaxTxSize = MAX_BLOCK_SIZE - GetSerializeSize(block) - nSigSize;
     int64 nTotalTxFee = 0;
-    pTxPool->ArrangeBlockTx(pCoreProtocol->GetGenesisBlockHash(),nMaxTxSize,block.vtx,nTotalTxFee);
+    pTxPool->ArrangeBlockTx(pCoreProtocol->GetGenesisBlockHash(),block.nTimeStamp,nMaxTxSize,block.vtx,nTotalTxFee);
     block.hashMerkle = block.CalcMerkleTreeRoot();
     block.txMint.nAmount += nTotalTxFee;
 

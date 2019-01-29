@@ -225,6 +225,10 @@
                 "type": "string",
                 "desc": "transaction type"
             },
+            "time": {
+                "type": "uint",
+                "desc": "transaction timestamp"
+            },
             "lockuntil": {
                 "type": "uint",
                 "desc": "unlock time"
@@ -304,6 +308,10 @@
             "type": {
                 "type": "string",
                 "desc": "transaction type"
+            },
+            "time": {
+                "type": "uint",
+                "desc": "transaction timestamp"
             },
             "send": {
                 "type": "bool",
@@ -634,10 +642,18 @@
     "listfork": {
         "type": "command",
         "name": "ListFork",
-        "desc": "Returns the list of forks.",
+        "desc": "If true list of all forks, or subscribed forks",
         "request": {
             "type": "object",
-            "content": {}
+            "content": {
+                "all": {
+                    "type": "bool",
+                    "desc": "list all forks or not",
+                    "opt": "a",
+                    "default": false,
+                    "required": false
+                }
+            }
         },
         "response": {
             "type": "array",
@@ -683,7 +699,7 @@
         "example": [
             {
                 "request": "multiverse-cli listfork",
-                "response": "1"
+                "response": "[{\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\",\"name\":\"Fission And Fusion Network\",\"symbol\":\"FnFn\",\"isolated\":true,\"private\":false,\"enclosed\":false,\"owner\":\"1mjw7aa0s7v9sv7x3thvcexxzjz4tq82j5qc12dy29ktqy84haa0j7dwb\"}]"
             },
             {
                 "request": "{\"id\":69,\"method\":\"listfork\",\"jsonrpc\":\"2.0\",\"params\":{}}",
@@ -1018,36 +1034,6 @@
             "{\"code\":-6,\"message\":\"Unknown fork\"}"
         ]
     },
-    "removependingtx": {
-        "type": "command",
-        "name": "RemovePendingTx",
-        "desc": "Removes tx whose id is <txid> from txpool.",
-        "request": {
-            "type": "object",
-            "content": {
-                "txid": {
-                    "type": "string",
-                    "desc": "transaction hash"
-                }
-            }
-        },
-        "response": {
-            "type": "string",
-            "name": "result",
-            "desc": "remove tx result"
-        },
-        "example": [
-            {
-                "request": "multiverse-cli removependingtx 01a9f3bb967f24396293903c856e99896a514756a220266afa347a8b8c7f0038",
-                "response": "Remove tx successfully: 01a9f3bb967f24396293903c856e99896a514756a220266afa347a8b8c7f0038"
-            },
-            {
-                "request": "curl -d '{\"id\":21,\"method\":\"removependingtx\",\"jsonrpc\":\"2.0\",\"params\":{\"txid\":\"01a9f3bb967f24396293903c856e99896a514756a220266afa347a8b8c7f0038\"}}' http://127.0.0.1:6812",
-                "response": "{\"id\":21,\"jsonrpc\":\"2.0\",\"result\":\"Remove tx successfully: 01a9f3bb967f24396293903c856e99896a514756a220266afa347a8b8c7f0038\"}"
-            }
-        ],
-        "error": "{\"code\":-6,\"message\":\"This transaction is not in tx pool.\"}"
-    },
     "gettransaction": {
         "type": "command",
         "name": "GetTransaction",
@@ -1093,11 +1079,11 @@
         "example": [
             {
                 "request": "multiverse-cli gettransaction 3d4ed629c594b924d72480e29a332ca91915be685c85940a8c501f8248269e29",
-                "response": "{\"transaction\":{\"txid\":\"3d4ed629c594b924d72480e29a332ca91915be685c85940a8c501f8248269e29\",\"version\":1,\"type\":\"work\",\"lockuntil\":0,\"anchor\":\"47b86e794e7ce0546def4fe3603d58d9cc9fc87eeee676bd15ae90e45ab51f8a\",\"vin\":[],\"sendto\":\"20g00k7pe4krdbbxpn5swgbxc0w4a54w054stt1z107d9n3sk6q7js9gw\",\"amount\":15.00000000,\"txfee\":0.00000000,\"data\":\"\",\"sig\":\"\",\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\",\"confirmations\":785}}"
+                "response": "{\"transaction\":{\"txid\":\"3d4ed629c594b924d72480e29a332ca91915be685c85940a8c501f8248269e29\",\"version\":1,\"type\":\"work\",\"time\":1547916097,\"lockuntil\":0,\"anchor\":\"47b86e794e7ce0546def4fe3603d58d9cc9fc87eeee676bd15ae90e45ab51f8a\",\"vin\":[],\"sendto\":\"20g00k7pe4krdbbxpn5swgbxc0w4a54w054stt1z107d9n3sk6q7js9gw\",\"amount\":15.00000000,\"txfee\":0.00000000,\"data\":\"\",\"sig\":\"\",\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\",\"confirmations\":785}}"
             },
             {
                 "request": "curl -d '{\"id\":13,\"method\":\"gettransaction\",\"jsonrpc\":\"2.0\",\"params\":{\"txid\":\"3d4ed629c594b924d72480e29a332ca91915be685c85940a8c501f8248269e29\",\"serialized\":false}}' http://127.0.0.1:6812",
-                "response": "{\"id\":13,\"jsonrpc\":\"2.0\",\"result\":{\"transaction\":{\"txid\":\"3d4ed629c594b924d72480e29a332ca91915be685c85940a8c501f8248269e29\",\"version\":1,\"type\":\"work\",\"lockuntil\":0,\"anchor\":\"47b86e794e7ce0546def4fe3603d58d9cc9fc87eeee676bd15ae90e45ab51f8a\",\"vin\":[],\"sendto\":\"20g00k7pe4krdbbxpn5swgbxc0w4a54w054stt1z107d9n3sk6q7js9gw\",\"amount\":15.00000000,\"txfee\":0.00000000,\"data\":\"\",\"sig\":\"\",\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\",\"confirmations\":785}}}"
+                "response": "{\"id\":13,\"jsonrpc\":\"2.0\",\"result\":{\"transaction\":{\"txid\":\"3d4ed629c594b924d72480e29a332ca91915be685c85940a8c501f8248269e29\",\"version\":1,\"type\":\"work\",\"time\":1547916097,\"lockuntil\":0,\"anchor\":\"47b86e794e7ce0546def4fe3603d58d9cc9fc87eeee676bd15ae90e45ab51f8a\",\"vin\":[],\"sendto\":\"20g00k7pe4krdbbxpn5swgbxc0w4a54w054stt1z107d9n3sk6q7js9gw\",\"amount\":15.00000000,\"txfee\":0.00000000,\"data\":\"\",\"sig\":\"\",\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\",\"confirmations\":785}}}"
             },
             {
                 "request": "multiverse-cli gettransaction -s 3d4ed629c594b924d72480e29a332ca91915be685c85940a8c501f8248269e29",
@@ -1297,8 +1283,7 @@
             {
                 "request": "curl -d '{\"id\":5,\"method\":\"encryptkey\",\"jsonrpc\":\"2.0\",\"params\":{\"pubkey\":\"f4c3babec11363be80e7b6aa1d803d63206a11f36fc99b874b63a262110a0add\",\"passphrase\":\"456\",\"oldpassphrase\":\"123\"}}' http://127.0.0.1:6812",
                 "response": "{\"id\":5,\"jsonrpc\":\"2.0\",\"result\":\"Encrypt key successfully: f4c3babec11363be80e7b6aa1d803d63206a11f36fc99b874b63a262110a0add\"}"
-            },
-            "multiverse-cli encryptkey f4c3babec11363be80e7b6aa1d803d63206a11f36fc99b874b63a262110a0add 456 123"
+            }
         ],
         "error": [
             "{\"code\":-6,\"message\":\"Passphrase must be nonempty\"}",
@@ -1338,8 +1323,7 @@
             {
                 "request": "curl -d '{\"id\":1,\"method\":\"lockkey\",\"jsonrpc\":\"2.0\",\"params\":{\"pubkey\":\"2e05c9ee45fdf58f7b007458298042fc3d3ad416a2f9977ace16d14164a3e882\"}}' http://127.0.0.1:6812",
                 "response": "{\"id\":1,\"jsonrpc\":\"2.0\",\"result\":\"Lock key successfully: 2e05c9ee45fdf58f7b007458298042fc3d3ad416a2f9977ace16d14164a3e882\"}"
-            },
-            "multiverse-cli encryptkey 2e05c9ee45fdf58f7b007458298042fc3d3ad416a2f9977ace16d14164a3e882 456 123"
+            }
         ],
         "error": [
             "{\"code\":-4,\"message\":\"Unknown key\"}",
@@ -1437,8 +1421,8 @@
             }
         ],
         "error": [
+            "{\"code\":-6,\"message\":\"Invalid private key\"}",
             "{\"code\":-6,\"message\":\"Passphrase must be nonempty\"}",
-            "{\"code\":-4,\"message\":\"Invalid private key\"}",
             "{\"code\":-401,\"message\":\"Already have key\"}",
             "{\"code\":-401,\"message\":\"Failed to add key\"}",
             "{\"code\":-401,\"message\":\"Failed to sync wallet tx\"}"
@@ -1614,7 +1598,6 @@
         ],
         "error": [
             "{\"code\":-6,\"message\":\"Invalid address\"}",
-            "{\"code\":-6,\"message\":\"Invalid address, should be template address\"}",
             "{\"code\":-401,\"message\":\"Unkown template\"}"
         ]
     },
@@ -1851,19 +1834,19 @@
         "example": [
             {
                 "request": "multiverse-cli listtransaction",
-                "response": "[{\"txid\":\"4a8e6035b575699cdb25d45beadd49f18fb1303f57ec55493139e65d811e74ff\",\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\",\"blockheight\":31296,\"type\":\"work\",\"send\":false,\"to\":\"20g098nza351f53wppg0kfnsbxqf80h3x8fwp9vdmc98fbrgbv6mtjagy\",\"amount\":15.00000000,\"fee\":0.00000000,\"lockuntil\":0},{\"txid\":\"0aa6954236382a6c1c46cce7fa3165b4d1718f5e03ca67cd5fe831616a9000da\",\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\",\"blockheight\":31297,\"type\":\"work\",\"send\":false,\"to\":\"20g098nza351f53wppg0kfnsbxqf80h3x8fwp9vdmc98fbrgbv6mtjagy\",\"amount\":15.00000000,\"fee\":0.00000000,\"lockuntil\":0}]"
+                "response": "[{\"txid\":\"4a8e6035b575699cdb25d45beadd49f18fb1303f57ec55493139e65d811e74ff\",\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\",\"blockheight\":31296,\"type\":\"work\",\"time\":1547916097,\"send\":false,\"to\":\"20g098nza351f53wppg0kfnsbxqf80h3x8fwp9vdmc98fbrgbv6mtjagy\",\"amount\":15.00000000,\"fee\":0.00000000,\"lockuntil\":0},{\"txid\":\"0aa6954236382a6c1c46cce7fa3165b4d1718f5e03ca67cd5fe831616a9000da\",\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\",\"blockheight\":31297,\"type\":\"work\",\"time\":1547916097,\"send\":false,\"to\":\"20g098nza351f53wppg0kfnsbxqf80h3x8fwp9vdmc98fbrgbv6mtjagy\",\"amount\":15.00000000,\"fee\":0.00000000,\"lockuntil\":0}]"
             },
             {
                 "request": "curl -d '{\"id\":2,\"method\":\"listtransaction\",\"jsonrpc\":\"2.0\",\"params\":{}}' http://127.0.0.1:6812",
-                "response": "{\"id\":2,\"jsonrpc\":\"2.0\",\"result\":[{\"txid\":\"4a8e6035b575699cdb25d45beadd49f18fb1303f57ec55493139e65d811e74ff\",\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\",\"blockheight\":31296,\"type\":\"work\",\"send\":false,\"to\":\"20g098nza351f53wppg0kfnsbxqf80h3x8fwp9vdmc98fbrgbv6mtjagy\",\"amount\":15.00000000,\"fee\":0.00000000,\"lockuntil\":0},{\"txid\":\"0aa6954236382a6c1c46cce7fa3165b4d1718f5e03ca67cd5fe831616a9000da\",\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\",\"blockheight\":31297,\"type\":\"work\",\"send\":false,\"to\":\"20g098nza351f53wppg0kfnsbxqf80h3x8fwp9vdmc98fbrgbv6mtjagy\",\"amount\":15.00000000,\"fee\":0.00000000,\"lockuntil\":0}]}"
+                "response": "{\"id\":2,\"jsonrpc\":\"2.0\",\"result\":[{\"txid\":\"4a8e6035b575699cdb25d45beadd49f18fb1303f57ec55493139e65d811e74ff\",\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\",\"blockheight\":31296,\"type\":\"work\",\"time\":1547916097,\"send\":false,\"to\":\"20g098nza351f53wppg0kfnsbxqf80h3x8fwp9vdmc98fbrgbv6mtjagy\",\"amount\":15.00000000,\"fee\":0.00000000,\"lockuntil\":0},{\"txid\":\"0aa6954236382a6c1c46cce7fa3165b4d1718f5e03ca67cd5fe831616a9000da\",\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\",\"blockheight\":31297,\"type\":\"work\",\"time\":1547916097,\"send\":false,\"to\":\"20g098nza351f53wppg0kfnsbxqf80h3x8fwp9vdmc98fbrgbv6mtjagy\",\"amount\":15.00000000,\"fee\":0.00000000,\"lockuntil\":0}]}"
             },
             {
                 "request": "multiverse-cli listtransaction 1 -1",
-                "response": "[{\"txid\":\"5a1b7bf5e32a77ecb3c53782a8e06f2b12bdcb73b677d6f89b6f82f85f14373a\",\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\",\"blockheight\":32086,\"type\":\"work\",\"send\":false,\"to\":\"20g098nza351f53wppg0kfnsbxqf80h3x8fwp9vdmc98fbrgbv6mtjagy\",\"amount\":15.00000000,\"fee\":0.00000000,\"lockuntil\":0}]"
+                "response": "[{\"txid\":\"5a1b7bf5e32a77ecb3c53782a8e06f2b12bdcb73b677d6f89b6f82f85f14373a\",\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\",\"blockheight\":32086,\"type\":\"work\",\"time\":1547916097,\"send\":false,\"to\":\"20g098nza351f53wppg0kfnsbxqf80h3x8fwp9vdmc98fbrgbv6mtjagy\",\"amount\":15.00000000,\"fee\":0.00000000,\"lockuntil\":0}]"
             },
             {
                 "request": "curl -d '{\"id\":0,\"method\":\"listtransaction\",\"jsonrpc\":\"2.0\",\"params\":{\"count\":1,\"offset\":-1}}' http://127.0.0.1:6812",
-                "response": "{\"id\":0,\"jsonrpc\":\"2.0\",\"result\":[{\"txid\":\"5a1b7bf5e32a77ecb3c53782a8e06f2b12bdcb73b677d6f89b6f82f85f14373a\",\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\",\"blockheight\":32086,\"type\":\"work\",\"send\":false,\"to\":\"20g098nza351f53wppg0kfnsbxqf80h3x8fwp9vdmc98fbrgbv6mtjagy\",\"amount\":15.00000000,\"fee\":0.00000000,\"lockuntil\":0}]}"
+                "response": "{\"id\":0,\"jsonrpc\":\"2.0\",\"result\":[{\"txid\":\"5a1b7bf5e32a77ecb3c53782a8e06f2b12bdcb73b677d6f89b6f82f85f14373a\",\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\",\"blockheight\":32086,\"type\":\"work\",\"time\":1547916097,\"send\":false,\"to\":\"20g098nza351f53wppg0kfnsbxqf80h3x8fwp9vdmc98fbrgbv6mtjagy\",\"amount\":15.00000000,\"fee\":0.00000000,\"lockuntil\":0}]}"
             },
             {
                 "request": "listtransaction -n=1 -o=-1"
@@ -2231,7 +2214,6 @@
             "{\"code\":-401,\"message\":\"Failed to add key\"}",
             "{\"code\":-401,\"message\":\"Failed to sync wallet tx\"}",
             "{\"code\":-401,\"message\":\"Failed to add template\"}",
-            "{\"code\":-401,\"message\":\"Failed to sync wallet tx\"}",
             "{\"code\":-32602,\"message\":\"Failed to verify serialized key\"}",
             "{\"code\":-32602,\"message\":\"Can't import the key with empty passphrase\"}"
         ]
@@ -2382,8 +2364,7 @@
         "error": [
             "{\"code\":-6,\"message\":\"Invalid pubkey\"}",
             "{\"code\":-6,\"message\":\"Invalid message\"}",
-            "{\"code\":-6,\"message\":\"Invalid sig\"}",
-            "{\"code\":-4,\"message\":\"Unknown pubkey\"}"
+            "{\"code\":-6,\"message\":\"Invalid sig\"}"
         ]
     },
     "makekeypair": {
@@ -2448,7 +2429,7 @@
             }
         ],
         "error": [
-            "{\"code\":-4,\"message\":\"Unknown pubkey\"}"
+            "{\"code\":-6,\"message\":\"Invalid pubkey\"}"
         ]
     },
     "gettemplateaddress": {
@@ -2548,11 +2529,11 @@
         "example": [
             {
                 "request": "multiverse-cli decodetransaction 01000000000000002b747e24738befccff4a05c21dba749632cb8eb410233fa110e3f58a779b4325010ef45be50157453a57519929052d0818c269dee60be98958d5ab65bc7e0919810001b9c3b7aa16c6cb1bf193faf717580d03347148b2145ca98b30b1376d634c12f440420f0000000000a08601000000000002123400",
-                "response": "{\"txid\":\"b492ea1de2d540288f6e45fd21bc4ac2cd2fcfeb63ec43c50acdb69debfad10a\",\"version\":1,\"type\":\"token\",\"lockuntil\":0,\"anchor\":\"25439b778af5e310a13f2310b48ecb329674ba1dc2054affccef8b73247e742b\",\"vin\":[{\"txid\":\"8119097ebc65abd55889e90be6de69c218082d05299951573a455701e55bf40e\",\"vout\":0}],\"sendto\":\"1q71vfagprv5hqwckzbvhep0d0ct72j5j2heak2sgp4vptrtc2btdje3q\",\"amount\":1.00000000,\"txfee\":0.10000000,\"data\":\"1234\",\"sig\":\"\",\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\"}"
+                "response": "{\"txid\":\"b492ea1de2d540288f6e45fd21bc4ac2cd2fcfeb63ec43c50acdb69debfad10a\",\"version\":1,\"type\":\"token\",\"time\":1547916097,\"lockuntil\":0,\"anchor\":\"25439b778af5e310a13f2310b48ecb329674ba1dc2054affccef8b73247e742b\",\"vin\":[{\"txid\":\"8119097ebc65abd55889e90be6de69c218082d05299951573a455701e55bf40e\",\"vout\":0}],\"sendto\":\"1q71vfagprv5hqwckzbvhep0d0ct72j5j2heak2sgp4vptrtc2btdje3q\",\"amount\":1.00000000,\"txfee\":0.10000000,\"data\":\"1234\",\"sig\":\"\",\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\"}"
             },
             {
                 "request": "curl -d '{\"id\":1,\"method\":\"decodetransaction\",\"jsonrpc\":\"2.0\",\"params\":{\"txdata\":\"01000000000000002b747e24738befccff4a05c21dba749632cb8eb410233fa110e3f58a779b4325010ef45be50157453a57519929052d0818c269dee60be98958d5ab65bc7e0919810001b9c3b7aa16c6cb1bf193faf717580d03347148b2145ca98b30b1376d634c12f440420f0000000000a08601000000000002123400\"}}' http://127.0.0.1:6812",
-                "response": "{\"id\":1,\"jsonrpc\":\"2.0\",\"result\":{\"txid\":\"b492ea1de2d540288f6e45fd21bc4ac2cd2fcfeb63ec43c50acdb69debfad10a\",\"version\":1,\"type\":\"token\",\"lockuntil\":0,\"anchor\":\"25439b778af5e310a13f2310b48ecb329674ba1dc2054affccef8b73247e742b\",\"vin\":[{\"txid\":\"8119097ebc65abd55889e90be6de69c218082d05299951573a455701e55bf40e\",\"vout\":0}],\"sendto\":\"1q71vfagprv5hqwckzbvhep0d0ct72j5j2heak2sgp4vptrtc2btdje3q\",\"amount\":1.00000000,\"txfee\":0.10000000,\"data\":\"1234\",\"sig\":\"\",\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\"}}"
+                "response": "{\"id\":1,\"jsonrpc\":\"2.0\",\"result\":{\"txid\":\"b492ea1de2d540288f6e45fd21bc4ac2cd2fcfeb63ec43c50acdb69debfad10a\",\"version\":1,\"type\":\"token\",\"time\":1547916097,\"lockuntil\":0,\"anchor\":\"25439b778af5e310a13f2310b48ecb329674ba1dc2054affccef8b73247e742b\",\"vin\":[{\"txid\":\"8119097ebc65abd55889e90be6de69c218082d05299951573a455701e55bf40e\",\"vout\":0}],\"sendto\":\"1q71vfagprv5hqwckzbvhep0d0ct72j5j2heak2sgp4vptrtc2btdje3q\",\"amount\":1.00000000,\"txfee\":0.10000000,\"data\":\"1234\",\"sig\":\"\",\"fork\":\"a63d6f9d8055dc1bd7799593fb46ddc1b4e4519bd049e8eba1a0806917dcafc0\"}}"
             }
         ],
         "error": [

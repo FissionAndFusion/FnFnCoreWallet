@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2018 The Multiverse developers
+// Copyright (c) 2017-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -65,6 +65,7 @@ CTransactionData TxToJSON(const uint256& txid,const CTransaction& tx,const uint2
     ret.strTxid = txid.GetHex();
     ret.nVersion = tx.nVersion;
     ret.strType = tx.GetTypeString();
+    ret.nTime = tx.nTimeStamp;
     ret.nLockuntil = tx.nLockUntil;
     ret.strAnchor = tx.hashAnchor.GetHex();
     BOOST_FOREACH(const CTxIn& txin, tx.vInput)
@@ -99,6 +100,7 @@ CWalletTxData WalletTxToJSON(const CWalletTx& wtx)
         data.nBlockheight = wtx.nBlockHeight;
     }
     data.strType = wtx.GetTypeString();
+    data.nTime = (boost::int64_t)wtx.nTimeStamp;
     data.fSend = wtx.IsFromMe();
     if (!wtx.IsMintTx())
     {

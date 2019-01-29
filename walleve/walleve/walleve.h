@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2018 The LoMoCoin developers
+// Copyright (c) 2016-2019 The Multiverse developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -8,6 +8,7 @@
 #include <walleve/type.h>
 #include <walleve/util.h>
 #include <walleve/rwlock.h>
+#include <walleve/cache.h>
 #include <walleve/compacttv.h>
 #include <walleve/entry/entry.h>
 #include <walleve/stream/stream.h>
