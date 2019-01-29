@@ -166,6 +166,7 @@ protected:
     void AddNewWalletTx(std::shared_ptr<CWalletTx>& spWalletTx,std::vector<uint256>& vFork);
     void RemoveWalletTx(std::shared_ptr<CWalletTx>& spWalletTx,const uint256& hashFork);
     bool SyncWalletTx(CTxFilter& txFilter);
+    bool InspectWalletTx();
 protected:
     storage::CWalletDB dbWallet;
     ICoreProtocol* pCoreProtocol;

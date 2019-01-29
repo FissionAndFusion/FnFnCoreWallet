@@ -1024,7 +1024,7 @@ bool CBlockBase::GetForkBlockInv(const uint256& hashFork,const CBlockLocator& lo
 }
 
 bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
-{
+{/*
     boost::timer::cpu_timer t_lock;
     t_lock.start();
 
@@ -1409,12 +1409,12 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
     Log("B", "Checking duration ===> %s\n", t_check.format().c_str());
 
     Log("B", "Data consistency verified.\n");
-
+*/
     return true;
 }
 
 bool CBlockBase::CheckInputSingleAddressForTxWithChange(const uint256& txid)
-{
+{/*
     CTransaction tx;
     if(!RetrieveTx(txid, tx))
     {
@@ -1508,6 +1508,8 @@ bool CBlockBase::CheckInputSingleAddressForTxWithChange(const uint256& txid)
     {
         return true;
     }
+*/
+    return true;//should to be removed when uncomment the above source code
 }
 
 CBlockIndex* CBlockBase::GetIndex(const uint256& hash) const

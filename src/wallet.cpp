@@ -126,18 +126,18 @@ bool CWallet::WalleveHandleInvoke()
         return false;
     }
 
-    if (!dbWallet.CheckWalletTx())
-    {
-        WalleveLog("Failed to check wallet transactions\n");
-        return false;
-    }
-
     if (!LoadDB())
     {
         WalleveError("Failed to load wallet database\n");
         return false;
     }
-    
+
+    if (!InspectWalletTx())
+    {
+        WalleveLog("Failed to inspect wallet transactions\n");
+        return false;
+    }
+
     return true;
 }
 
@@ -630,6 +630,45 @@ bool CWallet::SyncWalletTx(CTxFilter& txFilter)
     return true;
 }
 
+bool CWallet::InspectWalletTx()
+{
+    set<CDestination> setAddr;
+    {
+        boost::shared_lock<boost::shared_mutex> rlock(rwKeyStore);
+
+        for(const auto& i : mapKeyStore)
+        {
+            CDestination dest(i.first);
+            setAddr.insert(dest);
+        }
+        for(const auto& i : mapTemplatePtr)
+        {
+            CDestination dest(i.first);
+            setAddr.insert(dest);
+        }
+    }
+
+    {
+        //wallet transactions must be only owned by addresses in the wallet of the node
+        boost::shared_lock<boost::shared_mutex> rlock(rwWalletTx);
+        for(const auto& i : mapWalletTx)
+        {
+            const std::shared_ptr<CWalletTx>& spWtx = i.second;
+            const CDestination& sendTo = spWtx->sendTo;
+            const CDestination& destIn = spWtx->destIn;
+            if(setAddr.find(sendTo) == setAddr.end() || setAddr.find(destIn) == setAddr.end())
+            {
+                return false;
+            }
+        }
+
+        //set of wallet transactions must be equal to set of transactions in the whole block
+        ;
+    }
+
+    return true;
+}
+
 bool CWallet::LoadDB()
 {
     {
@@ -1095,7 +1134,7 @@ void CWallet::AddNewWalletTx(std::shared_ptr<CWalletTx>& spWalletTx,vector<uint2
 
                 if (!spPrevWalletTx->GetRefCount())
                 {
-                     mapWalletTx.erase(it);
+                    mapWalletTx.erase(it);
                 }
             }
         }
