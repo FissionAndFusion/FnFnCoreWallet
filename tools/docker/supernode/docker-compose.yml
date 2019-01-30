@@ -21,8 +21,8 @@ services:
     depends_on:
       - db
     environment:
-      DNSEED: '192.168.199.50'
-      DNSEED_PORT: 6811 
+      #DNSEED: '192.168.199.50'
+      #DNSEED_PORT: 6811 
       DB_HOST: db 
       DB_PORT: 3306
       DB_NAME: 'sn_root'
