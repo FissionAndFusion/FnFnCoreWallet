@@ -6,8 +6,8 @@
 
 using namespace std;
 using namespace boost::filesystem;
-using namespace multiverse::storage;
 using namespace walleve;
+using namespace multiverse::storage;
 
 //////////////////////////////
 // CTimeSeriesBase

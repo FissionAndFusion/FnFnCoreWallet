@@ -4,7 +4,7 @@
 
 #include "purger.h"
 #include "blockdb.h"    
-#include "txpooldb.h"
+#include "txpooldata.h"
 #include "walletdb.h"
 
 using namespace std;
@@ -42,14 +42,13 @@ bool CPurger::ResetDB(const boost::filesystem::path& pathDataLocation) const
     }
 
     {
-        CTxPoolDB dbTxPool;
-        if (dbTxPool.Initialize(pathDataLocation))
+        CTxPoolData datTxPool;
+        if (datTxPool.Initialize(pathDataLocation))
         {
-            if (!dbTxPool.RemoveAll())
+            if (!datTxPool.Remove())
             {
                 return false;
             }
-            dbTxPool.Deinitialize();
         }
     }
 
