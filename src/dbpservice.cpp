@@ -1503,6 +1503,16 @@ void CDbpService::RPCRouteRootHandle(int type, CMvRPCRoute* data)
         }
         return;
     }
+
+    if(type == CMvRPCRoute::DBP_RPCROUTE_GET_FORK_COUNT)
+    {
+       if (sessionCount == 0 && pIoComplt != NULL)
+        {
+            int count = pService->GetForkCount();
+            pIoComplt->Completed(false);
+        }
+        return;
+    }
 }
 
 void CDbpService::RPCRouteForkHandle(int type, CMvRPCRoute* data)
@@ -1519,10 +1529,25 @@ void CDbpService::RPCRouteForkHandle(int type, CMvRPCRoute* data)
             CMvRPCRouteResult result;
             result.type = type;
             result.vRawData = data;
-            // TODO:vData
-
             SendRPCResult(result);
             pService->Shutdown();
+        }
+        return;
+    }
+
+    if (type == CMvRPCRoute::DBP_RPCROUTE_GET_FORK_COUNT)
+    {
+        CMvRPCRouteGetForkCount getForkCount = *((CMvRPCRouteGetForkCount*)data);
+        walleve::CWalleveBufStream ss;
+        ss << getForkCount;
+        std::vector<uint8> data(ss.GetData(), ss.GetData() + ss.GetSize());
+        
+        if (sessionCount == 0 && pIoComplt == NULL)
+        {
+            CMvRPCRouteResult result;
+            result.type = type;
+            result.vRawData = data;
+            SendRPCResult(result);
         }
         return;
     }
@@ -1564,10 +1589,24 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteStop& event)
     walleve::CWalleveBufStream ss;
     ss << event.data;
     std::vector<uint8> data(ss.GetData(), ss.GetData() + ss.GetSize());
-    PushRPC(data, CMvRPCRoute::DBP_RPCROUTE_STOP);
 
+    PushRPC(data, CMvRPCRoute::DBP_RPCROUTE_STOP);
     InitSessionCount();
     RPCRouteRootHandle(CMvRPCRoute::DBP_RPCROUTE_STOP, &event.data);
+    return true;
+}
+
+bool CDbpService::HandleEvent(CMvEventRPCRouteGetForkCount& event)
+{
+    pIoComplt = event.data.ioComplt;
+
+    walleve::CWalleveBufStream ss;
+    ss << event.data;
+    std::vector<uint8> data(ss.GetData(), ss.GetData() + ss.GetSize());
+
+    PushRPC(data, CMvRPCRoute::DBP_RPCROUTE_GET_FORK_COUNT);
+    InitSessionCount();
+    RPCRouteRootHandle(CMvRPCRoute::DBP_RPCROUTE_GET_FORK_COUNT, &event.data);
     return true;
 }
 
@@ -1582,7 +1621,7 @@ void CDbpService::SendRPCResult(CMvRPCRouteResult& result)
 
 bool CDbpService::HandleEvent(CMvEventRPCRouteAdded& event)
 {
-    PushRPC(event.data.vData, CMvRPCRoute::DBP_RPCROUTE_STOP);
+    PushRPC(event.data.vData, event.data.type);
     InitSessionCount();
 
     walleve::CWalleveBufStream ss;
@@ -1600,33 +1639,33 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteAdded& event)
         ss >> getForkCount;
         RPCRouteForkHandle(event.data.type, &getForkCount);
     }
-
     return true;
 }
 
 void CDbpService::HandleRPCRoute(CMvEventDbpMethod& event)
 {
     sessionCount--;
-
     int type = boost::any_cast<int>(event.data.params["type"]);
+    std::string data = boost::any_cast<std::string>(event.data.params["data"]);
+    std::string rawData = boost::any_cast<std::string>(event.data.params["rawdata"]);
+
+    walleve::CWalleveBufStream ss;
+    ss.Write(rawData.data(), rawData.size());
+
     if (type == CMvRPCRoute::DBP_RPCROUTE_STOP)
     {
-        std::string data =
-          boost::any_cast<std::string>(event.data.params["data"]);
-        std::string rawData =
-          boost::any_cast<std::string>(event.data.params["rawdata"]);
-
-        if (rawData.size() > 0)
-        {
-            CMvRPCRouteStop stop;
-            walleve::CWalleveBufStream ss;
-            ss.Write(rawData.data(), rawData.size());
-            ss >> stop;
-
-            RPCRouteRootHandle(CMvRPCRoute::DBP_RPCROUTE_STOP, &stop);
-            RPCRouteForkHandle(CMvRPCRoute::DBP_RPCROUTE_STOP, &stop);
-        }
+        CMvRPCRouteStop stop;
+        ss >> stop;
+        RPCRouteRootHandle(CMvRPCRoute::DBP_RPCROUTE_STOP, &stop);
+        RPCRouteForkHandle(CMvRPCRoute::DBP_RPCROUTE_STOP, &stop);
+    }
+    if (type == CMvRPCRoute::DBP_RPCROUTE_GET_FORK_COUNT)
+    {
+        CMvRPCRouteGetForkCount getForkCount;
+        ss >> getForkCount;
+        RPCRouteRootHandle(CMvRPCRoute::DBP_RPCROUTE_GET_FORK_COUNT, &getForkCount);
+        RPCRouteForkHandle(CMvRPCRoute::DBP_RPCROUTE_GET_FORK_COUNT, &getForkCount);
     }
 }
 
-// 
+//

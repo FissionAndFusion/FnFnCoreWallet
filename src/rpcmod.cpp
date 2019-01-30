@@ -2067,9 +2067,16 @@ CRPCResultPtr CRPCMod::SnRPCStop(CRPCParamPtr param)
     return NULL;
 }
 
+CRPCResultPtr CRPCMod::SnRPCGetForkCount(CRPCParamPtr param)
+{
+    (void)param;
+    return NULL;
+}
+
 CSnRPCMod::CSnRPCMod()
 {
     mapRPCFunc["stop"] = &CRPCMod::SnRPCStop;
+    mapRPCFunc["getforkcount"] = &CRPCMod::SnRPCGetForkCount;
 }
 
 CSnRPCMod::~CSnRPCMod()
@@ -2099,9 +2106,6 @@ CRPCResultPtr CSnRPCMod::SnRPCStop(CRPCParamPtr param)
 {
     CMvEventRPCRouteStop *pEvent = new CMvEventRPCRouteStop("");
     pEvent->data.ioComplt = &ioComplt;
-    // pEvent->data.type = CMvRPCRoute::EventType::DBP_RPCROUTE_STOP;
-    pEvent->data.rpc = "rpc-stop";
-
     if(!pEvent)
     {
         return NULL;
@@ -2111,6 +2115,22 @@ CRPCResultPtr CSnRPCMod::SnRPCStop(CRPCParamPtr param)
     ioComplt.Reset();
     bool fResult = false;
     ioComplt.WaitForComplete(fResult);
-    std::string reason = "multiverse server stopping[supernode]";
+    std::string reason = "[supernode]multiverse server stopping";
     return MakeCStopResultPtr(reason);
+}
+
+CRPCResultPtr CSnRPCMod::SnRPCGetForkCount(CRPCParamPtr param)
+{
+    CMvEventRPCRouteGetForkCount *pEvent = new CMvEventRPCRouteGetForkCount("");
+    pEvent->data.ioComplt = &ioComplt;
+    if(!pEvent)
+    {
+        return NULL;
+    }
+    pDbpService->PostEvent(pEvent);
+
+    ioComplt.Reset();
+    bool fResult = false;
+    ioComplt.WaitForComplete(fResult);
+    return MakeCGetForkCountResultPtr(pService->GetForkCount());
 }

@@ -124,6 +124,7 @@ private:
 
 public:
     virtual CRPCResultPtr SnRPCStop(CRPCParamPtr param);
+    virtual CRPCResultPtr SnRPCGetForkCount(CRPCParamPtr param);
 
 protected:
     walleve::IIOProc *pHttpServer;
@@ -140,6 +141,7 @@ public:
     CSnRPCMod();
     ~CSnRPCMod();
     CRPCResultPtr SnRPCStop(CRPCParamPtr param) override;
+    CRPCResultPtr SnRPCGetForkCount(CRPCParamPtr param) override;
 
 protected:
     bool WalleveHandleInitialize() override;

@@ -64,6 +64,7 @@ public:
 
     //RPC Route
     bool HandleEvent(CMvEventRPCRouteStop& event) override;
+    bool HandleEvent(CMvEventRPCRouteGetForkCount& event) override;
     void SendRPCResult(CMvRPCRouteResult& result);
     bool HandleEvent(CMvEventRPCRouteAdded& event) override;
     void HandleRPCRoute(CMvEventDbpMethod& event);

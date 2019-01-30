@@ -130,19 +130,26 @@ class CMvRPCRouteStop : public CMvRPCRoute
 {
     friend class walleve::CWalleveStream;
 public:
-    std::string rpc;
 
 protected:
     template <typename O>
     void WalleveSerialize(walleve::CWalleveStream& s,O& opt)
     {
         CMvRPCRoute::WalleveSerialize(s, opt);
-        s.Serialize(rpc, opt);
     } 
 };
 
 class CMvRPCRouteGetForkCount : public CMvRPCRoute
 {
+    friend class walleve::CWalleveStream;
+public:
+
+protected:
+    template <typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s,O& opt)
+    {
+        CMvRPCRoute::WalleveSerialize(s, opt);
+    } 
 };
 
 class CMvRPCRouteResult
