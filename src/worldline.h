@@ -61,7 +61,8 @@ protected:
                          std::vector<CBlockEx>& vBlockAddNew,std::vector<CBlockEx>& vBlockRemove);
 protected:
     boost::shared_mutex rwAccess;
-    ICoreProtocol *pCoreProtocol;
+    ICoreProtocol* pCoreProtocol;
+    ITxPool* pTxPool;
     storage::CBlockBase cntrBlock;
 };
 

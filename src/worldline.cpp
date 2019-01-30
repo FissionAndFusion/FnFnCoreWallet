@@ -16,6 +16,7 @@ using namespace multiverse;
 CWorldLine::CWorldLine()
 {
     pCoreProtocol = NULL;
+    pTxPool = NULL;
 }
 
 CWorldLine::~CWorldLine()
@@ -30,12 +31,19 @@ bool CWorldLine::WalleveHandleInitialize()
         return false;
     }
 
+    if (!WalleveGetObject("txpool",pTxPool))
+    {
+        WalleveError("Failed to request txpool\n");
+        return false;
+    }
+
     return true;
 }
 
 void CWorldLine::WalleveHandleDeinitialize()
 {
     pCoreProtocol = NULL;
+    pTxPool = NULL;
 }
 
 bool CWorldLine::WalleveHandleInvoke()
@@ -390,11 +398,14 @@ MvErr CWorldLine::AddNewBlock(const CBlock& block,CWorldLineUpdate& update)
             WalleveLog("AddNewBlock Get txContxt Error(%s) : %s \n",MvErrString(err),txid.ToString().c_str());
             return err;
         }
-        err = pCoreProtocol->VerifyBlockTx(tx,txContxt,pIndexPrev);
-        if (err != MV_OK)
+        if (!pTxPool->Exists(txid))
         {
-            WalleveLog("AddNewBlock Verify BlockTx Error(%s) : %s \n",MvErrString(err),txid.ToString().c_str());
-            return err;
+            err = pCoreProtocol->VerifyBlockTx(tx,txContxt,pIndexPrev);
+            if (err != MV_OK)
+            {
+                WalleveLog("AddNewBlock Verify BlockTx Error(%s) : %s \n",MvErrString(err),txid.ToString().c_str());
+                return err;
+            }
         }
         vTxContxt.push_back(txContxt);
         view.AddTx(txid,tx,txContxt.destIn,txContxt.GetValueIn());
