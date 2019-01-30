@@ -30,10 +30,15 @@ message VPeerNetEvent
     bytes data = 2; // 虚拟PeerNet二进制数据
 }
 
-message RouteStop
+message RPCRouteEvent
 {
+	int32 type = 1;
+	bytes data = 2;
 }
 
-message RouteGetForkCount
+message RPCRouteArgs
 {
+	int32 type = 1;
+	bytes data = 2;
+	bytes rawdata = 3;
 }

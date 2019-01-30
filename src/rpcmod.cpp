@@ -2099,8 +2099,8 @@ CRPCResultPtr CSnRPCMod::SnRPCStop(CRPCParamPtr param)
 {
     CMvEventRPCRouteStop *pEvent = new CMvEventRPCRouteStop("");
     pEvent->data.ioComplt = &ioComplt;
-    pEvent->data.type = CMvRPCRoute::EventType::DBP_RPCROUTE_STOP;
-    pEvent->data.rpc = "stop";
+    // pEvent->data.type = CMvRPCRoute::EventType::DBP_RPCROUTE_STOP;
+    pEvent->data.rpc = "rpc-stop";
 
     if(!pEvent)
     {

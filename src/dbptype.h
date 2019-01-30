@@ -101,27 +101,44 @@ class CMvRPCRouteAdded : public CMvDbpRespond
 public:
     std::string name;
     std::string id;
-    std::string rpc;
-    boost::any anyAddedObj;
+    int type;
+    std::vector<uint8> vData;
 };
 
 class CMvRPCRoute
 {
+    friend class walleve::CWalleveStream;
 public:
-    enum EventType : int
+    enum
     {
         DBP_RPCROUTE_STOP = 0,
         DBP_RPCROUTE_GET_FORK_COUNT = 1
     };
 
     walleve::CIOCompletion *ioComplt;
-    EventType type;
+    int type;
+
+protected:
+    template <typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s,O& opt)
+    {
+        s.Serialize(type,opt);
+    }    
 };
 
 class CMvRPCRouteStop : public CMvRPCRoute
 {
+    friend class walleve::CWalleveStream;
 public:
     std::string rpc;
+
+protected:
+    template <typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s,O& opt)
+    {
+        CMvRPCRoute::WalleveSerialize(s, opt);
+        s.Serialize(rpc, opt);
+    } 
 };
 
 class CMvRPCRouteGetForkCount : public CMvRPCRoute
@@ -130,6 +147,10 @@ class CMvRPCRouteGetForkCount : public CMvRPCRoute
 
 class CMvRPCRouteResult
 {
+public:
+    int type;
+    std::vector<uint8> vData;
+    std::vector<uint8> vRawData;
 };
 
 //

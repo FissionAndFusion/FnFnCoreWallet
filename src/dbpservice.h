@@ -104,9 +104,11 @@ private:
     void PushBlock(const std::string& forkid, const CMvDbpBlock& block);
     void PushTx(const std::string& forkid, const CMvDbpTransaction& dbptx);
     bool PushEvent(const CMvDbpVirtualPeerNetEvent& event);
-    void PushRPCCmd(CMvRPCRoute* route);
-    void RPCRouteOwnProcessing(CMvRPCRoute* route);
-   
+    void PushRPC(std::vector<uint8>& data, int type);
+    void InitSessionCount();
+    void RPCRouteRootHandle(int type, CMvRPCRoute* data);
+    void RPCRouteForkHandle(int type, CMvRPCRoute* data);
+
     void SendEventToParentNode(CMvDbpVirtualPeerNetEvent& event);
     void UpdateGetDataEventRecord(const CMvEventPeerGetData& event);
     bool IsThisNodeData(const uint256& hashFork, uint64 nNonce, const uint256& dataHash);

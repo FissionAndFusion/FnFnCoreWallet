@@ -530,24 +530,13 @@ void CMvDbpClient::HandleAdded(CMvDbpClientSocket* pClientSocket, google::protob
 
     if (added.name() == RPC_CMD_TOPIC)
     {
+        sn::RPCRouteEvent routeEvent;
+        added.object().UnpackTo(&routeEvent);
         CMvEventRPCRouteAdded* pEvent = new CMvEventRPCRouteAdded("");
         pEvent->data.id = added.id();
         pEvent->data.name = added.name();
-        // pEvent->data.anyAddedObj = added.object();
-
-        if (added.object().Is<sn::RouteStop>())
-        {
-            CMvRPCRouteStop stop;
-            stop.type = CMvRPCRoute::EventType::DBP_RPCROUTE_STOP;
-            pEvent->data.anyAddedObj = stop;
-        }
-        if (added.object().Is<sn::RouteGetForkCount>())
-        {
-            CMvRPCRouteGetForkCount forkCount;
-            forkCount.type = CMvRPCRoute::EventType::DBP_RPCROUTE_GET_FORK_COUNT;
-            pEvent->data.anyAddedObj = forkCount;
-        }
-
+        pEvent->data.type = routeEvent.type();
+        pEvent->data.vData = std::vector<uint8>(routeEvent.data().begin(), routeEvent.data().end());
         pDbpService->PostEvent(pEvent);
     }
 }
@@ -870,10 +859,11 @@ void CMvDbpClientSocket::SendRPCRouteResult(CMvRPCRouteResult& result)
     method.set_method("rpcroute");
 
     google::protobuf::Any *params = new google::protobuf::Any();
-    // sn::VPeerNetEvent event;
-    // event.set_type(dbpEvent.type);
-    // event.set_data(std::string(dbpEvent.data.begin(), dbpEvent.data.end()));
-    // params->PackFrom(event);
+    sn::RPCRouteArgs args;
+    args.set_type(result.type);
+    args.set_data(std::string(result.vData.begin(), result.vData.end()));
+    args.set_rawdata(std::string(result.vRawData.begin(), result.vRawData.end()));
+    params->PackFrom(args);
     method.set_allocated_params(params);
 
     google::protobuf::Any *any = new google::protobuf::Any();
