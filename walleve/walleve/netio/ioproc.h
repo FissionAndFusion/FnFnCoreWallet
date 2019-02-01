@@ -32,6 +32,8 @@ public:
 class CIOCompletion
 {
 public:
+    boost::any obj;
+public:
     CIOCompletion();
     bool WaitForComplete(bool& fResultRet);
     void Completed(bool fResultIn);
