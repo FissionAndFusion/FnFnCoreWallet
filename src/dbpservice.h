@@ -65,9 +65,7 @@ public:
     //RPC Route
     bool HandleEvent(CMvEventRPCRouteStop& event) override;
     bool HandleEvent(CMvEventRPCRouteGetForkCount& event) override;
-    void SendRPCResult(CMvRPCRouteResult& result);
     bool HandleEvent(CMvEventRPCRouteAdded& event) override;
-    void HandleRPCRoute(CMvEventDbpMethod& event);
 
 protected:
     bool WalleveHandleInitialize() override;
@@ -105,10 +103,14 @@ private:
     void PushBlock(const std::string& forkid, const CMvDbpBlock& block);
     void PushTx(const std::string& forkid, const CMvDbpTransaction& dbptx);
     bool PushEvent(const CMvDbpVirtualPeerNetEvent& event);
+    void SendRPCResult(CMvRPCRouteResult& result);
+    void HandleRPCRoute(CMvEventDbpMethod& event);
     void PushRPC(std::vector<uint8>& data, int type);
     void InitSessionCount();
-    void RPCRouteRootHandle(int type, CMvRPCRoute* data);
-    void RPCRouteForkHandle(int type, CMvRPCRoute* data);
+    void RPCRouteRootHandle(int type, CMvRPCRoute* data, CMvRPCRouteRet* ret);
+    void RPCRouteForkHandle(int type, CMvRPCRoute* data, CMvRPCRouteRet* ret);
+    void InsertQueCount(uint64 nNonce, CMvRPCRouteRet obj);
+    bool FindQueCount(uint64 nNonce, CMvRPCRouteRet* pObj);
 
     void SendEventToParentNode(CMvDbpVirtualPeerNetEvent& event);
     void UpdateGetDataEventRecord(const CMvEventPeerGetData& event);
@@ -156,6 +158,7 @@ private:
     std::map<ForkNonceKeyType, int> mapChildNodeForkCount;
     std::map<ForkNonceKeyType, int> mapThisNodeForkCount;
     std::map<ForkNonceKeyType, std::set<uint256>> mapThisNodeGetData; 
+    std::deque<std::pair<uint64, CMvRPCRouteRet>> queCount;
 };
 
 } // namespace multiverse

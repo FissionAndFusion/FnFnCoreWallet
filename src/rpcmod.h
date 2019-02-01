@@ -146,6 +146,7 @@ public:
 protected:
     bool WalleveHandleInitialize() override;
     void WalleveHandleDeinitialize() override;
+    uint64 GenNonce();
 
 protected:
     walleve::CIOCompletion ioComplt;

@@ -2102,10 +2102,22 @@ void CSnRPCMod::WalleveHandleDeinitialize()
     pDbpService = NULL;
 }
 
+uint64 CSnRPCMod::GenNonce()
+{
+    uint64 nNonce;
+    RAND_bytes((unsigned char*)&nNonce, sizeof(nNonce));
+    while(nNonce <= 0xFF || nNonce == std::numeric_limits<uint64>::max())
+    {
+        RAND_bytes((unsigned char*)&nNonce, sizeof(nNonce));
+    }
+    return nNonce;
+}
+
 CRPCResultPtr CSnRPCMod::SnRPCStop(CRPCParamPtr param)
 {
     CMvEventRPCRouteStop *pEvent = new CMvEventRPCRouteStop("");
     pEvent->data.ioComplt = &ioComplt;
+    pEvent->data.nNonce = GenNonce();
     if(!pEvent)
     {
         return NULL;
@@ -2123,6 +2135,7 @@ CRPCResultPtr CSnRPCMod::SnRPCGetForkCount(CRPCParamPtr param)
 {
     CMvEventRPCRouteGetForkCount *pEvent = new CMvEventRPCRouteGetForkCount("");
     pEvent->data.ioComplt = &ioComplt;
+    pEvent->data.nNonce = GenNonce();
     if(!pEvent)
     {
         return NULL;
@@ -2132,5 +2145,6 @@ CRPCResultPtr CSnRPCMod::SnRPCGetForkCount(CRPCParamPtr param)
     ioComplt.Reset();
     bool fResult = false;
     ioComplt.WaitForComplete(fResult);
-    return MakeCGetForkCountResultPtr(pService->GetForkCount());
+    CMvRPCRouteGetForkCountRet ret = boost::any_cast<CMvRPCRouteGetForkCountRet>(ioComplt.obj);
+    return MakeCGetForkCountResultPtr(ret.count);
 }

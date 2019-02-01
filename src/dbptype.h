@@ -117,12 +117,14 @@ public:
 
     walleve::CIOCompletion *ioComplt;
     int type;
+    uint64 nNonce;
 
 protected:
     template <typename O>
     void WalleveSerialize(walleve::CWalleveStream& s,O& opt)
     {
         s.Serialize(type,opt);
+        s.Serialize(nNonce, opt);
     }    
 };
 
@@ -158,6 +160,49 @@ public:
     int type;
     std::vector<uint8> vData;
     std::vector<uint8> vRawData;
+};
+
+class CMvRPCRouteRet
+{
+    friend class walleve::CWalleveStream;
+public:
+    int type;
+    uint64 nNonce;
+
+protected:
+    template<typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
+    {
+        s.Serialize(type, opt);
+        s.Serialize(nNonce, opt);
+    }
+};
+
+class CMvRPCRouteStopRet : public CMvRPCRouteRet
+{
+    friend class walleve::CWalleveStream;
+public:
+protected:
+    template<typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
+    {
+        CMvRPCRouteRet::WalleveSerialize(s, opt);
+    }
+};
+
+class CMvRPCRouteGetForkCountRet : public CMvRPCRouteRet
+{
+    friend class walleve::CWalleveStream;
+public:
+    int count;
+
+protected:
+    template<typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
+    {
+        CMvRPCRouteRet::WalleveSerialize(s, opt);
+        s.Serialize(count, opt);
+    }
 };
 
 //
