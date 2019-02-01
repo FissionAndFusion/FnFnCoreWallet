@@ -4,10 +4,6 @@
 
 #include "blockdb.h"
 #include "walleve/stream/datastream.h"
-#include <string>
-#include <iostream>
-#include <fstream>
-#include <iomanip>
 
 using namespace std;
 using namespace multiverse::storage;

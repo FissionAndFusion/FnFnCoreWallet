@@ -202,8 +202,6 @@ public:
     bool ListRollBackTx(const uint256& hashFork,int nMinHeight,std::vector<uint256>& vForkTx);
     bool WalkThroughTx(CWalletDBTxWalker& walker);
     bool ClearTx();
-    bool CheckWalletTx();
-    bool IsWalletTxNull();
 protected:
     bool ListDBTx(int nOffset,int nCount,std::vector<CWalletTx>& vWalletTx);
 protected:

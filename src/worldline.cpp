@@ -47,7 +47,7 @@ bool CWorldLine::WalleveHandleInvoke()
     }
 
     if (!CheckContainer())
-    {assert(0);
+    {
         cntrBlock.Clear();
         WalleveLog("Block container is invalid,try rebuild from block storage\n");
         // Rebuild ... 
@@ -57,7 +57,7 @@ bool CWorldLine::WalleveHandleInvoke()
             WalleveError("Failed to rebuild Block container,reconstruct all\n");
         } 
     }
-    assert(0);
+
     if (cntrBlock.IsEmpty())
     {
         CBlock block;

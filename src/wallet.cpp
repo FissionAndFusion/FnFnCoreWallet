@@ -132,7 +132,7 @@ bool CWallet::WalleveHandleInvoke()
         return false;
     }
 
-    if (!InspectWalletTx())
+    if (!InspectWalletTx(StorageConfig()->nCheckDepth))
     {
         WalleveLog("Failed to inspect wallet transactions\n");
         return false;
@@ -630,7 +630,7 @@ bool CWallet::SyncWalletTx(CTxFilter& txFilter)
     return true;
 }
 
-bool CWallet::InspectWalletTx()
+bool CWallet::InspectWalletTx(int nCheckDepth)
 {
     set<CDestination> setAddr;
     {
