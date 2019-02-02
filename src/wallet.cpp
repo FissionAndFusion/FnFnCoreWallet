@@ -655,18 +655,16 @@ bool CWallet::SyncWalletTx(CTxFilter& txFilter)
 bool CWallet::InspectWalletTx(int nCheckDepth)
 {
     set<CDestination> setAddr;
+    GetDestinations(setAddr);
+    if(setAddr.empty())
     {
-        boost::shared_lock<boost::shared_mutex> rlock(rwKeyStore);
-
-        for(const auto& i : mapKeyStore)
+        if(dbWallet.GetTxCount() == 0)
         {
-            CDestination dest(i.first);
-            setAddr.insert(dest);
+            return true;
         }
-        for(const auto& i : mapTemplatePtr)
+        else
         {
-            CDestination dest(i.first);
-            setAddr.insert(dest);
+            return false;
         }
     }
 
