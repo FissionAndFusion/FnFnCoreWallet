@@ -75,6 +75,28 @@ public:
 };
 
 //////////////////////////////
+// CInspectWtxFilter
+
+class CInspectWtxFilter : public CTxFilter
+{
+public:
+    CInspectWtxFilter(CWallet* pWalletIn,const CDestination& destNew)
+            : CTxFilter(destNew),pWallet(pWalletIn)
+    {
+    }
+    CInspectWtxFilter(CWallet* pWalletIn,const set<CDestination>& setDestIn)
+            : CTxFilter(setDestIn),pWallet(pWalletIn)
+    {
+    }
+    bool FoundTx(const uint256& hashFork,const CAssembledTx& tx)
+    {
+        return pWallet->CompareWtxAndTx(tx);
+    }
+public:
+    CWallet* pWallet;
+};
+
+//////////////////////////////
 // CWallet 
 
 CWallet::CWallet()
@@ -648,26 +670,59 @@ bool CWallet::InspectWalletTx(int nCheckDepth)
         }
     }
 
+    //set of wallet transactions must be equal to set of transactions in the whole block
+    map<uint256, CForkStatus> mapForkStatus;
+    pWorldLine->GetForkStatus(mapForkStatus);
+    for(const auto& it : mapForkStatus)
     {
-        //wallet transactions must be only owned by addresses in the wallet of the node
-        boost::shared_lock<boost::shared_mutex> rlock(rwWalletTx);
-        for(const auto& i : mapWalletTx)
+        const auto& hashFork = it.first;
+        const auto& status = it.second;
+        int nDepth = nCheckDepth;
+        if(nDepth > status.nLastBlockHeight || nDepth <= 0)
         {
-            const std::shared_ptr<CWalletTx>& spWtx = i.second;
-            const CDestination& sendTo = spWtx->sendTo;
-            const CDestination& destIn = spWtx->destIn;
-            if(setAddr.find(sendTo) == setAddr.end() || setAddr.find(destIn) == setAddr.end())
+            nDepth = status.nLastBlockHeight;
+        }
+
+        vector<uint256> vFork;
+        GetWalletTxFork(hashFork, status.nLastBlockHeight - nDepth, vFork);
+        CInspectWtxFilter filter(this, setAddr);
+        for(const auto& it : vFork)
+        {
+            if(!pWorldLine->FilterTx(it, nDepth, filter))   //condition: fork/depth/dest's
             {
                 return false;
             }
         }
-
-        //set of wallet transactions must be equal to set of transactions in the whole block
-        ;
     }
 
     return true;
 }
+
+bool CWallet::CompareWtxAndTx(const CAssembledTx& tx)
+{
+    if(!dbWallet.ExistsTx(tx.GetHash()))
+    {
+        return false;
+    }
+
+    CWalletTx wtx;
+    if(!dbWallet.RetrieveTx(tx.GetHash(), wtx))
+    {
+        return false;
+    }
+
+    if(tx.nTimeStamp != wtx.nTimeStamp || tx.nVersion != wtx.nVersion
+       || tx.nType != wtx.nType || tx.nLockUntil != wtx.nLockUntil
+       || tx.vInput != wtx.vInput || tx.sendTo != wtx.sendTo
+       || tx.nAmount != wtx.nAmount || tx.nTxFee != wtx.nTxFee
+       || tx.nBlockHeight != wtx.nBlockHeight)
+    {
+        return false;
+    }
+
+    return true;
+}
+
 
 bool CWallet::LoadDB()
 {

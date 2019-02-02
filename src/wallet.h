@@ -145,6 +145,7 @@ public:
     /* Resync */
     bool SynchronizeWalletTx(const CDestination& destNew) override;
     bool ResynchronizeWalletTx() override;
+    bool CompareWtxAndTx(const CAssembledTx& tx);
 protected:
     bool WalleveHandleInitialize() override;
     void WalleveHandleDeinitialize() override;

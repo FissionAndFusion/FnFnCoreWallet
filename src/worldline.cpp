@@ -274,6 +274,11 @@ bool CWorldLine::FilterTx(const uint256& hashFork,CTxFilter& filter)
     return cntrBlock.FilterTx(hashFork,filter);
 }
 
+bool CWorldLine::FilterTx(const uint256& hashFork, int nDepth, CTxFilter& filter)
+{
+    return cntrBlock.FilterTx(hashFork, nDepth, filter);
+}
+
 bool CWorldLine::ListForkContext(vector<CForkContext>& vForkCtxt)
 {
     return cntrBlock.ListForkContext(vForkCtxt);

@@ -940,6 +940,51 @@ bool CBlockBase::FilterTx(const uint256& hashFork,CTxFilter& filter)
     return true;
 }
 
+bool CBlockBase::FilterTx(const uint256& hashFork, int nDepth, CTxFilter& filter)
+{
+    CWalleveReadLock rlock(rwAccess);
+
+    boost::shared_ptr<CBlockFork> spFork = GetFork(hashFork);
+    if (spFork == NULL)
+    {
+        return false;
+    }
+
+    CWalleveReadLock rForkLock(spFork->GetRWAccess());
+
+    int nCount = 0;
+    for (CBlockIndex* pIndex = spFork->GetLast(); pIndex != NULL && nCount++ < nDepth; pIndex = pIndex->pPrev)
+    {
+        CBlockEx block;
+        if (!tsBlock.Read(block,pIndex->nFile,pIndex->nOffset))
+        {
+            return false;
+        }
+        int nBlockHeight = pIndex->GetBlockHeight();
+        if (filter.setDest.count(block.txMint.sendTo))
+        {
+            if (!filter.FoundTx(hashFork,CAssembledTx(block.txMint,nBlockHeight)))
+            {
+                return false;
+            }
+        }
+        for (int i = 0; i < block.vtx.size();i++)
+        {
+            CTransaction& tx = block.vtx[i];
+            CTxContxt& ctxt = block.vTxContxt[i];
+
+            if (filter.setDest.count(tx.sendTo) || filter.setDest.count(ctxt.destIn))
+            {
+                if (!filter.FoundTx(hashFork,CAssembledTx(tx,nBlockHeight,ctxt.destIn,ctxt.GetValueIn())))
+                {
+                    return false;
+                }
+            }
+        }
+    }
+    return true;
+}
+
 bool CBlockBase::ListForkContext(std::vector<CForkContext>& vForkCtxt)
 {
     return dbBlock.ListForkContext(vForkCtxt);
