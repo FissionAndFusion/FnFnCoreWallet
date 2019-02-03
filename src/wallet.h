@@ -145,7 +145,8 @@ public:
     /* Resync */
     bool SynchronizeWalletTx(const CDestination& destNew) override;
     bool ResynchronizeWalletTx() override;
-    bool CompareWtxAndTx(const CAssembledTx& tx);
+    bool CompareWithTxOrPool(const CAssembledTx& tx);
+    bool CompareWithPoolOrTx(const CWalletTx& wtx, const std::set<CDestination> setAddr);
 protected:
     bool WalleveHandleInitialize() override;
     void WalleveHandleDeinitialize() override;

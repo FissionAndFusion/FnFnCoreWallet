@@ -80,20 +80,38 @@ public:
 class CInspectWtxFilter : public CTxFilter
 {
 public:
-    CInspectWtxFilter(CWallet* pWalletIn,const CDestination& destNew)
-            : CTxFilter(destNew),pWallet(pWalletIn)
+    CInspectWtxFilter(CWallet* pWalletIn, const CDestination& destNew)
+            : CTxFilter(destNew), pWallet(pWalletIn)
     {
     }
-    CInspectWtxFilter(CWallet* pWalletIn,const set<CDestination>& setDestIn)
-            : CTxFilter(setDestIn),pWallet(pWalletIn)
+    CInspectWtxFilter(CWallet* pWalletIn, const set<CDestination>& setDestIn)
+            : CTxFilter(setDestIn), pWallet(pWalletIn)
     {
     }
-    bool FoundTx(const uint256& hashFork,const CAssembledTx& tx)
+    bool FoundTx(const uint256& hashFork, const CAssembledTx& tx)
     {
-        return pWallet->CompareWtxAndTx(tx);
+        return pWallet->CompareWithTxOrPool(tx);
     }
 public:
     CWallet* pWallet;
+};
+
+//////////////////////////////
+// CInspectDBTxWalker
+
+class CInspectDBTxWalker : public storage::CWalletDBTxWalker
+{
+public:
+    CInspectDBTxWalker(CWallet* pWalletIn, set<CDestination> setDestIn)
+            : pWallet(pWalletIn)
+            , setDest(setDestIn) {}
+    bool Walk(const CWalletTx& wtx)
+    {
+        return pWallet->CompareWithPoolOrTx(wtx, setDest);
+    }
+protected:
+    CWallet* pWallet;
+    set<CDestination> setDest;
 };
 
 //////////////////////////////
@@ -668,7 +686,6 @@ bool CWallet::InspectWalletTx(int nCheckDepth)
         }
     }
 
-    //set of wallet transactions must be equal to set of transactions in the whole block
     map<uint256, CForkStatus> mapForkStatus;
     pWorldLine->GetForkStatus(mapForkStatus);
     for(const auto& it : mapForkStatus)
@@ -683,20 +700,38 @@ bool CWallet::InspectWalletTx(int nCheckDepth)
 
         vector<uint256> vFork;
         GetWalletTxFork(hashFork, status.nLastBlockHeight - nDepth, vFork);
-        CInspectWtxFilter filter(this, setAddr);
+
+        //set of wallet pooled transactions must be equal to set of transactions in txpool
+        CInspectWtxFilter filterPool(this, setAddr);
         for(const auto& it : vFork)
         {
-            if(!pWorldLine->FilterTx(it, nDepth, filter))   //condition: fork/depth/dest's
+            if(!pTxPool->FilterTx(it, filterPool))   //condition: fork/dest's
+            {
+                return false;
+            }
+        }
+
+        //set of wallet transactions must be equal to set of transactions in the whole block
+        CInspectWtxFilter filterTx(this, setAddr);
+        for(const auto& it : vFork)
+        {
+            if(!pWorldLine->FilterTx(it, nDepth, filterTx))   //condition: fork/depth/dest's
             {
                 return false;
             }
         }
     }
 
+    CInspectDBTxWalker walker(this, setAddr);
+    if(!dbWallet.WalkThroughTx(walker))
+    {
+        return false;
+    }
+
     return true;
 }
 
-bool CWallet::CompareWtxAndTx(const CAssembledTx& tx)
+bool CWallet::CompareWithTxOrPool(const CAssembledTx& tx)
 {
     if(!dbWallet.ExistsTx(tx.GetHash()))
     {
@@ -721,6 +756,55 @@ bool CWallet::CompareWtxAndTx(const CAssembledTx& tx)
     return true;
 }
 
+bool CWallet::CompareWithPoolOrTx(const CWalletTx& wtx, const std::set<CDestination> setAddr)
+{
+    //wallet transactions must be only owned by addresses in the wallet of the node
+    if(!setAddr.count(wtx.destIn) || !setAddr.count(wtx.sendTo))
+    {
+        return false;
+    }
+
+    if(wtx.nBlockHeight < 0)
+    {//compare wtx with txpool
+        if(!pTxPool->Exists(wtx.txid))
+        {
+            return false;
+        }
+        CTransaction tx;
+        if(!pTxPool->Get(wtx.txid, tx))
+        {
+            return false;
+        }
+        if(tx.nTimeStamp != wtx.nTimeStamp || tx.nVersion != wtx.nVersion
+           || tx.nType != wtx.nType || tx.nLockUntil != wtx.nLockUntil
+           || tx.vInput != wtx.vInput || tx.sendTo != wtx.sendTo
+           || tx.nAmount != wtx.nAmount || tx.nTxFee != wtx.nTxFee)
+        {
+            return false;
+        }
+    }
+    else
+    {//compare wtx with vtx of block
+        if(!pWorldLine->ExistsTx(wtx.txid))
+        {
+            return false;
+        }
+        CTransaction tx;
+        if(!pWorldLine->GetTransaction(wtx.txid, tx))
+        {
+            return false;
+        }
+        if(tx.nTimeStamp != wtx.nTimeStamp || tx.nVersion != wtx.nVersion
+           || tx.nType != wtx.nType || tx.nLockUntil != wtx.nLockUntil
+           || tx.vInput != wtx.vInput || tx.sendTo != wtx.sendTo
+           || tx.nAmount != wtx.nAmount || tx.nTxFee != wtx.nTxFee)
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
 
 bool CWallet::LoadDB()
 {
