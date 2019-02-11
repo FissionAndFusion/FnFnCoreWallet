@@ -11,6 +11,8 @@
 using namespace std;
 using namespace walleve;
 using namespace multiverse::storage;
+
+#define UNSPENT_FLUSH_INTERVAL                  (60)
     
 //////////////////////////////
 // CForkUnspentDB
@@ -31,6 +33,7 @@ CForkUnspentDB::CForkUnspentDB(const boost::filesystem::path& pathDB)
 CForkUnspentDB::~CForkUnspentDB()
 {
     Close();
+    dblCache.Clear();
 }
 
 bool CForkUnspentDB::RemoveAll()
@@ -39,27 +42,27 @@ bool CForkUnspentDB::RemoveAll()
     {
         return false;
     }
+    dblCache.Clear();
     return true;
 }
 
 bool CForkUnspentDB::UpdateUnspent(const vector<CTxUnspent>& vAddNew,const vector<CTxOutPoint>& vRemove)
 {
-    if (!TxnBegin())
-    {
-        return false;
-    }
+    walleve::CWalleveWriteLock wlock(rwUpper);
+
+    MapType& mapUpper = dblCache.GetUpperMap();
 
     BOOST_FOREACH(const CTxUnspent& unspent,vAddNew)
     {
-        Write(static_cast<const CTxOutPoint&>(unspent),unspent.output);
+        mapUpper[static_cast<const CTxOutPoint&>(unspent)] = unspent.output;
     }
 
     BOOST_FOREACH(const CTxOutPoint& txout,vRemove)
     {
-        Erase(txout);
+        mapUpper[txout].SetNull();
     }
 
-    return TxnCommit();
+    return true;
 }
 
 bool CForkUnspentDB::WriteUnspent(const CTxOutPoint& txout,const CTxOutput& output)
@@ -69,6 +72,40 @@ bool CForkUnspentDB::WriteUnspent(const CTxOutPoint& txout,const CTxOutput& outp
 
 bool CForkUnspentDB::ReadUnspent(const CTxOutPoint& txout,CTxOutput& output)
 {
+    {
+        walleve::CWalleveReadLock rlock(rwUpper);
+
+        MapType& mapUpper = dblCache.GetUpperMap();
+        typename MapType::iterator it = mapUpper.find(txout);
+        if (it != mapUpper.end())
+        {
+            if (!(*it).second.IsNull())
+            {
+                output = (*it).second;
+                return true;
+            }
+            return false;
+        }
+    }
+
+    if (rwLower.ReadTryLock())
+    {
+        MapType& mapLower = dblCache.GetLowerMap();
+        typename MapType::iterator it = mapLower.find(txout);
+        if (it != mapLower.end())
+        {
+            if (!(*it).second.IsNull())
+            {
+                output = (*it).second;
+                rwLower.ReadUnlock();
+                return true;
+            }
+            rwLower.ReadUnlock();
+            return false;
+        }
+        rwLower.ReadUnlock();
+    }
+
     return Read(txout,output);
 }
 
@@ -81,11 +118,15 @@ bool CForkUnspentDB::Copy(CForkUnspentDB& dbUnspent)
 
     try
     {
+        walleve::CWalleveReadLock rulock(rwUpper);
+        walleve::CWalleveReadLock rdlock(rwLower);
+
         if (!WalkThrough(boost::bind(&CForkUnspentDB::CopyWalker,this,_1,_2,boost::ref(dbUnspent))))
         {
             return false;
         }
-        
+
+        dbUnspent.SetCache(dblCache); 
     }
     catch (exception& e)
     {
@@ -99,9 +140,41 @@ bool CForkUnspentDB::WalkThroughUnspent(CForkUnspentDBWalker& walker)
 {
     try
     {
-        if (!WalkThrough(boost::bind(&CForkUnspentDB::LoadWalker,this,_1,_2,boost::ref(walker))))
+        walleve::CWalleveReadLock rulock(rwUpper);
+        walleve::CWalleveReadLock rdlock(rwLower);
+
+        MapType& mapUpper = dblCache.GetUpperMap();
+        MapType& mapLower = dblCache.GetLowerMap();
+
+        if (!WalkThrough(boost::bind(&CForkUnspentDB::LoadWalker,this,_1,_2,boost::ref(walker),
+                                     boost::ref(mapUpper),boost::ref(mapLower))))
         {
             return false;
+        }
+
+        for (MapType::iterator it = mapLower.begin();it != mapLower.end();++it)
+        {
+            const CTxOutPoint& txout = (*it).first;
+            const CTxOutput& output  = (*it).second;
+            if (!mapUpper.count(txout) && !output.IsNull())
+            {
+                if (!walker.Walk(txout,output))
+                {
+                    return false;
+                }
+            }
+        }
+        for (MapType::iterator it = mapUpper.begin();it != mapUpper.end();++it)
+        {
+            const CTxOutPoint& txout = (*it).first;
+            const CTxOutput& output  = (*it).second;
+            if (!output.IsNull())
+            {
+                if (!walker.Walk(txout,output))
+                {
+                    return false;
+                }
+            }
         }
     }
     catch (exception& e)
@@ -124,18 +197,81 @@ bool CForkUnspentDB::CopyWalker(CWalleveBufStream& ssKey, CWalleveBufStream& ssV
 }
 
 bool CForkUnspentDB::LoadWalker(CWalleveBufStream& ssKey, CWalleveBufStream& ssValue,
-                                CForkUnspentDBWalker& walker)
+                                CForkUnspentDBWalker& walker,const MapType& mapUpper,const MapType& mapLower)
 {
     CTxOutPoint txout;
     CTxOutput output;
     ssKey >> txout;
+
+    if (mapUpper.count(txout) || mapLower.count(txout))
+    {
+        return true;
+    }
+
     ssValue >> output;
-    
+     
     return walker.Walk(txout,output);
+}
+
+bool CForkUnspentDB::Flush()
+{
+    walleve::CWalleveUpgradeLock ulock(rwLower);
+
+    vector<pair<CTxOutPoint,CTxOutput> > vAddNew;
+    vector<CTxOutPoint> vRemove;
+
+    MapType& mapLower = dblCache.GetLowerMap();
+    for (typename MapType::iterator it = mapLower.begin(); it != mapLower.end(); ++it)
+    {
+        CTxOutput& output = (*it).second;
+        if (!output.IsNull())
+        {
+            vAddNew.push_back(*it);
+        }
+        else
+        {
+            vRemove.push_back((*it).first);
+        }
+    }
+
+    if (!TxnBegin())
+    {
+        return false;
+    }
+
+    for (int i = 0;i < vAddNew.size();i++)
+    {
+        Write(vAddNew[i].first,vAddNew[i].second);
+    }
+
+    for (int i = 0;i < vRemove.size();i++)
+    {
+        Erase(vRemove[i]);
+    }
+
+    if (!TxnCommit())
+    {
+        return false;
+    }
+
+    ulock.Upgrade();
+
+    {
+        walleve::CWalleveWriteLock wlock(rwUpper);
+        dblCache.Flip();
+    }
+
+    return true;
 }
 
 //////////////////////////////
 // CUnspentDB
+
+CUnspentDB::CUnspentDB()
+{
+    pThreadFlush = NULL;
+    fStopFlush = true;
+}
 
 bool CUnspentDB::Initialize(const boost::filesystem::path& pathData)
 {
@@ -151,18 +287,52 @@ bool CUnspentDB::Initialize(const boost::filesystem::path& pathData)
         return false;
     }
 
+    fStopFlush = false;
+    pThreadFlush = new boost::thread(boost::bind(&CUnspentDB::FlushProc,this));
+    if (pThreadFlush == NULL)
+    {
+        fStopFlush = true;
+        return false;
+    }
+
     return true;
 }
 
 void CUnspentDB::Deinitialize()
 {
-    mapUnspenDB.clear();
+    if (pThreadFlush)
+    {
+        {
+            boost::unique_lock<boost::mutex> lock(mtxFlush);
+            fStopFlush = true;
+        }
+        condFlush.notify_all();
+        pThreadFlush->join();
+        delete pThreadFlush;
+        pThreadFlush = NULL;
+    }
+    
+    {
+        CWalleveWriteLock wlock(rwAccess);
+
+        for (map<uint256,std::shared_ptr<CForkUnspentDB> >::iterator it = mapUnspentDB.begin();
+             it != mapUnspentDB.end();++it)
+        {
+            std::shared_ptr<CForkUnspentDB> spUnspent = (*it).second;
+
+            spUnspent->Flush();
+            spUnspent->Flush();
+        }
+        mapUnspentDB.clear();
+    }
 }
 
-bool CUnspentDB::AddNew(const uint256& hashFork)
+bool CUnspentDB::AddNewFork(const uint256& hashFork)
 {
-    map<uint256,std::shared_ptr<CForkUnspentDB> >::iterator it = mapUnspenDB.find(hashFork);
-    if (it != mapUnspenDB.end())
+    CWalleveWriteLock wlock(rwAccess);
+    
+    map<uint256,std::shared_ptr<CForkUnspentDB> >::iterator it = mapUnspentDB.find(hashFork);
+    if (it != mapUnspentDB.end())
     {
         return true;
     }
@@ -172,17 +342,19 @@ bool CUnspentDB::AddNew(const uint256& hashFork)
     {
         return false;
     }
-    mapUnspenDB.insert(make_pair(hashFork,spUnspent));
+    mapUnspentDB.insert(make_pair(hashFork,spUnspent));
     return true;
 }
 
-bool CUnspentDB::Remove(const uint256& hashFork)
+bool CUnspentDB::RemoveFork(const uint256& hashFork)
 {
-    map<uint256,std::shared_ptr<CForkUnspentDB> >::iterator it = mapUnspenDB.find(hashFork);
-    if (it != mapUnspenDB.end())
+    CWalleveWriteLock wlock(rwAccess);
+
+    map<uint256,std::shared_ptr<CForkUnspentDB> >::iterator it = mapUnspentDB.find(hashFork);
+    if (it != mapUnspentDB.end())
     {
         (*it).second->RemoveAll();
-        mapUnspenDB.erase(it);
+        mapUnspentDB.erase(it);
         return true;
     }
     return false;
@@ -190,19 +362,23 @@ bool CUnspentDB::Remove(const uint256& hashFork)
 
 void CUnspentDB::Clear()
 {
-    map<uint256,std::shared_ptr<CForkUnspentDB> >::iterator it = mapUnspenDB.begin();
-    while (it != mapUnspenDB.end())
+    CWalleveWriteLock wlock(rwAccess);
+
+    map<uint256,std::shared_ptr<CForkUnspentDB> >::iterator it = mapUnspentDB.begin();
+    while (it != mapUnspentDB.end())
     {
         (*it).second->RemoveAll();
-        mapUnspenDB.erase(it++);
+        mapUnspentDB.erase(it++);
     }
 }
 
 bool CUnspentDB::Update(const uint256& hashFork,
                         const vector<CTxUnspent>& vAddNew,const vector<CTxOutPoint>& vRemove)
 {
-    map<uint256,std::shared_ptr<CForkUnspentDB> >::iterator it = mapUnspenDB.find(hashFork);
-    if (it != mapUnspenDB.end())
+    CWalleveReadLock rlock(rwAccess);
+
+    map<uint256,std::shared_ptr<CForkUnspentDB> >::iterator it = mapUnspentDB.find(hashFork);
+    if (it != mapUnspentDB.end())
     {
         return (*it).second->UpdateUnspent(vAddNew,vRemove);
     }
@@ -211,8 +387,10 @@ bool CUnspentDB::Update(const uint256& hashFork,
 
 bool CUnspentDB::Retrieve(const uint256& hashFork,const CTxOutPoint& txout,CTxOutput& output)
 {
-    map<uint256,std::shared_ptr<CForkUnspentDB> >::iterator it = mapUnspenDB.find(hashFork);
-    if (it != mapUnspenDB.end())
+    CWalleveReadLock rlock(rwAccess);
+
+    map<uint256,std::shared_ptr<CForkUnspentDB> >::iterator it = mapUnspentDB.find(hashFork);
+    if (it != mapUnspentDB.end())
     {
         return (*it).second->ReadUnspent(txout,output);
     }
@@ -221,14 +399,16 @@ bool CUnspentDB::Retrieve(const uint256& hashFork,const CTxOutPoint& txout,CTxOu
 
 bool CUnspentDB::Copy(const uint256& srcFork,const uint256& destFork)
 {
-    map<uint256,std::shared_ptr<CForkUnspentDB> >::iterator itSrc = mapUnspenDB.find(srcFork);
-    if (itSrc == mapUnspenDB.end())
+    CWalleveReadLock rlock(rwAccess);
+
+    map<uint256,std::shared_ptr<CForkUnspentDB> >::iterator itSrc = mapUnspentDB.find(srcFork);
+    if (itSrc == mapUnspentDB.end())
     {
         return false;
     }
 
-    map<uint256,std::shared_ptr<CForkUnspentDB> >::iterator itDest = mapUnspenDB.find(destFork);
-    if (itDest == mapUnspenDB.end())
+    map<uint256,std::shared_ptr<CForkUnspentDB> >::iterator itDest = mapUnspentDB.find(destFork);
+    if (itDest == mapUnspentDB.end())
     {
         return false;
     }
@@ -238,10 +418,50 @@ bool CUnspentDB::Copy(const uint256& srcFork,const uint256& destFork)
 
 bool CUnspentDB::WalkThrough(const uint256& hashFork,CForkUnspentDBWalker& walker)
 {
-    map<uint256,std::shared_ptr<CForkUnspentDB> >::iterator it = mapUnspenDB.find(hashFork);
-    if (it != mapUnspenDB.end())
+    CWalleveReadLock rlock(rwAccess);
+
+    map<uint256,std::shared_ptr<CForkUnspentDB> >::iterator it = mapUnspentDB.find(hashFork);
+    if (it != mapUnspentDB.end())
     {
         return (*it).second->WalkThroughUnspent(walker);
     }
     return false;
+}
+
+void CUnspentDB::FlushProc()
+{
+    boost::system_time timeout = boost::get_system_time();
+
+    boost::unique_lock<boost::mutex> lock(mtxFlush);
+    while (!fStopFlush)
+    {
+        timeout += boost::posix_time::seconds(UNSPENT_FLUSH_INTERVAL);
+
+        while (!fStopFlush)
+        {
+            if (!condFlush.timed_wait(lock,timeout))
+            {
+                break;
+            }
+        }
+
+        if (!fStopFlush)
+        {
+            vector<std::shared_ptr<CForkUnspentDB> > vUnspentDB;
+            vUnspentDB.reserve(mapUnspentDB.size());
+            {
+                CWalleveReadLock rlock(rwAccess);
+
+                for (map<uint256,std::shared_ptr<CForkUnspentDB> >::iterator it = mapUnspentDB.begin();
+                     it != mapUnspentDB.end();++it)
+                {
+                    vUnspentDB.push_back((*it).second);
+                }
+            }
+            for (int i = 0;i < vUnspentDB.size();i++)
+            {
+                vUnspentDB[i]->Flush();
+            }
+        }
+    }
 }

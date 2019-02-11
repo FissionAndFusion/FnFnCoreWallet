@@ -6,8 +6,8 @@
 
 using namespace std;
 using namespace boost::filesystem;
-using namespace multiverse::storage;
 using namespace walleve;
+using namespace multiverse::storage;
 
 //////////////////////////////
 // CTimeSeriesBase
@@ -53,7 +53,7 @@ bool CTimeSeriesBase::CheckDiskSpace()
 const std::string CTimeSeriesBase::FileName(uint32 nFile)
 {
     ostringstream oss;
-    oss << strPrefix << "_" << setfill('0') << setw(4) << nFile << ".dat";
+    oss << strPrefix << "_" << setfill('0') << setw(6) << nFile << ".dat";
     return oss.str();
 }
 

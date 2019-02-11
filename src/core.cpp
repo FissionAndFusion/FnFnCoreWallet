@@ -271,9 +271,33 @@ MvErr CMvCoreProtocol::VerifyBlock(const CBlock& block,CBlockIndex* pIndexPrev)
 
 MvErr CMvCoreProtocol::VerifyBlockTx(const CTransaction& tx,const CTxContxt& txContxt,CBlockIndex* pIndexPrev)
 {
-    (void)tx;
-    (void)txContxt;
-    (void)pIndexPrev;
+    const CDestination& destIn = txContxt.destIn;
+    int64 nValueIn = 0;
+    BOOST_FOREACH(const CTxInContxt& inctxt,txContxt.vin)
+    {
+        if (inctxt.nTxTime > tx.nTimeStamp)
+        {
+            return DEBUG(MV_ERR_TRANSACTION_INPUT_INVALID,"tx time is ahead of input tx\n");
+        }
+        if (inctxt.nLockUntil != 0 && inctxt.nLockUntil < pIndexPrev->GetBlockHeight())
+        {
+            return DEBUG(MV_ERR_TRANSACTION_INPUT_INVALID,"input is still locked\n");
+        }
+        nValueIn += inctxt.nAmount;
+    }
+
+    if (!MoneyRange(nValueIn))
+    {
+        return DEBUG(MV_ERR_TRANSACTION_INPUT_INVALID,"valuein invalid %ld\n",nValueIn);
+    }
+    if (nValueIn < tx.nAmount + tx.nTxFee)
+    {
+        return DEBUG(MV_ERR_TRANSACTION_INPUT_INVALID,"valuein is not enough (%ld : %ld)\n",nValueIn,tx.nAmount + tx.nTxFee);
+    }
+    if (!destIn.VerifySignature(tx.GetSignatureHash(),tx.vchSig))
+    {
+        return DEBUG(MV_ERR_TRANSACTION_SIGNATURE_INVALID,"invalid signature\n");
+    }
     return MV_OK;
 }
 

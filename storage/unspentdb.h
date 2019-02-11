@@ -5,8 +5,10 @@
 #ifndef  MULTIVERSE_UNSPENTDB_H
 #define  MULTIVERSE_UNSPENTDB_H
 
-#include "walleve/walleve.h"
 #include "transaction.h"
+#include "walleve/walleve.h"
+
+#include <boost/thread/thread.hpp>
 
 namespace multiverse
 {
@@ -21,6 +23,35 @@ public:
 
 class CForkUnspentDB : public walleve::CKVDB
 {
+    typedef std::map<CTxOutPoint,CTxOutput> MapType;
+    class CDblMap
+    {
+    public:
+        CDblMap() : nIdxUpper(0) {}
+        MapType& GetUpperMap()
+        {
+            return mapCache[nIdxUpper];
+        }
+        MapType& GetLowerMap()
+        {
+            return mapCache[nIdxUpper ^ 1];
+        }
+        void Flip()
+        {
+            MapType& mapLower = mapCache[nIdxUpper ^ 1];
+            mapLower.clear();
+            nIdxUpper = nIdxUpper ^ 1;
+        }
+        void Clear()
+        {
+            mapCache[0].clear();
+            mapCache[1].clear();
+            nIdxUpper = 0;
+        }
+    protected:
+        MapType mapCache[2];
+        int nIdxUpper;
+    };
 public:
     CForkUnspentDB(const boost::filesystem::path& pathDB);
     ~CForkUnspentDB();
@@ -29,22 +60,29 @@ public:
     bool WriteUnspent(const CTxOutPoint& txout,const CTxOutput& output);
     bool ReadUnspent(const CTxOutPoint& txout,CTxOutput& output);
     bool Copy(CForkUnspentDB& dbUnspent);
-    bool WalkThroughUnspent(CForkUnspentDBWalker& walker); 
+    void SetCache(const CDblMap& dblCacheIn) { dblCache = dblCacheIn; }
+    bool WalkThroughUnspent(CForkUnspentDBWalker& walker);
+    bool Flush();
 protected:
     bool CopyWalker(walleve::CWalleveBufStream& ssKey, walleve::CWalleveBufStream& ssValue,
                     CForkUnspentDB& dbUnspent);
     bool LoadWalker(walleve::CWalleveBufStream& ssKey, walleve::CWalleveBufStream& ssValue,
-                    CForkUnspentDBWalker& walker);
+                    CForkUnspentDBWalker& walker,const MapType& mapUpper,const MapType& mapLower);
+protected:
+    walleve::CWalleveRWAccess rwUpper;
+    walleve::CWalleveRWAccess rwLower;    
+    CDblMap dblCache;
 };
 
 class CUnspentDB
 {
 public:
+    CUnspentDB();
     bool Initialize(const boost::filesystem::path& pathData);
     void Deinitialize();
-    bool Exists(const uint256& hashFork) { return (!!mapUnspenDB.count(hashFork)); }
-    bool AddNew(const uint256& hashFork);
-    bool Remove(const uint256& hashFork);
+    bool Exists(const uint256& hashFork) { return (!!mapUnspentDB.count(hashFork)); }
+    bool AddNewFork(const uint256& hashFork);
+    bool RemoveFork(const uint256& hashFork);
     void Clear();
     bool Update(const uint256& hashFork,
                 const std::vector<CTxUnspent>& vAddNew,const std::vector<CTxOutPoint>& vRemove);
@@ -52,8 +90,16 @@ public:
     bool Copy(const uint256& srcFork,const uint256& destFork);
     bool WalkThrough(const uint256& hashFork,CForkUnspentDBWalker& walker);
 protected:
+    void FlushProc();
+protected:
     boost::filesystem::path pathUnspent;
-    std::map<uint256,std::shared_ptr<CForkUnspentDB> > mapUnspenDB;
+    walleve::CWalleveRWAccess rwAccess;
+    std::map<uint256,std::shared_ptr<CForkUnspentDB> > mapUnspentDB;
+
+    boost::mutex mtxFlush;
+    boost::condition_variable condFlush;
+    boost::thread* pThreadFlush;
+    bool fStopFlush;
 };
 
 } // namespace storage

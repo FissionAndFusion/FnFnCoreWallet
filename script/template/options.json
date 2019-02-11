@@ -344,54 +344,6 @@
     ],
    
     "CMvStorageConfigOption": [
-        {
-            "name": "strDBHost",
-            "type": "string",
-            "opt": "dbhost",
-            "default": "localhost",
-            "format": "-dbhost=<host>",
-            "desc": "Set mysql host (default: localhost)"
-        },
-        {
-            "name": "strDBName",
-            "type": "string",
-            "opt": "dbname",
-            "default": "multiverse",
-            "format": "-dbname=<name>",
-            "desc": "Set mysql database name (default: multiverse)"
-        },
-        {
-            "name": "strDBUser",
-            "type": "string",
-            "opt": "dbuser",
-            "default": "multiverse",
-            "format": "-dbuser=<user>",
-            "desc": "Set mysql user's name (default: multiverse)"
-        },
-        {
-            "name": "strDBPass",
-            "type": "string",
-            "opt": "dbpass",
-            "default": "multiverse",
-            "format": "-dbpass=<pwd>",
-            "desc": "Set mysql user's password (default: multiverse)"
-        },
-        {
-            "name": "nDBPort",
-            "type": "int",
-            "opt": "dbport",
-            "default": 0,
-            "format": "-dbport=<n>",
-            "desc": "Set mysql port (default: 0)"
-        },
-        {
-            "name": "nDBConn",
-            "type": "int",
-            "opt": "dbconn",
-            "default": "DEFAULT_DB_CONNECTION",
-            "format": "-dbconn=<n>",
-            "desc": "Set mysql connections count (default: 8)"
-        }
     ],
     "CMvNetworkConfigOption": [
         {
@@ -447,22 +399,6 @@
             "opt": "connect",
             "format": "-connect=<ip>",
             "desc": "Connect only to the specified node"
-        },
-        {
-            "name": "nDNSeedPort",
-            "type": "int",
-            "opt": "dnseedport",
-            "default": "DEFAULT_DNSEED_PORT",
-            "format": "-dnseedport=<port>",
-            "desc": "Listen for dnseed connections on <port> (default: 6816)"
-        },
-        {
-            "name": "nMaxTimes2ConnectFail",
-            "type": "unsigned int",
-            "opt": "dnseedmaxtimes",
-            "default": "DNSEED_DEFAULT_MAX_TIMES_CONNECT_FAIL",
-            "format": "-dnseedmaxtimes=<times>",
-            "desc": "Max <times> dnseed attempt to connect node"
         },
         {
             "name": "strTrustAddress",

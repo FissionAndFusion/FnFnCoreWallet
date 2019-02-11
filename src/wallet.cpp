@@ -12,32 +12,21 @@ using namespace multiverse;
 #define MAX_SIGNATURE_SIZE         2048
 
 //////////////////////////////
-// CDBKeyWalker
+// CDBAddressWalker
  
-class CDBKeyWalker : public storage::CWalletDBKeyWalker
+class CDBAddrWalker : public storage::CWalletDBAddrWalker
 {
 public:
-    CDBKeyWalker(CWallet* pWalletIn) : pWallet(pWalletIn) {}
-    bool Walk(const uint256& pubkey,int version,const crypto::CCryptoCipher& cipher)
+    CDBAddrWalker(CWallet* pWalletIn) : pWallet(pWalletIn) {}
+    bool WalkPubkey(const crypto::CPubKey& pubkey,int version,const crypto::CCryptoCipher& cipher)
     {
         crypto::CKey key;
         key.Load(pubkey,version,cipher);
         return pWallet->LoadKey(key);
     }
-protected:
-    CWallet* pWallet;
-};
-
-//////////////////////////////
-// CDBTemplateWalker
- 
-class CDBTemplateWalker : public storage::CWalletDBTemplateWalker
-{
-public:
-    CDBTemplateWalker(CWallet* pWalletIn) : pWallet(pWalletIn) {}
-    bool Walk(const uint256& tid,uint16 nType,const std::vector<unsigned char>& vchData)
+    bool WalkTemplate(const CTemplateId& tid,const std::vector<unsigned char>& vchData)
     {
-        CTemplatePtr ptr = CTemplateGeneric::CreateTemplatePtr(nType,vchData);
+        CTemplatePtr ptr = CTemplateGeneric::CreateTemplatePtr(tid.GetType(),vchData);
         if (ptr != NULL && tid == ptr->GetTemplateId())
         {
             return  pWallet->LoadTemplate(ptr);
@@ -131,9 +120,7 @@ void CWallet::WalleveHandleDeinitialize()
 
 bool CWallet::WalleveHandleInvoke()
 {
-    storage::CMvDBConfig dbConfig(StorageConfig()->strDBHost,StorageConfig()->nDBPort,
-                                  StorageConfig()->strDBName,StorageConfig()->strDBUser,StorageConfig()->strDBPass);
-    if (!dbWallet.Initialize(dbConfig))
+    if (!dbWallet.Initialize(WalleveConfig()->pathData / "wallet"))
     {
         WalleveError("Failed to initialize wallet database\n");
         return false;
@@ -178,7 +165,7 @@ bool CWallet::AddKey(const crypto::CKey& key)
         return false;
     }
 
-    if (!dbWallet.AddNewKey(key.GetPubKey(),key.GetVersion(),key.GetCipher()))
+    if (!dbWallet.UpdateKey(key.GetPubKey(),key.GetVersion(),key.GetCipher()))
     {
         mapKeyStore.erase(key.GetPubKey());
         WalleveWarn("AddKey : failed to save key\n");
@@ -386,7 +373,7 @@ bool CWallet::AddTemplate(CTemplatePtr& ptr)
         {
             vector<unsigned char> vchData;
             ptr->GetTemplateData(vchData);
-            return dbWallet.AddNewTemplate(tid,ptr->GetTemplateType(),vchData);
+            return dbWallet.UpdateTemplate(tid,vchData);
         }
     }
     return false;
@@ -641,19 +628,11 @@ bool CWallet::LoadDB()
 {
     {
         boost::unique_lock<boost::shared_mutex> wlock(rwKeyStore);
+
+        CDBAddrWalker walker(this);
+        if (!dbWallet.WalkThroughAddress(walker))
         {
-            CDBKeyWalker walker(this);
-            if (!dbWallet.WalkThroughKey(walker))
-            {
-                return false;
-            }
-        }
-        {
-            CDBTemplateWalker walker(this);
-            if (!dbWallet.WalkThroughTemplate(walker))
-            {
-                return false;
-            }
+            return false;
         }
     }
 

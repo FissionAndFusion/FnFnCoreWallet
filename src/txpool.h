@@ -6,7 +6,7 @@
 #define  MULTIVERSE_TXPOOL_H
 
 #include "mvbase.h"
-#include "txpooldb.h"
+#include "txpooldata.h"
 
 namespace multiverse
 {
@@ -172,13 +172,13 @@ public:
                         std::vector<CTransaction>& vtx,int64& nTotalTxFee) override;
     bool FetchInputs(const uint256& hashFork,const CTransaction& tx,std::vector<CTxOutput>& vUnspent) override;
     bool SynchronizeWorldLine(const CWorldLineUpdate& update,CTxSetChange& change) override;
-    bool LoadTx(const uint256& txid,const uint256& hashFork,const CAssembledTx& tx);
 protected:
     bool WalleveHandleInitialize() override;
     void WalleveHandleDeinitialize() override;
     bool WalleveHandleInvoke() override;
     void WalleveHandleHalt() override;
-    bool LoadDB();
+    bool LoadData();
+    bool SaveData();
     MvErr AddNew(CTxPoolView& txView,const uint256& txid,const CTransaction& tx,const uint256& hashFork,int nForkHeight);
     std::size_t GetSequenceNumber()
     {
@@ -189,7 +189,7 @@ protected:
         return ++nLastSequenceNumber;
     }
 protected:
-    storage::CTxPoolDB dbTxPool;
+    storage::CTxPoolData datTxPool;
     mutable boost::shared_mutex rwAccess;
     ICoreProtocol* pCoreProtocol;
     IWorldLine* pWorldLine;
