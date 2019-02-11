@@ -1492,16 +1492,6 @@ bool CDbpService::IsThisNodeData(const uint256& hashFork, uint64 nNonce, const u
 
 //rpc route
 
-void CDbpService::InsertQueCount(uint64 nNonce, boost::any obj)
-{
-    if(queCount.size() > 100)
-    {
-        queCount.pop_back();
-    }
-    std::pair<uint64, boost::any> pair(nNonce, obj);
-    queCount.push_front(pair);
-}
-
 void CDbpService::RPCRouteRootHandle(int type, CMvRPCRoute* data, CMvRPCRouteRet* ret)
 {
     if (type == CMvRPCRoute::DBP_RPCROUTE_STOP && ret == NULL)
@@ -1659,6 +1649,57 @@ void CDbpService::RPCRouteForkHandle(int type, CMvRPCRoute* data, CMvRPCRouteRet
     }
 }
 
+void CDbpService::RPCStopRootHandle(CMvRPCRouteStop* data, CMvRPCRouteStopRet* ret)
+{
+    if (ret == NULL)
+    {
+        if (sessionCount == 0 && pIoComplt != NULL)
+        {
+            pIoComplt->Completed(false);
+            pService->Shutdown();
+        }
+    }
+}
+
+void CDbpService::RPCStopForkHandle(CMvRPCRouteStop* data, CMvRPCRouteStopRet* ret)
+{
+    if (ret == NULL)
+    {
+        CMvRPCRouteStop stop = *data;
+        walleve::CWalleveBufStream ss;
+        ss << stop;
+        std::vector<uint8> vRawData(ss.GetData(), ss.GetData() + ss.GetSize());
+        
+        if (sessionCount == 0 && pIoComplt == NULL)
+        {
+            CMvRPCRouteResult result;
+            result.type = CMvRPCRoute::DBP_RPCROUTE_STOP;
+            result.vRawData = vRawData;
+            SendRPCResult(result);
+            pService->Shutdown();
+        }
+    }
+}
+
+void CDbpService::InsertQueCount(uint64 nNonce, boost::any obj)
+{
+    if(queCount.size() > 100)
+    {
+        queCount.pop_back();
+    }
+    std::pair<uint64, boost::any> pair(nNonce, obj);
+    queCount.push_front(pair);
+}
+
+void CDbpService::SendRPCResult(CMvRPCRouteResult& result)
+{
+    CMvEventRPCRouteResult event(""); 
+    event.data.type = result.type;
+    event.data.vData = result.vData;
+    event.data.vRawData = result.vRawData;
+    pDbpClient->DispatchEvent(&event);
+}
+
 void CDbpService::PushRPC(std::vector<uint8>& data, int type)
 {
     const auto& allIds = mapTopicIds[RPC_CMD_TOPIC];
@@ -1684,7 +1725,6 @@ void CDbpService::InitSessionCount()
     {
         setSession.insert(pos.second);
     }
-
     sessionCount = setSession.size();
 }
 
@@ -1705,7 +1745,7 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteStop& event)
         return true;
     }
 
-    RPCRouteRootHandle(CMvRPCRoute::DBP_RPCROUTE_STOP, &event.data, NULL);
+    RPCStopRootHandle(&event.data, NULL);
     return true;
 }
 
@@ -1727,17 +1767,8 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetForkCount& event)
         return true;
     }
 
-    RPCRouteRootHandle(CMvRPCRoute::DBP_RPCROUTE_GET_FORK_COUNT, &event.data, NULL);
+    RPCRouteRootHandle(CMvRPCRoute::DBP_RPCROUTE_GET_FORK_COUNT, &event.data, NULL); //root
     return true;
-}
-
-void CDbpService::SendRPCResult(CMvRPCRouteResult& result)
-{
-    CMvEventRPCRouteResult event(""); 
-    event.data.type = result.type;
-    event.data.vData = result.vData;
-    event.data.vRawData = result.vRawData;
-    pDbpClient->DispatchEvent(&event);
 }
 
 bool CDbpService::HandleEvent(CMvEventRPCRouteAdded& event)
@@ -1759,7 +1790,7 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteAdded& event)
             PushRPC(event.data.vData, event.data.type);
             return true;
         }
-        RPCRouteForkHandle(event.data.type, &stop, NULL);
+        RPCStopForkHandle(&stop, NULL);
     }
 
     if(event.data.type == CMvRPCRoute::DBP_RPCROUTE_GET_FORK_COUNT)
@@ -1775,7 +1806,7 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteAdded& event)
             PushRPC(event.data.vData, event.data.type);
             return true;
         }
-        RPCRouteForkHandle(event.data.type, &getForkCount, NULL);
+        RPCRouteForkHandle(event.data.type, &getForkCount, NULL); //fork -leaf
     }
     return true;
 }
@@ -1798,13 +1829,12 @@ void CDbpService::HandleRPCRoute(CMvEventDbpMethod& event)
         
         if(pIoComplt)
         {
-            RPCRouteRootHandle(CMvRPCRoute::DBP_RPCROUTE_STOP, &stop, NULL);
+            RPCStopRootHandle(&stop, NULL);
         }
         else
         {
-            RPCRouteForkHandle(CMvRPCRoute::DBP_RPCROUTE_STOP, &stop, NULL);
+            RPCStopForkHandle(&stop, NULL);
         }
-        
     }
 
     if (type == CMvRPCRoute::DBP_RPCROUTE_GET_FORK_COUNT)
@@ -1816,13 +1846,11 @@ void CDbpService::HandleRPCRoute(CMvEventDbpMethod& event)
 
         if (pIoComplt)
         {
-            RPCRouteRootHandle(CMvRPCRoute::DBP_RPCROUTE_GET_FORK_COUNT,
-                               &getForkCount, &getForkcountRet);
+            RPCRouteRootHandle(CMvRPCRoute::DBP_RPCROUTE_GET_FORK_COUNT, &getForkCount, &getForkcountRet); //root
         }
         else
         {
-            RPCRouteForkHandle(CMvRPCRoute::DBP_RPCROUTE_GET_FORK_COUNT,
-                               &getForkCount, &getForkcountRet);
+            RPCRouteForkHandle(CMvRPCRoute::DBP_RPCROUTE_GET_FORK_COUNT, &getForkCount, &getForkcountRet); //fork -mid
         }
     }
 }

@@ -103,14 +103,18 @@ private:
     void PushBlock(const std::string& forkid, const CMvDbpBlock& block);
     void PushTx(const std::string& forkid, const CMvDbpTransaction& dbptx);
     bool PushEvent(const CMvDbpVirtualPeerNetEvent& event);
+
     void SendRPCResult(CMvRPCRouteResult& result);
     void HandleRPCRoute(CMvEventDbpMethod& event);
     void PushRPC(std::vector<uint8>& data, int type);
     void InitSessionCount();
+    void InsertQueCount(uint64 nNonce, boost::any obj);
     void RPCRouteRootHandle(int type, CMvRPCRoute* data, CMvRPCRouteRet* ret);
     void RPCRouteForkHandle(int type, CMvRPCRoute* data, CMvRPCRouteRet* ret);
-    // void InsertQueCount(uint64 nNonce, CMvRPCRouteRet obj);
-    void InsertQueCount(uint64 nNonce, boost::any obj);
+    void RPCStopRootHandle(CMvRPCRouteStop* data, CMvRPCRouteStopRet* ret);
+    void RPCStopForkHandle(CMvRPCRouteStop* data, CMvRPCRouteStopRet* ret);
+    void RPCGetForkCountForkHandle(CMvRPCRouteGetForkCount& data, CMvRPCRouteGetForkCountRet& ret);
+    void RPCGetForkCountRootHandle(CMvRPCRouteGetForkCount& data, CMvRPCRouteGetForkCountRet& ret);
 
     void SendEventToParentNode(CMvDbpVirtualPeerNetEvent& event);
     void UpdateGetDataEventRecord(const CMvEventPeerGetData& event);
