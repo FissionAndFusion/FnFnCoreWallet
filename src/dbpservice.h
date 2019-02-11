@@ -109,8 +109,8 @@ private:
     void InitSessionCount();
     void RPCRouteRootHandle(int type, CMvRPCRoute* data, CMvRPCRouteRet* ret);
     void RPCRouteForkHandle(int type, CMvRPCRoute* data, CMvRPCRouteRet* ret);
-    void InsertQueCount(uint64 nNonce, CMvRPCRouteRet obj);
-    bool FindQueCount(uint64 nNonce, CMvRPCRouteRet* pObj);
+    // void InsertQueCount(uint64 nNonce, CMvRPCRouteRet obj);
+    void InsertQueCount(uint64 nNonce, boost::any obj);
 
     void SendEventToParentNode(CMvDbpVirtualPeerNetEvent& event);
     void UpdateGetDataEventRecord(const CMvEventPeerGetData& event);
@@ -158,7 +158,7 @@ private:
     std::map<ForkNonceKeyType, int> mapChildNodeForkCount;
     std::map<ForkNonceKeyType, int> mapThisNodeForkCount;
     std::map<ForkNonceKeyType, std::set<uint256>> mapThisNodeGetData; 
-    std::deque<std::pair<uint64, CMvRPCRouteRet>> queCount;
+    std::deque<std::pair<uint64, boost::any>> queCount;
 };
 
 } // namespace multiverse
