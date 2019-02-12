@@ -109,12 +109,10 @@ private:
     void PushRPC(std::vector<uint8>& data, int type);
     void InitSessionCount();
     void InsertQueCount(uint64 nNonce, boost::any obj);
-    // void RPCRouteRootHandle(int type, CMvRPCRoute* data, CMvRPCRouteRet* ret);
-    // void RPCRouteForkHandle(int type, CMvRPCRoute* data, CMvRPCRouteRet* ret);
-    void RPCStopRootHandle(CMvRPCRouteStop* data, CMvRPCRouteStopRet* ret);
-    void RPCStopForkHandle(CMvRPCRouteStop* data, CMvRPCRouteStopRet* ret);
-    void RPCGetForkCountForkHandle(CMvRPCRouteGetForkCount* data, CMvRPCRouteGetForkCountRet* ret);
-    void RPCGetForkCountRootHandle(CMvRPCRouteGetForkCount* data, CMvRPCRouteGetForkCountRet* ret);
+    void RPCRootHandle(CMvRPCRouteStop* data, CMvRPCRouteStopRet* ret);
+    void RPCRootHandle(CMvRPCRouteGetForkCount* data, CMvRPCRouteGetForkCountRet* ret);
+    void RPCForkHandle(CMvRPCRouteStop* data, CMvRPCRouteStopRet* ret);
+    void RPCForkHandle(CMvRPCRouteGetForkCount* data, CMvRPCRouteGetForkCountRet* ret);
 
     void SendEventToParentNode(CMvDbpVirtualPeerNetEvent& event);
     void UpdateGetDataEventRecord(const CMvEventPeerGetData& event);

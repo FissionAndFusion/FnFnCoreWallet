@@ -1492,7 +1492,7 @@ bool CDbpService::IsThisNodeData(const uint256& hashFork, uint64 nNonce, const u
 
 //rpc route
 
-void CDbpService::RPCStopRootHandle(CMvRPCRouteStop* data, CMvRPCRouteStopRet* ret)
+void CDbpService::RPCRootHandle(CMvRPCRouteStop* data, CMvRPCRouteStopRet* ret)
 {
     if (ret == NULL)
     {
@@ -1504,28 +1504,7 @@ void CDbpService::RPCStopRootHandle(CMvRPCRouteStop* data, CMvRPCRouteStopRet* r
     }
 }
 
-void CDbpService::RPCStopForkHandle(CMvRPCRouteStop* data, CMvRPCRouteStopRet* ret)
-{
-    if (ret == NULL)
-    {
-        CMvRPCRouteStop stop = *data;
-        walleve::CWalleveBufStream ss;
-        ss << stop;
-        std::vector<uint8> vRawData(ss.GetData(), ss.GetData() + ss.GetSize());
-        
-        if (sessionCount == 0 && pIoComplt == NULL)
-        {
-            CMvRPCRouteResult result;
-            result.type = CMvRPCRoute::DBP_RPCROUTE_STOP;
-            result.vRawData = vRawData;
-            SendRPCResult(result);
-            pService->Shutdown();
-        }
-    }
-}
-
-
-void CDbpService::RPCGetForkCountRootHandle(CMvRPCRouteGetForkCount* data, CMvRPCRouteGetForkCountRet* ret)
+void CDbpService::RPCRootHandle(CMvRPCRouteGetForkCount* data, CMvRPCRouteGetForkCountRet* ret)
 {
     if (ret == NULL)
     {
@@ -1568,7 +1547,27 @@ void CDbpService::RPCGetForkCountRootHandle(CMvRPCRouteGetForkCount* data, CMvRP
     }
 }
 
-void CDbpService::RPCGetForkCountForkHandle(CMvRPCRouteGetForkCount* data, CMvRPCRouteGetForkCountRet* ret)
+void CDbpService::RPCForkHandle(CMvRPCRouteStop* data, CMvRPCRouteStopRet* ret)
+{
+    if (ret == NULL)
+    {
+        CMvRPCRouteStop stop = *data;
+        walleve::CWalleveBufStream ss;
+        ss << stop;
+        std::vector<uint8> vRawData(ss.GetData(), ss.GetData() + ss.GetSize());
+        
+        if (sessionCount == 0 && pIoComplt == NULL)
+        {
+            CMvRPCRouteResult result;
+            result.type = CMvRPCRoute::DBP_RPCROUTE_STOP;
+            result.vRawData = vRawData;
+            SendRPCResult(result);
+            pService->Shutdown();
+        }
+    }
+}
+
+void CDbpService::RPCForkHandle(CMvRPCRouteGetForkCount* data, CMvRPCRouteGetForkCountRet* ret)
 {
     if (ret == NULL)
     {
@@ -1708,7 +1707,7 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteStop& event)
         return true;
     }
 
-    RPCStopRootHandle(&event.data, NULL);
+    RPCRootHandle(&event.data, NULL);
     return true;
 }
 
@@ -1729,7 +1728,7 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetForkCount& event)
         PushRPC(data, CMvRPCRoute::DBP_RPCROUTE_GET_FORK_COUNT);
         return true;
     }
-    RPCGetForkCountRootHandle(&event.data, NULL);
+    RPCRootHandle(&event.data, NULL);
     return true;
 }
 
@@ -1752,7 +1751,7 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteAdded& event)
             PushRPC(event.data.vData, event.data.type);
             return true;
         }
-        RPCStopForkHandle(&stop, NULL);
+        RPCForkHandle(&stop, NULL);
     }
 
     if(event.data.type == CMvRPCRoute::DBP_RPCROUTE_GET_FORK_COUNT)
@@ -1768,7 +1767,7 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteAdded& event)
             PushRPC(event.data.vData, event.data.type);
             return true;
         }
-        RPCGetForkCountForkHandle(&getForkCount, NULL);
+        RPCForkHandle(&getForkCount, NULL);
     }
     return true;
 }
@@ -1791,11 +1790,11 @@ void CDbpService::HandleRPCRoute(CMvEventDbpMethod& event)
         
         if(pIoComplt)
         {
-            RPCStopRootHandle(&stop, NULL);
+            RPCRootHandle(&stop, NULL);
         }
         else
         {
-            RPCStopForkHandle(&stop, NULL);
+            RPCForkHandle(&stop, NULL);
         }
     }
 
@@ -1808,11 +1807,11 @@ void CDbpService::HandleRPCRoute(CMvEventDbpMethod& event)
 
         if (pIoComplt)
         {
-            RPCGetForkCountRootHandle(&getForkCount, &getForkCountRet);
+            RPCRootHandle(&getForkCount, &getForkCountRet);
         }
         else
         {
-            RPCGetForkCountForkHandle(&getForkCount, &getForkCountRet);
+            RPCForkHandle(&getForkCount, &getForkCountRet);
         }
     }
 }
