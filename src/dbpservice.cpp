@@ -1492,163 +1492,6 @@ bool CDbpService::IsThisNodeData(const uint256& hashFork, uint64 nNonce, const u
 
 //rpc route
 
-void CDbpService::RPCRouteRootHandle(int type, CMvRPCRoute* data, CMvRPCRouteRet* ret)
-{
-    if (type == CMvRPCRoute::DBP_RPCROUTE_STOP && ret == NULL)
-    {
-        if (sessionCount == 0 && pIoComplt != NULL)
-        {
-            pIoComplt->Completed(false);
-            pService->Shutdown();
-        }
-        return;
-    }
-
-    if (type == CMvRPCRoute::DBP_RPCROUTE_STOP && ret != NULL)
-    {
-        return;
-    }
-
-    if (type == CMvRPCRoute::DBP_RPCROUTE_GET_FORK_COUNT && ret == NULL)
-    {
-       if (sessionCount == 0 && pIoComplt != NULL)
-        {
-            CMvRPCRouteGetForkCountRet ret;
-            ret.count = pService->GetForkCount();
-            pIoComplt->obj = ret;
-            pIoComplt->Completed(false);
-        }
-        return;
-    }
-
-    if (type == CMvRPCRoute::DBP_RPCROUTE_GET_FORK_COUNT && ret != NULL)
-    {
-        CMvRPCRouteGetForkCountRet getForkCountRetIn = *((CMvRPCRouteGetForkCountRet*)ret);
-        int count = 0;
-
-        uint64 nNonce = getForkCountRetIn.nNonce;
-        auto iter = std::find_if(queCount.begin(), queCount.end(),
-                       [nNonce](std::pair<uint64, boost::any>& element) {
-                           return nNonce == element.first;
-                       });
-
-        if(iter != queCount.end() && (iter->second).type() == typeid(CMvRPCRouteGetForkCountRet))
-        {
-            int &c = boost::any_cast<CMvRPCRouteGetForkCountRet&>(iter->second).count;
-            c = c + getForkCountRetIn.count;
-            count = c;
-        }
-
-        if (sessionCount == 0 && pIoComplt != NULL)
-        {
-            CMvRPCRouteGetForkCountRet ret;
-            ret.count = pService->GetForkCount() + count;
-            pIoComplt->obj = ret;
-            pIoComplt->Completed(false);
-        }
-        return;
-    }
-}
-
-void CDbpService::RPCRouteForkHandle(int type, CMvRPCRoute* data, CMvRPCRouteRet* ret)
-{
-    if (type == CMvRPCRoute::DBP_RPCROUTE_STOP && ret == NULL)
-    {
-        CMvRPCRouteStop stop = *((CMvRPCRouteStop*)data);
-        walleve::CWalleveBufStream ss;
-        ss << stop;
-        std::vector<uint8> vRawData(ss.GetData(), ss.GetData() + ss.GetSize());
-        
-        if (sessionCount == 0 && pIoComplt == NULL)
-        {
-            CMvRPCRouteResult result;
-            result.type = type;
-            result.vRawData = vRawData;
-            SendRPCResult(result);
-            pService->Shutdown();
-        }
-        return;
-    }
-
-    if (type == CMvRPCRoute::DBP_RPCROUTE_STOP && ret != NULL)
-    {
-        return;
-    }
-
-    if (type == CMvRPCRoute::DBP_RPCROUTE_GET_FORK_COUNT && ret == NULL)
-    {
-        CMvRPCRouteGetForkCount getForkCount = *((CMvRPCRouteGetForkCount*)data);
-        walleve::CWalleveBufStream ss;
-        ss << getForkCount;
-        std::vector<uint8> vRawData(ss.GetData(), ss.GetData() + ss.GetSize());
-        
-        if (sessionCount == 0 && pIoComplt == NULL)
-        {
-            CMvRPCRouteResult result;
-            result.type = type;
-            result.vRawData = vRawData;
-
-            CMvRPCRouteGetForkCountRet ret;
-            ret.nNonce = getForkCount.nNonce;
-            ret.count = pService->GetForkCount() - 1;
-
-            walleve::CWalleveBufStream ss;
-            ss << ret;
-            std::vector<uint8> data(ss.GetData(), ss.GetData() + ss.GetSize());
-
-            result.vData = data;
-            SendRPCResult(result);
-        }
-        return;
-    }
-
-    if (type == CMvRPCRoute::DBP_RPCROUTE_GET_FORK_COUNT && ret != NULL)
-    {
-        CMvRPCRouteGetForkCount getForkCount = *((CMvRPCRouteGetForkCount*)data);
-        walleve::CWalleveBufStream ss;
-        ss << getForkCount;
-        std::vector<uint8> vRawData(ss.GetData(), ss.GetData() + ss.GetSize());
-
-        CMvRPCRouteGetForkCountRet getForkCountRetIn = *((CMvRPCRouteGetForkCountRet*)ret);
-        CMvRPCRouteGetForkCountRet tempRet;
-        int count = 0;
-
-        uint64 nNonce = getForkCountRetIn.nNonce;
-        auto iter =
-          std::find_if(queCount.begin(), queCount.end(),
-                       [nNonce](std::pair<uint64, boost::any>& element) {
-                           return nNonce == element.first;
-                       });
-
-        if (iter != queCount.end() && (iter->second).type() == typeid(CMvRPCRouteGetForkCountRet))
-        {
-            int &c = boost::any_cast<CMvRPCRouteGetForkCountRet&>(iter->second).count;
-            c = c + getForkCountRetIn.count;
-            count = c;
-        }
-
-        if (sessionCount == 0 && pIoComplt == NULL)
-        {
-            CMvRPCRouteResult result;
-            result.type = type;
-            result.vRawData = vRawData;
-
-            CMvRPCRouteGetForkCountRet getForkCountRetOut;
-            getForkCountRetOut.type = getForkCountRetIn.type;
-            getForkCountRetOut.nNonce = getForkCountRetIn.nNonce;
-            getForkCountRetOut.count = pService->GetForkCount() - 1 + count;
-
-            walleve::CWalleveBufStream ss;
-            ss << getForkCountRetOut;
-            std::vector<uint8> data(ss.GetData(), ss.GetData() + ss.GetSize());
-            result.vData = data;
-
-            SendRPCResult(result);
-        }
-        return;
-    }
-}
-
 void CDbpService::RPCStopRootHandle(CMvRPCRouteStop* data, CMvRPCRouteStopRet* ret)
 {
     if (ret == NULL)
@@ -1678,6 +1521,126 @@ void CDbpService::RPCStopForkHandle(CMvRPCRouteStop* data, CMvRPCRouteStopRet* r
             SendRPCResult(result);
             pService->Shutdown();
         }
+    }
+}
+
+
+void CDbpService::RPCGetForkCountRootHandle(CMvRPCRouteGetForkCount* data, CMvRPCRouteGetForkCountRet* ret)
+{
+    if (ret == NULL)
+    {
+       if (sessionCount == 0 && pIoComplt != NULL)
+        {
+            CMvRPCRouteGetForkCountRet ret;
+            ret.count = pService->GetForkCount();
+            pIoComplt->obj = ret;
+            pIoComplt->Completed(false);
+        }
+        return;
+    }
+
+    if (ret != NULL)
+    {
+        CMvRPCRouteGetForkCountRet getForkCountRetIn = *((CMvRPCRouteGetForkCountRet*)ret);
+        int count = 0;
+
+        uint64 nNonce = getForkCountRetIn.nNonce;
+        auto iter = std::find_if(queCount.begin(), queCount.end(),
+                       [nNonce](std::pair<uint64, boost::any>& element) {
+                           return nNonce == element.first;
+                       });
+
+        if(iter != queCount.end() && (iter->second).type() == typeid(CMvRPCRouteGetForkCountRet))
+        {
+            int &c = boost::any_cast<CMvRPCRouteGetForkCountRet&>(iter->second).count;
+            c = c + getForkCountRetIn.count;
+            count = c;
+        }
+
+        if (sessionCount == 0 && pIoComplt != NULL)
+        {
+            CMvRPCRouteGetForkCountRet ret;
+            ret.count = pService->GetForkCount() + count;
+            pIoComplt->obj = ret;
+            pIoComplt->Completed(false);
+        }
+        return;
+    }
+}
+
+void CDbpService::RPCGetForkCountForkHandle(CMvRPCRouteGetForkCount* data, CMvRPCRouteGetForkCountRet* ret)
+{
+    if (ret == NULL)
+    {
+        CMvRPCRouteGetForkCount getForkCount = *((CMvRPCRouteGetForkCount*)data);
+        walleve::CWalleveBufStream ss;
+        ss << getForkCount;
+        std::vector<uint8> vRawData(ss.GetData(), ss.GetData() + ss.GetSize());
+        
+        if (sessionCount == 0 && pIoComplt == NULL)
+        {
+            CMvRPCRouteResult result;
+            result.type = CMvRPCRoute::DBP_RPCROUTE_GET_FORK_COUNT;
+            result.vRawData = vRawData;
+
+            CMvRPCRouteGetForkCountRet ret;
+            ret.nNonce = getForkCount.nNonce;
+            ret.count = pService->GetForkCount() - 1;
+
+            walleve::CWalleveBufStream ss;
+            ss << ret;
+            std::vector<uint8> data(ss.GetData(), ss.GetData() + ss.GetSize());
+
+            result.vData = data;
+            SendRPCResult(result);
+        }
+        return;
+    }
+
+    if (ret != NULL)
+    {
+        CMvRPCRouteGetForkCount getForkCount = *((CMvRPCRouteGetForkCount*)data);
+        walleve::CWalleveBufStream ss;
+        ss << getForkCount;
+        std::vector<uint8> vRawData(ss.GetData(), ss.GetData() + ss.GetSize());
+
+        CMvRPCRouteGetForkCountRet getForkCountRetIn = *((CMvRPCRouteGetForkCountRet*)ret);
+        CMvRPCRouteGetForkCountRet tempRet;
+        int count = 0;
+
+        uint64 nNonce = getForkCountRetIn.nNonce;
+        auto iter =
+          std::find_if(queCount.begin(), queCount.end(),
+                       [nNonce](std::pair<uint64, boost::any>& element) {
+                           return nNonce == element.first;
+                       });
+
+        if (iter != queCount.end() && (iter->second).type() == typeid(CMvRPCRouteGetForkCountRet))
+        {
+            int &c = boost::any_cast<CMvRPCRouteGetForkCountRet&>(iter->second).count;
+            c = c + getForkCountRetIn.count;
+            count = c;
+        }
+
+        if (sessionCount == 0 && pIoComplt == NULL)
+        {
+            CMvRPCRouteResult result;
+            result.type = CMvRPCRoute::DBP_RPCROUTE_GET_FORK_COUNT;
+            result.vRawData = vRawData;
+
+            CMvRPCRouteGetForkCountRet getForkCountRetOut;
+            getForkCountRetOut.type = getForkCountRetIn.type;
+            getForkCountRetOut.nNonce = getForkCountRetIn.nNonce;
+            getForkCountRetOut.count = pService->GetForkCount() - 1 + count;
+
+            walleve::CWalleveBufStream ss;
+            ss << getForkCountRetOut;
+            std::vector<uint8> data(ss.GetData(), ss.GetData() + ss.GetSize());
+            result.vData = data;
+
+            SendRPCResult(result);
+        }
+        return;
     }
 }
 
@@ -1766,8 +1729,7 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetForkCount& event)
         PushRPC(data, CMvRPCRoute::DBP_RPCROUTE_GET_FORK_COUNT);
         return true;
     }
-
-    RPCRouteRootHandle(CMvRPCRoute::DBP_RPCROUTE_GET_FORK_COUNT, &event.data, NULL); //root
+    RPCGetForkCountRootHandle(&event.data, NULL);
     return true;
 }
 
@@ -1806,7 +1768,7 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteAdded& event)
             PushRPC(event.data.vData, event.data.type);
             return true;
         }
-        RPCRouteForkHandle(event.data.type, &getForkCount, NULL); //fork -leaf
+        RPCGetForkCountForkHandle(&getForkCount, NULL);
     }
     return true;
 }
@@ -1839,18 +1801,18 @@ void CDbpService::HandleRPCRoute(CMvEventDbpMethod& event)
 
     if (type == CMvRPCRoute::DBP_RPCROUTE_GET_FORK_COUNT)
     {
-        CMvRPCRouteGetForkCountRet getForkcountRet;
-        ss >> getForkcountRet;
+        CMvRPCRouteGetForkCountRet getForkCountRet;
+        ss >> getForkCountRet;
         CMvRPCRouteGetForkCount getForkCount;
         ssRaw >> getForkCount;
 
         if (pIoComplt)
         {
-            RPCRouteRootHandle(CMvRPCRoute::DBP_RPCROUTE_GET_FORK_COUNT, &getForkCount, &getForkcountRet); //root
+            RPCGetForkCountRootHandle(&getForkCount, &getForkCountRet);
         }
         else
         {
-            RPCRouteForkHandle(CMvRPCRoute::DBP_RPCROUTE_GET_FORK_COUNT, &getForkCount, &getForkcountRet); //fork -mid
+            RPCGetForkCountForkHandle(&getForkCount, &getForkCountRet);
         }
     }
 }
