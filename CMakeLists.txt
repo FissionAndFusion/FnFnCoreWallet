@@ -45,9 +45,10 @@ find_package(Readline 5.0 REQUIRED)
 set(Protobuf_USE_STATIC_LIBS ON)
 find_package(Protobuf 3.3.0 REQUIRED)
 
-if(${USE_SSL_110} MATCHES "TRUE")
+if(OPENSSL_VERSION VERSION_EQUAL 1.1.0 OR 
+    (OPENSSL_VERSION VERSION_GREATER 1.1.0 AND OPENSSL_VERSION VERSION_LESS 1.2.0))
     add_definitions(-DUSE_SSL_110)
-endif(${USE_SSL_110} MATCHES "TRUE")
+endif()
 
 # libs
 if(WIN32)
