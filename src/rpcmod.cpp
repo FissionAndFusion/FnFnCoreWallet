@@ -2073,10 +2073,17 @@ CRPCResultPtr CRPCMod::SnRPCGetForkCount(CRPCParamPtr param)
     return NULL;
 }
 
+CRPCResultPtr CRPCMod::SnRPCListFork(CRPCParamPtr param)
+{
+    (void)param;
+    return NULL;
+}
+
 CSnRPCMod::CSnRPCMod()
 {
     mapRPCFunc["stop"] = &CRPCMod::SnRPCStop;
     mapRPCFunc["getforkcount"] = &CRPCMod::SnRPCGetForkCount;
+    mapRPCFunc["listfork"] = &CRPCMod::SnRPCListFork;
 }
 
 CSnRPCMod::~CSnRPCMod()
@@ -2115,7 +2122,7 @@ uint64 CSnRPCMod::GenNonce()
 
 CRPCResultPtr CSnRPCMod::SnRPCStop(CRPCParamPtr param)
 {
-    CMvEventRPCRouteStop *pEvent = new CMvEventRPCRouteStop("");
+    CMvEventRPCRouteStop* pEvent = new CMvEventRPCRouteStop("");
     pEvent->data.ioComplt = &ioComplt;
     pEvent->data.nNonce = GenNonce();
     if(!pEvent)
@@ -2133,7 +2140,7 @@ CRPCResultPtr CSnRPCMod::SnRPCStop(CRPCParamPtr param)
 
 CRPCResultPtr CSnRPCMod::SnRPCGetForkCount(CRPCParamPtr param)
 {
-    CMvEventRPCRouteGetForkCount *pEvent = new CMvEventRPCRouteGetForkCount("");
+    CMvEventRPCRouteGetForkCount* pEvent = new CMvEventRPCRouteGetForkCount("");
     pEvent->data.ioComplt = &ioComplt;
     pEvent->data.nNonce = GenNonce();
     if(!pEvent)
@@ -2147,4 +2154,35 @@ CRPCResultPtr CSnRPCMod::SnRPCGetForkCount(CRPCParamPtr param)
     ioComplt.WaitForComplete(fResult);
     CMvRPCRouteGetForkCountRet ret = boost::any_cast<CMvRPCRouteGetForkCountRet>(ioComplt.obj);
     return MakeCGetForkCountResultPtr(ret.count);
+}
+
+CRPCResultPtr CSnRPCMod::SnRPCListFork(CRPCParamPtr param)
+{
+    auto spParam = CastParamPtr<CListForkParam>(param);
+    CMvEventRPCRouteListFork* pEvent = new CMvEventRPCRouteListFork("");
+    pEvent->data.ioComplt = &ioComplt;
+    pEvent->data.nNonce = GenNonce();
+    pEvent->data.fAll = spParam->fAll;
+    if(!pEvent)
+    {
+        return NULL;
+    }
+    pDbpService->PostEvent(pEvent);
+    ioComplt.Reset();
+    bool fResult = false;
+    ioComplt.WaitForComplete(fResult);
+
+    CMvRPCRouteListForkRet ret = boost::any_cast<CMvRPCRouteListForkRet>(ioComplt.obj);
+    auto vFork = ret.vFork;
+    auto spResult = MakeCListForkResultPtr();
+    for (size_t i = 0; i < vFork.size(); i++)
+    {
+        CProfile& profile = vFork[i].second;
+        spResult->vecProfile.push_back(
+          { vFork[i].first.GetHex(), profile.strName, profile.strSymbol,
+            profile.IsIsolated(), profile.IsPrivate(), profile.IsEnclosed(),
+            CMvAddress(profile.destOwner).ToString() });
+    }
+
+    return spResult;
 }

@@ -6,6 +6,7 @@
 #define MULTIVERSE_DBP_TYPE_H
 
 #include <boost/any.hpp>
+#include "profile.h"
 
 namespace multiverse
 {
@@ -154,6 +155,21 @@ protected:
     } 
 };
 
+class CMvRPCRouteListFork : public CMvRPCRoute
+{
+    friend class walleve::CWalleveStream;
+public:
+    bool fAll;
+
+protected:
+    template<typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
+    {
+        CMvRPCRoute::WalleveSerialize(s, opt);
+        s.Serialize(fAll, opt);
+    }
+};
+
 class CMvRPCRouteResult
 {
 public:
@@ -202,6 +218,21 @@ protected:
     {
         CMvRPCRouteRet::WalleveSerialize(s, opt);
         s.Serialize(count, opt);
+    }
+};
+
+class CMvRPCRouteListForkRet: public CMvRPCRouteRet
+{
+    friend class walleve::CWalleveStream;
+public:
+    std::vector<std::pair<uint256,CProfile>> vFork;
+
+protected:
+    template<typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
+    {
+        CMvRPCRouteRet::WalleveSerialize(s, opt);
+        s.Serialize(vFork, opt);
     }
 };
 

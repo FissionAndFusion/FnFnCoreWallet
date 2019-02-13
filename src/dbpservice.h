@@ -65,6 +65,7 @@ public:
     //RPC Route
     bool HandleEvent(CMvEventRPCRouteStop& event) override;
     bool HandleEvent(CMvEventRPCRouteGetForkCount& event) override;
+    bool HandleEvent(CMvEventRPCRouteListFork& event) override;
     bool HandleEvent(CMvEventRPCRouteAdded& event) override;
 
 protected:
@@ -111,8 +112,10 @@ private:
     void InsertQueCount(uint64 nNonce, boost::any obj);
     void RPCRootHandle(CMvRPCRouteStop* data, CMvRPCRouteStopRet* ret);
     void RPCRootHandle(CMvRPCRouteGetForkCount* data, CMvRPCRouteGetForkCountRet* ret);
+    void RPCRootHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRet* ret);
     void RPCForkHandle(CMvRPCRouteStop* data, CMvRPCRouteStopRet* ret);
     void RPCForkHandle(CMvRPCRouteGetForkCount* data, CMvRPCRouteGetForkCountRet* ret);
+    void RPCForkHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRet* ret);
 
     void SendEventToParentNode(CMvDbpVirtualPeerNetEvent& event);
     void UpdateGetDataEventRecord(const CMvEventPeerGetData& event);
