@@ -2177,12 +2177,11 @@ CRPCResultPtr CSnRPCMod::SnRPCListFork(CRPCParamPtr param)
     auto spResult = MakeCListForkResultPtr();
     for (size_t i = 0; i < vFork.size(); i++)
     {
-        CProfile& profile = vFork[i].second;
-        spResult->vecProfile.push_back(
-          { vFork[i].first.GetHex(), profile.strName, profile.strSymbol,
-            profile.IsIsolated(), profile.IsPrivate(), profile.IsEnclosed(),
-            CMvAddress(profile.destOwner).ToString() });
+        CMvRPCProfile& profile = vFork[i];
+        spResult->vecProfile.push_back({ profile.strHex, profile.strName,
+                                         profile.strSymbol, profile.fIsolated,
+                                         profile.fPrivate, profile.fEnclosed,
+                                         profile.address });
     }
-
     return spResult;
 }

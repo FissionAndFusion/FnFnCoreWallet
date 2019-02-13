@@ -11,6 +11,7 @@
 #include "virtualpeernetevent.h"
 #include "mvpeernet.h"
 #include "walleve/walleve.h"
+#include "address.h"
 
 #include <set>
 #include <utility>
@@ -110,6 +111,7 @@ private:
     void PushRPC(std::vector<uint8>& data, int type);
     void InitSessionCount();
     void InsertQueCount(uint64 nNonce, boost::any obj);
+    void SwrapForks(std::vector<std::pair<uint256,CProfile>>& vFork, std::vector<CMvRPCProfile>& vRpcFork);
     void RPCRootHandle(CMvRPCRouteStop* data, CMvRPCRouteStopRet* ret);
     void RPCRootHandle(CMvRPCRouteGetForkCount* data, CMvRPCRouteGetForkCountRet* ret);
     void RPCRootHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRet* ret);

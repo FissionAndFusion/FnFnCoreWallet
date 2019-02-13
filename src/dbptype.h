@@ -113,7 +113,8 @@ public:
     enum
     {
         DBP_RPCROUTE_STOP = 0,
-        DBP_RPCROUTE_GET_FORK_COUNT = 1
+        DBP_RPCROUTE_GET_FORK_COUNT = 1,
+        DBP_RPCROUTE_LIST_FORK = 2
     };
 
     walleve::CIOCompletion *ioComplt;
@@ -221,11 +222,36 @@ protected:
     }
 };
 
+class CMvRPCProfile
+{
+    friend class walleve::CWalleveStream;
+public:
+    std::string strHex;
+    std::string strName;
+    std::string strSymbol;
+    bool fIsolated;
+    bool fPrivate;
+    bool fEnclosed;
+    std::string address;
+protected:
+    template <typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
+    {
+        s.Serialize(strHex, opt);
+        s.Serialize(strName, opt);
+        s.Serialize(strSymbol, opt);
+        s.Serialize(fIsolated, opt);
+        s.Serialize(fPrivate, opt);
+        s.Serialize(fEnclosed, opt);
+        s.Serialize(address, opt);
+    }
+};
+
 class CMvRPCRouteListForkRet: public CMvRPCRouteRet
 {
     friend class walleve::CWalleveStream;
 public:
-    std::vector<std::pair<uint256,CProfile>> vFork;
+    std::vector<CMvRPCProfile> vFork;
 
 protected:
     template<typename O>

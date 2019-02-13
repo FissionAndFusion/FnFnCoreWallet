@@ -1547,6 +1547,22 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetForkCount* data, CMvRPCRouteGetFor
     }
 }
 
+void CDbpService::SwrapForks(std::vector<std::pair<uint256, CProfile>>& vFork, std::vector<CMvRPCProfile>& vRpcFork)
+{
+    for (auto& fork : vFork)
+    {
+        CMvRPCProfile profile;
+        profile.strHex = fork.first.GetHex();
+        profile.strName = fork.second.strName;
+        profile.strSymbol = fork.second.strSymbol;
+        profile.fIsolated = fork.second.IsIsolated();
+        profile.fPrivate = fork.second.IsPrivate();
+        profile.fEnclosed = fork.second.IsEnclosed();
+        profile.address = CMvAddress(fork.second.destOwner).ToString();
+        vRpcFork.push_back(profile);
+    }
+}
+
 void CDbpService::RPCRootHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRet* ret)
 {
     if(ret == NULL)
@@ -1556,7 +1572,9 @@ void CDbpService::RPCRootHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRe
             CMvRPCRouteListForkRet ret;
             std::vector<std::pair<uint256,CProfile>> vFork;
             pService->ListFork(vFork, data->fAll);
-            ret.vFork.insert(ret.vFork.end(), vFork.begin(), vFork.end());
+            std::vector<CMvRPCProfile> vRpcFork;
+            SwrapForks(vFork, vRpcFork);
+            ret.vFork.insert(ret.vFork.end(), vRpcFork.begin(), vRpcFork.end());
             pIoComplt->obj = ret;
             pIoComplt->Completed(false);
         }
@@ -1566,7 +1584,7 @@ void CDbpService::RPCRootHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRe
     if(ret != NULL)
     {
         CMvRPCRouteListForkRet listForkRetIn = *((CMvRPCRouteListForkRet*)ret);
-        std::vector<std::pair<uint256, CProfile>> vTempFork;
+        std::vector<CMvRPCProfile> vTempFork;
         uint64 nNonce = listForkRetIn.nNonce;
         auto iter = std::find_if(queCount.begin(), queCount.end(),
                        [nNonce](std::pair<uint64, boost::any>& element) {
@@ -1577,10 +1595,13 @@ void CDbpService::RPCRootHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRe
         {
             auto& vForkSelf = boost::any_cast<CMvRPCRouteListForkRet&>(iter->second).vFork;
             vForkSelf.insert(vForkSelf.end(), listForkRetIn.vFork.begin(), listForkRetIn.vFork.end());
+            std::sort(vForkSelf.begin(), vForkSelf.end(),
+                      [](CMvRPCProfile& i, CMvRPCProfile& j) {
+                          return i.strHex > j.strHex;
+                      });
             auto it = std::unique(vForkSelf.begin(), vForkSelf.end(),
-                                  [](std::pair<uint256, CProfile>& i,
-                                     std::pair<uint256, CProfile>& j) {
-                                      return i.first == j.first;
+                                  [](CMvRPCProfile& i, CMvRPCProfile& j) {
+                                         return i.strHex == j.strHex;
                                   });
             vForkSelf.resize(std::distance(vForkSelf.begin(), it));
             vTempFork.insert(vTempFork.end(), vForkSelf.begin(), vForkSelf.end());
@@ -1591,13 +1612,17 @@ void CDbpService::RPCRootHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRe
             CMvRPCRouteListForkRet retOut;
             std::vector<std::pair<uint256, CProfile>> vFork;
             pService->ListFork(vFork, data->fAll);
-
+            std::vector<CMvRPCProfile> vRpcFork;
+            SwrapForks(vFork, vRpcFork);
             retOut.vFork.insert(retOut.vFork.end(), vTempFork.begin(), vTempFork.end());
-            retOut.vFork.insert(retOut.vFork.end(), vFork.begin(), vFork.end());
+            retOut.vFork.insert(retOut.vFork.end(), vRpcFork.begin(), vRpcFork.end());
+            std::sort(retOut.vFork.begin(), retOut.vFork.end(),
+                      [](CMvRPCProfile& i, CMvRPCProfile& j) {
+                          return i.strHex > j.strHex;
+                      });
             auto it = std::unique(retOut.vFork.begin(), retOut.vFork.end(),
-                                  [](std::pair<uint256, CProfile>& i,
-                                     std::pair<uint256, CProfile>& j) {
-                                      return i.first == j.first;
+                                  [](CMvRPCProfile& i, CMvRPCProfile& j) {
+                                      return i.strHex == j.strHex;
                                   });
             retOut.vFork.resize(std::distance(retOut.vFork.begin(), it));
 
@@ -1708,11 +1733,101 @@ void CDbpService::RPCForkHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRe
 {
     if(ret == NULL)
     {
+        CMvRPCRouteListFork listFork = *data;
+        walleve::CWalleveBufStream ss;
+        ss << listFork;
+        std::vector<uint8> vRawData(ss.GetData(), ss.GetData() + ss.GetSize());
+
+        if (sessionCount == 0 && pIoComplt == NULL)
+        {
+            CMvRPCRouteResult result;
+            result.type = CMvRPCRoute::DBP_RPCROUTE_LIST_FORK;
+            result.vRawData = vRawData;
+
+            CMvRPCRouteListForkRet retOut;
+            retOut.nNonce = listFork.nNonce;
+            retOut.type = listFork.type;
+
+            std::vector<std::pair<uint256, CProfile>> vFork;
+            pService->ListFork(vFork, data->fAll);
+            std::vector<CMvRPCProfile> vRpcFork;
+            SwrapForks(vFork, vRpcFork);
+            retOut.vFork.insert(retOut.vFork.end(), vRpcFork.begin(), vRpcFork.end());
+
+            walleve::CWalleveBufStream ss;
+            ss << retOut;
+            std::vector<uint8> vData(ss.GetData(), ss.GetData() + ss.GetSize());
+            result.vData = vData;
+            SendRPCResult(result);
+        }
         return;
     }
 
     if(ret != NULL)
     {
+        CMvRPCRouteListFork listFork = *data;
+        walleve::CWalleveBufStream ss;
+        ss << listFork;
+        std::vector<uint8> vRawData(ss.GetData(), ss.GetData() + ss.GetSize());
+
+        CMvRPCRouteListForkRet listForkRetIn = *ret;
+        std::vector<CMvRPCProfile> vTempFork;
+        uint64 nNonce = listForkRetIn.nNonce;
+
+        auto iter = std::find_if(queCount.begin(), queCount.end(),
+                       [nNonce](std::pair<uint64, boost::any>& element) {
+                           return nNonce == element.first;
+                       });
+
+        if (iter != queCount.end() && (iter->second).type() == typeid(CMvRPCRouteListForkRet))
+        {
+            auto& vForkSelf = boost::any_cast<CMvRPCRouteListForkRet&>(iter->second).vFork;
+            vForkSelf.insert(vForkSelf.end(), listForkRetIn.vFork.begin(), listForkRetIn.vFork.end());
+            std::sort(vForkSelf.begin(), vForkSelf.end(), 
+                        [](CMvRPCProfile& i, CMvRPCProfile& j) {
+                            return i.strHex > j.strHex;
+                        });
+            auto it = std::unique(vForkSelf.begin(), vForkSelf.end(),
+                                  [](CMvRPCProfile& i, CMvRPCProfile& j) {
+                                         return i.strHex == j.strHex;
+                                  });
+            vForkSelf.resize(std::distance(vForkSelf.begin(), it));
+            vTempFork.insert(vTempFork.end(), vForkSelf.begin(), vForkSelf.end());
+        }
+
+        if (sessionCount == 0 && pIoComplt == NULL)
+        {
+            CMvRPCRouteResult result;
+            result.type = CMvRPCRoute::DBP_RPCROUTE_LIST_FORK;
+            result.vRawData = vRawData;
+
+            CMvRPCRouteListForkRet listForkRetOut;
+            listForkRetOut.type = listForkRetIn.type;
+            listForkRetOut.nNonce = listForkRetIn.nNonce;
+
+            std::vector<std::pair<uint256, CProfile>> vFork;
+            pService->ListFork(vFork, data->fAll);
+            std::vector<CMvRPCProfile> vRpcFork;
+            SwrapForks(vFork, vRpcFork);
+
+            listForkRetOut.vFork.insert(listForkRetOut.vFork.end(), vTempFork.begin(), vTempFork.end());
+            listForkRetOut.vFork.insert(listForkRetOut.vFork.end(), vRpcFork.begin(), vRpcFork.end());
+            std::sort(listForkRetOut.vFork.begin(), listForkRetOut.vFork.end(), 
+                        [](CMvRPCProfile& i, CMvRPCProfile& j) {
+                            return i.strHex > j.strHex;
+                        });
+            auto it = std::unique(listForkRetOut.vFork.begin(), listForkRetOut.vFork.end(),
+                                  [](CMvRPCProfile& i, CMvRPCProfile& j) {
+                                      return i.strHex == j.strHex;
+                                  });
+            listForkRetOut.vFork.resize(std::distance(listForkRetOut.vFork.begin(), it));
+
+            walleve::CWalleveBufStream ss;
+            ss << listForkRetOut;
+            std::vector<uint8> vData(ss.GetData(), ss.GetData() + ss.GetSize());
+            result.vData = vData;
+            SendRPCResult(result);
+        }
         return;
     }
 }
@@ -1811,6 +1926,7 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteListFork& event)
     pIoComplt = event.data.ioComplt;
     CMvRPCRouteListForkRet listForkRet;
     InsertQueCount(event.data.nNonce, listForkRet);
+    // std::cout << "11### nNonce:" << event.data.nNonce << std::endl;
 
     walleve::CWalleveBufStream ss;
     ss << event.data;
@@ -1819,7 +1935,7 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteListFork& event)
     InitSessionCount();
     if(sessionCount > 0)
     {
-        PushRPC(data, CMvRPCRoute::DBP_RPCROUTE_GET_FORK_COUNT);
+        PushRPC(data, CMvRPCRoute::DBP_RPCROUTE_LIST_FORK);
         return true;
     }
     RPCRootHandle(&event.data, NULL);
@@ -1862,6 +1978,22 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteAdded& event)
             return true;
         }
         RPCForkHandle(&getForkCount, NULL);
+    }
+
+    if(event.data.type == CMvRPCRoute::DBP_RPCROUTE_LIST_FORK)
+    {
+        CMvRPCRouteListFork listFork;
+        ss >> listFork;
+        CMvRPCRouteListForkRet listForkRet;
+        InsertQueCount(listFork.nNonce, listForkRet);
+        // std::cout << "21### nNonce:" << listFork.nNonce << std::endl;
+
+        if(sessionCount > 0)
+        {
+            PushRPC(event.data.vData, event.data.type);
+            return true;
+        }
+        RPCForkHandle(&listFork, NULL);
     }
     return true;
 }
@@ -1906,6 +2038,23 @@ void CDbpService::HandleRPCRoute(CMvEventDbpMethod& event)
         else
         {
             RPCForkHandle(&getForkCount, &getForkCountRet);
+        }
+    }
+
+    if(type == CMvRPCRoute::DBP_RPCROUTE_LIST_FORK)
+    {
+        CMvRPCRouteListForkRet listForkRet;
+        ss >> listForkRet;
+        CMvRPCRouteListFork listFork;
+        ssRaw >> listFork;
+
+        if(pIoComplt)
+        {
+            RPCRootHandle(&listFork, &listForkRet);
+        }
+        else
+        {
+            RPCForkHandle(&listFork, &listForkRet);
         }
     }
 }
