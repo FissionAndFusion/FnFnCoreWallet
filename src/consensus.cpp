@@ -18,7 +18,7 @@ public:
     : CTxFilter(ctxtIn.GetDestination()),ctxt(ctxtIn)
     {
     }
-    bool FoundTx(const uint256& hashFork,const CAssembledTx& tx)
+    bool FoundTx(const uint256& hashFork,const CAssembledTx& tx) override
     {
         ctxt.AddNewTx(tx);
         return true;

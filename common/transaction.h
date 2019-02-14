@@ -238,12 +238,12 @@ public:
 public:
     CTxUnspent() { SetNull(); }
     CTxUnspent(const CTxOutPoint& out,const CTxOutput& outputIn) : CTxOutPoint(out),output(outputIn) {}
-    void SetNull()
+    void SetNull() override
     {
         CTxOutPoint::SetNull();
         output.SetNull();
     }
-    bool IsNull() const { return (CTxOutPoint::IsNull() || output.IsNull()); }
+    bool IsNull() const override { return (CTxOutPoint::IsNull() || output.IsNull()); }
 };
 
 class CAssembledTx : public CTransaction
@@ -259,7 +259,7 @@ public:
     : CTransaction(tx),destIn(destInIn),nValueIn(nValueInIn),nBlockHeight(nBlockHeightIn) 
     { 
     }
-    void SetNull()
+    void SetNull() override
     {
         CTransaction::SetNull();
         destIn.SetNull();

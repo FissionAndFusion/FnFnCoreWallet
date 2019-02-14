@@ -20,7 +20,7 @@ class CBlockWalker : public CBlockDBWalker
 {
 public:
     CBlockWalker(CBlockBase* pBaseIn) : pBase(pBaseIn) {}
-    bool Walk(CBlockOutline& outline) { return pBase->LoadIndex(outline); } 
+    bool Walk(CBlockOutline& outline) override { return pBase->LoadIndex(outline); } 
 public:
     CBlockBase* pBase;
 };

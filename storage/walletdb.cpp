@@ -349,7 +349,7 @@ public:
     : nOffset(nOffsetIn), nMaxCount(nMaxCountIn), nIndex(0)
     {
     }
-    bool Walk(const uint256& txid,const uint256& hashFork,const int nBlockHeight)
+    bool Walk(const uint256& txid,const uint256& hashFork,const int nBlockHeight) override
     {
         if (nIndex++ < nOffset)
         {
@@ -375,7 +375,7 @@ public:
     : hashFork(hashForkIn), nMinHeight(nMinHeightIn), vForkTx(vForkTxIn)
     {
     }
-    bool Walk(const uint256& txidIn,const uint256& hashForkIn,const int nBlockHeightIn)
+    bool Walk(const uint256& txidIn,const uint256& hashForkIn,const int nBlockHeightIn) override
     {
         if (hashForkIn == hashFork && (nBlockHeightIn < 0 || nBlockHeightIn >= nMinHeight))
         {
