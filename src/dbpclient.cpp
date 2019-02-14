@@ -895,7 +895,7 @@ bool CMvDbpClient::HandleEvent(CMvEventDbpRegisterForkID& event)
     }
 
     // pick one session to sendforks
-    CMvDbpClientSocket* pClientSocket = nullptr;
+    CMvDbpClientSocket* pClientSocket = NULL;
     if(mapSessionProfile.size() > 0)
     {
         pClientSocket = mapSessionProfile.begin()->second.pClientSocket;
@@ -931,7 +931,7 @@ bool CMvDbpClient::HandleEvent(CMvEventDbpSendBlock& event)
     }
 
     // pick one session to sendblock
-    CMvDbpClientSocket* pClientSocket = nullptr;
+    CMvDbpClientSocket* pClientSocket = NULL;
     if(mapSessionProfile.size() > 0)
     {
         pClientSocket = mapSessionProfile.begin()->second.pClientSocket;
@@ -965,7 +965,7 @@ bool CMvDbpClient::HandleEvent(CMvEventDbpSendTx& event)
     }
     
     // pick one session to sendtx
-    CMvDbpClientSocket* pClientSocket = nullptr;
+    CMvDbpClientSocket* pClientSocket = NULL;
     if(mapSessionProfile.size() > 0)
     {
         pClientSocket = mapSessionProfile.begin()->second.pClientSocket;
