@@ -94,6 +94,22 @@
             "desc": "Listen for JSON-RPC connections on <port> (default: 6812 or testnet: 6814))"
         },
         {
+            "name": "fRPCListen4",
+            "type": "bool",
+            "opt": "rpclisten4",
+            "default": false,
+            "format": "-rpclisten4",
+            "desc": "Accept RPC IPv4 connections (default: 0)"
+        },
+        {
+            "name": "fRPCListen6",
+            "type": "bool",
+            "opt": "rpclisten6",
+            "default": false,
+            "format": "-rpclisten6",
+            "desc": "Accept RPC IPv6 connections (default: 0)"
+        },
+        {
             "name": "strRPCUser",
             "type": "string",
             "opt": "rpcuser",
@@ -248,6 +264,22 @@
             "desc": "Listen for DBP connections on <port> (default: 6815)"
         },
         {
+            "name": "fDbpListen4",
+            "type": "bool",
+            "opt": "dbplisten4",
+            "default": false,
+            "format": "-dbplisten4",
+            "desc": "Accept DBP IPv4 connections (default: 0)"
+        },
+        {
+            "name": "fDbpListen6",
+            "type": "bool",
+            "opt": "dbplisten6",
+            "default": false,
+            "format": "-dbplisten6",
+            "desc": "Accept DBP IPv6 connections (default: 0)"
+        },
+        {
             "name": "strDbpUser",
             "type": "string",
             "opt": "dbpuser",
@@ -315,12 +347,20 @@
     ],
     "CMvNetworkConfigOption": [
         {
-            "name": "fListen",
+            "name": "fListen4",
             "type": "bool",
-            "opt": "listen",
+            "opt": "listen4",
             "default": false,
-            "format": "-listen",
-            "desc": "Accept connections from outside (default: 0)"
+            "format": "-listen4",
+            "desc": "Accept IPv4 connections from outside (default: 0)"
+        },
+        {
+            "name": "fListen6",
+            "type": "bool",
+            "opt": "listen6",
+            "default": false,
+            "format": "-listen6",
+            "desc": "Accept IPv6 connections from outside (default: 0)"
         },
         {
             "name": "nPortInt",
