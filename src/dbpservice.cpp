@@ -1563,6 +1563,13 @@ void CDbpService::SwrapForks(std::vector<std::pair<uint256, CProfile>>& vFork, s
     }
 }
 
+void CDbpService::ListForkUnique(std::vector<CMvRPCProfile>& vFork)
+{
+    std::sort(vFork.begin(), vFork.end(), [](CMvRPCProfile& i, CMvRPCProfile& j) { return i.strHex > j.strHex; });
+    auto it = std::unique(vFork.begin(), vFork.end(), [](CMvRPCProfile& i, CMvRPCProfile& j) { return i.strHex == j.strHex; });
+    vFork.resize(std::distance(vFork.begin(), it));
+}
+
 void CDbpService::RPCRootHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRet* ret)
 {
     if(ret == NULL)
@@ -1595,15 +1602,7 @@ void CDbpService::RPCRootHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRe
         {
             auto& vForkSelf = boost::any_cast<CMvRPCRouteListForkRet&>(iter->second).vFork;
             vForkSelf.insert(vForkSelf.end(), listForkRetIn.vFork.begin(), listForkRetIn.vFork.end());
-            std::sort(vForkSelf.begin(), vForkSelf.end(),
-                      [](CMvRPCProfile& i, CMvRPCProfile& j) {
-                          return i.strHex > j.strHex;
-                      });
-            auto it = std::unique(vForkSelf.begin(), vForkSelf.end(),
-                                  [](CMvRPCProfile& i, CMvRPCProfile& j) {
-                                         return i.strHex == j.strHex;
-                                  });
-            vForkSelf.resize(std::distance(vForkSelf.begin(), it));
+            ListForkUnique(vForkSelf);
             vTempFork.insert(vTempFork.end(), vForkSelf.begin(), vForkSelf.end());
         }
 
@@ -1616,16 +1615,7 @@ void CDbpService::RPCRootHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRe
             SwrapForks(vFork, vRpcFork);
             retOut.vFork.insert(retOut.vFork.end(), vTempFork.begin(), vTempFork.end());
             retOut.vFork.insert(retOut.vFork.end(), vRpcFork.begin(), vRpcFork.end());
-            std::sort(retOut.vFork.begin(), retOut.vFork.end(),
-                      [](CMvRPCProfile& i, CMvRPCProfile& j) {
-                          return i.strHex > j.strHex;
-                      });
-            auto it = std::unique(retOut.vFork.begin(), retOut.vFork.end(),
-                                  [](CMvRPCProfile& i, CMvRPCProfile& j) {
-                                      return i.strHex == j.strHex;
-                                  });
-            retOut.vFork.resize(std::distance(retOut.vFork.begin(), it));
-
+            ListForkUnique(retOut.vFork);
             pIoComplt->obj = retOut;
             pIoComplt->Completed(false);
         }
@@ -1783,15 +1773,7 @@ void CDbpService::RPCForkHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRe
         {
             auto& vForkSelf = boost::any_cast<CMvRPCRouteListForkRet&>(iter->second).vFork;
             vForkSelf.insert(vForkSelf.end(), listForkRetIn.vFork.begin(), listForkRetIn.vFork.end());
-            std::sort(vForkSelf.begin(), vForkSelf.end(), 
-                        [](CMvRPCProfile& i, CMvRPCProfile& j) {
-                            return i.strHex > j.strHex;
-                        });
-            auto it = std::unique(vForkSelf.begin(), vForkSelf.end(),
-                                  [](CMvRPCProfile& i, CMvRPCProfile& j) {
-                                         return i.strHex == j.strHex;
-                                  });
-            vForkSelf.resize(std::distance(vForkSelf.begin(), it));
+            ListForkUnique(vForkSelf);
             vTempFork.insert(vTempFork.end(), vForkSelf.begin(), vForkSelf.end());
         }
 
@@ -1812,16 +1794,7 @@ void CDbpService::RPCForkHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRe
 
             listForkRetOut.vFork.insert(listForkRetOut.vFork.end(), vTempFork.begin(), vTempFork.end());
             listForkRetOut.vFork.insert(listForkRetOut.vFork.end(), vRpcFork.begin(), vRpcFork.end());
-            std::sort(listForkRetOut.vFork.begin(), listForkRetOut.vFork.end(), 
-                        [](CMvRPCProfile& i, CMvRPCProfile& j) {
-                            return i.strHex > j.strHex;
-                        });
-            auto it = std::unique(listForkRetOut.vFork.begin(), listForkRetOut.vFork.end(),
-                                  [](CMvRPCProfile& i, CMvRPCProfile& j) {
-                                      return i.strHex == j.strHex;
-                                  });
-            listForkRetOut.vFork.resize(std::distance(listForkRetOut.vFork.begin(), it));
-
+            ListForkUnique(listForkRetOut.vFork);
             walleve::CWalleveBufStream ss;
             ss << listForkRetOut;
             std::vector<uint8> vData(ss.GetData(), ss.GetData() + ss.GetSize());

@@ -112,6 +112,7 @@ private:
     void InitSessionCount();
     void InsertQueCount(uint64 nNonce, boost::any obj);
     void SwrapForks(std::vector<std::pair<uint256,CProfile>>& vFork, std::vector<CMvRPCProfile>& vRpcFork);
+    void ListForkUnique(std::vector<CMvRPCProfile>& vFork);
     void RPCRootHandle(CMvRPCRouteStop* data, CMvRPCRouteStopRet* ret);
     void RPCRootHandle(CMvRPCRouteGetForkCount* data, CMvRPCRouteGetForkCountRet* ret);
     void RPCRootHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRet* ret);
