@@ -28,7 +28,7 @@ public:
     {
         nSerializeSize = walleve::GetSerializeSize(tx);
     }
-    void SetNull()
+    void SetNull() override
     {
         CAssembledTx::SetNull();
         nSequenceNumber = 0;

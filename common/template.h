@@ -128,10 +128,10 @@ public:
                                                       const std::vector<unsigned char>& vchPreSig,
                                                       std::vector<unsigned char>& vchSig,bool& fCompleted);
 protected:
-    bool SetTemplateData(const std::vector<unsigned char>& vchDataIn);
-    void BuildTemplateData();
+    bool SetTemplateData(const std::vector<unsigned char>& vchDataIn) override;
+    void BuildTemplateData() override;
     bool GetSignedWeight(const uint256& hash,const std::vector<unsigned char>& vchSig,int& nWeight);
-    bool VerifySignature(const uint256& hash,const std::vector<unsigned char>& vchSig,bool fBlock);
+    bool VerifySignature(const uint256& hash,const std::vector<unsigned char>& vchSig,bool fBlock) override;
 public:
     std::map<multiverse::crypto::CPubKey,unsigned char> mapPubKeyWeight;
     int nRequired;
@@ -149,8 +149,8 @@ public:
         }
     }
 protected:
-    bool SetTemplateData(const std::vector<unsigned char>& vchDataIn);
-    void BuildTemplateData();
+    bool SetTemplateData(const std::vector<unsigned char>& vchDataIn) override;
+    void BuildTemplateData() override;
 };
 
 class CTemplateFork : public CTemplateGeneric
@@ -166,9 +166,9 @@ public:
     }
     bool BuildTxSignature(const uint256& hash,const std::vector<unsigned char>& vchRedeemSig,std::vector<unsigned char>& vchSig);
 protected:
-    bool SetTemplateData(const std::vector<unsigned char>& vchDataIn);
-    void BuildTemplateData();
-    bool VerifySignature(const uint256& hash,const std::vector<unsigned char>& vchSig,bool fBlock);
+    bool SetTemplateData(const std::vector<unsigned char>& vchDataIn) override;
+    void BuildTemplateData() override;
+    bool VerifySignature(const uint256& hash,const std::vector<unsigned char>& vchSig,bool fBlock) override;
 public:
     CDestination destRedeem;
     uint256 hashFork;
@@ -186,11 +186,11 @@ public:
         }
     }
     bool BuildTxSignature(const uint256& hash,const std::vector<unsigned char>& vchSpendSig,std::vector<unsigned char>& vchSig);
-    bool BuildBlockSignature(const uint256& hash,const std::vector<unsigned char>& vchMintSig,std::vector<unsigned char>& vchSig);
+    bool BuildBlockSignature(const uint256& hash,const std::vector<unsigned char>& vchMintSig,std::vector<unsigned char>& vchSig) override;
 protected:
-    bool SetTemplateData(const std::vector<unsigned char>& vchDataIn);
-    void BuildTemplateData();
-    bool VerifySignature(const uint256& hash,const std::vector<unsigned char>& vchSig,bool fBlock);
+    bool SetTemplateData(const std::vector<unsigned char>& vchDataIn) override;
+    void BuildTemplateData() override;
+    bool VerifySignature(const uint256& hash,const std::vector<unsigned char>& vchSig,bool fBlock) override;
 public:
     multiverse::crypto::CPubKey keyMint;
     CDestination destSpend;
@@ -210,11 +210,11 @@ public:
     bool BuildTxSignature(const CDestination& dest,const uint256& hash,const std::vector<unsigned char>& vchSpendSig,
                           std::vector<unsigned char>& vchSig);
     bool BuildVssSignature(const uint256& hash,const std::vector<unsigned char>& vchVssSig,std::vector<unsigned char>& vchSig);
-    bool BuildBlockSignature(const uint256& hash,const std::vector<unsigned char>& vchMintSig,std::vector<unsigned char>& vchSig);
+    bool BuildBlockSignature(const uint256& hash,const std::vector<unsigned char>& vchMintSig,std::vector<unsigned char>& vchSig) override;
 protected:
-    bool SetTemplateData(const std::vector<unsigned char>& vchDataIn);
-    void BuildTemplateData();
-    bool VerifySignature(const uint256& hash,const std::vector<unsigned char>& vchSig,bool fBlock);
+    bool SetTemplateData(const std::vector<unsigned char>& vchDataIn) override;
+    void BuildTemplateData() override;
+    bool VerifySignature(const uint256& hash,const std::vector<unsigned char>& vchSig,bool fBlock) override;
 public:
     multiverse::crypto::CPubKey keyDelegate;
     CDestination destOwner;

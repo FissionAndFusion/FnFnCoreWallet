@@ -18,13 +18,13 @@ class CDBAddrWalker : public storage::CWalletDBAddrWalker
 {
 public:
     CDBAddrWalker(CWallet* pWalletIn) : pWallet(pWalletIn) {}
-    bool WalkPubkey(const crypto::CPubKey& pubkey,int version,const crypto::CCryptoCipher& cipher)
+    bool WalkPubkey(const crypto::CPubKey& pubkey,int version,const crypto::CCryptoCipher& cipher) override
     {
         crypto::CKey key;
         key.Load(pubkey,version,cipher);
         return pWallet->LoadKey(key);
     }
-    bool WalkTemplate(const CTemplateId& tid,const std::vector<unsigned char>& vchData)
+    bool WalkTemplate(const CTemplateId& tid,const std::vector<unsigned char>& vchData) override
     {
         CTemplatePtr ptr = CTemplateGeneric::CreateTemplatePtr(tid.GetType(),vchData);
         if (ptr != NULL && tid == ptr->GetTemplateId())
@@ -44,7 +44,7 @@ class CDBTxWalker : public storage::CWalletDBTxWalker
 {
 public:
     CDBTxWalker(CWallet* pWalletIn) : pWallet(pWalletIn) {}
-    bool Walk(const CWalletTx& wtx)
+    bool Walk(const CWalletTx& wtx) override
     {
         return pWallet->LoadTx(wtx);
     }
@@ -66,7 +66,7 @@ public:
     : CTxFilter(setDestIn),pWallet(pWalletIn)
     {
     }
-    bool FoundTx(const uint256& hashFork,const CAssembledTx& tx)
+    bool FoundTx(const uint256& hashFork,const CAssembledTx& tx) override
     {
         return pWallet->UpdateTx(hashFork,tx);
     }
