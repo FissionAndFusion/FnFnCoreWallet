@@ -21,7 +21,7 @@ using namespace walleve;
 namespace multiverse
 {
 
-class CMvDbpClient;
+class CDbpClient;
 
 class CDbpClientConfig
 {
@@ -65,7 +65,7 @@ class CMvDbpClientSocket
 {
 public:
     CMvDbpClientSocket(IIOModule* pIOModuleIn,const uint64 nNonceIn,
-                   CMvDbpClient* pDbpClientIn,CIOClient* pClientIn);
+                   CDbpClient* pDbpClientIn,CIOClient* pClientIn);
     ~CMvDbpClientSocket();
 
     IIOModule* GetIOModule();
@@ -102,7 +102,7 @@ private:
 protected:
     IIOModule* pIOModule;
     const uint64 nNonce;
-    CMvDbpClient* pDbpClient;
+    CDbpClient* pDbpClient;
     CIOClient* pClient;
 
     CWalleveBufStream ssRecv;
@@ -121,11 +121,11 @@ public:
     std::shared_ptr<boost::asio::deadline_timer> ptrPingTimer;
 };
 
-class CMvDbpClient : public walleve::CIOProc, virtual public CDBPEventListener
+class CDbpClient : public walleve::CIOProc, virtual public CDBPEventListener
 {
 public:
-    CMvDbpClient();
-    virtual ~CMvDbpClient() noexcept;
+    CDbpClient();
+    virtual ~CDbpClient() noexcept;
 
     void HandleClientSocketError(CMvDbpClientSocket* pClientSocket);
     void HandleClientSocketSent(CMvDbpClientSocket* pClientSocket);

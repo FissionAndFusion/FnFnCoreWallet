@@ -404,7 +404,7 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
         }
         case EModuleType::DBPCLIENT:
         {
-            if(!AttachModule(new CMvDbpClient()))
+            if(!AttachModule(new CDbpClient()))
             {
                 return false;
             }
@@ -445,7 +445,7 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
                 dynamic_cast<CNetChannel*>(pNetChannelBase)->EnableSuperNode(config.fEnableForkNode);
             }
             
-            dynamic_cast<CMvDbpClient*>(pClientBase)->AddNewClient(config);
+            dynamic_cast<CDbpClient*>(pClientBase)->AddNewClient(config);
 
             CDbpService* pDbpService = new CDbpService();
             pDbpService->EnableSuperNode(config.fEnableSuperNode);
