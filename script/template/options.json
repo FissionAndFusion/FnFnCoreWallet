@@ -112,6 +112,22 @@
             "desc": "Listen for JSON-RPC connections on <port> (default: 6812 or testnet: 6814))"
         },
         {
+            "name": "fRPCListen4",
+            "type": "bool",
+            "opt": "rpclisten4",
+            "default": false,
+            "format": "-rpclisten4",
+            "desc": "Accept RPC IPv4 connections (default: 0)"
+        },
+        {
+            "name": "fRPCListen6",
+            "type": "bool",
+            "opt": "rpclisten6",
+            "default": false,
+            "format": "-rpclisten6",
+            "desc": "Accept RPC IPv6 connections (default: 0)"
+        },
+        {
             "name": "strRPCUser",
             "type": "string",
             "opt": "rpcuser",
@@ -282,6 +298,22 @@
             "desc": "Listen for DBP connections on <port> (default: 6815)"
         },
         {
+            "name": "fDbpListen4",
+            "type": "bool",
+            "opt": "dbplisten4",
+            "default": false,
+            "format": "-dbplisten4",
+            "desc": "Accept DBP IPv4 connections (default: 0)"
+        },
+        {
+            "name": "fDbpListen6",
+            "type": "bool",
+            "opt": "dbplisten6",
+            "default": false,
+            "format": "-dbplisten6",
+            "desc": "Accept DBP IPv6 connections (default: 0)"
+        },
+        {
             "name": "strDbpUser",
             "type": "string",
             "opt": "dbpuser",
@@ -346,63 +378,23 @@
     ],
    
     "CMvStorageConfigOption": [
-        {
-            "name": "strDBHost",
-            "type": "string",
-            "opt": "dbhost",
-            "default": "localhost",
-            "format": "-dbhost=<host>",
-            "desc": "Set mysql host (default: localhost)"
-        },
-        {
-            "name": "strDBName",
-            "type": "string",
-            "opt": "dbname",
-            "default": "multiverse",
-            "format": "-dbname=<name>",
-            "desc": "Set mysql database name (default: multiverse)"
-        },
-        {
-            "name": "strDBUser",
-            "type": "string",
-            "opt": "dbuser",
-            "default": "multiverse",
-            "format": "-dbuser=<user>",
-            "desc": "Set mysql user's name (default: multiverse)"
-        },
-        {
-            "name": "strDBPass",
-            "type": "string",
-            "opt": "dbpass",
-            "default": "multiverse",
-            "format": "-dbpass=<pwd>",
-            "desc": "Set mysql user's password (default: multiverse)"
-        },
-        {
-            "name": "nDBPort",
-            "type": "int",
-            "opt": "dbport",
-            "default": 0,
-            "format": "-dbport=<n>",
-            "desc": "Set mysql port (default: 0)"
-        },
-        {
-            "name": "nDBConn",
-            "type": "int",
-            "opt": "dbconn",
-            "default": "DEFAULT_DB_CONNECTION",
-            "format": "-dbconn=<n>",
-            "desc": "Set mysql connections count (default: 8)"
-        }
     ],
     "CMvNetworkConfigOption": [
         {
-            "name": "fListen",
+            "name": "fListen4",
             "type": "bool",
-            "opt": "listen",
+            "opt": "listen4",
             "default": false,
-            "format": "-listen",
-            "desc": "Accept connections from outside (default: 0)"
+            "format": "-listen4",
+            "desc": "Accept IPv4 connections from outside (default: 0)"
+        },
+        {
+            "name": "fListen6",
+            "type": "bool",
+            "opt": "listen6",
+            "default": false,
+            "format": "-listen6",
+            "desc": "Accept IPv6 connections from outside (default: 0)"
         },
         {
             "name": "nPortInt",
@@ -441,22 +433,6 @@
             "opt": "connect",
             "format": "-connect=<ip>",
             "desc": "Connect only to the specified node"
-        },
-        {
-            "name": "nDNSeedPort",
-            "type": "int",
-            "opt": "dnseedport",
-            "default": "DEFAULT_DNSEED_PORT",
-            "format": "-dnseedport=<port>",
-            "desc": "Listen for dnseed connections on <port> (default: 6816)"
-        },
-        {
-            "name": "nMaxTimes2ConnectFail",
-            "type": "unsigned int",
-            "opt": "dnseedmaxtimes",
-            "default": "DNSEED_DEFAULT_MAX_TIMES_CONNECT_FAIL",
-            "format": "-dnseedmaxtimes=<times>",
-            "desc": "Max <times> dnseed attempt to connect node"
         },
         {
             "name": "strTrustAddress",

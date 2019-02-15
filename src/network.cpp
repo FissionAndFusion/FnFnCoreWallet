@@ -29,9 +29,14 @@ bool CNetwork::WalleveHandleInitialize()
               FormatSubVersion(),!NetworkConfig()->vConnectTo.empty());
 
     CPeerNetConfig config;
-    if (NetworkConfig()->fListen)
+    if (NetworkConfig()->fListen4)
     {
         config.vecService.push_back(CPeerService(tcp::endpoint(tcp::v4(), NetworkConfig()->nPort),
+                                                 NetworkConfig()->nMaxInBounds));
+    }
+    if(NetworkConfig()->fListen6)
+    {
+        config.vecService.push_back(CPeerService(tcp::endpoint(tcp::v6(), NetworkConfig()->nPort),
                                                  NetworkConfig()->nMaxInBounds));
     }
     config.nMaxOutBounds = NetworkConfig()->nMaxOutBounds;

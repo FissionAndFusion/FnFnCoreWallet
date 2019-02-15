@@ -31,7 +31,6 @@ enum class EModuleType
     DBPCLIENT,           // CMvDbpClient
     DBPSERVER,           // CDbpServer
     DBPSERVICE,          // CDbpService
-    DNSEED,              // CDNSeed
 };
 
 } // namespace multiverse

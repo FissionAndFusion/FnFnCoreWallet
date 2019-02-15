@@ -3,7 +3,7 @@ Fission And Fusion Network Official Development Repo
 
 ## What is Fission And Fusion Network?
 
-[Fission And Fusion Network](https://fnfn.io) (abbreviated FnFn), is a decentralized data service system designed for internet of things（IOT）applications. Based on blockchain and advanced security technologies，FnFn offers a secure,trusted and scalable interactive platform to IOT devices.
+[Fission And Fusion Network](https://fnfn.io) (abbreviated FnFn), is a decentralized data service system designed for internet of things（IoT）applications. Based on blockchain and advanced security technologies，FnFn offers a secure,trusted and scalable interactive platform to IoT devices.
 
 ## FnFn Resources
 

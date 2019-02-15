@@ -70,7 +70,7 @@ public:
                                                       std::vector<CTxOutput>& vOutput) = 0;
     virtual bool ExistsTx(const uint256& txid) = 0;
     virtual bool FilterTx(const uint256& hashFork,CTxFilter& filter) = 0;
-    virtual bool FilterForkContext(CForkContextFilter& filter) = 0;
+    virtual bool ListForkContext(std::vector<CForkContext>& vForkCtxt) = 0;
     virtual MvErr AddNewForkContext(const CTransaction& txFork,CForkContext& ctxt) = 0;
     virtual MvErr AddNewBlock(const CBlock& block,CWorldLineUpdate& update) = 0;    
     virtual MvErr AddNewOrigin(const CBlock& block,CWorldLineUpdate& update) = 0;    
@@ -104,7 +104,8 @@ public:
     virtual void ListTx(const uint256& hashFork, std::vector<std::pair<uint256, std::size_t>>& vTxPool) = 0;
     virtual void ListTx(const uint256& hashFork, std::vector<uint256>& vTxPool) = 0;
     virtual bool FilterTx(const uint256& hashFork,CTxFilter& filter) = 0;
-    virtual void ArrangeBlockTx(const uint256& hashFork, std::size_t nMaxSize, std::vector<CTransaction>& vtx, int64& nTotalTxFee) = 0;
+    virtual void ArrangeBlockTx(const uint256& hashFork, int64 nBlockTime, std::size_t nMaxSize,
+                                std::vector<CTransaction>& vtx, int64& nTotalTxFee) = 0;
     virtual bool FetchInputs(const uint256& hashFork, const CTransaction& tx, std::vector<CTxOutput>& vUnspent) = 0;
     virtual bool SynchronizeWorldLine(const CWorldLineUpdate& update, CTxSetChange& change) = 0;
     const CMvStorageConfig* StorageConfig()

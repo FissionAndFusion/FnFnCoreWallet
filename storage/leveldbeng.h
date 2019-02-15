@@ -32,18 +32,18 @@ public:
     CLevelDBEngine(CLevelDBArguments& arguments);
     ~CLevelDBEngine();
 
-    bool Open();
-    void Close();
-    bool TxnBegin();
-    bool TxnCommit();
-    void TxnAbort();
-    bool Get(walleve::CWalleveBufStream& ssKey,walleve::CWalleveBufStream& ssValue);
-    bool Put(walleve::CWalleveBufStream& ssKey,walleve::CWalleveBufStream& ssValue, bool fOverwrite);
-    bool Remove(walleve::CWalleveBufStream& ssKey);
-    bool RemoveAll();
-    bool MoveFirst();
-    bool MoveTo(walleve::CWalleveBufStream& ssKey);
-    bool MoveNext(walleve::CWalleveBufStream& ssKey,walleve::CWalleveBufStream& ssValue);
+    bool Open() override;
+    void Close() override;
+    bool TxnBegin() override;
+    bool TxnCommit() override;
+    void TxnAbort() override;
+    bool Get(walleve::CWalleveBufStream& ssKey,walleve::CWalleveBufStream& ssValue) override;
+    bool Put(walleve::CWalleveBufStream& ssKey,walleve::CWalleveBufStream& ssValue, bool fOverwrite) override;
+    bool Remove(walleve::CWalleveBufStream& ssKey) override;
+    bool RemoveAll() override;
+    bool MoveFirst() override;
+    bool MoveTo(walleve::CWalleveBufStream& ssKey) override;
+    bool MoveNext(walleve::CWalleveBufStream& ssKey,walleve::CWalleveBufStream& ssValue) override;
 protected:
     std::string path;
     leveldb::DB* pdb;

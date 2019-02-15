@@ -41,12 +41,12 @@ class CProofOfPiggyback : public CProofOfSecretShare
 public:
     uint256 hashRefBlock;
 protected:
-    virtual void ToStream(walleve::CWalleveODataStream& os)
+    virtual void ToStream(walleve::CWalleveODataStream& os) override
     {
         CProofOfSecretShare::ToStream(os);
         os << hashRefBlock;
     }
-    virtual void FromStream(walleve::CWalleveIDataStream& is)
+    virtual void FromStream(walleve::CWalleveIDataStream& is) override
     {
         CProofOfSecretShare::FromStream(is);
         is >> hashRefBlock;
@@ -60,12 +60,12 @@ public:
     unsigned char nBits;
     uint256 nNonce;
 protected:
-    virtual void ToStream(walleve::CWalleveODataStream& os)
+    virtual void ToStream(walleve::CWalleveODataStream& os) override
     {
         CProofOfSecretShare::ToStream(os);
         os << nAlgo << nBits << nNonce;
     }
-    virtual void FromStream(walleve::CWalleveIDataStream& is)
+    virtual void FromStream(walleve::CWalleveIDataStream& is) override
     {
         CProofOfSecretShare::FromStream(is);
         is >> nAlgo >> nBits >> nNonce;

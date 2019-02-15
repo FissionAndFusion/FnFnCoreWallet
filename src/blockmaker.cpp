@@ -254,7 +254,7 @@ void CBlockMaker::ArrangeBlockTx(CBlock& block,const uint256& hashFork,const CBl
 {
     size_t nMaxTxSize = MAX_BLOCK_SIZE - GetSerializeSize(block) - profile.GetSignatureSize();
     int64 nTotalTxFee = 0;
-    pTxPool->ArrangeBlockTx(hashFork,nMaxTxSize,block.vtx,nTotalTxFee); 
+    pTxPool->ArrangeBlockTx(hashFork,block.GetBlockTime(),nMaxTxSize,block.vtx,nTotalTxFee); 
     block.hashMerkle = block.CalcMerkleTreeRoot();
     block.txMint.nAmount += nTotalTxFee;
 }
@@ -324,6 +324,8 @@ bool CBlockMaker::CreateProofOfWorkBlock(CBlock& block)
         return false;
     }
 
+    txMint.nTimeStamp = block.nTimeStamp;
+
     ArrangeBlockTx(block,pCoreProtocol->GetGenesisBlockHash(),profile);
 
     return SignBlock(block,profile);
@@ -389,10 +391,11 @@ bool CBlockMaker::CreateDelegatedBlock(CBlock& block,const uint256& hashFork,con
     }
 
     CTransaction& txMint = block.txMint;
-    txMint.nType = CTransaction::TX_STAKE;
-    txMint.hashAnchor = block.hashPrev;
-    txMint.sendTo = destSendTo;
-    txMint.nAmount = nReward;
+    txMint.nType         = CTransaction::TX_STAKE;
+    txMint.nTimeStamp    = block.nTimeStamp;
+    txMint.hashAnchor    = block.hashPrev;
+    txMint.sendTo        = destSendTo;
+    txMint.nAmount       = nReward;
         
     ArrangeBlockTx(block,hashFork,profile);
 
@@ -448,15 +451,18 @@ void CBlockMaker::CreateExtended(const CBlockMakerProfile& profile,const CBlockM
             && nLastBlockTime < nTime)
         {
             CBlock block;
-            block.nType = CBlock::BLOCK_EXTENDED;
+            block.nType      = CBlock::BLOCK_EXTENDED;
             block.nTimeStamp = nTime;
-            block.hashPrev = hashLastBlock;
+            block.hashPrev   = hashLastBlock;
             proof.Save(block.vchProof);
+
             CTransaction& txMint = block.txMint;
-            txMint.nType = CTransaction::TX_STAKE;
+            txMint.nType      = CTransaction::TX_STAKE;
+            txMint.nTimeStamp = block.nTimeStamp;
             txMint.hashAnchor = hashLastBlock;
-            txMint.sendTo = profile.GetDestination();
-            txMint.nAmount = 0;
+            txMint.sendTo     = profile.GetDestination();
+            txMint.nAmount    = 0;
+ 
             ArrangeBlockTx(block,hashFork,profile);
             if (!block.vtx.empty() && SignBlock(block,profile))
             {

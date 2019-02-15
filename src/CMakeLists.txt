@@ -51,7 +51,6 @@ set(src
 	dbpserver.cpp dbpserver.h
 	dbpservice.cpp dbpservice.h
 	dbpclient.cpp dbpclient.h
-	dnseed.cpp dnseed.h
 	schedule.cpp schedule.h
 	service.cpp service.h
 	txpool.cpp txpool.h
@@ -126,7 +125,7 @@ target_link_libraries(multiverse
 )
 
 # create symbol link
-set(exec_link multiverse-cli multiverse-server multiverse-miner multiverse-dnseed)
+set(exec_link multiverse-cli multiverse-server multiverse-miner)
 foreach(link ${exec_link})
 	add_custom_command(TARGET multiverse POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E create_symlink multiverse ${link}

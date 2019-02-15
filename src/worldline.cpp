@@ -16,6 +16,7 @@ using namespace multiverse;
 CWorldLine::CWorldLine()
 {
     pCoreProtocol = NULL;
+    pTxPool = NULL;
 }
 
 CWorldLine::~CWorldLine()
@@ -30,20 +31,24 @@ bool CWorldLine::WalleveHandleInitialize()
         return false;
     }
 
+    if (!WalleveGetObject("txpool",pTxPool))
+    {
+        WalleveError("Failed to request txpool\n");
+        return false;
+    }
+
     return true;
 }
 
 void CWorldLine::WalleveHandleDeinitialize()
 {
     pCoreProtocol = NULL;
+    pTxPool = NULL;
 }
 
 bool CWorldLine::WalleveHandleInvoke()
 {
-    storage::CMvDBConfig dbConfig(StorageConfig()->strDBHost,StorageConfig()->nDBPort,
-                                  StorageConfig()->strDBName,StorageConfig()->strDBUser,StorageConfig()->strDBPass);
-
-    if (!cntrBlock.Initialize(dbConfig,StorageConfig()->nDBConn,WalleveConfig()->pathData,WalleveConfig()->fDebug))
+    if (!cntrBlock.Initialize(WalleveConfig()->pathData,WalleveConfig()->fDebug))
     {
         WalleveError("Failed to initalize container\n");
         return false;
@@ -277,9 +282,9 @@ bool CWorldLine::FilterTx(const uint256& hashFork,CTxFilter& filter)
     return cntrBlock.FilterTx(hashFork,filter);
 }
 
-bool CWorldLine::FilterForkContext(CForkContextFilter& filter)
+bool CWorldLine::ListForkContext(vector<CForkContext>& vForkCtxt)
 {
-    return cntrBlock.FilterForkContext(filter);
+    return cntrBlock.ListForkContext(vForkCtxt);
 }
 
 MvErr CWorldLine::AddNewForkContext(const CTransaction& txFork,CForkContext& ctxt)
@@ -393,11 +398,14 @@ MvErr CWorldLine::AddNewBlock(const CBlock& block,CWorldLineUpdate& update)
             WalleveLog("AddNewBlock Get txContxt Error(%s) : %s \n",MvErrString(err),txid.ToString().c_str());
             return err;
         }
-        err = pCoreProtocol->VerifyBlockTx(tx,txContxt,pIndexPrev);
-        if (err != MV_OK)
+        if (!pTxPool->Exists(txid))
         {
-            WalleveLog("AddNewBlock Verify BlockTx Error(%s) : %s \n",MvErrString(err),txid.ToString().c_str());
-            return err;
+            err = pCoreProtocol->VerifyBlockTx(tx,txContxt,pIndexPrev);
+            if (err != MV_OK)
+            {
+                WalleveLog("AddNewBlock Verify BlockTx Error(%s) : %s \n",MvErrString(err),txid.ToString().c_str());
+                return err;
+            }
         }
         vTxContxt.push_back(txContxt);
         view.AddTx(txid,tx,txContxt.destIn,txContxt.GetValueIn());
@@ -411,7 +419,10 @@ MvErr CWorldLine::AddNewBlock(const CBlock& block,CWorldLineUpdate& update)
     }
 
     WalleveLog("AddNew Block : %s\n", pIndexNew->ToString().c_str());
-    WalleveDebug("New Block %s tx : %s\n",hash.ToString().c_str(), view.ToString().c_str());
+    if (WalleveConfig()->fDebug)
+    {
+        WalleveDebug("New Block %s tx : %s\n",hash.ToString().c_str(), view.ToString().c_str());
+    }
 
     CBlockIndex* pIndexFork = NULL;
     if (cntrBlock.RetrieveFork(pIndexNew->GetOriginHash(),&pIndexFork)
@@ -434,6 +445,7 @@ MvErr CWorldLine::AddNewBlock(const CBlock& block,CWorldLineUpdate& update)
         WalleveLog("AddNewBlock Storage GetBlockChanges Error : %s \n",hash.ToString().c_str());
         return MV_ERR_SYS_STORAGE_ERROR;
     } 
+
     return MV_OK;
 }
 
@@ -601,34 +613,18 @@ bool CWorldLine::GetBlockDelegateEnrolled(const uint256& hashBlock,map<CDestinat
     {
         return true;
     }
+    vector<uint256> vBlockRange;
     for (int i = 0;i < MV_CONSENSUS_ENROLL_INTERVAL;i++)
     {
+        vBlockRange.push_back(pIndex->GetBlockHash());
         pIndex = pIndex->pPrev;
     }
-    
-    map<CDestination,int64> mapDelegate;
-    if (!cntrBlock.RetrieveDelegate(hashBlock,nDelegateWeightRatio,mapDelegate))
-    {
-        WalleveLog("GetBlockDelegateEnrolled : Retrieve Delegate Error: %s \n",hashBlock.ToString().c_str());
-        return false;
-    }
 
-    map<CDestination,vector<unsigned char> > mapEnrollDataAll;
-    if (!cntrBlock.RetrieveEnroll(pIndex->GetBlockHash(),hashBlock,mapEnrollDataAll))
+    if (!cntrBlock.RetrieveAvailDelegate(hashBlock,pIndex->GetBlockHash(),vBlockRange,nDelegateWeightRatio,
+                                                   mapWeight,mapEnrollData))
     {
-        WalleveLog("GetBlockDelegateEnrolled : Retrieve Enroll Error: %s \n",hashBlock.ToString().c_str());
+        WalleveLog("GetBlockDelegateEnrolled : Retrieve Avail Delegate Error: %s \n",hashBlock.ToString().c_str());
         return false;
-    }
-
-    for (map<CDestination,int64>::iterator it = mapDelegate.begin();it != mapDelegate.end();++it)
-    {
-        const CDestination& dest = (*it).first;
-        map<CDestination,vector<unsigned char> >::iterator mi = mapEnrollDataAll.find(dest);
-        if (mi != mapEnrollDataAll.end())
-        {
-            mapWeight.insert(make_pair(dest,size_t((*it).second / nDelegateWeightRatio)));
-            mapEnrollData.insert((*mi));
-        }
     }
 
     return true;
@@ -726,7 +722,7 @@ MvErr CWorldLine::GetTxContxt(storage::CBlockView& view,const CTransaction& tx,C
         {
             return MV_ERR_TRANSACTION_INVALID;
         }
-        txContxt.vInputValue.push_back(make_pair(output.nAmount,output.nLockUntil));
+        txContxt.vin.push_back(CTxInContxt(output));
     }
     return MV_OK; 
 }
