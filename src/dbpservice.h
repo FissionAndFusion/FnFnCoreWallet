@@ -68,6 +68,7 @@ public:
     bool HandleEvent(CMvEventRPCRouteGetForkCount& event) override;
     bool HandleEvent(CMvEventRPCRouteListFork& event) override;
     bool HandleEvent(CMvEventRPCRouteAdded& event) override;
+    bool HandleEvent(CMvEventRPCRouteGetBlockLocation& event) override;
 
 protected:
     bool WalleveHandleInitialize() override;
@@ -109,16 +110,20 @@ private:
     void SendRPCResult(CMvRPCRouteResult& result);
     void HandleRPCRoute(CMvEventDbpMethod& event);
     void PushRPC(std::vector<uint8>& data, int type);
+    void PushRPCOnece(std::string id, std::vector<uint8>& data, int type);
     void InitSessionCount();
     void InsertQueCount(uint64 nNonce, boost::any obj);
+    bool RouteAddedHandle(boost::any obj, CMvEventRPCRouteAdded& event, CMvRPCRoute* route);
     void SwrapForks(std::vector<std::pair<uint256,CProfile>>& vFork, std::vector<CMvRPCProfile>& vRpcFork);
     void ListForkUnique(std::vector<CMvRPCProfile>& vFork);
     void RPCRootHandle(CMvRPCRouteStop* data, CMvRPCRouteStopRet* ret);
     void RPCRootHandle(CMvRPCRouteGetForkCount* data, CMvRPCRouteGetForkCountRet* ret);
     void RPCRootHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRet* ret);
+    void RPCRootHandle(CMvRPCRouteGetBlockLocation* data, CMvRPCRouteGetBlockLocationRet* ret);
     void RPCForkHandle(CMvRPCRouteStop* data, CMvRPCRouteStopRet* ret);
     void RPCForkHandle(CMvRPCRouteGetForkCount* data, CMvRPCRouteGetForkCountRet* ret);
     void RPCForkHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRet* ret);
+    void RPCForkHandle(CMvRPCRouteGetBlockLocation* data, CMvRPCRouteGetBlockLocationRet* ret);
 
     void SendEventToParentNode(CMvDbpVirtualPeerNetEvent& event);
     void UpdateGetDataEventRecord(const CMvEventPeerGetData& event);

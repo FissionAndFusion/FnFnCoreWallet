@@ -2079,11 +2079,18 @@ CRPCResultPtr CRPCMod::SnRPCListFork(CRPCParamPtr param)
     return NULL;
 }
 
+CRPCResultPtr CRPCMod::SnRPCGetBlockLocation(CRPCParamPtr param)
+{
+    (void)param;
+    return NULL;
+}
+
 CSnRPCMod::CSnRPCMod()
 {
     mapRPCFunc["stop"] = &CRPCMod::SnRPCStop;
     mapRPCFunc["getforkcount"] = &CRPCMod::SnRPCGetForkCount;
     mapRPCFunc["listfork"] = &CRPCMod::SnRPCListFork;
+    mapRPCFunc["getblocklocation"] = &CRPCMod::SnRPCGetBlockLocation;
 }
 
 CSnRPCMod::~CSnRPCMod()
@@ -2183,5 +2190,33 @@ CRPCResultPtr CSnRPCMod::SnRPCListFork(CRPCParamPtr param)
                                          profile.fPrivate, profile.fEnclosed,
                                          profile.address });
     }
+    return spResult;
+}
+
+CRPCResultPtr CSnRPCMod::SnRPCGetBlockLocation(CRPCParamPtr param)
+{
+    auto spParam = CastParamPtr<CGetBlockLocationParam>(param);
+    CMvEventRPCRouteGetBlockLocation* pEvent = new CMvEventRPCRouteGetBlockLocation("");
+    pEvent->data.ioComplt = &ioComplt;
+    pEvent->data.nNonce = GenNonce();
+    pEvent->data.strBlock = spParam->strBlock;
+    if(!pEvent)
+    {
+        return NULL;
+    }
+    pDbpService->PostEvent(pEvent);
+    ioComplt.Reset();
+    bool fResult = false;
+    ioComplt.WaitForComplete(fResult);
+
+    CMvRPCRouteGetBlockLocationRet ret = boost::any_cast<CMvRPCRouteGetBlockLocationRet >(ioComplt.obj);
+    if (ret.strFork.empty())
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Unknown block");
+    }
+
+    auto spResult = MakeCGetBlockLocationResultPtr();
+    spResult->strFork = ret.strFork;
+    spResult->nHeight = ret.height;
     return spResult;
 }

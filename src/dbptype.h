@@ -114,7 +114,8 @@ public:
     {
         DBP_RPCROUTE_STOP = 0,
         DBP_RPCROUTE_GET_FORK_COUNT = 1,
-        DBP_RPCROUTE_LIST_FORK = 2
+        DBP_RPCROUTE_LIST_FORK = 2,
+        DBP_RPCROUTE_GET_BLOCK_LOCATION = 3,
     };
 
     walleve::CIOCompletion *ioComplt;
@@ -168,6 +169,21 @@ protected:
     {
         CMvRPCRoute::WalleveSerialize(s, opt);
         s.Serialize(fAll, opt);
+    }
+};
+
+class CMvRPCRouteGetBlockLocation : public CMvRPCRoute
+{
+    friend class walleve::CWalleveStream;
+public:
+    std::string strBlock;
+
+protected:
+    template<typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
+    {
+        CMvRPCRoute::WalleveSerialize(s, opt);
+        s.Serialize(strBlock, opt);
     }
 };
 
@@ -259,6 +275,23 @@ protected:
     {
         CMvRPCRouteRet::WalleveSerialize(s, opt);
         s.Serialize(vFork, opt);
+    }
+};
+
+class CMvRPCRouteGetBlockLocationRet : public CMvRPCRouteRet
+{
+    friend class walleve::CWalleveStream;
+public:
+    std::string strFork;
+    int height;
+
+protected:
+    template<typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
+    {
+        CMvRPCRouteRet::WalleveSerialize(s, opt);
+        s.Serialize(strFork, opt);
+        s.Serialize(height, opt);
     }
 };
 
