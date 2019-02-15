@@ -37,6 +37,6 @@ target_link_libraries(storage
 	walleve
 	crypto
 	common
-        leveldb	
-        snappy	
+    leveldb	
+    snappy	
 )

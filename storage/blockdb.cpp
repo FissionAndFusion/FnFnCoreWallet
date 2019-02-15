@@ -232,4 +232,3 @@ bool CBlockDB::LoadFork()
     return true;
 }
 
-

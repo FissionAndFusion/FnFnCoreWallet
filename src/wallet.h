@@ -145,6 +145,8 @@ public:
     /* Resync */
     bool SynchronizeWalletTx(const CDestination& destNew) override;
     bool ResynchronizeWalletTx() override;
+    bool CompareWithTxOrPool(const CAssembledTx& tx);
+    bool CompareWithPoolOrTx(const CWalletTx& wtx, const std::set<CDestination> setAddr);
 protected:
     bool WalleveHandleInitialize() override;
     void WalleveHandleDeinitialize() override;
@@ -166,6 +168,7 @@ protected:
     void AddNewWalletTx(std::shared_ptr<CWalletTx>& spWalletTx,std::vector<uint256>& vFork);
     void RemoveWalletTx(std::shared_ptr<CWalletTx>& spWalletTx,const uint256& hashFork);
     bool SyncWalletTx(CTxFilter& txFilter);
+    bool InspectWalletTx(int nCheckDepth);
 protected:
     storage::CWalletDB dbWallet;
     ICoreProtocol* pCoreProtocol;

@@ -50,7 +50,7 @@ bool CWorldLine::WalleveHandleInvoke()
 {
     if (!cntrBlock.Initialize(WalleveConfig()->pathData,WalleveConfig()->fDebug))
     {
-        WalleveError("Failed to initalize container\n");
+        WalleveError("Failed to initialize container\n");
         return false;
     }
 
@@ -280,6 +280,11 @@ bool CWorldLine::GetTxUnspent(const uint256& hashFork,const vector<CTxIn>& vInpu
 bool CWorldLine::FilterTx(const uint256& hashFork,CTxFilter& filter)
 {
     return cntrBlock.FilterTx(hashFork,filter);
+}
+
+bool CWorldLine::FilterTx(const uint256& hashFork, int nDepth, CTxFilter& filter)
+{
+    return cntrBlock.FilterTx(hashFork, nDepth, filter);
 }
 
 bool CWorldLine::ListForkContext(vector<CForkContext>& vForkCtxt)
@@ -686,7 +691,7 @@ bool CWorldLine::CheckContainer()
     {
         return false;
     }
-    return true;
+    return cntrBlock.CheckConsistency(StorageConfig()->nCheckLevel, StorageConfig()->nCheckDepth);
 }
 
 bool CWorldLine::RebuildContainer()

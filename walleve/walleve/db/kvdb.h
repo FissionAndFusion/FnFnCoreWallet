@@ -260,15 +260,15 @@ protected:
 
             if (!dbEngine->MoveFirst())
                 return false;
-            
+
             for (;;)
-            { 
+            {
                 CWalleveBufStream ssKey,ssValue;
                 if (!dbEngine->MoveNext(ssKey,ssValue))
                     break;
 
                 if (!fnWalker(ssKey,ssValue))
-                    break;                               
+                    break;
             }
             return true;
         }
