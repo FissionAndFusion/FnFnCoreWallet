@@ -61,12 +61,12 @@ public:
     std::string strPrivateKey;
 };
 
-class CMvDbpClientSocket
+class CDbpClientSocket
 {
 public:
-    CMvDbpClientSocket(IIOModule* pIOModuleIn,const uint64 nNonceIn,
+    CDbpClientSocket(IIOModule* pIOModuleIn,const uint64 nNonceIn,
                    CDbpClient* pDbpClientIn,CIOClient* pClientIn);
-    ~CMvDbpClientSocket();
+    ~CDbpClientSocket();
 
     IIOModule* GetIOModule();
     uint64 GetNonce();
@@ -115,7 +115,7 @@ protected:
 class CMvSessionProfile
 {
 public:
-    CMvDbpClientSocket* pClientSocket;
+    CDbpClientSocket* pClientSocket;
     std::string strSessionId;
     uint64 nTimeStamp;
     std::shared_ptr<boost::asio::deadline_timer> ptrPingTimer;
@@ -127,19 +127,19 @@ public:
     CDbpClient();
     virtual ~CDbpClient() noexcept;
 
-    void HandleClientSocketError(CMvDbpClientSocket* pClientSocket);
-    void HandleClientSocketSent(CMvDbpClientSocket* pClientSocket);
-    void HandleClientSocketRecv(CMvDbpClientSocket* pClientSocket, const boost::any& anyObj);   
+    void HandleClientSocketError(CDbpClientSocket* pClientSocket);
+    void HandleClientSocketSent(CDbpClientSocket* pClientSocket);
+    void HandleClientSocketRecv(CDbpClientSocket* pClientSocket, const boost::any& anyObj);   
     void AddNewClient(const CDbpClientConfig& confClient);
 
-    void HandleConnected(CMvDbpClientSocket* pClientSocket, google::protobuf::Any* any);
-    void HandleFailed(CMvDbpClientSocket* pClientSocket, google::protobuf::Any* any);
-    void HandlePing(CMvDbpClientSocket* pClientSocket, google::protobuf::Any* any);
-    void HandlePong(CMvDbpClientSocket* pClientSocket, google::protobuf::Any* any);
-    void HandleResult(CMvDbpClientSocket* pClientSocket, google::protobuf::Any* any);
-    void HandleAdded(CMvDbpClientSocket* pClientSocket, google::protobuf::Any* any);
-    void HandleReady(CMvDbpClientSocket* pClientSocket, google::protobuf::Any* any);
-    void HandleNoSub(CMvDbpClientSocket* pClientSocket, google::protobuf::Any* any);
+    void HandleConnected(CDbpClientSocket* pClientSocket, google::protobuf::Any* any);
+    void HandleFailed(CDbpClientSocket* pClientSocket, google::protobuf::Any* any);
+    void HandlePing(CDbpClientSocket* pClientSocket, google::protobuf::Any* any);
+    void HandlePong(CDbpClientSocket* pClientSocket, google::protobuf::Any* any);
+    void HandleResult(CDbpClientSocket* pClientSocket, google::protobuf::Any* any);
+    void HandleAdded(CDbpClientSocket* pClientSocket, google::protobuf::Any* any);
+    void HandleReady(CDbpClientSocket* pClientSocket, google::protobuf::Any* any);
+    void HandleNoSub(CDbpClientSocket* pClientSocket, google::protobuf::Any* any);
 
     bool HandleEvent(CMvEventDbpVirtualPeerNet& event) override;
 
@@ -159,24 +159,24 @@ protected:
    
     void StartPingTimer(const std::string& session);
     void SendPingHandler(const boost::system::error_code& err, const CMvSessionProfile& sessionProfile);
-    void CreateSession(const std::string& session, CMvDbpClientSocket* pClientSocket);
-    bool HaveAssociatedSessionOf(CMvDbpClientSocket* pClientSocket);
+    void CreateSession(const std::string& session, CDbpClientSocket* pClientSocket);
+    bool HaveAssociatedSessionOf(CDbpClientSocket* pClientSocket);
     bool IsSessionExist(const std::string& session);  
 
     bool ActivateConnect(CIOClient* pClient);
-    void CloseConnect(CMvDbpClientSocket* pClientSocket);
-    void RemoveSession(CMvDbpClientSocket* pClientSocket);
-    void RemoveClientSocket(CMvDbpClientSocket* pClientSocket);
-    CMvDbpClientSocket* PickOneSessionSocket() const;
+    void CloseConnect(CDbpClientSocket* pClientSocket);
+    void RemoveSession(CDbpClientSocket* pClientSocket);
+    void RemoveClientSocket(CDbpClientSocket* pClientSocket);
+    CDbpClientSocket* PickOneSessionSocket() const;
 
 protected:
     std::vector<CDbpClientConfig> vecClientConfig;
     std::map<boost::asio::ip::tcp::endpoint, CDbpClientProfile> mapProfile;
-    std::map<uint64, CMvDbpClientSocket*> mapClientSocket; // nonce => CDbpClientSocket
+    std::map<uint64, CDbpClientSocket*> mapClientSocket; // nonce => CDbpClientSocket
 
-    typedef boost::bimap<std::string, CMvDbpClientSocket*> SessionClientSocketBimapType;
+    typedef boost::bimap<std::string, CDbpClientSocket*> SessionClientSocketBimapType;
     typedef SessionClientSocketBimapType::value_type position_pair;
-    SessionClientSocketBimapType bimapSessionClientSocket;      // session id <=> CMvDbpClientSocket
+    SessionClientSocketBimapType bimapSessionClientSocket;      // session id <=> CDbpClientSocket
     std::map<std::string, CMvSessionProfile> mapSessionProfile; // session id => session profile
 
 
