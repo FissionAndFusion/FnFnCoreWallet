@@ -88,7 +88,7 @@ public:
             : CTxFilter(setDestIn), pWallet(pWalletIn)
     {
     }
-    bool FoundTx(const uint256& hashFork, const CAssembledTx& tx)
+    bool FoundTx(const uint256& hashFork, const CAssembledTx& tx) override
     {
         return pWallet->CompareWithTxOrPool(tx);
     }
@@ -103,12 +103,15 @@ class CInspectDBTxWalker : public storage::CWalletDBTxWalker
 {
 public:
     CInspectDBTxWalker(CWallet* pWalletIn, set<CDestination> setDestIn)
-            : pWallet(pWalletIn)
+            : fRes(false)
+            , pWallet(pWalletIn)
             , setDest(setDestIn) {}
-    bool Walk(const CWalletTx& wtx)
+    bool Walk(const CWalletTx& wtx) override
     {
-        return pWallet->CompareWithPoolOrTx(wtx, setDest);
+        fRes = pWallet->CompareWithPoolOrTx(wtx, setDest);
+        return fRes;
     }
+    bool fRes;
 protected:
     CWallet* pWallet;
     set<CDestination> setDest;
@@ -723,7 +726,7 @@ bool CWallet::InspectWalletTx(int nCheckDepth)
     }
 
     CInspectDBTxWalker walker(this, setAddr);
-    if(!dbWallet.WalkThroughTx(walker))
+    if(!dbWallet.WalkThroughTx(walker) && !walker.fRes)
     {
         return false;
     }
@@ -733,11 +736,6 @@ bool CWallet::InspectWalletTx(int nCheckDepth)
 
 bool CWallet::CompareWithTxOrPool(const CAssembledTx& tx)
 {
-    if(!dbWallet.ExistsTx(tx.GetHash()))
-    {
-        return false;
-    }
-
     CWalletTx wtx;
     if(!dbWallet.RetrieveTx(tx.GetHash(), wtx))
     {
@@ -766,10 +764,6 @@ bool CWallet::CompareWithPoolOrTx(const CWalletTx& wtx, const std::set<CDestinat
 
     if(wtx.nBlockHeight < 0)
     {//compare wtx with txpool
-        if(!pTxPool->Exists(wtx.txid))
-        {
-            return false;
-        }
         CTransaction tx;
         if(!pTxPool->Get(wtx.txid, tx))
         {
@@ -785,10 +779,6 @@ bool CWallet::CompareWithPoolOrTx(const CWalletTx& wtx, const std::set<CDestinat
     }
     else
     {//compare wtx with vtx of block
-        if(!pWorldLine->ExistsTx(wtx.txid))
-        {
-            return false;
-        }
         CTransaction tx;
         if(!pWorldLine->GetTransaction(wtx.txid, tx))
         {
