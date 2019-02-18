@@ -125,23 +125,6 @@ bool CDbpService::HandleEvent(CMvEventDbpRemoveSession& event)
     return true;
 }
 
-static std::string GetHex(std::string data)
-{
-    int n = 2 * data.length() + 1;
-    std::string ret;
-    const char c_map[16] = {'0', '1', '2', '3', '4', '5', '6', '7',
-                            '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
-
-    ret.reserve(n);
-    for (const unsigned char &c : data)
-    {
-        ret.push_back(c_map[c >> 4]);
-        ret.push_back(c_map[c & 15]);
-    }
-
-    return ret;
-}
-
 bool CDbpService::HandleEvent(CMvEventDbpConnect& event)
 {
     bool isReconnect = event.data.isReconnect;
