@@ -479,6 +479,12 @@ void CForkBlockMaker::BlockMakerThreadFunc()
                 continue;
             }
 
+            if(agree.vBallot.empty())
+            {
+                nMakerStatus = ForkMakerStatus::MAKER_SKIP;
+                continue;
+            }
+
             currentAgreement = agree;
             
             nMakerStatus = ForkMakerStatus::MAKER_RUN;

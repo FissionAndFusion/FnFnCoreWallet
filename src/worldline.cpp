@@ -650,11 +650,6 @@ bool CWorldLine::GetBlockDelegateAgreement(const uint256& hashBlock,uint256& nAg
         WalleveLog("GetBlockDelegateAgreement : Retrieve block Error: %s \n",hashBlock.ToString().c_str());
         return false;
     }
-
-    if(block.IsProofOfWork())
-    {
-        return false;
-    }
     
     for (int i = 0;i < MV_CONSENSUS_DISTRIBUTE_INTERVAL + 1;i++)
     {
