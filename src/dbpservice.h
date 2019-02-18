@@ -111,6 +111,7 @@ private:
     void HandleRPCRoute(CMvEventDbpMethod& event);
     void PushRPC(std::vector<uint8>& data, int type);
     void PushRPCOnece(std::string id, std::vector<uint8>& data, int type);
+    void InitRPCTopicIds();
     void InitSessionCount();
     void InsertQueCount(uint64 nNonce, boost::any obj);
     bool RouteAddedHandle(boost::any obj, CMvEventRPCRouteAdded& event, CMvRPCRoute* route);
@@ -172,6 +173,7 @@ private:
     std::map<ForkNonceKeyType, int> mapThisNodeForkCount;
     std::map<ForkNonceKeyType, std::set<uint256>> mapThisNodeGetData; 
     std::deque<std::pair<uint64, boost::any>> queCount;
+    std::vector<std::string> vRPCTopicIds;
 };
 
 } // namespace multiverse

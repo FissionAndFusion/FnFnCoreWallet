@@ -1623,15 +1623,71 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetBlockLocation* data, CMvRPCRouteGe
     {
         if (sessionCount == 0 && pIoComplt != NULL)
         {
+            CMvRPCRouteGetBlockLocationRet getBlockLocationRet;
+            getBlockLocationRet.nNonce = data->nNonce;
+            getBlockLocationRet.type = data->type;
+            getBlockLocationRet.strFork = "";
+            getBlockLocationRet.height = 0;
+            pIoComplt->obj = getBlockLocationRet;
+            pIoComplt->Completed(false);
             return;
         }
-        return;
+
+        if (sessionCount != 0 && pIoComplt != NULL)
+        {
+            walleve::CWalleveBufStream ss;
+            ss << *data;
+            std::vector<uint8> rawData(ss.GetData(), ss.GetData() + ss.GetSize());
+
+            if (!vRPCTopicIds.empty())
+            {
+                auto id = vRPCTopicIds.back();
+                PushRPCOnece(id, rawData, data->type);
+                vRPCTopicIds.pop_back();
+                std::cout << "1##########" << std::endl;
+            }
+            return;
+        }
     }
 
     if (ret != NULL)
     {
+        walleve::CWalleveBufStream ss;
+        ss << *data;
+        std::vector<uint8> rawData(ss.GetData(), ss.GetData() + ss.GetSize());
+
+        if(!ret->strFork.empty())
+        {
+            CMvRPCRouteGetBlockLocationRet getBlockLocationRet;
+            getBlockLocationRet.nNonce = data->nNonce;
+            getBlockLocationRet.type = data->type;
+            getBlockLocationRet.strFork = ret->strFork;
+            getBlockLocationRet.height = ret->height;
+            pIoComplt->obj = getBlockLocationRet;
+            pIoComplt->Completed(false);
+            return;
+        }
+
         if (sessionCount == 0 && pIoComplt != NULL)
         {
+            CMvRPCRouteGetBlockLocationRet getBlockLocationRet;
+            getBlockLocationRet.nNonce = data->nNonce;
+            getBlockLocationRet.type = data->type;
+            getBlockLocationRet.strFork = "";
+            getBlockLocationRet.height = 0;
+            pIoComplt->obj = getBlockLocationRet;
+            pIoComplt->Completed(false);
+            return;
+        }
+
+        if (sessionCount != 0 && pIoComplt != NULL)
+        {
+            if (!vRPCTopicIds.empty())
+            {
+                auto id = vRPCTopicIds.back();
+                PushRPCOnece(id, rawData, data->type);
+                vRPCTopicIds.pop_back();
+            }
             return;
         }
         return;
@@ -1814,13 +1870,99 @@ void CDbpService::RPCForkHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRe
 
 void CDbpService::RPCForkHandle(CMvRPCRouteGetBlockLocation* data, CMvRPCRouteGetBlockLocationRet* ret)
 {
+    CMvRPCRouteGetBlockLocation getBlockLocation = *data;
+    walleve::CWalleveBufStream ss;
+    ss << getBlockLocation;
+    std::vector<uint8> vRawData(ss.GetData(), ss.GetData() + ss.GetSize());
+
     if (ret == NULL)
     {
-        return;
+        std::cout << "3##########" << std::endl;
+        if (sessionCount == 0 && pIoComplt == NULL)
+        {
+            CMvRPCRouteGetBlockLocationRet getBlockLocationRet;
+            CMvRPCRouteResult result;
+            result.type = CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK_LOCATION;
+            result.vRawData = vRawData;
+            getBlockLocationRet.nNonce = getBlockLocation.nNonce;
+            getBlockLocationRet.type = getBlockLocation.type;
+            getBlockLocationRet.strFork = "";
+            getBlockLocationRet.height = 0;
+
+            walleve::CWalleveBufStream ss;
+            ss << getBlockLocationRet;
+            std::vector<uint8> vData(ss.GetData(), ss.GetData() + ss.GetSize());
+            result.vData = vData;
+            SendRPCResult(result);
+            return;
+        }
+
+        if (sessionCount != 0 && pIoComplt == NULL)
+        {
+            walleve::CWalleveBufStream ss;
+            ss << *data;
+            std::vector<uint8> rawData(ss.GetData(), ss.GetData() + ss.GetSize());
+
+            if (!vRPCTopicIds.empty())
+            {
+                auto id = vRPCTopicIds.back();
+                PushRPCOnece(id, rawData, data->type);
+                vRPCTopicIds.pop_back();
+            }
+        }
+        return;       
     }
 
     if (ret != NULL)
     {
+        if (!ret->strFork.empty())
+        {
+            CMvRPCRouteGetBlockLocationRet getBlockLocationRet;
+            CMvRPCRouteResult result;
+            result.type = CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK_LOCATION;
+            result.vRawData = vRawData;
+            getBlockLocationRet.nNonce = getBlockLocation.nNonce;
+            getBlockLocationRet.type = getBlockLocation.type;
+            getBlockLocationRet.strFork = ret->strFork;
+            getBlockLocationRet.height = ret->height;
+
+            walleve::CWalleveBufStream ss;
+            ss << getBlockLocationRet;
+            std::vector<uint8> vData(ss.GetData(), ss.GetData() + ss.GetSize());
+            result.vData = vData;
+            SendRPCResult(result);
+            return;
+        }
+
+        if (sessionCount == 0 && pIoComplt == NULL)
+        {
+            CMvRPCRouteGetBlockLocationRet getBlockLocationRet;
+            CMvRPCRouteResult result;
+            result.type = CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK_LOCATION;
+            result.vRawData = vRawData;
+            getBlockLocationRet.nNonce = getBlockLocation.nNonce;
+            getBlockLocationRet.type = getBlockLocation.type;
+            getBlockLocationRet.strFork = "";
+            getBlockLocationRet.height = 0;
+
+            walleve::CWalleveBufStream ss;
+            ss << getBlockLocationRet;
+            std::vector<uint8> vData(ss.GetData(), ss.GetData() + ss.GetSize());
+            result.vData = vData;
+            SendRPCResult(result);
+            return;
+        }
+
+        if (sessionCount != 0 && pIoComplt == NULL)
+        {
+            if (!vRPCTopicIds.empty())
+            {
+                auto id = vRPCTopicIds.back();
+                PushRPCOnece(id, vRawData, data->type);
+                vRPCTopicIds.pop_back();
+            }
+            return;
+        }
         return;
     }
 }
@@ -1876,14 +2018,41 @@ void CDbpService::PushRPC(std::vector<uint8>& data, int type)
     }
 }
 
+void CDbpService::InitRPCTopicIds()
+{
+    const auto& allIds = mapTopicIds[RPC_CMD_TOPIC];
+    for (const auto id : allIds)
+    {
+        auto it = mapIdSubedSession.find(id);
+        if (it != mapIdSubedSession.end())
+        {
+            vRPCTopicIds.push_back(id);
+        }
+    }
+    std::cout << "topic id count:" << vRPCTopicIds.size() << std::endl;
+}
+
 void CDbpService::InitSessionCount()
 {
+    // std::set<std::string> setSession;
+    // for (const auto& pos : mapIdSubedSession)
+    // {
+    //     setSession.insert(pos.second);
+    // }
+    // sessionCount = setSession.size();
+
     std::set<std::string> setSession;
-    for (const auto& pos : mapIdSubedSession)
+    const auto& allIds = mapTopicIds[RPC_CMD_TOPIC];
+    for (const auto id : allIds)
     {
-        setSession.insert(pos.second);
+        auto it = mapIdSubedSession.find(id);
+        if (it != mapIdSubedSession.end())
+        {
+            setSession.insert(it->second);
+        }
     }
     sessionCount = setSession.size();
+    std::cout << "session count:" << setSession.size() << std::endl;
 }
 
 bool CDbpService::HandleEvent(CMvEventRPCRouteStop& event)
@@ -1951,6 +2120,7 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteListFork& event)
 bool CDbpService::HandleEvent(CMvEventRPCRouteGetBlockLocation& event)
 {
     std::cout << "11### nNonce:" << event.data.nNonce << std::endl;
+    event.data.type = CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK_LOCATION;
     pIoComplt = event.data.ioComplt;
 
     CMvRPCRouteGetBlockLocationRet getBlockLocationRet;
@@ -1970,6 +2140,7 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetBlockLocation& event)
         return true;
     }
 
+    InitRPCTopicIds();
     InitSessionCount();
     InsertQueCount(event.data.nNonce, getBlockLocationRet);
 
@@ -2028,6 +2199,40 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteAdded& event)
             return true;
         }
         RPCForkHandle(&listFork, NULL);
+    }
+
+    if(event.data.type == CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK_LOCATION)
+    {
+        CMvRPCRouteGetBlockLocation getBlockLocation;
+        ss >> getBlockLocation;
+        CMvRPCRouteGetBlockLocationRet getBlockLocationRet;
+
+        std::cout << "2##########" << std::endl;
+        InitRPCTopicIds();
+        InsertQueCount(getBlockLocation.nNonce, getBlockLocationRet);
+
+        uint256 hashBlock;
+        hashBlock.SetHex(getBlockLocation.strBlock);
+        uint256 fork;
+        int height;
+        if (pService->GetBlockLocation(hashBlock, fork, height))
+        {
+        std::cout << "2-1##########" << std::endl;
+            CMvRPCRouteResult result;
+            result.type = CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK_LOCATION;
+            result.vRawData = event.data.vData;
+            getBlockLocationRet.nNonce = getBlockLocation.nNonce;
+            getBlockLocationRet.height = height;
+            getBlockLocationRet.strFork = fork.GetHex();
+
+            walleve::CWalleveBufStream ss;
+            ss << getBlockLocationRet;
+            std::vector<uint8> vData(ss.GetData(), ss.GetData() + ss.GetSize());
+            result.vData = vData;
+            SendRPCResult(result);
+            return true;
+        }
+        RPCForkHandle(&getBlockLocation, NULL);
     }
     return true;
 }
@@ -2089,6 +2294,23 @@ void CDbpService::HandleRPCRoute(CMvEventDbpMethod& event)
         else
         {
             RPCForkHandle(&listFork, &listForkRet);
+        }
+    }
+
+    if(type == CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK_LOCATION)
+    {
+        CMvRPCRouteGetBlockLocationRet getBlockLocationRet;
+        ss >> getBlockLocationRet;
+        CMvRPCRouteGetBlockLocation getBlockLocation;
+        ssRaw >> getBlockLocation;
+
+        if(pIoComplt)
+        {
+            RPCRootHandle(&getBlockLocation, &getBlockLocationRet);
+        }
+        else
+        {
+            RPCForkHandle(&getBlockLocation, &getBlockLocationRet);
         }
     }
 }
