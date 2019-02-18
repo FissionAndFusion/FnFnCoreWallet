@@ -16,7 +16,7 @@ CDbpService::CDbpService()
 {
     pService = NULL;
     pCoreProtocol = NULL;
-    pWallet = NULL;
+    pDbpClient = NULL;
     pDbpServer = NULL;
     pNetChannel = NULL;
     pVirtualPeerNet = NULL;
@@ -54,12 +54,6 @@ bool CDbpService::WalleveHandleInitialize()
         return false;
     }
 
-    if (!WalleveGetObject("wallet", pWallet))
-    {
-        WalleveError("Failed to request wallet\n");
-        return false;
-    }
-
     if (!WalleveGetObject("dbpserver", pDbpServer))
     {
         WalleveError("Failed to request dbpserver\n");
@@ -89,10 +83,10 @@ bool CDbpService::WalleveHandleInitialize()
 
 void CDbpService::WalleveHandleDeinitialize()
 {
+    pDbpClient = NULL;
     pDbpServer = NULL;
     pService = NULL;
     pCoreProtocol = NULL;
-    pWallet = NULL;
     pNetChannel = NULL;
     pVirtualPeerNet = NULL;
 }
