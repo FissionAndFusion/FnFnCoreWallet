@@ -61,7 +61,7 @@ bool CService::WalleveHandleInitialize()
         return false;
     }
 
-    if (!WalleveGetObject("peernet",pNetwork))
+    if (!WalleveGetObject("virtualpeernet",pNetwork))
     {
         WalleveError("Failed to request network\n");
         return false;

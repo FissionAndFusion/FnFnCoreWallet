@@ -46,7 +46,8 @@ typedef TYPE_PEERNETEVENT(WALLEVE_EVENT_PEERNET_SETBAN,ADDRESSES_TO_BAN,std::siz
 typedef TYPE_PEERNETEVENT(WALLEVE_EVENT_PEERNET_CLRBANNED,std::vector<std::string>,std::size_t) CWalleveEventPeerNetClrBanned;
 typedef TYPE_PEERNETEVENT(WALLEVE_EVENT_PEERNET_REWARD,CEndpointManager::Bonus,bool) CWalleveEventPeerNetReward;
 typedef TYPE_PEERNETEVENT(WALLEVE_EVENT_PEERNET_CLOSE,CEndpointManager::CloseReason,bool) CWalleveEventPeerNetClose;
-
+typedef TYPE_PEERNETEVENT(WALLEVE_EVENT_PEERNET_REWARD, int ,bool) CWalleveSuperNodeEventPeerNetReward;
+typedef TYPE_PEERNETEVENT(WALLEVE_EVENT_PEERNET_CLOSE, int ,bool) CWalleveSuperNodeEventPeerNetClose;
 
 class CWallevePeerEventListener : virtual public CWalleveEventListener
 {
@@ -62,6 +63,9 @@ public:
     DECLARE_EVENTHANDLER(CWalleveEventPeerNetClrBanned);
     DECLARE_EVENTHANDLER(CWalleveEventPeerNetReward);
     DECLARE_EVENTHANDLER(CWalleveEventPeerNetClose);
+
+    DECLARE_EVENTHANDLER(CWalleveSuperNodeEventPeerNetReward);
+    DECLARE_EVENTHANDLER(CWalleveSuperNodeEventPeerNetClose);
 };
 
 } // namespace walleve

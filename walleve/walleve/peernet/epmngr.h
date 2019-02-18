@@ -79,7 +79,7 @@ public:
 class CEndpointManager
 {
 public:
-    typedef enum
+    typedef enum : int
     {
         HOST_CLOSE = 0,
         CONNECT_FAILURE,
@@ -89,7 +89,7 @@ public:
         DDOS_ATTACK,
         NUM_CLOSEREASONS
     }CloseReason;
-    typedef enum
+    typedef enum : int
     {
         OPERATION_DONE = 0,
         MINOR_DATA,

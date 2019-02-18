@@ -713,7 +713,7 @@ void CBlockMaker::ExtendedMakerThreadFunc()
         {
             boost::unique_lock<boost::mutex> lock(mutex);
             
-            while (hashPrimaryBlock == hashLastBlock && nMakerStatus != MAKER_EXIT)
+            while (hashPrimaryBlock == hashLastBlock && nMakerStatus !=  MAKER_EXIT)
             {
                 cond.wait(lock);
             }

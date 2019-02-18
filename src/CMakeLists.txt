@@ -43,6 +43,7 @@ set(src
 	rpcmod.cpp rpcmod.h
 	consensus.cpp consensus.h
 	blockmaker.cpp blockmaker.h
+	forkblockmaker.cpp forkblockmaker.h
 	rpcclient.cpp rpcclient.h
 	miner.cpp miner.h
 	dbptype.h
@@ -62,7 +63,8 @@ set(src
 	param.h
 	storage.h
 	version.h
-)
+	virtualpeernet.cpp virtualpeernet.h
+		virtualpeernetevent.h)
 set(mode_src
 	mode/basic_config.cpp mode/basic_config.h
 	mode/fork_config.cpp mode/fork_config.h

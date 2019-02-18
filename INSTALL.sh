@@ -48,4 +48,7 @@ else
     fi
 fi
 
+pwd
+cp src/multiverse* ../docker/apps
+
 cd $origin_path

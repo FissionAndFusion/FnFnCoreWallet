@@ -9,6 +9,9 @@
 #include <cstring>
 #include <random>
 #include <vector>
+#include <climits>
+#include <algorithm>
+#include <functional>
 
 #include "dbp.pb.h"
 #include "lws.pb.h"
@@ -16,6 +19,10 @@
 
 namespace multiverse
 {
+
+using random_bytes_engine = std::independent_bits_engine<
+    std::default_random_engine, CHAR_BIT, unsigned char>;
+
 class CDbpUtils
 {
 public:
@@ -59,6 +66,16 @@ public:
             s += chrs[pick(rg)];
 
         return s;
+    }
+
+    static uint32_t RandomBits()
+    {
+        random_bytes_engine rbe;
+        std::vector<uint8_t> data(4);
+        std::generate(begin(data), end(data), std::ref(rbe));
+        uint32_t random32Bits;
+        std::memcpy(&random32Bits, data.data(), 4);
+        return random32Bits;
     }
 
     static std::vector<std::string> Split(const std::string& str, char delim)
@@ -212,136 +229,146 @@ public:
 
     }
 
-    static void DbpToSnTransaction(const CMvDbpTransaction* dbptx, sn::Transaction* tx)
+    static void RawToDbpTransaction(const CTransaction& tx, const uint256& forkHash, int64 nChange, CMvDbpTransaction& dbptx)
     {
-        tx->set_nversion(dbptx->nVersion);
-        tx->set_ntype(dbptx->nType);
-        tx->set_nlockuntil(dbptx->nLockUntil);
+        dbptx.nVersion = tx.nVersion;
+        dbptx.nType = tx.nType;
+        dbptx.nLockUntil = tx.nLockUntil;
 
-        std::string hashAnchor(dbptx->hashAnchor.begin(), dbptx->hashAnchor.end());
-        tx->set_hashanchor(hashAnchor);
+        walleve::CWalleveODataStream hashAnchorStream(dbptx.hashAnchor);
+        tx.hashAnchor.ToDataStream(hashAnchorStream);
 
-        for (const auto& input : dbptx->vInput)
+        for (const auto& input : tx.vInput)
         {
-            std::string inputHash(input.hash.begin(), input.hash.end());
-            auto add = tx->add_vinput();
-            add->set_hash(inputHash);
-            add->set_n(input.n);
-        }
-
-        sn::Transaction::CDestination* dest = new sn::Transaction::CDestination();
-        dest->set_prefix(dbptx->cDestination.prefix);
-        dest->set_size(dbptx->cDestination.size);
-
-        std::string destData(dbptx->cDestination.data.begin(), dbptx->cDestination.data.end());
-        dest->set_data(destData);
-        tx->set_allocated_cdestination(dest);
-
-        tx->set_namount(dbptx->nAmount);
-        tx->set_ntxfee(dbptx->nTxFee);
-
-        std::string mintVchData(dbptx->vchData.begin(), dbptx->vchData.end());
-        tx->set_vchdata(mintVchData);
-
-        std::string mintVchSig(dbptx->vchSig.begin(), dbptx->vchSig.end());
-        tx->set_vchsig(mintVchSig);
-
-        std::string hash(dbptx->hash.begin(), dbptx->hash.end());
-        tx->set_hash(hash);
-    }
-
-    static void DbpToSnBlock(const CMvDbpBlock* pBlock, sn::Block& block)
-    {
-        block.set_nversion(pBlock->nVersion);
-        block.set_ntype(pBlock->nType);
-        block.set_ntimestamp(pBlock->nTimeStamp);
-
-        std::string hashPrev(pBlock->hashPrev.begin(), pBlock->hashPrev.end());
-        block.set_hashprev(hashPrev);
-
-        std::string hashMerkle(pBlock->hashMerkle.begin(), pBlock->hashMerkle.end());
-        block.set_hashmerkle(hashMerkle);
-
-        std::string vchproof(pBlock->vchProof.begin(), pBlock->vchProof.end());
-        block.set_vchproof(vchproof);
-
-        std::string vchSig(pBlock->vchSig.begin(), pBlock->vchSig.end());
-        block.set_vchsig(vchSig);
-
-        //txMint
-        sn::Transaction* txMint = new sn::Transaction();
-        DbpToSnTransaction(&(pBlock->txMint), txMint);
-        block.set_allocated_txmint(txMint);
-
-        //repeated vtx
-        for (const auto& tx : pBlock->vtx)
-        {
-            DbpToSnTransaction(&tx, block.add_vtx());
-        }
-
-        block.set_nheight(pBlock->nHeight);
-        std::string hash(pBlock->hash.begin(), pBlock->hash.end());
-        block.set_hash(hash);
-    }
-
-    static void SnToDbpTransaction(const sn::Transaction* tx, CMvDbpTransaction* dbptx)
-    {
-        dbptx->nVersion = tx->nversion();
-        dbptx->nType = tx->ntype();
-        dbptx->nLockUntil = tx->nlockuntil();
-
-        std::vector<unsigned char> hashAnchor(tx->hashanchor().begin(), tx->hashanchor().end());
-        dbptx->hashAnchor = hashAnchor;
-
-        for(int i = 0; i < tx->vinput_size(); ++i)
-        {
-            auto input = tx->vinput(i);
             CMvDbpTxIn txin;
-            txin.hash = std::vector<unsigned char>(input.hash().begin(), input.hash().end());
-            txin.n = input.n();
+            txin.n = input.prevout.n;
 
-            dbptx->vInput.push_back(txin);
+            walleve::CWalleveODataStream txInHashStream(txin.hash);
+            input.prevout.hash.ToDataStream(txInHashStream);
+
+            dbptx.vInput.push_back(txin);
         }
 
-        dbptx->cDestination.prefix = tx->cdestination().prefix();
-        dbptx->cDestination.size = tx->cdestination().size();
-        auto& data = tx->cdestination().data();
-        dbptx->cDestination.data = std::vector<unsigned char>(data.begin(),data.end());
+        dbptx.cDestination.prefix = tx.sendTo.prefix;
+        dbptx.cDestination.size = tx.sendTo.DESTINATION_SIZE;
 
-        dbptx->nAmount = tx->namount();
-        dbptx->nTxFee = tx->ntxfee();
+        walleve::CWalleveODataStream sendtoStream(dbptx.cDestination.data);
+        tx.sendTo.data.ToDataStream(sendtoStream);
 
-        dbptx->vchData = std::vector<unsigned char>(tx->vchdata().begin(), tx->vchdata().end());
-        dbptx->vchSig = std::vector<unsigned char>(tx->vchsig().begin(), tx->vchsig().end());
+        dbptx.nAmount = tx.nAmount;
+        dbptx.nTxFee = tx.nTxFee;
+        dbptx.nChange = nChange;
 
-        dbptx->hash = std::vector<unsigned char>(tx->hash().begin(), tx->hash().end());
+        dbptx.vchData = tx.vchData;
+        dbptx.vchSig = tx.vchSig;
+
+        walleve::CWalleveODataStream hashStream(dbptx.hash);
+        tx.GetHash().ToDataStream(hashStream);
+
+        walleve::CWalleveODataStream forkStream(dbptx.fork);
+        forkHash.ToDataStream(forkStream);
     }
 
-    static void SnToDbpBlock(const sn::Block *pBlock, CMvDbpBlock& block)
+    static void RawToDbpBlock(const CBlockEx& blockDetail, const uint256& forkHash,
+                                 int blockHeight, CMvDbpBlock& block)
     {
-        block.nVersion = pBlock->nversion();
-        block.nType = pBlock->ntype();
-        block.nTimeStamp = pBlock->ntimestamp();
+        block.nVersion = blockDetail.nVersion;
+        block.nType = blockDetail.nType;
+        block.nTimeStamp = blockDetail.nTimeStamp;
 
-        block.hashPrev = std::vector<unsigned char>(pBlock->hashprev().begin(),pBlock->hashprev().end());
-        block.hashMerkle = std::vector<unsigned char>(pBlock->hashmerkle().begin(),pBlock->hashmerkle().end());
-        block.vchProof = std::vector<unsigned char>(pBlock->vchproof().begin(), pBlock->vchproof().end());
-        block.vchSig = std::vector<unsigned char>(pBlock->vchsig().begin(), pBlock->vchsig().end());
+        walleve::CWalleveODataStream hashPrevStream(block.hashPrev);
+        blockDetail.hashPrev.ToDataStream(hashPrevStream);
 
-        //txMint
-        SnToDbpTransaction(&(pBlock->txmint()), &(block.txMint));
+        walleve::CWalleveODataStream hashMerkleStream(block.hashMerkle);
+        blockDetail.hashMerkle.ToDataStream(hashMerkleStream);
 
-        //repeated vtx
-        for(int i = 0; i < pBlock->vtx_size(); ++i)
+        block.vchProof = blockDetail.vchProof;
+        block.vchSig = blockDetail.vchSig;
+
+        // txMint
+        RawToDbpTransaction(blockDetail.txMint, forkHash, blockDetail.txMint.GetChange(0), block.txMint);
+
+        // vtx
+        int k = 0;
+        if(blockDetail.vTxContxt.size() >= blockDetail.vtx.size())
         {
-            auto vtx = pBlock->vtx(i);
-            CMvDbpTransaction tx;
-            SnToDbpTransaction(&vtx,&tx);
+            for (const auto& tx : blockDetail.vtx)
+            {
+                CMvDbpTransaction dbpTx;
+                int64 nValueIn = blockDetail.vTxContxt[k++].GetValueIn();
+                RawToDbpTransaction(tx, forkHash, tx.GetChange(nValueIn), dbpTx);
+                block.vtx.push_back(dbpTx);
+            }
+        }
+        else
+        {
+            for (const auto& tx : blockDetail.vtx)
+            {
+                CMvDbpTransaction dbpTx;
+                RawToDbpTransaction(tx, forkHash, 0, dbpTx);
+                block.vtx.push_back(dbpTx);
+            }
+        }
+
+        block.nHeight = blockHeight;
+        walleve::CWalleveODataStream hashStream(block.hash);
+        blockDetail.GetHash().ToDataStream(hashStream);
+
+        walleve::CWalleveODataStream forkStream(block.fork);
+        forkHash.ToDataStream(forkStream);
+    }
+
+    static void DbpToRawTransaction(const CMvDbpTransaction& dbpTx, CTransaction& tx)
+    {
+        tx.nVersion = dbpTx.nVersion;
+        tx.nType = dbpTx.nType;
+        tx.nLockUntil = dbpTx.nLockUntil;
+
+        tx.hashAnchor = uint256(dbpTx.hashAnchor);
+
+        for (const auto& input : dbpTx.vInput)
+        {
+            CTxIn txin;
+            txin.prevout.n = input.n;
+            txin.prevout.hash = uint256(input.hash);
+        
+            tx.vInput.push_back(txin);
+        }
+
+        tx.sendTo.prefix = dbpTx.cDestination.prefix;
+        tx.sendTo.data = uint256(dbpTx.cDestination.data);
+
+        tx.nAmount = dbpTx.nAmount;
+        tx.nTxFee = dbpTx.nTxFee;
+
+        tx.vchData  = dbpTx.vchData;
+        tx.vchSig = dbpTx.vchSig;
+
+    }
+    
+    static void DbpToRawBlock(const CMvDbpBlock& dbpBlock, CBlockEx& block)
+    {
+        block.nVersion = dbpBlock.nVersion;
+        block.nType = dbpBlock.nType;
+        block.nTimeStamp = dbpBlock.nTimeStamp;
+
+        block.hashPrev = uint256(dbpBlock.hashPrev);
+        block.hashMerkle = uint256(dbpBlock.hashMerkle);
+
+        block.vchProof = dbpBlock.vchProof;
+        block.vchSig = dbpBlock.vchSig;
+
+        // txMint
+        DbpToRawTransaction(dbpBlock.txMint, block.txMint);
+
+        // vtx
+        for(const auto& dbptx : dbpBlock.vtx)
+        {
+            CTransaction tx;
+            DbpToRawTransaction(dbptx,tx);
             block.vtx.push_back(tx);
         }
 
-        block.nHeight = pBlock->nheight();
-        block.hash = std::vector<unsigned char>(pBlock->hash().begin(), pBlock->hash().end());
     }
 
 };

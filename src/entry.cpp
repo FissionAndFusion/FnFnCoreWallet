@@ -16,6 +16,7 @@
 #include "rpcmod.h"
 #include "service.h"
 #include "blockmaker.h"
+#include "forkblockmaker.h"
 #include "rpcclient.h"
 #include "miner.h"
 #include "dbpservice.h"
@@ -182,10 +183,41 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
         }
         case EModuleType::BLOCKMAKER:
         {
-            if (!AttachModule(new CBlockMaker()))
+            
+            auto config = GetDbpClientConfig();
+            
+            IBlockMaker* pBlockMaker = NULL;
+            
+            // fnfn node
+            if(!config.fEnableSuperNode)
             {
-                return false;
+                pBlockMaker = new CBlockMaker();
+                if (!AttachModule(pBlockMaker))
+                {
+                    return false;
+                }
             }
+
+            // root node for supernode
+            if(config.fEnableSuperNode && !config.fEnableForkNode)
+            {
+                pBlockMaker = new CBlockMaker();
+                if (!AttachModule(pBlockMaker))
+                {
+                    return false;
+                }
+            }
+
+            // fork node for supernode
+            if(config.fEnableSuperNode && config.fEnableForkNode)
+            {
+                pBlockMaker = new CForkBlockMaker();
+                if (!AttachModule(pBlockMaker))
+                {
+                    return false;
+                }
+            }
+            
             break;
         }
         case EModuleType::COREPROTOCOL:
@@ -238,10 +270,39 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
         }
         case EModuleType::DELEGATEDCHANNEL:
         {
-            if (!AttachModule(new CDelegatedChannel()))
+            auto config = GetDbpClientConfig();
+            
+            IMvDelegatedChannel *pDelegatedChn = NULL;
+            // fnfn node
+            if(!config.fEnableSuperNode)
             {
-                return false;
+                pDelegatedChn = new CDelegatedChannel();
+                if (!AttachModule(pDelegatedChn))
+                {
+                    return false;
+                }
             }
+
+            // root node for supernode
+            if(config.fEnableSuperNode && !config.fEnableForkNode)
+            {
+                pDelegatedChn = new CDelegatedChannel();
+                if (!AttachModule(pDelegatedChn))
+                {
+                    return false;
+                }
+            }
+
+            // fork node for supernode
+            if(config.fEnableSuperNode && config.fEnableForkNode)
+            {
+                pDelegatedChn = new CDummyDelegatedChannel();
+                if (!AttachModule(pDelegatedChn))
+                {
+                    return false;
+                }
+            }
+            
             break;
         }
         case EModuleType::NETWORK:
@@ -343,7 +404,7 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
         }
         case EModuleType::DBPCLIENT:
         {
-            if(!AttachModule(new CMvDbpClient()))
+            if(!AttachModule(new CDbpClient()))
             {
                 return false;
             }
@@ -351,21 +412,46 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
         }
         case EModuleType::DBPSERVICE:
         {
-            auto pBase = walleveDocker.GetObject("dbpserver");
-            if (!pBase)
+            auto config = GetDbpClientConfig();
+            
+            auto pServerBase = walleveDocker.GetObject("dbpserver");
+            if (!pServerBase)
             {
                 return false;
             }
-            dynamic_cast<CDbpServer*>(pBase)->AddNewHost(GetDbpHostConfig());
+            dynamic_cast<CDbpServer*>(pServerBase)->AddNewHost(GetDbpHostConfig());
 
             auto pClientBase = walleveDocker.GetObject("dbpclient");
             if(!pClientBase)
             {
                 return false;
             }
-            dynamic_cast<CMvDbpClient*>(pClientBase)->AddNewClient(GetDbpClientConfig());
 
-            if (!AttachModule(new CDbpService()))
+            auto pVirtualPeerNetBase = walleveDocker.GetObject("virtualpeernet");
+            if(!pVirtualPeerNetBase)
+            {
+                return false;
+            }
+
+            auto pNetChannelBase = walleveDocker.GetObject("netchannel");
+            if(!pNetChannelBase)
+            {
+                return false;
+            }
+            
+            if(config.fEnableSuperNode)
+            {
+                dynamic_cast<CVirtualPeerNet*>(pVirtualPeerNetBase)->EnableSuperNode(config.fEnableForkNode);
+                dynamic_cast<CNetChannel*>(pNetChannelBase)->EnableSuperNode(config.fEnableForkNode);
+            }
+            
+            dynamic_cast<CDbpClient*>(pClientBase)->AddNewClient(config);
+
+            CDbpService* pDbpService = new CDbpService();
+            pDbpService->EnableSuperNode(config.fEnableSuperNode);
+            pDbpService->EnableForkNode(config.fEnableForkNode);
+
+            if (!AttachModule(pDbpService))
             {
                 return false;
             }
@@ -421,7 +507,8 @@ CDbpClientConfig CMvEntry::GetDbpClientConfig()
                         config->strDbpCAFile, config->strDbpCertFile,
                         config->strDbpPKFile, config->strDbpCiphers);
     
-    return CDbpClientConfig(config->epParentHost,config->strSupportForks,sslDbp,"dbpservice");
+    return CDbpClientConfig(config->epParentHost,config->strPrivateKey,sslDbp,"dbpservice", 
+            config->fEnableForkNode, config->fEnableSuperNode);
 }
 
 void CMvEntry::PurgeStorage()

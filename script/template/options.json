@@ -83,6 +83,24 @@
             "desc": "POW blake512 key"
         }
     ],
+    "CMvForkNodeMintConfigOption": [
+        {
+            "access": "protected",
+            "name": "strForkNodeAddressMPVss",
+            "type": "string",
+            "opt": "forkmpvssaddress",
+            "format": "-forkmpvssaddress=<address>",
+            "desc": "MPVSS address for forknode"
+        },
+        {
+            "access": "protected",
+            "name": "strForkNodeKeyMPVss",
+            "type": "string",
+            "opt": "forkmpvsskey",
+            "format": "-forkmpvsskey=<key>",
+            "desc": "MPVSS key for forknode"
+        }
+    ],
     "CMvRPCBasicConfigOption": [
         {
             "access": "protected",
@@ -227,12 +245,28 @@
             "desc": "Set dbp parent node ip to <ip> for super node(default: empty)"
         },
         {
-            "name": "strSupportForks",
+            "name": "fEnableForkNode",
+            "type": "bool",
+            "opt": "enableforknode",
+            "default": "false",
+            "format": "-enableforknode=<true | false>",
+            "desc": "Enable fork node for super node(default: false)"
+        },
+        {
+            "name": "fEnableSuperNode",
+            "type": "bool",
+            "opt": "enablesupernode",
+            "default": "false",
+            "format": "-enablesupernode=<true | false>",
+            "desc": "Enable super node(default: false)"
+        },
+        {
+            "name": "strPrivateKey",
             "type": "string",
-            "opt": "supernodeforks",
+            "opt": "supernodeprikey",
             "default": "",
-            "format": "-supernodeforks=<forkids>",
-            "desc": "Set Support Fork List to <forkids> for super node(default: empty)"
+            "format": "-supernodeprikey=<privatekey>",
+            "desc": "Set Private Key to <privatekey> for ForkNode of super node(default: empty)"
         }
     ],
 

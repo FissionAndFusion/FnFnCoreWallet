@@ -637,7 +637,7 @@ bool CWorldLine::GetBlockDelegateEnrolled(const uint256& hashBlock,map<CDestinat
 
 bool CWorldLine::GetBlockDelegateAgreement(const uint256& hashBlock,uint256& nAgreement,size_t& nWeight,vector<CDestination>& vBallot)
 {
-    CBlockIndex* pIndex;
+    CBlockIndex* pIndex = NULL;
     if (!cntrBlock.RetrieveIndex(hashBlock,&pIndex))
     {
         WalleveLog("GetBlockDelegateAgreement : Retrieve block Index Error: %s \n",hashBlock.ToString().c_str());
@@ -655,7 +655,7 @@ bool CWorldLine::GetBlockDelegateAgreement(const uint256& hashBlock,uint256& nAg
         WalleveLog("GetBlockDelegateAgreement : Retrieve block Error: %s \n",hashBlock.ToString().c_str());
         return false;
     }
-
+    
     for (int i = 0;i < MV_CONSENSUS_DISTRIBUTE_INTERVAL + 1;i++)
     {
         pIndex = pIndex->pPrev;

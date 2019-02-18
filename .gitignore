@@ -19,3 +19,6 @@ multiverse
 multiverse.exe
 multiverse-*
 CMakeSettings.json
+
+docker/mysql
+docker/nodes

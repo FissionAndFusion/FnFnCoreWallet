@@ -6,6 +6,8 @@
 #define  MULTIVERSE_NETCHN_H
 
 #include "mvpeernet.h"
+#include "event.h"
+#include "virtualpeernetevent.h"
 #include "mvbase.h"
 #include "schedule.h"
 
@@ -56,6 +58,14 @@ public:
 class CNetChannel : public network::IMvNetChannel
 {
 public:
+    enum class NODE_TYPE : int
+    {
+        NODE_TYPE_UNKN,
+        NODE_TYPE_FNFN = 0,
+        NODE_TYPE_ROOT,
+        NODE_TYPE_FORK
+    };
+
     CNetChannel();
     ~CNetChannel();
     int GetPrimaryChainHeight() override;
@@ -64,6 +74,9 @@ public:
     void BroadcastTxInv(const uint256& hashFork) override;
     void SubscribeFork(const uint256& hashFork) override;
     void UnsubscribeFork(const uint256& hashFork) override;
+    bool IsContains(const uint256& hashFork) override;
+    void EnableSuperNode(bool fIsFork = false) override;
+
 protected:
     enum {MAX_GETBLOCKS_COUNT = 128};
     enum {MAX_PEER_SCHED_COUNT = 8};
@@ -97,6 +110,7 @@ protected:
     void PostAddNew(const uint256& hashFork,CSchedule& sched,
                     std::set<uint64>& setSchedPeer,std::set<uint64>& setMisbehavePeer);
     void SetPeerSyncStatus(uint64 nNonce,const uint256& hashFork,bool fSync);
+
     void PushTxTimerFunc(uint32 nTimerId);
     bool PushTxInv(const uint256& hashFork);
 protected:
@@ -117,6 +131,8 @@ protected:
     mutable boost::mutex mtxPushTx; 
     uint32 nTimerPushTx;
     std::set<uint256> setPushTxFork;
+
+    NODE_TYPE nodeType;
 };
 
 } // namespace multiverse
