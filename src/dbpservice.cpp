@@ -142,17 +142,6 @@ static std::string GetHex(std::string data)
     return ret;
 }
 
-static void print_block(const CBlock &block)
-{
-   
-
-}
-
-static void print_tx(const CTransaction &tx)
-{
-    
-}
-
 bool CDbpService::HandleEvent(CMvEventDbpConnect& event)
 {
     bool isReconnect = event.data.isReconnect;
@@ -637,8 +626,6 @@ void CDbpService::HandleSendEvent(CMvEventDbpMethod& event)
         ss >> eventSub;
 
         CMvEventPeerSubscribe eventUpSub(eventSub.nNonce, eventSub.hashFork);
-
-
         FilterChildSubscribeFork(eventSub, eventUpSub);
 
         if(!eventUpSub.data.empty())
