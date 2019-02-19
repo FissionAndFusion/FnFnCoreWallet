@@ -37,7 +37,6 @@ public:
     bool HandleEvent(CMvEventDbpSub& event) override;
     bool HandleEvent(CMvEventDbpUnSub& event) override;
     bool HandleEvent(CMvEventDbpMethod& event) override;
-    bool HandleEvent(CMvEventDbpPong& event) override;
     bool HandleEvent(CMvEventDbpBroken& event) override;
     bool HandleEvent(CMvEventDbpRemoveSession& event) override;
     
@@ -113,7 +112,8 @@ private:
     void RespondNoSub(CMvEventDbpSub& event);
     void RespondReady(CMvEventDbpSub& event);
 
-
+    void HandleDbpClientBroken(const std::string& session);
+    void HandleDbpServerBroken(const std::string& session);
 protected:
     walleve::IIOProc* pDbpServer;
     walleve::IIOProc* pDbpClient;
@@ -124,8 +124,6 @@ protected:
     IMvNetChannel* pNetChannel;
 
 private:
-    std::map<std::string, ForksType> mapSessionChildNodeForks; // session => child node forks
-
     std::map<std::string, std::string> mapIdSubedSession;       // id => session
     std::unordered_map<std::string, IdsType> mapTopicIds;       // topic => ids
 

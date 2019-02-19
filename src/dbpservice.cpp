@@ -101,15 +101,28 @@ void CDbpService::EnableSuperNode(bool enable)
     fEnableSuperNode = enable;
 }
 
-bool CDbpService::HandleEvent(CMvEventDbpPong& event)
+void CDbpService::HandleDbpClientBroken(const std::string& session)
 {
-    (void)event;
-    return true;
+    (void)session;
+}
+
+void CDbpService::HandleDbpServerBroken(const std::string& session)
+{
+    (void)session;
 }
 
 bool CDbpService::HandleEvent(CMvEventDbpBroken& event)
 {
-    mapSessionChildNodeForks.erase(event.strSessionId);
+    if(event.data.from == "dbpserver")
+    {
+        HandleDbpServerBroken(event.strSessionId);
+    }
+
+    if(event.data.from == "dbpclient")
+    {
+        HandleDbpClientBroken(event.strSessionId);
+    }
+
     return true;
 }
 
