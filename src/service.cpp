@@ -463,7 +463,7 @@ bool CService::SignTransaction(CTransaction& tx,bool& fCompleted)
         return false;
     }
 
-    CDestination destIn = vUnspent[0].destTo;
+    const CDestination& destIn = vUnspent[0].destTo;
     if (!pWallet->SignTransaction(destIn,tx,fCompleted))
     {
         return false;
@@ -488,9 +488,9 @@ bool CService::AddTemplate(CTemplatePtr& ptr)
     return pWallet->AddTemplate(ptr);
 }
 
-bool CService::GetTemplate(const CTemplateId& tid,CTemplatePtr& ptr)
+CTemplatePtr CService::GetTemplate(const CTemplateId& tid)
 {
-    return pWallet->GetTemplate(tid,ptr);
+    return pWallet->GetTemplate(tid);
 }
 
 bool CService::GetBalance(const CDestination& dest,const uint256& hashFork,CWalletBalance& balance)
@@ -613,7 +613,7 @@ bool CService::GetWork(vector<unsigned char>& vchWorkData,uint256& hashPrev,uint
     return true;
 }
 
-MvErr CService::SubmitWork(const vector<unsigned char>& vchWorkData,CTemplatePtr& templMint,crypto::CKey& keyMint,uint256& hashBlock)
+MvErr CService::SubmitWork(const vector<unsigned char>& vchWorkData,CTemplateMintPtr& templMint,crypto::CKey& keyMint,uint256& hashBlock)
 {
     if (vchWorkData.empty())
     {
@@ -650,7 +650,7 @@ MvErr CService::SubmitWork(const vector<unsigned char>& vchWorkData,CTemplatePtr
     txMint.sendTo = CDestination(templMint->GetTemplateId());
     txMint.nAmount = nReward;
 
-    size_t nSigSize = templMint->GetTemplateDataSize() + 64 + 2;
+    size_t nSigSize = templMint->GetTemplateData().size() + 64 + 2;
     size_t nMaxTxSize = MAX_BLOCK_SIZE - GetSerializeSize(block) - nSigSize;
     int64 nTotalTxFee = 0;
     pTxPool->ArrangeBlockTx(pCoreProtocol->GetGenesisBlockHash(),nMaxTxSize,block.vtx,nTotalTxFee);

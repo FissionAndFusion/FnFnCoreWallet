@@ -3,6 +3,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "key.h"
+
 #include "walleve/stream/datastream.h"
 #include "walleve/util.h"
 
@@ -16,13 +17,20 @@ CPubKey::CPubKey()
 }
 
 CPubKey::CPubKey(const uint256& pubkey)
-: uint256(pubkey)
+  : uint256(pubkey)
 {
 }
 
-bool CPubKey::Verify(const uint256& hash,const std::vector<uint8>& vchSig)
+bool CPubKey::Verify(const uint256& hash, const std::vector<uint8>& vchSig) const
 {
-    return CryptoVerify(*this,&hash,sizeof(hash),vchSig);
+    return CryptoVerify(*this, &hash, sizeof(hash), vchSig);
+}
+
+bool CPubKey::MultiVerify(const std::set<uint256>& setPubKey, const uint256& seed,
+                          const uint256& hash, const std::vector<uint8>& vchSig)
+{
+    std::set<uint256> setPartKey;
+    return CryptoMultiVerify(setPubKey, seed.begin(), seed.size(), hash.begin(), hash.size(), vchSig, setPartKey);
 }
 
 //////////////////////////////
@@ -85,7 +93,7 @@ bool CKey::Renew()
     return (CryptoMakeNewKey(*pCryptoKey) != 0 && UpdateCipher());
 }
 
-void CKey::Load(const CPubKey& pubkeyIn,const uint32 nVersionIn,const CCryptoCipher& cipherIn)
+void CKey::Load(const CPubKey& pubkeyIn, const uint32 nVersionIn, const CCryptoCipher& cipherIn)
 {
     pCryptoKey->pubkey = pubkeyIn;
     pCryptoKey->secret = 0;
@@ -96,7 +104,7 @@ void CKey::Load(const CPubKey& pubkeyIn,const uint32 nVersionIn,const CCryptoCip
 bool CKey::Load(const std::vector<unsigned char>& vchKey)
 {
     if (vchKey.size() != 96)
-    {   
+    {
         return false;
     }
 
@@ -107,18 +115,18 @@ bool CKey::Load(const std::vector<unsigned char>& vchKey)
 
     walleve::CWalleveIDataStream is(vchKey);
     is >> pubkey >> version;
-    is.Pop(cipherNew.encrypted,48);
+    is.Pop(cipherNew.encrypted, 48);
     is >> cipherNew.nonce >> check;
 
-    if (CryptoHash(&vchKey[0],vchKey.size() - 4).Get32() != check)
+    if (CryptoHash(&vchKey[0], vchKey.size() - 4).Get32() != check)
     {
         return false;
     }
-    Load(pubkey,version,cipherNew);
+    Load(pubkey, version, cipherNew);
     return true;
 }
 
-void CKey::Save(CPubKey& pubkeyRet,uint32& nVersionRet,CCryptoCipher& cipherRet) const
+void CKey::Save(CPubKey& pubkeyRet, uint32& nVersionRet, CCryptoCipher& cipherRet) const
 {
     pubkeyRet = pCryptoKey->pubkey;
     nVersionRet = nVersion;
@@ -129,13 +137,13 @@ void CKey::Save(std::vector<unsigned char>& vchKey) const
 {
     vchKey.clear();
     vchKey.reserve(96);
-    
+
     walleve::CWalleveODataStream os(vchKey);
     os << GetPubKey() << GetVersion();
-    os.Push(GetCipher().encrypted,48);
+    os.Push(GetCipher().encrypted, 48);
     os << GetCipher().nonce;
-    
-    uint256 hash = CryptoHash(&vchKey[0],vchKey.size());
+
+    uint256 hash = CryptoHash(&vchKey[0], vchKey.size());
     os << hash.Get32();
 }
 
@@ -145,7 +153,7 @@ bool CKey::SetSecret(const CCryptoKeyData& vchSecret)
     {
         return false;
     }
-    return (CryptoImportKey(*pCryptoKey,*((uint256*)&vchSecret[0])) != 0 
+    return (CryptoImportKey(*pCryptoKey, *((uint256*)&vchSecret[0])) != 0
             && UpdateCipher());
 }
 
@@ -153,7 +161,7 @@ bool CKey::GetSecret(CCryptoKeyData& vchSecret) const
 {
     if (!IsNull() && !IsLocked())
     {
-        vchSecret.assign(pCryptoKey->secret.begin(),pCryptoKey->secret.end());
+        vchSecret.assign(pCryptoKey->secret.begin(), pCryptoKey->secret.end());
         return true;
     }
     return false;
@@ -169,11 +177,23 @@ const CCryptoCipher& CKey::GetCipher() const
     return cipher;
 }
 
-bool CKey::Sign(const uint256& hash,std::vector<uint8>& vchSig) const
+bool CKey::Sign(const uint256& hash, std::vector<uint8>& vchSig) const
 {
     if (!IsNull() && !IsLocked())
     {
-        CryptoSign(*pCryptoKey,&hash,sizeof(hash),vchSig);
+        CryptoSign(*pCryptoKey, &hash, sizeof(hash), vchSig);
+        return true;
+    }
+    return false;
+}
+
+bool CKey::MultiSign(const std::set<CPubKey>& setPubKey, const uint256& seed,
+                     const uint256& hash, std::vector<uint8>& vchSig) const
+{
+    if (!IsNull() && !IsLocked())
+    {
+        CryptoMultiSign(std::set<uint256>(setPubKey.begin(), setPubKey.end()), *pCryptoKey,
+                        seed.begin(), seed.size(), hash.begin(), hash.size(), vchSig);
         return true;
     }
     return false;
@@ -188,8 +208,8 @@ bool CKey::Encrypt(const CCryptoString& strPassphrase,
     }
     if (Unlock(strCurrentPassphrase))
     {
-        return UpdateCipher(1,strPassphrase);
-    } 
+        return UpdateCipher(1, strPassphrase);
+    }
     return false;
 }
 
@@ -202,31 +222,30 @@ bool CKey::Unlock(const CCryptoString& strPassphrase)
 {
     try
     {
-        return CryptoDecryptSecret(nVersion,strPassphrase,cipher,*pCryptoKey);
+        return CryptoDecryptSecret(nVersion, strPassphrase, cipher, *pCryptoKey);
     }
-    catch (std::exception& e) 
+    catch (std::exception& e)
     {
         StdError(__PRETTY_FUNCTION__, e.what());
     }
     return false;
 }
 
-bool CKey::UpdateCipher(uint32 nVersionIn,const CCryptoString& strPassphrase)
+bool CKey::UpdateCipher(uint32 nVersionIn, const CCryptoString& strPassphrase)
 {
     try
     {
         CCryptoCipher cipherNew;
-        if (CryptoEncryptSecret(nVersionIn,strPassphrase,*pCryptoKey,cipherNew))
+        if (CryptoEncryptSecret(nVersionIn, strPassphrase, *pCryptoKey, cipherNew))
         {
             nVersion = nVersionIn;
             cipher = cipherNew;
             return true;
         }
     }
-    catch (std::exception& e) 
+    catch (std::exception& e)
     {
         StdError(__PRETTY_FUNCTION__, e.what());
     }
     return false;
 }
-

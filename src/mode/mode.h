@@ -68,8 +68,7 @@
 #include "mode/rpc_config.h"
 #include "mode/dbp_config.h"
 #include "mode/storage_config.h"
-
-#include "rpc/auto_rpc.h"
+#include "mode/auto_config.h"
 
 namespace multiverse
 {
@@ -98,7 +97,7 @@ private:
     {
         if (mode_impl::CCheckType<t...>().Exist(EConfigType::RPCCLIENT))
         {
-            return rpc::CreateConfig<
+            return CreateRPCCommandConfig<
                 typename std::remove_pointer<typename std::tuple_element<
                     static_cast<int>(t),
                     decltype(config_type::___ConfigTypeTemplate)>::type>::type...>(cmd);
@@ -225,7 +224,7 @@ public:
      */
     static std::string Help(EModeType type, const std::string& subCmd, const std::string& options = "")
     {
-        return rpc::Help(type, subCmd, options);
+        return RPCHelpInfo(type, subCmd, options);
     }
 };
 

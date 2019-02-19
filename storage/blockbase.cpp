@@ -3,7 +3,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "blockbase.h"
-#include "template.h"
+#include "template/template.h"
 
 using namespace std;
 using namespace boost::filesystem;

@@ -19,7 +19,7 @@ using namespace std;
 using namespace multiverse;
 using namespace walleve;
 using namespace json_spirit;
-using namespace multiverse::rpc;
+using namespace rpc;
 using boost::asio::ip::tcp;
 
 static char** RPCCommand_Completion(const char* text, int start, int end);

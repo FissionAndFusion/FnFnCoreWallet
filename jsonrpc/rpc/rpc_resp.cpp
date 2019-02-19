@@ -2,7 +2,7 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "rpc/rpc_resp.h"
+#include "rpc_resp.h"
 
 #include <exception>
 #include <memory>
@@ -10,10 +10,8 @@
 #include "json/json_spirit_reader_template.h"
 #include "json/json_spirit_utils.h"
 
-#include "rpc/auto_rpc.h"
+#include "rpc/auto_protocol.h"
 
-namespace multiverse
-{
 namespace rpc
 {
 ///////////////////////////////////////////////////
@@ -202,5 +200,3 @@ std::string SerializeCRPCResp(const CRPCRespVec& resp, bool indent)
 }
 
 }  // namespace rpc
-
-}  // namespace multiverse

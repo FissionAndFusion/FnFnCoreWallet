@@ -7,6 +7,9 @@
 
 #include <mysql.h>
 #include <boost/thread/thread.hpp>
+
+#include "walleve/util.h"
+
 #include "uint256.h"
 #include "destination.h"
 

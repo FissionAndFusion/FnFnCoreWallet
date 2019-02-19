@@ -5,6 +5,7 @@
 #include "profile.h"
 #include <walleve/stream/datastream.h>
 #include <walleve/compacttv.h>
+#include <walleve/util.h>
 
 using namespace std;
 using namespace walleve;

@@ -130,28 +130,33 @@ BOOST_AUTO_TEST_CASE( sc25519 )
 BOOST_AUTO_TEST_CASE( ed25519 )
 {
     srand(time(0));
-    uint8_t md32[32];
+    uint64_t md32[4] = {0x23753fb0451ab230, 0xa03e286ea4e97588, 0x513ae37812fb6579, 0x687709b0bc557364};
+    CSC25519 k((uint8*)md32);
+    CEdwards25519 P;
+    P.Generate(k);
+    P.Pack((uint8*)md32);
+    std::cout << uint256(md32).ToString() << std::endl;
 
     // sign, verify
-    for (int i = 0; i < 10; i++)
-    {
-        uint256 priv1, pub1;
-        uint256 priv2, pub2;
-        KeyGenerator(priv1, pub1);
-        KeyGenerator(priv2, pub2);
+    // for (int i = 0; i < 10; i++)
+    // {
+    //     uint256 priv1, pub1;
+    //     uint256 priv2, pub2;
+    //     KeyGenerator(priv1, pub1);
+    //     KeyGenerator(priv2, pub2);
 
-        RandGeneretor(md32);
-        CSC25519 hash(md32);
+    //     RandGeneretor(md32);
+    //     CSC25519 hash(md32);
 
-        CSC25519 sign = CSC25519(priv1.begin()) + CSC25519(priv2.begin()) * hash;
+    //     CSC25519 sign = CSC25519(priv1.begin()) + CSC25519(priv2.begin()) * hash;
 
-        CEdwards25519 P,R,S;
-        P.Unpack(pub1.begin());
-        R.Unpack(pub2.begin());
-        S.Generate(sign);
+    //     CEdwards25519 P,R,S;
+    //     P.Unpack(pub1.begin());
+    //     R.Unpack(pub2.begin());
+    //     S.Generate(sign);
         
-        BOOST_CHECK( S == (P + R.ScalarMult(hash)) );
-    }
+    //     BOOST_CHECK( S == (P + R.ScalarMult(hash)) );
+    // }
 }
 
 BOOST_AUTO_TEST_CASE( interpolation )
@@ -246,18 +251,18 @@ BOOST_AUTO_TEST_CASE( mpvss )
 
         // Publish
         t0 = boost::posix_time::microsec_clock::universal_time();
-        bool fComplete;
+        bool fCompleted;
         for (int i = 0;i < count;i++)
         {
             std::map<uint256,std::vector<uint256> > mapShare;
             mapSS[vID[i]].Publish(mapShare);
             for (int j = 0;j < count;j++)
             {
-                fComplete = false;
-                mapSS[vID[j]].Collect(vID[i],mapShare,fComplete);
+                fCompleted = false;
+                mapSS[vID[j]].Collect(vID[i],mapShare,fCompleted);
             }
-            fComplete = false;
-            ssWitness.Collect(vID[i],mapShare,fComplete);
+            fCompleted = false;
+            ssWitness.Collect(vID[i],mapShare,fCompleted);
         }
         std::cout << "\tPublish : " << ((boost::posix_time::microsec_clock::universal_time() - t0).ticks() / count) <<"\n";
 

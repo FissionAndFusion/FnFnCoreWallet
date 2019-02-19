@@ -15,7 +15,7 @@ using namespace multiverse;
 using namespace walleve;
 using namespace json_spirit;
 using boost::asio::ip::tcp;
-using namespace multiverse::rpc;
+using namespace rpc;
 
 extern void MvShutdown();
 

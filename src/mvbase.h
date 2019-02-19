@@ -14,7 +14,8 @@
 #include "profile.h"
 #include "wallettx.h"
 #include "destination.h"
-#include "template.h"
+#include "template/template.h"
+#include "template/mint.h"
 #include "crypto.h"
 #include "key.h"
 #include "config.h"
@@ -177,7 +178,7 @@ public:
     virtual void GetTemplateIds(std::set<CTemplateId>& setTemplateId) const = 0;
     virtual bool Have(const CTemplateId& tid) const = 0;
     virtual bool AddTemplate(CTemplatePtr& ptr) = 0;
-    virtual bool GetTemplate(const CTemplateId& tid, CTemplatePtr& ptr) = 0;
+    virtual CTemplatePtr GetTemplate(const CTemplateId& tid) const = 0;
     /* Wallet Tx */
     virtual std::size_t GetTxCount() = 0;
     virtual bool ListTx(int nOffset, int nCount, std::vector<CWalletTx>& vWalletTx) = 0;
@@ -261,7 +262,7 @@ public:
     virtual bool HaveTemplate(const CTemplateId& tid) = 0;
     virtual void GetTemplateIds(std::set<CTemplateId>& setTid) = 0;
     virtual bool AddTemplate(CTemplatePtr& ptr) = 0;
-    virtual bool GetTemplate(const CTemplateId& tid, CTemplatePtr& ptr) = 0;
+    virtual CTemplatePtr GetTemplate(const CTemplateId& tid) = 0;
     virtual bool GetBalance(const CDestination& dest, const uint256& hashFork, CWalletBalance& balance) = 0;
     virtual bool ListWalletTx(int nOffset, int nCount, std::vector<CWalletTx>& vWalletTx) = 0;
     virtual bool CreateTransaction(const uint256& hashFork, const CDestination& destFrom,
@@ -271,7 +272,7 @@ public:
     virtual bool ResynchronizeWalletTx() = 0;
     /* Mint */
     virtual bool GetWork(std::vector<unsigned char>& vchWorkData, uint256& hashPrev, uint32& nPrevTime, int& nAlgo, int& nBits) = 0;
-    virtual MvErr SubmitWork(const std::vector<unsigned char>& vchWorkData, CTemplatePtr& templMint, crypto::CKey& keyMint, uint256& hashBlock) = 0;
+    virtual MvErr SubmitWork(const std::vector<unsigned char>& vchWorkData, CTemplateMintPtr& templMint, crypto::CKey& keyMint, uint256& hashBlock) = 0;
 };
 
 } // namespace multiverse

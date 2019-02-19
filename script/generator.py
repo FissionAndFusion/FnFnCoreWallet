@@ -5,9 +5,9 @@ import sys
 sys.dont_write_bytecode = True
 
 import os
-import options_generator as options
-import rpc_protocol_generator as protocol
-import rpc_generator as rpc
+import auto_options as options
+import auto_protocol as protocol
+import auto_rpc as rpc
 from tool import *
 
 
@@ -15,25 +15,36 @@ def create_dir(dir):
     if not os.path.exists(dir):
         os.makedirs(dir)
 
+def panic():
+    print('[ERROR] arguments error!')
+    print('usage: generator.py ["all"|"rpc"|"mode"] [output directory]')
+    exit(1)
 
-def delete_file(file):
-    if os.path.exists(file):
-        os.remove(file)
 
+if len(sys.argv) < 3:
+    panic()
 
 # script dictionary
 root = os.path.dirname(__file__)
+
 # json files dictionary
 json_root = os.path.abspath(os.path.join(root, 'template'))
-# cpp files dictionary
-cpp_src_root = os.path.abspath(os.path.join(root, '../build/src'))
-if len(sys.argv) > 1:
-    cpp_src_root = sys.argv[1]
-    if not os.path.isabs(cpp_src_root):
-        cpp_src_root = os.path.join(os.getcwd(), cpp_src_root)
 
-create_dir(os.path.join(cpp_src_root, 'mode'))
-create_dir(os.path.join(cpp_src_root, 'rpc'))
+# generating modules
+modules = sys.argv[1]
+if modules != 'all' and modules != 'rpc' and modules != 'mode':
+    panic()
+
+# cpp files dictionary
+cpp_src_root = sys.argv[2]
+if not os.path.isabs(cpp_src_root):
+    cpp_src_root = os.path.join(os.getcwd(), cpp_src_root)
+
+if modules == 'all' or modules == 'mode':
+    create_dir(os.path.join(cpp_src_root, 'mode'))
+
+if modules == 'all' or modules == 'rpc':
+    create_dir(os.path.join(cpp_src_root, 'rpc'))
 
 # json file name
 json_files = {
@@ -43,12 +54,14 @@ json_files = {
 }
 
 # cpp file name
-cpp_files = {
+mode_cpp_files = {
     'options_h': 'mode/auto_options.h',
-    'rpc_h': 'rpc/auto_rpc.h',
-    'rpc_cpp': 'rpc/auto_rpc.cpp',
-    'rpc_protocol_h': 'rpc/auto_protocol.h',
-    'rpc_protocol_cpp': 'rpc/auto_protocol.cpp',
+    'config_h': 'mode/auto_config.h',
+    'config_cpp': 'mode/auto_config.cpp',
+}
+rpc_cpp_files = {
+    'protocol_h': 'rpc/auto_protocol.h',
+    'protocol_cpp': 'rpc/auto_protocol.cpp',
 }
 
 
@@ -58,18 +71,23 @@ def generate():
         json_files[k] = os.path.join(json_root, v)
 
     # cpp files path
-    for k, v in cpp_files.items():
-        # new cpp file path
-        cpp_files[k] = os.path.join(cpp_src_root, v)
+    cpp_files = {}
+    for k, v in mode_cpp_files.items():
+        if modules == 'all' or modules == 'mode':
+            cpp_files[k] = os.path.join(cpp_src_root, v)
+        else:
+            cpp_files[k] = None
 
-    # generate auto_options.h
+    for k, v in rpc_cpp_files.items():
+        if modules == 'all' or modules == 'rpc':
+            cpp_files[k] = os.path.join(cpp_src_root, v)
+        else:
+            cpp_files[k] = None
+
     options.generate_options(json_files['options_json'], cpp_files['options_h'])
-
-    # generate auto_rpc.h auto_rpc.cpp
-    protocol.generate_protocol(json_files['rpc_json'], cpp_files['rpc_protocol_h'], cpp_files['rpc_protocol_cpp'])
-
-    # generate auto_rpc.h auto_rpc.cpp
-    rpc.generate_rpc(json_files['mode_json'], json_files['rpc_json'], cpp_files['rpc_h'], cpp_files['rpc_cpp'])
+    protocol.generate_protocol(json_files['rpc_json'], json_files['mode_json'], cpp_files['protocol_h'],
+                               cpp_files['protocol_cpp'], cpp_files['config_h'], cpp_files['config_cpp'])
+    # rpc.generate_rpc(json_files['mode_json'], json_files['rpc_json'], cpp_files['rpc_h'], cpp_files['rpc_cpp'])
 
 
 if __name__ == '__main__':

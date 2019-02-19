@@ -286,7 +286,7 @@ MvErr CMvCoreProtocol::VerifyTransaction(const CTransaction& tx,const vector<CTx
         {
             return DEBUG(MV_ERR_TRANSACTION_INPUT_INVALID,"input destination mismatched\n");
         }
-        if (output.nLockUntil != 0 && output.nLockUntil < nForkHeight)
+        if (output.IsLocked(nForkHeight))
         {
             return DEBUG(MV_ERR_TRANSACTION_INPUT_INVALID,"input is still locked\n");
         }
@@ -300,7 +300,21 @@ MvErr CMvCoreProtocol::VerifyTransaction(const CTransaction& tx,const vector<CTx
     {
         return DEBUG(MV_ERR_TRANSACTION_INPUT_INVALID,"valuein is not enough (%ld : %ld)\n",nValueIn,tx.nAmount + tx.nTxFee);
     }
-    if (!destIn.VerifySignature(tx.GetSignatureHash(),tx.vchSig))
+
+    vector<uint8> vchSig;
+    if (CTemplate::IsDestInRecorded(tx.sendTo))
+    {
+        CDestination recordedDestIn;
+        if (!CDestInRecordedTemplate::ParseDestIn(tx.vchSig, recordedDestIn, vchSig) || recordedDestIn != destIn)
+        {
+            return DEBUG(MV_ERR_TRANSACTION_SIGNATURE_INVALID,"invalid recoreded destination\n");
+        }
+    }
+    else
+    {
+        vchSig = tx.vchSig;
+    }
+    if (!destIn.VerifyTxSignature(tx.GetSignatureHash(), tx.hashAnchor, tx.sendTo, vchSig))
     {
         return DEBUG(MV_ERR_TRANSACTION_SIGNATURE_INVALID,"invalid signature\n");
     }
@@ -418,7 +432,10 @@ int64 CMvCoreProtocol::GetProofOfWorkReward(CBlockIndex* pIndexPrev)
 
 bool CMvCoreProtocol::CheckBlockSignature(const CBlock& block)
 {
-    (void)block;
+    if (block.GetHash() != GetGenesisBlockHash())
+    {
+        return block.txMint.sendTo.VerifyBlockSignature(block.GetHash(), block.vchSig);
+    }
     return true;
 }
 

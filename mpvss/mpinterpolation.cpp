@@ -131,7 +131,7 @@ const uint256 MPLagrange(vector<pair<uint32_t,uint256> >& vShare)
         }
         s0 += l * CSC25519(vShare[i].second.begin());
     }
-    return uint256(s0.value);
+    return uint256(s0.Data());
 }
 
 // Newton interpolation polynomial. Return f(0)
@@ -174,5 +174,5 @@ const uint256 MPNewton(vector<pair<uint32_t,uint256> >& vShare)
         basis.Negative();
         vDiffSet.push_back(std::move(vDiff));
     }
-    return uint256(s0.value);
+    return uint256(s0.Data());
 }

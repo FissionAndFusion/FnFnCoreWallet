@@ -13,6 +13,7 @@ set(sources
 	rpc_tests.cpp
 	version_tests.cpp
 	mpvss_tests.cpp
+	crypto_tests.cpp
 )
 
 add_executable(test_fnfn ${sources})
@@ -24,4 +25,5 @@ target_link_libraries(test_fnfn
 	Boost::system
 	Boost::thread
 	mpvss
+	crypto
 )

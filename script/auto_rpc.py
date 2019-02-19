@@ -162,7 +162,7 @@ def CreateConfig_h(w):
         for cmd, name in config_class.items():
             w.write('if (cmd == "' + cmd + '")\n')
             indent = brace_begin(w, indent)
-            w.write(indent + 'return new mode_impl::CCombinConfig<' +
+            w.write(indent + 'return new mode_impl::CCombinConfig<rpc::' +
                     name + ', T...>;\n')
             indent = brace_end(w, indent)
             w.write(indent + 'else ')
@@ -234,10 +234,11 @@ def generate_h():
         # file top
         w.write(
             '''
-#ifndef MULTIVERSE_RPC_AUTO_RPC_H
-#define MULTIVERSE_RPC_AUTO_RPC_H
+#ifndef MULTIVERSE_MODE_AUTO_RPC_H
+#define MULTIVERSE_MODE_AUTO_RPC_H
 
 #include <tuple>
+#include "mode/auto_config.h"
 #include "mode/mode_type.h"
 #include "mode/mode_impl.h"
 #include "rpc/rpc_error.h"
@@ -246,8 +247,6 @@ def generate_h():
 #include "rpc/auto_protocol.h"
 
 namespace multiverse
-{
-namespace rpc
 {
 ''')
         # function CreateCRPCParam
@@ -277,11 +276,9 @@ namespace rpc
         # file bottom
         w.write(
             '''
-}  // namespace rpc
-
 }  // namespace multiverse
 
-#endif  // MULTIVERSE_RPC_AUTO_RPC_H
+#endif  // MULTIVERSE_MODE_AUTO_RPC_H
 ''')
 
 
@@ -296,9 +293,9 @@ def generate_cpp():
 
 #include "rpc/rpc_error.h"
 
+using namespace rpc;
+
 namespace multiverse
-{
-namespace rpc
 {
 ''')
 
@@ -319,8 +316,6 @@ namespace rpc
         # file bottom
         w.write(
             '''
-}  // namespace rpc
-
 }  // namespace multiverse
 ''')
 
@@ -334,11 +329,14 @@ def generate_rpc(mode_json_path, rpc_json_path, rpc_h_path, rpc_cpp_path):
     rpc_h = rpc_h_path
     rpc_cpp = rpc_cpp_path
 
+    if not mode_json or not rpc_json or not rpc_h or not rpc_cpp:
+        return
+
     # parse json file
     parse()
 
-    # generate template.h
+    # generate auto_rpc.h
     generate_h()
 
-    # generate template.cpp
+    # generate auto_rpc.cpp
     generate_cpp()

@@ -133,10 +133,26 @@ public:
         ss << nVersion << nType << nLockUntil << hashAnchor << vInput << sendTo << nAmount << nTxFee << vchData;
         return multiverse::crypto::CryptoHash(ss.GetData(),ss.GetSize());
     }
-
     int64 GetChange(int64 nValueIn) const
     {
         return (nValueIn - nAmount - nTxFee);
+    }
+    uint32 GetLockUntil(const uint32 n = 0) const
+    {
+        if (n == (nLockUntil >> 31))
+        {
+            return nLockUntil & 0x7FFFFFFF;
+        }
+        return 0;
+    }
+    bool SetLockUntil(const uint32 nHeight, const uint32 n = 0)
+    {
+        if (nHeight >> 31)
+        {
+            return false;
+        }
+        nLockUntil = (n << 31) | nHeight;
+        return true;
     }
     friend bool operator==(const CTransaction& a, const CTransaction& b)
     {
@@ -198,11 +214,11 @@ public:
         nLockUntil =  0;
     }
     bool IsNull() const { return (destTo.IsNull() || nAmount <= 0); }
-    bool IsLocked(int nBlockHeight) const { return (nBlockHeight < nLockUntil); } 
+    bool IsLocked(int nBlockHeight) const { return (nBlockHeight < (nLockUntil & 0x7FFFFFFF)); } 
     std::string ToString() const 
     {
         std::ostringstream oss;
-        oss << "TxOutput : (" << destTo.GetHex() << "," << nAmount << "," << nLockUntil << ")";
+        oss << "TxOutput : (" << destTo.ToString() << "," << nAmount << "," << nLockUntil << ")";
         return oss.str(); 
     }
 protected:
@@ -257,11 +273,11 @@ public:
     {
         if (n == 0)
         {
-            return CTxOutput(sendTo,nAmount,nLockUntil);
+            return CTxOutput(sendTo,nAmount,GetLockUntil(0));
         }
         else if (n == 1)
         {
-            return CTxOutput(destIn,GetChange(),0);
+            return CTxOutput(destIn,GetChange(),GetLockUntil(1));
         }
         return CTxOutput();
     }

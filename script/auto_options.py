@@ -24,6 +24,9 @@ def generate_options(options_json_path, options_h_path):
     options_json = options_json_path
     options_h = options_h_path
 
+    if not options_h or not options_h:
+        return
+
     with open(options_json, 'r') as r:
         content = json.loads(r.read(), object_pairs_hook=OrderedDict)
         content = json_hook(content)

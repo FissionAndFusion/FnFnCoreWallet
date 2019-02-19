@@ -90,17 +90,25 @@ public:
     {
         if (n == 0)
         {
-            return CTxOutput(sendTo,nAmount,nLockUntil);
+            return CTxOutput(sendTo,nAmount,GetLockUntil(0));
         }
         else if (n == 1)
         {
-            return CTxOutput(destIn,GetChange(),0);
+            return CTxOutput(destIn,GetChange(),GetLockUntil(1));
         }
         return CTxOutput();
     }
     int GetRefCount() const
     {
         return nRefCount;
+    }
+    uint32 GetLockUntil(const uint32 n = 0) const
+    {
+        if (n == (nLockUntil >> 31))
+        {
+            return nLockUntil & 0x7FFFFFFF;
+        }
+        return 0;
     }
 };
 
@@ -109,10 +117,11 @@ class CWalletTxOut
 public:
     CWalletTxOut(const std::shared_ptr<CWalletTx>& spWalletTxIn=NULL,int nIn=-1) : spWalletTx(spWalletTxIn),n(nIn) {}
     bool IsNull() const { return (spWalletTx == NULL || spWalletTx->GetOutput(n).IsNull()); }
-    bool IsLocked(int nHeight) const { return (n == 0 && spWalletTx->nLockUntil > 0 && spWalletTx->nLockUntil < nHeight); }
+    bool IsLocked(int nHeight) const { return nHeight < spWalletTx->GetLockUntil(n); } 
     int GetDepth(int nHeight) const { return (spWalletTx->nBlockHeight >= 0 ? nHeight - spWalletTx->nBlockHeight + 1 : 0); }
     int64 GetAmount() const { return (n == 0 ? spWalletTx->nAmount : spWalletTx->GetChange()); }
     CTxOutPoint GetTxOutPoint() const { return CTxOutPoint(spWalletTx->txid,n); }
+    const CTxOutput GetTxOutput() const { return spWalletTx->GetOutput(n); }
     void AddRef() const { ++spWalletTx->nRefCount; }
     void Release() const { --spWalletTx->nRefCount; }
     friend inline bool operator==(const CWalletTxOut& a,const CWalletTxOut& b)
