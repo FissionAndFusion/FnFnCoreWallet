@@ -306,11 +306,12 @@ CDbpClient::~CDbpClient() noexcept
 
 void CDbpClient::HandleClientSocketError(CDbpClientSocket* pClientSocket)
 {
-    std::cerr << "Client Socket Error." << std::endl; 
+    std::cerr << "Dbp Client Socket Error." << std::endl; 
     
     CMvEventDbpBroken *pEventDbpBroken = new CMvEventDbpBroken(pClientSocket->GetSession());
     if(pEventDbpBroken)
     {
+        pEventDbpBroken->data.from = "dbpclient";
         pClientSocket->GetIOModule()->PostEvent(pEventDbpBroken);
     }
 
@@ -443,7 +444,7 @@ void CDbpClient::HandleFailed(CDbpClientSocket* pClientSocket, google::protobuf:
     
    
     auto epRemote = pClientSocket->GetHost().ToEndPoint();
-    RemoveClientSocket(pClientSocket);
+    HandleClientSocketError(pClientSocket);
     
     auto it = mapProfile.find(epRemote);
     if(it != mapProfile.end())

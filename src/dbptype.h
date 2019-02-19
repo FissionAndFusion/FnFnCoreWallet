@@ -237,6 +237,7 @@ class CMvDbpBroken
 {
 public:
     std::string session;
+    std::string from; // event from [dbpserver | dbpclient]
 };
 
 class CMvDbpRemoveSession

@@ -732,11 +732,12 @@ void CDbpServer::HandleClientSent(CDbpServerSocket* pDbpClient)
 
 void CDbpServer::HandleClientError(CDbpServerSocket* pDbpClient)
 {
-    std::cerr << "Client Error. " << std::endl;
+    std::cerr << "Dbp Server Socket Error. " << std::endl;
     
     CMvEventDbpBroken *pEventDbpBroken = new CMvEventDbpBroken(pDbpClient->GetSession());
     if(pEventDbpBroken)
     {
+        pEventDbpBroken->data.from = "dbpserver";
         pDbpClient->GetProfile()->pIOModule->PostEvent(pEventDbpBroken);
     }
 
