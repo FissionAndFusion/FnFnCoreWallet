@@ -105,7 +105,7 @@ void CDbpService::HandleDbpClientBroken(const std::string& session)
 {
     (void)session;
 
-    for(const auto& ele : mapPeerEvent)
+    for(const auto& ele : mapPeerEventActive)
     {
         uint64 nNonce = ele.first;
         auto &event = ele.second;
@@ -167,7 +167,7 @@ bool CDbpService::HandleEvent(CMvEventDbpConnect& event)
         {
             RespondConnected(event);
 
-            for(const auto& virtualevent : mapPeerEvent)
+            for(const auto& virtualevent : mapPeerEventActive)
             {
                 std::string session(event.strSessionId);
                 CMvEventDbpAdded eventAdd(session);
@@ -176,7 +176,7 @@ bool CDbpService::HandleEvent(CMvEventDbpConnect& event)
                 return pDbpServer->DispatchEvent(&eventAdd);
             }
 
-            if(mapPeerEvent.size() == 0)
+            if(mapPeerEventActive.size() == 0)
             {
                 CWalleveBufStream ss;
                 CMvEventPeerActive eventAct(std::numeric_limits<uint64>::max());
@@ -960,7 +960,7 @@ bool CDbpService::HandleEvent(CMvEventPeerActive& event)
         eventVPeer.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_ACTIVE;
         eventVPeer.data = std::vector<uint8>(data.begin(), data.end());
        
-        mapPeerEvent[event.nNonce] = eventVPeer;
+        mapPeerEventActive[event.nNonce] = eventVPeer;
         PushEvent(eventVPeer);
     }
 
@@ -980,7 +980,7 @@ bool CDbpService::HandleEvent(CMvEventPeerDeactive& event)
         eventVPeer.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_DEACTIVE;
         eventVPeer.data = std::vector<uint8>(data.begin(), data.end());
         
-        mapPeerEvent.erase(event.nNonce);
+        mapPeerEventActive.erase(event.nNonce);
         PushEvent(eventVPeer);
     }
     
@@ -1299,7 +1299,7 @@ bool CDbpService::HandleEvent(CMvEventDbpVirtualPeerNet& event)
         ss >> eventActive;  
         pVirtualPeerNet->DispatchEvent(&eventActive);
 
-        mapPeerEvent[eventActive.nNonce] = event.data;
+        mapPeerEventActive[eventActive.nNonce] = event.data;
         PushEvent(event.data);
     }
 
@@ -1309,7 +1309,7 @@ bool CDbpService::HandleEvent(CMvEventDbpVirtualPeerNet& event)
         ss >> eventDeactive;   
         pVirtualPeerNet->DispatchEvent(&eventDeactive);
 
-        mapPeerEvent.erase(eventDeactive.nNonce);
+        mapPeerEventActive.erase(eventDeactive.nNonce);
         PushEvent(event.data);
     }
 

@@ -133,7 +133,7 @@ private:
     bool fEnableSuperNode;
 
     
-    std::map<uint64, CMvDbpVirtualPeerNetEvent> mapPeerEvent;
+    std::map<uint64, CMvDbpVirtualPeerNetEvent> mapPeerEventActive;
 
     /*Event router*/
     typedef std::pair<uint256, uint64> ForkNonceKeyType;
