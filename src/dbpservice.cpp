@@ -101,10 +101,8 @@ void CDbpService::EnableSuperNode(bool enable)
     fEnableSuperNode = enable;
 }
 
-void CDbpService::HandleDbpClientBroken(const std::string& session)
+void CDbpService::DeativeNode()
 {
-
-    // 2
     for(const auto& ele : mapPeerEventActive)
     {
         uint64 nNonce = ele.first;
@@ -121,6 +119,11 @@ void CDbpService::HandleDbpClientBroken(const std::string& session)
         eventDeactive.data = eventActive.data;  
         pVirtualPeerNet->DispatchEvent(&eventDeactive);
     }
+}
+
+void CDbpService::HandleDbpClientBroken(const std::string& session)
+{
+    DeativeNode();
 }
 
 void CDbpService::HandleDbpServerBroken(const std::string& session)
