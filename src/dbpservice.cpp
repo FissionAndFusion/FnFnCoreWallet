@@ -2189,6 +2189,7 @@ void CDbpService::PushRPC(std::vector<uint8>& data, int type)
 
 void CDbpService::InitRPCTopicIds()
 {
+    vRPCTopicIds.clear();
     const auto& allIds = mapTopicIds[RPC_CMD_TOPIC];
     for (const auto id : allIds)
     {
@@ -2198,7 +2199,7 @@ void CDbpService::InitRPCTopicIds()
             vRPCTopicIds.push_back(id);
         }
     }
-    std::cout << "topic id count:" << vRPCTopicIds.size() << std::endl;
+    std::cout << "[<] topic id count:" << vRPCTopicIds.size() << std::endl;
 }
 
 void CDbpService::InitSessionCount()
@@ -2221,7 +2222,7 @@ void CDbpService::InitSessionCount()
         }
     }
     sessionCount = setSession.size();
-    std::cout << "session count:" << setSession.size() << std::endl;
+    std::cout << "[<] session count:" << setSession.size() << std::endl;
 }
 
 bool CDbpService::HandleEvent(CMvEventRPCRouteStop& event)
