@@ -735,6 +735,7 @@ void CDbpServer::HandleClientError(CDbpServerSocket* pDbpClient)
     CMvEventDbpBroken *pEventDbpBroken = new CMvEventDbpBroken(pDbpClient->GetSession());
     if(pEventDbpBroken)
     {
+        pEventDbpBroken->data.session = pDbpClient->GetSession();
         pEventDbpBroken->data.from = "dbpserver";
         pDbpClient->GetProfile()->pIOModule->PostEvent(pEventDbpBroken);
     }
