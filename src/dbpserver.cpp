@@ -306,6 +306,12 @@ bool CDbpServerSocket::IsSentComplete()
 
 void CDbpServerSocket::HandleReadHeader(std::size_t nTransferred)
 {
+    if(nTransferred == 0)
+    {
+        pServer->HandleClientError(this);
+        return;
+    }
+    
     if (nTransferred == MSG_HEADER_LEN)
     {
         std::string lenBuffer(ssRecv.GetData(), ssRecv.GetData() + MSG_HEADER_LEN);
@@ -328,6 +334,12 @@ void CDbpServerSocket::HandleReadHeader(std::size_t nTransferred)
 
 void CDbpServerSocket::HandleReadPayload(std::size_t nTransferred, uint32_t len)
 {
+    if(nTransferred == 0)
+    {
+        pServer->HandleClientError(this);
+        return;
+    }
+    
     if (nTransferred == len)
     {
         HandleReadCompleted(len);

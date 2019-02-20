@@ -205,6 +205,12 @@ void CDbpClientSocket::HandleWritenRequest(std::size_t nTransferred, dbp::Msg ty
     
 void CDbpClientSocket::HandleReadHeader(std::size_t nTransferred)
 {   
+    if(nTransferred == 0)
+    {
+        pDbpClient->HandleClientSocketError(this);
+        return;
+    }
+    
     if (nTransferred == MSG_HEADER_LEN)
     {
         std::string lenBuffer(ssRecv.GetData(), ssRecv.GetData() + MSG_HEADER_LEN);
@@ -225,8 +231,14 @@ void CDbpClientSocket::HandleReadHeader(std::size_t nTransferred)
     }
 }
     
-void CDbpClientSocket::HandleReadPayload(std::size_t nTransferred,uint32_t len)
+void CDbpClientSocket::HandleReadPayload(std::size_t nTransferred, uint32_t len)
 {
+    if(nTransferred == 0)
+    {
+        pDbpClient->HandleClientSocketError(this);
+        return;
+    }
+    
     if (nTransferred == len)
     {
         HandleReadCompleted(len);
