@@ -2091,6 +2091,12 @@ CRPCResultPtr CRPCMod::SnRPCGetBlockCount(CRPCParamPtr param)
     return NULL;
 }
 
+CRPCResultPtr CRPCMod::SnRPCGetBlockHash(CRPCParamPtr param)
+{
+    (void)param;
+    return NULL;
+}
+
 CSnRPCMod::CSnRPCMod()
 {
     mapRPCFunc["stop"] = &CRPCMod::SnRPCStop;
@@ -2098,6 +2104,7 @@ CSnRPCMod::CSnRPCMod()
     mapRPCFunc["listfork"] = &CRPCMod::SnRPCListFork;
     mapRPCFunc["getblocklocation"] = &CRPCMod::SnRPCGetBlockLocation;
     mapRPCFunc["getblockcount"] = &CRPCMod::SnRPCGetBlockCount;
+    mapRPCFunc["getblockhash"] = &CRPCMod::SnRPCGetBlockHash;
 }
 
 CSnRPCMod::~CSnRPCMod()
@@ -2245,7 +2252,6 @@ CRPCResultPtr CSnRPCMod::SnRPCGetBlockCount(CRPCParamPtr param)
     ioComplt.WaitForComplete(fResult);
 
     auto ret = boost::any_cast<CMvRPCRouteGetBlockCountRet>(ioComplt.obj);
-
     uint256 hashFork;
     int height = 0;
     if (ret.exception == 0)
@@ -2261,4 +2267,48 @@ CRPCResultPtr CSnRPCMod::SnRPCGetBlockCount(CRPCParamPtr param)
         throw CRPCException(RPC_INVALID_PARAMETER, "Unknown fork");
     }
     return MakeCGetBlockCountResultPtr(height);
+}
+
+CRPCResultPtr CSnRPCMod::SnRPCGetBlockHash(CRPCParamPtr param)
+{
+    auto spParam = CastParamPtr<CGetBlockHashParam>(param);
+    auto* pEvent = new CMvEventRPCRouteGetBlockHash("");
+    pEvent->data.ioComplt = &ioComplt;
+    pEvent->data.nNonce = GenNonce();
+    pEvent->data.height = spParam->nHeight;
+    pEvent->data.strFork = spParam->strFork;
+    if(!pEvent)
+    {
+        return NULL;
+    }
+    pDbpService->PostEvent(pEvent);
+    ioComplt.Reset();
+    bool fResult = false;
+    ioComplt.WaitForComplete(fResult);
+
+    auto ret = boost::any_cast<CMvRPCRouteGetBlockHashRet>(ioComplt.obj);
+    int height = 0;
+    if (ret.exception == 0)
+    {
+        // hash = ret.strHash;
+    }
+    else if (ret.exception == 1)
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Invalid fork");
+    }
+    else if (ret.exception == 2)
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Unknown fork");
+    }
+    else if (ret.exception == 3)
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Block number out of range.");
+    }
+
+    auto spResult = MakeCGetBlockHashResultPtr();
+    for (const auto& hash: ret.vHash)
+    {
+        spResult->vecHash.push_back(hash);
+    }
+    return spResult;
 }

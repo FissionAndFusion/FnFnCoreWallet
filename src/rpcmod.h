@@ -128,6 +128,7 @@ public:
     virtual CRPCResultPtr SnRPCListFork(CRPCParamPtr param);
     virtual CRPCResultPtr SnRPCGetBlockLocation(CRPCParamPtr param);
     virtual CRPCResultPtr SnRPCGetBlockCount(CRPCParamPtr param);
+    virtual CRPCResultPtr SnRPCGetBlockHash(CRPCParamPtr param);
 
 protected:
     walleve::IIOProc *pHttpServer;
@@ -148,6 +149,7 @@ public:
     CRPCResultPtr SnRPCListFork(CRPCParamPtr param) override;
     CRPCResultPtr SnRPCGetBlockLocation(CRPCParamPtr param) override;
     CRPCResultPtr SnRPCGetBlockCount(CRPCParamPtr param) override;
+    CRPCResultPtr SnRPCGetBlockHash(CRPCParamPtr param) override;
 
 protected:
     bool WalleveHandleInitialize() override;
