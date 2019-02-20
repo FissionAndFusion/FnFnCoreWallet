@@ -569,6 +569,37 @@ void CDbpService::FilterChildUnsubscribeFork(const CMvEventPeerUnsubscribe& in, 
     }
 }
 
+void CDbpService::CollectSessionSubForks(const std::string& session, const CMvEventPeerSubscribe& sub)
+{
+    if(mapSessionForks.find(session) != mapSessionForks.end())
+    {
+        for(const uint256& fork : sub.data)
+        {
+            mapSessionForks[session].push_back(fork);
+        }
+    }
+    else
+    {
+        mapSessionForks[session] = sub.data;
+    }
+}
+
+void CDbpService::CollectSessionUnSubForks(const std::string& session, const CMvEventPeerUnsubscribe& unsub)
+{
+    if(mapSessionForks.find(session) != mapSessionForks.end())
+    {
+        auto& forks = mapSessionForks[session];
+        for(const uint256& fork : unsub.data)
+        {
+            auto iter = std::find(forks.begin(), forks.end(), fork);
+            if(iter != forks.end())
+            {
+                forks.erase(iter);
+            }
+        }
+    }
+}
+
 // event from down to up
 void CDbpService::HandleSendEvent(CMvEventDbpMethod& event)
 {
@@ -634,6 +665,7 @@ void CDbpService::HandleSendEvent(CMvEventDbpMethod& event)
 
         CMvEventPeerSubscribe eventUpSub(eventSub.nNonce, eventSub.hashFork);
         FilterChildSubscribeFork(eventSub, eventUpSub);
+        CollectSessionSubForks(event.strSessionId, eventSub);
 
         if(!eventUpSub.data.empty())
         {
@@ -664,8 +696,8 @@ void CDbpService::HandleSendEvent(CMvEventDbpMethod& event)
         ss >> eventUnSub;
 
         CMvEventPeerUnsubscribe eventUpUnSub(eventUnSub.nNonce, eventUnSub.hashFork);
-
         FilterChildUnsubscribeFork(eventUnSub, eventUpUnSub);
+        CollectSessionUnSubForks(event.strSessionId, eventUnSub);
 
         if(!eventUpUnSub.data.empty())
         {

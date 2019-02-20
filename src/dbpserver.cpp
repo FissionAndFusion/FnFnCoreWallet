@@ -552,8 +552,6 @@ void CDbpServer::HandleClientMethod(CDbpServerSocket* pDbpClient, google::protob
 
     CMvDbpMethod& methodBody = pEventDbpMethod->data;
     methodBody.id = methodMsg.id();
-
-    std::cout << "[<] method " << methodMsg.method() << " [dbp server]\n";
     
     if (methodMsg.method() == "getblocks" && 
         methodMsg.params().Is<lws::GetBlocksArg>())
