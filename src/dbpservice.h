@@ -117,6 +117,8 @@ private:
     
     void CollectSessionSubForks(const std::string& session, const CMvEventPeerSubscribe& sub);
     void CollectSessionUnSubForks(const std::string& session, const CMvEventPeerUnsubscribe& unsub);
+
+    void CleanTopicIdsBySession(const std::string& session);
 protected:
     walleve::IIOProc* pDbpServer;
     walleve::IIOProc* pDbpClient;
