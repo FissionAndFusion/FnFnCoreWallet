@@ -588,13 +588,13 @@ void CDbpService::CollectSessionUnSubForks(const std::string& session, const CMv
 {
     if(mapSessionForks.find(session) != mapSessionForks.end())
     {
-        auto& forks = mapSessionForks[session];
+        auto& sessionForks = mapSessionForks[session];
         for(const uint256& fork : unsub.data)
         {
-            auto iter = std::find(forks.begin(), forks.end(), fork);
-            if(iter != forks.end())
+            auto iter = std::find(sessionForks.begin(), sessionForks.end(), fork);
+            if(iter != sessionForks.end())
             {
-                forks.erase(iter);
+                sessionForks.erase(iter);
             }
         }
     }
