@@ -44,17 +44,37 @@ public:
     virtual bool Walk(const T& t,uint32 nFile,uint32 nOffset) = 0;
 };
 
-class CTimeSeries
+class CTimeSeriesBase
 {
 public:
-    CTimeSeries();
-    ~CTimeSeries();
+    CTimeSeriesBase();
+    ~CTimeSeriesBase();
+    virtual bool Initialize(const boost::filesystem::path& pathLocationIn,const std::string& strPrefixIn);
+    virtual void Deinitialize();
+protected:
+    bool CheckDiskSpace();
+    const std::string FileName(uint32 nFile);
+    bool GetFilePath(uint32 nFile,std::string& strPath);
+    bool GetLastFilePath(uint32& nFile,std::string& strPath);
+protected:
+    enum {MAX_FILE_SIZE = 0x7F000000,MAX_CHUNK_SIZE = 0x200000};
+    boost::filesystem::path pathLocation;
+    std::string strPrefix;
+    uint32 nLastFile;
+};
+
+class CTimeSeriesCached : public CTimeSeriesBase
+{
+public:
+    CTimeSeriesCached();
+    ~CTimeSeriesCached();
     bool Initialize(const boost::filesystem::path& pathLocationIn,const std::string& strPrefixIn);
     void Deinitialize();
     template <typename T>
-    bool Write(const T& t,uint32& nFile,uint32& nOffset)
+    bool Write(const T& t,uint32& nFile,uint32& nOffset,bool fWriteCache = true)
     {
-        boost::unique_lock<boost::mutex> lock(mtxFile);
+        boost::unique_lock<boost::mutex> lock(mtxCache);
+
         std::string pathFile;
         if (!GetLastFilePath(nFile,pathFile))
         {
@@ -74,16 +94,52 @@ public:
             walleve::StdError(__PRETTY_FUNCTION__, e.what());
             return false;
         }
-        if (!WriteToCache(t,CDiskPos(nFile,nOffset)))
+        if (fWriteCache)
         {
-            ResetCache();
+            if (!WriteToCache(t,CDiskPos(nFile,nOffset)))
+            {
+                ResetCache();
+            }
         }
         return true;
     }
     template <typename T>
-    bool Read(T& t,uint32 nFile,uint32 nOffset)
+    bool Write(const T& t,CDiskPos& pos,bool fWriteCache = true)
     {
-        boost::unique_lock<boost::mutex> lock(mtxFile);
+        boost::unique_lock<boost::mutex> lock(mtxCache);
+
+        std::string pathFile;
+        if (!GetLastFilePath(pos.nFile,pathFile))
+        {
+            return false;
+        }
+        try
+        {
+            walleve::CWalleveFileStream fs(pathFile.c_str());
+            fs.SeekToEnd();
+            uint32 nSize = fs.GetSerializeSize(t);
+            fs << nMagicNum << nSize;
+            pos.nOffset = fs.GetCurPos();
+            fs << t;
+        }
+        catch (std::exception& e)
+        {
+            walleve::StdError(__PRETTY_FUNCTION__, e.what());
+            return false;
+        }
+        if (fWriteCache)
+        {
+            if (!WriteToCache(t,pos))
+            {
+                ResetCache();
+            }
+        }
+        return true;
+    }
+    template <typename T>
+    bool Read(T& t,uint32 nFile,uint32 nOffset,bool fWriteCache = true)
+    {
+        boost::unique_lock<boost::mutex> lock(mtxCache);
 
         if (ReadFromCache(t,CDiskPos(nFile,nOffset)))
         {
@@ -108,26 +164,65 @@ public:
             return false;
         }
 
-        if (!WriteToCache(t,CDiskPos(nFile,nOffset)))
+        if (fWriteCache)
         {
-            ResetCache();
+            if (!WriteToCache(t,CDiskPos(nFile,nOffset)))
+            {
+                ResetCache();
+            }
         }
         return true;
     }
     template <typename T>
-    bool WalkThrough(CTSWalker<T>& walker,uint32& nLastFile,uint32& nLastPos)
+    bool Read(T& t,const CDiskPos& pos,bool fWriteCache = true)
     {
-        boost::unique_lock<boost::mutex> lock(mtxFile);
+        boost::unique_lock<boost::mutex> lock(mtxCache);
+
+        if (ReadFromCache(t,pos))
+        {
+            return true;
+        }
+
+        std::string pathFile;
+        if (!GetFilePath(pos.nFile,pathFile))
+        {
+            return false;
+        }
+        try
+        {
+            // Open history file to read
+            walleve::CWalleveFileStream fs(pathFile.c_str());
+            fs.Seek(pos.nOffset);
+            fs >> t;
+        }
+        catch (std::exception& e)
+        {
+            walleve::StdError(__PRETTY_FUNCTION__, e.what());
+            return false;
+        }
+
+        if (fWriteCache)
+        {
+            if (!WriteToCache(t,pos))
+            {
+                ResetCache();
+            }
+        }
+        return true;
+    }
+    template <typename T>
+    bool WalkThrough(CTSWalker<T>& walker,uint32& nLastFileRet,uint32& nLastPosRet)
+    {
         bool fRet = true;
         uint32 nFile = 1;
         uint32 nOffset = 0;
-        nLastFile = 0;
-        nLastPos = 0;
+        nLastFileRet = 0;
+        nLastPosRet = 0;
         std::string pathFile;
 
         while (GetFilePath(nFile,pathFile) && fRet)
         {
-            nLastFile = nFile;
+            nLastFileRet = nFile;
             try
             {
                 walleve::CWalleveFileStream fs(pathFile.c_str());
@@ -155,14 +250,31 @@ public:
             }
             nFile++;
         }
-        nLastPos = nOffset;
+        nLastPosRet = nOffset;
         return fRet;
     }
+    template <typename T>
+    bool ReadDirect(T& t,uint32 nFile,uint32 nOffset)
+    {
+        std::string pathFile;
+        if (!GetFilePath(nFile,pathFile))
+        {
+            return false;
+        }
+        try
+        {
+            walleve::CWalleveFileStream fs(pathFile.c_str());
+            fs.Seek(nOffset);
+            fs >> t;
+        }
+        catch(...)
+        {
+            return false;
+        }
+
+        return true;
+    }
 protected:
-    bool CheckDiskSpace();
-    const std::string FileName(uint32 nFile);
-    bool GetFilePath(uint32 nFile,std::string& strPath);
-    bool GetLastFilePath(uint32& nFile,std::string& strPath);
     void ResetCache();
     bool VacateCache(uint32 nNeeded);
     template <typename T>
@@ -215,13 +327,106 @@ protected:
         return false;
     }
 protected:
-    enum {MAX_FILE_SIZE = 0x7F000000,FILE_CACHE_SIZE = 0x2000000,MAX_CHUNK_SIZE = 0x200000};
-    boost::mutex mtxFile;
-    boost::filesystem::path pathLocation;
-    std::string strPrefix;
-    uint32 nLastFile;
+    enum {FILE_CACHE_SIZE = 0x2000000};
+    boost::mutex mtxCache;
     walleve::CWalleveCircularStream cacheStream;
     std::map<CDiskPos,std::size_t> mapCachePos;
+    static const uint32 nMagicNum;
+};
+
+class CTimeSeriesChunk : public CTimeSeriesBase
+{
+public:
+    CTimeSeriesChunk();
+    ~CTimeSeriesChunk();
+    template <typename T>
+    bool Write(const T& t,CDiskPos& pos)
+    {
+        boost::unique_lock<boost::mutex> lock(mtxWriter);
+
+        std::string pathFile;
+        if (!GetLastFilePath(pos.nFile,pathFile))
+        {
+            return false;
+        }
+        try
+        {
+            walleve::CWalleveFileStream fs(pathFile.c_str());
+            fs.SeekToEnd();
+            uint32 nSize = fs.GetSerializeSize(t);
+            fs << nMagicNum << nSize;
+            pos.nOffset = fs.GetCurPos();
+            fs << t;
+        }
+        catch (std::exception& e)
+        {
+            walleve::StdError(__PRETTY_FUNCTION__, e.what());
+            return false;
+        }
+        return true;
+    }
+    template <typename T>
+    bool WriteBatch(const typename std::vector<T>& vBatch,std::vector<CDiskPos>& vPos)
+    {
+        boost::unique_lock<boost::mutex> lock(mtxWriter);
+
+        size_t n = 0;
+
+        while (n < vBatch.size())
+        { 
+            uint32 nFile,nOffset;
+            std::string pathFile;
+            if (!GetLastFilePath(nFile,pathFile))
+            {
+                return false;
+            }
+            try
+            {
+                walleve::CWalleveFileStream fs(pathFile.c_str());
+                fs.SeekToEnd();
+                do
+                {
+                    uint32 nSize = fs.GetSerializeSize(vBatch[n]);
+                    fs << nMagicNum << nSize;
+                    nOffset = fs.GetCurPos();
+                    fs << vBatch[n++];
+                    vPos.push_back(CDiskPos(nFile,nOffset));
+                }
+                while (n < vBatch.size() && nOffset < MAX_FILE_SIZE - MAX_CHUNK_SIZE - 8);
+            }
+            catch (std::exception& e)
+            {
+                walleve::StdError(__PRETTY_FUNCTION__, e.what());
+                return false;
+            }
+        }
+
+        return true; 
+    }
+    template <typename T>
+    bool Read(T& t,const CDiskPos& pos)
+    {
+        std::string pathFile;
+        if (!GetFilePath(pos.nFile,pathFile))
+        {
+            return false;
+        }
+        try
+        {
+            // Open history file to read
+            walleve::CWalleveFileStream fs(pathFile.c_str());
+            fs.Seek(pos.nOffset);
+            fs >> t;
+        }
+        catch (std::exception& e)
+        {
+            walleve::StdError(__PRETTY_FUNCTION__, e.what());
+            return false;
+        }
+        return true;
+    }
+protected:
+    boost::mutex mtxWriter;
     static const uint32 nMagicNum;
 };
 

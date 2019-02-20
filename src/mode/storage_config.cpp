@@ -28,14 +28,6 @@ bool CMvStorageConfig::PostLoad()
         return true;
     }
 
-    if (fTestNet)
-    {
-        strDBName = "multiverse_test";
-    }
-    if (nDBPort < 0 || nDBPort > 0xFFFF)
-    {
-        nDBPort = 0;
-    }
     return true;
 }
 

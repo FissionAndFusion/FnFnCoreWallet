@@ -384,7 +384,7 @@ public:
         is.Pop(pn,sizeof(pn));
     }
 protected:
-    void WalleveSerialize(walleve::CWalleveStream& s,walleve::SaveType&)
+    void WalleveSerialize(walleve::CWalleveStream& s,walleve::SaveType&) const
     {
         s.Write((char *)pn, sizeof(pn));
     }
@@ -392,7 +392,7 @@ protected:
     {
         s.Read((char *)pn, sizeof(pn));
     }
-    void WalleveSerialize(walleve::CWalleveStream& s,std::size_t& serSize)
+    void WalleveSerialize(walleve::CWalleveStream& s,std::size_t& serSize) const
     {
         (void)s;
         serSize += sizeof(pn);
@@ -400,11 +400,13 @@ protected:
     
     friend class uint160;
     friend class uint256;
+    friend class uint224;
     friend inline int Testuint256AdHoc(std::vector<std::string> vArg);
 };
 
 typedef base_uint<160> base_uint160;
 typedef base_uint<256> base_uint256;
+typedef base_uint<224> base_uint224;
 
 
 
@@ -553,6 +555,13 @@ public:
             pn[i] = b.pn[i];
     }
 
+    uint256(const uint32 h,const base_uint224& l)
+    {
+        for (int i = 0;i < WIDTH - 1;i++)
+            pn[i] = l.pn[i];
+        pn[WIDTH - 1] = h;
+    }
+ 
     uint256& operator=(const basetype& b)
     {
         for (int i = 0; i < WIDTH; i++)
@@ -648,5 +657,91 @@ inline const uint256 operator&(const uint256& a, const uint256& b)      { return
 inline const uint256 operator|(const uint256& a, const uint256& b)      { return (base_uint256)a |  (base_uint256)b; }
 inline const uint256 operator+(const uint256& a, const uint256& b)      { return (base_uint256)a +  (base_uint256)b; }
 inline const uint256 operator-(const uint256& a, const uint256& b)      { return (base_uint256)a -  (base_uint256)b; }
+
+//////////////////////////////////////////////////////////////////////////////
+//
+// uint224
+//
+
+/** 224-bit unsigned integer */
+class uint224 : public base_uint224
+{
+public:
+    typedef base_uint224 basetype;
+
+    uint224()
+    {
+        for (int i = 0; i < WIDTH; i++)
+            pn[i] = 0;
+    }
+
+    uint224(const basetype& b)
+    {
+        for (int i = 0; i < WIDTH; i++)
+            pn[i] = b.pn[i];
+    }
+
+    uint224(const uint256& b)
+    {
+        for (int i = 0; i < WIDTH; i++)
+            pn[i] = b.pn[i];
+    }
+
+    uint224& operator=(const basetype& b)
+    {
+        for (int i = 0; i < WIDTH; i++)
+            pn[i] = b.pn[i];
+        return *this;
+    }
+
+    uint224(const uint64 b)
+    {
+        pn[0] = (unsigned int)b;
+        pn[1] = (unsigned int)(b >> 32);
+        for (int i = 2; i < WIDTH; i++)
+            pn[i] = 0;
+    }
+
+    uint224& operator=(uint64 b)
+    {
+        pn[0] = (unsigned int)b;
+        pn[1] = (unsigned int)(b >> 32);
+        for (int i = 2; i < WIDTH; i++)
+            pn[i] = 0;
+        return *this;
+    }
+
+    explicit uint224(const std::string& str)
+    {
+        SetHex(str);
+    }
+
+    explicit uint224(const std::vector<unsigned char>& vch)
+    {
+        if (vch.size() == sizeof(pn))
+            memcpy(pn, &vch[0], sizeof(pn));
+        else
+            *this = 0;
+    }
+};
+
+inline bool operator<(const base_uint224& a, const uint224& b)          { return (base_uint224)a <  (base_uint224)b; }
+inline bool operator<=(const base_uint224& a, const uint224& b)         { return (base_uint224)a <= (base_uint224)b; }
+inline bool operator>(const base_uint224& a, const uint224& b)          { return (base_uint224)a >  (base_uint224)b; }
+inline bool operator>=(const base_uint224& a, const uint224& b)         { return (base_uint224)a >= (base_uint224)b; }
+inline bool operator==(const base_uint224& a, const uint224& b)         { return (base_uint224)a == (base_uint224)b; }
+inline bool operator!=(const base_uint224& a, const uint224& b)         { return (base_uint224)a != (base_uint224)b; }
+inline bool operator<(const uint224& a, const base_uint224& b)          { return (base_uint224)a <  (base_uint224)b; }
+inline bool operator<=(const uint224& a, const base_uint224& b)         { return (base_uint224)a <= (base_uint224)b; }
+inline bool operator>(const uint224& a, const base_uint224& b)          { return (base_uint224)a >  (base_uint224)b; }
+inline bool operator>=(const uint224& a, const base_uint224& b)         { return (base_uint224)a >= (base_uint224)b; }
+inline bool operator==(const uint224& a, const base_uint224& b)         { return (base_uint224)a == (base_uint224)b; }
+inline bool operator!=(const uint224& a, const base_uint224& b)         { return (base_uint224)a != (base_uint224)b; }
+inline bool operator<(const uint224& a, const uint224& b)               { return (base_uint224)a <  (base_uint224)b; }
+inline bool operator<=(const uint224& a, const uint224& b)              { return (base_uint224)a <= (base_uint224)b; }
+inline bool operator>(const uint224& a, const uint224& b)               { return (base_uint224)a >  (base_uint224)b; }
+inline bool operator>=(const uint224& a, const uint224& b)              { return (base_uint224)a >= (base_uint224)b; }
+inline bool operator==(const uint224& a, const uint224& b)              { return (base_uint224)a == (base_uint224)b; }
+inline bool operator!=(const uint224& a, const uint224& b)              { return (base_uint224)a != (base_uint224)b; }
 
 #endif

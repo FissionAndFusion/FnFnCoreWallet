@@ -21,7 +21,7 @@ public:
     CMvPeer(walleve::CPeerNet *pPeerNetIn, walleve::CIOClient* pClientIn,uint64 nNonceIn,
             bool fInBoundIn,uint32 nMsgMagicIn,uint32 nHsTimerIdIn);
     ~CMvPeer();
-    void Activate();
+    void Activate() override;
     bool IsHandshaked();
     bool SendMessage(int nChannel,int nCommand,walleve::CWalleveBufStream& ssPayload);
     bool SendMessage(int nChannel,int nCommand)

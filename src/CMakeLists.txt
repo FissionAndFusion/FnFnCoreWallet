@@ -40,6 +40,7 @@ set(src
 	rpcmod.cpp rpcmod.h
 	consensus.cpp consensus.h
 	blockmaker.cpp blockmaker.h
+	forkblockmaker.cpp forkblockmaker.h
 	rpcclient.cpp rpcclient.h
 	miner.cpp miner.h
 	dbptype.h
@@ -47,7 +48,6 @@ set(src
 	dbpserver.cpp dbpserver.h
 	dbpservice.cpp dbpservice.h
 	dbpclient.cpp dbpclient.h
-	dnseed.cpp dnseed.h
 	schedule.cpp schedule.h
 	service.cpp service.h
 	txpool.cpp txpool.h
@@ -60,7 +60,8 @@ set(src
 	param.h
 	storage.h
 	version.h
-)
+	virtualpeernet.cpp virtualpeernet.h
+		virtualpeernetevent.h)
 set(mode_src
 	mode/basic_config.cpp mode/basic_config.h
 	mode/fork_config.cpp mode/fork_config.h
@@ -116,7 +117,7 @@ target_link_libraries(multiverse
 )
 
 # create symbol link
-set(exec_link multiverse-cli multiverse-server multiverse-miner multiverse-dnseed)
+set(exec_link multiverse-cli multiverse-server multiverse-miner)
 foreach(link ${exec_link})
 	add_custom_command(TARGET multiverse POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E create_symlink multiverse ${link}

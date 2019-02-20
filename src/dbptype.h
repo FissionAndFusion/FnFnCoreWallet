@@ -10,6 +10,14 @@
 namespace multiverse
 {
 
+static const std::string ALL_BLOCK_TOPIC("all-block");
+static const std::string ALL_TX_TOPIC("all-tx");
+static const std::string SYS_CMD_TOPIC("sys-cmd");
+static const std::string BLOCK_CMD_TOPIC("block-cmd");
+static const std::string TX_CMD_TOPIC("tx-cmd");
+static const std::string CHANGED_TOPIC("changed");
+static const std::string REMOVED_TOPIC("removed");
+
 class CMvDbpContent
 {
 public:
@@ -61,6 +69,29 @@ public:
     std::string id;
 };
 
+class CMvDbpVirtualPeerNetEvent
+{
+public:
+    enum EventType : int
+    {
+        DBP_EVENT_PEER_ACTIVE = 0x00,
+        DBP_EVENT_PEER_DEACTIVE = 0x01,
+        DBP_EVENT_PEER_SUBSCRIBE = 0x02,
+        DBP_EVENT_PEER_UNSUBSCRIBE = 0x03,
+        DBP_EVENT_PEER_INV = 0x04,
+        DBP_EVENT_PEER_GETDATA = 0x05,
+        DBP_EVENT_PEER_GETBLOCKS= 0x06,
+        DBP_EVENT_PEER_TX = 0x07,
+        DBP_EVENT_PEER_BLOCK = 0x08,
+        DBP_EVENT_PEER_REWARD = 0x09,
+        DBP_EVENT_PEER_CLOSE = 0x0A
+    };
+public:
+    uint64 nNonce; 
+    int type;
+    uint256 hashFork;
+    std::vector<uint8> data;
+};
 
 class CMvDbpTxIn
 {
@@ -100,7 +131,8 @@ public:
     int64 nChange;                  //余额
     std::vector<uint8> vchData;     //输出参数(模板地址参数、跨分支交易共轭交易)
     std::vector<uint8> vchSig;      //交易签名
-    std::vector<uint8> hash;
+    std::vector<uint8> hash;        // 当前交易的 hash
+    std::vector<uint8> fork;        // 当前交易的 forkid
 };
 
 class CMvDbpBlock
@@ -117,6 +149,7 @@ public:
     std::vector<uint8> vchSig;          //区块签名
     uint32 nHeight;                     // 当前区块高度
     std::vector<uint8> hash;            //当前区块的hash
+    std::vector<uint8> fork;            // 当前区块的forkid
 };
 
 class CMvDbpAdded : public CMvDbpRespond
@@ -130,22 +163,25 @@ public:
 
 class CMvDbpMethod : public CMvDbpRequest
 {
-public:
-    enum Method
+public: 
+
+    enum SnMethod : uint32_t
     {
-        GET_BLOCKS,
-        GET_TRANSACTION,
-        SEND_TRANSACTION,
-        SEND_TX, // supernode 
-        REGISTER_FORK,
-        SEND_BLOCK
+        SEND_EVENT = 0x03
+    };
+    
+    enum  LwsMethod : uint32_t
+    {
+        GET_BLOCKS = 0x00,
+        GET_TRANSACTION = 0x01,
+        SEND_TRANSACTION = 0x02
     };
 
     // param name => param value
     typedef std::map<std::string, boost::any> ParamMap;
 
 public:
-    Method method;
+    uint32_t method;
     std::string id;
     ParamMap params;
 };
@@ -156,42 +192,6 @@ public:
     std::string hash;
     std::string result;
     std::string reason;
-};
-
-class CMvDbpRegisterForkIDRet
-{
-public:
-    std::string forkid;
-};
-
-class CMvDbpSendBlockRet
-{
-public:
-    std::string hash;
-};
-
-class CMvDbpSendTxRet
-{
-public:
-    std::string hash;
-};
-
-class CMvDbpRegisterForkID : public CMvDbpRequest
-{
-public:
-    std::string forkid;
-};
-
-class CMvDbpSendBlock : public CMvDbpRequest
-{
-public:
-    boost::any block;
-};
-
-class CMvDbpSendTx : public CMvDbpRequest
-{
-public:
-    boost::any tx;
 };
 
 class CMvDbpMethodResult : public CMvDbpRespond

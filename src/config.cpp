@@ -53,10 +53,6 @@ bool CMvConfig::Load(int argc, char* argv[], const fs::path& pathDefault,
     {
         emMode = EModeType::MINER;
     }
-    else if (exec == "multiverse-dnseed")
-    {
-        emMode = EModeType::DNSEED;
-    }
     else if (exec == "multiverse-cli")
     {
         emMode = EModeType::CONSOLE;
@@ -80,11 +76,6 @@ bool CMvConfig::Load(int argc, char* argv[], const fs::path& pathDefault,
         else if (cmd == "miner")
         {
             emMode = EModeType::MINER;
-            ignoreCmd = 1;
-        }
-        else if (cmd == "dnseed")
-        {
-            emMode = EModeType::DNSEED;
             ignoreCmd = 1;
         }
         else

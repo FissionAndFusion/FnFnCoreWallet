@@ -1,0 +1,89 @@
+version: '3'
+services:
+  db:
+    image: mysql:5.7
+    container_name: db 
+    restart: always
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: 'true'
+    volumes:
+      - './mysql/config:/etc/mysql/conf.d'
+      - './mysql/data:/var/lib/mysql'
+    networks:
+      - sn
+    ports:
+      - 13309:3306
+
+  root:
+    build: .
+    image: multiverse:latest
+    container_name: root
+    depends_on:
+      - db
+    environment:
+      DNSEED: '192.168.199.50'
+      DNSEED_PORT: 6811 
+      DB_HOST: db 
+      DB_PORT: 3306
+      DB_NAME: 'sn_root'
+      DBP_ALLOW_IP: '*.*.*.*' 
+      ENABLE_SN: 'true'
+      ENABLE_FN: 'false'
+    volumes:
+      - './apps:/home/apps'
+      - './nodes/root:/home/fnfn'
+    networks:
+      - sn
+    ports:
+      - 8150:6815
+      - 8120:6812
+
+  fork1:
+    image: multiverse:latest
+    container_name: fork1
+    depends_on:
+      - db
+      - root
+    environment:
+      DB_HOST: db 
+      DB_PORT: 3306
+      DB_NAME: 'sn_fork1'
+      DBP_R_HOST: root 
+      DBP_ALLOW_IP: '*.*.*.*' 
+      ENABLE_SN: 'true'
+      ENABLE_FN: 'true' 
+      FORK_ID: 'c002847f7a3a74869c6e5ac9ba04553cb832540337292df67e03af60b43f21c0'
+    volumes:
+      - './apps:/home/apps'
+      - './nodes/fork1:/home/fnfn'
+    networks:
+      - sn
+    ports:
+      - 9151:6815
+      - 9121:6812
+
+  fork2:
+    image: multiverse:latest
+    container_name: fork2
+    depends_on:
+      - db
+    environment:
+      DB_HOST: db 
+      DB_PORT: 3306
+      DB_NAME: 'sn_fork2'
+      DBP_R_HOST: fork1
+      DBP_ALLOW_IP: '*.*.*.*' 
+      ENABLE_SN: 'true' 
+      ENABLE_FN: 'true'
+      FORK_ID: '6c78270ac6d5892deb4b33ec9123289b24067a8649937ccfe43a98e68992a8ea'
+    volumes:
+      - './apps:/home/apps'
+      - './nodes/fork2:/home/fnfn'
+    networks:
+      - sn
+    ports:
+      - 5152:6815
+      - 5122:6812
+
+networks:
+  sn:

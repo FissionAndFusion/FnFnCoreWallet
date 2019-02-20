@@ -25,6 +25,8 @@ public:
     virtual void BroadcastTxInv(const uint256& hashFork) = 0;
     virtual void SubscribeFork(const uint256& hashFork) = 0;
     virtual void UnsubscribeFork(const uint256& hashFork) = 0;
+    virtual bool IsContains(const uint256& hashFork) = 0;
+    virtual void EnableSuperNode(bool fIsFork) = 0;
 };
 
 class IMvDelegatedChannel : public walleve::IIOModule, virtual public CMvPeerEventListener
@@ -40,13 +42,38 @@ public:
 class CMvPeerNet : public walleve::CPeerNet, virtual public CMvPeerEventListener
 {
 public:
+    enum class SUPER_NODE_TYPE : int
+    {
+        SUPER_NODE_TYPE_UNKN,
+        SUPER_NODE_TYPE_FNFN = 0,
+        SUPER_NODE_TYPE_ROOT,
+        SUPER_NODE_TYPE_FORK
+    };
+
+public:
     CMvPeerNet();
+    CMvPeerNet(const std::string& walleveOwnKeyIn);
     ~CMvPeerNet();
     virtual void BuildHello(walleve::CPeer *pPeer,walleve::CWalleveBufStream& ssPayload);
     void HandlePeerWriten(walleve::CPeer *pPeer) override;
     virtual bool HandlePeerHandshaked(walleve::CPeer *pPeer,uint32 nTimerId);
     virtual bool HandlePeerRecvMessage(walleve::CPeer *pPeer,int nChannel,int nCommand,
                                walleve::CWalleveBufStream& ssPayload);
+protected:
+    bool HandleForkPeerActive(const CMvEventPeerActive& eventActive);
+    bool HandleForkPeerDeactive(const CMvEventPeerDeactive& eventDeactive);
+    virtual bool HandlePeerHandshakedForForkNode(const CMvEventPeerActive& peerActive);
+    virtual bool DestroyPeerForForkNode(const CMvEventPeerDeactive& peerDeactive);
+
+    virtual bool HandleRootPeerSub(const uint64& nNonce, const uint256& hashFork, std::vector<uint256>& data);
+    virtual bool HandleRootPeerUnSub(const uint64& nNonce, const uint256& hashFork, std::vector<uint256>& data);
+    virtual bool HandleRootPeerGetBlocks(const uint64& nNonce, const uint256& hashFork, CBlockLocator& data);
+    virtual bool HandleRootPeerInv(const uint64& nNonce, const uint256& hashFork, std::vector<CInv>& data);
+    virtual bool HandleRootPeerGetData(const uint64& nNonce, const uint256& hashFork, std::vector<CInv>& data);
+    virtual bool HandleRootPeerBlock(const uint64& nNonce, const uint256& hashFork, CBlock& data);
+    virtual bool HandleRootPeerTx(const uint64& nNonce, const uint256& hashFork, CTransaction& data);
+    virtual bool IsMainFork(const uint256& hashFork);
+    bool IsThisNodeData(const uint256& hashFork, uint64 nNonce, const uint256& dataHash);
 protected:
     bool WalleveHandleInitialize() override;
     void WalleveHandleDeinitialize() override;
@@ -83,6 +110,9 @@ protected:
     bool fEnclosed;
     std::string subVersion;    
     std::set<boost::asio::ip::tcp::endpoint> setDNSeed;
+    SUPER_NODE_TYPE typeNode;
+    typedef std::pair<uint256, uint64> ForkNonceKeyType;
+    std::map<ForkNonceKeyType, std::set<uint256>> mapThisNodeGetData; 
 };
 
 } // namespace network

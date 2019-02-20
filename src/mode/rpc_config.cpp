@@ -106,10 +106,21 @@ bool CMvRPCServerConfig::PostLoad()
 
     CMvRPCBasicConfig::PostLoad();
 
-    epRPC = tcp::endpoint(!vRPCAllowIP.empty()
+    if(fRPCListen4 || (!fRPCListen4 && !fRPCListen6))
+    {
+        epRPC = tcp::endpoint(!vRPCAllowIP.empty()
                               ? boost::asio::ip::address_v4::any()
                               : boost::asio::ip::address_v4::loopback(),
                           nRPCPort);
+    }
+
+    if(fRPCListen6)
+    {
+        epRPC = tcp::endpoint(!vRPCAllowIP.empty()
+                              ? boost::asio::ip::address_v6::any()
+                              : boost::asio::ip::address_v6::loopback(),
+                          nRPCPort);
+    }
     
     return true;
 }
@@ -149,6 +160,31 @@ bool CMvRPCClientConfig::PostLoad()
     }
 
     CMvRPCBasicConfig::PostLoad();
+
+    try
+    {
+        boost::asio::ip::address addr(boost::asio::ip::address::from_string(strRPCConnect));
+        if(fRPCListen4 || (!fRPCListen4 && !fRPCListen6))
+        {
+            if(addr.is_loopback())
+            {
+                strRPCConnect = boost::asio::ip::address_v4::loopback().to_string();
+            }
+        }
+
+        if(fRPCListen6)
+        {
+            if(addr.is_loopback())
+            {
+                strRPCConnect = boost::asio::ip::address_v6::loopback().to_string();
+            }
+        }
+    }
+    catch(const std::exception& e)
+    {
+        std::cerr << e.what() << std::endl;
+        return false;
+    }
 
     if (nRPCConnectTimeout == 0)
     {

@@ -16,20 +16,16 @@ using namespace multiverse;
 class CDelegateTxFilter : public CTxFilter
 {
 public:
-    CDelegateTxFilter(const uint256& hashForkIn,CDelegateContext& ctxtIn)
-    : CTxFilter(ctxtIn.GetDestination(),ctxtIn.GetDestination()),hashFork(hashForkIn),ctxt(ctxtIn)
+    CDelegateTxFilter(CDelegateContext& ctxtIn)
+    : CTxFilter(ctxtIn.GetDestination()),ctxt(ctxtIn)
     {
     }
-    bool FoundTx(const uint256& hashForkIn,const CAssembledTx& tx)
+    bool FoundTx(const uint256& hashFork,const CAssembledTx& tx) override
     {
-        if (hashFork == hashForkIn)
-        {
-            ctxt.AddNewTx(tx);
-        }
+        ctxt.AddNewTx(tx);
         return true;
     }
 protected:
-    uint256 hashFork;
     CDelegateContext& ctxt;
 }; 
 
@@ -122,16 +118,17 @@ void CDelegateContext::AddNewTx(const CAssembledTx& tx)
     } 
 }
 
-bool CDelegateContext::BuildEnrollTx(CTransaction& tx,int nBlockHeight,const uint256& hashAnchor,int64 nTxFee,
-                                                      const vector<unsigned char>& vchData)
+bool CDelegateContext::BuildEnrollTx(CTransaction& tx,int nBlockHeight,int64 nTime,
+                                     const uint256& hashAnchor,int64 nTxFee,const vector<unsigned char>& vchData)
 {
     tx.SetNull();
-    tx.nType = CTransaction::TX_CERT;
+    tx.nType      = CTransaction::TX_CERT;
+    tx.nTimeStamp = nTime;
     tx.hashAnchor = hashAnchor;
-    tx.sendTo = destDelegate;
-    tx.nAmount = 0;
-    tx.nTxFee = nTxFee;
-    tx.vchData = vchData;
+    tx.sendTo     = destDelegate;
+    tx.nAmount    = 0;
+    tx.nTxFee     = nTxFee;
+    tx.vchData    = vchData;
 
     int64 nValueIn = 0;
     for (map<CTxOutPoint,CDelegateTx*>::iterator it = mapUnspent.begin();it != mapUnspent.end();++it)
@@ -141,6 +138,10 @@ bool CDelegateContext::BuildEnrollTx(CTransaction& tx,int nBlockHeight,const uin
         if (pTx->IsLocked(txout.n, nBlockHeight))
         {
             continue;
+        }
+        if (pTx->GetTxTime() > tx.GetTxTime())
+        {
+           continue;
         }
         tx.vInput.push_back(CTxIn(txout)); 
         nValueIn += (txout.n == 0 ? pTx->nAmount : pTx->nChange);
@@ -319,7 +320,7 @@ void CConsensus::PrimaryUpdate(const CWorldLineUpdate& update,const CTxSetChange
                 if (mi != mapContext.end())
                 { 
                     CTransaction tx;
-                    if ((*mi).second.BuildEnrollTx(tx,nBlockHeight,hash,0,(*it).second))
+                    if ((*mi).second.BuildEnrollTx(tx,nBlockHeight,WalleveGetNetTime(),hash,0,(*it).second))
                     {
                         routine.vEnrollTx.push_back(tx);
                     }
@@ -385,10 +386,11 @@ void CConsensus::GetProof(int nTargetHeight,vector<unsigned char>& vchProof)
 
 bool CConsensus::LoadDelegateTx()
 {
+    const uint256 hashGenesis = pCoreProtocol->GetGenesisBlockHash();
     for (map<CDestination,CDelegateContext>::iterator it = mapContext.begin();it != mapContext.end();++it)
     {
-        CDelegateTxFilter txFilter(pCoreProtocol->GetGenesisBlockHash(),(*it).second);
-        if (!pWorldLine->FilterTx(txFilter) || !pTxPool->FilterTx(txFilter))
+        CDelegateTxFilter txFilter((*it).second);
+        if (!pWorldLine->FilterTx(hashGenesis,txFilter) || !pTxPool->FilterTx(hashGenesis,txFilter))
         {
             return false;
         }

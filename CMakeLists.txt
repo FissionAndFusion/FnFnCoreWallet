@@ -39,16 +39,16 @@ find_package(Boost 1.58.0 REQUIRED COMPONENTS
     unit_test_framework
 )
 find_package(OpenSSL 1.0.0 REQUIRED) 
-find_package(MySQL 5.7.20 REQUIRED)
 find_package(sodium 1.0.8 REQUIRED)
 find_package(Readline 5.0 REQUIRED)
 
 set(Protobuf_USE_STATIC_LIBS ON)
 find_package(Protobuf 3.3.0 REQUIRED)
 
-if(${USE_SSL_110} MATCHES "TRUE")
+if(OPENSSL_VERSION VERSION_EQUAL 1.1.0 OR 
+    (OPENSSL_VERSION VERSION_GREATER 1.1.0 AND OPENSSL_VERSION VERSION_LESS 1.2.0))
     add_definitions(-DUSE_SSL_110)
-endif(${USE_SSL_110} MATCHES "TRUE")
+endif()
 
 # libs
 if(WIN32)
@@ -71,3 +71,4 @@ add_subdirectory(test)
 add_subdirectory(delegate)
 add_subdirectory(leveldb)
 add_subdirectory(jsonrpc)
+add_subdirectory(snappy)

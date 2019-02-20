@@ -14,33 +14,22 @@ using namespace multiverse;
 #define MAX_SIGNATURE_SIZE         2048
 
 //////////////////////////////
-// CDBKeyWalker
+// CDBAddressWalker
  
-class CDBKeyWalker : public storage::CWalletDBKeyWalker
+class CDBAddrWalker : public storage::CWalletDBAddrWalker
 {
 public:
-    CDBKeyWalker(CWallet* pWalletIn) : pWallet(pWalletIn) {}
-    bool Walk(const uint256& pubkey,int version,const crypto::CCryptoCipher& cipher)
+    CDBAddrWalker(CWallet* pWalletIn) : pWallet(pWalletIn) {}
+    bool WalkPubkey(const crypto::CPubKey& pubkey,int version,const crypto::CCryptoCipher& cipher) override
     {
         crypto::CKey key;
         key.Load(pubkey,version,cipher);
         return pWallet->LoadKey(key);
     }
-protected:
-    CWallet* pWallet;
-};
-
-//////////////////////////////
-// CDBTemplateWalker
- 
-class CDBTemplateWalker : public storage::CWalletDBTemplateWalker
-{
-public:
-    CDBTemplateWalker(CWallet* pWalletIn) : pWallet(pWalletIn) {}
-    bool Walk(const uint256& tid,uint16 nType,const std::vector<unsigned char>& vchData)
+    bool WalkTemplate(const CTemplateId& tid,const std::vector<unsigned char>& vchData) override
     {
-        CTemplatePtr ptr = CTemplate::CreateTemplatePtr(nType,vchData);
-        if (ptr != NULL && tid == ptr->GetTemplateId())
+        CTemplatePtr ptr = CTemplate::CreateTemplatePtr(tid.GetType(),vchData);
+        if (ptr)
         {
             return  pWallet->LoadTemplate(ptr);
         }
@@ -57,12 +46,77 @@ class CDBTxWalker : public storage::CWalletDBTxWalker
 {
 public:
     CDBTxWalker(CWallet* pWalletIn) : pWallet(pWalletIn) {}
-    bool Walk(const CWalletTx& wtx)
+    bool Walk(const CWalletTx& wtx) override
     {
         return pWallet->LoadTx(wtx);
     }
 protected:
     CWallet* pWallet;
+};
+
+//////////////////////////////
+// CWalletTxFilter
+
+class CWalletTxFilter : public CTxFilter
+{
+public:
+    CWalletTxFilter(CWallet* pWalletIn,const CDestination& destNew)
+    : CTxFilter(destNew),pWallet(pWalletIn)
+    {
+    }
+    CWalletTxFilter(CWallet* pWalletIn,const set<CDestination>& setDestIn)
+    : CTxFilter(setDestIn),pWallet(pWalletIn)
+    {
+    }
+    bool FoundTx(const uint256& hashFork,const CAssembledTx& tx) override
+    {
+        return pWallet->UpdateTx(hashFork,tx);
+    }
+public:
+    CWallet* pWallet;
+};
+
+//////////////////////////////
+// CInspectWtxFilter
+
+class CInspectWtxFilter : public CTxFilter
+{
+public:
+    CInspectWtxFilter(CWallet* pWalletIn, const CDestination& destNew)
+            : CTxFilter(destNew), pWallet(pWalletIn)
+    {
+    }
+    CInspectWtxFilter(CWallet* pWalletIn, const set<CDestination>& setDestIn)
+            : CTxFilter(setDestIn), pWallet(pWalletIn)
+    {
+    }
+    bool FoundTx(const uint256& hashFork, const CAssembledTx& tx) override
+    {
+        return pWallet->CompareWithTxOrPool(tx);
+    }
+public:
+    CWallet* pWallet;
+};
+
+//////////////////////////////
+// CInspectDBTxWalker
+
+class CInspectDBTxWalker : public storage::CWalletDBTxWalker
+{
+public:
+    CInspectDBTxWalker(CWallet* pWalletIn, set<CDestination> setDestIn)
+            : fRes(false)
+            , pWallet(pWalletIn)
+            , setDest(setDestIn) {}
+    bool Walk(const CWalletTx& wtx) override
+    {
+        fRes = pWallet->CompareWithPoolOrTx(wtx, setDest);
+        return fRes;
+    }
+    bool fRes;
+protected:
+    CWallet* pWallet;
+    set<CDestination> setDest;
 };
 
 //////////////////////////////
@@ -72,6 +126,7 @@ CWallet::CWallet()
 {
     pCoreProtocol = NULL;
     pWorldLine = NULL;
+    pTxPool = NULL;
 }
 
 CWallet::~CWallet()
@@ -92,6 +147,12 @@ bool CWallet::WalleveHandleInitialize()
         return false;
     }
 
+    if (!WalleveGetObject("txpool",pTxPool))
+    {
+        WalleveError("Failed to request txpool\n");
+        return false;
+    }
+
     return true;
 }
 
@@ -99,13 +160,12 @@ void CWallet::WalleveHandleDeinitialize()
 {
     pCoreProtocol = NULL;
     pWorldLine = NULL;
+    pTxPool = NULL;
 }
 
 bool CWallet::WalleveHandleInvoke()
 {
-    storage::CMvDBConfig dbConfig(StorageConfig()->strDBHost,StorageConfig()->nDBPort,
-                                  StorageConfig()->strDBName,StorageConfig()->strDBUser,StorageConfig()->strDBPass);
-    if (!dbWallet.Initialize(dbConfig))
+    if (!dbWallet.Initialize(WalleveConfig()->pathData / "wallet"))
     {
         WalleveError("Failed to initialize wallet database\n");
         return false;
@@ -116,7 +176,13 @@ bool CWallet::WalleveHandleInvoke()
         WalleveError("Failed to load wallet database\n");
         return false;
     }
-    
+
+    if (!InspectWalletTx(StorageConfig()->nCheckDepth))
+    {
+        WalleveLog("Failed to inspect wallet transactions\n");
+        return false;
+    }
+
     return true;
 }
 
@@ -150,7 +216,7 @@ bool CWallet::AddKey(const crypto::CKey& key)
         return false;
     }
 
-    if (!dbWallet.AddNewKey(key.GetPubKey(),key.GetVersion(),key.GetCipher()))
+    if (!dbWallet.UpdateKey(key.GetPubKey(),key.GetVersion(),key.GetCipher()))
     {
         mapKeyStore.erase(key.GetPubKey());
         WalleveWarn("AddKey : failed to save key\n");
@@ -357,7 +423,7 @@ bool CWallet::AddTemplate(CTemplatePtr& ptr)
         if (mapTemplatePtr.insert(make_pair(tid,ptr)).second)
         {
             const vector<unsigned char>& vchData = ptr->GetTemplateData();
-            return dbWallet.AddNewTemplate(tid,ptr->GetTemplateType(),vchData);
+            return dbWallet.UpdateTemplate(tid,vchData);
         }
     }
     return false;
@@ -372,6 +438,23 @@ CTemplatePtr CWallet::GetTemplate(const CTemplateId& tid) const
         return (*it).second;
     }
     return NULL;
+}
+
+void CWallet::GetDestinations(set<CDestination>& setDest)
+{
+    boost::shared_lock<boost::shared_mutex> rlock(rwKeyStore);
+
+    for (map<crypto::CPubKey,CWalletKeyStore>::const_iterator it = mapKeyStore.begin();
+         it != mapKeyStore.end();++it)
+    {
+        setDest.insert(CDestination((*it).first));
+    }
+    
+    for (map<CTemplateId,CTemplatePtr>::const_iterator it = mapTemplatePtr.begin();
+         it != mapTemplatePtr.end(); ++it)
+    {
+        setDest.insert(CDestination((*it).first));
+    }
 }
 
 size_t CWallet::GetTxCount()
@@ -462,7 +545,7 @@ bool CWallet::ArrangeInputs(const CDestination& destIn,const uint256& hashFork,i
     vector<CTxOutPoint> vCoins;
     {
         boost::shared_lock<boost::shared_mutex> rlock(rwWalletTx);
-        int64 nValueIn = SelectCoins(destIn,tx.sendTo,hashFork,nForkHeight,nTargeValue,nMaxInput,vCoins);
+        int64 nValueIn = SelectCoins(destIn,hashFork,nForkHeight,tx.GetTxTime(),nTargeValue,nMaxInput,vCoins);
         if (nValueIn < nTargeValue)
         {
             return false;
@@ -472,6 +555,34 @@ bool CWallet::ArrangeInputs(const CDestination& destIn,const uint256& hashFork,i
     BOOST_FOREACH(const CTxOutPoint& out,vCoins)
     {
         tx.vInput.push_back(CTxIn(out));
+    }
+    return true;
+}
+
+bool CWallet::UpdateTx(const uint256& hashFork,const CAssembledTx& tx)
+{
+    vector<CWalletTx> vWalletTx;
+    bool fIsMine = IsMine(tx.sendTo);
+    bool fFromMe = IsMine(tx.destIn);
+    if (fFromMe || fIsMine)
+    {
+        uint256 txid = tx.GetHash();
+        std::shared_ptr<CWalletTx> spWalletTx = InsertWalletTx(txid,tx,hashFork,fIsMine,fFromMe);
+        if (spWalletTx != NULL)
+        {
+            vector<uint256> vFork;
+            GetWalletTxFork(hashFork,tx.nBlockHeight,vFork);
+            AddNewWalletTx(spWalletTx,vFork);
+            vWalletTx.push_back(*spWalletTx);
+            if (!spWalletTx->GetRefCount())
+            {
+                mapWalletTx.erase(txid);
+            }
+        }
+    }
+    if (!vWalletTx.empty())
+    {
+        return dbWallet.UpdateTx(vWalletTx);
     }
     return true;
 }
@@ -538,23 +649,195 @@ bool CWallet::AddNewFork(const uint256& hashFork,const uint256& hashParent,int n
     return true;
 }
 
-bool CWallet::LoadDB()
+bool CWallet::ResynchronizeWalletTx()
 {
+    boost::unique_lock<boost::shared_mutex> wlock(rwWalletTx);
+
+    if (!ClearTx())
     {
-        boost::unique_lock<boost::shared_mutex> wlock(rwKeyStore);
+        return false;
+    }
+    set<CDestination> setDest;
+    GetDestinations(setDest);
+ 
+    CWalletTxFilter txFilter(this,setDest);
+
+    return SyncWalletTx(txFilter);
+}
+
+bool CWallet::SynchronizeWalletTx(const CDestination& destNew)
+{
+    boost::unique_lock<boost::shared_mutex> wlock(rwWalletTx);
+
+    CWalletTxFilter txFilter(this,destNew);
+
+    return SyncWalletTx(txFilter);
+}
+
+bool CWallet::SyncWalletTx(CTxFilter& txFilter)
+{
+    vector<uint256> vFork;
+    vFork.reserve(mapFork.size());
+
+    vFork.push_back(pCoreProtocol->GetGenesisBlockHash());
+   
+    for (int i = 0;i < vFork.size();i++)
+    {
+        const uint256& hashFork = vFork[i];
+
+        map<uint256,CWalletFork>::iterator it = mapFork.find(hashFork);
+        if (it == mapFork.end())
         {
-            CDBKeyWalker walker(this);
-            if (!dbWallet.WalkThroughKey(walker))
+            return false;
+        }
+       
+        for (multimap<int,uint256>::iterator mi = (*it).second.mapSubline.begin();
+             mi != (*it).second.mapSubline.end(); ++mi)
+        { 
+            vFork.push_back((*mi).second);
+        }
+
+        if (!pWorldLine->FilterTx(hashFork,txFilter) || !pTxPool->FilterTx(hashFork,txFilter))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool CWallet::InspectWalletTx(int nCheckDepth)
+{
+    set<CDestination> setAddr;
+    GetDestinations(setAddr);
+    if(setAddr.empty())
+    {
+        if(dbWallet.GetTxCount() == 0)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    map<uint256, CForkStatus> mapForkStatus;
+    pWorldLine->GetForkStatus(mapForkStatus);
+    for(const auto& it : mapForkStatus)
+    {
+        const auto& hashFork = it.first;
+        const auto& status = it.second;
+        int nDepth = nCheckDepth;
+        if(nDepth > status.nLastBlockHeight || nDepth <= 0)
+        {
+            nDepth = status.nLastBlockHeight;
+        }
+
+        vector<uint256> vFork;
+        GetWalletTxFork(hashFork, status.nLastBlockHeight - nDepth, vFork);
+
+        //set of wallet pooled transactions must be equal to set of transactions in txpool
+        CInspectWtxFilter filterPool(this, setAddr);
+        for(const auto& it : vFork)
+        {
+            if(!pTxPool->FilterTx(it, filterPool))   //condition: fork/dest's
             {
                 return false;
             }
         }
+
+        //set of wallet transactions must be equal to set of transactions in the whole block
+        CInspectWtxFilter filterTx(this, setAddr);
+        for(const auto& it : vFork)
         {
-            CDBTemplateWalker walker(this);
-            if (!dbWallet.WalkThroughTemplate(walker))
+            if(!pWorldLine->FilterTx(it, nDepth, filterTx))   //condition: fork/depth/dest's
             {
                 return false;
             }
+        }
+    }
+
+    CInspectDBTxWalker walker(this, setAddr);
+    if(!dbWallet.WalkThroughTx(walker) && !walker.fRes)
+    {
+        return false;
+    }
+
+    return true;
+}
+
+bool CWallet::CompareWithTxOrPool(const CAssembledTx& tx)
+{
+    CWalletTx wtx;
+    if(!dbWallet.RetrieveTx(tx.GetHash(), wtx))
+    {
+        return false;
+    }
+
+    if(tx.nTimeStamp != wtx.nTimeStamp || tx.nVersion != wtx.nVersion
+       || tx.nType != wtx.nType || tx.nLockUntil != wtx.nLockUntil
+       || tx.vInput != wtx.vInput || tx.sendTo != wtx.sendTo
+       || tx.nAmount != wtx.nAmount || tx.nTxFee != wtx.nTxFee
+       || tx.nBlockHeight != wtx.nBlockHeight)
+    {
+        return false;
+    }
+
+    return true;
+}
+
+bool CWallet::CompareWithPoolOrTx(const CWalletTx& wtx, const std::set<CDestination> setAddr)
+{
+    //wallet transactions must be only owned by addresses in the wallet of the node
+    if(!setAddr.count(wtx.destIn) || !setAddr.count(wtx.sendTo))
+    {
+        return false;
+    }
+
+    if(wtx.nBlockHeight < 0)
+    {//compare wtx with txpool
+        CTransaction tx;
+        if(!pTxPool->Get(wtx.txid, tx))
+        {
+            return false;
+        }
+        if(tx.nTimeStamp != wtx.nTimeStamp || tx.nVersion != wtx.nVersion
+           || tx.nType != wtx.nType || tx.nLockUntil != wtx.nLockUntil
+           || tx.vInput != wtx.vInput || tx.sendTo != wtx.sendTo
+           || tx.nAmount != wtx.nAmount || tx.nTxFee != wtx.nTxFee)
+        {
+            return false;
+        }
+    }
+    else
+    {//compare wtx with vtx of block
+        CTransaction tx;
+        if(!pWorldLine->GetTransaction(wtx.txid, tx))
+        {
+            return false;
+        }
+        if(tx.nTimeStamp != wtx.nTimeStamp || tx.nVersion != wtx.nVersion
+           || tx.nType != wtx.nType || tx.nLockUntil != wtx.nLockUntil
+           || tx.vInput != wtx.vInput || tx.sendTo != wtx.sendTo
+           || tx.nAmount != wtx.nAmount || tx.nTxFee != wtx.nTxFee)
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool CWallet::LoadDB()
+{
+    {
+        boost::unique_lock<boost::shared_mutex> wlock(rwKeyStore);
+
+        CDBAddrWalker walker(this);
+        if (!dbWallet.WalkThroughAddress(walker))
+        {
+            return false;
         }
     }
 
@@ -586,6 +869,13 @@ void CWallet::Clear()
         mapWalletUnspent.clear();
         mapWalletTx.clear();
     }
+}
+
+bool CWallet::ClearTx()
+{
+    mapWalletUnspent.clear();
+    mapWalletTx.clear();
+    return dbWallet.ClearTx();
 }
 
 bool CWallet::InsertKey(const crypto::CKey& key)
@@ -697,44 +987,6 @@ bool CWallet::AddNewTx(const uint256& hashFork,const CAssembledTx& tx)
     return true;
 }
 
-bool CWallet::UpdateTx(const uint256& hashFork,const CAssembledTx& tx)
-{
-    boost::unique_lock<boost::shared_mutex> wlock(rwWalletTx);
-
-    vector<CWalletTx> vWalletTx;
-    bool fIsMine = IsMine(tx.sendTo);
-    bool fFromMe = IsMine(tx.destIn);
-    if (fFromMe || fIsMine)
-    {
-        uint256 txid = tx.GetHash();
-        std::shared_ptr<CWalletTx> spWalletTx = InsertWalletTx(txid,tx,hashFork,fIsMine,fFromMe);
-        if (spWalletTx != NULL)
-        {
-            vector<uint256> vFork;
-            GetWalletTxFork(hashFork,tx.nBlockHeight,vFork);
-            AddNewWalletTx(spWalletTx,vFork);
-            vWalletTx.push_back(*spWalletTx);
-            if (!spWalletTx->GetRefCount())
-            {
-                mapWalletTx.erase(txid);
-            }
-        }
-    }
-    if (!vWalletTx.empty())
-    {
-        return dbWallet.UpdateTx(vWalletTx);
-    }
-    return true;
-}
-
-bool CWallet::ClearTx()
-{
-    boost::unique_lock<boost::shared_mutex> wlock(rwWalletTx);
-    mapWalletUnspent.clear();
-    mapWalletTx.clear();
-    return dbWallet.ClearTx();
-}
-
 std::shared_ptr<CWalletTx> CWallet::LoadWalletTx(const uint256& txid)
 {
     std::shared_ptr<CWalletTx> spWalletTx;
@@ -756,7 +1008,8 @@ std::shared_ptr<CWalletTx> CWallet::LoadWalletTx(const uint256& txid)
     return (!spWalletTx->IsNull() ? spWalletTx : NULL);
 }
 
-std::shared_ptr<CWalletTx> CWallet::InsertWalletTx(const uint256& txid,const CAssembledTx &tx,const uint256& hashFork,bool fIsMine,bool fFromMe)
+std::shared_ptr<CWalletTx> CWallet::InsertWalletTx(const uint256& txid,const CAssembledTx &tx,const uint256& hashFork,
+                                                   bool fIsMine,bool fFromMe)
 {
     std::shared_ptr<CWalletTx> spWalletTx;
     map<uint256,std::shared_ptr<CWalletTx> >::iterator it = mapWalletTx.find(txid);
@@ -774,12 +1027,12 @@ std::shared_ptr<CWalletTx> CWallet::InsertWalletTx(const uint256& txid,const CAs
     return spWalletTx;
 }
 
-int64 CWallet::SelectCoins(const CDestination& destIn,const CDestination& destTo,const uint256& hashFork,
-                           int nForkHeight,int64 nTargetValue,size_t nMaxInput,vector<CTxOutPoint>& vCoins)
+int64 CWallet::SelectCoins(const CDestination& dest,const uint256& hashFork,int nForkHeight,
+                           int64 nTxTime,int64 nTargetValue,size_t nMaxInput,vector<CTxOutPoint>& vCoins)
 {
     vCoins.clear();
 
-    CWalletCoins& walletCoins = mapWalletUnspent[destIn].GetCoins(hashFork);
+    CWalletCoins& walletCoins = mapWalletUnspent[dest].GetCoins(hashFork);
     if (walletCoins.nTotalValue < nTargetValue)
     {
         return 0;
@@ -793,7 +1046,7 @@ int64 CWallet::SelectCoins(const CDestination& destIn,const CDestination& destTo
 
     BOOST_FOREACH(const CWalletTxOut& out,walletCoins.setCoins)
     {
-        if (out.IsLocked(nForkHeight))
+        if (out.IsLocked(nForkHeight) || out.GetTxTime() > nTxTime)
         {
             continue;
         }
@@ -1020,7 +1273,7 @@ void CWallet::AddNewWalletTx(std::shared_ptr<CWalletTx>& spWalletTx,vector<uint2
 
                 if (!spPrevWalletTx->GetRefCount())
                 {
-                     mapWalletTx.erase(it);
+                    mapWalletTx.erase(it);
                 }
             }
         }

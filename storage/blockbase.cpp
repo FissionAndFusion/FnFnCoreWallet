@@ -4,6 +4,8 @@
 
 #include "blockbase.h"
 #include "template/template.h"
+#include <boost/timer/timer.hpp>
+#include <cstdio>
 
 using namespace std;
 using namespace boost::filesystem;
@@ -20,33 +22,9 @@ class CBlockWalker : public CBlockDBWalker
 {
 public:
     CBlockWalker(CBlockBase* pBaseIn) : pBase(pBaseIn) {}
-    bool Walk(CBlockOutline& outline) { return pBase->LoadIndex(outline); } 
+    bool Walk(CBlockOutline& outline) override { return pBase->LoadIndex(outline); } 
 public:
     CBlockBase* pBase;
-};
-
-//////////////////////////////
-// CBlockTxFilter
-
-class CBlockTxFilter : public CBlockDBTxFilter
-{
-public:
-    CBlockTxFilter(CBlockBase* pBlockBaseIn,CTxFilter& filterIn) 
-    : CBlockDBTxFilter(filterIn),pBlockBase(pBlockBaseIn) 
-    {
-    }
-    bool FoundTxIndex(const CDestination& destTxIn,int64 nValueTxIn,int nBlockHeight,uint32 nFile,uint32 nOffset)
-    {
-        uint256 hashFork;
-        CTransaction tx;
-        if (!pBlockBase->LoadTx(tx,nFile,nOffset,hashFork))
-        {
-            return false;
-        }
-        return filter.FoundTx(hashFork,CAssembledTx(tx,nBlockHeight,destTxIn,nValueTxIn));
-    }
-public:
-    CBlockBase* pBlockBase;
 };
 
 //////////////////////////////
@@ -169,8 +147,8 @@ void CBlockView::RemoveTx(const uint256& txid,const CTransaction& tx,const CTxCo
     vTxRemove.push_back(txid);
     for (int i = 0;i < tx.vInput.size();i++)
     {
-        const pair<int64,uint32>& input = txContxt.vInputValue[i];
-        mapUnspent[tx.vInput[i].prevout].Enable(CTxOutput(txContxt.destIn,input.first,input.second));
+        const CTxInContxt& in = txContxt.vin[i];
+        mapUnspent[tx.vInput[i].prevout].Enable(CTxOutput(txContxt.destIn,in.nAmount,in.nTxTime,in.nLockUntil));
     }    
     mapUnspent[CTxOutPoint(txid,0)].Disable();
     mapUnspent[CTxOutPoint(txid,1)].Disable();
@@ -238,7 +216,7 @@ CBlockBase::~CBlockBase()
     tsBlock.Deinitialize();
 }
 
-bool CBlockBase::Initialize(const CMvDBConfig& dbConfig,int nMaxDBConn,const path& pathDataLocation,bool fDebug,bool fRenewDB)
+bool CBlockBase::Initialize(const path& pathDataLocation,bool fDebug,bool fRenewDB)
 {
     if (!SetupLog(pathDataLocation,fDebug))
     {
@@ -246,17 +224,6 @@ bool CBlockBase::Initialize(const CMvDBConfig& dbConfig,int nMaxDBConn,const pat
     }
 
     Log("B","Initializing... (Path : %s)\n",pathDataLocation.string().c_str());
-
-    if (!dbBlock.DBPoolInitialize(dbConfig,nMaxDBConn))
-    {
-        Error("B","Failed MySQL not connect\n");
-        return false;
-    }
-
-    if (!dbBlock.InnoDB()){
-        Error("B","Failed MySQL not Support InnoDB\n");
-        return false;
-    }
 
     if (!dbBlock.Initialize(pathDataLocation))
     {
@@ -312,7 +279,9 @@ bool CBlockBase::Exists(const uint256& hash) const
 
 bool CBlockBase::ExistsTx(const uint256& txid)
 {
-    return dbBlock.ExistsTx(txid);
+    uint256 hashFork;
+    CTxIndex txIndex;
+    return dbBlock.RetrieveTxIndex(txid,txIndex,hashFork);
 }
 
 bool CBlockBase::IsEmpty() const
@@ -337,7 +306,7 @@ bool CBlockBase::Initiate(const uint256& hashGenesis,const CBlock& blockGenesis)
         return false;
     }
     uint32 nFile,nOffset;
-    if (!tsBlock.Write(blockGenesis,nFile,nOffset))
+    if (!tsBlock.Write(CBlockEx(blockGenesis),nFile,nOffset))
     {
         return false;
     }
@@ -346,7 +315,7 @@ bool CBlockBase::Initiate(const uint256& hashGenesis,const CBlock& blockGenesis)
     uint256 txidMintTx = blockGenesis.txMint.GetHash();
 
     vector<pair<uint256,CTxIndex> > vTxNew;
-    vTxNew.push_back(make_pair(txidMintTx,CTxIndex(blockGenesis.txMint,CDestination(),0,0,nFile,nTxOffset)));
+    vTxNew.push_back(make_pair(txidMintTx,CTxIndex(0,nFile,nTxOffset)));
 
     vector<CTxUnspent> vAddNew;
     vAddNew.push_back(CTxUnspent(CTxOutPoint(txidMintTx,0),CTxOutput(blockGenesis.txMint)));
@@ -360,6 +329,12 @@ bool CBlockBase::Initiate(const uint256& hashGenesis,const CBlock& blockGenesis)
         }
 
         if (!dbBlock.AddNewBlock(CBlockOutline(pIndexNew)))
+        {
+            return false;
+        }
+
+        CDelegateContext ctxtDelegate;
+        if (!dbBlock.UpdateDelegateContext(hashGenesis,ctxtDelegate))
         {
             return false;
         }
@@ -432,7 +407,7 @@ bool CBlockBase::AddNew(const uint256& hash,CBlockEx& block,CBlockIndex** ppInde
         
         if (pIndexNew->IsPrimary())
         {
-            if (!UpdateDelegate(hash,block))
+            if (!UpdateDelegate(hash,block,CDiskPos(nFile,nOffset)))
             {
                 dbBlock.RemoveBlock(hash);
                 mapIndex.erase(hash);
@@ -472,7 +447,7 @@ bool CBlockBase::Retrieve(const uint256& hash,CBlock& block)
             return false;
         }
     }
-    if (!tsBlock.Read(block,pIndex->nFile,pIndex->nOffset))
+    if (!tsBlock.Read(block,pIndex->nFile,pIndex->nOffset,false))
     {
         return false;
     }
@@ -483,7 +458,7 @@ bool CBlockBase::Retrieve(const CBlockIndex* pIndex,CBlock& block)
 {
     block.SetNull();
 
-    if (!tsBlock.Read(block,pIndex->nFile,pIndex->nOffset))
+    if (!tsBlock.Read(block,pIndex->nFile,pIndex->nOffset,false))
     {
         return false;
     }
@@ -637,14 +612,31 @@ bool CBlockBase::RetrieveOrigin(const uint256& hash,CBlock& block)
 bool CBlockBase::RetrieveTx(const uint256& txid,CTransaction& tx)
 {
     tx.SetNull();
-
-    uint32 nTxFile,nTxOffset;
-    if (!dbBlock.RetrieveTxPos(txid,nTxFile,nTxOffset))
+    uint256 hashFork;
+    CTxIndex txIndex;
+    if (!dbBlock.RetrieveTxIndex(txid,txIndex,hashFork))
     {
         return false;
     }
 
-    if (!tsBlock.Read(tx,nTxFile,nTxOffset))
+    if (!tsBlock.Read(tx,txIndex.nFile,txIndex.nOffset))
+    {
+        return false;
+    }
+    return true;
+}
+
+bool CBlockBase::RetrieveTx(const uint256& hashFork,const uint256& txid,CTransaction& tx)
+{
+    tx.SetNull();
+
+    CTxIndex txIndex;
+    if (!dbBlock.RetrieveTxIndex(hashFork,txid,txIndex))
+    {
+        return false;
+    }
+
+    if (!tsBlock.Read(tx,txIndex.nFile,txIndex.nOffset))
     {
         return false;
     }
@@ -653,63 +645,50 @@ bool CBlockBase::RetrieveTx(const uint256& txid,CTransaction& tx)
 
 bool CBlockBase::RetrieveTxLocation(const uint256& txid,uint256& hashFork,int& nHeight)
 {
-    uint256 hashAnchor;
-    if (!dbBlock.RetrieveTxLocation(txid,hashAnchor,nHeight))
+    CTxIndex txIndex;
+    if (!dbBlock.RetrieveTxIndex(txid,txIndex,hashFork))
     {
         return false;
     }
 
-    {
-        CWalleveReadLock rlock(rwAccess);
-        CBlockIndex* pIndex = (hashAnchor != 0 ? GetIndex(hashAnchor) : GetOriginIndex(txid));
-        if (pIndex == NULL)
-        {
-            return false;
-        }
-        hashFork = pIndex->GetOriginHash();
-    }
-
+    nHeight = txIndex.nBlockHeight;
     return true;
 }
 
-bool CBlockBase::RetrieveDelegate(const uint256& hash,int64 nMinAmount,map<CDestination,int64>& mapDelegate)
+bool CBlockBase::RetrieveAvailDelegate(const uint256& hash,const uint256& hashAnchor,const vector<uint256>& vBlockRange,
+                                                           int64 nDelegateWeightRatio,
+                                                           map<CDestination,size_t>& mapWeight,
+                                                           map<CDestination,vector<unsigned char> >& mapEnrollData)
 {
-    return dbBlock.RetrieveDelegate(hash,nMinAmount,mapDelegate);
-}
-
-bool CBlockBase::RetrieveEnroll(const uint256& hashAnchor,const uint256& hashEnrollEnd,
-                                map<CDestination,vector<unsigned char> >& mapEnrollData)
-{
-    CWalleveReadLock rlock(rwAccess);
-
-    CBlockIndex* pIndex = GetIndex(hashEnrollEnd);
-    set<uint256> setBlockRange;
-    while (pIndex != NULL && pIndex->GetBlockHash() != hashAnchor)
-    {
-        setBlockRange.insert(pIndex->GetBlockHash());
-        pIndex = pIndex->pPrev;
-    }
-    
-    if (pIndex == NULL)
+    map<CDestination,int64> mapVote;
+    if (!dbBlock.RetrieveDelegate(hash,mapVote))
     {
         return false;
     }
 
-    map<CDestination,pair<uint32,uint32> > mapEnrollTxPos;
-    if (!dbBlock.RetrieveEnroll(hashAnchor,setBlockRange,mapEnrollTxPos))
+    map<CDestination,CDiskPos> mapEnrollTxPos;
+    if (!dbBlock.RetrieveEnroll(hashAnchor,vBlockRange,mapEnrollTxPos))
     {
         return false;
     }
-    
-    for (map<CDestination,pair<uint32,uint32> >::iterator it = mapEnrollTxPos.begin();
-         it != mapEnrollTxPos.end();++it)
+
+    for (map<CDestination,int64>::iterator it = mapVote.begin();it != mapVote.end();++it)
     {
-        CTransaction tx;
-        if (!tsBlock.Read(tx,(*it).second.first,(*it).second.second))
+        if ((*it).second >= nDelegateWeightRatio)
         {
-            return false;
+            const CDestination& dest = (*it).first;
+            map<CDestination,CDiskPos>::iterator mi = mapEnrollTxPos.find(dest);
+            if (mi != mapEnrollTxPos.end())
+            {
+                CTransaction tx;
+                if (!tsBlock.Read(tx,(*mi).second))
+                {
+                    return false;
+                }
+                mapWeight.insert(make_pair(dest,size_t((*it).second / nDelegateWeightRatio)));
+                mapEnrollData.insert(make_pair(dest,tx.vchData)); 
+            }
         }
-        mapEnrollData.insert(make_pair((*it).first,tx.vchData)); 
     }
     return true;
 }
@@ -847,14 +826,6 @@ bool CBlockBase::CommitBlockView(CBlockView& view,CBlockIndex* pIndexNew)
     vector<CTxOutPoint> vRemove;
     view.GetUnspentChanges(vAddNew,vRemove);
 
-    if (pIndexNew->IsPrimary())
-    {
-        if (!UpdateEnroll(pIndexNew,vTxNew))
-        {
-            return false;
-        }
-    }
-
     if (hashFork == view.GetForkHash())
     {
         spFork->UpgradeToWrite();
@@ -874,30 +845,38 @@ bool CBlockBase::CommitBlockView(CBlockView& view,CBlockIndex* pIndexNew)
 bool CBlockBase::LoadIndex(CBlockOutline& outline)
 {
     uint256 hash = outline.GetBlockHash();
-    CBlockIndex* pIndexNew = new CBlockIndex(static_cast<CBlockIndex&>(outline));
-    if (pIndexNew == NULL)
+    CBlockIndex* pIndexNew = NULL;
+
+    map<uint256, CBlockIndex*>::iterator mi = mapIndex.find(hash);
+    if (mi != mapIndex.end())
     {
-        return false;
+        pIndexNew = (*mi).second;
+        *pIndexNew = static_cast<CBlockIndex&>(outline);
     }
-    map<uint256, CBlockIndex*>::iterator mi;
-    mi = mapIndex.insert(make_pair(hash, pIndexNew)).first;
+    else
+    {
+        pIndexNew = new CBlockIndex(static_cast<CBlockIndex&>(outline));
+        if (pIndexNew == NULL)
+        {
+            return false;
+        }
+        mi = mapIndex.insert(make_pair(hash, pIndexNew)).first;
+    }
+
     pIndexNew->phashBlock = &((*mi).first);
     pIndexNew->pPrev = NULL;
     pIndexNew->pOrigin = pIndexNew;
+
     if (outline.hashPrev != 0)
     {
-        pIndexNew->pPrev = GetIndex(outline.hashPrev);
-        if (pIndexNew->pPrev == NULL)
-        {
-            mapIndex.erase(hash);
-            delete pIndexNew;
-            return false;
-        }
-        if (!pIndexNew->IsOrigin())
-        {
-            pIndexNew->pOrigin = pIndexNew->pPrev->pOrigin;
-        }
+        pIndexNew->pPrev = GetOrCreateIndex(outline.hashPrev);
     }
+    
+    if (!pIndexNew->IsOrigin())
+    {
+        pIndexNew->pOrigin = GetOrCreateIndex(outline.hashOrigin);
+    }
+ 
     return true;
 }
 
@@ -917,15 +896,98 @@ bool CBlockBase::LoadTx(CTransaction& tx,uint32 nTxFile,uint32 nTxOffset,uint256
     return true;
 }
 
-bool CBlockBase::FilterTx(CTxFilter& filter)
+bool CBlockBase::FilterTx(const uint256& hashFork,CTxFilter& filter)
 {
-    CBlockTxFilter txFilter(this,filter); 
-    return dbBlock.FilterTx(txFilter);
+    CWalleveReadLock rlock(rwAccess);
+
+    boost::shared_ptr<CBlockFork> spFork = GetFork(hashFork);
+    if (spFork == NULL)
+    {
+        return false;
+    }
+
+    CWalleveReadLock rForkLock(spFork->GetRWAccess());
+
+    for (CBlockIndex* pIndex = spFork->GetOrigin(); pIndex != NULL; pIndex = pIndex->pNext)
+    {    
+        CBlockEx block;
+        if (!tsBlock.Read(block,pIndex->nFile,pIndex->nOffset))
+        {
+            return false;
+        }
+        int nBlockHeight = pIndex->GetBlockHeight();
+        if (filter.setDest.count(block.txMint.sendTo))
+        {
+            if (!filter.FoundTx(hashFork,CAssembledTx(block.txMint,nBlockHeight)))
+            {
+                return false;
+            }
+        }
+        for (int i = 0; i < block.vtx.size();i++)
+        {
+            CTransaction& tx = block.vtx[i];
+            CTxContxt& ctxt = block.vTxContxt[i];
+
+            if (filter.setDest.count(tx.sendTo) || filter.setDest.count(ctxt.destIn))
+            {
+                if (!filter.FoundTx(hashFork,CAssembledTx(tx,nBlockHeight,ctxt.destIn,ctxt.GetValueIn())))
+                {
+                    return false;
+                }
+            }
+        }
+    }
+    return true;
 }
 
-bool CBlockBase::FilterForkContext(CForkContextFilter& filter)
+bool CBlockBase::FilterTx(const uint256& hashFork, int nDepth, CTxFilter& filter)
 {
-    return dbBlock.FilterForkContext(filter);
+    CWalleveReadLock rlock(rwAccess);
+
+    boost::shared_ptr<CBlockFork> spFork = GetFork(hashFork);
+    if (spFork == NULL)
+    {
+        return false;
+    }
+
+    CWalleveReadLock rForkLock(spFork->GetRWAccess());
+
+    int nCount = 0;
+    for (CBlockIndex* pIndex = spFork->GetLast(); pIndex != NULL && nCount++ < nDepth; pIndex = pIndex->pPrev)
+    {
+        CBlockEx block;
+        if (!tsBlock.Read(block,pIndex->nFile,pIndex->nOffset))
+        {
+            return false;
+        }
+        int nBlockHeight = pIndex->GetBlockHeight();
+        if (filter.setDest.count(block.txMint.sendTo))
+        {
+            if (!filter.FoundTx(hashFork,CAssembledTx(block.txMint,nBlockHeight)))
+            {
+                return false;
+            }
+        }
+        for (int i = 0; i < block.vtx.size();i++)
+        {
+            CTransaction& tx = block.vtx[i];
+            CTxContxt& ctxt = block.vTxContxt[i];
+
+            if (filter.setDest.count(tx.sendTo) || filter.setDest.count(ctxt.destIn))
+            {
+                if (!filter.FoundTx(hashFork,CAssembledTx(tx,nBlockHeight,ctxt.destIn,ctxt.GetValueIn())))
+                {
+                    return false;
+                }
+            }
+        }
+    }
+    return true;
+}
+
+bool CBlockBase::ListForkContext(std::vector<CForkContext>& vForkCtxt)
+{
+    return dbBlock.ListForkContext(vForkCtxt);
 }
 
 bool CBlockBase::GetForkBlockLocator(const uint256& hashFork,CBlockLocator& locator)
@@ -1006,10 +1068,509 @@ bool CBlockBase::GetForkBlockInv(const uint256& hashFork,const CBlockLocator& lo
     return true;
 }
 
+bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
+{/*
+    boost::timer::cpu_timer t_lock;
+    t_lock.start();
+
+    CWalleveReadLock rlock(rwAccess);
+
+    Log("B", "Getting lock duration ===> %s.\n", t_lock.format().c_str());
+
+    boost::timer::cpu_timer t_check;
+    t_check.start();
+
+    Log("B", "Check consistency with parameters check-level:%d and check-depth:%d.\n", nCheckLevel, nCheckDepth);
+
+    int nLevel = nCheckLevel;
+    if(nCheckLevel < 0)
+    {
+        nLevel = 0;
+    }
+    if(nCheckLevel > 3)
+    {
+        nLevel = 3;
+    }
+    int nDepth = nCheckDepth;
+
+    Log("B", "Consistency checking level is %d\n", nLevel);
+
+    vector<CBlockDBFork> vFork;
+    if(!dbBlock.FetchFork(vFork))
+    {
+        Error("B", "Fetch fork failed.\n");
+        return false;
+    }
+
+    for(const auto& fork : vFork)
+    {
+        boost::timer::cpu_timer t_fork;
+        t_fork.start();
+
+        //checking of level 0: fork/block
+
+        //check field refblock of table fork must be in rows in table block
+        CBlockIndex* pBlockRefIndex = GetIndex(fork.hashRef);
+        if(!pBlockRefIndex)
+        {
+            Error("B", "Get referenced block index failed.\n");
+            return false;
+        }
+
+        boost::shared_ptr<CBlockFork> spFork = GetFork(fork.hashFork);
+        if(NULL == spFork)
+        {
+            Error("B", "Get fork failed.\n");
+            return false;
+        }
+        CBlockIndex* pLastBlock = spFork->GetLast();
+        if(NULL == pLastBlock)
+        {
+            Error("B", "Get last block index of current fork failed.\n");
+            return false;
+        }
+
+        bool fIsMainFork = spFork->GetOrigin()->IsPrimary();
+
+        if(0 == nDepth || pLastBlock->nHeight < nDepth)
+        {
+            nDepth = pLastBlock->nHeight;
+            Log("B", "Consistency checking depth is {%d} for fork:{%s}\n", nDepth, fork.hashFork.ToString().c_str());
+        }
+
+        CBlockIndex* pIndex = pLastBlock;
+        map<CDestination, int64> mapNextBlockDelegate;
+
+        map<CTxOutPoint, CTxUnspent> mapUnspentUTXO;
+        vector<CTxOutPoint> vSpentUTXO;
+
+        while(pIndex && pLastBlock->nHeight - pIndex->nHeight < nDepth)
+        {
+            //be able to read from block files
+            CBlockEx block;
+            if(!tsBlock.ReadDirect(block, pIndex->nFile, pIndex->nOffset))
+            {
+                Error("B", "Retrieve block from file directly failed.\n");
+                return false;
+            }
+
+            //consistent between database and block file
+            if(!(pIndex->GetBlockHash() == block.GetHash()
+                 && pIndex->pPrev->GetBlockHash() == block.hashPrev
+                 && pIndex->nVersion == block.nVersion
+                 && pIndex->nType == block.nType
+                 && pIndex->nTimeStamp == block.nTimeStamp
+                 && ((pIndex->nMintType == 0 ) ?
+                     block.IsVacant()
+                     : (!block.IsVacant() && pIndex->txidMint == block.txMint.GetHash() && pIndex->nMintType == block.txMint.nType))
+                ))
+            {
+                Error("B", "Block info are not consistent in db and file.\n");
+                return false;
+            }
+
+            //checking of level 1: transaction
+            if(nLevel >= 1 && !pIndex->IsVacant())
+            {
+                auto lmdChkTx = [&] (const uint256& txid, const CTxIndex& pTxIndex) -> bool {
+                    CTransaction tx;
+                    if (!tsBlock.ReadDirect(tx, pTxIndex.nFile, pTxIndex.nOffset))
+                    {
+                        Error("B", "Retrieve tx from file directly failed.\n");
+                        return false;
+                    }
+
+                    //consistent between database and block file
+                    if(!(txid == tx.GetHash()
+                          && pTxIndex.nVersion == tx.nVersion
+                          && pTxIndex.nType == tx.nType
+                          && pTxIndex.nLockUntil == tx.nLockUntil
+                          && pTxIndex.hashAnchor == tx.hashAnchor
+                          && pTxIndex.sendTo == tx.sendTo
+                          && pTxIndex.nAmount == tx.nAmount)
+                            )
+                    {
+                        return false;
+                    }
+
+                    return true;
+                };
+
+                CTxIndex pTxIdx;
+                if(!dbBlock.RetrieveTxIndex(pIndex->txidMint, pTxIdx))
+                {
+                    Error("B", "Retrieve mint tx index from db failed.\n");
+                    return false;
+                }
+                if(!lmdChkTx(pIndex->txidMint, pTxIdx))
+                {
+                    Error("B", "Mint tx info are not consistent in db and file.\n");
+                    return false;
+                }
+
+                for(auto const& tx : block.vtx)
+                {
+                    pTxIdx.SetNull();
+                    const uint256& txid = tx.GetHash();
+                    if(!dbBlock.RetrieveTxIndex(txid, pTxIdx))
+                    {
+                        Error("B", "Retrieve token tx index from db failed.\n");
+                        return false;
+                    }
+                    if(!lmdChkTx(txid, pTxIdx))
+                    {
+                        Error("B", "Token tx info are not consistent in db and file.\n");
+                        return false;
+                    }
+                }
+
+            }
+
+            //checking of level 2: delegate/enroll
+            if(nLevel >= 2 && fIsMainFork)
+            {
+                static bool fIsLastBlock = true;
+
+                if(fIsLastBlock)
+                {
+                    if(!dbBlock.RetrieveDelegate(block.GetHash(), 0, mapNextBlockDelegate))
+                    {
+                        Error("B", "Retrieve the latest delegate record from db failed.\n");
+                        return false;
+                    }
+                    fIsLastBlock = false;
+                }
+                else
+                {   //compare delegate in this iteration with the previous one
+                    map<CDestination, int64> mapPrevBlockDelegate;
+                    if(!dbBlock.RetrieveDelegate(block.GetHash(), 0, mapPrevBlockDelegate))
+                    {
+                        Error("B", "Retrieve the following previous delegate record from db failed.\n");
+                        return false;
+                    }
+                    if(mapNextBlockDelegate != mapPrevBlockDelegate)
+                    {
+                        Error("B", "Delegate records followed one by one do not match.\n");
+                        return false;
+                    }
+                    mapNextBlockDelegate = mapPrevBlockDelegate;
+                }
+
+                if (block.txMint.nType == CTransaction::TX_STAKE)
+                {
+                    mapNextBlockDelegate[block.txMint.sendTo] -= block.txMint.nAmount;
+                }
+
+                map<pair<uint256, CDestination>, tuple<uint256, uint32, uint32>> mapEnrollRanged;
+                for (int i = 0; i < block.vtx.size(); i++)
+                {
+                    const CTransaction& tx = block.vtx[i];
+                    {
+                        CTemplateId tid;
+                        if(tx.sendTo.GetTemplateId(tid) && tid.GetType() == TEMPLATE_DELEGATE)
+                        {
+                            mapNextBlockDelegate[tx.sendTo] -= tx.nAmount;
+                        }
+                    }
+
+                    const CTxContxt& txContxt = block.vTxContxt[i];
+                    {
+                        CTemplateId tid;
+                        if(txContxt.destIn.GetTemplateId(tid) && tid.GetType() == TEMPLATE_DELEGATE)
+                        {
+                            mapNextBlockDelegate[txContxt.destIn] += tx.nAmount + tx.nTxFee;
+                        }
+                    }
+
+                    if(tx.nType == CTransaction::TX_CERT)
+                    {
+                        const uint256& anchor = tx.hashAnchor;
+                        const CDestination& dest = tx.sendTo;
+                        const uint256& blk = block.GetHash();
+                        CTxIndex txIdx;
+                        if(!dbBlock.RetrieveTxIndex(tx.GetHash(), txIdx))
+                        {
+                            Error("B", "Retrieve enroll tx index from table transaction failed.\n");
+                            return false;
+                        }
+                        const uint32& nFile = txIdx.nFile;
+                        const uint32& nOffset = txIdx.nOffset;
+                        mapEnrollRanged[make_pair(anchor, dest)] = make_tuple(blk, nFile, nOffset);
+                    }
+                }
+
+                vector<CDestination> vDestNull;
+                for(const auto& delegate : mapNextBlockDelegate)
+                {
+                    if(delegate.second < 0)
+                    {
+                        Error("B", "Amount on delegate template address must not be less than zero.\n");
+                        return false;
+                    }
+                    if(delegate.second == 0)
+                    {
+                        vDestNull.push_back(delegate.first);
+                    }
+                }
+                for(const auto& dest : vDestNull)
+                {
+                    mapNextBlockDelegate.erase(dest);
+                }
+
+                //compare enroll ranged in argument of nDepth with table enroll
+                set<uint256> setBlockRange;
+                setBlockRange.insert(block.GetHash());
+                map<CDestination, pair<uint32, uint32>> mapRes;
+                if(!dbBlock.RetrieveEnroll(block.hashPrev, setBlockRange, mapRes))
+                {
+                    Error("B", "Retrieve enroll tx records from table enroll failed.\n");
+                    return false;
+                }
+                map<CDestination, pair<uint32, uint32>> mapResComp;
+                for(const auto& enroll : mapEnrollRanged)
+                {
+                    const CDestination& dest = enroll.first.second;
+                    const tuple<uint256, uint32, uint32>& pos = enroll.second;
+                    const uint32& file = get<1>(pos);
+                    const uint32& offset = get<2>(pos);
+                    mapResComp.insert(make_pair(dest, make_pair(file, offset)));
+                }
+                if(mapRes != mapResComp)
+                {
+                    Error("B", "Enroll transactions in tables enroll and transaction do not match.\n");
+                    return false;
+                }
+            }
+
+            //checking of level 3: unspent
+            if(nLevel >= 3)
+            {
+                static vector<pair<uint256, uint64> > preout;   //txid vs. height
+                mapUnspentUTXO.insert(make_pair(CTxOutPoint(block.txMint.GetHash(), 0), CTxUnspent(CTxOutPoint(block.txMint.GetHash(), 0)
+                                     , CTxOutput(block.txMint.sendTo, block.txMint.nAmount, block.txMint.nLockUntil))));
+
+                for(const auto& tx : block.vtx)
+                {
+                    CTxIndex TxIdx;
+                    if(!dbBlock.RetrieveTxIndex(tx.GetHash(), TxIdx))
+                    {
+                        assert(0);
+                    }
+                    int64 nChange = TxIdx.nValueIn - TxIdx.nAmount - tx.nTxFee;
+                    if(nChange > 0 && tx.sendTo.IsTemplate())
+                    {
+                        cout << "there is a change with template address: " << tx.sendTo.GetHex() << endl;
+                    }
+                    if(nChange > 0)
+                    {
+                        cout << "there is a change with " << (tx.sendTo.IsPubKey() ? "pubkey " : "tempkey ") << tx.sendTo.GetHex() << endl;
+                        int n = 1;
+                    }
+                    if(tx.nAmount == 11500000)
+                    {
+                        int n = 1;
+                    }
+                    if(tx.sendTo.IsPubKey())
+                    {
+                        cout << "send to a pubkey address of " << tx.sendTo.GetHex() << endl;
+//                        preout.push_back(make_pair(tx.GetHash(), TxIdx.nBlockHeight));
+                    }
+                    mapUnspentUTXO.insert(make_pair(CTxOutPoint(tx.GetHash(), 0), CTxUnspent(CTxOutPoint(tx.GetHash(), 0), CTxOutput(tx.sendTo, tx.nAmount, tx.nLockUntil))));
+                    if(nChange > 0)
+                    {
+                        if(TxIdx.nBlockHeight == 20170)
+                        {
+                            int n = 1;
+                        }
+                        Log("B", "Tx(%s) with a change(%s) on height(%d): to prepare to check.\n", tx.GetHash().ToString().c_str(), to_string(nChange).c_str(), TxIdx.nBlockHeight);
+                        if(!CheckInputSingleAddressForTxWithChange(tx.GetHash()))
+                        {
+                            Error("B", "Tx(%s) with a change(%s) on height(%d): input must be a single address.\n", tx.GetHash().ToString().c_str(), to_string(nChange).c_str(), TxIdx.nBlockHeight);
+                            return false;
+                        }
+                        else
+                        {
+                            mapUnspentUTXO.insert(make_pair(CTxOutPoint(tx.GetHash(), 1)
+                                                 , CTxUnspent(CTxOutPoint(tx.GetHash(), 1)
+                                                             , CTxOutput(TxIdx.destIn, nChange, tx.nLockUntil))));
+                        }
+                    }
+                    for(const auto& txin : tx.vInput)
+                    {
+                        for(const auto& po : preout)
+                        {
+                            if(txin.prevout.hash == po.first)
+                            {
+                                int n = 1;
+                            }
+                        }
+                        vSpentUTXO.push_back(txin.prevout);
+                    }
+                }
+
+                vector<CTxOutPoint> vRemovedUTXO;
+                for(const auto& spent : vSpentUTXO)
+                {
+                    for(const auto& po : preout)
+                    {
+                        if(spent.hash == po.first)
+                        {
+                            int n = 1;
+                        }
+                    }
+                    if(mapUnspentUTXO.find(spent) != mapUnspentUTXO.end())
+                    {
+                        mapUnspentUTXO.erase(spent);
+                        vRemovedUTXO.push_back(spent);
+                    }
+                }
+
+                for(const auto& txDel : vRemovedUTXO)
+                {
+                    const auto& pos = find(vSpentUTXO.begin(), vSpentUTXO.end(), txDel);
+                    vSpentUTXO.erase(pos);
+                }
+
+            }
+
+            pIndex = pIndex->pPrev;
+        }
+        Log("B", "Checking duration before comparing unspent ===> %s\n", t_fork.format().c_str());
+        if(nLevel >= 3)
+        {
+            //compare unspent with transaction
+            if(!dbBlock.CompareRangedUnspentTx(fork.hashFork, mapUnspentUTXO))
+            {
+
+
+                Error("B", "{%d} ranged unspent records do not match with full collection of unspent.\n", mapUnspentUTXO.size());
+                return false;
+            }
+        }
+
+        Log("B", "Checking duration of fork{%s} ===> %s\n", fork.hashFork.ToString().c_str(), t_fork.format().c_str());
+    }
+
+    Log("B", "Checking duration ===> %s\n", t_check.format().c_str());
+
+    Log("B", "Data consistency verified.\n");
+*/
+    return true;
+}
+
+bool CBlockBase::CheckInputSingleAddressForTxWithChange(const uint256& txid)
+{/*
+    CTransaction tx;
+    if(!RetrieveTx(txid, tx))
+    {
+        Error("B", "[CBlockBase::CheckInputSingleAddressForTxWithChange](%s): Failed to call to RetrieveTx.\n", txid.ToString().c_str());
+        return false;
+    }
+
+    //validate if this is a transaction which has a change
+    CTxIndex TxIdx;
+    if(!dbBlock.RetrieveTxIndex(tx.GetHash(), TxIdx))
+    {
+        assert(0);
+    }
+    int64 nChange = TxIdx.nValueIn - TxIdx.nAmount - tx.nTxFee;
+    if(nChange <= 0)
+    {
+        Error("B", "[CBlockBase::CheckInputSingleAddressForTxWithChange]: Tx(%s) is not a transaction with change.\n", txid.ToString().c_str());
+        assert(0);
+    }
+    Log("B", "[CheckInputSingleAddressForTxWithChange]txid:(%s)change:(%s)\n", txid.ToString().c_str(), to_string(nChange).c_str());
+
+    //get all inputs whose index is 0 if any
+    vector<CDestination> vDestNoChange;
+    vector<uint256> vTxExistChange;
+    for(const auto& i : tx.vInput)
+    {
+        if(i.prevout.n == 0)
+        {
+            CTxIndex txIdx;
+            if(!dbBlock.RetrieveTxIndex(i.prevout.hash, txIdx))
+            {
+                Error("B", "[CBlockBase::CheckInputSingleAddressForTxWithChange](%s): Failed to call to RetrieveTxIndex.\n", txid.ToString().c_str());
+                return false;
+            }
+            vDestNoChange.push_back(txIdx.sendTo);
+        }
+        else
+        {
+            vTxExistChange.push_back(i.prevout.hash);
+        }
+    }
+    sort(vDestNoChange.begin(), vDestNoChange.end());
+    unique(vDestNoChange.begin(), vDestNoChange.end());
+
+    //if destinations are not equal, return false
+    if(vDestNoChange.size() > 1)
+    {
+        Error("B", "[CBlockBase::CheckInputSingleAddressForTxWithChange](%s): {vDestNoChange.size() > 1}.\n", txid.ToString().c_str());
+        return false;
+    }
+
+    //if destination from input is not equal to output, return false
+    if(vDestNoChange.size() == 1)
+    {
+        CTxIndex txIdx;
+        if(!dbBlock.RetrieveTxIndex(txid, txIdx))
+        {
+            Error("B", "[CBlockBase::CheckInputSingleAddressForTxWithChange](%s): Failed to call to RetrieveTxIndex{vDestNoChange.size() == 1}.\n", txid.ToString().c_str());
+            return false;
+        }
+        CDestination dest = *(vDestNoChange.begin());
+        if(dest != txIdx.sendTo)
+        {
+            Error("B", "[CBlockBase::CheckInputSingleAddressForTxWithChange](%s): {dest != txIdx.sendTo}.\n", txid.ToString().c_str());
+            return false;
+        }
+    }
+
+    //if exist output index is 1, recur the process
+    vector<bool> vRes;
+    for(const auto& i : vTxExistChange)
+    {
+        vRes.push_back(CheckInputSingleAddressForTxWithChange(i));
+    }
+
+    if(!vRes.empty())
+    {
+        int nFalse = count(vRes.begin(), vRes.end(), false);
+        if(nFalse <= 0)
+        {
+            return true;
+        }
+        else
+        {
+            Error("B", "Tx(%s) one or more preout validate failed.\n", txid.ToString().c_str());
+            return false;
+        }
+//        return count(vRes.begin(), vRes.end(), false) <= 0;
+    }
+    else
+    {
+        return true;
+    }
+*/
+    return true;//should to be removed when uncomment the above source code
+}
+
 CBlockIndex* CBlockBase::GetIndex(const uint256& hash) const
 {
     map<uint256,CBlockIndex*>::const_iterator mi = mapIndex.find(hash);
     return (mi != mapIndex.end() ? (*mi).second : NULL);
+}
+
+CBlockIndex* CBlockBase::GetOrCreateIndex(const uint256& hash)
+{
+    map<uint256,CBlockIndex*>::const_iterator mi = mapIndex.find(hash);
+    if (mi == mapIndex.end())
+    {
+        mi = mapIndex.insert(make_pair(hash,new CBlockIndex())).first;
+    }
+    return ((*mi).second);
 }
 
 CBlockIndex* CBlockBase::GetBranch(CBlockIndex* pIndexRef,CBlockIndex* pIndex,vector<CBlockIndex*>& vPath)
@@ -1132,18 +1693,23 @@ bool CBlockBase::LoadForkProfile(const CBlockIndex* pIndexOrigin,CProfile& profi
     return true;
 }
 
-bool CBlockBase::UpdateDelegate(const uint256& hash,CBlockEx& block)
+bool CBlockBase::UpdateDelegate(const uint256& hash,CBlockEx& block,const CDiskPos& posBlock)
 {
-    map<CDestination,int64> mapDelegate;
-    if (!dbBlock.RetrieveDelegate(block.hashPrev,0,mapDelegate))
+    CDelegateContext ctxtDelegate;
+    
+    map<CDestination,int64>& mapDelegate = ctxtDelegate.mapVote;
+    map<uint256,map<CDestination,CDiskPos> >& mapEnrollTx = ctxtDelegate.mapEnrollTx;
+
+    if (!dbBlock.RetrieveDelegate(block.hashPrev,mapDelegate))
     {
         return false;
     }
-    
-    if (block.txMint.nType == CTransaction::TX_STAKE)
-    {
-        mapDelegate[block.txMint.sendTo] += block.txMint.nAmount;
-    }
+
+    CWalleveBufStream ss;
+    CVarInt var(block.vtx.size());
+    uint32 nOffset = posBlock.nOffset + block.GetTxSerializedOffset() 
+                                      + ss.GetSerializeSize(block.txMint)
+                                      + ss.GetSerializeSize(var);
 
     for (int i = 0;i < block.vtx.size();i++)
     {
@@ -1164,28 +1730,14 @@ bool CBlockBase::UpdateDelegate(const uint256& hash,CBlockEx& block)
                 mapDelegate[txContxt.destIn] -= tx.nAmount + tx.nTxFee;
             }
         }
-    }
 
-    return dbBlock.UpdateDelegate(hash,mapDelegate);
-}
-
-bool CBlockBase::UpdateEnroll(CBlockIndex* pIndexNew,const vector<pair<uint256,CTxIndex> >& vTxNew)
-{
-    vector<pair<CTxIndex,uint256> > vEnroll;
-    for (int i = 0;i < vTxNew.size();i++)
-    {
-        const CTxIndex& txIndex = vTxNew[i].second;
-        if (txIndex.nType == CTransaction::TX_CERT)
+        if (tx.nType == CTransaction::TX_CERT)
         {
-            CBlockIndex* pIndex = pIndexNew;
-            while (pIndex->GetBlockHeight() > txIndex.nBlockHeight)
-            {
-                pIndex = pIndex->pPrev;
-            }
-            vEnroll.push_back(make_pair(txIndex,pIndex->GetBlockHash()));
+            mapEnrollTx[tx.hashAnchor].insert(make_pair(txContxt.destIn,CDiskPos(posBlock.nFile,nOffset)));
         }
+        nOffset += ss.GetSerializeSize(tx);
     }
-    return (vEnroll.empty() || dbBlock.UpdateEnroll(vEnroll));
+    return dbBlock.UpdateDelegateContext(hash,ctxtDelegate);
 }
 
 bool CBlockBase::GetTxUnspent(const uint256 fork,const CTxOutPoint& out,CTxOutput& unspent)
@@ -1219,7 +1771,7 @@ bool CBlockBase::GetTxNewIndex(CBlockView& view,CBlockIndex* pIndexNew,vector<pa
 
         if (!block.txMint.IsNull())
         {
-            CTxIndex txIndex(block.txMint,CDestination(),0,nHeight,pIndex->nFile,nOffset);
+            CTxIndex txIndex(nHeight,pIndex->nFile,nOffset);
             vTxNew.push_back(make_pair(block.txMint.GetHash(),txIndex));
         }
         nOffset += ss.GetSerializeSize(block.txMint);
@@ -1231,7 +1783,7 @@ bool CBlockBase::GetTxNewIndex(CBlockView& view,CBlockIndex* pIndexNew,vector<pa
             CTransaction& tx = block.vtx[i];
             CTxContxt& txCtxt = block.vTxContxt[i];
             uint256 txid = tx.GetHash();
-            CTxIndex txIndex(tx,txCtxt.destIn,txCtxt.GetValueIn(),nHeight,pIndex->nFile,nOffset);
+            CTxIndex txIndex(nHeight,pIndex->nFile,nOffset);
             vTxNew.push_back(make_pair(txid,txIndex));
             nOffset += ss.GetSerializeSize(tx);
         }
@@ -1262,15 +1814,15 @@ bool CBlockBase::LoadDB()
         return false;
     }
 
-    vector<uint256> vFork;
-    if (!dbBlock.RetrieveFork(vFork))
+    vector<pair<uint256,uint256> > vFork;
+    if (!dbBlock.ListFork(vFork))
     {
         ClearCache();
         return false;
     }
     for (int i = 0;i < vFork.size();i++)
     {   
-        CBlockIndex* pIndex = GetIndex(vFork[i]);
+        CBlockIndex* pIndex = GetIndex(vFork[i].second);
         if (pIndex == NULL)
         {
             ClearCache();

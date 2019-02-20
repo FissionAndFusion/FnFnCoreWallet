@@ -1,8 +1,2 @@
 
-mysql setup
-========
-login mysql as root,run sql command: 
-
-create database multiverse;
-grant all privileges on multiverse.* to multiverse@localhost identified by 'multiverse';
 

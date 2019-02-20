@@ -12,23 +12,6 @@ using namespace multiverse;
 extern void MvShutdown();
 
 //////////////////////////////
-// CServiceWalletTxFilter
-class CServiceWalletTxFilter : public CTxFilter
-{
-public:
-    CServiceWalletTxFilter(IWallet* pWalletIn,const CDestination& destNew)
-    : CTxFilter(destNew,destNew),pWallet(pWalletIn)
-    {
-    }
-    bool FoundTx(const uint256& hashFork,const CAssembledTx& tx)
-    {
-        return pWallet->UpdateTx(hashFork,tx);
-    }
-public:
-    IWallet* pWallet;
-};
-
-//////////////////////////////
 // CService 
 
 CService::CService()
@@ -78,7 +61,7 @@ bool CService::WalleveHandleInitialize()
         return false;
     }
 
-    if (!WalleveGetObject("peernet",pNetwork))
+    if (!WalleveGetObject("virtualpeernet",pNetwork))
     {
         WalleveError("Failed to request network\n");
         return false;
@@ -533,6 +516,7 @@ bool CService::CreateTransaction(const uint256& hashFork,const CDestination& des
         txNew.hashAnchor = (*it).second.hashLastBlock;
     }
     txNew.nType = CTransaction::TX_TOKEN;
+    txNew.nTimeStamp = WalleveGetNetTime();
     txNew.nLockUntil = 0;
     txNew.sendTo = destSendTo;
     txNew.nAmount = nAmount;
@@ -544,36 +528,12 @@ bool CService::CreateTransaction(const uint256& hashFork,const CDestination& des
 
 bool CService::SynchronizeWalletTx(const CDestination& destNew)
 {
-    CServiceWalletTxFilter txFilter(pWallet,destNew);
-    return (pWorldLine->FilterTx(txFilter) && pTxPool->FilterTx(txFilter));
+    return pWallet->SynchronizeWalletTx(destNew);
 }
 
 bool CService::ResynchronizeWalletTx()
 {
-    if (!pWallet->ClearTx())
-    {
-        return false;
-    }
-    
-    set<crypto::CPubKey> setPubKey;
-    pWallet->GetPubKeys(setPubKey);
-    BOOST_FOREACH(const crypto::CPubKey& pubkey,setPubKey)
-    {
-        if (!SynchronizeWalletTx(CDestination(pubkey)))
-        {
-            return false;
-        }
-    }
-    set<CTemplateId> setTemplateId;
-    pWallet->GetTemplateIds(setTemplateId);
-    BOOST_FOREACH(const CTemplateId& tid,setTemplateId)
-    {
-        if (!SynchronizeWalletTx(CDestination(tid)))
-        {
-            return false;
-        }
-    }
-    return true;
+    return pWallet->ResynchronizeWalletTx();
 }
 
 bool CService::GetWork(vector<unsigned char>& vchWorkData,uint256& hashPrev,uint32& nPrevTime,int& nAlgo,int& nBits)
@@ -645,15 +605,16 @@ MvErr CService::SubmitWork(const vector<unsigned char>& vchWorkData,CTemplateMin
     }
 
     CTransaction& txMint = block.txMint;
-    txMint.nType = CTransaction::TX_WORK;
-    txMint.hashAnchor = block.hashPrev;
-    txMint.sendTo = CDestination(templMint->GetTemplateId());
-    txMint.nAmount = nReward;
+    txMint.nType         = CTransaction::TX_WORK;
+    txMint.nTimeStamp    = block.nTimeStamp;
+    txMint.hashAnchor    = block.hashPrev;
+    txMint.sendTo        = CDestination(templMint->GetTemplateId());
+    txMint.nAmount       = nReward;
 
     size_t nSigSize = templMint->GetTemplateData().size() + 64 + 2;
     size_t nMaxTxSize = MAX_BLOCK_SIZE - GetSerializeSize(block) - nSigSize;
     int64 nTotalTxFee = 0;
-    pTxPool->ArrangeBlockTx(pCoreProtocol->GetGenesisBlockHash(),nMaxTxSize,block.vtx,nTotalTxFee);
+    pTxPool->ArrangeBlockTx(pCoreProtocol->GetGenesisBlockHash(),block.nTimeStamp,nMaxTxSize,block.vtx,nTotalTxFee);
     block.hashMerkle = block.CalcMerkleTreeRoot();
     block.txMint.nAmount += nTotalTxFee;
 

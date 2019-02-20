@@ -4,7 +4,9 @@
 
 #include "netchn.h"
 #include "schedule.h"
+#include "virtualpeernet.h"
 #include <boost/bind.hpp>
+#include <limits>
 
 using namespace std;
 using namespace walleve;
@@ -102,6 +104,7 @@ CNetChannel::CNetChannel()
     pTxPool = NULL;
     pService = NULL;
     pDispatcher = NULL;
+    nodeType = NODE_TYPE::NODE_TYPE_FNFN;
 }
 
 CNetChannel::~CNetChannel()
@@ -110,7 +113,7 @@ CNetChannel::~CNetChannel()
 
 bool CNetChannel::WalleveHandleInitialize()
 {
-    if (!WalleveGetObject("peernet",pPeerNet))
+    if (!WalleveGetObject("virtualpeernet",pPeerNet))
     {
         WalleveError("Failed to request peer net\n");
         return false;
@@ -209,7 +212,12 @@ bool CNetChannel::IsForkSynchronized(const uint256& hashFork) const
 void CNetChannel::BroadcastBlockInv(const uint256& hashFork,const uint256& hashBlock,const set<uint64>& setKnownPeer)
 {
     network::CMvEventPeerInv eventInv(0,hashFork);
+    eventInv.sender = "netchannel";
     eventInv.data.push_back(network::CInv(network::CInv::MSG_BLOCK,hashBlock));
+
+    network::CMvEventPeerInv eventDownInv(std::numeric_limits<uint64>::max(), hashFork);
+    eventDownInv.sender = "netchannel";
+    eventDownInv.data.push_back(network::CInv(network::CInv::MSG_BLOCK,hashBlock));
     {
         boost::shared_lock<boost::shared_mutex> rlock(rwNetPeer);
         for (map<uint64,CNetChannelPeer>::iterator it = mapPeer.begin();it != mapPeer.end();++it)
@@ -221,6 +229,8 @@ void CNetChannel::BroadcastBlockInv(const uint256& hashFork,const uint256& hashB
                 pPeerNet->DispatchEvent(&eventInv);
             }
         }
+
+        pPeerNet->DispatchEvent(&eventDownInv);
     }
 }
 
@@ -286,6 +296,17 @@ void CNetChannel::UnsubscribeFork(const uint256& hashFork)
             pPeerNet->DispatchEvent(&eventUnsubscribe);
         }
     }
+}
+
+bool CNetChannel::IsContains(const uint256& hashFork)
+{
+    boost::recursive_mutex::scoped_lock scoped_lock(mtxSched);
+    return mapSched.find(hashFork) != mapSched.end();
+}
+
+void CNetChannel::EnableSuperNode(bool fIsFork)
+{
+    nodeType = fIsFork ? NODE_TYPE::NODE_TYPE_FORK : NODE_TYPE::NODE_TYPE_ROOT;
 }
 
 bool CNetChannel::HandleEvent(network::CMvEventPeerActive& eventActive)
@@ -417,6 +438,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerInv& eventInv)
 {
     uint64 nNonce = eventInv.nNonce;
     uint256& hashFork = eventInv.hashFork;
+
     try 
     {
         if (eventInv.data.size() > network::CInv::MAX_INV_COUNT)
@@ -459,19 +481,34 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerGetData& eventGetData)
 {
     uint64 nNonce = eventGetData.nNonce;
     uint256& hashFork = eventGetData.hashFork;
+    std::string flow = eventGetData.flow;
     BOOST_FOREACH(const network::CInv& inv,eventGetData.data)
     {
         if (inv.nType == network::CInv::MSG_TX)
         {
             network::CMvEventPeerTx eventTx(nNonce,hashFork);
+
+            if("up" == flow)
+            {
+                eventTx.nNonce = std::numeric_limits<uint64>::max();
+                eventTx.sender = "netchannel";
+            }
+
             if (pTxPool->Get(inv.nHash,eventTx.data))
-            {   
+            {
                 pPeerNet->DispatchEvent(&eventTx);
             }
         }
         else if (inv.nType == network::CInv::MSG_BLOCK)
         {
             network::CMvEventPeerBlock eventBlock(nNonce,hashFork);
+
+            if("up" == flow)
+            {
+                eventBlock.nNonce = std::numeric_limits<uint64>::max();
+                eventBlock.sender = "netchannel";
+            }
+
             if (pWorldLine->GetBlock(inv.nHash,eventBlock.data))
             {
                 pPeerNet->DispatchEvent(&eventBlock);
@@ -486,6 +523,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerGetBlocks& eventGetBlocks)
     uint64 nNonce = eventGetBlocks.nNonce;
     uint256& hashFork = eventGetBlocks.hashFork;
     vector<uint256> vBlockHash;
+    std::string flow = eventGetBlocks.flow;
     if (!pWorldLine->GetBlockInv(hashFork,eventGetBlocks.data,vBlockHash,MAX_GETBLOCKS_COUNT))
     {
         DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK,"eventGetBlocks");
@@ -496,6 +534,13 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerGetBlocks& eventGetBlocks)
     {
         eventInv.data.push_back(network::CInv(network::CInv::MSG_BLOCK,hash));
     }
+
+    if("up" == flow)
+    {
+        eventInv.nNonce = std::numeric_limits<uint64>::max();
+        eventInv.sender = "netchannel";
+    }
+
     pPeerNet->DispatchEvent(&eventInv);
     return true;
 }
@@ -506,7 +551,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerTx& eventTx)
     uint256& hashFork = eventTx.hashFork;
     CTransaction& tx = eventTx.data;
     uint256 txid = tx.GetHash();
-    
+
     try
     {
         boost::recursive_mutex::scoped_lock scoped_lock(mtxSched);
@@ -527,7 +572,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerTx& eventTx)
             set<uint256> setMissingPrevTx;
             if (!GetMissingPrevTx(tx,setMissingPrevTx))
             {
-                AddNewTx(hashFork,txid,sched,setSchedPeer,setMisbehavePeer);
+                AddNewTx(hashFork,txid,sched,setSchedPeer,setMisbehavePeer);   
             }
             else
             {
@@ -556,6 +601,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerTx& eventTx)
         DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK,"eventTx");
     }
     return true;
+    
 }
 
 bool CNetChannel::HandleEvent(network::CMvEventPeerBlock& eventBlock)
@@ -583,7 +629,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerBlock& eventBlock)
         {
             if (hashForkPrev == hashFork)
             {
-                AddNewBlock(hashFork,hash,sched,setSchedPeer,setMisbehavePeer);
+               AddNewBlock(hashFork,hash,sched,setSchedPeer,setMisbehavePeer);
             }
             else
             {
@@ -601,7 +647,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerBlock& eventBlock)
     {
         DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK,"eventBlock");
     }
-    return true;
+    return true; 
 }
 
 CSchedule& CNetChannel::GetSchedule(const uint256& hashFork)
@@ -666,14 +712,21 @@ void CNetChannel::SchedulePeerInv(uint64 nNonce,const uint256& hashFork,CSchedul
         {
             if (!sched.ScheduleTxInv(nNonce,eventGetData.data,MAX_PEER_SCHED_COUNT))
             {
-                DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK,"SchedulePeerInv1");
+                if(nNonce != std::numeric_limits<uint64>::max())
+                {
+                    DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK,"SchedulePeerInv1");
+                }     
             }
         }
         SetPeerSyncStatus(nNonce,hashFork,fEmpty);
     }
     else
     {
-        DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK,"SchedulePeerInv2");
+        if(nNonce != std::numeric_limits<uint64>::max())
+        {
+            DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK,"SchedulePeerInv2");
+        }
+        
     }
     if (!eventGetData.data.empty())
     {
@@ -722,9 +775,13 @@ void CNetChannel::AddNewBlock(const uint256& hashFork,const uint256& hash,CSched
                 set<uint64> setKnownPeer;
                 sched.GetNextBlock(hashBlock,vBlockHash);
                 sched.RemoveInv(network::CInv(network::CInv::MSG_BLOCK,hashBlock),setKnownPeer);
-                DispatchAwardEvent(nNonceSender,CEndpointManager::VITAL_DATA);
-
-                BroadcastBlockInv(hashFork,hashBlock,setKnownPeer); 
+                
+                if(nNonceSender != std::numeric_limits<uint64>::max())
+                {
+                    DispatchAwardEvent(nNonceSender,CEndpointManager::VITAL_DATA);
+                    BroadcastBlockInv(hashFork,hashBlock,setKnownPeer);
+                }
+                
                 setSchedPeer.insert(setKnownPeer.begin(),setKnownPeer.end());
             }
             else if (err == MV_ERR_ALREADY_HAVE && pBlock->IsVacant())
@@ -762,7 +819,12 @@ void CNetChannel::AddNewTx(const uint256& hashFork,const uint256& txid,CSchedule
             {
                 sched.GetNextTx(hashTx,vtx,setTx);
                 sched.RemoveInv(network::CInv(network::CInv::MSG_TX,hashTx),setSchedPeer);
-                DispatchAwardEvent(nNonceSender,CEndpointManager::MAJOR_DATA);
+                
+                if(nNonceSender != std::numeric_limits<uint64>::max())
+                {
+                    DispatchAwardEvent(nNonceSender,CEndpointManager::MAJOR_DATA);
+                }
+
                 nAddNewTx++;
             }
             else if (err != MV_ERR_MISSING_PREV)
@@ -790,7 +852,10 @@ void CNetChannel::PostAddNew(const uint256& hashFork,CSchedule& sched,
 
     BOOST_FOREACH(const uint64 nNonceMisbehave,setMisbehavePeer)
     {
-        DispatchMisbehaveEvent(nNonceMisbehave,CEndpointManager::DDOS_ATTACK,"PostAddNew");
+        if(nNonceMisbehave != std::numeric_limits<uint64>::max())
+        {
+            DispatchMisbehaveEvent(nNonceMisbehave,CEndpointManager::DDOS_ATTACK,"PostAddNew");
+        }
     }
 }
 

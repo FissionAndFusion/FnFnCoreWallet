@@ -10,25 +10,6 @@ using namespace walleve;
 using namespace multiverse;
 
 //////////////////////////////
-// CForkManagerFilter
-
-class CForkManagerFilter : public CForkContextFilter
-{
-public:
-    CForkManagerFilter(CForkManager* pForkManagerIn,vector<uint256>& vActiveIn) 
-    : pForkManager(pForkManagerIn), vActive(vActiveIn) 
-    {
-    }
-    bool FoundForkContext(const CForkContext& ctxt)
-    {
-        return pForkManager->AddNewForkContext(ctxt,vActive);
-    }
-protected:
-    CForkManager* pForkManager;
-    vector<uint256>& vActive;
-}; 
-
-//////////////////////////////
 // CForkManager 
 
 CForkManager::CForkManager()
@@ -130,9 +111,22 @@ bool CForkManager::GetJoint(const uint256& hashFork,uint256& hashParent,uint256&
 bool CForkManager::LoadForkContext(vector<uint256>& vActive)
 {
     boost::unique_lock<boost::shared_mutex> wlock(rwAccess);
+    
+    vector<CForkContext> vForkCtxt;
+    if (!pWorldLine->ListForkContext(vForkCtxt))
+    {
+        return false;
+    }
 
-    CForkManagerFilter filter(this,vActive);
-    return pWorldLine->FilterForkContext(filter);
+    BOOST_FOREACH(const CForkContext& ctxt,vForkCtxt)
+    {
+        if (!AddNewForkContext(ctxt,vActive))
+        {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 void CForkManager::ForkUpdate(const CWorldLineUpdate& update,vector<uint256>& vActive,vector<uint256>& vDeactive)
@@ -176,6 +170,7 @@ void CForkManager::ForkUpdate(const CWorldLineUpdate& update,vector<uint256>& vA
 
 bool CForkManager::AddNewForkContext(const CForkContext& ctxt,vector<uint256>& vActive)
 {
+    cout << "-------------------------" << ctxt.hashFork.ToString() << endl;
     if (IsAllowedFork(ctxt.hashFork,ctxt.hashParent))
     {
         mapForkSched.insert(make_pair(ctxt.hashFork,CForkSchedule(true)));

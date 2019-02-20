@@ -75,6 +75,7 @@ static CTransactionData TxToJSON(const uint256& txid,const CTransaction& tx,cons
     ret.strTxid = txid.GetHex();
     ret.nVersion = tx.nVersion;
     ret.strType = tx.GetTypeString();
+    ret.nTime = tx.nTimeStamp;
     ret.nLockuntil = tx.nLockUntil;
     ret.strAnchor = tx.hashAnchor.GetHex();
     BOOST_FOREACH(const CTxIn& txin, tx.vInput)
@@ -109,6 +110,7 @@ static CWalletTxData WalletTxToJSON(const CWalletTx& wtx)
         data.nBlockheight = wtx.nBlockHeight;
     }
     data.strType = wtx.GetTypeString();
+    data.nTime = (boost::int64_t)wtx.nTimeStamp;
     data.fSend = wtx.IsFromMe();
     if (!wtx.IsMintTx())
     {
@@ -150,7 +152,6 @@ CRPCMod::CRPCMod()
                 ("getblockhash",          &CRPCMod::RPCGetBlockHash)
                 ("getblock",              &CRPCMod::RPCGetBlock)
                 ("gettxpool",             &CRPCMod::RPCGetTxPool)
-                // ("removependingtx",       &CRPCMod::RPCRemovePendingTx)
                 ("gettransaction",        &CRPCMod::RPCGetTransaction)
                 ("sendtransaction",       &CRPCMod::RPCSendTransaction)
                 ("getforkheight",         &CRPCMod::RPCGetForkHeight)
@@ -696,21 +697,6 @@ CRPCResultPtr CRPCMod::RPCGetTxPool(CRPCParamPtr param)
     
     return spResult;
 }
-
-// CRPCResultPtr CRPCMod::RPCRemovePendingTx(CRPCParamPtr param)
-// {
-//     auto spParam = CastParamPtr<CRemovePendingTxParam>(param);
-
-//     uint256 txid;
-//     txid.SetHex(spParam->strTxid);
-
-//     if (!pService->RemovePendingTx(txid))
-//     {
-//         throw CRPCException(RPC_INVALID_REQUEST, "This transaction is not in tx pool");
-//     }
-
-//     return MakeCRemovePendingTxResultPtr(string("Remove tx successfully: ") + spParam->strTxid);
-// }
 
 CRPCResultPtr CRPCMod::RPCGetTransaction(CRPCParamPtr param)
 {
@@ -1755,9 +1741,10 @@ CRPCResultPtr CRPCMod::RPCMakeOrigin(CRPCParamPtr param)
     profile.Save(block.vchProof);
 
     CTransaction& tx = block.txMint;
-    tx.nType = CTransaction::TX_GENESIS;
-    tx.sendTo  = destOwner;
-    tx.nAmount = nAmount;
+    tx.nType         = CTransaction::TX_GENESIS;
+    tx.nTimeStamp    = block.nTimeStamp;
+    tx.sendTo        = destOwner;
+    tx.nAmount       = nAmount;
     tx.vchData.assign(profile.strName.begin(),profile.strName.end());
 
     crypto::CPubKey pubkey;

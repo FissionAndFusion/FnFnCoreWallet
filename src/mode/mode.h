@@ -132,7 +132,8 @@ public:
                                 EConfigType::RPCSERVER, 
                                 EConfigType::STORAGE,
                                 EConfigType::DBPSERVER,
-                                EConfigType::DBPCLIENT
+                                EConfigType::DBPCLIENT,
+                                EConfigType::FORKMINT
                              >(cmd);
             }
             case EModeType::CONSOLE:
@@ -145,13 +146,6 @@ public:
             {
                 return Create<
                                 EConfigType::RPCCLIENT
-                             >(cmd);
-            }
-            case EModeType::DNSEED:
-            {
-                return Create<
-                                EConfigType::NETWORK,
-                                EConfigType::STORAGE
                              >(cmd);
             }
             // Add new mode-module relationship here.
@@ -203,13 +197,6 @@ public:
                 {
                     EModuleType::HTTPGET,
                     EModuleType::MINER
-                }
-            },
-            {
-                EModeType::DNSEED, 
-                {
-                    EModuleType::LOCK,
-                    EModuleType::DNSEED,
                 }
             }
             // Add new mode-config relationship here.

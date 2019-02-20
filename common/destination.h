@@ -74,11 +74,16 @@ public:
     void FromDataStream(walleve::CWalleveIDataStream& is);
 
 protected:
-    template <typename O>
-    void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
+    void WalleveSerialize(walleve::CWalleveStream& s,walleve::LoadType& opt)
     {
-        s.Serialize(prefix, opt);
-        s.Serialize(data, opt);
+        s.Serialize(prefix,opt);
+        s.Serialize(data,opt);
+    } 
+    template <typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s,O& opt) const
+    {
+        s.Serialize(prefix,opt);
+        s.Serialize(data,opt);
     }
 };
 
