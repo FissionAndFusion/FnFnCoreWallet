@@ -2085,12 +2085,19 @@ CRPCResultPtr CRPCMod::SnRPCGetBlockLocation(CRPCParamPtr param)
     return NULL;
 }
 
+CRPCResultPtr CRPCMod::SnRPCGetBlockCount(CRPCParamPtr param)
+{
+    (void)param;
+    return NULL;
+}
+
 CSnRPCMod::CSnRPCMod()
 {
     mapRPCFunc["stop"] = &CRPCMod::SnRPCStop;
     mapRPCFunc["getforkcount"] = &CRPCMod::SnRPCGetForkCount;
     mapRPCFunc["listfork"] = &CRPCMod::SnRPCListFork;
     mapRPCFunc["getblocklocation"] = &CRPCMod::SnRPCGetBlockLocation;
+    mapRPCFunc["getblockcount"] = &CRPCMod::SnRPCGetBlockCount;
 }
 
 CSnRPCMod::~CSnRPCMod()
@@ -2209,7 +2216,7 @@ CRPCResultPtr CSnRPCMod::SnRPCGetBlockLocation(CRPCParamPtr param)
     bool fResult = false;
     ioComplt.WaitForComplete(fResult);
 
-    CMvRPCRouteGetBlockLocationRet ret = boost::any_cast<CMvRPCRouteGetBlockLocationRet >(ioComplt.obj);
+    CMvRPCRouteGetBlockLocationRet ret = boost::any_cast<CMvRPCRouteGetBlockLocationRet>(ioComplt.obj);
     if (ret.strFork.empty())
     {
         throw CRPCException(RPC_INVALID_PARAMETER, "Unknown block");
@@ -2219,4 +2226,39 @@ CRPCResultPtr CSnRPCMod::SnRPCGetBlockLocation(CRPCParamPtr param)
     spResult->strFork = ret.strFork;
     spResult->nHeight = ret.height;
     return spResult;
+}
+
+CRPCResultPtr CSnRPCMod::SnRPCGetBlockCount(CRPCParamPtr param)
+{
+    auto spParam = CastParamPtr<CGetBlockCountParam>(param);
+    auto* pEvent = new CMvEventRPCRouteGetBlockCount("");
+    pEvent->data.ioComplt = &ioComplt;
+    pEvent->data.nNonce = GenNonce();
+    pEvent->data.strFork = spParam->strFork;
+    if(!pEvent)
+    {
+        return NULL;
+    }
+    pDbpService->PostEvent(pEvent);
+    ioComplt.Reset();
+    bool fResult = false;
+    ioComplt.WaitForComplete(fResult);
+
+    auto ret = boost::any_cast<CMvRPCRouteGetBlockCountRet>(ioComplt.obj);
+
+    uint256 hashFork;
+    int height = 0;
+    if (ret.exception == 0)
+    {
+        height = ret.height;
+    }
+    else if (ret.exception == 1)
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Invalid fork");
+    }
+    else if (ret.exception == 2)
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Unknown fork");
+    }
+    return MakeCGetBlockCountResultPtr(height);
 }

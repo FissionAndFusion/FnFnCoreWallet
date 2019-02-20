@@ -1694,6 +1694,82 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetBlockLocation* data, CMvRPCRouteGe
     }
 }
 
+
+void CDbpService::RPCRootHandle(CMvRPCRouteGetBlockCount* data, CMvRPCRouteGetBlockCountRet* ret)
+{
+    if(ret == NULL)
+    {
+        if (sessionCount == 0 && pIoComplt != NULL)
+        {
+            CMvRPCRouteGetBlockCountRet getBlockCountRet;
+            getBlockCountRet.nNonce = data->nNonce;
+            getBlockCountRet.type = data->type;
+            getBlockCountRet.exception = 2;
+            getBlockCountRet.height = 0;
+            pIoComplt->obj = getBlockCountRet;
+            pIoComplt->Completed(false);
+            return;
+        }
+
+        if (sessionCount != 0 && pIoComplt != NULL)
+        {
+            walleve::CWalleveBufStream ss;
+            ss << *data;
+            std::vector<uint8> rawData(ss.GetData(), ss.GetData() + ss.GetSize());
+
+            if (!vRPCTopicIds.empty())
+            {
+                auto id = vRPCTopicIds.back();
+                PushRPCOnece(id, rawData, data->type);
+                vRPCTopicIds.pop_back();
+            }
+            return;
+        }
+    }
+
+    if(ret != NULL)
+    {
+        walleve::CWalleveBufStream ss;
+        ss << *data;
+        std::vector<uint8> rawData(ss.GetData(), ss.GetData() + ss.GetSize());
+
+        if(ret->exception == 0)
+        {
+            CMvRPCRouteGetBlockCountRet getBlockCountRet;
+            getBlockCountRet.nNonce = data->nNonce;
+            getBlockCountRet.type = data->type;
+            getBlockCountRet.exception = ret->exception;
+            getBlockCountRet.height = ret->height;
+            pIoComplt->obj = getBlockCountRet;
+            pIoComplt->Completed(false);
+            return;
+        }
+
+        if (sessionCount == 0 && pIoComplt != NULL)
+        {
+            CMvRPCRouteGetBlockCountRet getBlockCountRet;
+            getBlockCountRet.nNonce = data->nNonce;
+            getBlockCountRet.type = data->type;
+            getBlockCountRet.exception = 2;
+            getBlockCountRet.height = 0;
+            pIoComplt->obj = getBlockCountRet;
+            pIoComplt->Completed(false);
+            return;
+        }
+
+        if (sessionCount != 0 && pIoComplt != NULL)
+        {
+            if (!vRPCTopicIds.empty())
+            {
+                auto id = vRPCTopicIds.back();
+                PushRPCOnece(id, rawData, data->type);
+                vRPCTopicIds.pop_back();
+            }
+            return;
+        }
+    }
+}
+
 void CDbpService::RPCForkHandle(CMvRPCRouteStop* data, CMvRPCRouteStopRet* ret)
 {
     if (ret == NULL)
@@ -1967,6 +2043,12 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetBlockLocation* data, CMvRPCRouteGe
     }
 }
 
+
+void CDbpService::RPCForkHandle(CMvRPCRouteGetBlockCount* data, CMvRPCRouteGetBlockCountRet* ret)
+{
+    return;
+}
+
 void CDbpService::InsertQueCount(uint64 nNonce, boost::any obj)
 {
     if(queCount.size() > 100)
@@ -2119,7 +2201,6 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteListFork& event)
 
 bool CDbpService::HandleEvent(CMvEventRPCRouteGetBlockLocation& event)
 {
-    std::cout << "11### nNonce:" << event.data.nNonce << std::endl;
     event.data.type = CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK_LOCATION;
     pIoComplt = event.data.ioComplt;
 
@@ -2143,6 +2224,62 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetBlockLocation& event)
     InitRPCTopicIds();
     InitSessionCount();
     InsertQueCount(event.data.nNonce, getBlockLocationRet);
+
+    walleve::CWalleveBufStream ss;
+    ss << event.data;
+    std::vector<uint8> data(ss.GetData(), ss.GetData() + ss.GetSize());
+    RPCRootHandle(&event.data, NULL);
+    return true;
+}
+
+bool CDbpService::GetForkHashOfDef(const rpc::CRPCString& hex, uint256& hashFork)
+{
+    if (!hex.empty())
+    {
+        if (hashFork.SetHex(hex) != hex.size())
+        {
+            return false;
+        }
+    }
+    else
+    {
+        hashFork = pCoreProtocol->GetGenesisBlockHash();
+    }
+    return true;
+}
+
+bool CDbpService::HandleEvent(CMvEventRPCRouteGetBlockCount& event)
+{
+    std::cout << "11### nNonce:" << event.data.nNonce << std::endl;
+    event.data.type = CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK_COUNT;
+    pIoComplt = event.data.ioComplt;
+
+    CMvRPCRouteGetBlockCountRet getBlockCountRet;
+    getBlockCountRet.nNonce = event.data.nNonce;
+
+    // std::cout << "10#######################" << std::endl;
+    uint256 hashFork;
+    if (!GetForkHashOfDef(event.data.strFork, hashFork))
+    {
+        getBlockCountRet.height = 0;
+        getBlockCountRet.exception = 1;
+        pIoComplt->obj = getBlockCountRet;
+        pIoComplt->Completed(false);
+        return true;
+    }
+
+    if (pService->HaveFork(hashFork))
+    {
+        getBlockCountRet.height = pService->GetBlockCount(hashFork);
+        getBlockCountRet.exception = 0;
+        pIoComplt->obj = getBlockCountRet;
+        pIoComplt->Completed(false);
+        return true;
+    }
+
+    InitRPCTopicIds();
+    InitSessionCount();
+    InsertQueCount(event.data.nNonce, getBlockCountRet);
 
     walleve::CWalleveBufStream ss;
     ss << event.data;
