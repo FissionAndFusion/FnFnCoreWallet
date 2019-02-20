@@ -883,10 +883,6 @@ void CDbpServer::RemoveSession(CDbpServerSocket* pDbpClient)
         bimapSessionClient.right.erase(pDbpClient);
         mapSessionProfile[assciatedSession].ptrPingTimer->cancel();
         mapSessionProfile.erase(assciatedSession);
-
-        CMvEventDbpRemoveSession* pEvent = new CMvEventDbpRemoveSession("");
-        pEvent->data.session = assciatedSession;
-        pDbpClient->GetProfile()->pIOModule->PostEvent(pEvent);
     }
 }
 

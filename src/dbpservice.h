@@ -38,7 +38,6 @@ public:
     bool HandleEvent(CMvEventDbpUnSub& event) override;
     bool HandleEvent(CMvEventDbpMethod& event) override;
     bool HandleEvent(CMvEventDbpBroken& event) override;
-    bool HandleEvent(CMvEventDbpRemoveSession& event) override;
     
     // notify add msg(block tx ...) to event handler
     bool HandleEvent(CMvEventDbpUpdateNewBlock& event) override;
@@ -117,8 +116,6 @@ private:
     
     void CollectSessionSubForks(const std::string& session, const CMvEventPeerSubscribe& sub);
     void CollectSessionUnSubForks(const std::string& session, const CMvEventPeerUnsubscribe& unsub);
-
-    void CleanTopicIdsBySession(const std::string& session);
 protected:
     walleve::IIOProc* pDbpServer;
     walleve::IIOProc* pDbpClient;

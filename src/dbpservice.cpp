@@ -101,36 +101,6 @@ void CDbpService::EnableSuperNode(bool enable)
     fEnableSuperNode = enable;
 }
 
-void CDbpService::CleanTopicIdsBySession(const std::string& session)
-{
-    std::vector<std::string> beDeleteIds;
-    for(auto iter = mapIdSubedSession.begin(); iter != mapIdSubedSession.end(); ) 
-    {
-        if (iter->second == session) 
-        {
-            mapIdSubedSession.erase(iter++);
-            beDeleteIds.push_back(iter->first);
-        } 
-        else 
-        {
-            ++iter;
-        }
-    }
-
-    for(const std::string& id : beDeleteIds)
-    {
-        for(auto& ele : mapTopicIds)
-        {
-            auto& Ids = ele.second;
-            auto iter = Ids.find(id);
-            if(iter != Ids.end())
-            {
-                Ids.erase(iter);
-            }
-        }
-    }
-}
-
 void CDbpService::HandleDbpClientBroken(const std::string& session)
 {
 
@@ -155,7 +125,7 @@ void CDbpService::HandleDbpClientBroken(const std::string& session)
 
 void CDbpService::HandleDbpServerBroken(const std::string& session)
 {
-    CleanTopicIdsBySession(session);
+    RemoveSession(session);
 }
 
 bool CDbpService::HandleEvent(CMvEventDbpBroken& event)
@@ -170,12 +140,6 @@ bool CDbpService::HandleEvent(CMvEventDbpBroken& event)
         HandleDbpClientBroken(event.strSessionId);
     }
 
-    return true;
-}
-
-bool CDbpService::HandleEvent(CMvEventDbpRemoveSession& event)
-{
-    RemoveSession(event.data.session);
     return true;
 }
 

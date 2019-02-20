@@ -240,10 +240,5 @@ public:
     std::string from; // event from [dbpserver | dbpclient]
 };
 
-class CMvDbpRemoveSession
-{
-public:
-    std::string session;
-};
 } // namespace multiverse
 #endif //MULTIVERSE_DBP_TYPE_H
