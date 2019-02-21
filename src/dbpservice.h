@@ -85,6 +85,7 @@ public:
     bool HandleEvent(CMvEventRPCRouteGetBlockLocation& event) override;
     bool HandleEvent(CMvEventRPCRouteGetBlockCount& event) override;
     bool HandleEvent(CMvEventRPCRouteGetBlockHash& event) override;
+    bool HandleEvent(CMvEventRPCRouteGetBlock& event) override;
 
 protected:
     bool WalleveHandleInitialize() override;
@@ -140,6 +141,7 @@ private:
     void RPCRootHandle(CMvRPCRouteGetBlockLocation* data, CMvRPCRouteGetBlockLocationRet* ret);
     void RPCRootHandle(CMvRPCRouteGetBlockCount* data, CMvRPCRouteGetBlockCountRet* ret);
     void RPCRootHandle(CMvRPCRouteGetBlockHash * data, CMvRPCRouteGetBlockHashRet* ret);
+    void RPCRootHandle(CMvRPCRouteGetBlock* data, CMvRPCRouteGetBlockRet* ret);
 
     void RPCForkHandle(CMvRPCRouteStop* data, CMvRPCRouteStopRet* ret);
     void RPCForkHandle(CMvRPCRouteGetForkCount* data, CMvRPCRouteGetForkCountRet* ret);
@@ -147,6 +149,7 @@ private:
     void RPCForkHandle(CMvRPCRouteGetBlockLocation* data, CMvRPCRouteGetBlockLocationRet* ret);
     void RPCForkHandle(CMvRPCRouteGetBlockCount* data, CMvRPCRouteGetBlockCountRet* ret);
     void RPCForkHandle(CMvRPCRouteGetBlockHash* data, CMvRPCRouteGetBlockHashRet* ret);
+    void RPCForkHandle(CMvRPCRouteGetBlock* data, CMvRPCRouteGetBlockRet* ret);
 
     void SendEventToParentNode(CMvDbpVirtualPeerNetEvent& event);
     void UpdateGetDataEventRecord(const CMvEventPeerGetData& event);

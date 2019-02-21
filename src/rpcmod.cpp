@@ -2097,6 +2097,12 @@ CRPCResultPtr CRPCMod::SnRPCGetBlockHash(CRPCParamPtr param)
     return NULL;
 }
 
+CRPCResultPtr CRPCMod::SnRPCGetBlock(CRPCParamPtr param)
+{
+    (void)param;
+    return NULL;
+}
+
 CSnRPCMod::CSnRPCMod()
 {
     mapRPCFunc["stop"] = &CRPCMod::SnRPCStop;
@@ -2105,6 +2111,7 @@ CSnRPCMod::CSnRPCMod()
     mapRPCFunc["getblocklocation"] = &CRPCMod::SnRPCGetBlockLocation;
     mapRPCFunc["getblockcount"] = &CRPCMod::SnRPCGetBlockCount;
     mapRPCFunc["getblockhash"] = &CRPCMod::SnRPCGetBlockHash;
+    mapRPCFunc["getblock"] = &CRPCMod::SnRPCGetBlock;
 }
 
 CSnRPCMod::~CSnRPCMod()
@@ -2311,4 +2318,31 @@ CRPCResultPtr CSnRPCMod::SnRPCGetBlockHash(CRPCParamPtr param)
         spResult->vecHash.push_back(hash);
     }
     return spResult;
+}
+
+CRPCResultPtr CSnRPCMod::SnRPCGetBlock(CRPCParamPtr param)
+{
+    auto spParam = CastParamPtr<CGetBlockParam>(param);
+    auto* pEvent = new CMvEventRPCRouteGetBlock("");
+    pEvent->data.ioComplt = &ioComplt;
+    pEvent->data.nNonce = GenNonce();
+    pEvent->data.hash = spParam->strBlock;
+    if (!pEvent)
+    {
+        return NULL;
+    }
+    pDbpService->PostEvent(pEvent);
+    ioComplt.Reset();
+    bool fResult = false;
+    ioComplt.WaitForComplete(fResult);
+
+    auto ret = boost::any_cast<CMvRPCRouteGetBlockRet>(ioComplt.obj);
+    if (ret.exception == 1)
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Unknown block");
+    }
+
+    uint256 fork;
+    fork.SetHex(ret.strFork);
+    return MakeCGetBlockResultPtr(BlockToJSON(ret.block.GetHash(), ret.block, fork, ret.height));
 }
