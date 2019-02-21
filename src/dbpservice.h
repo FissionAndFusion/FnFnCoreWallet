@@ -23,6 +23,20 @@ namespace multiverse
 
 using namespace network;
 
+#define HANDLE_RPC_ROUTE(data, result)                                         \
+    result r;                                                                  \
+    ss >> r;                                                                   \
+    data d;                                                                    \
+    ssRaw >> d;                                                                \
+    if (pIoComplt)                                                             \
+    {                                                                          \
+        RPCRootHandle(&d, &r);                                                 \
+    }                                                                          \
+    else                                                                       \
+    {                                                                          \
+        RPCForkHandle(&d, &r);                                                 \
+    }
+
 class CDbpService : public walleve::IIOModule, virtual public CDBPEventListener, 
                     virtual public CMvDBPEventListener, virtual public CMvPeerEventListener, 
                     virtual public CWallevePeerEventListener 
