@@ -132,7 +132,7 @@ void CDbpService::DeactiveNode(const std::string& session)
     }
 }
 
-void CDbpService::UnsubscribeChildNodeForks()
+void CDbpService::UnsubscribeChildNodeForks(const std::string& session)
 {
     std::vector<ForkNonceKeyType> beDeleteKeys;
     
@@ -187,12 +187,14 @@ void CDbpService::UnsubscribeChildNodeForks()
 void CDbpService::HandleDbpClientBroken(const std::string& session)
 {
     DeactiveNode(session);
+    mapThisNodeForkCount.clear();
+    mapThisNodeGetData.clear();
 }
 
 void CDbpService::HandleDbpServerBroken(const std::string& session)
 {
     RemoveSession(session);
-    UnsubscribeChildNodeForks();
+    UnsubscribeChildNodeForks(session);
 }
 
 bool CDbpService::HandleEvent(CMvEventDbpBroken& event)
@@ -632,30 +634,37 @@ void CDbpService::FilterChildUnsubscribeFork(const CMvEventPeerUnsubscribe& in, 
 
 void CDbpService::CollectSessionSubForks(const std::string& session, const CMvEventPeerSubscribe& sub)
 {
-    if(mapSessionForks.find(session) != mapSessionForks.end())
+    if(mapSessionForkNonceKey.find(session) != mapSessionForkNonceKey.end())
     {
         for(const uint256& fork : sub.data)
         {
-            mapSessionForks[session].push_back(fork);
+            mapSessionForkNonceKey[session].push_back(std::make_pair(fork, sub.nNonce));
         }
     }
     else
     {
-        mapSessionForks[session] = sub.data;
+        std::vector<ForkNonceKeyType> vForkNonceKey;
+        for(const uint256& fork : sub.data)
+        {
+            vForkNonceKey.push_back(std::make_pair(fork, sub.nNonce));
+        }
+        
+        mapSessionForkNonceKey[session] = vForkNonceKey;
     }
 }
 
 void CDbpService::CollectSessionUnSubForks(const std::string& session, const CMvEventPeerUnsubscribe& unsub)
 {
-    if(mapSessionForks.find(session) != mapSessionForks.end())
+    if(mapSessionForkNonceKey.find(session) != mapSessionForkNonceKey.end())
     {
-        auto& sessionForks = mapSessionForks[session];
+        auto& sessionForkNonceKeys = mapSessionForkNonceKey[session];
         for(const uint256& fork : unsub.data)
         {
-            auto iter = std::find(sessionForks.begin(), sessionForks.end(), fork);
-            if(iter != sessionForks.end())
+            auto iter = std::find(sessionForkNonceKeys.begin(), sessionForkNonceKeys.end(), 
+                std::make_pair(fork, unsub.nNonce));
+            if(iter != sessionForkNonceKeys.end())
             {
-                sessionForks.erase(iter);
+                sessionForkNonceKeys.erase(iter);
             }
         }
     }

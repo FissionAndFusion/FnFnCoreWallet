@@ -118,7 +118,7 @@ private:
     void CollectSessionUnSubForks(const std::string& session, const CMvEventPeerUnsubscribe& unsub);
 
     void DeactiveNode(const std::string& session);
-    void UnsubscribeChildNodeForks();
+    void UnsubscribeChildNodeForks(const std::string& session);
 protected:
     walleve::IIOProc* pDbpServer;
     walleve::IIOProc* pDbpClient;
@@ -142,11 +142,12 @@ private:
 
     /*Event router*/
     typedef std::pair<uint256, uint64> ForkNonceKeyType;
-    std::map<ForkNonceKeyType, int> mapChildNodeForkCount;
-    std::map<ForkNonceKeyType, int> mapThisNodeForkCount;
+    typedef std::map<ForkNonceKeyType, int> MapForkCountType; 
+    MapForkCountType mapChildNodeForkCount;
+    MapForkCountType mapThisNodeForkCount;
     std::map<ForkNonceKeyType, std::set<uint256>> mapThisNodeGetData;
 
-    std::map<std::string, std::vector<uint256>> mapSessionForks;
+    std::map<std::string, std::vector<ForkNonceKeyType>> mapSessionForkNonceKey;
 };
 
 } // namespace multiverse
