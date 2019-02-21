@@ -101,7 +101,7 @@ void CDbpService::EnableSuperNode(bool enable)
     fEnableSuperNode = enable;
 }
 
-void CDbpService::DeativeNode()
+void CDbpService::DeactiveNode(const std::string& session)
 {
     for(const auto& ele : mapPeerEventActive)
     {
@@ -118,17 +118,81 @@ void CDbpService::DeativeNode()
         CMvEventPeerDeactive eventDeactive(nNonce);
         eventDeactive.data = eventActive.data;  
         pVirtualPeerNet->DispatchEvent(&eventDeactive);
+
+        CWalleveBufStream ssDeactive;
+        ssDeactive << eventDeactive;
+        std::string data(ssDeactive.GetData(), ssDeactive.GetSize());
+
+        CMvDbpVirtualPeerNetEvent eventVPeer;
+        eventVPeer.nNonce = nNonce;
+        eventVPeer.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_DEACTIVE;
+        eventVPeer.data = std::vector<uint8>(data.begin(), data.end());
+
+        PushEvent(eventVPeer);
+    }
+}
+
+void CDbpService::UnsubscribeChildNodeForks()
+{
+    std::vector<ForkNonceKeyType> beDeleteKeys;
+    
+    for(auto& fork : mapChildNodeForkCount)
+    {
+        ForkNonceKeyType key = fork.first;
+        uint256 forkHash = key.first;
+        uint64 nNonce = key.second;
+        int& forkCount = fork.second;
+
+        if(forkCount == 1)
+        {
+            forkCount = 0;
+            beDeleteKeys.push_back(key);
+            
+            //  
+            CMvEventPeerUnsubscribe eventUpUnSub(nNonce, pCoreProtocol->GetGenesisBlockHash());
+            eventUpUnSub.data.push_back(forkHash);
+
+            CWalleveBufStream eventSs;
+            eventSs << eventUpUnSub;
+            std::string data(eventSs.GetData(), eventSs.GetSize());
+            
+            if(IsForkNodeOfSuperNode())
+            {
+                CMvDbpVirtualPeerNetEvent vpeerEvent;
+                vpeerEvent.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_UNSUBSCRIBE;
+                vpeerEvent.data = std::vector<uint8>(data.begin(), data.end());
+                SendEventToParentNode(vpeerEvent);
+            }
+
+            if(IsRootNodeOfSuperNode())
+            {
+                eventUpUnSub.flow = "up";
+                eventUpUnSub.sender = "dbpservice";
+                pVirtualPeerNet->DispatchEvent(&eventUpUnSub);
+            }
+        }
+
+        if(forkCount > 1)
+        {
+            forkCount--;
+        }
+    }
+
+    for(const auto& key : beDeleteKeys)
+    {
+        mapChildNodeForkCount.erase(key);
     }
 }
 
 void CDbpService::HandleDbpClientBroken(const std::string& session)
 {
-    DeativeNode();
+    DeactiveNode(session);
 }
 
 void CDbpService::HandleDbpServerBroken(const std::string& session)
 {
     RemoveSession(session);
+    UnsubscribeChildNodeForks();
 }
 
 bool CDbpService::HandleEvent(CMvEventDbpBroken& event)
