@@ -195,8 +195,8 @@ void CDbpService::HandleDbpClientBroken(const std::string& session)
 
 void CDbpService::HandleDbpServerBroken(const std::string& session)
 {
-    RemoveSession(session);
     UnsubscribeChildNodeForks(session);
+    RemoveSession(session);
 }
 
 bool CDbpService::HandleEvent(CMvEventDbpBroken& event)
@@ -408,6 +408,8 @@ void CDbpService::RemoveSession(const std::string& session)
     {
         UnSubTopic(id);
     }
+
+    mapSessionForkNonceKey.erase(session);
 }
 
 bool CDbpService::IsEmpty(const uint256& hash)

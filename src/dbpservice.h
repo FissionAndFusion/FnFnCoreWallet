@@ -147,7 +147,7 @@ private:
     MapForkCountType mapThisNodeForkCount;
     std::map<ForkNonceKeyType, std::set<uint256>> mapThisNodeGetData;
 
-    std::map<std::string, std::vector<ForkNonceKeyType>> mapSessionForkNonceKey;
+    std::map<std::string, std::vector<ForkNonceKeyType>> mapSessionForkNonceKey; // session => vector ForkNonceKeyType
 };
 
 } // namespace multiverse
