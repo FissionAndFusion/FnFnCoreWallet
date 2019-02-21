@@ -90,7 +90,6 @@ protected:
     void HandleReadPayload(std::size_t nTransferred,uint32_t len);
     void HandleReadCompleted(uint32_t len);
 
-    void SendForkId(const std::string& fork);
     void SendSubscribeTopic(const std::string& topic);
     void SendMessage(dbp::Msg type, google::protobuf::Any* any);
 
