@@ -135,49 +135,51 @@ void CDbpService::DeactiveNode(const std::string& session)
 void CDbpService::UnsubscribeChildNodeForks(const std::string& session)
 {
     std::vector<ForkNonceKeyType> beDeleteKeys;
-    
-    for(auto& fork : mapChildNodeForkCount)
+    std::vector<ForkNonceKeyType>& beFindKeys = mapSessionForkNonceKey[session];
+
+    for(const auto& key : beFindKeys)
     {
-        ForkNonceKeyType key = fork.first;
-        uint256 forkHash = key.first;
-        uint64 nNonce = key.second;
-        int& forkCount = fork.second;
-
-        if(forkCount == 1)
+        auto iter = mapChildNodeForkCount.find(key);
+        if(iter != mapChildNodeForkCount.end())
         {
-            forkCount = 0;
-            beDeleteKeys.push_back(key);
-            
-            //  
-            CMvEventPeerUnsubscribe eventUpUnSub(nNonce, pCoreProtocol->GetGenesisBlockHash());
-            eventUpUnSub.data.push_back(forkHash);
-
-            CWalleveBufStream eventSs;
-            eventSs << eventUpUnSub;
-            std::string data(eventSs.GetData(), eventSs.GetSize());
-            
-            if(IsForkNodeOfSuperNode())
+            uint64 nNonce = key.second;
+            uint256 forkHash = key.first;
+            int& forkCount = iter->second;
+            if(forkCount == 1)
             {
-                CMvDbpVirtualPeerNetEvent vpeerEvent;
-                vpeerEvent.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_UNSUBSCRIBE;
-                vpeerEvent.data = std::vector<uint8>(data.begin(), data.end());
-                SendEventToParentNode(vpeerEvent);
+                forkCount = 0;
+                beDeleteKeys.push_back(key);
+                
+                CMvEventPeerUnsubscribe eventUpUnSub(nNonce, pCoreProtocol->GetGenesisBlockHash());
+                eventUpUnSub.data.push_back(forkHash);
+
+                CWalleveBufStream eventSs;
+                eventSs << eventUpUnSub;
+                std::string data(eventSs.GetData(), eventSs.GetSize());
+                
+                if(IsForkNodeOfSuperNode())
+                {
+                    CMvDbpVirtualPeerNetEvent vpeerEvent;
+                    vpeerEvent.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_UNSUBSCRIBE;
+                    vpeerEvent.data = std::vector<uint8>(data.begin(), data.end());
+                    SendEventToParentNode(vpeerEvent);
+                }
+
+                if(IsRootNodeOfSuperNode())
+                {
+                    eventUpUnSub.flow = "up";
+                    eventUpUnSub.sender = "dbpservice";
+                    pVirtualPeerNet->DispatchEvent(&eventUpUnSub);
+                }
             }
 
-            if(IsRootNodeOfSuperNode())
+            if(forkCount > 1)
             {
-                eventUpUnSub.flow = "up";
-                eventUpUnSub.sender = "dbpservice";
-                pVirtualPeerNet->DispatchEvent(&eventUpUnSub);
+                forkCount--;
             }
-        }
-
-        if(forkCount > 1)
-        {
-            forkCount--;
-        }
+        } 
     }
-
+    
     for(const auto& key : beDeleteKeys)
     {
         mapChildNodeForkCount.erase(key);
