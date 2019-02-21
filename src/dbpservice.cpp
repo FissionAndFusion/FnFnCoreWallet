@@ -2803,70 +2803,22 @@ void CDbpService::HandleRPCRoute(CMvEventDbpMethod& event)
 
     if (type == CMvRPCRoute::DBP_RPCROUTE_GET_FORK_COUNT)
     {
-        CMvRPCRouteGetForkCountRet getForkCountRet;
-        ss >> getForkCountRet;
-        CMvRPCRouteGetForkCount getForkCount;
-        ssRaw >> getForkCount;
-
-        if (pIoComplt)
-        {
-            RPCRootHandle(&getForkCount, &getForkCountRet);
-        }
-        else
-        {
-            RPCForkHandle(&getForkCount, &getForkCountRet);
-        }
+        HANDLE_RPC_ROUTE(CMvRPCRouteGetForkCount, CMvRPCRouteGetForkCountRet);
     }
 
     if(type == CMvRPCRoute::DBP_RPCROUTE_LIST_FORK)
     {
-        CMvRPCRouteListForkRet listForkRet;
-        ss >> listForkRet;
-        CMvRPCRouteListFork listFork;
-        ssRaw >> listFork;
-
-        if(pIoComplt)
-        {
-            RPCRootHandle(&listFork, &listForkRet);
-        }
-        else
-        {
-            RPCForkHandle(&listFork, &listForkRet);
-        }
+        HANDLE_RPC_ROUTE(CMvRPCRouteListFork, CMvRPCRouteListForkRet);
     }
 
     if(type == CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK_LOCATION)
     {
-        CMvRPCRouteGetBlockLocationRet getBlockLocationRet;
-        ss >> getBlockLocationRet;
-        CMvRPCRouteGetBlockLocation getBlockLocation;
-        ssRaw >> getBlockLocation;
-
-        if(pIoComplt)
-        {
-            RPCRootHandle(&getBlockLocation, &getBlockLocationRet);
-        }
-        else
-        {
-            RPCForkHandle(&getBlockLocation, &getBlockLocationRet);
-        }
+        HANDLE_RPC_ROUTE(CMvRPCRouteGetBlockLocation, CMvRPCRouteGetBlockLocationRet);
     }
 
     if (type == CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK_COUNT)
     {
-        CMvRPCRouteGetBlockCountRet getBlockCountRet;
-        ss >> getBlockCountRet;
-        CMvRPCRouteGetBlockCount getBlockCount;
-        ssRaw >> getBlockCount;
-
-        if(pIoComplt)
-        {
-            RPCRootHandle(&getBlockCount, &getBlockCountRet);
-        }
-        else
-        {
-            RPCForkHandle(&getBlockCount, &getBlockCountRet);
-        }
+        HANDLE_RPC_ROUTE(CMvRPCRouteGetBlockCount, CMvRPCRouteGetBlockCountRet);
     }
 
     if(type == CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK_HASH)
