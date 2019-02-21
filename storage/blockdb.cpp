@@ -198,6 +198,11 @@ bool CBlockDB::RetrieveTxUnspent(const uint256& fork,const CTxOutPoint& out,CTxO
     return dbUnspent.Retrieve(fork,out,unspent);
 }
 
+bool CBlockDB::WalkThroughUnspent(const uint256& hashFork, CForkUnspentDBWalker& walker)
+{
+    return dbUnspent.WalkThrough(hashFork, walker);
+}
+
 bool CBlockDB::RetrieveDelegate(const uint256& hash,map<CDestination,int64>& mapDelegate)
 {
     return dbDelegate.RetrieveDelegatedVote(hash,mapDelegate);

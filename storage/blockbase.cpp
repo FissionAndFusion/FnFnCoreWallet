@@ -28,6 +28,38 @@ public:
 };
 
 //////////////////////////////
+// CForkUnspentCheckWalker
+class CForkUnspentCheckWalker : public CForkUnspentDBWalker
+{
+public:
+    CForkUnspentCheckWalker(const std::map<CTxOutPoint, CTxUnspent>& mapUnspent)
+            : nMatch(0), nAll(0), nRanged(mapUnspent.size()), mapUnspentUTXO(mapUnspent) {};
+    bool Walk(const CTxOutPoint& txout, const CTxOutput& output) override
+    {
+        ++nAll;
+        for(const auto& item : mapUnspentUTXO)
+        {
+            const CTxUnspent& unspent = item.second;
+            if(unspent.hash == txout.hash && unspent.n == txout.n
+               && unspent.output.destTo == output.destTo
+               && unspent.output.nAmount == output.nAmount
+               && unspent.output.nLockUntil == output.nLockUntil)
+            {
+                ++nMatch;
+                break;
+            }
+        }
+        return true;
+    };
+
+public:
+    uint64 nMatch;
+    uint64 nAll;
+    uint64 nRanged;
+    const std::map<CTxOutPoint, CTxUnspent>& mapUnspentUTXO;
+};
+
+//////////////////////////////
 // CBlockView
  
 CBlockView::CBlockView()
@@ -1470,10 +1502,9 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
         if(nLevel >= 3)
         {
             //compare unspent with transaction
-            if(!dbBlock.CompareRangedUnspentTx(fork.first, mapUnspentUTXO))
+            CForkUnspentCheckWalker walker(mapUnspentUTXO);
+            if(!dbBlock.WalkThroughUnspent(fork.first, walker) && walker.nMatch < mapUnspentUTXO.size())
             {
-
-
                 Error("B", "{%d} ranged unspent records do not match with full collection of unspent.\n", mapUnspentUTXO.size());
                 return false;
             }
@@ -1504,7 +1535,7 @@ bool CBlockBase::CheckInputSingleAddressForTxWithChange(const uint256& txid)
     {
         assert(0);
     }
-    int64 nChange = TxIdx.nValueIn - TxIdx.nAmount - tx.nTxFee;
+    int64 nChange = TxIdx.nValueIn - TxIdx.nAmount - tx.GetChange();
     if(nChange <= 0)
     {
         Error("B", "[CBlockBase::CheckInputSingleAddressForTxWithChange]: Tx(%s) is not a transaction with change.\n", txid.ToString().c_str());
@@ -1545,14 +1576,8 @@ bool CBlockBase::CheckInputSingleAddressForTxWithChange(const uint256& txid)
     //if destination from input is not equal to output, return false
     if(vDestNoChange.size() == 1)
     {
-        CTxIndex txIdx;
-        if(!dbBlock.RetrieveTxIndex(txid, txIdx))
-        {
-            Error("B", "[CBlockBase::CheckInputSingleAddressForTxWithChange](%s): Failed to call to RetrieveTxIndex{vDestNoChange.size() == 1}.\n", txid.ToString().c_str());
-            return false;
-        }
         CDestination dest = *(vDestNoChange.begin());
-        if(dest != txIdx.sendTo)
+        if(dest != tx.sendTo)
         {
             Error("B", "[CBlockBase::CheckInputSingleAddressForTxWithChange](%s): {dest != txIdx.sendTo}.\n", txid.ToString().c_str());
             return false;

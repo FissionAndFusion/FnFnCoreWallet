@@ -19,36 +19,6 @@ public:
     virtual bool Walk(const CTxOutPoint& txout,const CTxOutput& output) = 0;
 };
 
-class CForkUnspentCheckWalker : public CForkUnspentDBWalker
-{
-public:
-    CForkUnspentCheckWalker(const std::map<CTxOutPoint, CTxUnspent>& mapUnspent)
-            : nMatch(0), nAll(0), nRanged(mapUnspent.size()), mapUnspentUTXO(mapUnspent) {};
-    bool Walk(const CTxOutPoint& txout, const CTxOutput& output) override
-    {
-        ++nAll;
-        for(const auto& item : mapUnspentUTXO)
-        {
-            const CTxUnspent& unspent = item.second;
-            if(unspent.hash == txout.hash && unspent.n == txout.n
-                    && unspent.output.destTo == output.destTo
-                    && unspent.output.nAmount == output.nAmount
-                    && unspent.output.nLockUntil == output.nLockUntil)
-            {
-                ++nMatch;
-                break;
-            }
-        }
-        return true;
-    };
-
-public:
-    uint64 nMatch;
-    uint64 nAll;
-    uint64 nRanged;
-    const std::map<CTxOutPoint, CTxUnspent>& mapUnspentUTXO;
-};
-
 class CForkUnspentDB : public walleve::CKVDB
 {
 public:
