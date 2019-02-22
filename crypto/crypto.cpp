@@ -372,11 +372,11 @@ set<uint256> CryptoMultiPartKey(const set<uint256>& setPubKey, const vector<uint
         return setPartKey;
     }
 
-    vector<uint8> vchIndex(vchSig.begin(), vchSig.begin() + nIndexLen);
+    const uint8* pIndex = &vchSig[0];
     int i = 0;
     for (auto itPub = setPubKey.begin(); itPub != setPubKey.end(); ++itPub, ++i)
     {
-        if (vchIndex[i / 8] & (i % 8))
+        if (pIndex[i / 8] & (1 << (i % 8)))
         {
             setPartKey.insert(*itPub);
         }
