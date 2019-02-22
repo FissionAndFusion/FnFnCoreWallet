@@ -19,8 +19,6 @@ class CWalleveODataStream
 #define BEGIN(a)            ((unsigned char*)&(a))
 #define END(a)              ((unsigned char*)&((&(a))[1]))
 
-#define UNSIGNED(T) typename boost::conditional<boost::is_unsigned<T>::value, T, unsigned int>::type
-
 public:
     CWalleveODataStream(std::vector<unsigned char>& vchIn,
                         std::vector<unsigned char>::size_type capacity = 1024)

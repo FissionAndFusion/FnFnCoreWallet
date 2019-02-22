@@ -170,7 +170,6 @@ void CForkManager::ForkUpdate(const CWorldLineUpdate& update,vector<uint256>& vA
 
 bool CForkManager::AddNewForkContext(const CForkContext& ctxt,vector<uint256>& vActive)
 {
-    cout << "-------------------------" << ctxt.hashFork.ToString() << endl;
     if (IsAllowedFork(ctxt.hashFork,ctxt.hashParent))
     {
         mapForkSched.insert(make_pair(ctxt.hashFork,CForkSchedule(true)));
