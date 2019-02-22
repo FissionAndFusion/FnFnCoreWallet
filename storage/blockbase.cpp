@@ -1213,7 +1213,7 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
                     }
 
                     //consistent between database and block file
-                    if(!txid == tx.GetHash())
+                    if(txid != tx.GetHash() || pTxIndex.nBlockHeight != pIndex->nHeight)
                     {
                         return false;
                     }
@@ -1372,7 +1372,6 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
             //checking of level 3: unspent
             if(nLevel >= 3)
             {
-                static vector<pair<uint256, uint64> > preout;   //txid vs. height
                 CTransaction txMint;
                 if(!RetrieveTx(block.txMint.GetHash(), txMint))
                 {
@@ -1411,76 +1410,10 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
                         vSpentUTXO.push_back(txin.prevout);
                     }
                 }
-/*                for(const auto& tx : block.vtx)
-                {
-                    CTxIndex TxIdx;
-                    uint256 blk;
-                    if(!dbBlock.RetrieveTxIndex(tx.GetHash(), TxIdx, blk))
-                    {
-                        assert(0);
-                    }
-                    int64 nChange = TxIdx.nValueIn - TxIdx.nAmount - tx.nTxFee;
-                    if(nChange > 0 && tx.sendTo.IsTemplate())
-                    {
-                        cout << "there is a change with template address: " << tx.sendTo.GetHex() << endl;
-                    }
-                    if(nChange > 0)
-                    {
-                        cout << "there is a change with " << (tx.sendTo.IsPubKey() ? "pubkey " : "tempkey ") << tx.sendTo.GetHex() << endl;
-                        int n = 1;
-                    }
-                    if(tx.nAmount == 11500000)
-                    {
-                        int n = 1;
-                    }
-                    if(tx.sendTo.IsPubKey())
-                    {
-                        cout << "send to a pubkey address of " << tx.sendTo.GetHex() << endl;
-//                        preout.push_back(make_pair(tx.GetHash(), TxIdx.nBlockHeight));
-                    }
-                    mapUnspentUTXO.insert(make_pair(CTxOutPoint(tx.GetHash(), 0), CTxUnspent(CTxOutPoint(tx.GetHash(), 0), CTxOutput(tx.sendTo, tx.nAmount, tx.nLockUntil))));
-                    if(nChange > 0)
-                    {
-                        if(TxIdx.nBlockHeight == 20170)
-                        {
-                            int n = 1;
-                        }
-                        Log("B", "Tx(%s) with a change(%s) on height(%d): to prepare to check.\n", tx.GetHash().ToString().c_str(), to_string(nChange).c_str(), TxIdx.nBlockHeight);
-                        if(!CheckInputSingleAddressForTxWithChange(tx.GetHash()))
-                        {
-                            Error("B", "Tx(%s) with a change(%s) on height(%d): input must be a single address.\n", tx.GetHash().ToString().c_str(), to_string(nChange).c_str(), TxIdx.nBlockHeight);
-                            return false;
-                        }
-                        else
-                        {
-                            mapUnspentUTXO.insert(make_pair(CTxOutPoint(tx.GetHash(), 1)
-                                                 , CTxUnspent(CTxOutPoint(tx.GetHash(), 1)
-                                                             , CTxOutput(TxIdx.destIn, nChange, tx.nLockUntil))));
-                        }
-                    }
-                    for(const auto& txin : tx.vInput)
-                    {
-                        for(const auto& po : preout)
-                        {
-                            if(txin.prevout.hash == po.first)
-                            {
-                                int n = 1;
-                            }
-                        }
-                        vSpentUTXO.push_back(txin.prevout);
-                    }
-                }*/
 
                 vector<CTxOutPoint> vRemovedUTXO;
                 for(const auto& spent : vSpentUTXO)
                 {
-                    for(const auto& po : preout)
-                    {
-                        if(spent.hash == po.first)
-                        {
-                            int n = 1;
-                        }
-                    }
                     if(mapUnspentUTXO.find(spent) != mapUnspentUTXO.end())
                     {
                         mapUnspentUTXO.erase(spent);
@@ -1503,7 +1436,13 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
         {
             //compare unspent with transaction
             CForkUnspentCheckWalker walker(mapUnspentUTXO);
-            if(!dbBlock.WalkThroughUnspent(fork.first, walker) && walker.nMatch < mapUnspentUTXO.size())
+            if(!dbBlock.WalkThroughUnspent(fork.first, walker))
+            {
+                Error("B", "{%d} ranged unspent records failed to walk through.\n", mapUnspentUTXO.size());
+                return false;
+            }
+
+            if(walker.nMatch != mapUnspentUTXO.size())
             {
                 Error("B", "{%d} ranged unspent records do not match with full collection of unspent.\n", mapUnspentUTXO.size());
                 return false;
@@ -1529,20 +1468,6 @@ bool CBlockBase::CheckInputSingleAddressForTxWithChange(const uint256& txid)
         return false;
     }
 
-    //validate if this is a transaction which has a change
-    CTxIndex TxIdx;
-    if(!dbBlock.RetrieveTxIndex(tx.GetHash(), TxIdx))
-    {
-        assert(0);
-    }
-    int64 nChange = TxIdx.nValueIn - TxIdx.nAmount - tx.GetChange();
-    if(nChange <= 0)
-    {
-        Error("B", "[CBlockBase::CheckInputSingleAddressForTxWithChange]: Tx(%s) is not a transaction with change.\n", txid.ToString().c_str());
-        assert(0);
-    }
-    Log("B", "[CheckInputSingleAddressForTxWithChange]txid:(%s)change:(%s)\n", txid.ToString().c_str(), to_string(nChange).c_str());
-
     //get all inputs whose index is 0 if any
     vector<CDestination> vDestNoChange;
     vector<uint256> vTxExistChange;
@@ -1550,13 +1475,13 @@ bool CBlockBase::CheckInputSingleAddressForTxWithChange(const uint256& txid)
     {
         if(i.prevout.n == 0)
         {
-            CTxIndex txIdx;
-            if(!dbBlock.RetrieveTxIndex(i.prevout.hash, txIdx))
+            CTransaction prevTx;
+            if(!RetrieveTx(i.prevout.hash, prevTx))
             {
                 Error("B", "[CBlockBase::CheckInputSingleAddressForTxWithChange](%s): Failed to call to RetrieveTxIndex.\n", txid.ToString().c_str());
                 return false;
             }
-            vDestNoChange.push_back(txIdx.sendTo);
+            vDestNoChange.push_back(prevTx.sendTo);
         }
         else
         {
@@ -1609,8 +1534,6 @@ bool CBlockBase::CheckInputSingleAddressForTxWithChange(const uint256& txid)
     {
         return true;
     }
-
-//    return true;//should to be removed when uncomment the above source code
 }
 
 CBlockIndex* CBlockBase::GetIndex(const uint256& hash) const
