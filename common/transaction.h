@@ -328,6 +328,7 @@ public:
         nTxTime    = prevOutput.nTxTime;
         nLockUntil = prevOutput.nLockUntil;
     }
+    bool IsLocked(int nBlockHeight) const { return (nBlockHeight < (nLockUntil & 0x7FFFFFFF)); } 
 protected:
     template <typename O>
     void WalleveSerialize(walleve::CWalleveStream& s,O& opt)
