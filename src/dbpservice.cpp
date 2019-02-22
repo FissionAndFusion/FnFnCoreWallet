@@ -101,7 +101,7 @@ void CDbpService::EnableSuperNode(bool enable)
     fEnableSuperNode = enable;
 }
 
-void CDbpService::DeactiveNode(const std::string& session)
+void CDbpService::DeactiveNodeTree(const std::string& session)
 {
     for(const auto& ele : mapPeerEventActive)
     {
@@ -188,7 +188,7 @@ void CDbpService::UnsubscribeChildNodeForks(const std::string& session)
 
 void CDbpService::HandleDbpClientBroken(const std::string& session)
 {
-    DeactiveNode(session);
+    DeactiveNodeTree(session);
     mapThisNodeForkCount.clear();
     mapThisNodeGetData.clear();
 }
