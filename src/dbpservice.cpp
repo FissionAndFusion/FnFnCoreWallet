@@ -1635,26 +1635,14 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetBlockLocation* data, CMvRPCRouteGe
 
         if (sessionCount != 0 && pIoComplt != NULL)
         {
-            walleve::CWalleveBufStream ss;
-            ss << *data;
-            std::vector<uint8> rawData(ss.GetData(), ss.GetData() + ss.GetSize());
-
-            if (!vRPCTopicIds.empty())
-            {
-                auto id = vRPCTopicIds.back();
-                PushRPCOnece(id, rawData, data->type);
-                vRPCTopicIds.pop_back();
-            }
+            auto vRawData = RPCRouteRetToStream(*data);
+            PushMsgToChild(vRawData, data->type);
             return;
         }
     }
 
     if (ret != NULL)
     {
-        walleve::CWalleveBufStream ss;
-        ss << *data;
-        std::vector<uint8> rawData(ss.GetData(), ss.GetData() + ss.GetSize());
-
         if(!ret->strFork.empty())
         {
             CMvRPCRouteGetBlockLocationRet getBlockLocationRet;
@@ -1681,18 +1669,13 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetBlockLocation* data, CMvRPCRouteGe
 
         if (sessionCount != 0 && pIoComplt != NULL)
         {
-            if (!vRPCTopicIds.empty())
-            {
-                auto id = vRPCTopicIds.back();
-                PushRPCOnece(id, rawData, data->type);
-                vRPCTopicIds.pop_back();
-            }
+            auto vRawData = RPCRouteRetToStream(*data);
+            PushMsgToChild(vRawData, data->type);
             return;
         }
         return;
     }
 }
-
 
 void CDbpService::RPCRootHandle(CMvRPCRouteGetBlockCount* data, CMvRPCRouteGetBlockCountRet* ret)
 {
@@ -1712,26 +1695,14 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetBlockCount* data, CMvRPCRouteGetBl
 
         if (sessionCount != 0 && pIoComplt != NULL)
         {
-            walleve::CWalleveBufStream ss;
-            ss << *data;
-            std::vector<uint8> rawData(ss.GetData(), ss.GetData() + ss.GetSize());
-
-            if (!vRPCTopicIds.empty())
-            {
-                auto id = vRPCTopicIds.back();
-                PushRPCOnece(id, rawData, data->type);
-                vRPCTopicIds.pop_back();
-            }
+            auto vRawData = RPCRouteRetToStream(*data);
+            PushMsgToChild(vRawData, data->type);
             return;
         }
     }
 
     if(ret != NULL)
     {
-        walleve::CWalleveBufStream ss;
-        ss << *data;
-        std::vector<uint8> rawData(ss.GetData(), ss.GetData() + ss.GetSize());
-
         if(ret->exception == 0)
         {
             CMvRPCRouteGetBlockCountRet getBlockCountRet;
@@ -1758,12 +1729,8 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetBlockCount* data, CMvRPCRouteGetBl
 
         if (sessionCount != 0 && pIoComplt != NULL)
         {
-            if (!vRPCTopicIds.empty())
-            {
-                auto id = vRPCTopicIds.back();
-                PushRPCOnece(id, rawData, data->type);
-                vRPCTopicIds.pop_back();
-            }
+            auto vRawData = RPCRouteRetToStream(*data);
+            PushMsgToChild(vRawData, data->type);
             return;
         }
     }
@@ -1786,26 +1753,14 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetBlockHash * data, CMvRPCRouteGetBl
 
         if (sessionCount != 0 && pIoComplt != NULL)
         {
-            walleve::CWalleveBufStream ss;
-            ss << *data;
-            std::vector<uint8> rawData(ss.GetData(), ss.GetData() + ss.GetSize());
-
-            if (!vRPCTopicIds.empty())
-            {
-                auto id = vRPCTopicIds.back();
-                PushRPCOnece(id, rawData, data->type);
-                vRPCTopicIds.pop_back();
-            }
+            auto vRawData = RPCRouteRetToStream(*data);
+            PushMsgToChild(vRawData, data->type);
             return;
         }
     }
 
     if(ret != NULL)
     {
-        walleve::CWalleveBufStream ss;
-        ss << *data;
-        std::vector<uint8> rawData(ss.GetData(), ss.GetData() + ss.GetSize());
-
         if(ret->exception == 0 || ret->exception == 3)
         {
             CMvRPCRouteGetBlockHashRet getBlockHashRet;
@@ -1831,12 +1786,8 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetBlockHash * data, CMvRPCRouteGetBl
 
         if (sessionCount != 0 && pIoComplt != NULL)
         {
-            if (!vRPCTopicIds.empty())
-            {
-                auto id = vRPCTopicIds.back();
-                PushRPCOnece(id, rawData, data->type);
-                vRPCTopicIds.pop_back();
-            }
+            auto vRawData = RPCRouteRetToStream(*data);
+            PushMsgToChild(vRawData, data->type);
             return;
         }
     }
@@ -1844,9 +1795,7 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetBlockHash * data, CMvRPCRouteGetBl
 
 void CDbpService::RPCRootHandle(CMvRPCRouteGetBlock* data, CMvRPCRouteGetBlockRet* ret)
 {
-    walleve::CWalleveBufStream ss;
-    ss << *data;
-    std::vector<uint8> vRawData(ss.GetData(), ss.GetData() + ss.GetSize());
+    auto vRawData = RPCRouteRetToStream(*data);
 
     if (ret == NULL)
     {
@@ -1863,12 +1812,7 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetBlock* data, CMvRPCRouteGetBlockRe
 
         if (sessionCount != 0 && pIoComplt != NULL)
         {
-            if (!vRPCTopicIds.empty())
-            {
-                auto id = vRPCTopicIds.back();
-                PushRPCOnece(id, vRawData, data->type);
-                vRPCTopicIds.pop_back();
-            }
+            PushMsgToChild(vRawData, data->type);
             return;
         }
     }
@@ -1900,12 +1844,7 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetBlock* data, CMvRPCRouteGetBlockRe
 
         if (sessionCount != 0 && pIoComplt != NULL)
         {
-            if (!vRPCTopicIds.empty())
-            {
-                auto id = vRPCTopicIds.back();
-                PushRPCOnece(id, vRawData, data->type);
-                vRPCTopicIds.pop_back();
-            }
+            PushMsgToChild(vRawData, data->type);
             return;
         }
     }
@@ -1915,16 +1854,11 @@ void CDbpService::RPCForkHandle(CMvRPCRouteStop* data, CMvRPCRouteStopRet* ret)
 {
     if (ret == NULL)
     {
-        CMvRPCRouteStop stop = *data;
-        walleve::CWalleveBufStream ss;
-        ss << stop;
-        std::vector<uint8> vRawData(ss.GetData(), ss.GetData() + ss.GetSize());
-        
         if (sessionCount == 0 && pIoComplt == NULL)
         {
             CMvRPCRouteResult result;
             result.type = CMvRPCRoute::DBP_RPCROUTE_STOP;
-            result.vRawData = vRawData;
+            result.vRawData = RPCRouteRetToStream(*data);
             SendRPCResult(result);
             pService->Shutdown();
         }
@@ -1935,25 +1869,16 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetForkCount* data, CMvRPCRouteGetFor
 {
     if (ret == NULL)
     {
-        CMvRPCRouteGetForkCount getForkCount = *((CMvRPCRouteGetForkCount*)data);
-        walleve::CWalleveBufStream ss;
-        ss << getForkCount;
-        std::vector<uint8> vRawData(ss.GetData(), ss.GetData() + ss.GetSize());
-        
         if (sessionCount == 0 && pIoComplt == NULL)
         {
             CMvRPCRouteResult result;
             result.type = CMvRPCRoute::DBP_RPCROUTE_GET_FORK_COUNT;
-            result.vRawData = vRawData;
+            result.vRawData = RPCRouteRetToStream(*data);
 
-            CMvRPCRouteGetForkCountRet ret;
-            ret.nNonce = getForkCount.nNonce;
-            ret.count = pService->GetForkCount() - 1;
-
-            walleve::CWalleveBufStream ss;
-            ss << ret;
-            std::vector<uint8> data(ss.GetData(), ss.GetData() + ss.GetSize());
-            result.vData = data;
+            CMvRPCRouteGetForkCountRet getForkCountRet;
+            getForkCountRet.nNonce = data->nNonce;
+            getForkCountRet.count = pService->GetForkCount() - 1;
+            result.vData = RPCRouteRetToStream(getForkCountRet);
             SendRPCResult(result);
         }
         return;
@@ -1961,11 +1886,6 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetForkCount* data, CMvRPCRouteGetFor
 
     if (ret != NULL)
     {
-        CMvRPCRouteGetForkCount getForkCount = *((CMvRPCRouteGetForkCount*)data);
-        walleve::CWalleveBufStream ss;
-        ss << getForkCount;
-        std::vector<uint8> vRawData(ss.GetData(), ss.GetData() + ss.GetSize());
-
         CMvRPCRouteGetForkCountRet getForkCountRetIn = *((CMvRPCRouteGetForkCountRet*)ret);
         CMvRPCRouteGetForkCountRet tempRet;
         int count = 0;
@@ -1984,18 +1904,13 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetForkCount* data, CMvRPCRouteGetFor
         {
             CMvRPCRouteResult result;
             result.type = CMvRPCRoute::DBP_RPCROUTE_GET_FORK_COUNT;
-            result.vRawData = vRawData;
+            result.vRawData = RPCRouteRetToStream(*data);
 
             CMvRPCRouteGetForkCountRet getForkCountRetOut;
             getForkCountRetOut.type = getForkCountRetIn.type;
             getForkCountRetOut.nNonce = getForkCountRetIn.nNonce;
             getForkCountRetOut.count = pService->GetForkCount() - 1 + count;
-
-            walleve::CWalleveBufStream ss;
-            ss << getForkCountRetOut;
-            std::vector<uint8> data(ss.GetData(), ss.GetData() + ss.GetSize());
-            result.vData = data;
-
+            result.vData = RPCRouteRetToStream(getForkCountRetOut);
             SendRPCResult(result);
         }
         return;
@@ -2006,20 +1921,15 @@ void CDbpService::RPCForkHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRe
 {
     if(ret == NULL)
     {
-        CMvRPCRouteListFork listFork = *data;
-        walleve::CWalleveBufStream ss;
-        ss << listFork;
-        std::vector<uint8> vRawData(ss.GetData(), ss.GetData() + ss.GetSize());
-
         if (sessionCount == 0 && pIoComplt == NULL)
         {
             CMvRPCRouteResult result;
             result.type = CMvRPCRoute::DBP_RPCROUTE_LIST_FORK;
-            result.vRawData = vRawData;
+            result.vRawData = RPCRouteRetToStream(*data);
 
             CMvRPCRouteListForkRet retOut;
-            retOut.nNonce = listFork.nNonce;
-            retOut.type = listFork.type;
+            retOut.nNonce = data->nNonce;
+            retOut.type = data->type;
 
             std::vector<std::pair<uint256, CProfile>> vFork;
             pService->ListFork(vFork, data->fAll);
@@ -2027,10 +1937,7 @@ void CDbpService::RPCForkHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRe
             SwrapForks(vFork, vRpcFork);
             retOut.vFork.insert(retOut.vFork.end(), vRpcFork.begin(), vRpcFork.end());
 
-            walleve::CWalleveBufStream ss;
-            ss << retOut;
-            std::vector<uint8> vData(ss.GetData(), ss.GetData() + ss.GetSize());
-            result.vData = vData;
+            result.vData = RPCRouteRetToStream(retOut);
             SendRPCResult(result);
         }
         return;
@@ -2038,11 +1945,6 @@ void CDbpService::RPCForkHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRe
 
     if(ret != NULL)
     {
-        CMvRPCRouteListFork listFork = *data;
-        walleve::CWalleveBufStream ss;
-        ss << listFork;
-        std::vector<uint8> vRawData(ss.GetData(), ss.GetData() + ss.GetSize());
-
         CMvRPCRouteListForkRet listForkRetIn = *ret;
         std::vector<CMvRPCProfile> vTempFork;
         uint64 nNonce = listForkRetIn.nNonce;
@@ -2060,7 +1962,7 @@ void CDbpService::RPCForkHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRe
         {
             CMvRPCRouteResult result;
             result.type = CMvRPCRoute::DBP_RPCROUTE_LIST_FORK;
-            result.vRawData = vRawData;
+            result.vRawData = RPCRouteRetToStream(*data);
 
             CMvRPCRouteListForkRet listForkRetOut;
             listForkRetOut.type = listForkRetIn.type;
@@ -2074,11 +1976,7 @@ void CDbpService::RPCForkHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRe
             listForkRetOut.vFork.insert(listForkRetOut.vFork.end(), vTempFork.begin(), vTempFork.end());
             listForkRetOut.vFork.insert(listForkRetOut.vFork.end(), vRpcFork.begin(), vRpcFork.end());
             ListForkUnique(listForkRetOut.vFork);
-
-            walleve::CWalleveBufStream ss;
-            ss << listForkRetOut;
-            std::vector<uint8> vData(ss.GetData(), ss.GetData() + ss.GetSize());
-            result.vData = vData;
+            result.vData = RPCRouteRetToStream(listForkRetOut);
             SendRPCResult(result);
         }
         return;
@@ -2087,10 +1985,7 @@ void CDbpService::RPCForkHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRe
 
 void CDbpService::RPCForkHandle(CMvRPCRouteGetBlockLocation* data, CMvRPCRouteGetBlockLocationRet* ret)
 {
-    CMvRPCRouteGetBlockLocation getBlockLocation = *data;
-    walleve::CWalleveBufStream ss;
-    ss << getBlockLocation;
-    std::vector<uint8> vRawData(ss.GetData(), ss.GetData() + ss.GetSize());
+    auto vRawData = RPCRouteRetToStream(*data);
 
     if (ret == NULL)
     {
@@ -2100,31 +1995,18 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetBlockLocation* data, CMvRPCRouteGe
             CMvRPCRouteResult result;
             result.type = CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK_LOCATION;
             result.vRawData = vRawData;
-            getBlockLocationRet.nNonce = getBlockLocation.nNonce;
-            getBlockLocationRet.type = getBlockLocation.type;
+            getBlockLocationRet.nNonce = data->nNonce;
+            getBlockLocationRet.type = data->type;
             getBlockLocationRet.strFork = "";
             getBlockLocationRet.height = 0;
-
-            walleve::CWalleveBufStream ss;
-            ss << getBlockLocationRet;
-            std::vector<uint8> vData(ss.GetData(), ss.GetData() + ss.GetSize());
-            result.vData = vData;
+            result.vData = RPCRouteRetToStream(getBlockLocationRet);
             SendRPCResult(result);
             return;
         }
 
         if (sessionCount != 0 && pIoComplt == NULL)
         {
-            walleve::CWalleveBufStream ss;
-            ss << *data;
-            std::vector<uint8> rawData(ss.GetData(), ss.GetData() + ss.GetSize());
-
-            if (!vRPCTopicIds.empty())
-            {
-                auto id = vRPCTopicIds.back();
-                PushRPCOnece(id, rawData, data->type);
-                vRPCTopicIds.pop_back();
-            }
+            PushMsgToChild(vRawData, data->type);
             return;
         }
     }
@@ -2137,15 +2019,11 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetBlockLocation* data, CMvRPCRouteGe
             CMvRPCRouteResult result;
             result.type = CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK_LOCATION;
             result.vRawData = vRawData;
-            getBlockLocationRet.nNonce = getBlockLocation.nNonce;
-            getBlockLocationRet.type = getBlockLocation.type;
+            getBlockLocationRet.nNonce = data->nNonce;
+            getBlockLocationRet.type = data->type;
             getBlockLocationRet.strFork = ret->strFork;
             getBlockLocationRet.height = ret->height;
-
-            walleve::CWalleveBufStream ss;
-            ss << getBlockLocationRet;
-            std::vector<uint8> vData(ss.GetData(), ss.GetData() + ss.GetSize());
-            result.vData = vData;
+            result.vData = RPCRouteRetToStream(getBlockLocationRet);
             SendRPCResult(result);
             return;
         }
@@ -2156,27 +2034,18 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetBlockLocation* data, CMvRPCRouteGe
             CMvRPCRouteResult result;
             result.type = CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK_LOCATION;
             result.vRawData = vRawData;
-            getBlockLocationRet.nNonce = getBlockLocation.nNonce;
-            getBlockLocationRet.type = getBlockLocation.type;
+            getBlockLocationRet.nNonce = data->nNonce;
+            getBlockLocationRet.type = data->type;
             getBlockLocationRet.strFork = "";
             getBlockLocationRet.height = 0;
-
-            walleve::CWalleveBufStream ss;
-            ss << getBlockLocationRet;
-            std::vector<uint8> vData(ss.GetData(), ss.GetData() + ss.GetSize());
-            result.vData = vData;
+            result.vData = RPCRouteRetToStream(getBlockLocationRet);
             SendRPCResult(result);
             return;
         }
 
         if (sessionCount != 0 && pIoComplt == NULL)
         {
-            if (!vRPCTopicIds.empty())
-            {
-                auto id = vRPCTopicIds.back();
-                PushRPCOnece(id, vRawData, data->type);
-                vRPCTopicIds.pop_back();
-            }
+            PushMsgToChild(vRawData, data->type);
             return;
         }
     }
@@ -2184,9 +2053,7 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetBlockLocation* data, CMvRPCRouteGe
 
 void CDbpService::RPCForkHandle(CMvRPCRouteGetBlockCount* data, CMvRPCRouteGetBlockCountRet* ret)
 {
-    walleve::CWalleveBufStream ss;
-    ss << *data;
-    std::vector<uint8> vRawData(ss.GetData(), ss.GetData() + ss.GetSize());
+    auto vRawData = RPCRouteRetToStream(*data);
 
     if (ret == NULL)
     {
@@ -2200,27 +2067,14 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetBlockCount* data, CMvRPCRouteGetBl
             getBlockCountRet.type = data->type;
             getBlockCountRet.exception = 2;
             getBlockCountRet.height = 0;
-
-            walleve::CWalleveBufStream ss;
-            ss << getBlockCountRet;
-            std::vector<uint8> vData(ss.GetData(), ss.GetData() + ss.GetSize());
-            result.vData = vData;
+            result.vData = RPCRouteRetToStream(getBlockCountRet);
             SendRPCResult(result);
             return;
         }
 
         if (sessionCount != 0 && pIoComplt == NULL)
         {
-            walleve::CWalleveBufStream ss;
-            ss << *data;
-            std::vector<uint8> rawData(ss.GetData(), ss.GetData() + ss.GetSize());
-
-            if (!vRPCTopicIds.empty())
-            {
-                auto id = vRPCTopicIds.back();
-                PushRPCOnece(id, rawData, data->type);
-                vRPCTopicIds.pop_back();
-            }
+            PushMsgToChild(vRawData, data->type);
             return;
         }
     }
@@ -2237,11 +2091,7 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetBlockCount* data, CMvRPCRouteGetBl
             getBlockCountRet.type = data->type;
             getBlockCountRet.exception = ret->exception;
             getBlockCountRet.height = ret->height;
-
-            walleve::CWalleveBufStream ss;
-            ss << getBlockCountRet;
-            std::vector<uint8> vData(ss.GetData(), ss.GetData() + ss.GetSize());
-            result.vData = vData;
+            result.vData = RPCRouteRetToStream(getBlockCountRet);
             SendRPCResult(result);
             return;
         }
@@ -2256,23 +2106,14 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetBlockCount* data, CMvRPCRouteGetBl
             getBlockCountRet.type = data->type;
             getBlockCountRet.exception = 2;
             getBlockCountRet.height = 0;
-
-            walleve::CWalleveBufStream ss;
-            ss << getBlockCountRet;
-            std::vector<uint8> vData(ss.GetData(), ss.GetData() + ss.GetSize());
-            result.vData = vData;
+            result.vData = RPCRouteRetToStream(getBlockCountRet);
             SendRPCResult(result);
             return;
         }
 
         if (sessionCount != 0 && pIoComplt == NULL)
         {
-            if (!vRPCTopicIds.empty())
-            {
-                auto id = vRPCTopicIds.back();
-                PushRPCOnece(id, vRawData, data->type);
-                vRPCTopicIds.pop_back();
-            }
+            PushMsgToChild(vRawData, data->type);
             return;
         }
     }
@@ -2280,9 +2121,7 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetBlockCount* data, CMvRPCRouteGetBl
 
 void CDbpService::RPCForkHandle(CMvRPCRouteGetBlockHash* data, CMvRPCRouteGetBlockHashRet* ret)
 {
-    walleve::CWalleveBufStream ss;
-    ss << *data;
-    std::vector<uint8> vRawData(ss.GetData(), ss.GetData() + ss.GetSize());
+    auto vRawData = RPCRouteRetToStream(*data);
 
     if (ret == NULL)
     {
@@ -2295,23 +2134,14 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetBlockHash* data, CMvRPCRouteGetBlo
             getBlockHashRet.nNonce = data->nNonce;
             getBlockHashRet.type = data->type;
             getBlockHashRet.exception = 2;
-
-            walleve::CWalleveBufStream ss;
-            ss << getBlockHashRet;
-            std::vector<uint8> vData(ss.GetData(), ss.GetData() + ss.GetSize());
-            result.vData = vData;
+            result.vData = RPCRouteRetToStream(getBlockHashRet);
             SendRPCResult(result);
             return;
         }
 
         if (sessionCount != 0 && pIoComplt == NULL)
         {
-            if (!vRPCTopicIds.empty())
-            {
-                auto id = vRPCTopicIds.back();
-                PushRPCOnece(id, vRawData, data->type);
-                vRPCTopicIds.pop_back();
-            }
+            PushMsgToChild(vRawData, data->type);
             return;
         }
     }
@@ -2328,11 +2158,7 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetBlockHash* data, CMvRPCRouteGetBlo
             getBlockHashRet.type = data->type;
             getBlockHashRet.exception = ret->exception;
             getBlockHashRet.vHash = ret->vHash;
-
-            walleve::CWalleveBufStream ss;
-            ss << getBlockHashRet;
-            std::vector<uint8> vData(ss.GetData(), ss.GetData() + ss.GetSize());
-            result.vData = vData;
+            result.vData = RPCRouteRetToStream(getBlockHashRet);
             SendRPCResult(result);
             return;
         }
@@ -2346,23 +2172,14 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetBlockHash* data, CMvRPCRouteGetBlo
             getBlockHashRet.nNonce = data->nNonce;
             getBlockHashRet.type = data->type;
             getBlockHashRet.exception = 2;
-
-            walleve::CWalleveBufStream ss;
-            ss << getBlockHashRet;
-            std::vector<uint8> vData(ss.GetData(), ss.GetData() + ss.GetSize());
-            result.vData = vData;
+            result.vData = RPCRouteRetToStream(getBlockHashRet);
             SendRPCResult(result);
             return;
         }
 
         if (sessionCount != 0 && pIoComplt == NULL)
         {
-            if (!vRPCTopicIds.empty())
-            {
-                auto id = vRPCTopicIds.back();
-                PushRPCOnece(id, vRawData, data->type);
-                vRPCTopicIds.pop_back();
-            }
+            PushMsgToChild(vRawData, data->type);
             return;
         }
     }
@@ -2370,9 +2187,7 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetBlockHash* data, CMvRPCRouteGetBlo
 
 void CDbpService::RPCForkHandle(CMvRPCRouteGetBlock* data, CMvRPCRouteGetBlockRet* ret)
 {
-    walleve::CWalleveBufStream ss;
-    ss << *data;
-    std::vector<uint8> vRawData(ss.GetData(), ss.GetData() + ss.GetSize());
+    auto vRawData = RPCRouteRetToStream(*data);
 
     if (ret == NULL)
     {
@@ -2385,23 +2200,14 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetBlock* data, CMvRPCRouteGetBlockRe
             getBlockRet.nNonce = data->nNonce;
             getBlockRet.type = data->type;
             getBlockRet.exception = 1;
-
-            walleve::CWalleveBufStream ss;
-            ss << getBlockRet;
-            std::vector<uint8> vData(ss.GetData(), ss.GetData() + ss.GetSize());
-            result.vData = vData;
+            result.vData = RPCRouteRetToStream(getBlockRet);
             SendRPCResult(result);
             return;
         }
 
         if (sessionCount != 0 && pIoComplt == NULL)
         {
-            if (!vRPCTopicIds.empty())
-            {
-                auto id = vRPCTopicIds.back();
-                PushRPCOnece(id, vRawData, data->type);
-                vRPCTopicIds.pop_back();
-            }
+            PushMsgToChild(vRawData, data->type);
             return;
         }
     }
@@ -2418,11 +2224,7 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetBlock* data, CMvRPCRouteGetBlockRe
         if(ret->exception == 0)
         {
             getBlockRet.exception = ret->exception;
-
-            walleve::CWalleveBufStream ss;
-            ss << getBlockRet;
-            std::vector<uint8> vData(ss.GetData(), ss.GetData() + ss.GetSize());
-            result.vData = vData;
+            result.vData = RPCRouteRetToStream(getBlockRet);
             SendRPCResult(result);
             return;
         }
@@ -2430,23 +2232,14 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetBlock* data, CMvRPCRouteGetBlockRe
         if (sessionCount == 0 && pIoComplt == NULL)
         {
             getBlockRet.exception = 1;
-
-            walleve::CWalleveBufStream ss;
-            ss << getBlockRet;
-            std::vector<uint8> vData(ss.GetData(), ss.GetData() + ss.GetSize());
-            result.vData = vData;
+            result.vData = RPCRouteRetToStream(getBlockRet);
             SendRPCResult(result);
             return;
         }
 
         if (sessionCount != 0 && pIoComplt == NULL)
         {
-            if (!vRPCTopicIds.empty())
-            {
-                auto id = vRPCTopicIds.back();
-                PushRPCOnece(id, vRawData, data->type);
-                vRPCTopicIds.pop_back();
-            }
+            PushMsgToChild(vRawData, data->type);
             return;
         }
     }
@@ -2460,6 +2253,16 @@ void CDbpService::InsertQueCount(uint64 nNonce, boost::any obj)
     }
     std::pair<uint64, boost::any> pair(nNonce, obj);
     queCount.push_front(pair);
+}
+
+void CDbpService::PushMsgToChild(std::vector<uint8>& data, int& type)
+{
+    if (!vRPCTopicIds.empty())
+    {
+        auto id = vRPCTopicIds.back();
+        PushRPCOnece(id, data, type);
+        vRPCTopicIds.pop_back();
+    }
 }
 
 void CDbpService::SendRPCResult(CMvRPCRouteResult& result)
@@ -2520,13 +2323,6 @@ void CDbpService::InitRPCTopicIds()
 
 void CDbpService::InitSessionCount()
 {
-    // std::set<std::string> setSession;
-    // for (const auto& pos : mapIdSubedSession)
-    // {
-    //     setSession.insert(pos.second);
-    // }
-    // sessionCount = setSession.size();
-
     std::set<std::string> setSession;
     const auto& allIds = mapTopicIds[RPC_CMD_TOPIC];
     for (const auto id : allIds)
@@ -2547,13 +2343,10 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteStop& event)
     CMvRPCRouteStopRet stopRet;
     InsertQueCount(event.data.nNonce, stopRet);
 
-    walleve::CWalleveBufStream ss;
-    ss << event.data;
-    std::vector<uint8> data(ss.GetData(), ss.GetData() + ss.GetSize());
-
     InitSessionCount();
     if(sessionCount > 0)
     {
+        auto data = RPCRouteRetToStream(event.data);
         PushRPC(data, CMvRPCRoute::DBP_RPCROUTE_STOP);
         return true;
     }
@@ -2569,13 +2362,10 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetForkCount& event)
     getForkCountRet.count = 0;
     InsertQueCount(event.data.nNonce, getForkCountRet);
 
-    walleve::CWalleveBufStream ss;
-    ss << event.data;
-    std::vector<uint8> data(ss.GetData(), ss.GetData() + ss.GetSize());
-
     InitSessionCount();
     if(sessionCount > 0)
     {
+        auto data = RPCRouteRetToStream(event.data);
         PushRPC(data, CMvRPCRoute::DBP_RPCROUTE_GET_FORK_COUNT);
         return true;
     }
@@ -2589,13 +2379,10 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteListFork& event)
     CMvRPCRouteListForkRet listForkRet;
     InsertQueCount(event.data.nNonce, listForkRet);
 
-    walleve::CWalleveBufStream ss;
-    ss << event.data;
-    std::vector<uint8> data(ss.GetData(), ss.GetData() + ss.GetSize());
-
     InitSessionCount();
     if(sessionCount > 0)
     {
+        auto data = RPCRouteRetToStream(event.data);
         PushRPC(data, CMvRPCRoute::DBP_RPCROUTE_LIST_FORK);
         return true;
     }
@@ -2628,10 +2415,6 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetBlockLocation& event)
     InitRPCTopicIds();
     InitSessionCount();
     InsertQueCount(event.data.nNonce, getBlockLocationRet);
-
-    walleve::CWalleveBufStream ss;
-    ss << event.data;
-    std::vector<uint8> data(ss.GetData(), ss.GetData() + ss.GetSize());
     RPCRootHandle(&event.data, NULL);
     return true;
 }
@@ -2682,10 +2465,6 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetBlockCount& event)
     InitRPCTopicIds();
     InitSessionCount();
     InsertQueCount(event.data.nNonce, getBlockCountRet);
-
-    walleve::CWalleveBufStream ss;
-    ss << event.data;
-    std::vector<uint8> data(ss.GetData(), ss.GetData() + ss.GetSize());
     RPCRootHandle(&event.data, NULL);
     return true;
 }
@@ -2732,10 +2511,6 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetBlockHash& event)
     InitRPCTopicIds();
     InitSessionCount();
     InsertQueCount(event.data.nNonce, getBlockHashRet);
-
-    walleve::CWalleveBufStream ss;
-    ss << event.data;
-    std::vector<uint8> data(ss.GetData(), ss.GetData() + ss.GetSize());
     RPCRootHandle(&event.data, NULL);
     return true;
 }
@@ -2749,7 +2524,6 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetBlock& event)
     CMvRPCRouteGetBlockRet getBlockRet;
     getBlockRet.nNonce = event.data.nNonce;
 
-    //getblock <"block">
     uint256 hashBlock;
     hashBlock.SetHex(event.data.hash);
 
@@ -2770,10 +2544,6 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetBlock& event)
     InitRPCTopicIds();
     InitSessionCount();
     InsertQueCount(event.data.nNonce, getBlockRet);
-
-    walleve::CWalleveBufStream ss;
-    ss << event.data;
-    std::vector<uint8> data(ss.GetData(), ss.GetData() + ss.GetSize());
     RPCRootHandle(&event.data, NULL);
     return true;
 }
@@ -2849,11 +2619,7 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteAdded& event)
             getBlockLocationRet.nNonce = getBlockLocation.nNonce;
             getBlockLocationRet.height = height;
             getBlockLocationRet.strFork = fork.GetHex();
-
-            walleve::CWalleveBufStream ss;
-            ss << getBlockLocationRet;
-            std::vector<uint8> vData(ss.GetData(), ss.GetData() + ss.GetSize());
-            result.vData = vData;
+            result.vData = RPCRouteRetToStream(getBlockLocationRet);
             SendRPCResult(result);
             return true;
         }
@@ -2878,11 +2644,7 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteAdded& event)
             getBlockCountRet.nNonce = getBlockCount.nNonce;
             getBlockCountRet.height = 0;
             getBlockCountRet.exception = 1;
-
-            walleve::CWalleveBufStream ss;
-            ss << getBlockCountRet;
-            std::vector<uint8> vData(ss.GetData(), ss.GetData() + ss.GetSize());
-            result.vData = vData;
+            result.vData = RPCRouteRetToStream(getBlockCountRet);
             SendRPCResult(result);
             return true;
         }
@@ -2895,11 +2657,7 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteAdded& event)
             getBlockCountRet.nNonce = getBlockCount.nNonce;
             getBlockCountRet.height = pService->GetBlockCount(hashFork);
             getBlockCountRet.exception = 0;
-
-            walleve::CWalleveBufStream ss;
-            ss << getBlockCountRet;
-            std::vector<uint8> vData(ss.GetData(), ss.GetData() + ss.GetSize());
-            result.vData = vData;
+            result.vData = RPCRouteRetToStream(getBlockCountRet);
             SendRPCResult(result);
             return true;
         }
@@ -2924,10 +2682,7 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteAdded& event)
         if (!GetForkHashOfDef(getBlockHash.strFork, hashFork))
         {
             getBlockHashRet.exception = 1;
-            walleve::CWalleveBufStream ss;
-            ss << getBlockHashRet;
-            std::vector<uint8> vData(ss.GetData(), ss.GetData() + ss.GetSize());
-            result.vData = vData;
+            result.vData = RPCRouteRetToStream(getBlockHashRet);
             SendRPCResult(result);
             return true;
         }
@@ -2938,10 +2693,7 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteAdded& event)
             if (!pService->GetBlockHash(hashFork, getBlockHash.height, vBlockHash))
             {
                 getBlockHashRet.exception = 3;
-                walleve::CWalleveBufStream ss;
-                ss << getBlockHashRet;
-                std::vector<uint8> vData(ss.GetData(), ss.GetData() + ss.GetSize());
-                result.vData = vData;
+                result.vData = RPCRouteRetToStream(getBlockHashRet);
                 SendRPCResult(result);
                 return true;
             }
@@ -2952,10 +2704,7 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteAdded& event)
             }
 
             getBlockHashRet.exception = 0;
-            walleve::CWalleveBufStream ss;
-            ss << getBlockHashRet;
-            std::vector<uint8> vData(ss.GetData(), ss.GetData() + ss.GetSize());
-            result.vData = vData;
+            result.vData = RPCRouteRetToStream(getBlockHashRet);
             SendRPCResult(result);
             return true;
         }
@@ -2986,11 +2735,7 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteAdded& event)
             getBlockRet.strFork = fork.GetHex();
             getBlockRet.height = height;
             getBlockRet.block = block;
-
-            walleve::CWalleveBufStream ss;
-            ss << getBlockRet;
-            std::vector<uint8> vData(ss.GetData(), ss.GetData() + ss.GetSize());
-            result.vData = vData;
+            result.vData = RPCRouteRetToStream(getBlockRet);
             SendRPCResult(result);
             return true;
         }

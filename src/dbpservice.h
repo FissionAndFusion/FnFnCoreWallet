@@ -124,6 +124,15 @@ private:
     void PushTx(const std::string& forkid, const CMvDbpTransaction& dbptx);
     bool PushEvent(const CMvDbpVirtualPeerNetEvent& event);
 
+    template<typename T>
+    std::vector<uint8> RPCRouteRetToStream(T& ret)
+    {
+        walleve::CWalleveBufStream ss;
+        ss << ret;
+        std::vector<uint8> vData(ss.GetData(), ss.GetData() + ss.GetSize());
+        return vData;
+    };
+    void PushMsgToChild(std::vector<uint8>& data, int& type);
     void SendRPCResult(CMvRPCRouteResult& result);
     void HandleRPCRoute(CMvEventDbpMethod& event);
     void PushRPC(std::vector<uint8>& data, int type);
