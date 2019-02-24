@@ -159,7 +159,7 @@ protected:
     uint64 GenNonce();
 
 protected:
-    walleve::CIOCompletion ioComplt;
+    // walleve::CIOCompletion ioComplt;
     walleve::IIOModule* pDbpService;
 };
 

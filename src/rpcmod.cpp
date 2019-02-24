@@ -2150,6 +2150,7 @@ uint64 CSnRPCMod::GenNonce()
 
 CRPCResultPtr CSnRPCMod::SnRPCStop(CRPCParamPtr param)
 {
+    walleve::CIOCompletion ioComplt;
     CMvEventRPCRouteStop* pEvent = new CMvEventRPCRouteStop("");
     pEvent->data.ioComplt = &ioComplt;
     pEvent->data.nNonce = GenNonce();
@@ -2157,9 +2158,8 @@ CRPCResultPtr CSnRPCMod::SnRPCStop(CRPCParamPtr param)
     {
         return NULL;
     }
-    pDbpService->PostEvent(pEvent);
-
     ioComplt.Reset();
+    pDbpService->PostEvent(pEvent);
     bool fResult = false;
     ioComplt.WaitForComplete(fResult);
     std::string reason = "[supernode]multiverse server stopping";
@@ -2168,6 +2168,7 @@ CRPCResultPtr CSnRPCMod::SnRPCStop(CRPCParamPtr param)
 
 CRPCResultPtr CSnRPCMod::SnRPCGetForkCount(CRPCParamPtr param)
 {
+    walleve::CIOCompletion ioComplt;
     CMvEventRPCRouteGetForkCount* pEvent = new CMvEventRPCRouteGetForkCount("");
     pEvent->data.ioComplt = &ioComplt;
     pEvent->data.nNonce = GenNonce();
@@ -2175,9 +2176,8 @@ CRPCResultPtr CSnRPCMod::SnRPCGetForkCount(CRPCParamPtr param)
     {
         return NULL;
     }
-    pDbpService->PostEvent(pEvent);
-
     ioComplt.Reset();
+    pDbpService->PostEvent(pEvent);
     bool fResult = false;
     ioComplt.WaitForComplete(fResult);
     CMvRPCRouteGetForkCountRet ret = boost::any_cast<CMvRPCRouteGetForkCountRet>(ioComplt.obj);
@@ -2186,6 +2186,7 @@ CRPCResultPtr CSnRPCMod::SnRPCGetForkCount(CRPCParamPtr param)
 
 CRPCResultPtr CSnRPCMod::SnRPCListFork(CRPCParamPtr param)
 {
+    walleve::CIOCompletion ioComplt;
     auto spParam = CastParamPtr<CListForkParam>(param);
     CMvEventRPCRouteListFork* pEvent = new CMvEventRPCRouteListFork("");
     pEvent->data.ioComplt = &ioComplt;
@@ -2195,8 +2196,8 @@ CRPCResultPtr CSnRPCMod::SnRPCListFork(CRPCParamPtr param)
     {
         return NULL;
     }
-    pDbpService->PostEvent(pEvent);
     ioComplt.Reset();
+    pDbpService->PostEvent(pEvent);
     bool fResult = false;
     ioComplt.WaitForComplete(fResult);
 
@@ -2216,6 +2217,7 @@ CRPCResultPtr CSnRPCMod::SnRPCListFork(CRPCParamPtr param)
 
 CRPCResultPtr CSnRPCMod::SnRPCGetBlockLocation(CRPCParamPtr param)
 {
+    walleve::CIOCompletion ioComplt;
     auto spParam = CastParamPtr<CGetBlockLocationParam>(param);
     CMvEventRPCRouteGetBlockLocation* pEvent = new CMvEventRPCRouteGetBlockLocation("");
     pEvent->data.ioComplt = &ioComplt;
@@ -2225,8 +2227,8 @@ CRPCResultPtr CSnRPCMod::SnRPCGetBlockLocation(CRPCParamPtr param)
     {
         return NULL;
     }
-    pDbpService->PostEvent(pEvent);
     ioComplt.Reset();
+    pDbpService->PostEvent(pEvent);
     bool fResult = false;
     ioComplt.WaitForComplete(fResult);
 
@@ -2244,6 +2246,7 @@ CRPCResultPtr CSnRPCMod::SnRPCGetBlockLocation(CRPCParamPtr param)
 
 CRPCResultPtr CSnRPCMod::SnRPCGetBlockCount(CRPCParamPtr param)
 {
+    walleve::CIOCompletion ioComplt;
     auto spParam = CastParamPtr<CGetBlockCountParam>(param);
     auto* pEvent = new CMvEventRPCRouteGetBlockCount("");
     pEvent->data.ioComplt = &ioComplt;
@@ -2253,8 +2256,8 @@ CRPCResultPtr CSnRPCMod::SnRPCGetBlockCount(CRPCParamPtr param)
     {
         return NULL;
     }
-    pDbpService->PostEvent(pEvent);
     ioComplt.Reset();
+    pDbpService->PostEvent(pEvent);
     bool fResult = false;
     ioComplt.WaitForComplete(fResult);
 
@@ -2278,6 +2281,7 @@ CRPCResultPtr CSnRPCMod::SnRPCGetBlockCount(CRPCParamPtr param)
 
 CRPCResultPtr CSnRPCMod::SnRPCGetBlockHash(CRPCParamPtr param)
 {
+    walleve::CIOCompletion ioComplt;
     auto spParam = CastParamPtr<CGetBlockHashParam>(param);
     auto* pEvent = new CMvEventRPCRouteGetBlockHash("");
     pEvent->data.ioComplt = &ioComplt;
@@ -2288,8 +2292,8 @@ CRPCResultPtr CSnRPCMod::SnRPCGetBlockHash(CRPCParamPtr param)
     {
         return NULL;
     }
-    pDbpService->PostEvent(pEvent);
     ioComplt.Reset();
+    pDbpService->PostEvent(pEvent);
     bool fResult = false;
     ioComplt.WaitForComplete(fResult);
 
@@ -2322,6 +2326,7 @@ CRPCResultPtr CSnRPCMod::SnRPCGetBlockHash(CRPCParamPtr param)
 
 CRPCResultPtr CSnRPCMod::SnRPCGetBlock(CRPCParamPtr param)
 {
+    walleve::CIOCompletion ioComplt;
     auto spParam = CastParamPtr<CGetBlockParam>(param);
     auto* pEvent = new CMvEventRPCRouteGetBlock("");
     pEvent->data.ioComplt = &ioComplt;
@@ -2331,8 +2336,8 @@ CRPCResultPtr CSnRPCMod::SnRPCGetBlock(CRPCParamPtr param)
     {
         return NULL;
     }
-    pDbpService->PostEvent(pEvent);
     ioComplt.Reset();
+    pDbpService->PostEvent(pEvent);
     bool fResult = false;
     ioComplt.WaitForComplete(fResult);
 

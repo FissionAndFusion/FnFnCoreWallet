@@ -118,7 +118,7 @@ public:
         DBP_RPCROUTE_GET_BLOCK_LOCATION = 3,
         DBP_RPCROUTE_GET_BLOCK_COUNT = 4,
         DBP_RPCROUTE_GET_BLOCK_HASH = 5,
-        DBP_RPCROUTE_GET_BLOCK = 5,
+        DBP_RPCROUTE_GET_BLOCK = 6,
     };
 
     walleve::CIOCompletion *ioComplt;
