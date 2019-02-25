@@ -2294,9 +2294,9 @@ CRPCResultPtr CSnRPCMod::SnRPCGetBlockHash(CRPCParamPtr param)
     }
     ioCompltUntil.Reset();
     pDbpService->PostEvent(pEvent);
+
     bool fResult = false;
     ioCompltUntil.WaitForComplete(fResult);
-
     if(!fResult)
     {
         throw CRPCException(RPC_INVALID_PARAMETER, "Timeout");

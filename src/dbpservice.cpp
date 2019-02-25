@@ -1496,9 +1496,9 @@ void CDbpService::RPCRootHandle(CMvRPCRouteStop* data, CMvRPCRouteStopRet* ret)
 {
     if (ret == NULL)
     {
-        if (sessionCount == 0 && pIoComplt != NULL)
+        if (sessionCount == 0 && pIoCompltUntil != NULL)
         {
-            pIoComplt->Completed(false);
+            pIoCompltUntil->Completed(true);
             pService->Shutdown();
         }
     }
@@ -1854,7 +1854,7 @@ void CDbpService::RPCForkHandle(CMvRPCRouteStop* data, CMvRPCRouteStopRet* ret)
 {
     if (ret == NULL)
     {
-        if (sessionCount == 0 && pIoComplt == NULL)
+        if (sessionCount == 0)
         {
             CMvRPCRouteResult result;
             result.type = CMvRPCRoute::DBP_RPCROUTE_STOP;
@@ -2339,7 +2339,8 @@ void CDbpService::InitSessionCount()
 
 bool CDbpService::HandleEvent(CMvEventRPCRouteStop& event)
 {
-    pIoComplt = event.data.ioComplt;
+    event.data.type = CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK_HASH;
+    pIoCompltUntil = event.data.pIoCompltUntil;
     CMvRPCRouteStopRet stopRet;
     InsertQueCount(event.data.nNonce, stopRet);
 
@@ -2760,11 +2761,12 @@ void CDbpService::HandleRPCRoute(CMvEventDbpMethod& event)
         CMvRPCRouteStop stop;
         ssRaw >> stop;
         
-        if(pIoComplt)
+        if (fEnableSuperNode && !fEnableForkNode)
         {
             RPCRootHandle(&stop, NULL);
         }
-        else
+
+        if (fEnableSuperNode && fEnableForkNode)
         {
             RPCForkHandle(&stop, NULL);
         }
