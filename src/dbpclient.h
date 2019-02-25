@@ -61,6 +61,7 @@ public:
     IIOModule* pIOModule;
     CIOSSLOption optSSL;
     boost::asio::ip::tcp::endpoint epParentHost;
+    unsigned int nSessionTimeout;
     std::string strPrivateKey;
 };
 
@@ -68,10 +69,11 @@ class CDbpClientSocket
 {
 public:
     CDbpClientSocket(IIOModule* pIOModuleIn,const uint64 nNonceIn,
-                   CDbpClient* pDbpClientIn,CIOClient* pClientIn);
+                   CDbpClient* pDbpClientIn,CIOClient* pClientIn, CDbpClientProfile* pProfileIn);
     ~CDbpClientSocket();
 
     IIOModule* GetIOModule();
+    CDbpClientProfile* GetProfile() const;
     uint64 GetNonce();
     CNetHost GetHost();
     std::string GetSession() const;
@@ -106,6 +108,7 @@ protected:
     const uint64 nNonce;
     CDbpClient* pDbpClient;
     CIOClient* pClient;
+    CDbpClientProfile* pProfile;
 
     CWalleveBufStream ssRecv;
     CWalleveBufStream ssSend;
@@ -114,7 +117,7 @@ protected:
     bool IsReading;
 };
 
-class CMvSessionProfile
+class CDbpClientSessionProfile
 {
 public:
     CDbpClientSocket* pClientSocket;
@@ -160,12 +163,13 @@ protected:
             const CIOSSLOption& optSSL);
    
     void StartPingTimer(const std::string& session);
-    void SendPingHandler(const boost::system::error_code& err, const CMvSessionProfile& sessionProfile);
+    void SendPingHandler(const boost::system::error_code& err, const CDbpClientSessionProfile& sessionProfile);
     void CreateSession(const std::string& session, CDbpClientSocket* pClientSocket);
     bool HaveAssociatedSessionOf(CDbpClientSocket* pClientSocket);
-    bool IsSessionExist(const std::string& session);  
+    bool IsSessionExist(const std::string& session);
+    bool IsSessionTimeout(CDbpClientSocket* pClientSocket);  
 
-    bool ActivateConnect(CIOClient* pClient);
+    bool ActivateConnect(CIOClient* pClient, CDbpClientProfile* pProfile);
     void CloseConnect(CDbpClientSocket* pClientSocket);
     void RemoveSession(CDbpClientSocket* pClientSocket);
     void RemoveClientSocket(CDbpClientSocket* pClientSocket);
@@ -179,7 +183,7 @@ protected:
     typedef boost::bimap<std::string, CDbpClientSocket*> SessionClientSocketBimapType;
     typedef SessionClientSocketBimapType::value_type position_pair;
     SessionClientSocketBimapType bimapSessionClientSocket;      // session id <=> CDbpClientSocket
-    std::map<std::string, CMvSessionProfile> mapSessionProfile; // session id => session profile
+    std::map<std::string, CDbpClientSessionProfile> mapSessionProfile; // session id => session profile
 
 
 private:
