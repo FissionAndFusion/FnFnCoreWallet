@@ -925,7 +925,7 @@ void CDbpServer::SendPingHandler(const boost::system::error_code& err, const CSe
 
     if(IsSessionTimeOut(sessionProfile.pDbpClient))
     {
-        std::cerr << "######### session time out ############\n";
+        std::cerr << "######### dbp server session time out ############\n";
         HandleClientError(sessionProfile.pDbpClient);
         return;
     }
