@@ -28,12 +28,14 @@ class CDbpClientConfig
 public:
     CDbpClientConfig(){}
     CDbpClientConfig(const boost::asio::ip::tcp::endpoint& epParentHostIn,
+                    unsigned int nSessionTimeoutIn,
                     const std::string& strPrivateKeyIn,
                     const CIOSSLOption& optSSLIn, 
                     const std::string& strIOModuleIn,
                     bool enableForkNode,
                     bool enableSuperNode)
     : epParentHost(epParentHostIn),
+      nSessionTimeout(nSessionTimeoutIn),
       strPrivateKey(strPrivateKeyIn),
       optSSL(optSSLIn),
       strIOModule(strIOModuleIn),
@@ -43,6 +45,7 @@ public:
     }
 public:
     boost::asio::ip::tcp::endpoint epParentHost;
+    unsigned int nSessionTimeout;
     std::string strPrivateKey;
     CIOSSLOption optSSL;
     std::string strIOModule;
