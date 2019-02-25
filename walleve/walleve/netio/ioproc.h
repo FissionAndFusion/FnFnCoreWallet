@@ -47,6 +47,25 @@ protected:
     bool fAborted;
 };
 
+class CIOCompletionUntil
+{
+public:
+    boost::any obj;
+public:
+    CIOCompletionUntil(int nTimeout);
+    bool WaitForComplete(bool& fResultRet);
+    void Completed(bool fResultIn);
+    void Abort();
+    void Reset();
+protected:
+    boost::condition_variable_any cond;
+    boost::mutex mutex;
+    int nTimeout; // microsecond
+    bool fResult;
+    bool fCompleted;
+    bool fAborted;
+};
+
 class CIOProc : public IIOProc
 {
     friend class CIOOutBound;
