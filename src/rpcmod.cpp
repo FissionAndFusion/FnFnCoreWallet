@@ -2150,37 +2150,49 @@ uint64 CSnRPCMod::GenNonce()
 
 CRPCResultPtr CSnRPCMod::SnRPCStop(CRPCParamPtr param)
 {
-    walleve::CIOCompletion ioComplt;
+    walleve::CIOCompletionUntil ioCompltUntil(100000);
     CMvEventRPCRouteStop* pEvent = new CMvEventRPCRouteStop("");
-    pEvent->data.ioComplt = &ioComplt;
+    pEvent->data.pIoCompltUntil = &ioCompltUntil;
     pEvent->data.nNonce = GenNonce();
     if(!pEvent)
     {
         return NULL;
     }
-    ioComplt.Reset();
+    ioCompltUntil.Reset();
     pDbpService->PostEvent(pEvent);
+
     bool fResult = false;
-    ioComplt.WaitForComplete(fResult);
+    ioCompltUntil.WaitForComplete(fResult);
+    if(!fResult)
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Timeout");
+    }
+
     std::string reason = "[supernode]multiverse server stopping";
     return MakeCStopResultPtr(reason);
 }
 
 CRPCResultPtr CSnRPCMod::SnRPCGetForkCount(CRPCParamPtr param)
 {
-    walleve::CIOCompletion ioComplt;
+    walleve::CIOCompletionUntil ioCompltUntil(10000);
     CMvEventRPCRouteGetForkCount* pEvent = new CMvEventRPCRouteGetForkCount("");
-    pEvent->data.ioComplt = &ioComplt;
+    pEvent->data.pIoCompltUntil = &ioCompltUntil;
     pEvent->data.nNonce = GenNonce();
     if(!pEvent)
     {
         return NULL;
     }
-    ioComplt.Reset();
+    ioCompltUntil.Reset();
     pDbpService->PostEvent(pEvent);
+
     bool fResult = false;
-    ioComplt.WaitForComplete(fResult);
-    CMvRPCRouteGetForkCountRet ret = boost::any_cast<CMvRPCRouteGetForkCountRet>(ioComplt.obj);
+    ioCompltUntil.WaitForComplete(fResult);
+    if(!fResult)
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Timeout");
+    }
+
+    CMvRPCRouteGetForkCountRet ret = boost::any_cast<CMvRPCRouteGetForkCountRet>(ioCompltUntil.obj);
     return MakeCGetForkCountResultPtr(ret.count);
 }
 
