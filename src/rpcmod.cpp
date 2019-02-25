@@ -2281,10 +2281,10 @@ CRPCResultPtr CSnRPCMod::SnRPCGetBlockCount(CRPCParamPtr param)
 
 CRPCResultPtr CSnRPCMod::SnRPCGetBlockHash(CRPCParamPtr param)
 {
-    walleve::CIOCompletion ioComplt;
+    walleve::CIOCompletionUntil ioCompltUntil(10000);
     auto spParam = CastParamPtr<CGetBlockHashParam>(param);
     auto* pEvent = new CMvEventRPCRouteGetBlockHash("");
-    pEvent->data.ioComplt = &ioComplt;
+    pEvent->data.pIoCompltUntil = &ioCompltUntil;
     pEvent->data.nNonce = GenNonce();
     pEvent->data.height = spParam->nHeight;
     pEvent->data.strFork = spParam->strFork;
@@ -2292,16 +2292,20 @@ CRPCResultPtr CSnRPCMod::SnRPCGetBlockHash(CRPCParamPtr param)
     {
         return NULL;
     }
-    ioComplt.Reset();
+    ioCompltUntil.Reset();
     pDbpService->PostEvent(pEvent);
     bool fResult = false;
-    ioComplt.WaitForComplete(fResult);
+    ioCompltUntil.WaitForComplete(fResult);
 
-    auto ret = boost::any_cast<CMvRPCRouteGetBlockHashRet>(ioComplt.obj);
+    if(!fResult)
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Timeout");
+    }
+
+    auto ret = boost::any_cast<CMvRPCRouteGetBlockHashRet>(ioCompltUntil.obj);
     int height = 0;
     if (ret.exception == 0)
     {
-        // hash = ret.strHash;
     }
     else if (ret.exception == 1)
     {

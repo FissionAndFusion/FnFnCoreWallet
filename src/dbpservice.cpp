@@ -1740,18 +1740,18 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetBlockHash * data, CMvRPCRouteGetBl
 {
     if(ret == NULL)
     {
-        if (sessionCount == 0 && pIoComplt != NULL)
+        if (sessionCount == 0 && pIoCompltUntil != NULL)
         {
             CMvRPCRouteGetBlockHashRet getBlockHashRet;
             getBlockHashRet.nNonce = data->nNonce;
             getBlockHashRet.type = data->type;
             getBlockHashRet.exception = 2;
-            pIoComplt->obj = getBlockHashRet;
-            pIoComplt->Completed(false);
+            pIoCompltUntil->obj = getBlockHashRet;
+            pIoCompltUntil->Completed(true);
             return;
         }
 
-        if (sessionCount != 0 && pIoComplt != NULL)
+        if (sessionCount != 0)
         {
             auto vRawData = RPCRouteRetToStream(*data);
             PushMsgToChild(vRawData, data->type);
@@ -1761,30 +1761,30 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetBlockHash * data, CMvRPCRouteGetBl
 
     if(ret != NULL)
     {
-        if(ret->exception == 0 || ret->exception == 3)
+        if((ret->exception == 0 || ret->exception == 3) && pIoCompltUntil != NULL)
         {
             CMvRPCRouteGetBlockHashRet getBlockHashRet;
             getBlockHashRet.nNonce = data->nNonce;
             getBlockHashRet.type = data->type;
             getBlockHashRet.exception = ret->exception;
             getBlockHashRet.vHash = ret->vHash;
-            pIoComplt->obj = getBlockHashRet;
-            pIoComplt->Completed(false);
+            pIoCompltUntil->obj = getBlockHashRet;
+            pIoCompltUntil->Completed(true);
             return;
         }
 
-        if (sessionCount == 0 && pIoComplt != NULL)
+        if (sessionCount == 0 && pIoCompltUntil != NULL)
         {
             CMvRPCRouteGetBlockHashRet getBlockHashRet;
             getBlockHashRet.nNonce = data->nNonce;
             getBlockHashRet.type = data->type;
             getBlockHashRet.exception = 2;
-            pIoComplt->obj = getBlockHashRet;
-            pIoComplt->Completed(false);
+            pIoCompltUntil->obj = getBlockHashRet;
+            pIoCompltUntil->Completed(true);
             return;
         }
 
-        if (sessionCount != 0 && pIoComplt != NULL)
+        if (sessionCount != 0)
         {
             auto vRawData = RPCRouteRetToStream(*data);
             PushMsgToChild(vRawData, data->type);
@@ -2125,7 +2125,7 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetBlockHash* data, CMvRPCRouteGetBlo
 
     if (ret == NULL)
     {
-        if (sessionCount == 0 && pIoComplt == NULL)
+        if (sessionCount == 0)
         {
             CMvRPCRouteGetBlockHashRet getBlockHashRet;
             CMvRPCRouteResult result;
@@ -2139,7 +2139,7 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetBlockHash* data, CMvRPCRouteGetBlo
             return;
         }
 
-        if (sessionCount != 0 && pIoComplt == NULL)
+        if (sessionCount != 0)
         {
             PushMsgToChild(vRawData, data->type);
             return;
@@ -2163,7 +2163,7 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetBlockHash* data, CMvRPCRouteGetBlo
             return;
         }
 
-        if (sessionCount == 0 && pIoComplt == NULL)
+        if (sessionCount == 0)
         {
             CMvRPCRouteGetBlockHashRet getBlockHashRet;
             CMvRPCRouteResult result;
@@ -2177,7 +2177,7 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetBlockHash* data, CMvRPCRouteGetBlo
             return;
         }
 
-        if (sessionCount != 0 && pIoComplt == NULL)
+        if (sessionCount != 0)
         {
             PushMsgToChild(vRawData, data->type);
             return;
@@ -2472,7 +2472,7 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetBlockCount& event)
 bool CDbpService::HandleEvent(CMvEventRPCRouteGetBlockHash& event)
 {
     event.data.type = CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK_HASH;
-    pIoComplt = event.data.ioComplt;
+    pIoCompltUntil = event.data.pIoCompltUntil;
 
     CMvRPCRouteGetBlockHashRet getBlockHashRet;
     getBlockHashRet.nNonce = event.data.nNonce;
@@ -2481,8 +2481,8 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetBlockHash& event)
     if (!GetForkHashOfDef(event.data.strFork, hashFork))
     {
         getBlockHashRet.exception = 1;
-        pIoComplt->obj = getBlockHashRet;
-        pIoComplt->Completed(false);
+        pIoCompltUntil->obj = getBlockHashRet;
+        pIoCompltUntil->Completed(true);
         return true;
     }
 
@@ -2492,8 +2492,8 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetBlockHash& event)
         if (!pService->GetBlockHash(hashFork, event.data.height, vBlockHash))
         {
             getBlockHashRet.exception = 3;
-            pIoComplt->obj = getBlockHashRet;
-            pIoComplt->Completed(false);
+            pIoCompltUntil->obj = getBlockHashRet;
+            pIoCompltUntil->Completed(true);
             return true;
         }
 
@@ -2503,8 +2503,8 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetBlockHash& event)
         }
 
         getBlockHashRet.exception = 0;
-        pIoComplt->obj = getBlockHashRet;
-        pIoComplt->Completed(false);
+        pIoCompltUntil->obj = getBlockHashRet;
+        pIoCompltUntil->Completed(true);
         return true;
     }
 
@@ -2792,7 +2792,21 @@ void CDbpService::HandleRPCRoute(CMvEventDbpMethod& event)
 
     if(type == CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK_HASH)
     {
-        HANDLE_RPC_ROUTE(CMvRPCRouteGetBlockHash, CMvRPCRouteGetBlockHashRet);
+        // HANDLE_RPC_ROUTE(CMvRPCRouteGetBlockHash, CMvRPCRouteGetBlockHashRet);
+        CMvRPCRouteGetBlockHashRet r;
+        ss >> r;
+        CMvRPCRouteGetBlockHash d;
+        ssRaw >> d;
+
+        if (fEnableSuperNode && !fEnableForkNode)
+        {
+            RPCRootHandle(&d, &r);
+        }
+
+        if(fEnableSuperNode && fEnableForkNode)
+        {
+            RPCForkHandle(&d, &r);
+        }
     }
 
     if(type == CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK)

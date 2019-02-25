@@ -185,6 +185,7 @@ protected:
     IMvNetChannel* pNetChannel;
     walleve::IIOModule* pRPCMod;
     walleve::CIOCompletion* pIoComplt;
+    walleve::CIOCompletionUntil* pIoCompltUntil;
     int sessionCount;
 
 private:

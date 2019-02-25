@@ -122,6 +122,7 @@ public:
     };
 
     walleve::CIOCompletion *ioComplt;
+    walleve::CIOCompletionUntil *pIoCompltUntil;
     int type;
     uint64 nNonce;
 
