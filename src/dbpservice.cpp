@@ -36,7 +36,7 @@ CDbpService::CDbpService()
 
     fEnableSuperNode = false;
     fEnableForkNode = false;
-    pIoComplt = NULL;
+    pIoCompltUntil = NULL;
     sessionCount = 0;
 }
 
@@ -1807,7 +1807,7 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetBlock* data, CMvRPCRouteGetBlockRe
             return;
         }
 
-        if (sessionCount != 0 && pIoComplt != NULL)
+        if (sessionCount != 0)
         {
             PushMsgToChild(vRawData, data->type);
             return;
@@ -1837,7 +1837,7 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetBlock* data, CMvRPCRouteGetBlockRe
             return;
         }
 
-        if (sessionCount != 0 && pIoComplt != NULL)
+        if (sessionCount != 0)
         {
             PushMsgToChild(vRawData, data->type);
             return;
@@ -2064,7 +2064,7 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetBlockCount* data, CMvRPCRouteGetBl
 
     if (ret == NULL)
     {
-        if (sessionCount == 0 && pIoComplt == NULL)
+        if (sessionCount == 0)
         {
             CMvRPCRouteGetBlockCountRet getBlockCountRet;
             CMvRPCRouteResult result;
@@ -2079,7 +2079,7 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetBlockCount* data, CMvRPCRouteGetBl
             return;
         }
 
-        if (sessionCount != 0 && pIoComplt == NULL)
+        if (sessionCount != 0)
         {
             PushMsgToChild(vRawData, data->type);
             return;
@@ -2103,7 +2103,7 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetBlockCount* data, CMvRPCRouteGetBl
             return;
         }
 
-        if (sessionCount == 0 && pIoComplt == NULL)
+        if (sessionCount == 0)
         {
             CMvRPCRouteGetBlockCountRet getBlockCountRet;
             CMvRPCRouteResult result;
@@ -2118,7 +2118,7 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetBlockCount* data, CMvRPCRouteGetBl
             return;
         }
 
-        if (sessionCount != 0 && pIoComplt == NULL)
+        if (sessionCount != 0)
         {
             PushMsgToChild(vRawData, data->type);
             return;

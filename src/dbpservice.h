@@ -187,7 +187,6 @@ protected:
     IWallet* pWallet;
     IMvNetChannel* pNetChannel;
     walleve::IIOModule* pRPCMod;
-    walleve::CIOCompletion* pIoComplt;
     walleve::CIOCompletionUntil* pIoCompltUntil;
     int sessionCount;
 
