@@ -2198,22 +2198,27 @@ CRPCResultPtr CSnRPCMod::SnRPCGetForkCount(CRPCParamPtr param)
 
 CRPCResultPtr CSnRPCMod::SnRPCListFork(CRPCParamPtr param)
 {
-    walleve::CIOCompletion ioComplt;
+    walleve::CIOCompletionUntil ioCompltUntil(20000);
     auto spParam = CastParamPtr<CListForkParam>(param);
     CMvEventRPCRouteListFork* pEvent = new CMvEventRPCRouteListFork("");
-    pEvent->data.ioComplt = &ioComplt;
+    pEvent->data.pIoCompltUntil = &ioCompltUntil;
     pEvent->data.nNonce = GenNonce();
     pEvent->data.fAll = spParam->fAll;
     if(!pEvent)
     {
         return NULL;
     }
-    ioComplt.Reset();
+    ioCompltUntil.Reset();
     pDbpService->PostEvent(pEvent);
-    bool fResult = false;
-    ioComplt.WaitForComplete(fResult);
 
-    CMvRPCRouteListForkRet ret = boost::any_cast<CMvRPCRouteListForkRet>(ioComplt.obj);
+    bool fResult = false;
+    ioCompltUntil.WaitForComplete(fResult);
+    if(!fResult)
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Timeout");
+    }
+
+    CMvRPCRouteListForkRet ret = boost::any_cast<CMvRPCRouteListForkRet>(ioCompltUntil.obj);
     auto vFork = ret.vFork;
     auto spResult = MakeCListForkResultPtr();
     for (size_t i = 0; i < vFork.size(); i++)

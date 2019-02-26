@@ -1580,7 +1580,7 @@ void CDbpService::RPCRootHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRe
 {
     if(ret == NULL)
     {
-       if (sessionCount == 0 && pIoComplt != NULL)
+       if (sessionCount == 0 && pIoCompltUntil != NULL)
         {
             CMvRPCRouteListForkRet ret;
             std::vector<std::pair<uint256,CProfile>> vFork;
@@ -1588,8 +1588,8 @@ void CDbpService::RPCRootHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRe
             std::vector<CMvRPCProfile> vRpcFork;
             SwrapForks(vFork, vRpcFork);
             ret.vFork.insert(ret.vFork.end(), vRpcFork.begin(), vRpcFork.end());
-            pIoComplt->obj = ret;
-            pIoComplt->Completed(false);
+            pIoCompltUntil->obj = ret;
+            pIoCompltUntil->Completed(true);
         }
         return;
     }
@@ -1609,7 +1609,7 @@ void CDbpService::RPCRootHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRe
             vTempFork.insert(vTempFork.end(), vForkSelf.begin(), vForkSelf.end());
         }
 
-        if (sessionCount == 0 && pIoComplt != NULL)
+        if (sessionCount == 0 && pIoCompltUntil != NULL)
         {
             CMvRPCRouteListForkRet retOut;
             std::vector<std::pair<uint256, CProfile>> vFork;
@@ -1619,8 +1619,8 @@ void CDbpService::RPCRootHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRe
             retOut.vFork.insert(retOut.vFork.end(), vTempFork.begin(), vTempFork.end());
             retOut.vFork.insert(retOut.vFork.end(), vRpcFork.begin(), vRpcFork.end());
             ListForkUnique(retOut.vFork);
-            pIoComplt->obj = retOut;
-            pIoComplt->Completed(false);
+            pIoCompltUntil->obj = retOut;
+            pIoCompltUntil->Completed(true);
         }
         return;
     }
@@ -1942,7 +1942,7 @@ void CDbpService::RPCForkHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRe
 {
     if(ret == NULL)
     {
-        if (sessionCount == 0 && pIoComplt == NULL)
+        if (sessionCount == 0)
         {
             CMvRPCRouteResult result;
             result.type = CMvRPCRoute::DBP_RPCROUTE_LIST_FORK;
@@ -1979,7 +1979,7 @@ void CDbpService::RPCForkHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRe
             vTempFork.insert(vTempFork.end(), vForkSelf.begin(), vForkSelf.end());
         }
 
-        if (sessionCount == 0 && pIoComplt == NULL)
+        if (sessionCount == 0)
         {
             CMvRPCRouteResult result;
             result.type = CMvRPCRoute::DBP_RPCROUTE_LIST_FORK;
@@ -2398,7 +2398,8 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetForkCount& event)
 
 bool CDbpService::HandleEvent(CMvEventRPCRouteListFork& event)
 {
-    pIoComplt = event.data.ioComplt;
+    event.data.type = CMvRPCRoute::DBP_RPCROUTE_LIST_FORK;
+    pIoCompltUntil = event.data.pIoCompltUntil;
     CMvRPCRouteListForkRet listForkRet;
     InsertQueCount(event.data.nNonce, listForkRet);
 
@@ -2818,7 +2819,21 @@ void CDbpService::HandleRPCRoute(CMvEventDbpMethod& event)
 
     if(type == CMvRPCRoute::DBP_RPCROUTE_LIST_FORK)
     {
-        HANDLE_RPC_ROUTE(CMvRPCRouteListFork, CMvRPCRouteListForkRet);
+        // HANDLE_RPC_ROUTE(CMvRPCRouteListFork, CMvRPCRouteListForkRet);
+        CMvRPCRouteListFork stop;
+        ssRaw >> stop;
+        CMvRPCRouteListForkRet stopRet;
+        ss >> stopRet;
+        
+        if (fEnableSuperNode && !fEnableForkNode)
+        {
+            RPCRootHandle(&stop, &stopRet);
+        }
+
+        if (fEnableSuperNode && fEnableForkNode)
+        {
+            RPCForkHandle(&stop, &stopRet);
+        }
     }
 
     if(type == CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK_LOCATION)
