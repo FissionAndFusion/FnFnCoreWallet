@@ -137,6 +137,7 @@ private:
     void HandleRPCRoute(CMvEventDbpMethod& event);
     void PushRPC(std::vector<uint8>& data, int type);
     void PushRPCOnece(std::string id, std::vector<uint8>& data, int type);
+    void Completion(CIOCompletionUntil *ioCompltUntil, boost::any obj);
     void InitRPCTopicIds();
     void InitSessionCount();
     void InsertQueCount(uint64 nNonce, boost::any obj);

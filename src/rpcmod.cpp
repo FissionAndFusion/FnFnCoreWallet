@@ -2150,7 +2150,7 @@ uint64 CSnRPCMod::GenNonce()
 
 CRPCResultPtr CSnRPCMod::SnRPCStop(CRPCParamPtr param)
 {
-    walleve::CIOCompletionUntil ioCompltUntil(100000);
+    walleve::CIOCompletionUntil ioCompltUntil(200000);
     CMvEventRPCRouteStop* pEvent = new CMvEventRPCRouteStop("");
     pEvent->data.pIoCompltUntil = &ioCompltUntil;
     pEvent->data.nNonce = GenNonce();
@@ -2174,7 +2174,7 @@ CRPCResultPtr CSnRPCMod::SnRPCStop(CRPCParamPtr param)
 
 CRPCResultPtr CSnRPCMod::SnRPCGetForkCount(CRPCParamPtr param)
 {
-    walleve::CIOCompletionUntil ioCompltUntil(10000);
+    walleve::CIOCompletionUntil ioCompltUntil(200000);
     CMvEventRPCRouteGetForkCount* pEvent = new CMvEventRPCRouteGetForkCount("");
     pEvent->data.pIoCompltUntil = &ioCompltUntil;
     pEvent->data.nNonce = GenNonce();
@@ -2198,7 +2198,7 @@ CRPCResultPtr CSnRPCMod::SnRPCGetForkCount(CRPCParamPtr param)
 
 CRPCResultPtr CSnRPCMod::SnRPCListFork(CRPCParamPtr param)
 {
-    walleve::CIOCompletionUntil ioCompltUntil(20000);
+    walleve::CIOCompletionUntil ioCompltUntil(200000);
     auto spParam = CastParamPtr<CListForkParam>(param);
     CMvEventRPCRouteListFork* pEvent = new CMvEventRPCRouteListFork("");
     pEvent->data.pIoCompltUntil = &ioCompltUntil;
@@ -2234,22 +2234,27 @@ CRPCResultPtr CSnRPCMod::SnRPCListFork(CRPCParamPtr param)
 
 CRPCResultPtr CSnRPCMod::SnRPCGetBlockLocation(CRPCParamPtr param)
 {
-    walleve::CIOCompletion ioComplt;
+    walleve::CIOCompletionUntil ioCompltUntil(200000);
     auto spParam = CastParamPtr<CGetBlockLocationParam>(param);
     CMvEventRPCRouteGetBlockLocation* pEvent = new CMvEventRPCRouteGetBlockLocation("");
-    pEvent->data.ioComplt = &ioComplt;
+    pEvent->data.pIoCompltUntil = &ioCompltUntil;
     pEvent->data.nNonce = GenNonce();
     pEvent->data.strBlock = spParam->strBlock;
     if(!pEvent)
     {
         return NULL;
     }
-    ioComplt.Reset();
+    ioCompltUntil.Reset();
     pDbpService->PostEvent(pEvent);
-    bool fResult = false;
-    ioComplt.WaitForComplete(fResult);
 
-    CMvRPCRouteGetBlockLocationRet ret = boost::any_cast<CMvRPCRouteGetBlockLocationRet>(ioComplt.obj);
+    bool fResult = false;
+    ioCompltUntil.WaitForComplete(fResult);
+    if(!fResult)
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Timeout");
+    }
+
+    CMvRPCRouteGetBlockLocationRet ret = boost::any_cast<CMvRPCRouteGetBlockLocationRet>(ioCompltUntil.obj);
     if (ret.strFork.empty())
     {
         throw CRPCException(RPC_INVALID_PARAMETER, "Unknown block");
@@ -2298,7 +2303,7 @@ CRPCResultPtr CSnRPCMod::SnRPCGetBlockCount(CRPCParamPtr param)
 
 CRPCResultPtr CSnRPCMod::SnRPCGetBlockHash(CRPCParamPtr param)
 {
-    walleve::CIOCompletionUntil ioCompltUntil(10000);
+    walleve::CIOCompletionUntil ioCompltUntil(200000);
     auto spParam = CastParamPtr<CGetBlockHashParam>(param);
     auto* pEvent = new CMvEventRPCRouteGetBlockHash("");
     pEvent->data.pIoCompltUntil = &ioCompltUntil;
