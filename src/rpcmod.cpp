@@ -2268,22 +2268,27 @@ CRPCResultPtr CSnRPCMod::SnRPCGetBlockLocation(CRPCParamPtr param)
 
 CRPCResultPtr CSnRPCMod::SnRPCGetBlockCount(CRPCParamPtr param)
 {
-    walleve::CIOCompletion ioComplt;
+    walleve::CIOCompletionUntil ioCompltUntil(200000);
     auto spParam = CastParamPtr<CGetBlockCountParam>(param);
     auto* pEvent = new CMvEventRPCRouteGetBlockCount("");
-    pEvent->data.ioComplt = &ioComplt;
+    pEvent->data.pIoCompltUntil = &ioCompltUntil;
     pEvent->data.nNonce = GenNonce();
     pEvent->data.strFork = spParam->strFork;
-    if(!pEvent)
+    if (!pEvent)
     {
         return NULL;
     }
-    ioComplt.Reset();
+    ioCompltUntil.Reset();
     pDbpService->PostEvent(pEvent);
-    bool fResult = false;
-    ioComplt.WaitForComplete(fResult);
 
-    auto ret = boost::any_cast<CMvRPCRouteGetBlockCountRet>(ioComplt.obj);
+    bool fResult = false;
+    ioCompltUntil.WaitForComplete(fResult);
+    if (!fResult)
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Timeout");
+    }
+
+    auto ret = boost::any_cast<CMvRPCRouteGetBlockCountRet>(ioCompltUntil.obj);
     uint256 hashFork;
     int height = 0;
     if (ret.exception == 0)
@@ -2352,22 +2357,27 @@ CRPCResultPtr CSnRPCMod::SnRPCGetBlockHash(CRPCParamPtr param)
 
 CRPCResultPtr CSnRPCMod::SnRPCGetBlock(CRPCParamPtr param)
 {
-    walleve::CIOCompletion ioComplt;
+    walleve::CIOCompletionUntil ioCompltUntil(200000);
     auto spParam = CastParamPtr<CGetBlockParam>(param);
     auto* pEvent = new CMvEventRPCRouteGetBlock("");
-    pEvent->data.ioComplt = &ioComplt;
+    pEvent->data.pIoCompltUntil = &ioCompltUntil;
     pEvent->data.nNonce = GenNonce();
     pEvent->data.hash = spParam->strBlock;
     if (!pEvent)
     {
         return NULL;
     }
-    ioComplt.Reset();
+    ioCompltUntil.Reset();
     pDbpService->PostEvent(pEvent);
-    bool fResult = false;
-    ioComplt.WaitForComplete(fResult);
 
-    auto ret = boost::any_cast<CMvRPCRouteGetBlockRet>(ioComplt.obj);
+    bool fResult = false;
+    ioCompltUntil.WaitForComplete(fResult);
+    if(!fResult)
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Timeout");
+    }
+
+    auto ret = boost::any_cast<CMvRPCRouteGetBlockRet>(ioCompltUntil.obj);
     if (ret.exception == 1)
     {
         throw CRPCException(RPC_INVALID_PARAMETER, "Unknown block");
