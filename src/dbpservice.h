@@ -28,11 +28,13 @@ using namespace network;
     ss >> r;                                                                   \
     data d;                                                                    \
     ssRaw >> d;                                                                \
-    if (pIoComplt)                                                             \
+                                                                               \
+    if (fEnableSuperNode && !fEnableForkNode)                                  \
     {                                                                          \
         RPCRootHandle(&d, &r);                                                 \
     }                                                                          \
-    else                                                                       \
+                                                                               \
+    if (fEnableSuperNode && fEnableForkNode)                                   \
     {                                                                          \
         RPCForkHandle(&d, &r);                                                 \
     }

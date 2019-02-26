@@ -2809,135 +2809,37 @@ void CDbpService::HandleRPCRoute(CMvEventDbpMethod& event)
 
     if (type == CMvRPCRoute::DBP_RPCROUTE_STOP)
     {
-        // HANDLE_RPC_ROUTE(CMvRPCRouteStop, CMvRPCRouteStopRet);
-        CMvRPCRouteStop stop;
-        ssRaw >> stop;
-        CMvRPCRouteStopRet stopRet;
-        ss >> stopRet;
-        
-        if (fEnableSuperNode && !fEnableForkNode)
-        {
-            RPCRootHandle(&stop, &stopRet);
-        }
-
-        if (fEnableSuperNode && fEnableForkNode)
-        {
-            RPCForkHandle(&stop, &stopRet);
-        }
+        HANDLE_RPC_ROUTE(CMvRPCRouteStop, CMvRPCRouteStopRet);
     }
 
     if (type == CMvRPCRoute::DBP_RPCROUTE_GET_FORK_COUNT)
     {
-        // HANDLE_RPC_ROUTE(CMvRPCRouteGetForkCount, CMvRPCRouteGetForkCountRet);
-        CMvRPCRouteGetForkCount stop;
-        ssRaw >> stop;
-        CMvRPCRouteGetForkCountRet stopRet;
-        ss >> stopRet;
-        
-        if (fEnableSuperNode && !fEnableForkNode)
-        {
-            RPCRootHandle(&stop, &stopRet);
-        }
-
-        if (fEnableSuperNode && fEnableForkNode)
-        {
-            RPCForkHandle(&stop, &stopRet);
-        }
+        HANDLE_RPC_ROUTE(CMvRPCRouteGetForkCount, CMvRPCRouteGetForkCountRet);
     }
 
     if(type == CMvRPCRoute::DBP_RPCROUTE_LIST_FORK)
     {
-        // HANDLE_RPC_ROUTE(CMvRPCRouteListFork, CMvRPCRouteListForkRet);
-        CMvRPCRouteListFork stop;
-        ssRaw >> stop;
-        CMvRPCRouteListForkRet stopRet;
-        ss >> stopRet;
-        
-        if (fEnableSuperNode && !fEnableForkNode)
-        {
-            RPCRootHandle(&stop, &stopRet);
-        }
-
-        if (fEnableSuperNode && fEnableForkNode)
-        {
-            RPCForkHandle(&stop, &stopRet);
-        }
+        HANDLE_RPC_ROUTE(CMvRPCRouteListFork, CMvRPCRouteListForkRet);
     }
 
     if(type == CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK_LOCATION)
     {
-        // HANDLE_RPC_ROUTE(CMvRPCRouteGetBlockLocation, CMvRPCRouteGetBlockLocationRet);
-        CMvRPCRouteGetBlockLocation stop;
-        ssRaw >> stop;
-        CMvRPCRouteGetBlockLocationRet stopRet;
-        ss >> stopRet;
-        
-        if (fEnableSuperNode && !fEnableForkNode)
-        {
-            RPCRootHandle(&stop, &stopRet);
-        }
-
-        if (fEnableSuperNode && fEnableForkNode)
-        {
-            RPCForkHandle(&stop, &stopRet);
-        }
+        HANDLE_RPC_ROUTE(CMvRPCRouteGetBlockLocation, CMvRPCRouteGetBlockLocationRet);
     }
 
     if (type == CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK_COUNT)
     {
-        // HANDLE_RPC_ROUTE(CMvRPCRouteGetBlockCount, CMvRPCRouteGetBlockCountRet);
-        CMvRPCRouteGetBlockCount stop;
-        ssRaw >> stop;
-        CMvRPCRouteGetBlockCountRet stopRet;
-        ss >> stopRet;
-        
-        if (fEnableSuperNode && !fEnableForkNode)
-        {
-            RPCRootHandle(&stop, &stopRet);
-        }
-
-        if (fEnableSuperNode && fEnableForkNode)
-        {
-            RPCForkHandle(&stop, &stopRet);
-        }
+        HANDLE_RPC_ROUTE(CMvRPCRouteGetBlockCount, CMvRPCRouteGetBlockCountRet);
     }
 
     if(type == CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK_HASH)
     {
-        // HANDLE_RPC_ROUTE(CMvRPCRouteGetBlockHash, CMvRPCRouteGetBlockHashRet);
-        CMvRPCRouteGetBlockHashRet r;
-        ss >> r;
-        CMvRPCRouteGetBlockHash d;
-        ssRaw >> d;
-
-        if (fEnableSuperNode && !fEnableForkNode)
-        {
-            RPCRootHandle(&d, &r);
-        }
-
-        if(fEnableSuperNode && fEnableForkNode)
-        {
-            RPCForkHandle(&d, &r);
-        }
+        HANDLE_RPC_ROUTE(CMvRPCRouteGetBlockHash, CMvRPCRouteGetBlockHashRet);
     }
 
     if(type == CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK)
     {
-        // HANDLE_RPC_ROUTE(CMvRPCRouteGetBlock, CMvRPCRouteGetBlockRet);
-        CMvRPCRouteGetBlock stop;
-        ssRaw >> stop;
-        CMvRPCRouteGetBlockRet stopRet;
-        ss >> stopRet;
-        
-        if (fEnableSuperNode && !fEnableForkNode)
-        {
-            RPCRootHandle(&stop, &stopRet);
-        }
-
-        if (fEnableSuperNode && fEnableForkNode)
-        {
-            RPCForkHandle(&stop, &stopRet);
-        }
+        HANDLE_RPC_ROUTE(CMvRPCRouteGetBlock, CMvRPCRouteGetBlockRet);
     }
 }
 
