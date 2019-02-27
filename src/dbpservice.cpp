@@ -2231,6 +2231,9 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetBlock* data, CMvRPCRouteGetBlockRe
         if(ret->exception == 0)
         {
             getBlockRet.exception = ret->exception;
+            getBlockRet.strFork = ret->strFork;
+            getBlockRet.height = ret->height;
+            getBlockRet.block = ret->block;
             result.vData = RPCRouteRetToStream(getBlockRet);
             SendRPCResult(result);
             return;
