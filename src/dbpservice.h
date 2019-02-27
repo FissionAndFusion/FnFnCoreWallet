@@ -37,9 +37,7 @@ public:
     bool HandleEvent(CMvEventDbpSub& event) override;
     bool HandleEvent(CMvEventDbpUnSub& event) override;
     bool HandleEvent(CMvEventDbpMethod& event) override;
-    bool HandleEvent(CMvEventDbpPong& event) override;
     bool HandleEvent(CMvEventDbpBroken& event) override;
-    bool HandleEvent(CMvEventDbpRemoveSession& event) override;
     
     // notify add msg(block tx ...) to event handler
     bool HandleEvent(CMvEventDbpUpdateNewBlock& event) override;
@@ -113,7 +111,14 @@ private:
     void RespondNoSub(CMvEventDbpSub& event);
     void RespondReady(CMvEventDbpSub& event);
 
+    void HandleDbpClientBroken(const std::string& session);
+    void HandleDbpServerBroken(const std::string& session);
+    
+    void CollectSessionSubForks(const std::string& session, const CMvEventPeerSubscribe& sub);
+    void CollectSessionUnSubForks(const std::string& session, const CMvEventPeerUnsubscribe& unsub);
 
+    void DeactiveNodeTree(const std::string& session);
+    void UnsubscribeChildNodeForks(const std::string& session);
 protected:
     walleve::IIOProc* pDbpServer;
     walleve::IIOProc* pDbpClient;
@@ -124,8 +129,6 @@ protected:
     IMvNetChannel* pNetChannel;
 
 private:
-    std::map<std::string, ForksType> mapSessionChildNodeForks; // session => child node forks
-
     std::map<std::string, std::string> mapIdSubedSession;       // id => session
     std::unordered_map<std::string, IdsType> mapTopicIds;       // topic => ids
 
@@ -135,13 +138,16 @@ private:
     bool fEnableSuperNode;
 
     
-    std::map<uint64, CMvDbpVirtualPeerNetEvent> mapPeerEvent;
+    std::map<uint64, CMvDbpVirtualPeerNetEvent> mapPeerEventActive;
 
     /*Event router*/
     typedef std::pair<uint256, uint64> ForkNonceKeyType;
-    std::map<ForkNonceKeyType, int> mapChildNodeForkCount;
-    std::map<ForkNonceKeyType, int> mapThisNodeForkCount;
-    std::map<ForkNonceKeyType, std::set<uint256>> mapThisNodeGetData; 
+    typedef std::map<ForkNonceKeyType, int> MapForkCountType; 
+    MapForkCountType mapChildNodeForkCount;
+    MapForkCountType mapThisNodeForkCount;
+    std::map<ForkNonceKeyType, std::set<uint256>> mapThisNodeGetData;
+
+    std::map<std::string, std::vector<ForkNonceKeyType>> mapSessionForkNonceKey; // session => vector ForkNonceKeyType
 };
 
 } // namespace multiverse

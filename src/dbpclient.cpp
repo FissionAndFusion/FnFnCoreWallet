@@ -23,11 +23,12 @@ namespace multiverse
 {
 
 CDbpClientSocket::CDbpClientSocket(IIOModule* pIOModuleIn,const uint64 nNonceIn,
-                   CDbpClient* pDbpClientIn,CIOClient* pClientIn)
+                   CDbpClient* pDbpClientIn,CIOClient* pClientIn, CDbpClientProfile* pProfileIn)
 : pIOModule(pIOModuleIn),
   nNonce(nNonceIn),
   pDbpClient(pDbpClientIn),
   pClient(pClientIn),
+  pProfile(pProfileIn),
   IsReading(false)
 {
     ssRecv.Clear();
@@ -44,6 +45,11 @@ CDbpClientSocket::~CDbpClientSocket()
 IIOModule* CDbpClientSocket::GetIOModule()
 {
     return pIOModule;
+}
+
+CDbpClientProfile* CDbpClientSocket::GetProfile() const
+{
+    return pProfile;
 }
     
 uint64 CDbpClientSocket::GetNonce()
@@ -205,6 +211,12 @@ void CDbpClientSocket::HandleWritenRequest(std::size_t nTransferred, dbp::Msg ty
     
 void CDbpClientSocket::HandleReadHeader(std::size_t nTransferred)
 {   
+    if(nTransferred == 0)
+    {
+        pDbpClient->HandleClientSocketError(this);
+        return;
+    }
+    
     if (nTransferred == MSG_HEADER_LEN)
     {
         std::string lenBuffer(ssRecv.GetData(), ssRecv.GetData() + MSG_HEADER_LEN);
@@ -225,8 +237,14 @@ void CDbpClientSocket::HandleReadHeader(std::size_t nTransferred)
     }
 }
     
-void CDbpClientSocket::HandleReadPayload(std::size_t nTransferred,uint32_t len)
+void CDbpClientSocket::HandleReadPayload(std::size_t nTransferred, uint32_t len)
 {
+    if(nTransferred == 0)
+    {
+        pDbpClient->HandleClientSocketError(this);
+        return;
+    }
+    
     if (nTransferred == len)
     {
         HandleReadCompleted(len);
@@ -306,11 +324,13 @@ CDbpClient::~CDbpClient() noexcept
 
 void CDbpClient::HandleClientSocketError(CDbpClientSocket* pClientSocket)
 {
-    std::cerr << "Client Socket Error." << std::endl; 
+    std::cerr << "Dbp Client Socket Error." << std::endl; 
     
     CMvEventDbpBroken *pEventDbpBroken = new CMvEventDbpBroken(pClientSocket->GetSession());
     if(pEventDbpBroken)
     {
+        pEventDbpBroken->data.session = pClientSocket->GetSession();
+        pEventDbpBroken->data.from = "dbpclient";
         pClientSocket->GetIOModule()->PostEvent(pEventDbpBroken);
     }
 
@@ -359,6 +379,12 @@ void CDbpClient::HandleClientSocketRecv(CDbpClientSocket* pClientSocket, const b
         {
             return;
         }
+
+        if(IsSessionTimeout(pClientSocket))
+        {
+            HandleClientSocketError(pClientSocket);
+            return;
+        }
         
         HandlePing(pClientSocket,&any);
     }
@@ -366,6 +392,12 @@ void CDbpClient::HandleClientSocketRecv(CDbpClientSocket* pClientSocket, const b
     {
         if(!HaveAssociatedSessionOf(pClientSocket))
         {
+            return;
+        }
+
+        if(IsSessionTimeout(pClientSocket))
+        {
+            HandleClientSocketError(pClientSocket);
             return;
         }
 
@@ -443,7 +475,7 @@ void CDbpClient::HandleFailed(CDbpClientSocket* pClientSocket, google::protobuf:
     
    
     auto epRemote = pClientSocket->GetHost().ToEndPoint();
-    RemoveClientSocket(pClientSocket);
+    HandleClientSocketError(pClientSocket);
     
     auto it = mapProfile.find(epRemote);
     if(it != mapProfile.end())
@@ -579,7 +611,7 @@ void CDbpClient::EnterLoop()
 void CDbpClient::LeaveLoop()
 {
     // destory resource
-    std::vector<CMvSessionProfile> vProfile;
+    std::vector<CDbpClientSessionProfile> vProfile;
     for(auto it = mapSessionProfile.begin(); it != mapSessionProfile.end(); ++it)
     {
         vProfile.push_back((*it).second);
@@ -605,7 +637,7 @@ bool CDbpClient::ClientConnected(CIOClient* pClient)
                        (*it).first.address().to_string().c_str(),
                        (*it).first.port());
 
-    return ActivateConnect(pClient);
+    return ActivateConnect(pClient, &(*it).second);
 }
 
 void CDbpClient::ClientFailToConnect(const boost::asio::ip::tcp::endpoint& epRemote)
@@ -657,6 +689,7 @@ bool CDbpClient::CreateProfile(const CDbpClientConfig& confClient)
     
     profile.strPrivateKey = confClient.strPrivateKey;
     profile.epParentHost = confClient.epParentHost;
+    profile.nSessionTimeout = confClient.nSessionTimeout;
     mapProfile[confClient.epParentHost] = profile;
 
     return true;
@@ -675,15 +708,17 @@ bool CDbpClient::StartConnection(const boost::asio::ip::tcp::endpoint& epRemote,
     }
 }
 
-void CDbpClient::SendPingHandler(const boost::system::error_code& err, const CMvSessionProfile& sessionProfile)
+void CDbpClient::SendPingHandler(const boost::system::error_code& err, const CDbpClientSessionProfile& sessionProfile)
 {
     if (err != boost::system::errc::success)
     {
         return;
     }
 
-    if(!HaveAssociatedSessionOf(sessionProfile.pClientSocket))
+    if(IsSessionTimeout(sessionProfile.pClientSocket))
     {
+        std::cerr << "######### dbp client session time out ############\n";
+        HandleClientSocketError(sessionProfile.pClientSocket);
         return;
     }
 
@@ -712,7 +747,7 @@ void CDbpClient::StartPingTimer(const std::string& session)
 
 void CDbpClient::CreateSession(const std::string& session, CDbpClientSocket* pClientSocket)
 {
-    CMvSessionProfile profile;
+    CDbpClientSessionProfile profile;
     profile.strSessionId = session;
     profile.nTimeStamp = CDbpUtils::CurrentUTC();
     profile.pClientSocket = pClientSocket;
@@ -733,9 +768,23 @@ bool CDbpClient::IsSessionExist(const std::string& session)
     return mapSessionProfile.find(session) != mapSessionProfile.end();
 }
 
-bool CDbpClient::ActivateConnect(CIOClient* pClient)
+bool CDbpClient::IsSessionTimeout(CDbpClientSocket* pClientSocket)
 {
-  
+     if (HaveAssociatedSessionOf(pClientSocket))
+    {
+        auto timeout = pClientSocket->GetProfile()->nSessionTimeout;
+        std::string assciatedSession = bimapSessionClientSocket.right.at(pClientSocket);
+        uint64 lastTimeStamp = mapSessionProfile[assciatedSession].nTimeStamp;
+        return (CDbpUtils::CurrentUTC() - lastTimeStamp > timeout) ? true : false;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+bool CDbpClient::ActivateConnect(CIOClient* pClient, CDbpClientProfile* pProfile)
+{
     uint64 nNonce = 0;
     RAND_bytes((unsigned char *)&nNonce, sizeof(nNonce));
     while (mapClientSocket.count(nNonce))
@@ -744,7 +793,7 @@ bool CDbpClient::ActivateConnect(CIOClient* pClient)
     }
     
     IIOModule* pIOModule = mapProfile[pClient->GetRemote()].pIOModule;
-    CDbpClientSocket* pDbpClientSocket = new CDbpClientSocket(pIOModule,nNonce,this,pClient);
+    CDbpClientSocket* pDbpClientSocket = new CDbpClientSocket(pIOModule,nNonce,this,pClient, pProfile);
     if(!pDbpClientSocket)
     {
         std::cerr << "Create Client Socket error\n";

@@ -306,6 +306,12 @@ bool CDbpServerSocket::IsSentComplete()
 
 void CDbpServerSocket::HandleReadHeader(std::size_t nTransferred)
 {
+    if(nTransferred == 0)
+    {
+        pServer->HandleClientError(this);
+        return;
+    }
+    
     if (nTransferred == MSG_HEADER_LEN)
     {
         std::string lenBuffer(ssRecv.GetData(), ssRecv.GetData() + MSG_HEADER_LEN);
@@ -328,6 +334,12 @@ void CDbpServerSocket::HandleReadHeader(std::size_t nTransferred)
 
 void CDbpServerSocket::HandleReadPayload(std::size_t nTransferred, uint32_t len)
 {
+    if(nTransferred == 0)
+    {
+        pServer->HandleClientError(this);
+        return;
+    }
+    
     if (nTransferred == len)
     {
         HandleReadCompleted(len);
@@ -455,12 +467,6 @@ void CDbpServer::HandleClientConnect(CDbpServerSocket* pDbpClient, google::proto
         std::string forkid = GetUdata(&connectMsg, "forkid");
         std::string client = connectMsg.client();
         CreateSession(session, client, forkid, pDbpClient);
-
-        std::string childNodeforks = GetUdata(&connectMsg,"supernode-forks");
-        auto forks = CDbpUtils::Split(childNodeforks,';');
-        std::for_each(forks.begin(),forks.end(),[&](const std::string& fork) -> void {
-            mapSessionProfile[pDbpClient->GetSession()].setChildForks.insert(fork); 
-        });
         
         CMvEventDbpConnect *pEventDbpConnect = new CMvEventDbpConnect(session);
         if (!pEventDbpConnect)
@@ -471,7 +477,6 @@ void CDbpServer::HandleClientConnect(CDbpServerSocket* pDbpClient, google::proto
         CMvDbpConnect& connectBody = pEventDbpConnect->data;
         connectBody.isReconnect = false;
         connectBody.session = session;
-        connectBody.forks = childNodeforks;
         connectBody.version = connectMsg.version();
         connectBody.client = connectMsg.client();
 
@@ -552,8 +557,6 @@ void CDbpServer::HandleClientMethod(CDbpServerSocket* pDbpClient, google::protob
 
     CMvDbpMethod& methodBody = pEventDbpMethod->data;
     methodBody.id = methodMsg.id();
-
-    std::cout << "[<] method " << methodMsg.method() << " [dbp server]\n";
     
     if (methodMsg.method() == "getblocks" && 
         methodMsg.params().Is<lws::GetBlocksArg>())
@@ -732,11 +735,13 @@ void CDbpServer::HandleClientSent(CDbpServerSocket* pDbpClient)
 
 void CDbpServer::HandleClientError(CDbpServerSocket* pDbpClient)
 {
-    std::cerr << "Client Error. " << std::endl;
+    std::cerr << "Dbp Server Socket Error. " << std::endl;
     
     CMvEventDbpBroken *pEventDbpBroken = new CMvEventDbpBroken(pDbpClient->GetSession());
     if(pEventDbpBroken)
     {
+        pEventDbpBroken->data.session = pDbpClient->GetSession();
+        pEventDbpBroken->data.from = "dbpserver";
         pDbpClient->GetProfile()->pIOModule->PostEvent(pEventDbpBroken);
     }
 
@@ -884,10 +889,6 @@ void CDbpServer::RemoveSession(CDbpServerSocket* pDbpClient)
         bimapSessionClient.right.erase(pDbpClient);
         mapSessionProfile[assciatedSession].ptrPingTimer->cancel();
         mapSessionProfile.erase(assciatedSession);
-
-        CMvEventDbpRemoveSession* pEvent = new CMvEventDbpRemoveSession("");
-        pEvent->data.session = assciatedSession;
-        pDbpClient->GetProfile()->pIOModule->PostEvent(pEvent);
     }
 }
 
@@ -924,8 +925,8 @@ void CDbpServer::SendPingHandler(const boost::system::error_code& err, const CSe
 
     if(IsSessionTimeOut(sessionProfile.pDbpClient))
     {
-        std::cerr << "######### session time out ############\n";
-        RemoveClient(sessionProfile.pDbpClient);
+        std::cerr << "######### dbp server session time out ############\n";
+        HandleClientError(sessionProfile.pDbpClient);
         return;
     }
 
@@ -978,7 +979,7 @@ bool CDbpServer::HandleEvent(CMvEventDbpFailed& event)
 
     pDbpClient->SendResponse(failedBody);
 
-    RemoveClient(pDbpClient);
+    HandleClientError(pDbpClient);
 
     return true;
 }
@@ -1140,18 +1141,6 @@ std::string CDbpServer::GetUdata(dbp::Connect* pConnect, const std::string& keyN
         else
             return std::string();
        
-    }
-
-    if(keyName == "supernode-forks")
-    {
-        std::string forks;
-        paramAny.UnpackTo(&forkidArg);
-        for(int i = 0; i < forkidArg.ids_size(); ++i)
-        {
-            forks.append(forkidArg.ids(i));
-            forks.append(";");
-        }
-        return std::string(forks.begin(),forks.end() - 1);    
     }
 
     return std::string();
