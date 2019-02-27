@@ -218,7 +218,7 @@ bool CWorldLine::GetLastBlockTime(const uint256& hashFork,int nDepth,vector<int6
     while (nDepth > 0 && pIndex != NULL)
     {
         vTime.push_back(pIndex->GetBlockTime());
-        if(pIndex->IsPrimary())
+        if(!pIndex->IsExtended())
         {
             nDepth--;
         }
