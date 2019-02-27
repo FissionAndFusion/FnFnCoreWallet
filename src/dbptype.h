@@ -119,6 +119,10 @@ public:
         DBP_RPCROUTE_GET_BLOCK_COUNT = 4,
         DBP_RPCROUTE_GET_BLOCK_HASH = 5,
         DBP_RPCROUTE_GET_BLOCK = 6,
+        DBP_RPCROUTE_GET_TXPOOL = 7,
+        DBP_RPCROUTE_GET_TRANSACTION = 8,
+        DBP_RPCROUTE_GET_FORK_HEIGHT = 9,
+        DBP_RPCROUTE_SEND_TRANSACTION = 10
     };
 
     walleve::CIOCompletion *ioComplt;
@@ -224,6 +228,66 @@ protected:
 };
 
 class CMvRPCRouteGetBlock : public CMvRPCRoute
+{
+    friend class walleve::CWalleveStream;
+public:
+    std::string hash;
+
+protected:
+    template<typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
+    {
+        CMvRPCRoute::WalleveSerialize(s, opt);
+        s.Serialize(hash, opt);
+    }
+};
+
+class CMvRPCRouteGetTxPool: public CMvRPCRoute
+{
+    friend class walleve::CWalleveStream;
+public:
+    std::string hash;
+
+protected:
+    template<typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
+    {
+        CMvRPCRoute::WalleveSerialize(s, opt);
+        s.Serialize(hash, opt);
+    }
+};
+
+class CMvRPCRouteGetTransaction: public CMvRPCRoute
+{
+    friend class walleve::CWalleveStream;
+public:
+    std::string hash;
+
+protected:
+    template<typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
+    {
+        CMvRPCRoute::WalleveSerialize(s, opt);
+        s.Serialize(hash, opt);
+    }
+};
+
+class CMvRPCRouteGetForkHeight : public CMvRPCRoute
+{
+    friend class walleve::CWalleveStream;
+public:
+    std::string hash;
+
+protected:
+    template<typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
+    {
+        CMvRPCRoute::WalleveSerialize(s, opt);
+        s.Serialize(hash, opt);
+    }
+};
+
+class CMvRPCRouteSendTransaction: public CMvRPCRoute
 {
     friend class walleve::CWalleveStream;
 public:
@@ -383,6 +447,90 @@ protected:
 };
 
 class CMvRPCRouteGetBlockRet : public CMvRPCRouteRet
+{
+    friend class walleve::CWalleveStream;
+public:
+    CBlock block;
+    int height;
+    std::string strFork;
+    int exception; // 0-nomal, 1-unknown block
+
+protected:
+    template<typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
+    {
+        CMvRPCRouteRet::WalleveSerialize(s, opt);
+        s.Serialize(block, opt);
+        s.Serialize(height, opt);
+        s.Serialize(strFork, opt);
+        s.Serialize(exception, opt);
+    }
+};
+
+class CMvRPCRouteGetTxPoolRet: public CMvRPCRouteRet
+{
+    friend class walleve::CWalleveStream;
+public:
+    CBlock block;
+    int height;
+    std::string strFork;
+    int exception; // 0-nomal, 1-unknown block
+
+protected:
+    template<typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
+    {
+        CMvRPCRouteRet::WalleveSerialize(s, opt);
+        s.Serialize(block, opt);
+        s.Serialize(height, opt);
+        s.Serialize(strFork, opt);
+        s.Serialize(exception, opt);
+    }
+};
+
+class CMvRPCRouteGetTransactionRet: public CMvRPCRouteRet
+{
+    friend class walleve::CWalleveStream;
+public:
+    CBlock block;
+    int height;
+    std::string strFork;
+    int exception; // 0-nomal, 1-unknown block
+
+protected:
+    template<typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
+    {
+        CMvRPCRouteRet::WalleveSerialize(s, opt);
+        s.Serialize(block, opt);
+        s.Serialize(height, opt);
+        s.Serialize(strFork, opt);
+        s.Serialize(exception, opt);
+    }
+};
+
+class CMvRPCRouteGetForkHeightRet: public CMvRPCRouteRet
+{
+    friend class walleve::CWalleveStream;
+public:
+    CBlock block;
+    int height;
+    std::string strFork;
+    int exception; // 0-nomal, 1-unknown block
+
+protected:
+    template<typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
+    {
+        CMvRPCRouteRet::WalleveSerialize(s, opt);
+        s.Serialize(block, opt);
+        s.Serialize(height, opt);
+        s.Serialize(strFork, opt);
+        s.Serialize(exception, opt);
+    }
+};
+
+class CMvRPCRouteSendTransactionRet : public CMvRPCRouteRet
 {
     friend class walleve::CWalleveStream;
 public:

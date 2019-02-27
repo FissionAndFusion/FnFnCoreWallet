@@ -130,6 +130,10 @@ public:
     virtual CRPCResultPtr SnRPCGetBlockCount(CRPCParamPtr param);
     virtual CRPCResultPtr SnRPCGetBlockHash(CRPCParamPtr param);
     virtual CRPCResultPtr SnRPCGetBlock(CRPCParamPtr param);
+    virtual CRPCResultPtr SnRPCGetTxPool(CRPCParamPtr param);
+    virtual CRPCResultPtr SnRPCGetTransaction(CRPCParamPtr param);
+    virtual CRPCResultPtr SnRPCGetForkHeight(CRPCParamPtr param);
+    virtual CRPCResultPtr SnRPCSendTransaction(CRPCParamPtr param);
 
 protected:
     walleve::IIOProc *pHttpServer;
@@ -152,6 +156,11 @@ public:
     CRPCResultPtr SnRPCGetBlockCount(CRPCParamPtr param) override;
     CRPCResultPtr SnRPCGetBlockHash(CRPCParamPtr param) override;
     CRPCResultPtr SnRPCGetBlock(CRPCParamPtr param) override;
+    CRPCResultPtr SnRPCGetTxPool(CRPCParamPtr param) override;
+    CRPCResultPtr SnRPCGetTransaction(CRPCParamPtr param) override;
+    CRPCResultPtr SnRPCGetForkHeight(CRPCParamPtr param) override;
+    CRPCResultPtr SnRPCSendTransaction(CRPCParamPtr param) override;
+
 
 protected:
     bool WalleveHandleInitialize() override;

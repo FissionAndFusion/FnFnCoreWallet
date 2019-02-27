@@ -2103,6 +2103,30 @@ CRPCResultPtr CRPCMod::SnRPCGetBlock(CRPCParamPtr param)
     return NULL;
 }
 
+CRPCResultPtr CRPCMod::SnRPCGetTxPool(CRPCParamPtr param)
+{
+    (void)param;
+    return NULL;
+}
+
+CRPCResultPtr CRPCMod::SnRPCGetTransaction(CRPCParamPtr param)
+{
+    (void)param;
+    return NULL;
+}
+
+CRPCResultPtr CRPCMod::SnRPCGetForkHeight(CRPCParamPtr param)
+{
+    (void)param;
+    return NULL;
+}
+
+CRPCResultPtr CRPCMod::SnRPCSendTransaction(CRPCParamPtr param)
+{
+    (void)param;
+    return NULL;
+}
+
 CSnRPCMod::CSnRPCMod()
 {
     mapRPCFunc["stop"] = &CRPCMod::SnRPCStop;
@@ -2112,6 +2136,10 @@ CSnRPCMod::CSnRPCMod()
     mapRPCFunc["getblockcount"] = &CRPCMod::SnRPCGetBlockCount;
     mapRPCFunc["getblockhash"] = &CRPCMod::SnRPCGetBlockHash;
     mapRPCFunc["getblock"] = &CRPCMod::SnRPCGetBlock;
+    mapRPCFunc["gettxpool"] = &CRPCMod::SnRPCGetTxPool;
+    // mapRPCFunc["gettransaction"] = &CRPCMod::SnRPCGetTransaction;
+    // mapRPCFunc["getforkheight"] = &CRPCMod::SnRPCGetForkHeight;
+    // mapRPCFunc["sendtransaction"] = &CRPCMod::SnRPCSendTransaction;
 }
 
 CSnRPCMod::~CSnRPCMod()
@@ -2386,4 +2414,28 @@ CRPCResultPtr CSnRPCMod::SnRPCGetBlock(CRPCParamPtr param)
     uint256 fork;
     fork.SetHex(ret.strFork);
     return MakeCGetBlockResultPtr(BlockToJSON(ret.block.GetHash(), ret.block, fork, ret.height));
+}
+
+CRPCResultPtr CSnRPCMod::SnRPCGetTxPool(CRPCParamPtr param)
+{
+    (void)param;
+    return NULL;
+}
+
+CRPCResultPtr CSnRPCMod::SnRPCGetTransaction(CRPCParamPtr param)
+{
+    (void)param;
+    return NULL;
+}
+
+CRPCResultPtr CSnRPCMod::SnRPCGetForkHeight(CRPCParamPtr param)
+{
+    (void)param;
+    return NULL;
+}
+
+CRPCResultPtr CSnRPCMod::SnRPCSendTransaction(CRPCParamPtr param)
+{
+    (void)param;
+    return NULL;
 }
