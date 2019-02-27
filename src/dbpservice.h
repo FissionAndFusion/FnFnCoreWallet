@@ -88,6 +88,10 @@ public:
     bool HandleEvent(CMvEventRPCRouteGetBlockCount& event) override;
     bool HandleEvent(CMvEventRPCRouteGetBlockHash& event) override;
     bool HandleEvent(CMvEventRPCRouteGetBlock& event) override;
+    bool HandleEvent(CMvEventRPCRouteGetTxPool& event) override;
+    bool HandleEvent(CMvEventRPCRouteGetTransaction& event) override;
+    bool HandleEvent(CMvEventRPCRouteGetForkHeight& event) override;
+    bool HandleEvent(CMvEventRPCRouteSendTransaction& event) override;
 
 protected:
     bool WalleveHandleInitialize() override;

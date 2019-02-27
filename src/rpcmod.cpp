@@ -2418,8 +2418,77 @@ CRPCResultPtr CSnRPCMod::SnRPCGetBlock(CRPCParamPtr param)
 
 CRPCResultPtr CSnRPCMod::SnRPCGetTxPool(CRPCParamPtr param)
 {
-    (void)param;
-    return NULL;
+    // //gettxpool (-f="fork") (-d|-nod*detail*)
+    // uint256 hashFork;
+    // if (!GetForkHashOfDef(spParam->strFork, hashFork))
+    // {
+    //     throw CRPCException(RPC_INVALID_PARAMETER, "Invalid fork");
+    // }
+    
+    // if (!pService->HaveFork(hashFork))
+    // {
+    //     throw CRPCException(RPC_INVALID_PARAMETER, "Unknown fork");
+    // }
+
+    // bool fDetail = spParam->fDetail.IsValid() ? bool(spParam->fDetail) : false;
+    
+    // vector<pair<uint256,size_t> > vTxPool;
+    // pService->GetTxPool(hashFork,vTxPool);
+
+    // auto spResult = MakeCGetTxPoolResultPtr();
+    // if (!fDetail)
+    // {
+    //     size_t nTotalSize = 0;
+    //     for (std::size_t i = 0;i < vTxPool.size();i++)
+    //     {
+    //         nTotalSize += vTxPool[i].second;
+    //     }
+    //     spResult->nCount = vTxPool.size();
+    //     spResult->nSize = nTotalSize;
+    // }
+    // else
+    // {
+    //     for (std::size_t i = 0;i < vTxPool.size();i++)
+    //     {
+    //         spResult->vecList.push_back({vTxPool[i].first.GetHex(), vTxPool[i].second});
+    //     }
+    // }
+    
+    walleve::CIOCompletionUntil ioCompltUntil(200000);
+    auto spParam = CastParamPtr<CGetTxPoolParam>(param);
+    auto* pEvent = new CMvEventRPCRouteGetTxPool("");
+    pEvent->data.pIoCompltUntil = &ioCompltUntil;
+    pEvent->data.nNonce = GenNonce();
+    pEvent->data.strFork = spParam->strFork;
+    pEvent->data.fDetail = spParam->fDetail.IsValid() ? bool(spParam->fDetail) : false;
+    if (!pEvent)
+    {
+        return NULL;
+    }
+    ioCompltUntil.Reset();
+    pDbpService->PostEvent(pEvent);
+
+    bool fResult = false;
+    ioCompltUntil.WaitForComplete(fResult);
+    if(!fResult)
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Timeout");
+    }
+
+    auto spResult = MakeCGetTxPoolResultPtr();
+    auto ret = boost::any_cast<CMvRPCRouteGetTxPoolRet>(ioCompltUntil.obj);
+    if (ret.exception == 0)
+    {
+    }
+    else if (ret.exception == 1)
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Invalid fork");
+    }
+    else if (ret.exception == 2)
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Unknown fork");
+    }
+    return spResult;
 }
 
 CRPCResultPtr CSnRPCMod::SnRPCGetTransaction(CRPCParamPtr param)

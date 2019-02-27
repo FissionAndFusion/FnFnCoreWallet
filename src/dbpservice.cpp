@@ -2562,6 +2562,26 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetBlock& event)
     return true;
 }
 
+bool CDbpService::HandleEvent(CMvEventRPCRouteGetTxPool& event)
+{
+    return true;
+}
+
+bool CDbpService::HandleEvent(CMvEventRPCRouteGetTransaction& event) 
+{
+    return true;
+}
+
+bool CDbpService::HandleEvent(CMvEventRPCRouteGetForkHeight& event)
+{
+    return true;
+}
+
+bool CDbpService::HandleEvent(CMvEventRPCRouteSendTransaction& event)
+{
+    return true;
+}
+
 bool CDbpService::HandleEvent(CMvEventRPCRouteAdded& event)
 {
     InitSessionCount();
