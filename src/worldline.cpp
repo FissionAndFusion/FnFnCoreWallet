@@ -215,9 +215,13 @@ bool CWorldLine::GetLastBlockTime(const uint256& hashFork,int nDepth,vector<int6
     }
 
     vTime.clear();
-    while ((nDepth--) > 0 && pIndex != NULL)
+    while (nDepth > 0 && pIndex != NULL)
     {
         vTime.push_back(pIndex->GetBlockTime());
+        if(!pIndex->IsExtended())
+        {
+            nDepth--;
+        }
         pIndex = pIndex->pPrev;
     }
     return true;

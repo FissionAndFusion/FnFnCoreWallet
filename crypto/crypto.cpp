@@ -112,8 +112,22 @@ uint256 CryptoHash(const uint256& h1, const uint256& h2)
 uint256 CryptoMakeNewKey(CCryptoKey& key)
 {
     uint256 pk;
-    crypto_sign_ed25519_keypair((uint8*)&pk, (uint8*)&key);
-    return pk;
+    while(crypto_sign_ed25519_keypair((uint8*)&pk,(uint8*)&key) == 0)
+    {
+        int count = 0;
+        const uint8* p = key.secret.begin();
+        for (int i = 1; i < 31; ++i)
+        {
+            if (p[i] != 0x00 && p[i] != 0xFF)
+            {
+                if (++count >= 4)
+                {
+                    return pk;
+                }
+            }
+        }
+    }
+    return uint64(0);
 }
 
 uint256 CryptoImportKey(CCryptoKey& key, const uint256& secret)
