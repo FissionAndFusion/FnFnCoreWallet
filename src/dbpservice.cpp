@@ -1845,6 +1845,36 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetBlock* data, CMvRPCRouteGetBlockRe
     }
 }
 
+
+void CDbpService::RPCRootHandle(CMvRPCRouteGetTxPool* data, CMvRPCRouteGetTxPoolRet* ret)
+{
+    auto vRawData = RPCRouteRetToStream(*data);
+
+    if(ret == NULL)
+    {
+        if (sessionCount == 0 && pIoCompltUntil != NULL)
+        {
+            CMvRPCRouteGetTxPoolRet getTxPoolRet;
+            getTxPoolRet.nNonce = data->nNonce;
+            getTxPoolRet.type = data->type;
+            getTxPoolRet.exception = 2;
+            Completion(pIoCompltUntil, getTxPoolRet);
+            return;
+        }
+
+        if (sessionCount != 0)
+        {
+            PushMsgToChild(vRawData, data->type);
+            return;
+        }
+    }
+
+    if(ret != NULL)
+    {
+        return;
+    }
+}
+
 void CDbpService::RPCForkHandle(CMvRPCRouteStop* data, CMvRPCRouteStopRet* ret)
 {
     if (ret == NULL)
@@ -2255,6 +2285,19 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetBlock* data, CMvRPCRouteGetBlockRe
     }
 }
 
+void CDbpService::RPCForkHandle(CMvRPCRouteGetTxPool* data, CMvRPCRouteGetTxPoolRet* ret)
+{
+    if (ret == NULL)
+    {
+        return;
+    }
+
+    if (ret != NULL)
+    {
+        return;
+    }
+}
+
 void CDbpService::InsertQueCount(uint64 nNonce, boost::any obj)
 {
     if(queCount.size() > 100)
@@ -2532,7 +2575,6 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetBlockHash& event)
 
 bool CDbpService::HandleEvent(CMvEventRPCRouteGetBlock& event)
 {
-    std::cout << "11### nNonce:" << event.data.nNonce << std::endl;
     event.data.type = CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK;
     pIoCompltUntil = event.data.pIoCompltUntil;
 
@@ -2564,6 +2606,39 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetBlock& event)
 
 bool CDbpService::HandleEvent(CMvEventRPCRouteGetTxPool& event)
 {
+    std::cout << "11### nNonce:" << event.data.nNonce << std::endl;
+    event.data.type = CMvRPCRoute::DBP_RPCROUTE_GET_TXPOOL;
+    pIoCompltUntil = event.data.pIoCompltUntil;
+
+    CMvRPCRouteGetTxPoolRet getTxPoolRet;
+    getTxPoolRet.nNonce = event.data.nNonce;
+
+    uint256 hashFork;
+    if (!GetForkHashOfDef(event.data.strFork, hashFork))
+    {
+        getTxPoolRet.exception = 1;
+        Completion(pIoCompltUntil, getTxPoolRet);
+        return true;
+    }
+
+    if (pService->HaveFork(hashFork))
+    {
+        std::vector<std::pair<uint256, size_t>> vTxPool;
+        pService->GetTxPool(hashFork, vTxPool);
+        for (auto& txPool : vTxPool)
+        {
+            getTxPoolRet.vTxPool.push_back({txPool.first.GetHex(), txPool.second});
+        }
+
+        getTxPoolRet.exception = 0;
+        Completion(pIoCompltUntil, getTxPoolRet);
+        return true;
+    }
+
+    InitRPCTopicIds();
+    InitSessionCount();
+    InsertQueCount(event.data.nNonce, getTxPoolRet);
+    RPCRootHandle(&event.data, NULL);
     return true;
 }
 

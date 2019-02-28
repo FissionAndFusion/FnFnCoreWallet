@@ -2456,11 +2456,12 @@ CRPCResultPtr CSnRPCMod::SnRPCGetTxPool(CRPCParamPtr param)
     
     walleve::CIOCompletionUntil ioCompltUntil(200000);
     auto spParam = CastParamPtr<CGetTxPoolParam>(param);
+    bool fDetail = spParam->fDetail.IsValid() ? bool(spParam->fDetail) : false;
     auto* pEvent = new CMvEventRPCRouteGetTxPool("");
     pEvent->data.pIoCompltUntil = &ioCompltUntil;
     pEvent->data.nNonce = GenNonce();
     pEvent->data.strFork = spParam->strFork;
-    pEvent->data.fDetail = spParam->fDetail.IsValid() ? bool(spParam->fDetail) : false;
+    pEvent->data.fDetail = fDetail;
     if (!pEvent)
     {
         return NULL;
@@ -2487,6 +2488,24 @@ CRPCResultPtr CSnRPCMod::SnRPCGetTxPool(CRPCParamPtr param)
     else if (ret.exception == 2)
     {
         throw CRPCException(RPC_INVALID_PARAMETER, "Unknown fork");
+    }
+
+    if (!fDetail)
+    {
+        size_t nTotalSize = 0;
+        for (std::size_t i = 0; i < ret.vTxPool.size(); i++)
+        {
+            nTotalSize += ret.vTxPool[i].second;
+        }
+        spResult->nCount = ret.vTxPool.size();
+        spResult->nSize = nTotalSize;
+    }
+    else
+    {
+        for (std::size_t i = 0; i < ret.vTxPool.size(); i++)
+        {
+            spResult->vecList.push_back({ret.vTxPool[i].first, ret.vTxPool[i].second});
+        }
     }
     return spResult;
 }

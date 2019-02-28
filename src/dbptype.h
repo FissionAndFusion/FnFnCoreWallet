@@ -473,8 +473,7 @@ class CMvRPCRouteGetTxPoolRet: public CMvRPCRouteRet
 {
     friend class walleve::CWalleveStream;
 public:
-    int height;
-    std::string strFork;
+    std::vector<std::pair<std::string, size_t>> vTxPool;
     int exception; // 0-nomal, 1-invalid block, 2-unknown fork
 
 protected:
@@ -482,8 +481,7 @@ protected:
     void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
     {
         CMvRPCRouteRet::WalleveSerialize(s, opt);
-        s.Serialize(height, opt);
-        s.Serialize(strFork, opt);
+        s.Serialize(vTxPool, opt);
         s.Serialize(exception, opt);
     }
 };
