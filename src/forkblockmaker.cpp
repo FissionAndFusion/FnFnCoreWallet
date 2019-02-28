@@ -276,7 +276,7 @@ void CForkBlockMaker::ProcessExtended(const CBlockMakerAgreement& agreement,cons
     vector<CForkBlockMakerProfile*> vProfile;
     set<uint256> setFork;
 
-    if (!GetAvailiableDelegatedProfile(agreement.vBallot,vProfile) || !GetAvailiableExtendedFork(setFork))
+    if (!GetAvailableDelegatedProfile(agreement.vBallot,vProfile) || !GetAvailableExtendedFork(setFork))
     {
         return;
     }
@@ -389,7 +389,7 @@ void CForkBlockMaker::CreateExtended(const CForkBlockMakerProfile& profile,const
     }
 }
     
-bool CForkBlockMaker::GetAvailiableDelegatedProfile(const std::vector<CDestination>& vBallot,std::vector<CForkBlockMakerProfile*>& vProfile)
+bool CForkBlockMaker::GetAvailableDelegatedProfile(const std::vector<CDestination>& vBallot,std::vector<CForkBlockMakerProfile*>& vProfile)
 {
     int nAvailProfile = 0;
     vProfile.reserve(vBallot.size());
@@ -410,7 +410,7 @@ bool CForkBlockMaker::GetAvailiableDelegatedProfile(const std::vector<CDestinati
     return (!!nAvailProfile);
 }
     
-bool CForkBlockMaker::GetAvailiableExtendedFork(std::set<uint256>& setFork)
+bool CForkBlockMaker::GetAvailableExtendedFork(std::set<uint256>& setFork)
 {
     map<uint256,CForkStatus> mapForkStatus;
     pWorldLine->GetForkStatus(mapForkStatus);
