@@ -2418,42 +2418,6 @@ CRPCResultPtr CSnRPCMod::SnRPCGetBlock(CRPCParamPtr param)
 
 CRPCResultPtr CSnRPCMod::SnRPCGetTxPool(CRPCParamPtr param)
 {
-    // //gettxpool (-f="fork") (-d|-nod*detail*)
-    // uint256 hashFork;
-    // if (!GetForkHashOfDef(spParam->strFork, hashFork))
-    // {
-    //     throw CRPCException(RPC_INVALID_PARAMETER, "Invalid fork");
-    // }
-    
-    // if (!pService->HaveFork(hashFork))
-    // {
-    //     throw CRPCException(RPC_INVALID_PARAMETER, "Unknown fork");
-    // }
-
-    // bool fDetail = spParam->fDetail.IsValid() ? bool(spParam->fDetail) : false;
-    
-    // vector<pair<uint256,size_t> > vTxPool;
-    // pService->GetTxPool(hashFork,vTxPool);
-
-    // auto spResult = MakeCGetTxPoolResultPtr();
-    // if (!fDetail)
-    // {
-    //     size_t nTotalSize = 0;
-    //     for (std::size_t i = 0;i < vTxPool.size();i++)
-    //     {
-    //         nTotalSize += vTxPool[i].second;
-    //     }
-    //     spResult->nCount = vTxPool.size();
-    //     spResult->nSize = nTotalSize;
-    // }
-    // else
-    // {
-    //     for (std::size_t i = 0;i < vTxPool.size();i++)
-    //     {
-    //         spResult->vecList.push_back({vTxPool[i].first.GetHex(), vTxPool[i].second});
-    //     }
-    // }
-    
     walleve::CIOCompletionUntil ioCompltUntil(200000);
     auto spParam = CastParamPtr<CGetTxPoolParam>(param);
     bool fDetail = spParam->fDetail.IsValid() ? bool(spParam->fDetail) : false;

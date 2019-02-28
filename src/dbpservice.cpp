@@ -1871,7 +1871,24 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetTxPool* data, CMvRPCRouteGetTxPool
 
     if(ret != NULL)
     {
-        return;
+        CMvRPCRouteGetTxPoolRet getTxPoolRet;
+        getTxPoolRet.nNonce = data->nNonce;
+        getTxPoolRet.type = data->type;
+
+        if (ret->exception == 0 && pIoCompltUntil != NULL)
+        {
+            getTxPoolRet.exception = ret->exception;
+            getTxPoolRet.vTxPool = ret->vTxPool;
+            Completion(pIoCompltUntil, getTxPoolRet);
+            return;
+        }
+
+        if (sessionCount == 0)
+        {
+            getTxPoolRet.exception = 2;
+            Completion(pIoCompltUntil, getTxPoolRet);
+            return;
+        }
     }
 }
 
@@ -2287,14 +2304,56 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetBlock* data, CMvRPCRouteGetBlockRe
 
 void CDbpService::RPCForkHandle(CMvRPCRouteGetTxPool* data, CMvRPCRouteGetTxPoolRet* ret)
 {
+    auto vRawData = RPCRouteRetToStream(*data);
+
     if (ret == NULL)
     {
-        return;
+        if (sessionCount == 0)
+        {
+            CMvRPCRouteGetTxPoolRet getTxPoolRet;
+            CMvRPCRouteResult result;
+            result.type = CMvRPCRoute::DBP_RPCROUTE_GET_TXPOOL;
+            result.vRawData = vRawData;
+            getTxPoolRet.nNonce = data->nNonce;
+            getTxPoolRet.type = data->type;
+            getTxPoolRet.exception = 2;
+            result.vData = RPCRouteRetToStream(getTxPoolRet);
+            SendRPCResult(result);
+            return;
+        }
+
+        if (sessionCount != 0)
+        {
+            PushMsgToChild(vRawData, data->type);
+            return;
+        }
     }
 
     if (ret != NULL)
     {
-        return;
+        CMvRPCRouteGetTxPoolRet getTxPoolRet;
+        CMvRPCRouteResult result;
+        result.type = CMvRPCRoute::DBP_RPCROUTE_GET_TXPOOL;
+        result.vRawData = vRawData;
+        getTxPoolRet.nNonce = data->nNonce;
+        getTxPoolRet.type = data->type;
+
+        if(ret->exception == 0)
+        {
+            getTxPoolRet.exception = ret->exception;
+            getTxPoolRet.vTxPool = ret->vTxPool;
+            result.vData = RPCRouteRetToStream(getTxPoolRet);
+            SendRPCResult(result);
+            return;
+        }
+
+        if (sessionCount == 0)
+        {
+            getTxPoolRet.exception = 2;
+            result.vData = RPCRouteRetToStream(getTxPoolRet);
+            SendRPCResult(result);
+            return;
+        }
     }
 }
 
@@ -2850,6 +2909,40 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteAdded& event)
         }
         RPCForkHandle(&getBlock, NULL);
     }
+
+    if (event.data.type == CMvRPCRoute::DBP_RPCROUTE_GET_TXPOOL)
+    {
+        CMvRPCRouteGetTxPool getTxPool;
+        ss >> getTxPool;
+        CMvRPCRouteGetTxPoolRet getTxPoolRet;
+
+        CMvRPCRouteResult result;
+        result.type = CMvRPCRoute::DBP_RPCROUTE_GET_TXPOOL;
+        result.vRawData = event.data.vData;
+        getTxPoolRet.nNonce = getTxPool.nNonce;
+
+        InitRPCTopicIds();
+        InsertQueCount(getTxPool.nNonce, getTxPoolRet);
+
+        uint256 hashFork;
+        hashFork.SetHex(getTxPool.strFork);
+
+        if (pService->HaveFork(hashFork))
+        {
+            std::vector<std::pair<uint256, size_t>> vTxPool;
+            pService->GetTxPool(hashFork, vTxPool);
+            for (auto& txPool : vTxPool)
+            {
+                getTxPoolRet.vTxPool.push_back( { txPool.first.GetHex(), txPool.second });
+            }
+
+            getTxPoolRet.exception = 0;
+            result.vData = RPCRouteRetToStream(getTxPoolRet);
+            SendRPCResult(result);
+            return true;
+        }
+        RPCForkHandle(&getTxPool, NULL);
+    }
     return true;
 }
 
@@ -2897,6 +2990,11 @@ void CDbpService::HandleRPCRoute(CMvEventDbpMethod& event)
     if(type == CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK)
     {
         HANDLE_RPC_ROUTE(CMvRPCRouteGetBlock, CMvRPCRouteGetBlockRet);
+    }
+
+    if(type == CMvRPCRoute::DBP_RPCROUTE_GET_TXPOOL)
+    {
+        HANDLE_RPC_ROUTE(CMvRPCRouteGetTxPool, CMvRPCRouteGetTxPoolRet);
     }
 }
 
