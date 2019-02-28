@@ -37,6 +37,7 @@ class CPeerNetConfig
 public:
     std::vector<CPeerService> vecService;
     std::vector<CNetHost> vecNode;
+    CNetHost gateWayNode;
     std::size_t nMaxOutBounds;
     unsigned short nPortDefault;
 };
