@@ -76,8 +76,8 @@ protected:
     void CreatePiggyback(const CBlockMakerProfile& profile,const CBlockMakerAgreement& agreement,
                          const uint256& hashRefBlock,int64 nRefBlockTime,int nPrevHeight); 
     void CreateExtended(const CBlockMakerProfile& profile,const CBlockMakerAgreement& agreement,const std::set<uint256>& setFork,int nPrimaryBlockHeight,int64 nTime); 
-    bool GetAvailiableDelegatedProfile(const std::vector<CDestination>& vBallot,std::vector<CBlockMakerProfile*>& vProfile);
-    bool GetAvailiableExtendedFork(std::set<uint256>& setFork);
+    bool GetAvailableDelegatedProfile(const std::vector<CDestination>& vBallot,std::vector<CBlockMakerProfile*>& vProfile);
+    bool GetAvailableExtendedFork(std::set<uint256>& setFork);
 private:
     enum {MAKER_RUN=0,MAKER_RESET=1,MAKER_EXIT=2,MAKER_HOLD=3};
     void BlockMakerThreadFunc();
