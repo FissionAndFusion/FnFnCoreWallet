@@ -1671,13 +1671,13 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetBlockLocation* data, CMvRPCRouteGe
             return;
         }
 
-        if (sessionCount != 0)
-        {
-            auto vRawData = RPCRouteRetToStream(*data);
-            PushMsgToChild(vRawData, data->type);
-            return;
-        }
-        return;
+        // if (sessionCount != 0)
+        // {
+        //     auto vRawData = RPCRouteRetToStream(*data);
+        //     PushMsgToChild(vRawData, data->type);
+        //     return;
+        // }
+        // return;
     }
 }
 
@@ -1728,12 +1728,12 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetBlockCount* data, CMvRPCRouteGetBl
             return;
         }
 
-        if (sessionCount != 0)
-        {
-            auto vRawData = RPCRouteRetToStream(*data);
-            PushMsgToChild(vRawData, data->type);
-            return;
-        }
+        // if (sessionCount != 0)
+        // {
+        //     auto vRawData = RPCRouteRetToStream(*data);
+        //     PushMsgToChild(vRawData, data->type);
+        //     return;
+        // }
     }
 }
 
@@ -1782,12 +1782,12 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetBlockHash * data, CMvRPCRouteGetBl
             return;
         }
 
-        if (sessionCount != 0)
-        {
-            auto vRawData = RPCRouteRetToStream(*data);
-            PushMsgToChild(vRawData, data->type);
-            return;
-        }
+        // if (sessionCount != 0)
+        // {
+        //     auto vRawData = RPCRouteRetToStream(*data);
+        //     PushMsgToChild(vRawData, data->type);
+        //     return;
+        // }
     }
 }
 
@@ -1837,11 +1837,11 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetBlock* data, CMvRPCRouteGetBlockRe
             return;
         }
 
-        if (sessionCount != 0)
-        {
-            PushMsgToChild(vRawData, data->type);
-            return;
-        }
+        // if (sessionCount != 0)
+        // {
+        //     PushMsgToChild(vRawData, data->type);
+        //     return;
+        // }
     }
 }
 
@@ -2097,11 +2097,11 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetBlockLocation* data, CMvRPCRouteGe
             return;
         }
 
-        if (sessionCount != 0)
-        {
-            PushMsgToChild(vRawData, data->type);
-            return;
-        }
+        // if (sessionCount != 0)
+        // {
+        //     PushMsgToChild(vRawData, data->type);
+        //     return;
+        // }
     }
 }
 
@@ -2165,11 +2165,11 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetBlockCount* data, CMvRPCRouteGetBl
             return;
         }
 
-        if (sessionCount != 0)
-        {
-            PushMsgToChild(vRawData, data->type);
-            return;
-        }
+        // if (sessionCount != 0)
+        // {
+        //     PushMsgToChild(vRawData, data->type);
+        //     return;
+        // }
     }
 }
 
@@ -2231,11 +2231,11 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetBlockHash* data, CMvRPCRouteGetBlo
             return;
         }
 
-        if (sessionCount != 0)
-        {
-            PushMsgToChild(vRawData, data->type);
-            return;
-        }
+        // if (sessionCount != 0)
+        // {
+        //     PushMsgToChild(vRawData, data->type);
+        //     return;
+        // }
     }
 }
 
@@ -2294,11 +2294,11 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetBlock* data, CMvRPCRouteGetBlockRe
             return;
         }
 
-        if (sessionCount != 0)
-        {
-            PushMsgToChild(vRawData, data->type);
-            return;
-        }
+        // if (sessionCount != 0)
+        // {
+        //     PushMsgToChild(vRawData, data->type);
+        //     return;
+        // }
     }
 }
 
