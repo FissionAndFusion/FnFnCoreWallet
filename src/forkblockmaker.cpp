@@ -244,7 +244,7 @@ bool CForkBlockMaker::SignBlock(CBlock& block,const CForkBlockMakerProfile& prof
     return profile.templMint->BuildBlockSignature(hashSig,vchMintSig,block.vchSig);
 }
     
-bool CForkBlockMaker::DispatchBlock(CBlock& block)
+bool CForkBlockMaker::DispatchBlock(const CBlock& block)
 {
     int nWait = block.nTimeStamp - WalleveGetNetTime();
     if (nWait > 0 && !Wait(nWait))

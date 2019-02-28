@@ -270,7 +270,7 @@ bool CBlockMaker::SignBlock(CBlock& block,const CBlockMakerProfile& profile)
     return profile.templMint->BuildBlockSignature(hashSig,vchMintSig,block.vchSig);
 }
 
-bool CBlockMaker::DispatchBlock(CBlock& block)
+bool CBlockMaker::DispatchBlock(const CBlock& block)
 {
     int nWait = block.nTimeStamp - WalleveGetNetTime();
     if (nWait > 0 && !Wait(nWait))

@@ -67,7 +67,7 @@ protected:
     bool Wait(long nSeconds,const uint256& hashPrimaryBlock);
     void ArrangeBlockTx(CBlock& block,const uint256& hashFork,const CForkBlockMakerProfile& profile);
     bool SignBlock(CBlock& block,const CForkBlockMakerProfile& profile);
-    bool DispatchBlock(CBlock& block);
+    bool DispatchBlock(const CBlock& block);
     void ProcessDelegatedProofOfStake(CBlock& block,const CBlockMakerAgreement& agreement,int nPrevHeight);
     void ProcessExtended(const CBlockMakerAgreement& agreement,const uint256& hashPrimaryBlock,
                                                                int64 nPrimaryBlockTime,int nPrimaryBlockHeight);
