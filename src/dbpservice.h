@@ -159,6 +159,7 @@ private:
     void RPCRootHandle(CMvRPCRouteGetBlockHash * data, CMvRPCRouteGetBlockHashRet* ret);
     void RPCRootHandle(CMvRPCRouteGetBlock* data, CMvRPCRouteGetBlockRet* ret);
     void RPCRootHandle(CMvRPCRouteGetTxPool* data, CMvRPCRouteGetTxPoolRet* ret);
+    void RPCRootHandle(CMvRPCRouteGetTransaction* data, CMvRPCRouteGetTransactionRet* ret);
 
     void RPCForkHandle(CMvRPCRouteStop* data, CMvRPCRouteStopRet* ret);
     void RPCForkHandle(CMvRPCRouteGetForkCount* data, CMvRPCRouteGetForkCountRet* ret);
@@ -168,6 +169,7 @@ private:
     void RPCForkHandle(CMvRPCRouteGetBlockHash* data, CMvRPCRouteGetBlockHashRet* ret);
     void RPCForkHandle(CMvRPCRouteGetBlock* data, CMvRPCRouteGetBlockRet* ret);
     void RPCForkHandle(CMvRPCRouteGetTxPool* data, CMvRPCRouteGetTxPoolRet* ret);
+    void RPCForkHandle(CMvRPCRouteGetTransaction* data, CMvRPCRouteGetTransactionRet* ret);
 
     void SendEventToParentNode(CMvDbpVirtualPeerNetEvent& event);
     void UpdateGetDataEventRecord(const CMvEventPeerGetData& event);

@@ -263,14 +263,14 @@ class CMvRPCRouteGetTransaction: public CMvRPCRoute
 {
     friend class walleve::CWalleveStream;
 public:
-    std::string hash;
+    std::string strTxid;
 
 protected:
     template<typename O>
     void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
     {
         CMvRPCRoute::WalleveSerialize(s, opt);
-        s.Serialize(hash, opt);
+        s.Serialize(strTxid, opt);
     }
 };
 
@@ -490,19 +490,19 @@ class CMvRPCRouteGetTransactionRet: public CMvRPCRouteRet
 {
     friend class walleve::CWalleveStream;
 public:
-    CBlock block;
-    int height;
+    CTransaction tx;
     std::string strFork;
-    int exception; // 0-nomal, 1-unknown block
+    int nDepth;
+    int exception; // 0-nomal, 1-no information
 
 protected:
     template<typename O>
     void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
     {
         CMvRPCRouteRet::WalleveSerialize(s, opt);
-        s.Serialize(block, opt);
-        s.Serialize(height, opt);
+        s.Serialize(tx, opt);
         s.Serialize(strFork, opt);
+        s.Serialize(nDepth, opt);
         s.Serialize(exception, opt);
     }
 };

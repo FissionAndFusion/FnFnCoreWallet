@@ -2476,8 +2476,48 @@ CRPCResultPtr CSnRPCMod::SnRPCGetTxPool(CRPCParamPtr param)
 
 CRPCResultPtr CSnRPCMod::SnRPCGetTransaction(CRPCParamPtr param)
 {
-    (void)param;
-    return NULL;
+    walleve::CIOCompletionUntil ioCompltUntil(200000);
+    auto spParam = CastParamPtr<CGetTransactionParam>(param);
+    auto* pEvent = new CMvEventRPCRouteGetTransaction("");
+    pEvent->data.pIoCompltUntil = &ioCompltUntil;
+    pEvent->data.nNonce = GenNonce();
+    pEvent->data.strTxid = spParam->strTxid;
+    if (!pEvent)
+    {
+        return NULL;
+    }
+    ioCompltUntil.Reset();
+    pDbpService->PostEvent(pEvent);
+
+    bool fResult = false;
+    ioCompltUntil.WaitForComplete(fResult);
+    if(!fResult)
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Timeout");
+    }
+
+    auto spResult = MakeCGetTransactionResultPtr();
+    auto ret = boost::any_cast<CMvRPCRouteGetTransactionRet>(ioCompltUntil.obj);
+    if (ret.exception == 0)
+    {
+    }
+    else if (ret.exception == 1)
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "No information available about transaction");
+    }
+
+    if (spParam->fSerialized)
+    {
+        CWalleveBufStream ss;
+        ss << ret.tx;
+        spResult->strSerialization = ToHexString((const unsigned char*)ss.GetData(),ss.GetSize());
+        return spResult;
+    }
+
+    uint256 txid, hashFork;
+    txid.SetHex(spParam->strTxid);
+    spResult->transaction = TxToJSON(txid, ret.tx, hashFork.SetHex(ret.strFork), ret.nDepth);
+    return spResult;
 }
 
 CRPCResultPtr CSnRPCMod::SnRPCGetForkHeight(CRPCParamPtr param)

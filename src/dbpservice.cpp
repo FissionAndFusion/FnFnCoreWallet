@@ -1892,6 +1892,54 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetTxPool* data, CMvRPCRouteGetTxPool
     }
 }
 
+void CDbpService::RPCRootHandle(CMvRPCRouteGetTransaction* data, CMvRPCRouteGetTransactionRet* ret)
+{
+    auto vRawData = RPCRouteRetToStream(*data);
+
+    if(ret == NULL)
+    {
+        if (sessionCount == 0 && pIoCompltUntil != NULL)
+        {
+            CMvRPCRouteGetTransactionRet getTransactionRet;
+            getTransactionRet.nNonce = data->nNonce;
+            getTransactionRet.type = data->type;
+            getTransactionRet.exception = 1;
+            Completion(pIoCompltUntil, getTransactionRet);
+            return;
+        }
+
+        if (sessionCount != 0)
+        {
+            PushMsgToChild(vRawData, data->type);
+            return;
+        }
+    }
+
+    if(ret != NULL)
+    {
+        CMvRPCRouteGetTransactionRet getTransactionRet;
+        getTransactionRet.nNonce = data->nNonce;
+        getTransactionRet.type = data->type;
+
+        if (ret->exception == 0 && pIoCompltUntil != NULL)
+        {
+            getTransactionRet.exception = ret->exception;
+            getTransactionRet.tx = ret->tx;
+            getTransactionRet.strFork = ret->strFork;
+            getTransactionRet.nDepth = ret->nDepth;
+            Completion(pIoCompltUntil, getTransactionRet);
+            return;
+        }
+
+        if (sessionCount == 0)
+        {
+            getTransactionRet.exception = 2;
+            Completion(pIoCompltUntil, getTransactionRet);
+            return;
+        }
+    }
+}
+
 void CDbpService::RPCForkHandle(CMvRPCRouteStop* data, CMvRPCRouteStopRet* ret)
 {
     if (ret == NULL)
@@ -2357,6 +2405,63 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetTxPool* data, CMvRPCRouteGetTxPool
     }
 }
 
+void CDbpService::RPCForkHandle(CMvRPCRouteGetTransaction* data, CMvRPCRouteGetTransactionRet* ret)
+{
+    auto vRawData = RPCRouteRetToStream(*data);
+
+    if (ret == NULL)
+    {
+        if (sessionCount == 0)
+        {
+            CMvRPCRouteGetTransactionRet getTransactionRet;
+            CMvRPCRouteResult result;
+            result.type = CMvRPCRoute::DBP_RPCROUTE_GET_TRANSACTION;
+            result.vRawData = vRawData;
+            getTransactionRet.nNonce = data->nNonce;
+            getTransactionRet.type = data->type;
+            getTransactionRet.exception = 1;
+            result.vData = RPCRouteRetToStream(getTransactionRet);
+            SendRPCResult(result);
+            return;
+        }
+
+        if (sessionCount != 0)
+        {
+            PushMsgToChild(vRawData, data->type);
+            return;
+        }
+    }
+
+    if (ret != NULL)
+    {
+        CMvRPCRouteGetTransactionRet getTransactionRet;
+        CMvRPCRouteResult result;
+        result.type = CMvRPCRoute::DBP_RPCROUTE_GET_TRANSACTION;
+        result.vRawData = vRawData;
+        getTransactionRet.nNonce = data->nNonce;
+        getTransactionRet.type = data->type;
+
+        if(ret->exception == 0)
+        {
+            getTransactionRet.exception = ret->exception;
+            getTransactionRet.tx = ret->tx;
+            getTransactionRet.strFork = ret->strFork;
+            getTransactionRet.nDepth = ret->nDepth;
+            result.vData = RPCRouteRetToStream(getTransactionRet);
+            SendRPCResult(result);
+            return;
+        }
+
+        if (sessionCount == 0) 
+        {
+            getTransactionRet.exception = 2;
+            result.vData = RPCRouteRetToStream(getTransactionRet);
+            SendRPCResult(result);
+            return;
+        }
+    }
+}
+
 void CDbpService::InsertQueCount(uint64 nNonce, boost::any obj)
 {
     if(queCount.size() > 100)
@@ -2665,7 +2770,6 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetBlock& event)
 
 bool CDbpService::HandleEvent(CMvEventRPCRouteGetTxPool& event)
 {
-    std::cout << "11### nNonce:" << event.data.nNonce << std::endl;
     event.data.type = CMvRPCRoute::DBP_RPCROUTE_GET_TXPOOL;
     pIoCompltUntil = event.data.pIoCompltUntil;
 
@@ -2703,6 +2807,34 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetTxPool& event)
 
 bool CDbpService::HandleEvent(CMvEventRPCRouteGetTransaction& event) 
 {
+    std::cout << "11### nNonce:" << event.data.nNonce << std::endl;
+    event.data.type = CMvRPCRoute::DBP_RPCROUTE_GET_TRANSACTION;
+    pIoCompltUntil = event.data.pIoCompltUntil;
+
+    CMvRPCRouteGetTransactionRet getTransactionRet;
+    getTransactionRet.nNonce = event.data.nNonce;
+
+    uint256 txid;
+    txid.SetHex(event.data.strTxid);
+
+    CTransaction tx;
+    uint256 hashFork;
+    int nHeight;
+
+    if (pService->GetTransaction(txid, tx, hashFork, nHeight))
+    {
+        getTransactionRet.exception = 0;
+        getTransactionRet.tx = tx;
+        getTransactionRet.strFork = hashFork.GetHex();
+        getTransactionRet.nDepth = nHeight < 0 ? 0 : pService->GetBlockCount(hashFork) - nHeight;
+        Completion(pIoCompltUntil, getTransactionRet);
+        return true;
+    }
+
+    InitRPCTopicIds();
+    InitSessionCount();
+    InsertQueCount(event.data.nNonce, getTransactionRet);
+    RPCRootHandle(&event.data, NULL);
     return true;
 }
 
@@ -2943,6 +3075,37 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteAdded& event)
         }
         RPCForkHandle(&getTxPool, NULL);
     }
+
+    if (event.data.type == CMvRPCRoute::DBP_RPCROUTE_GET_TRANSACTION)
+    {
+        CMvRPCRouteGetTransaction getTransaction;
+        ss >> getTransaction;
+        CMvRPCRouteGetTransactionRet getTransactionRet;
+
+        CMvRPCRouteResult result;
+        result.type = CMvRPCRoute::DBP_RPCROUTE_GET_TRANSACTION;
+        result.vRawData = event.data.vData;
+        getTransactionRet.nNonce = getTransaction.nNonce;
+
+        InitRPCTopicIds();
+        InsertQueCount(getTransaction.nNonce, getTransactionRet);
+
+        uint256 txid, hashFork;
+        txid.SetHex(getTransaction.strTxid);
+        CTransaction tx;
+        int nHeight;
+        if (pService->GetTransaction(txid, tx, hashFork, nHeight))
+        {
+            getTransactionRet.exception = 0;
+            getTransactionRet.tx = tx;
+            getTransactionRet.strFork = hashFork.GetHex();
+            getTransactionRet.nDepth = nHeight < 0 ? 0 : pService->GetBlockCount(hashFork) - nHeight;
+            result.vData = RPCRouteRetToStream(getTransactionRet);
+            SendRPCResult(result);
+            return true;
+        }
+        RPCForkHandle(&getTransaction, NULL);
+    }
     return true;
 }
 
@@ -2995,6 +3158,11 @@ void CDbpService::HandleRPCRoute(CMvEventDbpMethod& event)
     if(type == CMvRPCRoute::DBP_RPCROUTE_GET_TXPOOL)
     {
         HANDLE_RPC_ROUTE(CMvRPCRouteGetTxPool, CMvRPCRouteGetTxPoolRet);
+    }
+
+    if(type == CMvRPCRoute::DBP_RPCROUTE_GET_TRANSACTION)
+    {
+        HANDLE_RPC_ROUTE(CMvRPCRouteGetTransaction, CMvRPCRouteGetTransactionRet);
     }
 }
 
