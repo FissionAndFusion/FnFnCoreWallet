@@ -5,62 +5,95 @@
 #ifndef MULTIVERSE_RPCMOD_H
 #define MULTIVERSE_RPCMOD_H
 
-#include <boost/function.hpp>
-
-#include "mvbase.h"
-#include "walleve/walleve.h"
 #include "json/json_spirit.h"
+#include <boost/function.hpp>
+#include <thread>
+
+#include "walleve/walleve.h"
+
+#include "event.h"
+#include "mvbase.h"
 #include "rpc/rpc.h"
 
 namespace multiverse
 {
 
-class CRPCMod : public walleve::IIOModule, virtual public walleve::CWalleveHttpEventListener
+class CRPCMod : public walleve::IIOModule, virtual public walleve::CWalleveHttpEventListener, virtual public CMvRPCModEventListener
 {
 public:
-    typedef rpc::CRPCResultPtr (CRPCMod::*RPCFunc)(rpc::CRPCParamPtr param);
     CRPCMod();
     ~CRPCMod();
     bool HandleEvent(walleve::CWalleveEventHttpReq& eventHttpReq) override;
     bool HandleEvent(walleve::CWalleveEventHttpBroken& eventHttpBroken) override;
+    bool HandleEvent(CMvEventRPCModResponse& eventRPCModResponse) override;
+
+protected:
+    struct CWork
+    {
+        size_t nWorkId;
+        size_t nRemainder;
+        bool fArray;
+        rpc::CRPCReqVec vecReq;
+        rpc::CRPCRespVec vecResp;
+    };
 
 protected:
     bool WalleveHandleInitialize() override;
     void WalleveHandleDeinitialize() override;
-    const CMvNetworkConfig* WalleveConfig()
-    {
-        return dynamic_cast<const CMvNetworkConfig*>(walleve::IWalleveBase::WalleveConfig());
-    }
-
     void JsonReply(uint64 nNonce, const std::string& result);
 
-    int GetInt(const rpc::CRPCInt64& i, int valDefault)
+    bool CheckVersion(std::string& strVersion);
+    void AssignWork(const uint64 nNonce, const CWork& work);
+
+protected:
+    walleve::IIOProc* pHttpServer;
+    walleve::IIOModule* pRPCModWorker;
+
+    std::map<uint64, std::list<CWork>> mapWork;
+    size_t nWorkId;
+};
+
+class CRPCModWorker : public walleve::IIOModule, virtual public CMvRPCModEventListener
+{
+    typedef rpc::CRPCResultPtr (CRPCModWorker::*RPCFunc)(rpc::CRPCParamPtr param);
+
+public:
+    CRPCModWorker(uint nThreadIn = std::thread::hardware_concurrency() / 2 + 1);
+    ~CRPCModWorker();
+    bool HandleEvent(CMvEventRPCModRequest& eventRPCModRequest) override;
+
+protected:
+    struct CDestFork
     {
-        return i.IsValid() ? int(i) : valDefault;
-    }
-    unsigned int GetUint(const rpc::CRPCUint64& i,unsigned int valDefault)
-    {
-        return i.IsValid() ? uint64(i) : valDefault;
-    }
-    const bool GetForkHashOfDef(const rpc::CRPCString& hex, uint256& hashFork)
-    {
-        if (!hex.empty())
-        {  
-            if (hashFork.SetHex(hex) != hex.size())
-            {
-                return false;
-            }
-        }
-        else
+        CDestination dest;
+        uint256 hashFork;
+        friend inline bool operator<(const CDestFork& lhs, const CDestFork& rhs)
         {
-            hashFork = pCoreProtocol->GetGenesisBlockHash();
+            return (lhs.dest < rhs.dest) || (lhs.dest == rhs.dest && lhs.hashFork < rhs.hashFork);
         }
-        return true;
-    }
+    };
+    struct CDestMutex
+    {
+        size_t nRef = 0;
+        mutable boost::mutex mtx;
+    };
+    typedef std::shared_ptr<CDestMutex> CDestMutexPtr;
+
+protected:
+    bool WalleveHandleInitialize() override;
+    void WalleveHandleDeinitialize() override;
+
+    const CMvNetworkConfig* WalleveConfig();
+    int GetInt(const rpc::CRPCInt64& i, int valDefault);
+    unsigned int GetUint(const rpc::CRPCUint64& i, unsigned int valDefault);
+    const bool GetForkHashOfDef(const rpc::CRPCString& hex, uint256& hashFork);
     bool CheckWalletError(MvErr err);
     multiverse::crypto::CPubKey GetPubKey(const std::string& addr);
     void ListDestination(std::vector<CDestination>& vDestination);
-    bool CheckVersion(std::string& strVersion);
+
+    CDestMutexPtr LockDestMutex(const CDestFork& destFork);
+    void UnlockDestMutex(const CDestFork& destFork);
+
 private:
     /* System */
     rpc::CRPCResultPtr RPCHelp(rpc::CRPCParamPtr param);
@@ -120,9 +153,12 @@ private:
     rpc::CRPCResultPtr RPCSubmitWork(rpc::CRPCParamPtr param);
 
 protected:
-    walleve::IIOProc *pHttpServer;
-    ICoreProtocol *pCoreProtocol;
-    IService *pService;
+    ICoreProtocol* pCoreProtocol;
+    IService* pService;
+    walleve::IIOModule* pRPCMod;
+
+    mutable boost::mutex destForkMutex;
+    std::map<CDestFork, CDestMutexPtr> mapDestMutex;
 
 private:
     std::map<std::string, RPCFunc> mapRPCFunc;

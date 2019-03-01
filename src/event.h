@@ -49,7 +49,11 @@ enum
     MV_EVENT_DBP_PONG,
 
     MV_EVENT_DBP_BROKEN,
-    MV_EVENT_DBP_REMOVE_SESSION
+    MV_EVENT_DBP_REMOVE_SESSION,
+
+    // rpc mod
+    MV_EVENT_RPCMOD_REQUEST,
+    MV_EVENT_RPCMOD_RESPONSE,
 };
 
 class CMvBlockMakerEventListener;
@@ -173,6 +177,22 @@ public:
     DECLARE_EVENTHANDLER(CMvEventDbpPing);
     DECLARE_EVENTHANDLER(CMvEventDbpPong);
 
+};
+
+// rpc mod
+class CMvRPCModEventListener;
+#define TYPE_RPCMODEVENT(type, body) \
+    walleve::CWalleveEventCategory<type, CMvRPCModEventListener, body, CNil>
+
+typedef TYPE_RPCMODEVENT(MV_EVENT_RPCMOD_REQUEST, CRPCModRequest) CMvEventRPCModRequest;
+typedef TYPE_RPCMODEVENT(MV_EVENT_RPCMOD_RESPONSE, CRPCModResponse) CMvEventRPCModResponse;
+
+class CMvRPCModEventListener : virtual public walleve::CWalleveEventListener
+{
+public:
+    virtual ~CMvRPCModEventListener() {}
+    DECLARE_EVENTHANDLER(CMvEventRPCModRequest);
+    DECLARE_EVENTHANDLER(CMvEventRPCModResponse);
 };
 
 } // namespace multiverse
