@@ -103,20 +103,26 @@ inline bool IsRoutable(const boost::asio::ip::address& address)
     {
         boost::asio::ip::address_v6::bytes_type b = address.to_v6().to_bytes();
         
-        // RFC4862
+        // RFC4862 https://tools.ietf.org/html/rfc4862
+        // IPv6 Link-local addresses
+        // FE80::/64
         if (b[0] == 0xFE && b[1] == 0x80 && b[2] == 0 && b[3] == 0 
             && b[4] == 0 && b[5] == 0 && b[6] == 0 && b[7] == 0)
         {
             return false;
         }
         
-        // RFC4193
+        // RFC4193 https://tools.ietf.org/html/rfc4193
+        // Local IPv6 Unicast Addresses
+        // FC00::/7 prefix
         if ((b[0] & 0xFE) == 0xFC)
         {
             return false;
         }
         
-        // RFC4843
+        // RFC4843 https://tools.ietf.org/html/rfc4843
+        // An IPv6 Prefix for Overlay Routable Cryptographic Hash Identifiers
+        // 2001:10::/28 prefix
         if (b[0] == 0x20 && b[1] == 0x01 && b[2] == 0x00 && (b[3] & 0xF0) == 0x10)
         {
             return false;
