@@ -472,6 +472,15 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                 vector<CNodeAvail> vNode;
                 RetrieveGoodNode(vNode,NODE_ACTIVE_TIME,500);
                 vector<CAddress> vAddr;
+                
+                const CNetHost& gateWayNode = confNetwork.gateWayNode;
+                if(gateWayNode.data.type() == typeid(uint64) && 
+                    IsRoutable(gateWayNode.ToEndPoint().address()))
+                {
+                    uint64 nService = boost::any_cast<uint64>(gateWayNode.data);
+                    vAddr.push_back(CAddress(nService, gateWayNode.ToEndPoint()));
+                }
+                
                 BOOST_FOREACH(const CNodeAvail& node,vNode)
                 {
                     if (node.data.type() == typeid(uint64) && IsRoutable(node.ep.address()))

@@ -61,6 +61,13 @@ bool CNetwork::WalleveHandleInitialize()
                                               boost::any(uint64(network::NODE_NETWORK))));
         }
     }
+
+    if(NetworkConfig()->fListen4 || NetworkConfig()->fListen6)
+    {
+        config.gateWayNode = CNetHost(NetworkConfig()->strGateWay, config.nPortDefault, NetworkConfig()->strGateWay,
+                                              boost::any(uint64(network::NODE_NETWORK)));
+    }
+
     ConfigNetwork(config);
 
     return CVirtualPeerNet::WalleveHandleInitialize();

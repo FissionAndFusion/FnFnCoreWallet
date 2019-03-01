@@ -421,6 +421,13 @@
             "desc": "Listen for connections on <port> (default: 6811 or testnet: 6813)"
         },
         {
+            "name": "strGateWay",
+            "type": "string",
+            "opt": "gateway",
+            "format": "-gateway=<ip>:<port>",
+            "desc": "The form of <ip>:<port> of address of gateway(default <port>: 6811)"
+        },
+        {
             "name": "nMaxConnection",
             "type": "int",
             "opt": "maxconnections",
