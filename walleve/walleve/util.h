@@ -93,7 +93,7 @@ inline bool IsRoutable(const boost::asio::ip::address& address)
         
         // RFC3927 https://tools.ietf.org/html/rfc3927
         // IPv4 Link-Local addresses
-        // 0xFFFF0000 => 169.254.0.0 prefix
+        // 0xA9FE0000 => 169.254.0.0 prefix
         if ((u & 0xFFFF0000) == 0xA9FE0000)
         {
             return false;
