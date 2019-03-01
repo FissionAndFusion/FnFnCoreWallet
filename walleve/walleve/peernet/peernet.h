@@ -91,10 +91,11 @@ protected:
     bool HandleEvent(CWalleveEventPeerNetClose& eventClose) override;
     int GetCandidateNodeCount() { return epMngr.GetCandidateNodeCount(); }
 
+    void AddPeerRecord(CPeer* pPeer);
 protected:
     CPeerNetConfig confNetwork;
     boost::asio::ip::address localIP;
-
+    std::set<boost::asio::ip::address> setIP;
 private:
     CEndpointManager epMngr;
     std::map<uint64, CPeer*> mapPeer;

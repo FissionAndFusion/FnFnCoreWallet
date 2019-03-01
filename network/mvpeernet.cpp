@@ -499,7 +499,9 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                     tcp::endpoint ep;
                     addr.ssEndpoint.GetEndpoint(ep);          
                     if ((addr.nService & NODE_NETWORK) == NODE_NETWORK 
-                         && IsRoutable(ep.address()) && !setDNSeed.count(ep))
+                         && IsRoutable(ep.address()) 
+                         && !setDNSeed.count(ep) 
+                         && !setIP.count(ep.address()))
                     {   
                         AddNewNode(ep,ep.address().to_string(),boost::any(addr.nService));
                     }
