@@ -175,6 +175,18 @@ private:
     void RPCForkHandle(CMvRPCRouteGetForkHeight* data, CMvRPCRouteGetForkHeightRet* ret);
     void RPCForkHandle(CMvRPCRouteSendTransaction* data, CMvRPCRouteSendTransactionRet* ret);
 
+    bool HandleAddedEventStop(CMvEventRPCRouteAdded& event, walleve::CWalleveBufStream& ss);
+    bool HandleAddedEventGetForkCount(CMvEventRPCRouteAdded& event, walleve::CWalleveBufStream& ss);
+    bool HandleAddedEventListFork(CMvEventRPCRouteAdded& event, walleve::CWalleveBufStream& ss);
+    bool HandleAddedEventGetBlockLocation(CMvEventRPCRouteAdded& event, walleve::CWalleveBufStream& ss);
+    bool HandleAddedEventGetBlockCount(CMvEventRPCRouteAdded& event, walleve::CWalleveBufStream& ss);
+    bool HandleAddedEventGetBlockHash(CMvEventRPCRouteAdded& event, walleve::CWalleveBufStream& ss);
+    bool HandleAddedEventGetBlock(CMvEventRPCRouteAdded& event, walleve::CWalleveBufStream& ss);
+    bool HandleAddedEventGetTxPool(CMvEventRPCRouteAdded& event, walleve::CWalleveBufStream& ss);
+    bool HandleAddedEventGetTransaction(CMvEventRPCRouteAdded& event, walleve::CWalleveBufStream& ss);
+    bool HandleAddedEventGetForkHeight(CMvEventRPCRouteAdded& event, walleve::CWalleveBufStream& ss);
+    bool HandleAddedEventSendTransaction(CMvEventRPCRouteAdded& event, walleve::CWalleveBufStream& ss);
+
     void SendEventToParentNode(CMvDbpVirtualPeerNetEvent& event);
     void UpdateGetDataEventRecord(const CMvEventPeerGetData& event);
     bool IsThisNodeData(const uint256& hashFork, uint64 nNonce, const uint256& dataHash);
