@@ -47,6 +47,14 @@ public:
     {
         return (nVersion == 0);
     }
+    bool IsLocked(const uint32 n, const int nBlockHeight) const
+    {
+        if (n == (nLockUntil >> 31))
+        {
+            return (nBlockHeight < (nLockUntil & 0x7FFFFFFF));
+        }
+        return false;
+    }
     int64 GetTxTime() const
     {
         return ((int64)nTimeStamp);

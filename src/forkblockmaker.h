@@ -38,7 +38,7 @@ public:
     bool BuildTemplate();
     std::size_t GetSignatureSize() const
     {
-        std::size_t size = templMint->GetTemplateDataSize() + 64;
+        std::size_t size = templMint->GetTemplateData().size() + 64;
         walleve::CVarInt var(size);
         return (size + walleve::GetSerializeSize(var));
     }
@@ -47,7 +47,7 @@ public:
     int nAlgo;
     CDestination destMint;
     crypto::CKey keyMint;
-    CTemplatePtr templMint;
+    CTemplateMintPtr templMint;
 };
 
 // BlockMaker for forknode of supernode

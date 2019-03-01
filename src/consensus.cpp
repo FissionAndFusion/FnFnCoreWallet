@@ -5,6 +5,8 @@
 #include "consensus.h"
 #include "address.h"
 
+#include "template/delegate.h"
+
 using namespace std;
 using namespace walleve;
 using namespace multiverse;
@@ -35,11 +37,10 @@ CDelegateContext::CDelegateContext()
 }
 
 CDelegateContext::CDelegateContext(const crypto::CKey& keyDelegateIn,const CDestination& destOwnerIn)
+    : keyDelegate(keyDelegateIn),destOwner(destOwnerIn)
 {
-    keyDelegate   = keyDelegateIn;
-    destOwner     = destOwnerIn;
-    templDelegate = CTemplatePtr(new CTemplateDelegate(keyDelegateIn.GetPubKey(),destOwner));
-    destDelegate  = CDestination(templDelegate->GetTemplateId());
+    templDelegate = CTemplate::CreateTemplatePtr(new CTemplateDelegate(keyDelegateIn.GetPubKey(),destOwner));
+    destDelegate.SetTemplateId(templDelegate->GetTemplateId());
 }
 
 void CDelegateContext::Clear()
@@ -134,7 +135,7 @@ bool CDelegateContext::BuildEnrollTx(CTransaction& tx,int nBlockHeight,int64 nTi
     {
         const CTxOutPoint& txout = (*it).first;
         CDelegateTx* pTx = (*it).second;
-        if (pTx->nLockUntil != 0 && nBlockHeight < pTx->nLockUntil)
+        if (pTx->IsLocked(txout.n, nBlockHeight))
         {
             continue;
         }
@@ -162,7 +163,7 @@ bool CDelegateContext::BuildEnrollTx(CTransaction& tx,int nBlockHeight,int64 nTi
     {
         return false;
     }
-    CTemplateDelegate* p = (CTemplateDelegate*)templDelegate.get();
+    CTemplateDelegate* p = dynamic_cast<CTemplateDelegate*>(templDelegate.get());
     return p->BuildVssSignature(hash,vchDelegateSig,tx.vchSig);
 } 
 

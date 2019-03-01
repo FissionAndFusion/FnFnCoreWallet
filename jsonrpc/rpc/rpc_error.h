@@ -2,16 +2,14 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef MULTIVERSE_RPC_RPC_ERROR_H
-#define MULTIVERSE_RPC_RPC_ERROR_H
+#ifndef RPC_ERROR_H
+#define RPC_ERROR_H
 
 #include <exception>
 #include <memory>
 
 #include "json/json_spirit_writer_template.h"
 
-namespace multiverse
-{
 namespace rpc
 {
 
@@ -72,7 +70,7 @@ enum RPCErrorCode
 };
 
 /**
- * @brief A mapping of JSON-RPC v2.0 response field "error", basic class.
+ * A mapping of JSON-RPC v2.0 response field "error", basic class.
  */
 class CRPCError
 {
@@ -119,6 +117,4 @@ private:
 
 }  // namespace rpc
 
-}  // namespace multiverse
-
-#endif  // MULTIVERSE_RPC_RPC_JSON_H
+#endif  // RPC_ERROR_H

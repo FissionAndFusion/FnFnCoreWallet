@@ -11,17 +11,117 @@
 #include <boost/filesystem/fstream.hpp>
 #include <boost/regex.hpp>
 
+#include "json/json_spirit_reader_template.h"
 #include "address.h"
-#include "template.h"
 #include "version.h"
-#include "rpc/auto_rpc.h"
+#include "rpc/auto_protocol.h"
+#include "template/template.h"
+#include "template/proof.h"
 
 using namespace std;
 using namespace multiverse;
 using namespace walleve;
 using namespace json_spirit;
-using namespace multiverse::rpc;
+using namespace rpc;
 namespace fs = boost::filesystem;
+
+///////////////////////////////
+// static function
+
+static int64 AmountFromValue(const double dAmount)
+{
+    if (dAmount <= 0.0 || dAmount > MAX_MONEY)
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Invalid amount");
+    }
+    int64 nAmount = (int64)(dAmount * COIN + 0.5);
+    if (!MoneyRange(nAmount))
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Invalid amount");
+    }
+    return nAmount;
+}
+
+static double ValueFromAmount(int64 amount)
+{
+    return ((double)amount / (double)COIN);
+}
+
+static CBlockData BlockToJSON(const uint256& hashBlock,const CBlock& block,const uint256& hashFork,int nHeight)
+{
+    CBlockData data;
+    data.strHash = hashBlock.GetHex();
+    data.nVersion = block.nVersion;
+    data.strType = GetBlockTypeStr(block.nType,block.txMint.nType);
+    data.nTime = block.GetBlockTime();
+    if (block.hashPrev != 0)
+    {
+        data.strPrev = block.hashPrev.GetHex();
+    }
+    data.strFork = hashFork.GetHex();
+    data.nHeight = nHeight;
+    
+    data.strTxmint = block.txMint.GetHash().GetHex();
+    BOOST_FOREACH(const CTransaction& tx,block.vtx)
+    {
+        data.vecTx.push_back(tx.GetHash().GetHex());
+    }
+    return data;
+}
+
+static CTransactionData TxToJSON(const uint256& txid,const CTransaction& tx,const uint256& hashFork,int nDepth)
+{
+    CTransactionData ret;
+    ret.strTxid = txid.GetHex();
+    ret.nVersion = tx.nVersion;
+    ret.strType = tx.GetTypeString();
+    ret.nTime = tx.nTimeStamp;
+    ret.nLockuntil = tx.nLockUntil;
+    ret.strAnchor = tx.hashAnchor.GetHex();
+    BOOST_FOREACH(const CTxIn& txin, tx.vInput)
+    {
+        CTransactionData::CVin vin;
+        vin.nVout = txin.prevout.n;
+        vin.strTxid = txin.prevout.hash.GetHex();
+        ret.vecVin.push_back(move(vin));
+    }
+    ret.strSendto = CMvAddress(tx.sendTo).ToString();
+    ret.fAmount = ValueFromAmount(tx.nAmount);
+    ret.fTxfee = ValueFromAmount(tx.nTxFee);
+
+    ret.strData = walleve::ToHexString(tx.vchData);
+    ret.strSig = walleve::ToHexString(tx.vchSig);
+    ret.strFork = hashFork.GetHex();
+    if (nDepth >= 0)
+    {
+        ret.nConfirmations = nDepth;
+    }
+
+    return ret;
+}
+
+static CWalletTxData WalletTxToJSON(const CWalletTx& wtx)
+{
+    CWalletTxData data;
+    data.strTxid = wtx.txid.GetHex();
+    data.strFork = wtx.hashFork.GetHex();
+    if (wtx.nBlockHeight >= 0)
+    {
+        data.nBlockheight = wtx.nBlockHeight;
+    }
+    data.strType = wtx.GetTypeString();
+    data.nTime = (boost::int64_t)wtx.nTimeStamp;
+    data.fSend = wtx.IsFromMe();
+    if (!wtx.IsMintTx())
+    {
+        data.strFrom = CMvAddress(wtx.destIn).ToString();
+    }
+    data.strTo = CMvAddress(wtx.sendTo).ToString();
+    data.fAmount = ValueFromAmount(wtx.nAmount);
+    data.fFee = ValueFromAmount(wtx.nTxFee);
+    data.nLockuntil = (boost::int64_t)wtx.nLockUntil;
+    return data;
+}
 
 ///////////////////////////////
 // CRPCMod
@@ -298,79 +398,6 @@ crypto::CPubKey CRPCMod::GetPubKey(const string& addr)
     return pubkey;
 }
 
-CTemplatePtr CRPCMod::MakeTemplate(const CTemplateRequest& obj)
-{
-    CTemplatePtr ptr;
-    if (obj.strType == "weighted")
-    {
-        const int64& nRequired = obj.weighted.nRequired;
-        const vector<CTemplatePubKeyWeight>& vecPubkeys = obj.weighted.vecPubkeys;
-        vector<pair<crypto::CPubKey,unsigned char> > vPubKey;
-        for (auto& info: vecPubkeys)
-        {
-            crypto::CPubKey pubkey = GetPubKey(info.strKey);
-            int nWeight = info.nWeight;
-            if (nWeight <= 0 || nWeight >= 256)
-            {
-                throw CRPCException(RPC_INVALID_PARAMETER, "Invalid parameter, missing weight");
-            }
-            vPubKey.push_back(make_pair(pubkey,(unsigned char)nWeight));
-        }
-        ptr = CTemplatePtr(new CTemplateWeighted(vPubKey,nRequired));
-    }
-    else if (obj.strType == "multisig")
-    {
-        const int64& nRequired = obj.multisig.nRequired;
-        const vector<string>& vecPubkeys = obj.multisig.vecPubkeys;
-        vector<crypto::CPubKey> vPubKey;
-        for (auto& key : vecPubkeys)
-        {
-            vPubKey.push_back(GetPubKey(key));
-        } 
-        ptr = CTemplatePtr(new CTemplateMultiSig(vPubKey,nRequired));
-    }
-    else if (obj.strType == "fork")
-    {
-        const string& strRedeem = obj.fork.strRedeem;
-        const string& strFork = obj.fork.strFork;
-        CMvAddress address(strRedeem);
-        if (address.IsNull())
-        {
-            throw CRPCException(RPC_INVALID_PARAMETER, "Invalid parameter, missing redeem address");
-        }
-        uint256 hashFork(strFork);
-        ptr = CTemplatePtr(new CTemplateFork(static_cast<CDestination&>(address),hashFork));
-    }
-    else if (obj.strType == "mint")
-    {
-        const string& strMint = obj.mint.strMint;
-        const string& strSpent = obj.mint.strSpent;
-        crypto::CPubKey keyMint = GetPubKey(strMint);
-        CMvAddress addrSpent(strSpent);
-        if (addrSpent.IsNull())
-        {
-            throw CRPCException(RPC_INVALID_PARAMETER, "Invalid parameter, missing spent address");
-        }
-        ptr = CTemplatePtr(new CTemplateMint(keyMint,static_cast<CDestination&>(addrSpent)));
-    }
-    else if (obj.strType == "delegate")
-    {
-        const string& strDelegate = obj.delegate.strDelegate;
-        const string& strOwner = obj.delegate.strOwner;
-        crypto::CPubKey keyDelegate = GetPubKey(strDelegate);
-        CMvAddress addrOwner(strOwner);
-        if (addrOwner.IsNull())
-        {
-            throw CRPCException(RPC_INVALID_PARAMETER, "Invalid parameter, missing owner address");
-        }
-        ptr = CTemplatePtr(new CTemplateDelegate(keyDelegate,static_cast<CDestination&>(addrOwner)));
-    }
-    else {
-        throw CRPCException(RPC_INVALID_PARAMS, string("template type error. type: ") + obj.strType);
-    }
-    return ptr;
-}
-
 void CRPCMod::ListDestination(vector<CDestination>& vDestination)
 {
     set<crypto::CPubKey> setPubKey;
@@ -411,7 +438,7 @@ CRPCResultPtr CRPCMod::RPCHelp(CRPCParamPtr param)
 {
     auto spParam = CastParamPtr<CHelpParam>(param);
     string command = spParam->strCommand;
-    return MakeCHelpResultPtr(Help(EModeType::CONSOLE, command));
+    return MakeCHelpResultPtr(RPCHelpInfo(EModeType::CONSOLE, command));
 }
 
 CRPCResultPtr CRPCMod::RPCStop(CRPCParamPtr param)
@@ -1009,10 +1036,10 @@ CRPCResultPtr CRPCMod::RPCExportKey(CRPCParamPtr param)
 CRPCResultPtr CRPCMod::RPCAddNewTemplate(CRPCParamPtr param)
 {
     auto spParam = CastParamPtr<CAddNewTemplateParam>(param);
-    CTemplatePtr ptr = MakeTemplate(spParam->data);
-    if (ptr == NULL || ptr->IsNull())
+    CTemplatePtr ptr = CTemplate::CreateTemplatePtr(spParam->data, CMvAddress());
+    if (ptr == NULL)
     {
-        throw CRPCException(RPC_INVALID_PARAMETER,"Invalid parameters,failed to make template");
+        throw CRPCException(RPC_INVALID_PARAMETER,"Invalid parameters, failed to make template");
     }
     if (!pService->AddTemplate(ptr))
     {
@@ -1030,8 +1057,8 @@ CRPCResultPtr CRPCMod::RPCImportTemplate(CRPCParamPtr param)
 {
     auto spParam = CastParamPtr<CImportTemplateParam>(param);
     vector<unsigned char> vchTemplate = ParseHexString(spParam->strData);
-    CTemplatePtr ptr = CTemplateGeneric::CreateTemplatePtr(vchTemplate);
-    if (ptr == NULL || ptr->IsNull())
+    CTemplatePtr ptr = CTemplate::Import(vchTemplate);
+    if (ptr == NULL)
     {
         throw CRPCException(RPC_INVALID_PARAMETER,"Invalid parameters,failed to make template");
     }
@@ -1060,20 +1087,19 @@ CRPCResultPtr CRPCMod::RPCExportTemplate(CRPCParamPtr param)
         throw CRPCException(RPC_INVALID_PARAMETER, "Invalid address");
     }
 
-    CTemplateId tid;
-    if (!address.GetTemplateId(tid))
+    CTemplateId tid = address.GetTemplateId();
+    if (!tid)
     {
         throw CRPCException(RPC_INVALID_PARAMETER, "Invalid address");
     }
 
-    CTemplatePtr ptr;
-    if (!pService->GetTemplate(tid,ptr))
+    CTemplatePtr ptr = pService->GetTemplate(tid);
+    if (!ptr)
     {
         throw CRPCException(RPC_WALLET_ERROR,"Unkown template");
     }
-    vector<unsigned char> vchTemplate;
-    ptr->Export(vchTemplate);
 
+    vector<unsigned char> vchTemplate = ptr->Export();
     return MakeCExportTemplateResultPtr(ToHexString(vchTemplate));
 }
 
@@ -1102,63 +1128,19 @@ CRPCResultPtr CRPCMod::RPCValidateAddress(CRPCParamPtr param)
         }
         else if (address.IsTemplate())
         {
-            CTemplateId tid;
-            address.GetTemplateId(tid);
-            CTemplatePtr ptr;
+            CTemplateId tid = address.GetTemplateId();
             uint16 nType = tid.GetType();
-            bool isMine = pService->GetTemplate(tid,ptr);
-            addressData.fIsmine = isMine;
+            CTemplatePtr ptr = pService->GetTemplate(tid);
+            addressData.fIsmine = (ptr != NULL);
             addressData.strType = "template";
-            addressData.strTemplate = CTemplateGeneric::GetTypeName(nType);
-            if (isMine)
+            addressData.strTemplate = CTemplate::GetTypeName(nType);
+            if (ptr)
             {
                 auto& templateData = addressData.templatedata;
 
-                vector<unsigned char> vchTemplate;
-                ptr->Export(vchTemplate);
-                templateData.strHex = ToHexString(vchTemplate);
-                templateData.strType = CTemplateGeneric::GetTypeName(nType);
-                if (nType == TEMPLATE_WEIGHTED)
-                {
-                    CTemplateWeighted* p = (CTemplateWeighted*)ptr.get();
-                    templateData.weighted.nSigsrequired = p->nRequired;
-                    for (map<crypto::CPubKey,unsigned char>::iterator it = p->mapPubKeyWeight.begin();
-                         it != p->mapPubKeyWeight.end();++it)
-                    {
-                        CTemplatePubKeyWeight pubkey;
-                        pubkey.strKey = CMvAddress((*it).first).ToString();
-                        pubkey.nWeight = (*it).second;
-                        templateData.weighted.vecAddresses.push_back(pubkey);
-                    }
-                }
-                else if (nType == TEMPLATE_MULTISIG)
-                {
-                    CTemplateMultiSig* p = (CTemplateMultiSig*)ptr.get();
-                    templateData.multisig.nSigsrequired = p->nRequired;
-                    for (map<crypto::CPubKey,unsigned char>::iterator it = p->mapPubKeyWeight.begin();
-                         it != p->mapPubKeyWeight.end();++it)
-                    {
-                        templateData.multisig.vecAddresses.push_back(CMvAddress((*it).first).ToString());
-                    }
-                }
-                else if (nType == TEMPLATE_FORK)
-                {
-                    CTemplateFork* p = (CTemplateFork*)ptr.get();
-                    templateData.fork.strFork = p->hashFork.GetHex();
-                    templateData.fork.strRedeem = CMvAddress(p->destRedeem).ToString();
-                }
-                else if (nType == TEMPLATE_MINT)
-                {
-                    CTemplateMint* p = (CTemplateMint*)ptr.get();
-                    templateData.mint.strMint = CMvAddress(p->keyMint).ToString();
-                    templateData.mint.strSpent = CMvAddress(p->destSpend).ToString();
-                }
-                else if (nType == TEMPLATE_DELEGATE)
-                {
-                    CTemplateDelegate* p = (CTemplateDelegate*)ptr.get();
-                    templateData.delegate.strDelegate = CMvAddress(p->keyDelegate).ToString();
-                    templateData.delegate.strOwner = CMvAddress(p->destOwner).ToString();
-                }
+                templateData.strHex = ToHexString(ptr->Export());
+                templateData.strType = ptr->GetName();
+                ptr->GetTemplateData(templateData, CMvAddress());
             }
         }
     }
@@ -1420,7 +1402,7 @@ CRPCResultPtr CRPCMod::RPCSignTransaction(CRPCParamPtr param)
 
     auto spResult = MakeCSignTransactionResultPtr();
     spResult->strHex = ToHexString((const unsigned char*)ssNew.GetData(),ssNew.GetSize());
-    spResult->fComplete = fCompleted;
+    spResult->fCompleted = fCompleted;
     return spResult;
 }
 
@@ -1478,69 +1460,15 @@ CRPCResultPtr CRPCMod::RPCListAddress(CRPCParamPtr param)
         {
             addressData.strType = "template";
 
-            CTemplateId tid;
-            des.GetTemplateId(tid);
-            CTemplatePtr ptr;
+            CTemplateId tid = des.GetTemplateId();
             uint16 nType = tid.GetType();
-            pService->GetTemplate(tid,ptr);
-            addressData.strTemplate = CTemplateGeneric::GetTypeName(nType);
-
-            vector<unsigned char> vchTemplate;
-            ptr->Export(vchTemplate);
+            CTemplatePtr ptr = pService->GetTemplate(tid);
+            addressData.strTemplate = CTemplate::GetTypeName(nType);
 
             auto& templateData = addressData.templatedata;
-            templateData.strHex = ToHexString(vchTemplate);
-            templateData.strType = CTemplateGeneric::GetTypeName(nType);
-            switch(nType)
-            {
-                case TEMPLATE_WEIGHTED:
-                    {
-                        CTemplateWeighted* p = dynamic_cast<CTemplateWeighted*>(ptr.get());
-                        templateData.weighted.nSigsrequired = p->nRequired;
-                        for (const auto& it : p->mapPubKeyWeight)
-                        {
-                            CTemplatePubKeyWeight pubkey;
-                            pubkey.strKey = CMvAddress(it.first).ToString();
-                            pubkey.nWeight = it.second;
-                            templateData.weighted.vecAddresses.push_back(pubkey);
-                        }
-                    }
-                    break;
-                case TEMPLATE_MULTISIG:
-                    {
-                        CTemplateMultiSig* p = dynamic_cast<CTemplateMultiSig*>(ptr.get());
-                        templateData.multisig.nSigsrequired = p->nRequired;
-                        Array addresses;
-                        for (const auto& it : p->mapPubKeyWeight)
-                        {
-                            templateData.multisig.vecAddresses.push_back(CMvAddress(it.first).ToString());
-                        }
-                    }
-                    break;
-                case TEMPLATE_FORK:
-                    {
-                        CTemplateFork* p = dynamic_cast<CTemplateFork*>(ptr.get());
-                        templateData.fork.strFork = p->hashFork.GetHex();
-                        templateData.fork.strRedeem = CMvAddress(p->destRedeem).ToString();
-                    }
-                    break;
-                case TEMPLATE_MINT:
-                    {
-                        CTemplateMint* p = dynamic_cast<CTemplateMint*>(ptr.get());
-                        templateData.mint.strMint = CMvAddress(p->keyMint).ToString();
-                        templateData.mint.strSpent = CMvAddress(p->destSpend).ToString();
-                    }
-                    break;
-                case TEMPLATE_DELEGATE:
-                    {
-                        CTemplateDelegate* p = dynamic_cast<CTemplateDelegate*>(ptr.get());
-                        templateData.delegate.strDelegate = CMvAddress(p->keyDelegate).ToString();
-                        templateData.delegate.strOwner = CMvAddress(p->destOwner).ToString();
-                    }
-                    break;
-                default:
-                    break;
-            }
+            templateData.strHex = ToHexString(ptr->Export());
+            templateData.strType = ptr->GetName();
+            ptr->GetTemplateData(templateData, CMvAddress());
         }
         else
         {
@@ -1613,13 +1541,12 @@ CRPCResultPtr CRPCMod::RPCExportWallet(CRPCParamPtr param)
             {
                 throw CRPCException(RPC_INVALID_PARAMETER, "Invalid template address");
             }
-            CTemplatePtr ptr;
-            if (!pService->GetTemplate(tid, ptr))
+            CTemplatePtr ptr = pService->GetTemplate(tid);
+            if (!ptr)
             {
                 throw CRPCException(RPC_WALLET_ERROR, "Unkown template");
             }
-            vector<unsigned char> vchTemplate;
-            ptr->Export(vchTemplate);
+            vector<unsigned char> vchTemplate = ptr->Export();
 
             oTemp.push_back(Pair("hex", ToHexString(vchTemplate)));
 
@@ -1734,8 +1661,8 @@ CRPCResultPtr CRPCMod::RPCImportWallet(CRPCParamPtr param)
         if(addr.IsTemplate())
         {
             vector<unsigned char> vchTemplate = ParseHexString(sHex);
-            CTemplatePtr ptr = CTemplateGeneric::CreateTemplatePtr(vchTemplate);
-            if (ptr == NULL || ptr->IsNull())
+            CTemplatePtr ptr = CTemplate::Import(vchTemplate);
+            if (ptr == NULL)
             {
                 throw CRPCException(RPC_INVALID_PARAMETER,"Invalid parameters,failed to make template");
             }
@@ -1931,15 +1858,14 @@ CRPCResultPtr CRPCMod::RPCGetTemplateAddress(CRPCParamPtr param)
 CRPCResultPtr CRPCMod::RPCMakeTemplate(CRPCParamPtr param)
 {
     auto spParam = CastParamPtr<CMakeTemplateParam>(param);
-    CTemplatePtr ptr = MakeTemplate(spParam->data);
-    if (ptr == NULL || ptr->IsNull())
+    CTemplatePtr ptr = CTemplate::CreateTemplatePtr(spParam->data, CMvAddress());
+    if (ptr == NULL)
     {
         throw CRPCException(RPC_INVALID_PARAMETER, "Invalid parameters,failed to make template");
     }
-    vector<unsigned char> vchTemplate;
-    ptr->Export(vchTemplate);
 
     auto spResult = MakeCMakeTemplateResultPtr();
+    vector<unsigned char> vchTemplate = ptr->Export();
     spResult->strHex = ToHexString(vchTemplate);
     spResult->strAddress = CMvAddress(ptr->GetTemplateId()).ToString();
     return spResult;
@@ -2031,7 +1957,7 @@ CRPCResultPtr CRPCMod::RPCSubmitWork(CRPCParamPtr param)
         throw CRPCException(RPC_INVALID_ADDRESS_OR_KEY,"Invalid private key");
     }
     
-    CTemplatePtr ptr = CTemplatePtr(new CTemplateMint(key.GetPubKey(),static_cast<CDestination&>(addrSpent)));
+    CTemplateMintPtr ptr = CTemplateMint::CreateTemplatePtr(new CTemplateProof(key.GetPubKey(),static_cast<CDestination&>(addrSpent)));
     if (ptr == NULL)
     {
         throw CRPCException(RPC_INVALID_ADDRESS_OR_KEY,"Invalid mint template");

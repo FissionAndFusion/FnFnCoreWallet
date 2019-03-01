@@ -15,6 +15,10 @@ class CFP25519
 {
 public:
     CFP25519();
+    CFP25519(const CFP25519& fp);
+    CFP25519(CFP25519&& fp);
+    CFP25519& operator=(const CFP25519& fp);
+    CFP25519& operator=(CFP25519&& fp);
     CFP25519(const uint64_t u64);
     CFP25519(const uint8_t* md32);
     virtual ~CFP25519();

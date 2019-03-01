@@ -2,16 +2,14 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef MULTIVERSE_CRPC_CRPC_TYPE_H
-#define MULTIVERSE_CRPC_CRPC_TYPE_H
+#ifndef RPC_TYPE_H
+#define RPC_TYPE_H
 
 #include <iostream>
 #include <string>
 
 #include "walleve/type.h"
 
-namespace multiverse
-{
 namespace rpc
 {
 class CRPCType
@@ -272,6 +270,18 @@ inline bool operator==(const CRPCString& lhs, const CRPCString& rhs)
 {
     return std::string(lhs) == std::string(rhs);
 }
+inline bool operator!=(const char* lhs, const CRPCString& rhs)
+{
+    return !(lhs == rhs);
+}
+inline bool operator!=(const CRPCString& lhs, const char* rhs)
+{
+    return !(lhs == rhs);
+}
+inline bool operator!=(const CRPCString& lhs, const CRPCString& rhs)
+{
+    return !(lhs == rhs);
+}
 inline std::string operator+(const char* lhs, const CRPCString& rhs)
 {
     return std::string(lhs) + std::string(rhs);
@@ -309,13 +319,13 @@ public:
         fValid = false;
         return *this;
     }
-    CRPCVector& operator=(vector<T>&& vec)
+    CRPCVector& operator=(std::vector<T>&& vec)
     {
         o = vec;
         fValid = true;
         return *this;
     }
-    CRPCVector& operator=(const vector<T>& vec)
+    CRPCVector& operator=(const std::vector<T>& vec)
     {
         o = vec;
         fValid = true;
@@ -332,15 +342,15 @@ public:
         fValid = true;
     }
 
-    inline typename vector<T>::const_iterator begin() const
+    inline typename std::vector<T>::const_iterator begin() const
     {
         return o.begin();
     }
-    inline typename vector<T>::const_iterator end() const
+    inline typename std::vector<T>::const_iterator end() const
     {
         return o.end();
     }
-    inline typename vector<T>::size_type size() const
+    inline typename std::vector<T>::size_type size() const
     {
         return o.size();
     }
@@ -354,6 +364,4 @@ const CRPCType RPCValid(true);
 
 }  // namespace rpc
 
-}  // namespace multiverse
-
-#endif  // MULTIVERSE_CRPC_CRPC_TYPE_H
+#endif  // RPC_TYPE_H

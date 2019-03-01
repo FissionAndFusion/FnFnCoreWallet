@@ -4,6 +4,8 @@
 
 #include "wallet.h"
 
+#include "template/template.h"
+
 using namespace std;
 using namespace walleve;
 using namespace multiverse;
@@ -26,8 +28,8 @@ public:
     }
     bool WalkTemplate(const CTemplateId& tid,const std::vector<unsigned char>& vchData) override
     {
-        CTemplatePtr ptr = CTemplateGeneric::CreateTemplatePtr(tid.GetType(),vchData);
-        if (ptr != NULL && tid == ptr->GetTemplateId())
+        CTemplatePtr ptr = CTemplate::CreateTemplatePtr(tid.GetType(),vchData);
+        if (ptr)
         {
             return  pWallet->LoadTemplate(ptr);
         }
@@ -415,29 +417,27 @@ bool CWallet::Have(const CTemplateId& tid) const
 bool CWallet::AddTemplate(CTemplatePtr& ptr)
 {
     boost::unique_lock<boost::shared_mutex> wlock(rwKeyStore);
-    if (ptr != NULL && !ptr->IsNull())
+    if (ptr != NULL)
     {
         CTemplateId tid = ptr->GetTemplateId();
         if (mapTemplatePtr.insert(make_pair(tid,ptr)).second)
         {
-            vector<unsigned char> vchData;
-            ptr->GetTemplateData(vchData);
+            const vector<unsigned char>& vchData = ptr->GetTemplateData();
             return dbWallet.UpdateTemplate(tid,vchData);
         }
     }
     return false;
 }
 
-bool CWallet::GetTemplate(const CTemplateId& tid,CTemplatePtr& ptr)
+CTemplatePtr CWallet::GetTemplate(const CTemplateId& tid) const
 {
     boost::shared_lock<boost::shared_mutex> rlock(rwKeyStore);
     map<CTemplateId,CTemplatePtr>::const_iterator it = mapTemplatePtr.find(tid);
     if (it !=  mapTemplatePtr.end())
     {
-        ptr = (*it).second;
-        return true;
+        return (*it).second;
     }
-    return false;
+    return NULL;
 }
 
 void CWallet::GetDestinations(set<CDestination>& setDest)
@@ -497,16 +497,49 @@ bool CWallet::GetBalance(const CDestination& dest,const uint256& hashFork,int nF
     return true;
 }
 
-bool CWallet::SignTransaction(const CDestination& destIn,CTransaction& tx,bool& fCompleted) const
+bool CWallet::SignTransaction(const CDestination& destIn, CTransaction& tx, bool& fCompleted) const
 {
-    boost::shared_lock<boost::shared_mutex> rlock(rwKeyStore);
-    return SignDestination(destIn,tx.GetSignatureHash(),tx.vchSig,fCompleted);
+    vector<uint8> vchSig;
+
+    bool fDestInRecorded = CTemplate::IsDestInRecorded(tx.sendTo);
+    if (!tx.vchSig.empty())
+    {
+        if (fDestInRecorded)
+        {
+            CDestination preDestIn;
+            if (!CDestInRecordedTemplate::ParseDestIn(tx.vchSig, preDestIn, vchSig) || preDestIn != destIn)
+            {
+                return false;
+            }
+        }
+        else
+        {
+            vchSig = move(tx.vchSig);
+        }
+    }
+
+    {
+        boost::shared_lock<boost::shared_mutex> rlock(rwKeyStore);
+        if (!SignDestination(destIn, tx, tx.GetSignatureHash(), vchSig, fCompleted))
+        {
+            return false;
+        }
+    }
+
+    if (fDestInRecorded)
+    {
+        CDestInRecordedTemplate::RecordDestIn(destIn, vchSig, tx.vchSig);
+    }
+    else
+    {
+        tx.vchSig = move(vchSig);
+    }
+    return true;
 }
 
 bool CWallet::ArrangeInputs(const CDestination& destIn,const uint256& hashFork,int nForkHeight,CTransaction& tx)
 {
     tx.vInput.clear();
-    size_t nNoInputSize = GetSerializeSize(tx);
     int nMaxInput = (MAX_TX_SIZE - MAX_SIGNATURE_SIZE - 4) / 33;
     int64 nTargeValue = tx.nAmount + tx.nTxFee;
     vector<CTxOutPoint> vCoins;
@@ -1017,6 +1050,7 @@ int64 CWallet::SelectCoins(const CDestination& dest,const uint256& hashFork,int 
         {
             continue;
         }
+
         int64 nValue = out.GetAmount();
         pair<int64,CWalletTxOut> coin = make_pair(nValue,out);
 
@@ -1086,96 +1120,74 @@ bool CWallet::SignPubKey(const crypto::CPubKey& pubkey,const uint256& hash,vecto
     return false;
 }
 
-bool CWallet::SignDestination(const CDestination& destIn,const uint256& hash,vector<uint8>& vchSig,bool& fCompleted) const
+bool CWallet::SignMultiPubKey(const set<crypto::CPubKey>& setPubKey,const uint256& seed,const uint256& hash,vector<uint8>& vchSig) const
 {
-    crypto::CPubKey pubkey;
-    if (destIn.GetPubKey(pubkey))
+    bool fSigned = false;
+    for (auto& pubkey : setPubKey)
     {
-        fCompleted = SignPubKey(pubkey,hash,vchSig);
+        map<crypto::CPubKey,CWalletKeyStore>::const_iterator it = mapKeyStore.find(pubkey);
+        if (it != mapKeyStore.end())
+        {
+            fSigned |= (*it).second.key.MultiSign(setPubKey,seed,hash,vchSig);
+        }
+    }
+    return fSigned;
+}
+
+bool CWallet::SignDestination(const CDestination& destIn, const CTransaction& tx, const uint256& hash, vector<uint8>& vchSig, bool& fCompleted) const
+{
+    if (destIn.IsPubKey())
+    {
+        fCompleted = SignPubKey(destIn.GetPubKey(), hash, vchSig);
         return fCompleted;
     }
-    CTemplateId tid;
-    if (!destIn.GetTemplateId(tid))
+    else if (destIn.IsTemplate())
     {
-        return false;
-    }
-    
-    map<CTemplateId,CTemplatePtr>::const_iterator it = mapTemplatePtr.find(tid);
-    if (it == mapTemplatePtr.end())
-    {
-        return false;
-    }
-    CTemplatePtr ptr = (*it).second;
-    
-    uint16 nType = ptr->GetTemplateType();
-    if (nType == TEMPLATE_WEIGHTED || nType == TEMPLATE_MULTISIG)
-    {
-        bool fSigned = false;
-        CTemplateWeighted* p = (CTemplateWeighted*)ptr.get();
-        for (map<crypto::CPubKey,unsigned char>::iterator it = p->mapPubKeyWeight.begin();
-             it != p->mapPubKeyWeight.end(); ++it)
+        CTemplatePtr ptr = GetTemplate(destIn.GetTemplateId());
+        if (!ptr)
         {
-            const crypto::CPubKey& pk = (*it).first;
-            vector<uint8> vchKeySig;
-            if (SignPubKey(pk,hash,vchSig))
+            return false;
+        }
+
+        set<CDestination> setSubDest;
+        vector<uint8> vchSubSig;
+        if (!ptr->GetSignDestination(tx, vchSig, setSubDest, vchSubSig))
+        {
+            return false;
+        }
+
+        if (setSubDest.empty())
+        {
+            return false;
+        }
+        else if (setSubDest.size() == 1)
+        {
+            if(!SignDestination(*setSubDest.begin(), tx, hash, vchSubSig, fCompleted))
             {
-                if (!p->BuildTxSignature(hash,vchKeySig,vchSig,vchSig,fCompleted))
+                return false;
+            }
+        }
+        else
+        {
+            set<crypto::CPubKey> setPubKey;
+            for (const CDestination& dest : setSubDest)
+            {
+                if (!dest.IsPubKey())
                 {
                     return false;
                 }
-                fSigned = true;
+                setPubKey.insert(dest.GetPubKey());
             }
-            if (fCompleted)
+
+            if (!SignMultiPubKey(setPubKey, tx.hashAnchor, hash, vchSubSig))
             {
-                break;
+                return false;
             }
         }
 
-        return fSigned;
+        return ptr->BuildTxSignature(hash, tx.hashAnchor, tx.sendTo, vchSubSig, vchSig, fCompleted);
     }
 
-    else if (nType == TEMPLATE_FORK)
-    {
-        CTemplateFork* p = (CTemplateFork*)ptr.get();
-        vector<uint8> vchRedeemSig;
-        if (!vchSig.empty())
-        {
-            vchRedeemSig.assign(vchSig.begin() + p->vchData.size(),vchSig.end());
-        }
-        if (!SignDestination(p->destRedeem,hash,vchRedeemSig,fCompleted))
-        {
-            return false;
-        }
-        return p->BuildTxSignature(hash,vchRedeemSig,vchSig);
-    }
-    else if (nType == TEMPLATE_MINT)
-    {
-        CTemplateMint* p = (CTemplateMint*)ptr.get();
-        vector<uint8> vchSpendSig;
-        if (!vchSig.empty())
-        {
-            vchSpendSig.assign(vchSig.begin() + p->vchData.size(),vchSig.end());
-        }
-        if (!SignDestination(p->destSpend,hash,vchSpendSig,fCompleted))
-        {
-            return false;
-        }
-        return p->BuildTxSignature(hash,vchSpendSig,vchSig);
-    }
-    else if (nType == TEMPLATE_DELEGATE)
-    {
-        CTemplateDelegate* p = (CTemplateDelegate*)ptr.get();
-        vector<uint8> vchSpendSig;
-        if (!vchSig.empty())
-        {
-            vchSpendSig.assign(vchSig.begin() + p->vchData.size() + 33,vchSig.end());
-        }
-        if (!SignDestination(p->destOwner,hash,vchSpendSig,fCompleted))
-        {
-            return false;
-        }
-        return p->BuildTxSignature(p->destOwner,hash,vchSpendSig,vchSig);
-    }
     return false;
 }
 

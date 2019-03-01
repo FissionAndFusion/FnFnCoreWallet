@@ -2,8 +2,8 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef MULTIVERSE_RPC_RPC_REQ_H
-#define MULTIVERSE_RPC_RPC_REQ_H
+#ifndef RPC_REQ_H
+#define RPC_REQ_H
 
 #include <boost/program_options.hpp>
 #include <memory>
@@ -14,12 +14,10 @@
 #include "json/json_spirit_writer_template.h"
 #include "rpc/rpc_error.h"
 
-namespace multiverse
-{
 namespace rpc
 {
 /**
- * @brief A mapping of JSON-RPC v2.0 request field "param", basic class.
+ * A mapping of JSON-RPC v2.0 request field "param", basic class.
  */
 class CRPCParam
 {
@@ -45,7 +43,7 @@ CastParamPtr(CRPCParamPtr spParam)
 }
 
 /**
- * @brief A mapping of JSON-RPC v2.0 request structure.
+ * A mapping of JSON-RPC v2.0 request structure.
  *        JSON-RPC v2.0: https://www.jsonrpc.org/specification
  */
 class CRPCReq final
@@ -100,6 +98,4 @@ std::string SerializeCRPCReq(const CRPCReqVec& req, bool indent = false);
 
 }  // namespace rpc
 
-}  // namespace multiverse
-
-#endif  // MULTIVERSE_RPC_RPC_REQ_H
+#endif  // RPC_REQ_H

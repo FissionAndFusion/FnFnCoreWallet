@@ -2,20 +2,18 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef MULTIVERSE_RPC_RPC_RESP_H
-#define MULTIVERSE_RPC_RPC_RESP_H
+#ifndef RPC_RESP_H
+#define RPC_RESP_H
 
 #include "json/json_spirit_value.h"
 
 #include "rpc/rpc_error.h"
 #include "rpc/rpc_req.h"
 
-namespace multiverse
-{
 namespace rpc
 {
 /**
- * @brief A mapping of JSON-RPC v2.0 request field "param", basic class.
+ * A mapping of JSON-RPC v2.0 request field "param", basic class.
  */
 class CRPCResult
 {
@@ -72,7 +70,7 @@ public:
 
 
 /**
- * @brief A mapping of JSON-RPC v2.0 response structure.
+ * A mapping of JSON-RPC v2.0 response structure.
  *        JSON-RPC v2.0: https://www.jsonrpc.org/specification
  */
 class CRPCResp final
@@ -134,6 +132,4 @@ std::string SerializeCRPCResp(const CRPCRespVec& resp, bool indent = false);
 
 }  // namespace rpc
 
-}  // namespace multiverse
-
-#endif  // MULTIVERSE_RPC_RPC_RESP_H
+#endif  // RPC_RESP_H

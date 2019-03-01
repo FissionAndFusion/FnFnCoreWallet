@@ -4,6 +4,9 @@
 
 #include "blockmaker.h"
 #include "address.h"
+#include "template/proof.h"
+#include "template/delegate.h"
+
 using namespace std;
 using namespace walleve;
 using namespace multiverse;
@@ -35,15 +38,11 @@ bool CBlockMakerProfile::BuildTemplate()
     }
     if (nAlgo == CM_MPVSS)
     {
-        templMint = CTemplatePtr(new CTemplateDelegate(keyMint.GetPubKey(),destMint));
+        templMint = CTemplateMint::CreateTemplatePtr(new CTemplateDelegate(keyMint.GetPubKey(),destMint));
     }
     else if (nAlgo < CM_MAX)
     {
-        templMint = CTemplatePtr(new CTemplateMint(keyMint.GetPubKey(),destMint));
-    }
-    if (templMint != NULL && templMint->IsNull())
-    {
-        templMint.reset();
+        templMint = CTemplateMint::CreateTemplatePtr(new CTemplateProof(keyMint.GetPubKey(),destMint));
     }
     return (templMint != NULL);
 }

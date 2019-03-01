@@ -127,14 +127,14 @@ public:
     void GetTemplateIds(std::set<CTemplateId>& setTemplateId) const override;
     bool Have(const CTemplateId& tid) const override;
     bool AddTemplate(CTemplatePtr& ptr) override;
-    bool GetTemplate(const CTemplateId& tid,CTemplatePtr& ptr) override;
+    CTemplatePtr GetTemplate(const CTemplateId& tid) const override;
     /* Destination */
     void GetDestinations(std::set<CDestination>& setDest);
     /* Wallet Tx */
     std::size_t GetTxCount() override;
     bool ListTx(int nOffset,int nCount,std::vector<CWalletTx>& vWalletTx) override;
     bool GetBalance(const CDestination& dest,const uint256& hashFork,int nForkHeight,CWalletBalance& balance) override;
-    bool SignTransaction(const CDestination& destIn,CTransaction& tx,bool& fCompleted) const override;
+    bool SignTransaction(const CDestination& destIn, CTransaction& tx, bool& fCompleted) const override;
     bool ArrangeInputs(const CDestination& destIn,const uint256& hashFork,int nForkHeight,CTransaction& tx) override;
     /* Update */
     bool SynchronizeTxSet(const CTxSetChange& change) override;
@@ -158,11 +158,11 @@ protected:
     bool InsertKey(const crypto::CKey& key);
     int64 SelectCoins(const CDestination& dest,const uint256& hashFork,int nForkHeight,int64 nTxTime,
                       int64 nTargetValue,std::size_t nMaxInput,std::vector<CTxOutPoint>& vCoins);
-
     std::shared_ptr<CWalletTx> LoadWalletTx(const uint256& txid);
     std::shared_ptr<CWalletTx> InsertWalletTx(const uint256& txid,const CAssembledTx &tx,const uint256& hashFork,bool fIsMine,bool fFromMe);
     bool SignPubKey(const crypto::CPubKey& pubkey,const uint256& hash,std::vector<uint8>& vchSig) const;
-    bool SignDestination(const CDestination& destIn,const uint256& hash,std::vector<uint8>& vchSig,bool& fCompleted) const;
+    bool SignMultiPubKey(const std::set<crypto::CPubKey>& setPubKey,const uint256& seed,const uint256& hash,std::vector<uint8>& vchSig) const;
+    bool SignDestination(const CDestination& destIn, const CTransaction& tx, const uint256& hash, std::vector<uint8>& vchSig, bool& fCompleted) const;
     bool UpdateFork();
     void GetWalletTxFork(const uint256& hashFork,int nHeight,std::vector<uint256>& vFork);
     void AddNewWalletTx(std::shared_ptr<CWalletTx>& spWalletTx,std::vector<uint256>& vFork);
@@ -250,9 +250,9 @@ public:
     {
         return false;
     }
-    virtual bool GetTemplate(const CTemplateId& tid, CTemplatePtr& ptr) override
+    virtual CTemplatePtr GetTemplate(const CTemplateId& tid) const override
     {
-        return false;
+        return NULL;
     }
     /* Wallet Tx */
     virtual std::size_t GetTxCount() override
@@ -268,8 +268,7 @@ public:
     {
         return false;
     }
-    virtual bool SignTransaction(const CDestination& destIn, CTransaction& tx,
-                                 bool& fCompleted) const override
+    virtual bool SignTransaction(const CDestination& destIn, CTransaction& tx, bool& fCompleted) const override
     {
         return false;
     }

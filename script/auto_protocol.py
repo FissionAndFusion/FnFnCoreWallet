@@ -8,7 +8,7 @@ from collections import OrderedDict
 from tool import *
 from functools import cmp_to_key
 
-rpc_json, rpc_protocol_h, rpc_protocol_cpp = None, None, None
+rpc_json, mode_json, protocol_h, protocol_cpp, config_h, config_cpp = None, None, None, None, None, None
 
 # help list and dict
 commands = OrderedDict()
@@ -17,6 +17,12 @@ all_classes = {}
 json_type_list = ('int', 'uint', 'double', 'bool', 'string', 'array', 'object')
 
 RPC_DOUBLE_PRECISION = '6'
+
+modes = OrderedDict()
+param_class = OrderedDict()
+result_class = OrderedDict()
+config_class = OrderedDict()
+introduction = OrderedDict()
 
 # help function
 def subclass_name(name, named=False):
@@ -371,6 +377,7 @@ def check_is_valid_fun(w):
     brace_end(w, indent)
 
 
+# functions of protocol_h and protocol_cpp
 def constructor_h(name, params, w, indent):
     # default
     w.write(indent + name + '();\n')
@@ -583,6 +590,90 @@ def constructor_null_cpp(name, params, w, scope):
     brace_end(w)
 
 
+def CreateCRPCParam_h(w):
+    w.write('// Create family class shared ptr of CRPCParam\n')
+    w.write('CRPCParamPtr CreateCRPCParam(const std::string& cmd, const json_spirit::Value& valParam);\n')
+
+
+def CreateCRPCParam_cpp(w):
+    w.write('CRPCParamPtr CreateCRPCParam(const std::string& cmd, const json_spirit::Value& valParam)\n')
+    indent = brace_begin(w)
+
+    if len(param_class) == 0:
+        w.write(
+            indent + 'throw CRPCException(RPC_METHOD_NOT_FOUND, cmd + " not found!");\n')
+    else:
+        w.write(indent)
+        for cmd, name in param_class.items():
+            w.write('if (cmd == "' + cmd + '")\n')
+            indent = brace_begin(w, indent)
+            w.write(indent + 'auto ptr = Make' + name + 'Ptr();\n')
+            w.write(indent + 'ptr->FromJSON(valParam);\n')
+            w.write(indent + 'return ptr;\n')
+            indent = brace_end(w, indent)
+            w.write(indent + 'else ')
+
+        empty_line(w)
+        indent = brace_begin(w, indent)
+        w.write(indent + 'throw CRPCException(RPC_METHOD_NOT_FOUND, cmd + " not found!");\n')
+        indent = brace_end(w, indent)
+
+    brace_end(w, indent)
+
+
+def CreateCRPCResult_h(w):
+    w.write('// Create family class shared ptr of CRPCResult\n')
+    w.write('CRPCResultPtr CreateCRPCResult(const std::string& cmd, const json_spirit::Value& valResult);\n')
+
+
+def CreateCRPCResult_cpp(w):
+    w.write('CRPCResultPtr CreateCRPCResult(const std::string& cmd, const json_spirit::Value& valResult)\n')
+    indent = brace_begin(w)
+
+    if len(result_class) == 0:
+        w.write(indent + 'return std::make_shared<CRPCCommonResult>();\n')
+    else:
+        w.write(indent)
+        for cmd, name in result_class.items():
+            if result_class:
+                w.write('if (cmd == "' + cmd + '")\n')
+                indent = brace_begin(w, indent)
+                w.write(indent + 'auto ptr = Make' + name + 'Ptr();\n')
+                w.write(indent + 'ptr->FromJSON(valResult);\n')
+                w.write(indent + 'return ptr;\n')
+                indent = brace_end(w, indent)
+                w.write(indent + 'else ')
+
+        empty_line(w)
+        indent = brace_begin(w, indent)
+        w.write(indent + 'auto ptr = std::make_shared<CRPCCommonResult>();\n')
+        w.write(indent + 'ptr->FromJSON(valResult);\n')
+        w.write(indent + 'return ptr;\n')
+        indent = brace_end(w, indent)
+
+    brace_end(w, indent)
+
+def RPCCmdList_h(w):
+    w.write('// All rpc command list\n')
+    w.write('const std::vector<std::string>& RPCCmdList();\n')
+
+
+def RPCCmdList_cpp(w):
+    w.write('const std::vector<std::string>& RPCCmdList()\n')
+    indent = brace_begin(w)
+
+    w.write(indent + 'static std::vector<std::string> list = \n')
+    w.write(indent + '{\n')
+    for cmd in param_class:
+        w.write(indent + '\t' + quote(cmd) + ',\n')
+    w.write(indent + '};\n')
+
+    w.write(indent + 'return list;\n')
+
+    brace_end(w, indent)
+
+
+# functions of config_h and config_cpp
 def config_constructor_h(name, w, indent):
     # default constructor
     w.write(indent + name + '();\n')
@@ -970,6 +1061,100 @@ def Help_cpp(config, w, scope):
     brace_end(w)
 
 
+def CreateConfig_h(w):
+    w.write('// Dynamic create combin config with rpc command\n')
+    w.write('template <typename... T>\n')
+    w.write('CMvBasicConfig* CreateRPCCommandConfig(const std::string& cmd)\n')
+    indent = brace_begin(w)
+
+    if len(config_class) == 0:
+        w.write(indent + 'return new mode_impl::CCombinConfig<T...>();\n')
+    else:
+        w.write(indent)
+        for cmd, name in config_class.items():
+            w.write('if (cmd == "' + cmd + '")\n')
+            indent = brace_begin(w, indent)
+            w.write(indent + 'return new mode_impl::CCombinConfig<' +
+                    name + ', T...>;\n')
+            indent = brace_end(w, indent)
+            w.write(indent + 'else ')
+
+        empty_line(w)
+        indent = brace_begin(w, indent)
+        w.write(indent + 'return new mode_impl::CCombinConfig<T...>();\n')
+        indent = brace_end(w, indent)
+
+    brace_end(w, indent)
+
+
+def RPCHelp_h(w):
+    w.write('// Return help info by mode type and sub command\n')
+    w.write('std::string RPCHelpInfo(EModeType type, const std::string& subCmd, const std::string& options = "");\n')
+
+
+def RPCHelp_cpp(w):
+    # write "Options"
+    def write_options(w, indent):
+        w.write(indent + 'oss << "Options:\\n";\n')
+        w.write(indent + 'oss << options << "\\n";\n')
+
+    # write 'commands'
+    def write_introduction(cmd, introduction, w, indent):
+        introduction_list = split(introduction)
+        introduction_code = terminal_str_code(indent, 'oss << ', cmd + space(cmd), introduction_list)
+        w.write(introduction_code)
+
+    w.write('std::string RPCHelpInfo(EModeType type, const std::string& subCmd, const std::string& options)\n')
+    indent = brace_begin(w)
+
+    w.write(indent + 'std::ostringstream oss;\n')
+    w.write(indent)
+    for mode in modes:
+        usage, desc = modes[mode]
+        w.write('if (type == ' + mode + ')\n')
+        indent = brace_begin(w, indent)
+        if mode != 'EModeType::CONSOLE':
+            write_usage(usage, w, indent)
+            write_desc(desc, w, indent)
+            write_options(w, indent)
+        else:
+            # sub command is empty, output help
+            w.write(indent + 'if (subCmd.empty())\n')
+            indent = brace_begin(w, indent)
+
+            # options is not empty, output options. It's multiverse-cli -help
+            w.write(indent + 'if (!options.empty())\n')
+            indent = brace_begin(w, indent)
+            write_usage(usage, w, indent)
+            write_desc(desc, w, indent)
+            write_options(w, indent)
+            indent = brace_end(w, indent)
+
+            # output command list
+            w.write(indent + 'oss << "Commands:\\n";\n')
+            for cmd, intro in introduction.items():
+                write_introduction(commands_indent + cmd, intro, w, indent)
+
+            indent = brace_end(w, indent)
+
+            # output one command help. If subCmd == "all", show all command help
+            for cmd, class_name in config_class.items():
+                w.write(indent + 'if (subCmd == "all" || subCmd == "' + cmd + '")\n')
+                indent = brace_begin(w, indent)
+                w.write(indent + 'oss << ' + class_name + '().Help();\n')
+                indent = brace_end(w, indent)
+
+        indent = brace_end(w, indent)
+        w.write(indent + 'else ')
+
+    empty_line(w)
+    indent = brace_begin(w, indent)
+    indent = brace_end(w, indent)
+
+    w.write(indent + 'return oss.str();\n')
+    brace_end(w, indent)
+
+
 # other
 def parse_params(class_prefix, content, allow_empty):
     # function for nested array
@@ -1296,42 +1481,68 @@ class Config:
 
 # main function
 def parse():
-    with open(rpc_json, 'r') as r:
-        content = json.loads(r.read(), object_pairs_hook=OrderedDict)
-        content = json_hook(content)
-        check_value_type(rpc_json, content, dict)
+    # parse mode.json
+    if mode_json:
+        with open(mode_json, 'r') as r:
+            content = json.loads(r.read(), object_pairs_hook=OrderedDict)
+            content = json_hook(content)
 
-    for cmd, detail in content.items():
-        check_value_type(cmd, detail, dict)
+            for mode, detail in content.items():
+                usage = get_json_value(mode, detail, 'usage', str, '')
+                desc = get_desc(mode, detail)
+                modes[mode] = (usage, desc)
+    
+    # parse rpc.json
+    if rpc_json:
+        with open(rpc_json, 'r') as r:
+            content = json.loads(r.read(), object_pairs_hook=OrderedDict)
+            content = json_hook(content)
+            check_value_type(rpc_json, content, dict)
 
-        type = get_json_value(cmd, detail, 'type', type=str, default='command')
-        name = get_json_value(cmd, detail, 'name', type=str, default=cmd.title())
+        for cmd, detail in content.items():
+            check_value_type(cmd, detail, dict)
 
-        # stand-alone class
-        if type == 'class':
-            class_content = get_content(cmd, detail, 'object')
-            alone_class = SubClass(cmd, subclass_name(name, True), class_content)
-            all_classes[cmd] = alone_classes[cmd] = alone_class
-        # rpc command
-        elif type == 'command':
-            desc = get_desc(cmd, detail)
-            example = get_json_value(cmd, detail, 'example', required=False)
-            error = get_json_value(cmd, detail, 'error', required=False)
+            type = get_json_value(cmd, detail, 'type', type=str, default='command')
+            name = get_json_value(cmd, detail, 'name', type=str, default=cmd.title())
 
-            # request
-            request_content = get_json_value(cmd, detail, 'request', dict)
-            request = Request(cmd, param_class_name(name), desc, request_content)
+            # stand-alone class
+            if type == 'class':
+                class_content = get_content(cmd, detail, 'object')
+                alone_class = SubClass(cmd, subclass_name(name, True), class_content)
+                all_classes[cmd] = alone_classes[cmd] = alone_class
+            # rpc command
+            elif type == 'command':
+                desc = get_desc(cmd, detail)
+                example = get_json_value(cmd, detail, 'example', required=False)
+                error = get_json_value(cmd, detail, 'error', required=False)
+                name = get_json_value(cmd, detail, 'name', str, default=cmd.title())
 
-            # response
-            response_content = get_json_value(cmd, detail, 'response', dict, required=False)
-            response = Response(cmd, result_class_name(name), desc, response_content) if response_content else None
+                # request
+                request_content = get_json_value(cmd, detail, 'request', dict)
+                request = Request(cmd, param_class_name(name), desc, request_content)
 
-            # config
-            config = Config(cmd, config_class_name(name), desc, example, error)
+                param_class[cmd] = param_class_name(name)
+                config_class[cmd] = config_class_name(name)
 
-            commands[cmd] = (request, response, config)
-        else:
-            raise Exception('Unknown type [%s]' % type)
+                # response
+                response_content = get_json_value(cmd, detail, 'response', dict, required=False)
+                response = Response(cmd, result_class_name(name), desc, response_content) if response_content else None
+
+                if response:
+                    result_class[cmd] = result_class_name(name)
+
+                # config
+                config = Config(cmd, config_class_name(name), desc, example, error)
+
+                commands[cmd] = (request, response, config)
+
+                # introduction
+                intro = get_multiple_text(cmd, detail, 'introduction')
+                if len(intro) == 0:
+                    intro = get_desc(cmd, detail)
+                introduction[cmd] = intro
+            else:
+                raise Exception('Unknown type [%s]' % type)
 
     # parse stand-alone class
     for subclass in alone_classes.values():
@@ -1351,7 +1562,7 @@ def parse():
             config.parse(request.type, request.params, request.subclass)
 
 
-def generate_h():
+def generate_protocol_h():
     with open(protocol_h, 'w') as w:
         # copyright
         w.write(copyright)
@@ -1364,15 +1575,11 @@ def generate_h():
 #include <climits>
 
 #include "json/json_spirit_utils.h"
-#include "walleve/type.h"
 
-#include "mode/basic_config.h"
 #include "rpc/rpc_type.h"
 #include "rpc/rpc_req.h"
 #include "rpc/rpc_resp.h"
 
-namespace multiverse
-{
 namespace rpc
 {
 
@@ -1471,22 +1678,22 @@ namespace rpc
                 w.write('};\n')
                 MakeSharedPtr_h(response.cls_name, w, '')
 
-            # config begin
-            empty_line(w)
-            w.write('// ' + config.cls_name + '\n')
+        # function CreateCRPCParam
+        empty_line(w)
+        CreateCRPCParam_h(w)
 
-            w.write('class ' + config.cls_name + ' : virtual public CMvBasicConfig, public ' + request.cls_name + '\n')
-            indent = brace_begin(w)
+        # function CreateCRPCResult
+        empty_line(w)
+        CreateCRPCResult_h(w)
 
-            # functions
-            w.write('public:\n')
-            config_constructor_h(config.cls_name, w, indent)
-            PostLoad_h(w, indent)
-            ListConfig_h(w, indent)
-            Help_h(w, indent)
+        # function RPCCmdList
+        empty_line(w)
+        RPCCmdList_h(w)
 
-            # config end
-            w.write('};\n')
+        # help tips
+        empty_line(w)
+        w.write('// help tips used when error occured or help\n')
+        w.write('static const std::string strHelpTips = "\\nRun \'help COMMAND\' for more information on a command.\\n";\n')
 
         # file bottom
         w.write('''
@@ -1503,13 +1710,11 @@ namespace rpc
 
 }  // namespace rpc
 
-}  // namespace multiverse
-
 #endif  // MULTIVERSE_RPC_AUTO_PROTOCOL_H
 ''')
 
 
-def generate_cpp():
+def generate_protocol_cpp():
     with open(protocol_cpp, 'w') as w:
         # copyright
         w.write(copyright)
@@ -1526,8 +1731,6 @@ def generate_cpp():
 using namespace std;
 using namespace json_spirit;
 
-namespace multiverse
-{
 namespace rpc
 {
 ''')
@@ -1578,6 +1781,114 @@ namespace rpc
                 FromJSON_cpp(response.cmd, response.cls_name, response.params, response.type, w, scope)
                 Method_cpp(response.cmd, w, scope)
 
+        # function CreateCRPCParam
+        empty_line(w)
+        CreateCRPCParam_cpp(w)
+
+        # function CreateCRPCResult
+        empty_line(w)
+        CreateCRPCResult_cpp(w)
+
+        # function RPCCmdList
+        empty_line(w)
+        RPCCmdList_cpp(w)
+
+        # file bottom
+        w.write('''
+}  // namespace rpc
+
+''')
+
+
+def generate_config_h():
+    with open(config_h, 'w') as w:
+        # copyright
+        w.write(copyright)
+        # file top
+        w.write('''
+#ifndef MULTIVERSE_MODE_AUTO_CONFIG_H
+#define MULTIVERSE_MODE_AUTO_CONFIG_H
+
+#include "mode/mode_impl.h"
+#include "mode/mode_type.h"
+#include "rpc/auto_protocol.h"
+
+namespace multiverse
+{
+
+''')
+        # commands
+        for cmd in commands:
+            request, response, config = commands[cmd]
+
+            # comment
+            w.write('''
+/////////////////////////////////////////////////////
+// ''' + cmd + '''
+''')
+
+            # config begin
+            empty_line(w)
+            w.write('// ' + config.cls_name + '\n')
+
+            w.write('class ' + config.cls_name + ' : virtual public CMvBasicConfig, public rpc::' + request.cls_name + '\n')
+            indent = brace_begin(w)
+
+            # functions
+            w.write('public:\n')
+            config_constructor_h(config.cls_name, w, indent)
+            PostLoad_h(w, indent)
+            ListConfig_h(w, indent)
+            Help_h(w, indent)
+
+            # config end
+            w.write('};\n')
+
+        # function Help
+        empty_line(w)
+        RPCHelp_h(w)
+
+        # function CreateConfig
+        empty_line(w)
+        CreateConfig_h(w)
+
+        # file bottom
+        w.write('''
+}  // namespace multiverse
+
+#endif  // MULTIVERSE_MODE_AUTO_CONFIG_H
+''')
+
+
+def generate_config_cpp():
+    with open(config_cpp, 'w') as w:
+        # copyright
+        w.write(copyright)
+        # file top
+        w.write('''\
+#include "auto_config.h"
+
+#include <sstream>
+
+#include "json/json_spirit_reader_template.h"
+
+using namespace std;
+using namespace rpc;
+using namespace json_spirit;
+
+namespace multiverse
+{
+''')
+        # commands
+        for cmd in commands:
+            request, response, config = commands[cmd]
+
+            # comment
+            w.write('''
+/////////////////////////////////////////////////////
+// ''' + cmd + '''
+''')
+
             # config begin
             scope = config.cls_name + '::'
 
@@ -1588,27 +1899,37 @@ namespace rpc
             ListConfig_cpp(config.cls_name, config.req_params, config.req_sub_params, w, scope)
             Help_cpp(config, w, scope)
 
+        # function Help
+        empty_line(w)
+        RPCHelp_cpp(w)
+        
         # file bottom
         w.write('''
-
-}  // namespace rpc
-
 }  // namespace multiverse
 
 ''')
 
-
-def generate_protocol(rpc_json_path, protocol_h_path, protocol_cpp_path):
-    global rpc_json, protocol_h, protocol_cpp
+def generate_protocol(rpc_json_path, mode_json_path, protocol_h_path, protocol_cpp_path, config_h_path, config_cpp_path):
+    global rpc_json, mode_json, protocol_h, protocol_cpp, config_h, config_cpp
     rpc_json = rpc_json_path
+    mode_json = mode_json_path
     protocol_h = protocol_h_path
     protocol_cpp = protocol_cpp_path
+    config_h = config_h_path
+    config_cpp = config_cpp_path
+
+    if not rpc_json or ((not protocol_h or not protocol_cpp) and (not config_h or not config_cpp)):
+        return
 
     # parse json file
     parse()
 
-    # generate template.h
-    generate_h()
+    # generate auto_protocol
+    if protocol_h and protocol_cpp:
+        generate_protocol_h()
+        generate_protocol_cpp()
 
-    # generate template.cpp
-    generate_cpp()
+    # generate auto_config
+    if config_h and config_cpp:
+        generate_config_h()
+        generate_config_cpp()

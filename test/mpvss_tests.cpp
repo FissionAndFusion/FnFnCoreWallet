@@ -246,18 +246,18 @@ BOOST_AUTO_TEST_CASE( mpvss )
 
         // Publish
         t0 = boost::posix_time::microsec_clock::universal_time();
-        bool fComplete;
+        bool fCompleted;
         for (int i = 0;i < count;i++)
         {
             std::map<uint256,std::vector<uint256> > mapShare;
             mapSS[vID[i]].Publish(mapShare);
             for (int j = 0;j < count;j++)
             {
-                fComplete = false;
-                mapSS[vID[j]].Collect(vID[i],mapShare,fComplete);
+                fCompleted = false;
+                mapSS[vID[j]].Collect(vID[i],mapShare,fCompleted);
             }
-            fComplete = false;
-            ssWitness.Collect(vID[i],mapShare,fComplete);
+            fCompleted = false;
+            ssWitness.Collect(vID[i],mapShare,fCompleted);
         }
         std::cout << "\tPublish : " << ((boost::posix_time::microsec_clock::universal_time() - t0).ticks() / count) <<"\n";
 

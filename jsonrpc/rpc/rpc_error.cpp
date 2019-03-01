@@ -2,10 +2,8 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "rpc/rpc_error.h"
+#include "rpc_error.h"
 
-namespace multiverse
-{
 namespace rpc
 {
 
@@ -66,5 +64,3 @@ CRPCException::CRPCException(int error_code, const std::runtime_error& err,
 const char* CRPCException::what() const noexcept { return strError.c_str(); }
 
 }  // namespace rpc
-
-}  // namespace multiverse

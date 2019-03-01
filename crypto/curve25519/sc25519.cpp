@@ -19,6 +19,30 @@ CSC25519::CSC25519()
     Zero32(value);
 }
 
+CSC25519::CSC25519(const CSC25519& sc)
+{
+    Copy32(value, sc.value);
+}
+
+CSC25519::CSC25519(CSC25519&& sc)
+{
+    Copy32(value, sc.value);
+    Zero32(sc.value);
+}
+
+CSC25519& CSC25519::operator=(const CSC25519& sc)
+{
+    Copy32(value, sc.value);
+    return *this;
+}
+
+CSC25519& CSC25519::operator=(CSC25519&& sc)
+{
+    Copy32(value, sc.value);
+    Zero32(sc.value);
+    return *this;
+}
+
 CSC25519::CSC25519(const uint64_t u64)
 {
     Copy32(value, u64);
@@ -47,14 +71,20 @@ CSC25519::~CSC25519()
 {
 }
 
+void CSC25519::Unpack(const uint8_t* md32)
+{
+    Copy32(value,md32);
+    Reduce(0);
+}
+
 void CSC25519::Pack(uint8_t* md32) const
 {
     Copy32(md32,value);
 }
 
-const uint8_t* CSC25519::Data() const
+const uint64_t* CSC25519::Data() const
 {
-    return (const uint8_t*)value;
+    return value;
 }
 
 CSC25519& CSC25519::Negative()
@@ -203,7 +233,6 @@ void CSC25519::Reduce(const uint32_t carry)
 
     if (carry == 0)
     {
-
         if (Compare32(value, prime) >= 0)
         {
             uint8_t t = ((uint8_t*)value)[31] >> 4;

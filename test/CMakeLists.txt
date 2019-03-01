@@ -13,6 +13,7 @@ set(sources
 	rpc_tests.cpp
 	version_tests.cpp
 	mpvss_tests.cpp
+	crypto_tests.cpp
 	ipv6_tests.cpp
 )
 
@@ -25,6 +26,7 @@ target_link_libraries(test_fnfn
 	Boost::system
 	Boost::thread
 	mpvss
+	crypto
 )
 
 add_executable(test_ctsdb test_fnfn_main.cpp test_fnfn.h test_fnfn.cpp ctsdb_test.cpp)

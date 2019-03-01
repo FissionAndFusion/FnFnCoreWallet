@@ -143,10 +143,26 @@ public:
         ss << nVersion << nType << nTimeStamp << nLockUntil << hashAnchor << vInput << sendTo << nAmount << nTxFee << vchData;
         return multiverse::crypto::CryptoHash(ss.GetData(),ss.GetSize());
     }
-
     int64 GetChange(int64 nValueIn) const
     {
         return (nValueIn - nAmount - nTxFee);
+    }
+    uint32 GetLockUntil(const uint32 n = 0) const
+    {
+        if (n == (nLockUntil >> 31))
+        {
+            return nLockUntil & 0x7FFFFFFF;
+        }
+        return 0;
+    }
+    bool SetLockUntil(const uint32 nHeight, const uint32 n = 0)
+    {
+        if (nHeight >> 31)
+        {
+            return false;
+        }
+        nLockUntil = (n << 31) | nHeight;
+        return true;
     }
     friend bool operator==(const CTransaction& a, const CTransaction& b)
     {
@@ -212,12 +228,12 @@ public:
         nLockUntil = 0;
     }
     bool IsNull() const { return (destTo.IsNull() || nAmount <= 0); }
-    bool IsLocked(int nBlockHeight) const { return (nBlockHeight < nLockUntil); } 
+    bool IsLocked(int nBlockHeight) const { return (nBlockHeight < (nLockUntil & 0x7FFFFFFF)); } 
     int64 GetTxTime() const { return nTxTime; }
     std::string ToString() const 
     {
         std::ostringstream oss;
-        oss << "TxOutput : (" << destTo.GetHex() << "," << nAmount << "," << nTxTime << "," << nLockUntil << ")";
+        oss << "TxOutput : (" << destTo.ToString() << "," << nAmount << "," << nTxTime << "," << nLockUntil << ")";
         return oss.str(); 
     }
 protected:
@@ -273,11 +289,11 @@ public:
     {
         if (n == 0)
         {
-            return CTxOutput(sendTo,nAmount,nTimeStamp,nLockUntil);
+            return CTxOutput(sendTo,nAmount,nTimeStamp,GetLockUntil(0));
         }
         else if (n == 1)
         {
-            return CTxOutput(destIn,GetChange(),nTimeStamp,0);
+            return CTxOutput(destIn,GetChange(),nTimeStamp,GetLockUntil(1));
         }
         return CTxOutput();
     }
@@ -312,6 +328,7 @@ public:
         nTxTime    = prevOutput.nTxTime;
         nLockUntil = prevOutput.nLockUntil;
     }
+    bool IsLocked(int nBlockHeight) const { return (nBlockHeight < (nLockUntil & 0x7FFFFFFF)); } 
 protected:
     template <typename O>
     void WalleveSerialize(walleve::CWalleveStream& s,O& opt)
