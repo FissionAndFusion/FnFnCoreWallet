@@ -79,13 +79,21 @@ inline bool IsRoutable(const boost::asio::ip::address& address)
     if (address.is_v4())
     {        
         unsigned long u = address.to_v4().to_ulong();
-        //RFC1918
+        
+        // RFC1918 https://tools.ietf.org/html/rfc1918
+        // IP address space for private internets
+        // 0x0A000000 => 10.0.0.0 prefix
+        // 0xC0A80000 => 192.168.0.0 prefix
+        // 0x0xAC100000 - 0xAC200000 => 172.16.0.0 - 172.31.0.0 prefix
         if ((u & 0xFF000000) == 0x0A000000 || (u & 0xFFFF0000) == 0xC0A80000 
             || (u >= 0xAC100000 && u < 0xAC200000))
         {
             return false;
         }
-        //RFC3927
+        
+        // RFC3927 https://tools.ietf.org/html/rfc3927
+        // IPv4 Link-Local addresses
+        // 0xFFFF0000 => 169.254.0.0 prefix
         if ((u & 0xFFFF0000) == 0xA9FE0000)
         {
             return false;
@@ -94,18 +102,21 @@ inline bool IsRoutable(const boost::asio::ip::address& address)
     else
     {
         boost::asio::ip::address_v6::bytes_type b = address.to_v6().to_bytes();
-        //RFC4862
+        
+        // RFC4862
         if (b[0] == 0xFE && b[1] == 0x80 && b[2] == 0 && b[3] == 0 
             && b[4] == 0 && b[5] == 0 && b[6] == 0 && b[7] == 0)
         {
             return false;
         }
-        //RFC4193
+        
+        // RFC4193
         if ((b[0] & 0xFE) == 0xFC)
         {
             return false;
         }
-        //RFC4843
+        
+        // RFC4843
         if (b[0] == 0x20 && b[1] == 0x01 && b[2] == 0x00 && (b[3] & 0xF0) == 0x10)
         {
             return false;
