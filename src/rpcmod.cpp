@@ -2139,7 +2139,7 @@ CSnRPCMod::CSnRPCMod()
     mapRPCFunc["gettxpool"] = &CRPCMod::SnRPCGetTxPool;
     mapRPCFunc["gettransaction"] = &CRPCMod::SnRPCGetTransaction;
     mapRPCFunc["getforkheight"] = &CRPCMod::SnRPCGetForkHeight;
-    // mapRPCFunc["sendtransaction"] = &CRPCMod::SnRPCSendTransaction;
+    mapRPCFunc["sendtransaction"] = &CRPCMod::SnRPCSendTransaction;
 }
 
 CSnRPCMod::~CSnRPCMod()
@@ -2559,6 +2559,46 @@ CRPCResultPtr CSnRPCMod::SnRPCGetForkHeight(CRPCParamPtr param)
 
 CRPCResultPtr CSnRPCMod::SnRPCSendTransaction(CRPCParamPtr param)
 {
-    (void)param;
-    return NULL;
+    walleve::CIOCompletionUntil ioCompltUntil(200000);
+    auto spParam = CastParamPtr<CSendTransactionParam>(param);
+    vector<unsigned char> txData = ParseHexString(spParam->strTxdata);
+    CWalleveBufStream ss;
+    ss.Write((char *)&txData[0],txData.size());
+    CTransaction rawTx;
+    try
+    {
+        ss >> rawTx;
+    }
+    catch (const std::exception &e)
+    {
+        throw CRPCException(RPC_DESERIALIZATION_ERROR, "TX decode failed");
+    }
+
+    auto* pEvent = new CMvEventRPCRouteSendTransaction("");
+    pEvent->data.pIoCompltUntil = &ioCompltUntil;
+    pEvent->data.nNonce = GenNonce();
+    pEvent->data.rawTx = rawTx;
+    if (!pEvent)
+    {
+        return NULL;
+    }
+    ioCompltUntil.Reset();
+    pDbpService->PostEvent(pEvent);
+
+    bool fResult = false;
+    ioCompltUntil.WaitForComplete(fResult);
+    if(!fResult)
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Timeout");
+    }
+
+    auto ret = boost::any_cast<CMvRPCRouteSendTransactionRet>(ioCompltUntil.obj);
+    if (ret.exception == 0)
+    {
+    }
+    else if (ret.exception == 1)
+    {
+        throw CRPCException(RPC_TRANSACTION_REJECTED,string("Tx rejected : ") + MvErrString((MvErr)ret.err));
+    }
+    return MakeCSendTransactionResultPtr(rawTx.GetHash().GetHex());
 }

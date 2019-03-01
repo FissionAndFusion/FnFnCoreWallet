@@ -2003,6 +2003,58 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetForkHeight* data, CMvRPCRouteGetFo
     }
 }
 
+void CDbpService::RPCRootHandle(CMvRPCRouteSendTransaction* data, CMvRPCRouteSendTransactionRet* ret)
+{
+    auto vRawData = RPCRouteRetToStream(*data);
+
+    if(ret == NULL)
+    {
+        if (sessionCount == 0 && pIoCompltUntil != NULL)
+        {
+            CMvRPCRouteSendTransactionRet sendTransactionRet;
+            sendTransactionRet.nNonce = data->nNonce;
+            sendTransactionRet.type = data->type;
+            sendTransactionRet.exception = 1;
+            Completion(pIoCompltUntil, sendTransactionRet);
+            return;
+        }
+
+        if (sessionCount != 0)
+        {
+            PushMsgToChild(vRawData, data->type);
+            return;
+        }
+    }
+
+    if(ret != NULL)
+    {
+        CMvRPCRouteSendTransactionRet  sendTransactionRet;
+        sendTransactionRet.nNonce = data->nNonce;
+        sendTransactionRet.type = data->type;
+
+        if (ret->exception == 0 && pIoCompltUntil != NULL)
+        {
+            sendTransactionRet.exception = ret->exception;
+            Completion(pIoCompltUntil, sendTransactionRet);
+            return;
+        }
+
+        if (sessionCount == 0)
+        {
+            sendTransactionRet.exception = 1;
+            sendTransactionRet.err = ret->err;
+            Completion(pIoCompltUntil, sendTransactionRet);
+            return;
+        }
+
+        if (sessionCount != 0)
+        {
+            PushMsgToChild(vRawData, data->type);
+            return;
+        }
+    }
+}
+
 void CDbpService::RPCForkHandle(CMvRPCRouteStop* data, CMvRPCRouteStopRet* ret)
 {
     if (ret == NULL)
@@ -2597,7 +2649,66 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetForkHeight* data, CMvRPCRouteGetFo
             return;
         }
     }
+}
 
+void CDbpService::RPCForkHandle(CMvRPCRouteSendTransaction* data, CMvRPCRouteSendTransactionRet* ret)
+{
+    auto vRawData = RPCRouteRetToStream(*data);
+
+    if (ret == NULL)
+    {
+        if (sessionCount == 0)
+        {
+            CMvRPCRouteSendTransactionRet sendTransactionRet;
+            CMvRPCRouteResult result;
+            result.type = CMvRPCRoute::DBP_RPCROUTE_SEND_TRANSACTION;
+            result.vRawData = vRawData;
+            sendTransactionRet.nNonce = data->nNonce;
+            sendTransactionRet.type = data->type;
+            sendTransactionRet.exception = 1;
+            result.vData = RPCRouteRetToStream(sendTransactionRet);
+            SendRPCResult(result);
+            return;
+        }
+
+        if (sessionCount != 0)
+        {
+            PushMsgToChild(vRawData, data->type);
+            return;
+        }
+    }
+
+    if (ret != NULL)
+    {
+        CMvRPCRouteSendTransactionRet sendTransactionRet;
+        CMvRPCRouteResult result;
+        result.type = CMvRPCRoute::DBP_RPCROUTE_SEND_TRANSACTION;
+        result.vRawData = vRawData;
+        sendTransactionRet.nNonce = data->nNonce;
+        sendTransactionRet.type = data->type;
+
+        if(ret->exception == 0)
+        {
+            sendTransactionRet.exception = ret->exception;
+            result.vData = RPCRouteRetToStream(sendTransactionRet);
+            SendRPCResult(result);
+            return;
+        }
+
+        if (sessionCount == 0)
+        {
+            sendTransactionRet.exception = 1;
+            result.vData = RPCRouteRetToStream(sendTransactionRet);
+            SendRPCResult(result);
+            return;
+        }
+
+        if (sessionCount != 0)
+        {
+            PushMsgToChild(vRawData, data->type);
+            return;
+        }
+    }
 }
 
 void CDbpService::InsertQueCount(uint64 nNonce, boost::any obj)
@@ -3009,6 +3120,24 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetForkHeight& event)
 
 bool CDbpService::HandleEvent(CMvEventRPCRouteSendTransaction& event)
 {
+    event.data.type = CMvRPCRoute::DBP_RPCROUTE_SEND_TRANSACTION;
+    pIoCompltUntil = event.data.pIoCompltUntil;
+
+    CMvRPCRouteSendTransactionRet sendTransactionRet;
+    sendTransactionRet.nNonce = event.data.nNonce;
+
+    MvErr err = pService->SendTransaction(event.data.rawTx);
+    if (err == MV_OK)
+    {
+        sendTransactionRet.exception = 0;
+        Completion(pIoCompltUntil, sendTransactionRet);
+        return true;
+    }
+
+    InitRPCTopicIds();
+    InitSessionCount();
+    InsertQueCount(event.data.nNonce, sendTransactionRet);
+    RPCRootHandle(&event.data, NULL);
     return true;
 }
 
@@ -3298,6 +3427,31 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteAdded& event)
         }
         RPCForkHandle(&getForkHeight, NULL);
     }
+
+    if (event.data.type == CMvRPCRoute::DBP_RPCROUTE_SEND_TRANSACTION)
+    {
+        CMvRPCRouteSendTransaction sendTransaction;
+        ss >> sendTransaction;
+        CMvRPCRouteSendTransactionRet sendTransactionRet;
+
+        CMvRPCRouteResult result;
+        result.type = CMvRPCRoute::DBP_RPCROUTE_SEND_TRANSACTION;
+        result.vRawData = event.data.vData;
+        sendTransactionRet.nNonce = sendTransaction.nNonce;
+
+        InitRPCTopicIds();
+        InsertQueCount(sendTransaction.nNonce, sendTransactionRet);
+
+        MvErr err = pService->SendTransaction(sendTransaction.rawTx);
+        if (err == MV_OK)
+        {
+            sendTransactionRet.exception = 0;
+            result.vData = RPCRouteRetToStream(sendTransactionRet);
+            SendRPCResult(result);
+            return true;
+        }
+        RPCForkHandle(&sendTransaction, NULL);
+    }
     return true;
 }
 
@@ -3360,6 +3514,11 @@ void CDbpService::HandleRPCRoute(CMvEventDbpMethod& event)
     if(type == CMvRPCRoute::DBP_RPCROUTE_GET_FORK_HEIGHT)
     {
         HANDLE_RPC_ROUTE(CMvRPCRouteGetForkHeight, CMvRPCRouteGetForkHeightRet);
+    }
+
+    if(type == CMvRPCRoute::DBP_RPCROUTE_SEND_TRANSACTION)
+    {
+        HANDLE_RPC_ROUTE(CMvRPCRouteSendTransaction, CMvRPCRouteSendTransactionRet);
     }
 }
 

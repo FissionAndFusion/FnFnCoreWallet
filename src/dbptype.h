@@ -293,14 +293,14 @@ class CMvRPCRouteSendTransaction: public CMvRPCRoute
 {
     friend class walleve::CWalleveStream;
 public:
-    std::string hash;
+    CTransaction rawTx;
 
 protected:
     template<typename O>
     void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
     {
         CMvRPCRoute::WalleveSerialize(s, opt);
-        s.Serialize(hash, opt);
+        s.Serialize(rawTx, opt);
     }
 };
 
@@ -528,9 +528,7 @@ class CMvRPCRouteSendTransactionRet : public CMvRPCRouteRet
 {
     friend class walleve::CWalleveStream;
 public:
-    CBlock block;
-    int height;
-    std::string strFork;
+    int err;
     int exception; // 0-nomal, 1-unknown block
 
 protected:
@@ -538,9 +536,7 @@ protected:
     void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
     {
         CMvRPCRouteRet::WalleveSerialize(s, opt);
-        s.Serialize(block, opt);
-        s.Serialize(height, opt);
-        s.Serialize(strFork, opt);
+        s.Serialize(err, opt);
         s.Serialize(exception, opt);
     }
 };
