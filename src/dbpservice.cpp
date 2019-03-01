@@ -1951,6 +1951,58 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetTransaction* data, CMvRPCRouteGetT
     }
 }
 
+void CDbpService::RPCRootHandle(CMvRPCRouteGetForkHeight* data, CMvRPCRouteGetForkHeightRet* ret)
+{
+    auto vRawData = RPCRouteRetToStream(*data);
+
+    if(ret == NULL)
+    {
+        if (sessionCount == 0 && pIoCompltUntil != NULL)
+        {
+            CMvRPCRouteGetForkHeightRet getForkHeightRet;
+            getForkHeightRet.nNonce = data->nNonce;
+            getForkHeightRet.type = data->type;
+            getForkHeightRet.exception = 2;
+            Completion(pIoCompltUntil, getForkHeightRet);
+            return;
+        }
+
+        if (sessionCount != 0)
+        {
+            PushMsgToChild(vRawData, data->type);
+            return;
+        }
+    }
+
+    if(ret != NULL)
+    {
+        CMvRPCRouteGetForkHeightRet getForkHeightRet;
+        getForkHeightRet.nNonce = data->nNonce;
+        getForkHeightRet.type = data->type;
+
+        if (ret->exception == 0 && pIoCompltUntil != NULL)
+        {
+            getForkHeightRet.exception = ret->exception;
+            getForkHeightRet.height = ret->height;
+            Completion(pIoCompltUntil, getForkHeightRet);
+            return;
+        }
+
+        if (sessionCount == 0)
+        {
+            getForkHeightRet.exception = 2;
+            Completion(pIoCompltUntil, getForkHeightRet);
+            return;
+        }
+
+        if (sessionCount != 0)
+        {
+            PushMsgToChild(vRawData, data->type);
+            return;
+        }
+    }
+}
+
 void CDbpService::RPCForkHandle(CMvRPCRouteStop* data, CMvRPCRouteStopRet* ret)
 {
     if (ret == NULL)
@@ -2485,6 +2537,69 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetTransaction* data, CMvRPCRouteGetT
     }
 }
 
+
+void CDbpService::RPCForkHandle(CMvRPCRouteGetForkHeight* data, CMvRPCRouteGetForkHeightRet* ret)
+{
+    auto vRawData = RPCRouteRetToStream(*data);
+
+    if (ret == NULL)
+    {
+        if (sessionCount == 0)
+        {
+            CMvRPCRouteGetForkHeightRet getForkHeightRet;
+            CMvRPCRouteResult result;
+            result.type = CMvRPCRoute::DBP_RPCROUTE_GET_FORK_HEIGHT;
+            result.vRawData = vRawData;
+            getForkHeightRet.nNonce = data->nNonce;
+            getForkHeightRet.type = data->type;
+            getForkHeightRet.exception = 2;
+            result.vData = RPCRouteRetToStream(getForkHeightRet);
+            SendRPCResult(result);
+            return;
+        }
+
+        if (sessionCount != 0)
+        {
+            PushMsgToChild(vRawData, data->type);
+            return;
+        }
+    }
+
+    if (ret != NULL)
+    {
+        CMvRPCRouteGetForkHeightRet getForkHeightRet;
+        CMvRPCRouteResult result;
+        result.type = CMvRPCRoute::DBP_RPCROUTE_GET_FORK_HEIGHT;
+        result.vRawData = vRawData;
+        getForkHeightRet.nNonce = data->nNonce;
+        getForkHeightRet.type = data->type;
+
+        if(ret->exception == 0)
+        {
+            getForkHeightRet.exception = ret->exception;
+            getForkHeightRet.height = ret->height;
+            result.vData = RPCRouteRetToStream(getForkHeightRet);
+            SendRPCResult(result);
+            return;
+        }
+
+        if (sessionCount == 0)
+        {
+            getForkHeightRet.exception = 2;
+            result.vData = RPCRouteRetToStream(getForkHeightRet);
+            SendRPCResult(result);
+            return;
+        }
+
+        if (sessionCount != 0)
+        {
+            PushMsgToChild(vRawData, data->type);
+            return;
+        }
+    }
+
+}
+
 void CDbpService::InsertQueCount(uint64 nNonce, boost::any obj)
 {
     if(queCount.size() > 100)
@@ -2863,6 +2978,32 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetTransaction& event)
 
 bool CDbpService::HandleEvent(CMvEventRPCRouteGetForkHeight& event)
 {
+    event.data.type = CMvRPCRoute::DBP_RPCROUTE_GET_FORK_HEIGHT;
+    pIoCompltUntil = event.data.pIoCompltUntil;
+
+    CMvRPCRouteGetForkHeightRet getForkHeightRet;
+    getForkHeightRet.nNonce = event.data.nNonce;
+
+    uint256 hashFork;
+    if (!GetForkHashOfDef(event.data.strFork, hashFork))
+    {
+        getForkHeightRet.exception = 1;
+        Completion(pIoCompltUntil, getForkHeightRet);
+        return true;
+    }
+
+    if (pService->HaveFork(hashFork))
+    {
+        getForkHeightRet.exception = 0;
+        getForkHeightRet.height = pService->GetForkHeight(hashFork);
+        Completion(pIoCompltUntil, getForkHeightRet);
+        return true;
+    }
+
+    InitRPCTopicIds();
+    InitSessionCount();
+    InsertQueCount(event.data.nNonce, getForkHeightRet);
+    RPCRootHandle(&event.data, NULL);
     return true;
 }
 
@@ -3129,6 +3270,34 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteAdded& event)
         }
         RPCForkHandle(&getTransaction, NULL);
     }
+
+    if (event.data.type == CMvRPCRoute::DBP_RPCROUTE_GET_FORK_HEIGHT)
+    {
+        CMvRPCRouteGetForkHeight getForkHeight;
+        ss >> getForkHeight;
+        CMvRPCRouteGetForkHeightRet getForkHeightRet;
+
+        CMvRPCRouteResult result;
+        result.type = CMvRPCRoute::DBP_RPCROUTE_GET_FORK_HEIGHT;
+        result.vRawData = event.data.vData;
+        getForkHeightRet.nNonce = getForkHeight.nNonce;
+
+        InitRPCTopicIds();
+        InsertQueCount(getForkHeight.nNonce, getForkHeightRet);
+
+        uint256 hashFork;
+        hashFork.SetHex(getForkHeight.strFork);
+
+        if (pService->HaveFork(hashFork))
+        {
+            getForkHeightRet.exception = 0;
+            getForkHeightRet.height = pService->GetForkHeight(hashFork);
+            result.vData = RPCRouteRetToStream(getForkHeightRet);
+            SendRPCResult(result);
+            return true;
+        }
+        RPCForkHandle(&getForkHeight, NULL);
+    }
     return true;
 }
 
@@ -3186,6 +3355,11 @@ void CDbpService::HandleRPCRoute(CMvEventDbpMethod& event)
     if(type == CMvRPCRoute::DBP_RPCROUTE_GET_TRANSACTION)
     {
         HANDLE_RPC_ROUTE(CMvRPCRouteGetTransaction, CMvRPCRouteGetTransactionRet);
+    }
+
+    if(type == CMvRPCRoute::DBP_RPCROUTE_GET_FORK_HEIGHT)
+    {
+        HANDLE_RPC_ROUTE(CMvRPCRouteGetForkHeight, CMvRPCRouteGetForkHeightRet);
     }
 }
 

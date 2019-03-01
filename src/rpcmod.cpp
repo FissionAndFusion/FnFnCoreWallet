@@ -2137,8 +2137,8 @@ CSnRPCMod::CSnRPCMod()
     mapRPCFunc["getblockhash"] = &CRPCMod::SnRPCGetBlockHash;
     mapRPCFunc["getblock"] = &CRPCMod::SnRPCGetBlock;
     mapRPCFunc["gettxpool"] = &CRPCMod::SnRPCGetTxPool;
-    // mapRPCFunc["gettransaction"] = &CRPCMod::SnRPCGetTransaction;
-    // mapRPCFunc["getforkheight"] = &CRPCMod::SnRPCGetForkHeight;
+    mapRPCFunc["gettransaction"] = &CRPCMod::SnRPCGetTransaction;
+    mapRPCFunc["getforkheight"] = &CRPCMod::SnRPCGetForkHeight;
     // mapRPCFunc["sendtransaction"] = &CRPCMod::SnRPCSendTransaction;
 }
 
@@ -2522,8 +2522,39 @@ CRPCResultPtr CSnRPCMod::SnRPCGetTransaction(CRPCParamPtr param)
 
 CRPCResultPtr CSnRPCMod::SnRPCGetForkHeight(CRPCParamPtr param)
 {
-    (void)param;
-    return NULL;
+    walleve::CIOCompletionUntil ioCompltUntil(200000);
+    auto spParam = CastParamPtr<CGetForkHeightParam>(param);
+    auto* pEvent = new CMvEventRPCRouteGetForkHeight("");
+    pEvent->data.pIoCompltUntil = &ioCompltUntil;
+    pEvent->data.nNonce = GenNonce();
+    pEvent->data.strFork = spParam->strFork;
+    if (!pEvent)
+    {
+        return NULL;
+    }
+    ioCompltUntil.Reset();
+    pDbpService->PostEvent(pEvent);
+
+    bool fResult = false;
+    ioCompltUntil.WaitForComplete(fResult);
+    if(!fResult)
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Timeout");
+    }
+
+    auto ret = boost::any_cast<CMvRPCRouteGetForkHeightRet>(ioCompltUntil.obj);
+    if (ret.exception == 0)
+    {
+    }
+    else if (ret.exception == 1)
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Invalid fork");
+    }
+    else if (ret.exception == 2)
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Unknown fork");
+    }
+    return MakeCGetForkHeightResultPtr(ret.height);
 }
 
 CRPCResultPtr CSnRPCMod::SnRPCSendTransaction(CRPCParamPtr param)
