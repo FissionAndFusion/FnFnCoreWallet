@@ -32,6 +32,7 @@ target_link_libraries(storage
 	Boost::thread
 	Boost::date_time
 	Boost::regex
+    Boost::timer
         OpenSSL::SSL
         OpenSSL::Crypto
 	walleve

@@ -43,6 +43,7 @@ public:
     bool RetrieveTxIndex(const uint256& txid,CTxIndex& txIndex,uint256& fork);
     bool RetrieveTxIndex(const uint256& fork,const uint256& txid,CTxIndex& txIndex);
     bool RetrieveTxUnspent(const uint256& fork,const CTxOutPoint& out,CTxOutput& unspent);
+    bool WalkThroughUnspent(const uint256& hashFork, CForkUnspentDBWalker& walker);
     bool RetrieveDelegate(const uint256& hash,std::map<CDestination,int64>& mapDelegate);
     bool RetrieveEnroll(const uint256& hashAnchor,const std::vector<uint256>& vBlockRange, 
                                                   std::map<CDestination,CDiskPos>& mapEnrollTxPos);

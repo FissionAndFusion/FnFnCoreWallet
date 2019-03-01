@@ -28,6 +28,38 @@ public:
 };
 
 //////////////////////////////
+// CForkUnspentCheckWalker
+class CForkUnspentCheckWalker : public CForkUnspentDBWalker
+{
+public:
+    CForkUnspentCheckWalker(const std::map<CTxOutPoint, CTxUnspent>& mapUnspent)
+            : nMatch(0), nAll(0), nRanged(mapUnspent.size()), mapUnspentUTXO(mapUnspent) {};
+    bool Walk(const CTxOutPoint& txout, const CTxOutput& output) override
+    {
+        ++nAll;
+        for(const auto& item : mapUnspentUTXO)
+        {
+            const CTxUnspent& unspent = item.second;
+            if(unspent.hash == txout.hash && unspent.n == txout.n
+               && unspent.output.destTo == output.destTo
+               && unspent.output.nAmount == output.nAmount
+               && unspent.output.nLockUntil == output.nLockUntil)
+            {
+                ++nMatch;
+                break;
+            }
+        }
+        return true;
+    };
+
+public:
+    uint64 nMatch;
+    uint64 nAll;
+    uint64 nRanged;
+    const std::map<CTxOutPoint, CTxUnspent>& mapUnspentUTXO;
+};
+
+//////////////////////////////
 // CBlockView
  
 CBlockView::CBlockView()
@@ -1069,7 +1101,7 @@ bool CBlockBase::GetForkBlockInv(const uint256& hashFork,const CBlockLocator& lo
 }
 
 bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
-{/*
+{
     boost::timer::cpu_timer t_lock;
     t_lock.start();
 
@@ -1095,10 +1127,10 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
 
     Log("B", "Consistency checking level is %d\n", nLevel);
 
-    vector<CBlockDBFork> vFork;
-    if(!dbBlock.FetchFork(vFork))
+    vector<pair<uint256, uint256>> vFork;
+    if(!dbBlock.ListFork(vFork))
     {
-        Error("B", "Fetch fork failed.\n");
+        Error("B", "List fork failed.\n");
         return false;
     }
 
@@ -1110,14 +1142,14 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
         //checking of level 0: fork/block
 
         //check field refblock of table fork must be in rows in table block
-        CBlockIndex* pBlockRefIndex = GetIndex(fork.hashRef);
+        CBlockIndex* pBlockRefIndex = GetIndex(fork.second);
         if(!pBlockRefIndex)
         {
             Error("B", "Get referenced block index failed.\n");
             return false;
         }
 
-        boost::shared_ptr<CBlockFork> spFork = GetFork(fork.hashFork);
+        boost::shared_ptr<CBlockFork> spFork = GetFork(fork.first);
         if(NULL == spFork)
         {
             Error("B", "Get fork failed.\n");
@@ -1135,7 +1167,7 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
         if(0 == nDepth || pLastBlock->nHeight < nDepth)
         {
             nDepth = pLastBlock->nHeight;
-            Log("B", "Consistency checking depth is {%d} for fork:{%s}\n", nDepth, fork.hashFork.ToString().c_str());
+            Log("B", "Consistency checking depth is {%d} for fork:{%s}\n", nDepth, fork.first.ToString().c_str());
         }
 
         CBlockIndex* pIndex = pLastBlock;
@@ -1181,14 +1213,7 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
                     }
 
                     //consistent between database and block file
-                    if(!(txid == tx.GetHash()
-                          && pTxIndex.nVersion == tx.nVersion
-                          && pTxIndex.nType == tx.nType
-                          && pTxIndex.nLockUntil == tx.nLockUntil
-                          && pTxIndex.hashAnchor == tx.hashAnchor
-                          && pTxIndex.sendTo == tx.sendTo
-                          && pTxIndex.nAmount == tx.nAmount)
-                            )
+                    if(txid != tx.GetHash() || pTxIndex.nBlockHeight != pIndex->nHeight)
                     {
                         return false;
                     }
@@ -1197,7 +1222,8 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
                 };
 
                 CTxIndex pTxIdx;
-                if(!dbBlock.RetrieveTxIndex(pIndex->txidMint, pTxIdx))
+                uint256 fk;
+                if(!dbBlock.RetrieveTxIndex(pIndex->txidMint, pTxIdx, fk))
                 {
                     Error("B", "Retrieve mint tx index from db failed.\n");
                     return false;
@@ -1212,7 +1238,7 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
                 {
                     pTxIdx.SetNull();
                     const uint256& txid = tx.GetHash();
-                    if(!dbBlock.RetrieveTxIndex(txid, pTxIdx))
+                    if(!dbBlock.RetrieveTxIndex(txid, pTxIdx, fk))
                     {
                         Error("B", "Retrieve token tx index from db failed.\n");
                         return false;
@@ -1233,7 +1259,7 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
 
                 if(fIsLastBlock)
                 {
-                    if(!dbBlock.RetrieveDelegate(block.GetHash(), 0, mapNextBlockDelegate))
+                    if(!dbBlock.RetrieveDelegate(block.GetHash(), mapNextBlockDelegate))
                     {
                         Error("B", "Retrieve the latest delegate record from db failed.\n");
                         return false;
@@ -1243,7 +1269,7 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
                 else
                 {   //compare delegate in this iteration with the previous one
                     map<CDestination, int64> mapPrevBlockDelegate;
-                    if(!dbBlock.RetrieveDelegate(block.GetHash(), 0, mapPrevBlockDelegate))
+                    if(!dbBlock.RetrieveDelegate(block.GetHash(), mapPrevBlockDelegate))
                     {
                         Error("B", "Retrieve the following previous delegate record from db failed.\n");
                         return false;
@@ -1288,7 +1314,8 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
                         const CDestination& dest = tx.sendTo;
                         const uint256& blk = block.GetHash();
                         CTxIndex txIdx;
-                        if(!dbBlock.RetrieveTxIndex(tx.GetHash(), txIdx))
+                        uint256 fk;
+                        if(!dbBlock.RetrieveTxIndex(tx.GetHash(), txIdx, fk))
                         {
                             Error("B", "Retrieve enroll tx index from table transaction failed.\n");
                             return false;
@@ -1318,22 +1345,22 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
                 }
 
                 //compare enroll ranged in argument of nDepth with table enroll
-                set<uint256> setBlockRange;
-                setBlockRange.insert(block.GetHash());
-                map<CDestination, pair<uint32, uint32>> mapRes;
-                if(!dbBlock.RetrieveEnroll(block.hashPrev, setBlockRange, mapRes))
+                vector<uint256> vBlockRange;
+                vBlockRange.push_back(block.GetHash());
+                map<CDestination, CDiskPos> mapRes;
+                if(!dbBlock.RetrieveEnroll(block.hashPrev, vBlockRange, mapRes))
                 {
                     Error("B", "Retrieve enroll tx records from table enroll failed.\n");
                     return false;
                 }
-                map<CDestination, pair<uint32, uint32>> mapResComp;
+                map<CDestination, CDiskPos> mapResComp;
                 for(const auto& enroll : mapEnrollRanged)
                 {
                     const CDestination& dest = enroll.first.second;
                     const tuple<uint256, uint32, uint32>& pos = enroll.second;
                     const uint32& file = get<1>(pos);
                     const uint32& offset = get<2>(pos);
-                    mapResComp.insert(make_pair(dest, make_pair(file, offset)));
+                    mapResComp.insert(make_pair(dest, CDiskPos(file, offset)));
                 }
                 if(mapRes != mapResComp)
                 {
@@ -1345,65 +1372,41 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
             //checking of level 3: unspent
             if(nLevel >= 3)
             {
-                static vector<pair<uint256, uint64> > preout;   //txid vs. height
-                mapUnspentUTXO.insert(make_pair(CTxOutPoint(block.txMint.GetHash(), 0), CTxUnspent(CTxOutPoint(block.txMint.GetHash(), 0)
-                                     , CTxOutput(block.txMint.sendTo, block.txMint.nAmount, block.txMint.nLockUntil))));
-
-                for(const auto& tx : block.vtx)
+                CTransaction txMint;
+                if(!RetrieveTx(block.txMint.GetHash(), txMint))
                 {
-                    CTxIndex TxIdx;
-                    if(!dbBlock.RetrieveTxIndex(tx.GetHash(), TxIdx))
-                    {
-                        assert(0);
-                    }
-                    int64 nChange = TxIdx.nValueIn - TxIdx.nAmount - tx.nTxFee;
-                    if(nChange > 0 && tx.sendTo.IsTemplate())
-                    {
-                        cout << "there is a change with template address: " << tx.sendTo.GetHex() << endl;
-                    }
+                    return false;
+                }
+                mapUnspentUTXO.insert(make_pair(CTxOutPoint(block.txMint.GetHash(), 0), CTxUnspent(CTxOutPoint(block.txMint.GetHash(), 0)
+                                     , CTxOutput(txMint.sendTo, txMint.nAmount, txMint.nTimeStamp, txMint.nLockUntil))));
+
+                for(int i = 0; i < block.vtx.size(); ++i)
+                {
+                    const CTransaction& tx = block.vtx[i];
+                    const CTxContxt& txCtxt = block.vTxContxt[i];
+                    int64 nChange = txCtxt.GetValueIn() - tx.nAmount - tx.nTxFee;
+                    mapUnspentUTXO.insert(make_pair(
+                            CTxOutPoint(tx.GetHash(), 0),
+                            CTxUnspent(CTxOutPoint(tx.GetHash(), 0)
+                                     , CTxOutput(tx.sendTo, tx.nAmount, tx.nTimeStamp, tx.nLockUntil))));
                     if(nChange > 0)
                     {
-                        cout << "there is a change with " << (tx.sendTo.IsPubKey() ? "pubkey " : "tempkey ") << tx.sendTo.GetHex() << endl;
-                        int n = 1;
-                    }
-                    if(tx.nAmount == 11500000)
-                    {
-                        int n = 1;
-                    }
-                    if(tx.sendTo.IsPubKey())
-                    {
-                        cout << "send to a pubkey address of " << tx.sendTo.GetHex() << endl;
-//                        preout.push_back(make_pair(tx.GetHash(), TxIdx.nBlockHeight));
-                    }
-                    mapUnspentUTXO.insert(make_pair(CTxOutPoint(tx.GetHash(), 0), CTxUnspent(CTxOutPoint(tx.GetHash(), 0), CTxOutput(tx.sendTo, tx.nAmount, tx.nLockUntil))));
-                    if(nChange > 0)
-                    {
-                        if(TxIdx.nBlockHeight == 20170)
-                        {
-                            int n = 1;
-                        }
-                        Log("B", "Tx(%s) with a change(%s) on height(%d): to prepare to check.\n", tx.GetHash().ToString().c_str(), to_string(nChange).c_str(), TxIdx.nBlockHeight);
+                        Log("B", "Tx(%s) with a change(%s) on height(%d): to prepare to check.\n", tx.GetHash().ToString().c_str(), to_string(nChange).c_str(), pIndex->nHeight);
                         if(!CheckInputSingleAddressForTxWithChange(tx.GetHash()))
                         {
-                            Error("B", "Tx(%s) with a change(%s) on height(%d): input must be a single address.\n", tx.GetHash().ToString().c_str(), to_string(nChange).c_str(), TxIdx.nBlockHeight);
+                            Error("B", "Tx(%s) with a change(%s) on height(%d): input must be a single address.\n", tx.GetHash().ToString().c_str(), to_string(nChange).c_str(), pIndex->nHeight);
                             return false;
                         }
                         else
                         {
-                            mapUnspentUTXO.insert(make_pair(CTxOutPoint(tx.GetHash(), 1)
-                                                 , CTxUnspent(CTxOutPoint(tx.GetHash(), 1)
-                                                             , CTxOutput(TxIdx.destIn, nChange, tx.nLockUntil))));
+                            mapUnspentUTXO.insert(make_pair(
+                                    CTxOutPoint(tx.GetHash(), 1),
+                                    CTxUnspent(CTxOutPoint(tx.GetHash(), 1)
+                                             , CTxOutput(txCtxt.destIn, nChange, tx.nTimeStamp, tx.nLockUntil))));
                         }
                     }
                     for(const auto& txin : tx.vInput)
                     {
-                        for(const auto& po : preout)
-                        {
-                            if(txin.prevout.hash == po.first)
-                            {
-                                int n = 1;
-                            }
-                        }
                         vSpentUTXO.push_back(txin.prevout);
                     }
                 }
@@ -1411,13 +1414,6 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
                 vector<CTxOutPoint> vRemovedUTXO;
                 for(const auto& spent : vSpentUTXO)
                 {
-                    for(const auto& po : preout)
-                    {
-                        if(spent.hash == po.first)
-                        {
-                            int n = 1;
-                        }
-                    }
                     if(mapUnspentUTXO.find(spent) != mapUnspentUTXO.end())
                     {
                         mapUnspentUTXO.erase(spent);
@@ -1439,47 +1435,38 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
         if(nLevel >= 3)
         {
             //compare unspent with transaction
-            if(!dbBlock.CompareRangedUnspentTx(fork.hashFork, mapUnspentUTXO))
+            CForkUnspentCheckWalker walker(mapUnspentUTXO);
+            if(!dbBlock.WalkThroughUnspent(fork.first, walker))
             {
+                Error("B", "{%d} ranged unspent records failed to walk through.\n", mapUnspentUTXO.size());
+                return false;
+            }
 
-
+            if(walker.nMatch != mapUnspentUTXO.size())
+            {
                 Error("B", "{%d} ranged unspent records do not match with full collection of unspent.\n", mapUnspentUTXO.size());
                 return false;
             }
         }
 
-        Log("B", "Checking duration of fork{%s} ===> %s\n", fork.hashFork.ToString().c_str(), t_fork.format().c_str());
+        Log("B", "Checking duration of fork{%s} ===> %s\n", fork.first.ToString().c_str(), t_fork.format().c_str());
     }
 
     Log("B", "Checking duration ===> %s\n", t_check.format().c_str());
 
     Log("B", "Data consistency verified.\n");
-*/
+
     return true;
 }
 
 bool CBlockBase::CheckInputSingleAddressForTxWithChange(const uint256& txid)
-{/*
+{
     CTransaction tx;
     if(!RetrieveTx(txid, tx))
     {
         Error("B", "[CBlockBase::CheckInputSingleAddressForTxWithChange](%s): Failed to call to RetrieveTx.\n", txid.ToString().c_str());
         return false;
     }
-
-    //validate if this is a transaction which has a change
-    CTxIndex TxIdx;
-    if(!dbBlock.RetrieveTxIndex(tx.GetHash(), TxIdx))
-    {
-        assert(0);
-    }
-    int64 nChange = TxIdx.nValueIn - TxIdx.nAmount - tx.nTxFee;
-    if(nChange <= 0)
-    {
-        Error("B", "[CBlockBase::CheckInputSingleAddressForTxWithChange]: Tx(%s) is not a transaction with change.\n", txid.ToString().c_str());
-        assert(0);
-    }
-    Log("B", "[CheckInputSingleAddressForTxWithChange]txid:(%s)change:(%s)\n", txid.ToString().c_str(), to_string(nChange).c_str());
 
     //get all inputs whose index is 0 if any
     vector<CDestination> vDestNoChange;
@@ -1488,13 +1475,13 @@ bool CBlockBase::CheckInputSingleAddressForTxWithChange(const uint256& txid)
     {
         if(i.prevout.n == 0)
         {
-            CTxIndex txIdx;
-            if(!dbBlock.RetrieveTxIndex(i.prevout.hash, txIdx))
+            CTransaction prevTx;
+            if(!RetrieveTx(i.prevout.hash, prevTx))
             {
                 Error("B", "[CBlockBase::CheckInputSingleAddressForTxWithChange](%s): Failed to call to RetrieveTxIndex.\n", txid.ToString().c_str());
                 return false;
             }
-            vDestNoChange.push_back(txIdx.sendTo);
+            vDestNoChange.push_back(prevTx.sendTo);
         }
         else
         {
@@ -1514,14 +1501,8 @@ bool CBlockBase::CheckInputSingleAddressForTxWithChange(const uint256& txid)
     //if destination from input is not equal to output, return false
     if(vDestNoChange.size() == 1)
     {
-        CTxIndex txIdx;
-        if(!dbBlock.RetrieveTxIndex(txid, txIdx))
-        {
-            Error("B", "[CBlockBase::CheckInputSingleAddressForTxWithChange](%s): Failed to call to RetrieveTxIndex{vDestNoChange.size() == 1}.\n", txid.ToString().c_str());
-            return false;
-        }
         CDestination dest = *(vDestNoChange.begin());
-        if(dest != txIdx.sendTo)
+        if(dest != tx.sendTo)
         {
             Error("B", "[CBlockBase::CheckInputSingleAddressForTxWithChange](%s): {dest != txIdx.sendTo}.\n", txid.ToString().c_str());
             return false;
@@ -1553,8 +1534,6 @@ bool CBlockBase::CheckInputSingleAddressForTxWithChange(const uint256& txid)
     {
         return true;
     }
-*/
-    return true;//should to be removed when uncomment the above source code
 }
 
 CBlockIndex* CBlockBase::GetIndex(const uint256& hash) const
