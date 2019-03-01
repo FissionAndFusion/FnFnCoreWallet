@@ -2774,10 +2774,39 @@ void CDbpService::PushRPC(std::vector<uint8>& data, int type)
 
 void CDbpService::Completion(CIOCompletionUntil* ioCompltUntil, boost::any obj)
 {
-    //TODO:nNonce
-    //TODO:lock
     ioCompltUntil->obj = obj;
     ioCompltUntil->Completed(true);
+}
+
+void CDbpService::CreateCompletion(uint64 nNonce, walleve::CIOCompletionUntil* ptr)
+{
+    std::pair<uint64, std::shared_ptr<walleve::CIOCompletionUntil>> pair(nNonce, ptr);
+    vCompletionPtr.push_back(pair);
+}
+
+void CDbpService::CompletionByNonce(uint64& nNonce, boost::any obj)
+{
+    auto compare = [nNonce](std::pair<uint64, std::shared_ptr<walleve::CIOCompletionUntil>>& element) {
+        return nNonce == element.first;
+    };
+    auto iter = std::find_if(vCompletionPtr.begin(), vCompletionPtr.end(), compare);
+    if (iter != vCompletionPtr.end())
+    {
+        iter->second->obj = obj;
+        iter->second->Completed(true);
+    }
+}
+
+void CDbpService::DeleteCompletionByNonce(uint64 nNonce)
+{
+    auto compare = [nNonce](std::pair<uint64, std::shared_ptr<walleve::CIOCompletionUntil>>& element) {
+        return nNonce == element.first;
+    };
+    auto iter = std::find_if(vCompletionPtr.begin(), vCompletionPtr.end(), compare);
+    if (iter != vCompletionPtr.end())
+    {
+        vCompletionPtr.erase(iter);
+    }
 }
 
 void CDbpService::InitRPCTopicIds()
@@ -3056,7 +3085,6 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetTxPool& event)
 
 bool CDbpService::HandleEvent(CMvEventRPCRouteGetTransaction& event) 
 {
-    std::cout << "11### nNonce:" << event.data.nNonce << std::endl;
     event.data.type = CMvRPCRoute::DBP_RPCROUTE_GET_TRANSACTION;
     pIoCompltUntil = event.data.pIoCompltUntil;
 
