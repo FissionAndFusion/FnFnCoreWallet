@@ -34,7 +34,7 @@ void CPeerNet::ConfigNetwork(CPeerNetConfig& config)
 
 void CPeerNet::AddPeerRecord(CPeer* pPeer)
 {
-    setIP.insert(pPeer->GetLocal().address());
+    setIP.insert(pPeer->GetRemote().address());
 }
 
 void CPeerNet::HandlePeerClose(CPeer * pPeer)
