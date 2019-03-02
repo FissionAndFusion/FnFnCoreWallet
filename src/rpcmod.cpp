@@ -572,34 +572,6 @@ void CRPCModWorker::ListDestination(vector<CDestination>& vDestination)
     }
 }
 
-CRPCModWorker::CDestMutexPtr CRPCModWorker::LockDestMutex(const CDestFork& destFork)
-{
-    boost::unique_lock<boost::mutex> lock(destForkMutex);
-    auto it = mapDestMutex.find(destFork);
-    if (it == mapDestMutex.end())
-    {
-        it = mapDestMutex.insert(make_pair(destFork, CDestMutexPtr(new CDestMutex))).first;
-    }
-
-    CDestMutexPtr spDestMutex = it->second;
-    ++spDestMutex->nRef;
-
-    return spDestMutex;
-}
-
-void CRPCModWorker::UnlockDestMutex(const CDestFork& destFork)
-{
-    boost::unique_lock<boost::mutex> lock(destForkMutex);
-    auto it = mapDestMutex.find(destFork);
-    if (it != mapDestMutex.end())
-    {
-        if (--it->second->nRef == 0)
-        {
-            mapDestMutex.erase(it);
-        }
-    }
-}
-
 /* System */
 CRPCResultPtr CRPCModWorker::RPCHelp(CRPCParamPtr param)
 {
@@ -1460,12 +1432,10 @@ CRPCResultPtr CRPCModWorker::RPCSendFrom(CRPCParamPtr param)
     }
 
     // locked by from destination
-    CDestFork destFork{from, hashFork};
-    CDestMutexPtr spDestMutex = LockDestMutex(destFork);
-
     CTransaction txNew;
     {
-        boost::unique_lock<boost::mutex> lock(spDestMutex->mtx);
+        CDestForkLock lock(CDestFork{from, hashFork}, destForkMutex, mapDestMutex);
+
         if (!pService->CreateTransaction(hashFork,from,to,nAmount,nTxFee,vchData,txNew))
         {
             throw CRPCException(RPC_WALLET_ERROR,"Failed to create transaction");
@@ -1486,8 +1456,6 @@ CRPCResultPtr CRPCModWorker::RPCSendFrom(CRPCParamPtr param)
                                                         + MvErrString(err));
         }
     }
-
-    UnlockDestMutex(destFork);
 
     return MakeCSendFromResultPtr(txNew.GetHash().GetHex());
 }

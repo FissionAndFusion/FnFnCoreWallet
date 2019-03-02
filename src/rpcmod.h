@@ -72,12 +72,50 @@ protected:
             return (lhs.dest < rhs.dest) || (lhs.dest == rhs.dest && lhs.hashFork < rhs.hashFork);
         }
     };
+
     struct CDestMutex
     {
         size_t nRef = 0;
         mutable boost::mutex mtx;
     };
     typedef std::shared_ptr<CDestMutex> CDestMutexPtr;
+
+    class CDestForkLock
+    {
+    public:
+        CDestForkLock(const CDestFork& destForkIn, boost::mutex& destForkMutexIn,
+                      std::map<CDestFork, CDestMutexPtr>& mapDestMutexIn)
+        : destFork(destForkIn), destForkMutex(destForkMutexIn), mapDestMutex(mapDestMutexIn)
+        {
+            {
+                boost::unique_lock<boost::mutex> lock(destForkMutex);
+                auto it = mapDestMutex.find(destFork);
+                if (it == mapDestMutex.end())
+                {
+                    it = mapDestMutex.insert(make_pair(destFork, CDestMutexPtr(new CDestMutex))).first;
+                }
+                spDestMutex = it->second;
+                ++spDestMutex->nRef;
+            }
+            spDestMutex->mtx.lock();
+        }
+        ~CDestForkLock()
+        {
+            spDestMutex->mtx.unlock();
+            {
+                boost::unique_lock<boost::mutex> lock(destForkMutex);
+                if (--spDestMutex->nRef == 0)
+                {
+                    mapDestMutex.erase(destFork);
+                }
+            }
+        }
+    protected:
+        const CDestFork& destFork;
+        std::map<CDestFork, CDestMutexPtr>& mapDestMutex;
+        boost::mutex& destForkMutex;
+        CDestMutexPtr spDestMutex;
+    };
 
 protected:
     bool WalleveHandleInitialize() override;
@@ -90,9 +128,6 @@ protected:
     bool CheckWalletError(MvErr err);
     multiverse::crypto::CPubKey GetPubKey(const std::string& addr);
     void ListDestination(std::vector<CDestination>& vDestination);
-
-    CDestMutexPtr LockDestMutex(const CDestFork& destFork);
-    void UnlockDestMutex(const CDestFork& destFork);
 
 private:
     /* System */
