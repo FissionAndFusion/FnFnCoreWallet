@@ -84,6 +84,7 @@ public:
     bool HandleEvent(CMvEventRPCRouteGetForkCount& event) override;
     bool HandleEvent(CMvEventRPCRouteListFork& event) override;
     bool HandleEvent(CMvEventRPCRouteAdded& event) override;
+    bool HandleEvent(CMvEventRPCRouteDelCompltUntil& event) override;
     bool HandleEvent(CMvEventRPCRouteGetBlockLocation& event) override;
     bool HandleEvent(CMvEventRPCRouteGetBlockCount& event) override;
     bool HandleEvent(CMvEventRPCRouteGetBlockHash& event) override;
@@ -143,8 +144,7 @@ private:
     void HandleRPCRoute(CMvEventDbpMethod& event);
     void PushRPC(std::vector<uint8>& data, int type);
     void PushRPCOnece(std::string id, std::vector<uint8>& data, int type);
-    void Completion(CIOCompletionUntil *ioCompltUntil, boost::any obj);
-    void CreateCompletion(uint64 nNonce, walleve::CIOCompletionUntil* ptr);
+    void CreateCompletion(uint64 nNonce, std::shared_ptr<walleve::CIOCompletionUntil> sPtr);
     void CompletionByNonce(uint64& nNonce, boost::any obj);
     void DeleteCompletionByNonce(uint64 nNonce);
     void InitRPCTopicIds();
@@ -214,7 +214,6 @@ protected:
     IWallet* pWallet;
     IMvNetChannel* pNetChannel;
     walleve::IIOModule* pRPCMod;
-    walleve::CIOCompletionUntil* pIoCompltUntil;
     int sessionCount;
 
 private:
@@ -237,8 +236,7 @@ private:
     std::map<ForkNonceKeyType, int> mapThisNodeForkCount;
     std::map<ForkNonceKeyType, std::set<uint256>> mapThisNodeGetData; 
     std::deque<std::pair<uint64, boost::any>> queCount;
-    // std::vector<std::pair<uint64, walleve::CIOCompletionUntil*>> vCompletionPtr;
-    std::vector<std::pair<uint64, std::shared_ptr<walleve::CIOCompletionUntil>>> vCompletionPtr;
+    std::deque<std::pair<uint64, std::shared_ptr<walleve::CIOCompletionUntil>>> queCompletion;
     std::vector<std::string> vRPCTopicIds;
 };
 

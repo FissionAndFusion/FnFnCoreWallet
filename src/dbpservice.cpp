@@ -36,7 +36,6 @@ CDbpService::CDbpService()
 
     fEnableSuperNode = false;
     fEnableForkNode = false;
-    pIoCompltUntil = NULL;
     sessionCount = 0;
 }
 
@@ -1496,20 +1495,20 @@ void CDbpService::RPCRootHandle(CMvRPCRouteStop* data, CMvRPCRouteStopRet* ret)
 {
     if (ret == NULL)
     {
-        if (sessionCount == 0 && pIoCompltUntil != NULL)
+        if (sessionCount == 0)
         {
             CMvRPCRouteStopRet stopRet;
-            Completion(pIoCompltUntil, stopRet);
+            CompletionByNonce(data->nNonce, stopRet);
             pService->Shutdown();
         }
     }
 
     if (ret != NULL)
     {
-        if (sessionCount == 0 && pIoCompltUntil != NULL)
+        if (sessionCount == 0)
         {
             CMvRPCRouteStopRet stopRet;
-            Completion(pIoCompltUntil, stopRet);
+            CompletionByNonce(data->nNonce, stopRet);
             pService->Shutdown();
         }
     }
@@ -1519,11 +1518,11 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetForkCount* data, CMvRPCRouteGetFor
 {
     if (ret == NULL)
     {
-       if (sessionCount == 0 && pIoCompltUntil != NULL)
+       if (sessionCount == 0)
         {
             CMvRPCRouteGetForkCountRet ret;
             ret.count = pService->GetForkCount();
-            Completion(pIoCompltUntil, ret);
+            CompletionByNonce(data->nNonce, ret);
         }
         return;
     }
@@ -1543,11 +1542,11 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetForkCount* data, CMvRPCRouteGetFor
             count = c;
         }
 
-        if (sessionCount == 0 && pIoCompltUntil != NULL)
+        if (sessionCount == 0)
         {
             CMvRPCRouteGetForkCountRet ret;
             ret.count = pService->GetForkCount() + count;
-            Completion(pIoCompltUntil, ret);
+            CompletionByNonce(data->nNonce, ret);
         }
         return;
     }
@@ -1580,7 +1579,7 @@ void CDbpService::RPCRootHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRe
 {
     if(ret == NULL)
     {
-       if (sessionCount == 0 && pIoCompltUntil != NULL)
+       if (sessionCount == 0)
         {
             CMvRPCRouteListForkRet ret;
             std::vector<std::pair<uint256,CProfile>> vFork;
@@ -1588,7 +1587,7 @@ void CDbpService::RPCRootHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRe
             std::vector<CMvRPCProfile> vRpcFork;
             SwrapForks(vFork, vRpcFork);
             ret.vFork.insert(ret.vFork.end(), vRpcFork.begin(), vRpcFork.end());
-            Completion(pIoCompltUntil, ret);
+            CompletionByNonce(data->nNonce, ret);
         }
         return;
     }
@@ -1608,7 +1607,7 @@ void CDbpService::RPCRootHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRe
             vTempFork.insert(vTempFork.end(), vForkSelf.begin(), vForkSelf.end());
         }
 
-        if (sessionCount == 0 && pIoCompltUntil != NULL)
+        if (sessionCount == 0)
         {
             CMvRPCRouteListForkRet retOut;
             std::vector<std::pair<uint256, CProfile>> vFork;
@@ -1618,7 +1617,7 @@ void CDbpService::RPCRootHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRe
             retOut.vFork.insert(retOut.vFork.end(), vTempFork.begin(), vTempFork.end());
             retOut.vFork.insert(retOut.vFork.end(), vRpcFork.begin(), vRpcFork.end());
             ListForkUnique(retOut.vFork);
-            Completion(pIoCompltUntil, retOut);
+            CompletionByNonce(data->nNonce, retOut);
         }
         return;
     }
@@ -1628,14 +1627,14 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetBlockLocation* data, CMvRPCRouteGe
 {
     if (ret == NULL)
     {
-        if (sessionCount == 0 && pIoCompltUntil != NULL)
+        if (sessionCount == 0)
         {
             CMvRPCRouteGetBlockLocationRet getBlockLocationRet;
             getBlockLocationRet.nNonce = data->nNonce;
             getBlockLocationRet.type = data->type;
             getBlockLocationRet.strFork = "";
             getBlockLocationRet.height = 0;
-            Completion(pIoCompltUntil, getBlockLocationRet);
+            CompletionByNonce(data->nNonce, getBlockLocationRet);
             return;
         }
 
@@ -1649,25 +1648,25 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetBlockLocation* data, CMvRPCRouteGe
 
     if (ret != NULL)
     {
-        if(!ret->strFork.empty() && pIoCompltUntil != NULL)
+        if(!ret->strFork.empty())
         {
             CMvRPCRouteGetBlockLocationRet getBlockLocationRet;
             getBlockLocationRet.nNonce = data->nNonce;
             getBlockLocationRet.type = data->type;
             getBlockLocationRet.strFork = ret->strFork;
             getBlockLocationRet.height = ret->height;
-            Completion(pIoCompltUntil, getBlockLocationRet);
+            CompletionByNonce(data->nNonce, getBlockLocationRet);
             return;
         }
 
-        if (sessionCount == 0 && pIoCompltUntil != NULL)
+        if (sessionCount == 0)
         {
             CMvRPCRouteGetBlockLocationRet getBlockLocationRet;
             getBlockLocationRet.nNonce = data->nNonce;
             getBlockLocationRet.type = data->type;
             getBlockLocationRet.strFork = "";
             getBlockLocationRet.height = 0;
-            Completion(pIoCompltUntil, getBlockLocationRet);
+            CompletionByNonce(data->nNonce, getBlockLocationRet);
             return;
         }
 
@@ -1684,14 +1683,14 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetBlockCount* data, CMvRPCRouteGetBl
 {
     if(ret == NULL)
     {
-        if (sessionCount == 0 && pIoCompltUntil != NULL)
+        if (sessionCount == 0)
         {
             CMvRPCRouteGetBlockCountRet getBlockCountRet;
             getBlockCountRet.nNonce = data->nNonce;
             getBlockCountRet.type = data->type;
             getBlockCountRet.exception = 2;
             getBlockCountRet.height = 0;
-            Completion(pIoCompltUntil, getBlockCountRet);
+            CompletionByNonce(data->nNonce, getBlockCountRet);
             return;
         }
 
@@ -1705,25 +1704,25 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetBlockCount* data, CMvRPCRouteGetBl
 
     if(ret != NULL)
     {
-        if(ret->exception == 0 && pIoCompltUntil != NULL)
+        if(ret->exception == 0)
         {
             CMvRPCRouteGetBlockCountRet getBlockCountRet;
             getBlockCountRet.nNonce = data->nNonce;
             getBlockCountRet.type = data->type;
             getBlockCountRet.exception = ret->exception;
             getBlockCountRet.height = ret->height;
-            Completion(pIoCompltUntil, getBlockCountRet);
+            CompletionByNonce(data->nNonce, getBlockCountRet);
             return;
         }
 
-        if (sessionCount == 0 && pIoCompltUntil != NULL)
+        if (sessionCount == 0)
         {
             CMvRPCRouteGetBlockCountRet getBlockCountRet;
             getBlockCountRet.nNonce = data->nNonce;
             getBlockCountRet.type = data->type;
             getBlockCountRet.exception = 2;
             getBlockCountRet.height = 0;
-            Completion(pIoCompltUntil, getBlockCountRet);
+            CompletionByNonce(data->nNonce, getBlockCountRet);
             return;
         }
 
@@ -1740,13 +1739,13 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetBlockHash * data, CMvRPCRouteGetBl
 {
     if(ret == NULL)
     {
-        if (sessionCount == 0 && pIoCompltUntil != NULL)
+        if (sessionCount == 0)
         {
             CMvRPCRouteGetBlockHashRet getBlockHashRet;
             getBlockHashRet.nNonce = data->nNonce;
             getBlockHashRet.type = data->type;
             getBlockHashRet.exception = 2;
-            Completion(pIoCompltUntil, getBlockHashRet);
+            CompletionByNonce(data->nNonce, getBlockHashRet);
             return;
         }
 
@@ -1760,24 +1759,24 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetBlockHash * data, CMvRPCRouteGetBl
 
     if(ret != NULL)
     {
-        if((ret->exception == 0 || ret->exception == 3) && pIoCompltUntil != NULL)
+        if(ret->exception == 0 || ret->exception == 3)
         {
             CMvRPCRouteGetBlockHashRet getBlockHashRet;
             getBlockHashRet.nNonce = data->nNonce;
             getBlockHashRet.type = data->type;
             getBlockHashRet.exception = ret->exception;
             getBlockHashRet.vHash = ret->vHash;
-            Completion(pIoCompltUntil, getBlockHashRet);
+            CompletionByNonce(data->nNonce, getBlockHashRet);
             return;
         }
 
-        if (sessionCount == 0 && pIoCompltUntil != NULL)
+        if (sessionCount == 0)
         {
             CMvRPCRouteGetBlockHashRet getBlockHashRet;
             getBlockHashRet.nNonce = data->nNonce;
             getBlockHashRet.type = data->type;
             getBlockHashRet.exception = 2;
-            Completion(pIoCompltUntil, getBlockHashRet);
+            CompletionByNonce(data->nNonce, getBlockHashRet);
             return;
         }
 
@@ -1796,13 +1795,13 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetBlock* data, CMvRPCRouteGetBlockRe
 
     if (ret == NULL)
     {
-        if (sessionCount == 0 && pIoCompltUntil != NULL)
+        if (sessionCount == 0)
         {
             CMvRPCRouteGetBlockRet getBlockRet;
             getBlockRet.nNonce = data->nNonce;
             getBlockRet.type = data->type;
             getBlockRet.exception = 1;
-            Completion(pIoCompltUntil, getBlockRet);
+            CompletionByNonce(data->nNonce, getBlockRet);
             return;
         }
 
@@ -1825,14 +1824,14 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetBlock* data, CMvRPCRouteGetBlockRe
             getBlockRet.strFork = ret->strFork;
             getBlockRet.height = ret->height;
             getBlockRet.block = ret->block;
-            Completion(pIoCompltUntil, getBlockRet);
+            CompletionByNonce(data->nNonce, getBlockRet);
             return;
         }
 
-        if (sessionCount == 0 && pIoCompltUntil != NULL)
+        if (sessionCount == 0)
         {
             getBlockRet.exception = 1;
-            Completion(pIoCompltUntil, getBlockRet);
+            CompletionByNonce(data->nNonce, getBlockRet);
             return;
         }
 
@@ -1851,13 +1850,13 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetTxPool* data, CMvRPCRouteGetTxPool
 
     if(ret == NULL)
     {
-        if (sessionCount == 0 && pIoCompltUntil != NULL)
+        if (sessionCount == 0)
         {
             CMvRPCRouteGetTxPoolRet getTxPoolRet;
             getTxPoolRet.nNonce = data->nNonce;
             getTxPoolRet.type = data->type;
             getTxPoolRet.exception = 2;
-            Completion(pIoCompltUntil, getTxPoolRet);
+            CompletionByNonce(data->nNonce, getTxPoolRet);
             return;
         }
 
@@ -1874,18 +1873,18 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetTxPool* data, CMvRPCRouteGetTxPool
         getTxPoolRet.nNonce = data->nNonce;
         getTxPoolRet.type = data->type;
 
-        if (ret->exception == 0 && pIoCompltUntil != NULL)
+        if (ret->exception == 0)
         {
             getTxPoolRet.exception = ret->exception;
             getTxPoolRet.vTxPool = ret->vTxPool;
-            Completion(pIoCompltUntil, getTxPoolRet);
+            CompletionByNonce(data->nNonce, getTxPoolRet);
             return;
         }
 
         if (sessionCount == 0)
         {
             getTxPoolRet.exception = 2;
-            Completion(pIoCompltUntil, getTxPoolRet);
+            CompletionByNonce(data->nNonce, getTxPoolRet);
             return;
         }
 
@@ -1903,13 +1902,13 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetTransaction* data, CMvRPCRouteGetT
 
     if(ret == NULL)
     {
-        if (sessionCount == 0 && pIoCompltUntil != NULL)
+        if (sessionCount == 0)
         {
             CMvRPCRouteGetTransactionRet getTransactionRet;
             getTransactionRet.nNonce = data->nNonce;
             getTransactionRet.type = data->type;
             getTransactionRet.exception = 1;
-            Completion(pIoCompltUntil, getTransactionRet);
+            CompletionByNonce(data->nNonce, getTransactionRet);
             return;
         }
 
@@ -1926,20 +1925,20 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetTransaction* data, CMvRPCRouteGetT
         getTransactionRet.nNonce = data->nNonce;
         getTransactionRet.type = data->type;
 
-        if (ret->exception == 0 && pIoCompltUntil != NULL)
+        if (ret->exception == 0)
         {
             getTransactionRet.exception = ret->exception;
             getTransactionRet.tx = ret->tx;
             getTransactionRet.strFork = ret->strFork;
             getTransactionRet.nDepth = ret->nDepth;
-            Completion(pIoCompltUntil, getTransactionRet);
+            CompletionByNonce(data->nNonce, getTransactionRet);
             return;
         }
 
         if (sessionCount == 0)
         {
             getTransactionRet.exception = 2;
-            Completion(pIoCompltUntil, getTransactionRet);
+            CompletionByNonce(data->nNonce, getTransactionRet);
             return;
         }
 
@@ -1957,13 +1956,13 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetForkHeight* data, CMvRPCRouteGetFo
 
     if(ret == NULL)
     {
-        if (sessionCount == 0 && pIoCompltUntil != NULL)
+        if (sessionCount == 0)
         {
             CMvRPCRouteGetForkHeightRet getForkHeightRet;
             getForkHeightRet.nNonce = data->nNonce;
             getForkHeightRet.type = data->type;
             getForkHeightRet.exception = 2;
-            Completion(pIoCompltUntil, getForkHeightRet);
+            CompletionByNonce(data->nNonce, getForkHeightRet);
             return;
         }
 
@@ -1980,18 +1979,18 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetForkHeight* data, CMvRPCRouteGetFo
         getForkHeightRet.nNonce = data->nNonce;
         getForkHeightRet.type = data->type;
 
-        if (ret->exception == 0 && pIoCompltUntil != NULL)
+        if (ret->exception == 0)
         {
             getForkHeightRet.exception = ret->exception;
             getForkHeightRet.height = ret->height;
-            Completion(pIoCompltUntil, getForkHeightRet);
+            CompletionByNonce(data->nNonce, getForkHeightRet);
             return;
         }
 
         if (sessionCount == 0)
         {
             getForkHeightRet.exception = 2;
-            Completion(pIoCompltUntil, getForkHeightRet);
+            CompletionByNonce(data->nNonce, getForkHeightRet);
             return;
         }
 
@@ -2009,13 +2008,13 @@ void CDbpService::RPCRootHandle(CMvRPCRouteSendTransaction* data, CMvRPCRouteSen
 
     if(ret == NULL)
     {
-        if (sessionCount == 0 && pIoCompltUntil != NULL)
+        if (sessionCount == 0)
         {
             CMvRPCRouteSendTransactionRet sendTransactionRet;
             sendTransactionRet.nNonce = data->nNonce;
             sendTransactionRet.type = data->type;
             sendTransactionRet.exception = 1;
-            Completion(pIoCompltUntil, sendTransactionRet);
+            CompletionByNonce(data->nNonce, sendTransactionRet);
             return;
         }
 
@@ -2032,10 +2031,10 @@ void CDbpService::RPCRootHandle(CMvRPCRouteSendTransaction* data, CMvRPCRouteSen
         sendTransactionRet.nNonce = data->nNonce;
         sendTransactionRet.type = data->type;
 
-        if (ret->exception == 0 && pIoCompltUntil != NULL)
+        if (ret->exception == 0)
         {
             sendTransactionRet.exception = ret->exception;
-            Completion(pIoCompltUntil, sendTransactionRet);
+            CompletionByNonce(data->nNonce, sendTransactionRet);
             return;
         }
 
@@ -2043,7 +2042,7 @@ void CDbpService::RPCRootHandle(CMvRPCRouteSendTransaction* data, CMvRPCRouteSen
         {
             sendTransactionRet.exception = 1;
             sendTransactionRet.err = ret->err;
-            Completion(pIoCompltUntil, sendTransactionRet);
+            CompletionByNonce(data->nNonce, sendTransactionRet);
             return;
         }
 
@@ -2772,16 +2771,14 @@ void CDbpService::PushRPC(std::vector<uint8>& data, int type)
     }
 }
 
-void CDbpService::Completion(CIOCompletionUntil* ioCompltUntil, boost::any obj)
+void CDbpService::CreateCompletion(uint64 nNonce, std::shared_ptr<walleve::CIOCompletionUntil> sPtr)
 {
-    ioCompltUntil->obj = obj;
-    ioCompltUntil->Completed(true);
-}
-
-void CDbpService::CreateCompletion(uint64 nNonce, walleve::CIOCompletionUntil* ptr)
-{
-    std::pair<uint64, std::shared_ptr<walleve::CIOCompletionUntil>> pair(nNonce, ptr);
-    vCompletionPtr.push_back(pair);
+    if(queCompletion.size() > 100)
+    {
+        queCompletion.pop_back();
+    }
+    std::pair<uint64, std::shared_ptr<walleve::CIOCompletionUntil>> pair(nNonce, sPtr);
+    queCompletion.push_front(pair);
 }
 
 void CDbpService::CompletionByNonce(uint64& nNonce, boost::any obj)
@@ -2789,8 +2786,8 @@ void CDbpService::CompletionByNonce(uint64& nNonce, boost::any obj)
     auto compare = [nNonce](std::pair<uint64, std::shared_ptr<walleve::CIOCompletionUntil>>& element) {
         return nNonce == element.first;
     };
-    auto iter = std::find_if(vCompletionPtr.begin(), vCompletionPtr.end(), compare);
-    if (iter != vCompletionPtr.end())
+    auto iter = std::find_if(queCompletion.begin(), queCompletion.end(), compare);
+    if (iter != queCompletion.end())
     {
         iter->second->obj = obj;
         iter->second->Completed(true);
@@ -2802,10 +2799,10 @@ void CDbpService::DeleteCompletionByNonce(uint64 nNonce)
     auto compare = [nNonce](std::pair<uint64, std::shared_ptr<walleve::CIOCompletionUntil>>& element) {
         return nNonce == element.first;
     };
-    auto iter = std::find_if(vCompletionPtr.begin(), vCompletionPtr.end(), compare);
-    if (iter != vCompletionPtr.end())
+    auto iter = std::find_if(queCompletion.begin(), queCompletion.end(), compare);
+    if (iter != queCompletion.end())
     {
-        vCompletionPtr.erase(iter);
+        queCompletion.erase(iter);
     }
 }
 
@@ -2843,7 +2840,7 @@ void CDbpService::InitSessionCount()
 bool CDbpService::HandleEvent(CMvEventRPCRouteStop& event)
 {
     event.data.type = CMvRPCRoute::DBP_RPCROUTE_STOP;
-    pIoCompltUntil = event.data.pIoCompltUntil;
+    CreateCompletion(event.data.nNonce, event.data.spIoCompltUntil);
     CMvRPCRouteStopRet stopRet;
     InsertQueCount(event.data.nNonce, stopRet);
 
@@ -2862,7 +2859,7 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteStop& event)
 bool CDbpService::HandleEvent(CMvEventRPCRouteGetForkCount& event)
 {
     event.data.type = CMvRPCRoute::DBP_RPCROUTE_GET_FORK_COUNT;
-    pIoCompltUntil = event.data.pIoCompltUntil;
+    CreateCompletion(event.data.nNonce, event.data.spIoCompltUntil);
     CMvRPCRouteGetForkCountRet getForkCountRet;
     getForkCountRet.count = 0;
     InsertQueCount(event.data.nNonce, getForkCountRet);
@@ -2881,7 +2878,7 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetForkCount& event)
 bool CDbpService::HandleEvent(CMvEventRPCRouteListFork& event)
 {
     event.data.type = CMvRPCRoute::DBP_RPCROUTE_LIST_FORK;
-    pIoCompltUntil = event.data.pIoCompltUntil;
+    CreateCompletion(event.data.nNonce, event.data.spIoCompltUntil);
     CMvRPCRouteListForkRet listForkRet;
     InsertQueCount(event.data.nNonce, listForkRet);
 
@@ -2899,7 +2896,7 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteListFork& event)
 bool CDbpService::HandleEvent(CMvEventRPCRouteGetBlockLocation& event)
 {
     event.data.type = CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK_LOCATION;
-    pIoCompltUntil = event.data.pIoCompltUntil;
+    CreateCompletion(event.data.nNonce, event.data.spIoCompltUntil);
 
     CMvRPCRouteGetBlockLocationRet getBlockLocationRet;
     getBlockLocationRet.strFork = "";
@@ -2913,7 +2910,7 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetBlockLocation& event)
     {
         getBlockLocationRet.height = height;
         getBlockLocationRet.strFork = fork.GetHex();
-        Completion(pIoCompltUntil, getBlockLocationRet);
+        CompletionByNonce(event.data.nNonce, getBlockLocationRet);
         return true;
     }
 
@@ -2943,7 +2940,7 @@ bool CDbpService::GetForkHashOfDef(const rpc::CRPCString& hex, uint256& hashFork
 bool CDbpService::HandleEvent(CMvEventRPCRouteGetBlockCount& event)
 {
     event.data.type = CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK_COUNT;
-    pIoCompltUntil = event.data.pIoCompltUntil;
+    CreateCompletion(event.data.nNonce, event.data.spIoCompltUntil);
 
     CMvRPCRouteGetBlockCountRet getBlockCountRet;
     getBlockCountRet.nNonce = event.data.nNonce;
@@ -2953,7 +2950,7 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetBlockCount& event)
     {
         getBlockCountRet.height = 0;
         getBlockCountRet.exception = 1;
-        Completion(pIoCompltUntil, getBlockCountRet);
+        CompletionByNonce(event.data.nNonce, getBlockCountRet);
         return true;
     }
 
@@ -2961,7 +2958,7 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetBlockCount& event)
     {
         getBlockCountRet.height = pService->GetBlockCount(hashFork);
         getBlockCountRet.exception = 0;
-        Completion(pIoCompltUntil, getBlockCountRet);
+        CompletionByNonce(event.data.nNonce, getBlockCountRet);
         return true;
     }
 
@@ -2975,7 +2972,7 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetBlockCount& event)
 bool CDbpService::HandleEvent(CMvEventRPCRouteGetBlockHash& event)
 {
     event.data.type = CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK_HASH;
-    pIoCompltUntil = event.data.pIoCompltUntil;
+    CreateCompletion(event.data.nNonce, event.data.spIoCompltUntil);
 
     CMvRPCRouteGetBlockHashRet getBlockHashRet;
     getBlockHashRet.nNonce = event.data.nNonce;
@@ -2984,7 +2981,7 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetBlockHash& event)
     if (!GetForkHashOfDef(event.data.strFork, hashFork))
     {
         getBlockHashRet.exception = 1;
-        Completion(pIoCompltUntil, getBlockHashRet);
+        CompletionByNonce(event.data.nNonce, getBlockHashRet);
         return true;
     }
 
@@ -2994,7 +2991,7 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetBlockHash& event)
         if (!pService->GetBlockHash(hashFork, event.data.height, vBlockHash))
         {
             getBlockHashRet.exception = 3;
-            Completion(pIoCompltUntil, getBlockHashRet);
+            CompletionByNonce(event.data.nNonce, getBlockHashRet);
             return true;
         }
 
@@ -3004,7 +3001,7 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetBlockHash& event)
         }
 
         getBlockHashRet.exception = 0;
-        Completion(pIoCompltUntil, getBlockHashRet);
+        CompletionByNonce(event.data.nNonce, getBlockHashRet);
         return true;
     }
 
@@ -3018,7 +3015,7 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetBlockHash& event)
 bool CDbpService::HandleEvent(CMvEventRPCRouteGetBlock& event)
 {
     event.data.type = CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK;
-    pIoCompltUntil = event.data.pIoCompltUntil;
+    CreateCompletion(event.data.nNonce, event.data.spIoCompltUntil);
 
     CMvRPCRouteGetBlockRet getBlockRet;
     getBlockRet.nNonce = event.data.nNonce;
@@ -3035,7 +3032,7 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetBlock& event)
         getBlockRet.strFork = fork.GetHex();
         getBlockRet.height = height;
         getBlockRet.block = block;
-        Completion(pIoCompltUntil, getBlockRet);
+        CompletionByNonce(event.data.nNonce, getBlockRet);
         return true;
     }
 
@@ -3049,7 +3046,7 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetBlock& event)
 bool CDbpService::HandleEvent(CMvEventRPCRouteGetTxPool& event)
 {
     event.data.type = CMvRPCRoute::DBP_RPCROUTE_GET_TXPOOL;
-    pIoCompltUntil = event.data.pIoCompltUntil;
+    CreateCompletion(event.data.nNonce, event.data.spIoCompltUntil);
 
     CMvRPCRouteGetTxPoolRet getTxPoolRet;
     getTxPoolRet.nNonce = event.data.nNonce;
@@ -3058,7 +3055,7 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetTxPool& event)
     if (!GetForkHashOfDef(event.data.strFork, hashFork))
     {
         getTxPoolRet.exception = 1;
-        Completion(pIoCompltUntil, getTxPoolRet);
+        CompletionByNonce(event.data.nNonce, getTxPoolRet);
         return true;
     }
 
@@ -3072,7 +3069,7 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetTxPool& event)
         }
 
         getTxPoolRet.exception = 0;
-        Completion(pIoCompltUntil, getTxPoolRet);
+        CompletionByNonce(event.data.nNonce, getTxPoolRet);
         return true;
     }
 
@@ -3086,7 +3083,7 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetTxPool& event)
 bool CDbpService::HandleEvent(CMvEventRPCRouteGetTransaction& event) 
 {
     event.data.type = CMvRPCRoute::DBP_RPCROUTE_GET_TRANSACTION;
-    pIoCompltUntil = event.data.pIoCompltUntil;
+    CreateCompletion(event.data.nNonce, event.data.spIoCompltUntil);
 
     CMvRPCRouteGetTransactionRet getTransactionRet;
     getTransactionRet.nNonce = event.data.nNonce;
@@ -3104,7 +3101,7 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetTransaction& event)
         getTransactionRet.tx = tx;
         getTransactionRet.strFork = hashFork.GetHex();
         getTransactionRet.nDepth = nHeight < 0 ? 0 : pService->GetBlockCount(hashFork) - nHeight;
-        Completion(pIoCompltUntil, getTransactionRet);
+        CompletionByNonce(event.data.nNonce, getTransactionRet);
         return true;
     }
 
@@ -3118,7 +3115,7 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetTransaction& event)
 bool CDbpService::HandleEvent(CMvEventRPCRouteGetForkHeight& event)
 {
     event.data.type = CMvRPCRoute::DBP_RPCROUTE_GET_FORK_HEIGHT;
-    pIoCompltUntil = event.data.pIoCompltUntil;
+    CreateCompletion(event.data.nNonce, event.data.spIoCompltUntil);
 
     CMvRPCRouteGetForkHeightRet getForkHeightRet;
     getForkHeightRet.nNonce = event.data.nNonce;
@@ -3127,7 +3124,7 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetForkHeight& event)
     if (!GetForkHashOfDef(event.data.strFork, hashFork))
     {
         getForkHeightRet.exception = 1;
-        Completion(pIoCompltUntil, getForkHeightRet);
+        CompletionByNonce(event.data.nNonce, getForkHeightRet);
         return true;
     }
 
@@ -3135,7 +3132,7 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetForkHeight& event)
     {
         getForkHeightRet.exception = 0;
         getForkHeightRet.height = pService->GetForkHeight(hashFork);
-        Completion(pIoCompltUntil, getForkHeightRet);
+        CompletionByNonce(event.data.nNonce, getForkHeightRet);
         return true;
     }
 
@@ -3149,7 +3146,7 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetForkHeight& event)
 bool CDbpService::HandleEvent(CMvEventRPCRouteSendTransaction& event)
 {
     event.data.type = CMvRPCRoute::DBP_RPCROUTE_SEND_TRANSACTION;
-    pIoCompltUntil = event.data.pIoCompltUntil;
+    CreateCompletion(event.data.nNonce, event.data.spIoCompltUntil);
 
     CMvRPCRouteSendTransactionRet sendTransactionRet;
     sendTransactionRet.nNonce = event.data.nNonce;
@@ -3158,7 +3155,7 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteSendTransaction& event)
     if (err == MV_OK)
     {
         sendTransactionRet.exception = 0;
-        Completion(pIoCompltUntil, sendTransactionRet);
+        CompletionByNonce(event.data.nNonce, sendTransactionRet);
         return true;
     }
 
@@ -3548,6 +3545,12 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteAdded& event)
     {
         return HandleAddedEventSendTransaction(event, ss);
     }
+}
+
+bool CDbpService::HandleEvent(CMvEventRPCRouteDelCompltUntil& event)
+{
+    DeleteCompletionByNonce(event.data.nNonce);
+    return true;
 }
 
 void CDbpService::HandleRPCRoute(CMvEventDbpMethod& event)

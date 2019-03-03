@@ -161,11 +161,11 @@ public:
     CRPCResultPtr SnRPCGetForkHeight(CRPCParamPtr param) override;
     CRPCResultPtr SnRPCSendTransaction(CRPCParamPtr param) override;
 
-
 protected:
     bool WalleveHandleInitialize() override;
     void WalleveHandleDeinitialize() override;
     uint64 GenNonce();
+    void DelCompltUntilByNonce(uint64 nNonce);
 
 protected:
     walleve::IIOModule* pDbpService;

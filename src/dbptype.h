@@ -125,8 +125,7 @@ public:
         DBP_RPCROUTE_SEND_TRANSACTION = 10
     };
 
-    walleve::CIOCompletion *ioComplt;
-    walleve::CIOCompletionUntil *pIoCompltUntil;
+    std::shared_ptr<walleve::CIOCompletionUntil> spIoCompltUntil;
     int type;
     uint64 nNonce;
 
@@ -310,6 +309,12 @@ public:
     int type;
     std::vector<uint8> vData;
     std::vector<uint8> vRawData;
+};
+
+class CMvRPCRouteDelCompltUntil
+{
+public:
+    uint64 nNonce;
 };
 
 class CMvRPCRouteRet
