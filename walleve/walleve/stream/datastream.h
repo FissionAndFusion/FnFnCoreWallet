@@ -18,8 +18,15 @@ class CWalleveODataStream
 {
 #define BEGIN(a)            ((unsigned char*)&(a))
 #define END(a)              ((unsigned char*)&((&(a))[1]))
+
 public:
-    CWalleveODataStream(std::vector<unsigned char>& vchIn) : vch(vchIn) {}
+    CWalleveODataStream(std::vector<unsigned char>& vchIn,
+                        std::vector<unsigned char>::size_type capacity = 1024)
+    : vch(vchIn)
+    {
+        vch.reserve(capacity);
+    }
+
     void Push(const void* p,std::size_t size)
     {
         vch.insert(vch.end(),(const unsigned char*)p,(const unsigned char*)p + size);
@@ -30,6 +37,7 @@ public:
     {
         vch.insert(vch.end(),BEGIN(data),END(data));
     }
+
     template <typename T>
     void Push(const T& data,const boost::false_type&)
     {
@@ -42,10 +50,11 @@ public:
         Push(data,boost::is_fundamental<T>());
         return (*this);
     }
+
     template<typename T, typename A>
     CWalleveODataStream& operator<< (const std::vector<T, A>& data)
     {
-        unsigned int size = data.size();
+        typename std::vector<T, A>::size_type size = data.size();
         vch.insert(vch.end(),BEGIN(size),END(size));
         if (size > 0)
         {
@@ -55,7 +64,7 @@ public:
             }
             else
             {
-                for (std::size_t i = 0;i < data.size();i++)
+                for (decltype(size) i = 0;i < size;i++)
                 {
                     (*this) << data[i];
                 }
@@ -63,10 +72,11 @@ public:
         }
         return (*this);
     }
+
     template<typename K, typename V, typename C, typename A>
     CWalleveODataStream& operator<< (const std::map<K, V, C, A>& data)
     {
-        unsigned int size = data.size();
+        typename std::map<K, V, C, A>::size_type size = data.size();
         vch.insert(vch.end(),BEGIN(size),END(size));
         for (typename std::map<K, V, C, A>::const_iterator it = data.begin();it != data.end();++it)
         {
@@ -74,19 +84,23 @@ public:
         }
         return (*this);
     }
+
 protected:
     std::vector<unsigned char>& vch;
-    std::size_t nPosition;
 };
 
 class CWalleveIDataStream
 {
 public:
-    CWalleveIDataStream(const std::vector<unsigned char>& vchIn) : vch(vchIn),nPosition(0) {}
+    CWalleveIDataStream(const std::vector<unsigned char>& vchIn,
+                        const std::vector<unsigned char>::size_type nPositionIn = 0)
+    : vch(vchIn),nPosition(nPositionIn) {}
+
     std::size_t GetSize()
     {
         return (vch.size() - nPosition);
     }
+
     void Pop(void* p,std::size_t size)
     {
         if (nPosition + size > vch.size())
@@ -96,6 +110,7 @@ public:
         std::memmove(p,&vch[nPosition],size);
         nPosition += size;
     }
+
     template <typename T>
     void Pop(T& data,const boost::true_type&)
     {
@@ -106,21 +121,24 @@ public:
         data = *((T*)&vch[nPosition]);
         nPosition += sizeof(T);
     }
+
     template <typename T>
     void Pop(T& data,const boost::false_type&)
     {
         data.FromDataStream(*this);
     }
+
     template <typename T>
     CWalleveIDataStream& operator>> (T& data)
     {
         Pop(data,boost::is_fundamental<T>());
         return (*this);
     }
+
     template<typename T, typename A>
     CWalleveIDataStream& operator>> (std::vector<T, A>& data)
     {
-        unsigned int size;
+        typename std::vector<T, A>::size_type size;
         *this >> size;
         if (boost::is_fundamental<T>::value)
         {
@@ -130,19 +148,20 @@ public:
         else
         {
             data.resize(size);
-            for (unsigned int i = 0;i < size;i++)
+            for (decltype(size) i = 0;i < size;i++)
             {
                 *this >> data[i];
             }
         }
         return (*this);
     }
+
     template<typename K, typename V, typename C, typename A>
     CWalleveIDataStream& operator>> (std::map<K, V, C, A>& data)
     {
-        unsigned int size;
+        typename std::map<K, V, C, A>::size_type size;
         *this >> size;
-        for (std::size_t i = 0;i < size;i++)
+        for (decltype(size) i = 0;i < size;i++)
         {
             K k;
             V v;
@@ -154,9 +173,10 @@ public:
         }
         return (*this);
     }
+
 protected:
     const std::vector<unsigned char>& vch;
-    std::size_t nPosition;
+    std::vector<unsigned char>::size_type nPosition;
 };
 
 } // namespace walleve

@@ -4,6 +4,9 @@
 
 #include "blockmaker.h"
 #include "address.h"
+#include "template/proof.h"
+#include "template/delegate.h"
+
 using namespace std;
 using namespace walleve;
 using namespace multiverse;
@@ -35,15 +38,11 @@ bool CBlockMakerProfile::BuildTemplate()
     }
     if (nAlgo == CM_MPVSS)
     {
-        templMint = CTemplatePtr(new CTemplateDelegate(keyMint.GetPubKey(),destMint));
+        templMint = CTemplateMint::CreateTemplatePtr(new CTemplateDelegate(keyMint.GetPubKey(),destMint));
     }
     else if (nAlgo < CM_MAX)
     {
-        templMint = CTemplatePtr(new CTemplateMint(keyMint.GetPubKey(),destMint));
-    }
-    if (templMint != NULL && templMint->IsNull())
-    {
-        templMint.reset();
+        templMint = CTemplateMint::CreateTemplatePtr(new CTemplateProof(keyMint.GetPubKey(),destMint));
     }
     return (templMint != NULL);
 }
@@ -254,7 +253,7 @@ void CBlockMaker::ArrangeBlockTx(CBlock& block,const uint256& hashFork,const CBl
 {
     size_t nMaxTxSize = MAX_BLOCK_SIZE - GetSerializeSize(block) - profile.GetSignatureSize();
     int64 nTotalTxFee = 0;
-    pTxPool->ArrangeBlockTx(hashFork,nMaxTxSize,block.vtx,nTotalTxFee); 
+    pTxPool->ArrangeBlockTx(hashFork,block.GetBlockTime(),nMaxTxSize,block.vtx,nTotalTxFee); 
     block.hashMerkle = block.CalcMerkleTreeRoot();
     block.txMint.nAmount += nTotalTxFee;
 }
@@ -270,7 +269,7 @@ bool CBlockMaker::SignBlock(CBlock& block,const CBlockMakerProfile& profile)
     return profile.templMint->BuildBlockSignature(hashSig,vchMintSig,block.vchSig);
 }
 
-bool CBlockMaker::DispatchBlock(CBlock& block)
+bool CBlockMaker::DispatchBlock(const CBlock& block)
 {
     int nWait = block.nTimeStamp - WalleveGetNetTime();
     if (nWait > 0 && !Wait(nWait))
@@ -324,6 +323,8 @@ bool CBlockMaker::CreateProofOfWorkBlock(CBlock& block)
         return false;
     }
 
+    txMint.nTimeStamp = block.nTimeStamp;
+
     ArrangeBlockTx(block,pCoreProtocol->GetGenesisBlockHash(),profile);
 
     return SignBlock(block,profile);
@@ -351,7 +352,7 @@ void CBlockMaker::ProcessExtended(const CBlockMakerAgreement& agreement,
     vector<CBlockMakerProfile*> vProfile;
     set<uint256> setFork;
 
-    if (!GetAvailiableDelegatedProfile(agreement.vBallot,vProfile) || !GetAvailiableExtendedFork(setFork))
+    if (!GetAvailableDelegatedProfile(agreement.vBallot,vProfile) || !GetAvailableExtendedFork(setFork))
     {
         return;
     }
@@ -389,10 +390,11 @@ bool CBlockMaker::CreateDelegatedBlock(CBlock& block,const uint256& hashFork,con
     }
 
     CTransaction& txMint = block.txMint;
-    txMint.nType = CTransaction::TX_STAKE;
-    txMint.hashAnchor = block.hashPrev;
-    txMint.sendTo = destSendTo;
-    txMint.nAmount = nReward;
+    txMint.nType         = CTransaction::TX_STAKE;
+    txMint.nTimeStamp    = block.nTimeStamp;
+    txMint.hashAnchor    = block.hashPrev;
+    txMint.sendTo        = destSendTo;
+    txMint.nAmount       = nReward;
         
     ArrangeBlockTx(block,hashFork,profile);
 
@@ -448,15 +450,18 @@ void CBlockMaker::CreateExtended(const CBlockMakerProfile& profile,const CBlockM
             && nLastBlockTime < nTime)
         {
             CBlock block;
-            block.nType = CBlock::BLOCK_EXTENDED;
+            block.nType      = CBlock::BLOCK_EXTENDED;
             block.nTimeStamp = nTime;
-            block.hashPrev = hashLastBlock;
+            block.hashPrev   = hashLastBlock;
             proof.Save(block.vchProof);
+
             CTransaction& txMint = block.txMint;
-            txMint.nType = CTransaction::TX_STAKE;
+            txMint.nType      = CTransaction::TX_STAKE;
+            txMint.nTimeStamp = block.nTimeStamp;
             txMint.hashAnchor = hashLastBlock;
-            txMint.sendTo = profile.GetDestination();
-            txMint.nAmount = 0;
+            txMint.sendTo     = profile.GetDestination();
+            txMint.nAmount    = 0;
+ 
             ArrangeBlockTx(block,hashFork,profile);
             if (!block.vtx.empty() && SignBlock(block,profile))
             {
@@ -524,7 +529,7 @@ bool CBlockMaker::CreateProofOfWork(CBlock& block,CBlockMakerHashAlgo* pHashAlgo
     return false;
 }
 
-bool CBlockMaker::GetAvailiableDelegatedProfile(const vector<CDestination>& vBallot,vector<CBlockMakerProfile*>& vProfile)
+bool CBlockMaker::GetAvailableDelegatedProfile(const vector<CDestination>& vBallot,vector<CBlockMakerProfile*>& vProfile)
 {
     int nAvailProfile = 0;
     vProfile.reserve(vBallot.size());
@@ -545,7 +550,7 @@ bool CBlockMaker::GetAvailiableDelegatedProfile(const vector<CDestination>& vBal
     return (!!nAvailProfile);
 }
 
-bool CBlockMaker::GetAvailiableExtendedFork(set<uint256>& setFork)
+bool CBlockMaker::GetAvailableExtendedFork(set<uint256>& setFork)
 {
     map<uint256,CForkStatus> mapForkStatus;
     pWorldLine->GetForkStatus(mapForkStatus);

@@ -38,7 +38,7 @@ public:
     bool BuildTemplate();
     std::size_t GetSignatureSize() const
     {
-        std::size_t size = templMint->GetTemplateDataSize() + 64;
+        std::size_t size = templMint->GetTemplateData().size() + 64;
         walleve::CVarInt var(size);
         return (size + walleve::GetSerializeSize(var));
     }
@@ -47,7 +47,7 @@ public:
     int nAlgo;
     CDestination destMint;
     crypto::CKey keyMint;
-    CTemplatePtr templMint;
+    CTemplateMintPtr templMint;
 };
 
 // BlockMaker for forknode of supernode
@@ -67,15 +67,15 @@ protected:
     bool Wait(long nSeconds,const uint256& hashPrimaryBlock);
     void ArrangeBlockTx(CBlock& block,const uint256& hashFork,const CForkBlockMakerProfile& profile);
     bool SignBlock(CBlock& block,const CForkBlockMakerProfile& profile);
-    bool DispatchBlock(CBlock& block);
+    bool DispatchBlock(const CBlock& block);
     void ProcessDelegatedProofOfStake(CBlock& block,const CBlockMakerAgreement& agreement,int nPrevHeight);
     void ProcessExtended(const CBlockMakerAgreement& agreement,const uint256& hashPrimaryBlock,
                                                                int64 nPrimaryBlockTime,int nPrimaryBlockHeight);
     bool CreateDelegatedBlock(CBlock& block,const uint256& hashFork,const CForkBlockMakerProfile& profile,std::size_t nWeight);
     void CreatePiggyback(const CForkBlockMakerProfile& profile,const CBlockMakerAgreement& agreement,const CBlock& refblock,int nPrevHeight); 
     void CreateExtended(const CForkBlockMakerProfile& profile,const CBlockMakerAgreement& agreement,const std::set<uint256>& setFork,int nPrimaryBlockHeight,int64 nTime); 
-    bool GetAvailiableDelegatedProfile(const std::vector<CDestination>& vBallot,std::vector<CForkBlockMakerProfile*>& vProfile);
-    bool GetAvailiableExtendedFork(std::set<uint256>& setFork);
+    bool GetAvailableDelegatedProfile(const std::vector<CDestination>& vBallot,std::vector<CForkBlockMakerProfile*>& vProfile);
+    bool GetAvailableExtendedFork(std::set<uint256>& setFork);
 private:
     enum class ForkMakerStatus : int {MAKER_RUN=0,MAKER_RESET=1,MAKER_EXIT=2,MAKER_HOLD=3,MAKER_SKIP=4};
     void BlockMakerThreadFunc();

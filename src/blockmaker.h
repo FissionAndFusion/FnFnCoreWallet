@@ -37,7 +37,7 @@ public:
     bool BuildTemplate();
     std::size_t GetSignatureSize() const
     {
-        std::size_t size = templMint->GetTemplateDataSize() + 64;
+        std::size_t size = templMint->GetTemplateData().size() + 64;
         walleve::CVarInt var(size);
         return (size + walleve::GetSerializeSize(var));
     }
@@ -46,7 +46,7 @@ public:
     int nAlgo;
     CDestination destMint;
     crypto::CKey keyMint;
-    CTemplatePtr templMint;
+    CTemplateMintPtr templMint;
 };
 
 class CBlockMaker : public IBlockMaker, virtual public CMvBlockMakerEventListener
@@ -66,7 +66,7 @@ protected:
     void PrepareBlock(CBlock& block,const uint256& hashPrev,int64 nPrevTime,int nPrevHeight,const CBlockMakerAgreement& agreement);
     void ArrangeBlockTx(CBlock& block,const uint256& hashFork,const CBlockMakerProfile& profile);
     bool SignBlock(CBlock& block,const CBlockMakerProfile& profile);
-    bool DispatchBlock(CBlock& block);
+    bool DispatchBlock(const CBlock& block);
     bool CreateProofOfWorkBlock(CBlock& block);
     void ProcessDelegatedProofOfStake(CBlock& block,const CBlockMakerAgreement& agreement,int nPrevHeight);
     void ProcessExtended(const CBlockMakerAgreement& agreement,const uint256& hashPrimaryBlock,
@@ -76,8 +76,8 @@ protected:
     void CreatePiggyback(const CBlockMakerProfile& profile,const CBlockMakerAgreement& agreement,
                          const uint256& hashRefBlock,int64 nRefBlockTime,int nPrevHeight); 
     void CreateExtended(const CBlockMakerProfile& profile,const CBlockMakerAgreement& agreement,const std::set<uint256>& setFork,int nPrimaryBlockHeight,int64 nTime); 
-    bool GetAvailiableDelegatedProfile(const std::vector<CDestination>& vBallot,std::vector<CBlockMakerProfile*>& vProfile);
-    bool GetAvailiableExtendedFork(std::set<uint256>& setFork);
+    bool GetAvailableDelegatedProfile(const std::vector<CDestination>& vBallot,std::vector<CBlockMakerProfile*>& vProfile);
+    bool GetAvailableExtendedFork(std::set<uint256>& setFork);
 private:
     enum {MAKER_RUN=0,MAKER_RESET=1,MAKER_EXIT=2,MAKER_HOLD=3};
     void BlockMakerThreadFunc();

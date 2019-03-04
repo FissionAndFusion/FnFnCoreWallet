@@ -29,9 +29,14 @@ bool CNetwork::WalleveHandleInitialize()
               FormatSubVersion(),!NetworkConfig()->vConnectTo.empty());
 
     CPeerNetConfig config;
-    if (NetworkConfig()->fListen)
+    if (NetworkConfig()->fListen4)
     {
         config.vecService.push_back(CPeerService(tcp::endpoint(tcp::v4(), NetworkConfig()->nPort),
+                                                 NetworkConfig()->nMaxInBounds));
+    }
+    if(NetworkConfig()->fListen6)
+    {
+        config.vecService.push_back(CPeerService(tcp::endpoint(tcp::v6(), NetworkConfig()->nPort),
                                                  NetworkConfig()->nMaxInBounds));
     }
     config.nMaxOutBounds = NetworkConfig()->nMaxOutBounds;
@@ -56,6 +61,13 @@ bool CNetwork::WalleveHandleInitialize()
                                               boost::any(uint64(network::NODE_NETWORK))));
         }
     }
+
+    if(NetworkConfig()->fListen4 || NetworkConfig()->fListen6)
+    {
+        config.gateWayNode = CNetHost(NetworkConfig()->strGateWay, config.nPortDefault, NetworkConfig()->strGateWay,
+                                              boost::any(uint64(network::NODE_NETWORK)));
+    }
+
     ConfigNetwork(config);
 
     return CVirtualPeerNet::WalleveHandleInitialize();

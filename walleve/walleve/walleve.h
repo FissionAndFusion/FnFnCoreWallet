@@ -8,6 +8,7 @@
 #include <walleve/type.h>
 #include <walleve/util.h>
 #include <walleve/rwlock.h>
+#include <walleve/cache.h>
 #include <walleve/compacttv.h>
 #include <walleve/entry/entry.h>
 #include <walleve/stream/stream.h>

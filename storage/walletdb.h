@@ -5,9 +5,12 @@
 #ifndef  MULTIVERSE_WALLETDB_H
 #define  MULTIVERSE_WALLETDB_H
 
-#include "dbconn.h"
 #include "key.h"
 #include "wallettx.h"
+
+#include <walleve/walleve.h>
+
+#include <boost/function.hpp>
 
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/member.hpp>
@@ -19,22 +22,81 @@ namespace multiverse
 namespace storage
 {
 
-class CWalletDBKeyWalker
+class CWalletDBAddrWalker
 {
 public:
-    virtual bool Walk(const uint256& pubkey,int version,const crypto::CCryptoCipher& cipher) = 0;
-};
-
-class CWalletDBTemplateWalker
-{
-public:
-    virtual bool Walk(const uint256& tid,uint16 nType,const std::vector<unsigned char>& vchData) = 0;
+    virtual bool WalkPubkey(const crypto::CPubKey& pubkey,int version,const crypto::CCryptoCipher& cipher) = 0;
+    virtual bool WalkTemplate(const CTemplateId& tid,const std::vector<unsigned char>& vchData) = 0;
 };
 
 class CWalletDBTxWalker
 {
 public:
     virtual bool Walk(const CWalletTx& wtx) = 0;
+};
+
+class CWalletDBTxSeqWalker
+{
+public:
+    virtual bool Walk(const uint256& txid,const uint256& hashFork,const int nBlockHeight) = 0;
+};
+
+class CWalletAddrDB : public walleve::CKVDB
+{
+public:
+    CWalletAddrDB() {}
+    bool Initialize(const boost::filesystem::path& pathWallet);
+    void Deinitialize();
+    bool UpdateKey(const crypto::CPubKey& pubkey,int version,const crypto::CCryptoCipher& cipher);
+    bool UpdateTemplate(const CTemplateId& tid,const std::vector<unsigned char>& vchData);
+    bool EraseAddress(const CDestination& dest);
+    bool WalkThroughAddress(CWalletDBAddrWalker& walker);
+protected:
+    bool AddressDBWalker(walleve::CWalleveBufStream& ssKey,walleve::CWalleveBufStream& ssValue,CWalletDBAddrWalker& walker);
+};
+
+class CWalletTxSeq
+{
+    friend class walleve::CWalleveStream;
+public:
+    CWalletTxSeq() {}
+    CWalletTxSeq(const CWalletTx& wtx) : txid(wtx.txid), hashFork(wtx.hashFork), nBlockHeight(wtx.nBlockHeight) {}
+    uint256 txid;
+    uint256 hashFork;
+    int nBlockHeight;
+protected:
+    template <typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s,O& opt)
+    {
+        s.Serialize(txid,opt);
+        s.Serialize(hashFork,opt);
+        s.Serialize(nBlockHeight,opt);
+    }
+};
+
+class CWalletTxDB : public walleve::CKVDB
+{
+public:
+    CWalletTxDB() : nSequence(0), nTxCount(0) {}
+    bool Initialize(const boost::filesystem::path& pathWallet);
+    void Deinitialize();
+    bool Clear();
+    void SetSequence(uint64 nSequenceIn) { nSequence = nSequenceIn; }
+    void SetTxCount(std::size_t nTxCountIn) { nTxCount = nTxCountIn; }
+    bool AddNewTx(const CWalletTx& wtx);
+    bool UpdateTx(const std::vector<CWalletTx>& vWalletTx,const std::vector<uint256>& vRemove);
+    bool RetrieveTx(const uint256& txid,CWalletTx& wtx);
+    bool ExistsTx(const uint256& txid);
+    std::size_t GetTxCount();
+    bool WalkThroughTxSeq(CWalletDBTxSeqWalker& walker);
+    bool WalkThroughTx(CWalletDBTxWalker& walker);
+protected:
+    bool TxSeqWalker(walleve::CWalleveBufStream& ssKey,walleve::CWalleveBufStream& ssValue,CWalletDBTxSeqWalker& walker);
+    bool TxWalker(walleve::CWalleveBufStream& ssKey,walleve::CWalleveBufStream& ssValue,CWalletDBTxWalker& walker);
+    bool Reset();
+protected:
+    uint64 nSequence;
+    std::size_t nTxCount;
 };
 
 class CWalletTxCache
@@ -125,14 +187,11 @@ class CWalletDB
 public:
     CWalletDB();
     ~CWalletDB();
-    bool Initialize(const CMvDBConfig& config);
+    bool Initialize(const boost::filesystem::path& pathWallet);
     void Deinitialize();
-    bool AddNewKey(const uint256& pubkey,int version,const crypto::CCryptoCipher& cipher);
-    bool UpdateKey(const uint256& pubkey,int version,const crypto::CCryptoCipher& cipher);
-    bool WalkThroughKey(CWalletDBKeyWalker& walker); 
-
-    bool AddNewTemplate(const uint256& tid,uint16 nType,const std::vector<unsigned char>& vchData);
-    bool WalkThroughTemplate(CWalletDBTemplateWalker& walker);
+    bool UpdateKey(const crypto::CPubKey& pubkey,int version,const crypto::CCryptoCipher& cipher);
+    bool UpdateTemplate(const CTemplateId& tid,const std::vector<unsigned char>& vchData);
+    bool WalkThroughAddress(CWalletDBAddrWalker& walker);
 
     bool AddNewTx(const CWalletTx& wtx);
     bool UpdateTx(const std::vector<CWalletTx>& vWalletTx,const std::vector<uint256>& vRemove=std::vector<uint256>());
@@ -145,10 +204,9 @@ public:
     bool ClearTx();
 protected:
     bool ListDBTx(int nOffset,int nCount,std::vector<CWalletTx>& vWalletTx);
-    bool ParseTxIn(const std::vector<unsigned char>& vchTxIn,CWalletTx& wtx);
-    bool CreateTable();
 protected:
-    CMvDBConn dbConn;
+    CWalletAddrDB dbAddr;
+    CWalletTxDB dbWtx;
     CWalletTxCache txCache;
 };
 

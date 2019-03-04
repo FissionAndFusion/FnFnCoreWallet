@@ -10,9 +10,5 @@
     "EModeType::MINER": {
         "usage": "multiverse-miner (OPTIONS)",
         "desc": "Run multiverse miner"
-    },
-    "EModeType::DNSEED": {
-        "usage": "multiverse-dnseed (OPTIONS)",
-        "desc": "Run multiverse dnseed"
     }
 }

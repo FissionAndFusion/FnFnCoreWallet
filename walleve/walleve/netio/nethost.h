@@ -33,6 +33,8 @@ public:
     const boost::asio::ip::tcp::endpoint ToEndPoint() const;
 protected:
     unsigned short PortFromString(const std::string& strHostIn,unsigned short nPortDefault);
+    std::string HostFromString(const std::string& strHostIn);
+    bool IsV4FromString(const std::string& strHostIn);
 public:
     std::string strHost;
     unsigned short nPort;

@@ -149,7 +149,6 @@ typedef TYPE_DBP_EVENT(MV_EVENT_DBP_ADDED, CMvDbpAdded) CMvEventDbpAdded;
 typedef TYPE_DBP_EVENT(MV_EVENT_DBP_METHOD, CMvDbpMethod) CMvEventDbpMethod;
 typedef TYPE_DBP_EVENT(MV_EVENT_DBP_RESULT, CMvDbpMethodResult) CMvEventDbpMethodResult;
 typedef TYPE_DBP_EVENT(MV_EVENT_DBP_BROKEN, CMvDbpBroken) CMvEventDbpBroken;
-typedef TYPE_DBP_EVENT(MV_EVENT_DBP_REMOVE_SESSION, CMvDbpRemoveSession) CMvEventDbpRemoveSession;
 
 /*supernode*/
 typedef TYPE_DBP_EVENT(MV_EVENT_DBP_VPEERNET, CMvDbpVirtualPeerNetEvent) CMvEventDbpVirtualPeerNet;
@@ -197,7 +196,6 @@ public:
     DECLARE_EVENTHANDLER(CMvEventDbpMethod);
     DECLARE_EVENTHANDLER(CMvEventDbpMethodResult);
     DECLARE_EVENTHANDLER(CMvEventDbpBroken);
-    DECLARE_EVENTHANDLER(CMvEventDbpRemoveSession);
 
     /*supernode*/
     DECLARE_EVENTHANDLER(CMvEventDbpVirtualPeerNet);

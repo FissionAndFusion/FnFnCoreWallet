@@ -3,12 +3,392 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
     
 #include "walletdb.h"
+#include "leveldbeng.h"
+
 #include <boost/foreach.hpp>    
+#include <boost/bind.hpp>    
 
 using namespace std;
 using namespace walleve;
 using namespace multiverse::storage;
     
+//////////////////////////////
+// CWalletAddrDB
+
+bool CWalletAddrDB::Initialize(const boost::filesystem::path& pathWallet)
+{
+    CLevelDBArguments args;
+    args.path = (pathWallet / "addr").string();
+    args.syncwrite = true;
+    args.files = 8;
+    args.cache = 1 << 20;
+
+    CLevelDBEngine *engine = new CLevelDBEngine(args);
+    
+    if (!Open(engine))
+    {
+        delete engine;
+        return false;
+    }
+    
+    return true;
+}
+
+void CWalletAddrDB::Deinitialize()
+{
+    Close();
+}
+
+bool CWalletAddrDB::UpdateKey(const crypto::CPubKey& pubkey,int version,const crypto::CCryptoCipher& cipher)
+{
+    vector<unsigned char> vch;
+    vch.resize( 4 + 48 + 8);
+    memcpy(&vch[0],&version,4);
+    memcpy(&vch[4],cipher.encrypted,48);
+    memcpy(&vch[52],&cipher.nonce,8);
+
+    return Write(CDestination(pubkey),vch);
+}
+
+bool CWalletAddrDB::UpdateTemplate(const CTemplateId& tid,const vector<unsigned char>& vchData)
+{
+    return Write(CDestination(tid),vchData);
+}
+
+bool CWalletAddrDB::EraseAddress(const CDestination& dest)
+{
+    return Erase(dest);
+}
+
+bool CWalletAddrDB::WalkThroughAddress(CWalletDBAddrWalker& walker)
+{
+    return WalkThrough(boost::bind(&CWalletAddrDB::AddressDBWalker,this,_1,_2,boost::ref(walker)));
+}
+
+bool CWalletAddrDB::AddressDBWalker(CWalleveBufStream& ssKey,CWalleveBufStream& ssValue,CWalletDBAddrWalker& walker)
+{
+    CDestination dest;
+    vector<unsigned char> vch;
+    ssKey >> dest;
+    ssValue >> vch;
+
+    if (dest.IsTemplate())
+    {
+        return walker.WalkTemplate(dest.GetTemplateId(),vch);
+    }
+
+    crypto::CPubKey pubkey;
+    if (dest.GetPubKey(pubkey) && vch.size() == 4 + 48 + 8)
+    {
+        int version;
+        crypto::CCryptoCipher cipher;
+
+        memcpy(&version,&vch[0],4);
+        memcpy(cipher.encrypted,&vch[4],48);
+        memcpy(&cipher.nonce,&vch[52],8);
+
+        return walker.WalkPubkey(pubkey,version,cipher);
+    }
+
+    return false;
+}
+
+//////////////////////////////
+// CWalletTxDB
+
+bool CWalletTxDB::Initialize(const boost::filesystem::path& pathWallet)
+{
+    CLevelDBArguments args;
+    args.path = (pathWallet / "wtx").string();
+
+    CLevelDBEngine *engine = new CLevelDBEngine(args);
+    
+    if (!Open(engine))
+    {
+        delete engine;
+        return false;
+    }
+ 
+    if (!Read(string("txcount"),nTxCount) || !Read(string("sequence"),nSequence))
+    {
+        return Reset();
+    }
+ 
+    return true;
+}
+
+void CWalletTxDB::Deinitialize()
+{
+    Close();
+}
+
+bool CWalletTxDB::Clear()
+{
+    RemoveAll();
+    return Reset();
+}
+
+bool CWalletTxDB::AddNewTx(const CWalletTx& wtx)
+{
+    pair<uint64,CWalletTx> pairWalletTx;
+    if (Read(make_pair(string("wtx"),wtx.txid),pairWalletTx))
+    {
+        pairWalletTx.second = wtx;
+        return Write(make_pair(string("wtx"),wtx.txid),pairWalletTx);
+    } 
+
+    pairWalletTx.first = nSequence++;
+    pairWalletTx.second = wtx;
+
+    if (!TxnBegin())
+    {
+        return false;
+    }
+
+    if (!Write(make_pair(string("wtx"),wtx.txid),pairWalletTx)
+        || !Write(make_pair(string("seq"),pairWalletTx.first),CWalletTxSeq(wtx))
+        || !Write(string("txcount"),nTxCount + 1)
+        || !Write(string("sequence"),nSequence))
+    {
+        TxnAbort();
+        return false;
+    }
+
+    if (!TxnCommit())
+    {
+        return false;
+    }
+
+    ++nTxCount;
+
+    return true;
+}
+
+bool CWalletTxDB::UpdateTx(const vector<CWalletTx>& vWalletTx,const vector<uint256>& vRemove)
+{
+    int nTxAddNew = 0; 
+    vector<pair<uint64,CWalletTx> > vTxUpdate;
+    vTxUpdate.reserve(vWalletTx.size());
+
+    BOOST_FOREACH(const CWalletTx& wtx,vWalletTx)
+    {
+        pair<uint64,CWalletTx> pairWalletTx;
+        if (Read(make_pair(string("wtx"),wtx.txid),pairWalletTx))
+        {
+            vTxUpdate.push_back(make_pair(pairWalletTx.first,wtx));
+        }
+        else
+        {
+            vTxUpdate.push_back(make_pair(nSequence++,wtx));
+            ++nTxAddNew;
+        }
+    }
+
+    vector<pair<uint64,uint256> > vTxRemove;
+    vTxRemove.reserve(vRemove.size());
+
+    BOOST_FOREACH(const uint256& txid,vRemove)
+    {
+        pair<uint64,CWalletTx> pairWalletTx;
+        if (Read(make_pair(string("wtx"),txid),pairWalletTx))
+        {
+            vTxRemove.push_back(make_pair(pairWalletTx.first,txid));
+        }
+    }
+
+    if (!TxnBegin())
+    {
+        return false;
+    }
+
+    for (int i = 0;i < vTxUpdate.size();i++)
+    {
+        pair<uint64,CWalletTx>& pairWalletTx = vTxUpdate[i];
+        if (!Write(make_pair(string("wtx"),pairWalletTx.second.txid),pairWalletTx)
+            || !Write(make_pair(string("seq"),pairWalletTx.first),CWalletTxSeq(pairWalletTx.second)))
+        {
+            TxnAbort();
+            return false;
+        }
+    }
+
+    for (int i = 0;i < vTxRemove.size();i++)
+    {
+        if (!Erase(make_pair(string("wtx"),vTxRemove[i].second))
+            || !Erase(make_pair(string("seq"),vTxRemove[i].first)))
+        {
+            TxnAbort();
+            return false;
+        }
+    }
+
+    if (!Write(string("txcount"),nTxCount + nTxAddNew - vTxRemove.size())
+        || !Write(string("sequence"),nSequence))
+    {
+        TxnAbort();
+        return false;
+    }
+
+    if (!TxnCommit())
+    {
+        return false;
+    }
+
+    nTxCount += nTxAddNew - vTxRemove.size();
+
+    return true;
+}
+
+bool CWalletTxDB::RetrieveTx(const uint256& txid,CWalletTx& wtx)
+{
+    pair<uint64,CWalletTx> pairWalletTx;
+    if (!Read(make_pair(string("wtx"),txid),pairWalletTx))
+    {
+        return false;
+    }
+    wtx = pairWalletTx.second;
+    return true;
+}
+
+bool CWalletTxDB::ExistsTx(const uint256& txid)
+{
+    pair<uint64,CWalletTx> pairWalletTx;
+    return Read(make_pair(string("wtx"),txid),pairWalletTx);
+}
+
+size_t CWalletTxDB::GetTxCount()
+{
+    return nTxCount;
+}
+
+bool CWalletTxDB::WalkThroughTxSeq(CWalletDBTxSeqWalker& walker)
+{
+    return WalkThrough(boost::bind(&CWalletTxDB::TxSeqWalker,this,_1,_2,boost::ref(walker)),
+                       make_pair(string("seq"),uint64(0)));
+}
+
+bool CWalletTxDB::WalkThroughTx(CWalletDBTxWalker& walker)
+{
+    return WalkThrough(boost::bind(&CWalletTxDB::TxWalker,this,_1,_2,boost::ref(walker)),
+                       make_pair(string("seq"),uint64(0)));
+}
+
+bool CWalletTxDB::TxSeqWalker(CWalleveBufStream& ssKey,CWalleveBufStream& ssValue,CWalletDBTxSeqWalker& walker)
+{
+    string strPrefix;
+    uint64 nSeqNum;
+    CWalletTxSeq txSeq;
+
+    ssKey >> strPrefix;
+    if (strPrefix != "seq")
+    {
+        return false;
+    }
+
+    ssKey >> nSeqNum;
+    ssValue >> txSeq;
+
+    return walker.Walk(txSeq.txid,txSeq.hashFork,txSeq.nBlockHeight);
+}
+ 
+bool CWalletTxDB::TxWalker(CWalleveBufStream& ssKey,CWalleveBufStream& ssValue,CWalletDBTxWalker& walker)
+{
+    string strPrefix;
+    uint64 nSeqNum;
+    CWalletTxSeq txSeq;
+
+    ssKey >> strPrefix;
+    if (strPrefix != "seq")
+    {
+        return false;
+    }
+
+    ssKey >> nSeqNum;
+    ssValue >> txSeq;
+
+    CWalletTx wtx;
+    if (!RetrieveTx(txSeq.txid,wtx))
+    {
+        return false;
+    }
+    return walker.Walk(wtx);
+}
+
+bool CWalletTxDB::Reset()
+{
+    nSequence = 0;
+    nTxCount  = 0;
+
+    if (!TxnBegin())
+    {
+        return false;
+    }
+
+    if (!Write(string("txcount"),size_t(0)))
+    {
+        TxnAbort();
+        return false;
+    }
+
+    if (!Write(string("sequence"),nSequence))
+    {
+        TxnAbort();
+        return false;
+    }
+
+    return TxnCommit();
+}
+
+//////////////////////////////
+// CWalletDBListTxSeqWalker
+
+class CWalletDBListTxSeqWalker : public CWalletDBTxSeqWalker
+{
+public:
+    CWalletDBListTxSeqWalker(int nOffsetIn,int nMaxCountIn)
+    : nOffset(nOffsetIn), nMaxCount(nMaxCountIn), nIndex(0)
+    {
+    }
+    bool Walk(const uint256& txid,const uint256& hashFork,const int nBlockHeight) override
+    {
+        if (nIndex++ < nOffset)
+        {
+            return true;
+        }
+        vWalletTxid.push_back(txid);
+        return (vWalletTxid.size() < nMaxCount);
+    }
+public:
+    int nOffset;
+    int nMaxCount;
+    int nIndex;
+    vector<uint256> vWalletTxid;
+};
+
+//////////////////////////////
+// CWalletDBRollBackTxSeqWalker
+
+class CWalletDBRollBackTxSeqWalker : public CWalletDBTxSeqWalker
+{
+public:
+    CWalletDBRollBackTxSeqWalker(const uint256& hashForkIn,int nMinHeightIn,vector<uint256>& vForkTxIn)
+    : hashFork(hashForkIn), nMinHeight(nMinHeightIn), vForkTx(vForkTxIn)
+    {
+    }
+    bool Walk(const uint256& txidIn,const uint256& hashForkIn,const int nBlockHeightIn) override
+    {
+        if (hashForkIn == hashFork && (nBlockHeightIn < 0 || nBlockHeightIn >= nMinHeight))
+        {
+            vForkTx.push_back(txidIn);
+        }
+        return true;
+    }
+public:
+    uint256 hashFork;
+    int nMinHeight;
+    vector<uint256>& vForkTx;
+};
+
 //////////////////////////////
 // CWalletDB
 
@@ -21,13 +401,29 @@ CWalletDB::~CWalletDB()
     Deinitialize();
 }
 
-bool CWalletDB::Initialize(const CMvDBConfig& config)
+bool CWalletDB::Initialize(const boost::filesystem::path& pathWallet)
 {
-    if (!dbConn.Connect(config))
+    if (!boost::filesystem::exists(pathWallet))
+    {
+        boost::filesystem::create_directories(pathWallet);
+    }
+
+    if (!boost::filesystem::is_directory(pathWallet))
     {
         return false;
     }
-    return CreateTable();
+
+    if (!dbAddr.Initialize(pathWallet))
+    {
+        return false;
+    }
+
+    if (!dbWtx.Initialize(pathWallet))
+    {
+        return false;
+    }
+
+    return true;
 }
 
 void CWalletDB::Deinitialize()
@@ -38,77 +434,26 @@ void CWalletDB::Deinitialize()
     {
         UpdateTx(vWalletTx);
     }
-    dbConn.Disconnect();
+
     txCache.Clear();
+
+    dbWtx.Deinitialize();
+    dbAddr.Deinitialize();
 }
 
-bool CWalletDB::AddNewKey(const uint256& pubkey,int version,const crypto::CCryptoCipher& cipher)
+bool CWalletDB::UpdateKey(const crypto::CPubKey& pubkey,int version,const crypto::CCryptoCipher& cipher)
 {
-    ostringstream oss;
-    oss << "INSERT INTO walletkey(pubkey,version,encrypted,nonce) "
-              "VALUES("
-        <<            "\'" << dbConn.ToEscString(pubkey) << "\',"
-        <<            version << ","
-        <<            "\'" << dbConn.ToEscString(cipher.encrypted,48) << "\',"
-        <<            cipher.nonce << ")";
-    return dbConn.Query(oss.str());
+    return dbAddr.UpdateKey(pubkey,version,cipher);
 }
 
-bool CWalletDB::UpdateKey(const uint256& pubkey,int version,const crypto::CCryptoCipher& cipher)
+bool CWalletDB::UpdateTemplate(const CTemplateId& tid,const vector<unsigned char>& vchData)
 {
-    ostringstream oss;
-    oss << "UPDATE walletkey SET version = " << version << ","  
-                << "encrypted = \'" << dbConn.ToEscString(cipher.encrypted,48) << "\',"
-                << "nonce = " << cipher.nonce 
-                << " WHERE pubkey = " << "\'" << dbConn.ToEscString(pubkey) << "\'";
-
-    return dbConn.Query(oss.str());
+    return dbAddr.UpdateTemplate(tid,vchData);
 }
 
-bool CWalletDB::WalkThroughKey(CWalletDBKeyWalker& walker)
+bool CWalletDB::WalkThroughAddress(CWalletDBAddrWalker& walker)
 {
-    CMvDBRes res(dbConn,"SELECT pubkey,version,encrypted,nonce FROM walletkey",true);
-    while (res.GetRow())
-    {
-        int version;
-        uint256 pubkey;
-        crypto::CCryptoCipher cipher;
-        if (!res.GetField(0,pubkey) || !res.GetField(1,version)
-            || !res.GetBinary(2,cipher.encrypted,48) || !res.GetField(3,cipher.nonce) 
-            || !walker.Walk(pubkey,version,cipher))
-        {
-            return false;
-        }
-    }
-    return true;
-}
-
-bool CWalletDB::AddNewTemplate(const uint256& tid,uint16 nType,const vector<unsigned char>& vchData)
-{
-    ostringstream oss;
-    oss << "INSERT INTO wallettemplate(tid,type,data) "
-              "VALUES("
-        <<            "\'" << dbConn.ToEscString(tid) << "\',"
-        <<            nType << ","
-        <<            "\'" << dbConn.ToEscString(vchData) << "\')";
-    return dbConn.Query(oss.str());
-}
-
-bool CWalletDB::WalkThroughTemplate(CWalletDBTemplateWalker& walker)
-{
-    CMvDBRes res(dbConn,"SELECT tid,type,data FROM wallettemplate",true);
-    while (res.GetRow())
-    {
-        uint256 tid;
-        uint16 type;
-        vector<unsigned char> vchData;
-        if (!res.GetField(0,tid) || !res.GetField(1,type) || !res.GetField(2,vchData) 
-            || !walker.Walk(tid,type,vchData))
-        {
-            return false;
-        }
-    }
-    return true;
+    return dbAddr.WalkThroughAddress(walker);
 }
 
 bool CWalletDB::AddNewTx(const CWalletTx& wtx)
@@ -119,69 +464,24 @@ bool CWalletDB::AddNewTx(const CWalletTx& wtx)
         return true;
     }
 
-    walleve::CWalleveBufStream ss;
-    ss << wtx.vInput;
-    string strEscIn = dbConn.ToEscString(ss.GetData(),ss.GetSize());
-
-    ostringstream oss;
-    oss << "INSERT INTO wallettx(txid,version,type,lockuntil,sendto,amount,txfee,destin,valuein,height,flags,fork,txin) "
-              "VALUES("
-        <<            "\'" << dbConn.ToEscString(wtx.txid) << "\',"
-        <<            wtx.nVersion << ","
-        <<            wtx.nType << ","
-        <<            wtx.nLockUntil << ","
-        <<            "\'" << dbConn.ToEscString(wtx.sendTo) << "\',"
-        <<            wtx.nAmount << ","
-        <<            wtx.nTxFee << ","
-        <<            "\'" << dbConn.ToEscString(wtx.destIn) << "\',"
-        <<            wtx.nValueIn << ","
-        <<            wtx.nBlockHeight << ","
-        <<            wtx.nFlags << ","
-        <<            "\'" << dbConn.ToEscString(wtx.hashFork) << "\',"
-        <<            "\'" << strEscIn << "\')";
-    return dbConn.Query(oss.str());
+    return dbWtx.AddNewTx(wtx);
 }
 
 bool CWalletDB::UpdateTx(const vector<CWalletTx>& vWalletTx,const vector<uint256>& vRemove)
 {
-    CMvDBTxn txn(dbConn);
+    if (!dbWtx.UpdateTx(vWalletTx,vRemove))
+    {
+        return false;
+    }
     BOOST_FOREACH(const CWalletTx& wtx,vWalletTx)
     {
-        walleve::CWalleveBufStream ss;
-        ss << wtx.vInput;
-        string strEscIn = dbConn.ToEscString(ss.GetData(),ss.GetSize());
-
-        ostringstream oss;
-        oss << "INSERT INTO wallettx(txid,version,type,lockuntil,sendto,amount,txfee,destin,valuein,height,flags,fork,txin) "
-                  "VALUES("
-            <<            "\'" << dbConn.ToEscString(wtx.txid) << "\',"
-            <<            wtx.nVersion << ","
-            <<            wtx.nType << ","
-            <<            wtx.nLockUntil << ","
-            <<            "\'" << dbConn.ToEscString(wtx.sendTo) << "\',"
-            <<            wtx.nAmount << ","
-            <<            wtx.nTxFee << ","
-            <<            "\'" << dbConn.ToEscString(wtx.destIn) << "\',"
-            <<            wtx.nValueIn << ","
-            <<            wtx.nBlockHeight << ","
-            <<            wtx.nFlags << ","
-            <<            "\'" << dbConn.ToEscString(wtx.hashFork) << "\',"
-            <<            "\'" << strEscIn << "\')"
-            <<  " ON DUPLICATE KEY UPDATE "
-                          "height = VALUES(height),flags = VALUES(flags)";
-        txn.Query(oss.str());
-
         txCache.Remove(wtx.txid);
     }
     BOOST_FOREACH(const uint256& txid,vRemove)
     {
-        ostringstream oss;
-        oss << "DELETE FROM wallettx WHERE txid = \'" << dbConn.ToEscString(txid) << "\'";
-        txn.Query(oss.str());
-
         txCache.Remove(txid);
     }
-    return txn.Commit();
+    return true;
 }
 
 bool CWalletDB::RetrieveTx(const uint256& txid,CWalletTx& wtx)
@@ -191,22 +491,7 @@ bool CWalletDB::RetrieveTx(const uint256& txid,CWalletTx& wtx)
         return true;
     }
 
-    wtx.txid = txid;
-    wtx.nRefCount = 0;
-    ostringstream oss;
-    oss << "SELECT version,type,lockuntil,sendto,amount,txfee,destin,valuein,height,flags,fork,txin FROM wallettx WHERE txid = "
-        <<            "\'" << dbConn.ToEscString(txid) << "\'";
-
-    vector<unsigned char> vchTxIn;
-    CMvDBRes res(dbConn,oss.str());
-
-    return (res.GetRow()
-            && res.GetField(0,wtx.nVersion) && res.GetField(1,wtx.nType)
-            && res.GetField(2,wtx.nLockUntil) && res.GetField(3,wtx.sendTo)
-            && res.GetField(4,wtx.nAmount) && res.GetField(5,wtx.nTxFee)
-            && res.GetField(6,wtx.destIn) && res.GetField(7,wtx.nValueIn)
-            && res.GetField(8,wtx.nBlockHeight) && res.GetField(9,wtx.nFlags)
-            && res.GetField(10,wtx.hashFork) && res.GetField(11,vchTxIn) && ParseTxIn(vchTxIn,wtx));
+    return dbWtx.RetrieveTx(txid,wtx);
 }
 
 bool CWalletDB::ExistsTx(const uint256& txid)
@@ -216,27 +501,17 @@ bool CWalletDB::ExistsTx(const uint256& txid)
         return true;
     }
 
-    size_t count = 0;
-    ostringstream oss;
-    oss << "SELECT COUNT(*) FROM wallettx WHERE txid = \'" << dbConn.ToEscString(txid) << "\'";
-    CMvDBRes res(dbConn,oss.str());
-    return (res.GetRow() && res.GetField(0,count) && count != 0);
+    return dbWtx.ExistsTx(txid);
 }
 
-std::size_t CWalletDB::GetTxCount()
+size_t CWalletDB::GetTxCount()
 {
-    size_t count = 0;
-    CMvDBRes res(dbConn,"SELECT COUNT(*) FROM wallettx");
-    if (res.GetRow())
-    {
-        res.GetField(0,count);
-    }
-    return count + txCache.Count();
+    return dbWtx.GetTxCount() + txCache.Count();
 }
 
-bool CWalletDB::ListTx(int nOffset,int nCount,std::vector<CWalletTx>& vWalletTx)
+bool CWalletDB::ListTx(int nOffset,int nCount,vector<CWalletTx>& vWalletTx)
 {
-    std::size_t nDBTx = GetTxCount() - txCache.Count();
+    size_t nDBTx = dbWtx.GetTxCount();
 
     if (nOffset < nDBTx)
     {
@@ -256,30 +531,22 @@ bool CWalletDB::ListTx(int nOffset,int nCount,std::vector<CWalletTx>& vWalletTx)
     return true;
 }
 
-bool CWalletDB::ListDBTx(int nOffset,int nCount,std::vector<CWalletTx>& vWalletTx)
+bool CWalletDB::ListDBTx(int nOffset,int nCount,vector<CWalletTx>& vWalletTx)
 {
-    ostringstream oss;
-    oss << "SELECT txid,version,type,lockuntil,sendto,amount,txfee,destin,valuein,height,flags,fork,txin FROM wallettx ORDER BY id LIMIT " << nOffset << "," << nCount;
-    vector<unsigned char> vchTxIn;
-    CMvDBRes res(dbConn,oss.str(),true);
-    while (res.GetRow())
+    CWalletDBListTxSeqWalker walker(nOffset,nCount);
+    if (!dbWtx.WalkThroughTxSeq(walker))
+    {
+        return false;
+    }
+
+    BOOST_FOREACH(const uint256& txid,walker.vWalletTxid)
     {
         CWalletTx wtx;
-        if (res.GetField(0,wtx.txid) 
-            && res.GetField(1,wtx.nVersion) && res.GetField(2,wtx.nType)
-            && res.GetField(3,wtx.nLockUntil) && res.GetField(4,wtx.sendTo)
-            && res.GetField(5,wtx.nAmount) && res.GetField(6,wtx.nTxFee)
-            && res.GetField(7,wtx.destIn) && res.GetField(8,wtx.nValueIn)
-            && res.GetField(9,wtx.nBlockHeight) && res.GetField(10,wtx.nFlags)
-            && res.GetField(11,wtx.hashFork) && res.GetField(12,vchTxIn)
-            && ParseTxIn(vchTxIn,wtx))
-        {
-            vWalletTx.push_back(wtx);
-        }
-        else
+        if (!dbWtx.RetrieveTx(txid,wtx))
         {
             return false;
         }
+        vWalletTx.push_back(wtx);
     }
 
     return true;
@@ -287,24 +554,10 @@ bool CWalletDB::ListDBTx(int nOffset,int nCount,std::vector<CWalletTx>& vWalletT
 
 bool CWalletDB::ListRollBackTx(const uint256& hashFork,int nMinHeight,vector<uint256>& vForkTx)
 {
-    ostringstream oss;
-    oss << "SELECT txid FROM wallettx"
-                 " WHERE fork=" << "\'" << dbConn.ToEscString(hashFork) << "\'"
-                       " AND (height < 0 OR height >=" << nMinHeight << ")"           
-                 " ORDER BY id";
-    
-    CMvDBRes res(dbConn,oss.str(),true);
-    while (res.GetRow())
+    CWalletDBRollBackTxSeqWalker walker(hashFork,nMinHeight,vForkTx);
+    if (!dbWtx.WalkThroughTxSeq(walker))
     {
-        uint256 txid;
-        if (res.GetField(0,txid))
-        {
-            vForkTx.push_back(txid);
-        }
-        else
-        {
-            return false;
-        } 
+        return false;
     }
     txCache.ListForkTx(hashFork,vForkTx);
     return true;
@@ -312,84 +565,12 @@ bool CWalletDB::ListRollBackTx(const uint256& hashFork,int nMinHeight,vector<uin
 
 bool CWalletDB::WalkThroughTx(CWalletDBTxWalker& walker)
 {
-    string strSelectUnspent = string("SELECT txid,version,type,lockuntil,sendto,amount,txfee,destin,valuein,height,flags,fork,txin FROM wallettx ORDER BY id");
-    vector<unsigned char> vchTxIn;
-    CMvDBRes res(dbConn,strSelectUnspent,true);
-    while (res.GetRow())
-    {
-        CWalletTx wtx;
-        if (!res.GetField(0,wtx.txid) 
-            || !res.GetField(1,wtx.nVersion)     || !res.GetField(2,wtx.nType)
-            || !res.GetField(3,wtx.nLockUntil)   || !res.GetField(4,wtx.sendTo)
-            || !res.GetField(5,wtx.nAmount)      || !res.GetField(6,wtx.nTxFee)
-            || !res.GetField(7,wtx.destIn)       || !res.GetField(8,wtx.nValueIn)
-            || !res.GetField(9,wtx.nBlockHeight) || !res.GetField(10,wtx.nFlags)
-            || !res.GetField(11,wtx.hashFork)    || !res.GetField(12,vchTxIn)
-            || !ParseTxIn(vchTxIn,wtx)           || !walker.Walk(wtx))
-        {
-            return false;
-        }
-    }
-    return true;
+    return dbWtx.WalkThroughTx(walker);
 }
 
 bool CWalletDB::ClearTx()
 {
     txCache.Clear();
-    return dbConn.Query("TRUNCATE TABLE wallettx");
+    return dbWtx.Clear();
 }
 
-bool CWalletDB::ParseTxIn(const std::vector<unsigned char>& vchTxIn,CWalletTx& wtx)
-{
-    walleve::CWalleveBufStream ss;
-    ss.Write((char*)&vchTxIn[0],vchTxIn.size());
-    try
-    {
-        ss >> wtx.vInput;
-    }
-    catch (exception& e)
-    {
-        StdError(__PRETTY_FUNCTION__, e.what());
-        return false; 
-    }
-    
-    return true;
-}
-
-bool CWalletDB::CreateTable()
-{
-    return dbConn.Query("CREATE TABLE IF NOT EXISTS walletkey("
-                          "id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,"
-                          "pubkey BINARY(32) NOT NULL UNIQUE KEY,"
-                          "version INT NOT NULL,"
-                          "encrypted BINARY(48) NOT NULL,"
-                          "nonce BIGINT UNSIGNED NOT NULL)"
-                        " ENGINE=InnoDB"
-                       )
-             &&
-           dbConn.Query("CREATE TABLE IF NOT EXISTS wallettemplate("
-                          "id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,"
-                          "tid BINARY(32) NOT NULL UNIQUE KEY,"
-                          "type SMALLINT NOT NULL,"
-                          "data VARBINARY(640) NOT NULL)"
-                        " ENGINE=InnoDB"
-                       )
-             &&
-           dbConn.Query("CREATE TABLE IF NOT EXISTS wallettx("
-                          "id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,"
-                          "txid BINARY(32) NOT NULL UNIQUE KEY,"
-                          "version SMALLINT UNSIGNED NOT NULL,"
-                          "type SMALLINT UNSIGNED NOT NULL,"
-                          "lockuntil INT UNSIGNED NOT NULL,"
-                          "sendto BINARY(33) NOT NULL,"
-                          "amount BIGINT NOT NULL,"
-                          "txfee BIGINT NOT NULL,"
-                          "destin BINARY(33) NOT NULL,"
-                          "valuein BIGINT NOT NULL,"
-                          "height INT NOT NULL,"
-                          "flags INT NOT NULL,"
-                          "fork BINARY(32) NOT NULL,"
-                          "txin BLOB NOT NULL)"
-                        " ENGINE=InnoDB"
-                       );
-}

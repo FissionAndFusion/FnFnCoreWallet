@@ -42,7 +42,6 @@ public:
     std::string session;
     int32 version;
     std::string client;
-    std::string forks; // supre node child node fork ids
 };
 
 class CMvDbpSub : public CMvDbpRequest
@@ -693,12 +692,8 @@ class CMvDbpBroken
 {
 public:
     std::string session;
+    std::string from; // event from [dbpserver | dbpclient]
 };
 
-class CMvDbpRemoveSession
-{
-public:
-    std::string session;
-};
 } // namespace multiverse
 #endif //MULTIVERSE_DBP_TYPE_H

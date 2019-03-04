@@ -14,7 +14,8 @@
 #include "profile.h"
 #include "wallettx.h"
 #include "destination.h"
-#include "template.h"
+#include "template/template.h"
+#include "template/mint.h"
 #include "crypto.h"
 #include "key.h"
 #include "config.h"
@@ -70,7 +71,8 @@ public:
                                                       std::vector<CTxOutput>& vOutput) = 0;
     virtual bool ExistsTx(const uint256& txid) = 0;
     virtual bool FilterTx(const uint256& hashFork,CTxFilter& filter) = 0;
-    virtual bool FilterForkContext(CForkContextFilter& filter) = 0;
+    virtual bool FilterTx(const uint256& hashFork, int nDepth, CTxFilter& filter) = 0;
+    virtual bool ListForkContext(std::vector<CForkContext>& vForkCtxt) = 0;
     virtual MvErr AddNewForkContext(const CTransaction& txFork,CForkContext& ctxt) = 0;
     virtual MvErr AddNewBlock(const CBlock& block,CWorldLineUpdate& update) = 0;    
     virtual MvErr AddNewOrigin(const CBlock& block,CWorldLineUpdate& update) = 0;    
@@ -104,7 +106,8 @@ public:
     virtual void ListTx(const uint256& hashFork, std::vector<std::pair<uint256, std::size_t>>& vTxPool) = 0;
     virtual void ListTx(const uint256& hashFork, std::vector<uint256>& vTxPool) = 0;
     virtual bool FilterTx(const uint256& hashFork,CTxFilter& filter) = 0;
-    virtual void ArrangeBlockTx(const uint256& hashFork, std::size_t nMaxSize, std::vector<CTransaction>& vtx, int64& nTotalTxFee) = 0;
+    virtual void ArrangeBlockTx(const uint256& hashFork, int64 nBlockTime, std::size_t nMaxSize,
+                                std::vector<CTransaction>& vtx, int64& nTotalTxFee) = 0;
     virtual bool FetchInputs(const uint256& hashFork, const CTransaction& tx, std::vector<CTxOutput>& vUnspent) = 0;
     virtual bool SynchronizeWorldLine(const CWorldLineUpdate& update, CTxSetChange& change) = 0;
     const CMvStorageConfig* StorageConfig()
@@ -181,7 +184,7 @@ public:
     virtual void GetTemplateIds(std::set<CTemplateId>& setTemplateId) const = 0;
     virtual bool Have(const CTemplateId& tid) const = 0;
     virtual bool AddTemplate(CTemplatePtr& ptr) = 0;
-    virtual bool GetTemplate(const CTemplateId& tid, CTemplatePtr& ptr) = 0;
+    virtual CTemplatePtr GetTemplate(const CTemplateId& tid) const = 0;
     /* Wallet Tx */
     virtual std::size_t GetTxCount() = 0;
     virtual bool ListTx(int nOffset, int nCount, std::vector<CWalletTx>& vWalletTx) = 0;
@@ -267,7 +270,7 @@ public:
     virtual bool HaveTemplate(const CTemplateId& tid) = 0;
     virtual void GetTemplateIds(std::set<CTemplateId>& setTid) = 0;
     virtual bool AddTemplate(CTemplatePtr& ptr) = 0;
-    virtual bool GetTemplate(const CTemplateId& tid, CTemplatePtr& ptr) = 0;
+    virtual CTemplatePtr GetTemplate(const CTemplateId& tid) = 0;
     virtual bool GetBalance(const CDestination& dest, const uint256& hashFork, CWalletBalance& balance) = 0;
     virtual bool ListWalletTx(int nOffset, int nCount, std::vector<CWalletTx>& vWalletTx) = 0;
     virtual bool CreateTransaction(const uint256& hashFork, const CDestination& destFrom,
@@ -277,7 +280,7 @@ public:
     virtual bool ResynchronizeWalletTx() = 0;
     /* Mint */
     virtual bool GetWork(std::vector<unsigned char>& vchWorkData, uint256& hashPrev, uint32& nPrevTime, int& nAlgo, int& nBits) = 0;
-    virtual MvErr SubmitWork(const std::vector<unsigned char>& vchWorkData, CTemplatePtr& templMint, crypto::CKey& keyMint, uint256& hashBlock) = 0;
+    virtual MvErr SubmitWork(const std::vector<unsigned char>& vchWorkData, CTemplateMintPtr& templMint, crypto::CKey& keyMint, uint256& hashBlock) = 0;
 };
 
 } // namespace multiverse

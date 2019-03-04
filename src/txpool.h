@@ -6,7 +6,7 @@
 #define  MULTIVERSE_TXPOOL_H
 
 #include "mvbase.h"
-#include "txpooldb.h"
+#include "txpooldata.h"
 
 namespace multiverse
 {
@@ -28,7 +28,7 @@ public:
     {
         nSerializeSize = walleve::GetSerializeSize(tx);
     }
-    void SetNull()
+    void SetNull() override
     {
         CAssembledTx::SetNull();
         nSequenceNumber = 0;
@@ -148,7 +148,7 @@ public:
     void GetInvolvedTx(std::map<std::size_t,std::pair<uint256,CPooledTx*> >& mapInvolvedTx,
                        std::set<CDestination>& setDest);
     void ArrangeBlockTx(std::map<std::size_t,std::pair<uint256,CPooledTx*> >& mapArrangedTx,std::size_t nMaxSize);
-    void ArrangeBlockTx(std::vector<CTransaction>& vtx,int64& nTotalTxFee,std::size_t nMaxSize);
+    void ArrangeBlockTx(std::vector<CTransaction>& vtx,int64& nTotalTxFee,int64 nBlockTime,std::size_t nMaxSize);
 public:
     std::map<uint256,CPooledTx*> mapTx;
     std::map<CTxOutPoint,CSpent> mapSpent;
@@ -168,16 +168,17 @@ public:
     void ListTx(const uint256& hashFork,std::vector<std::pair<uint256,std::size_t> >& vTxPool) override;
     void ListTx(const uint256& hashFork,std::vector<uint256>& vTxPool) override;
     bool FilterTx(const uint256& hashFork,CTxFilter& filter) override;
-    void ArrangeBlockTx(const uint256& hashFork,std::size_t nMaxSize,std::vector<CTransaction>& vtx,int64& nTotalTxFee) override;
+    void ArrangeBlockTx(const uint256& hashFork,int64 nBlockTime,std::size_t nMaxSize,
+                        std::vector<CTransaction>& vtx,int64& nTotalTxFee) override;
     bool FetchInputs(const uint256& hashFork,const CTransaction& tx,std::vector<CTxOutput>& vUnspent) override;
     bool SynchronizeWorldLine(const CWorldLineUpdate& update,CTxSetChange& change) override;
-    bool LoadTx(const uint256& txid,const uint256& hashFork,const CAssembledTx& tx);
 protected:
     bool WalleveHandleInitialize() override;
     void WalleveHandleDeinitialize() override;
     bool WalleveHandleInvoke() override;
     void WalleveHandleHalt() override;
-    bool LoadDB();
+    bool LoadData();
+    bool SaveData();
     MvErr AddNew(CTxPoolView& txView,const uint256& txid,const CTransaction& tx,const uint256& hashFork,int nForkHeight);
     std::size_t GetSequenceNumber()
     {
@@ -188,7 +189,7 @@ protected:
         return ++nLastSequenceNumber;
     }
 protected:
-    storage::CTxPoolDB dbTxPool;
+    storage::CTxPoolData datTxPool;
     mutable boost::shared_mutex rwAccess;
     ICoreProtocol* pCoreProtocol;
     IWorldLine* pWorldLine;

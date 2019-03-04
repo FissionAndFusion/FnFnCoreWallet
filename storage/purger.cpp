@@ -4,7 +4,7 @@
 
 #include "purger.h"
 #include "blockdb.h"    
-#include "txpooldb.h"
+#include "txpooldata.h"
 #include "walletdb.h"
 
 using namespace std;
@@ -15,11 +15,11 @@ using namespace walleve;
 //////////////////////////////
 // CPurger
 
-bool CPurger::ResetDB(const CMvDBConfig& dbConfig,const boost::filesystem::path& pathDataLocation) const
+bool CPurger::ResetDB(const boost::filesystem::path& pathDataLocation) const
 {
     {
         CBlockDB dbBlock;
-        if (dbBlock.DBPoolInitialize(dbConfig,1) && dbBlock.Initialize(pathDataLocation))
+        if (dbBlock.Initialize(pathDataLocation))
         {
             if (!dbBlock.RemoveAll())
             {
@@ -31,7 +31,7 @@ bool CPurger::ResetDB(const CMvDBConfig& dbConfig,const boost::filesystem::path&
 
     {
         CWalletDB dbWallet;
-        if (dbWallet.Initialize(dbConfig))
+        if (dbWallet.Initialize(pathDataLocation / "wallet"))
         {
             if (!dbWallet.ClearTx())
             {
@@ -41,22 +41,17 @@ bool CPurger::ResetDB(const CMvDBConfig& dbConfig,const boost::filesystem::path&
         }
     }
 
-    return true;
-}
-
-bool CPurger::ResetCache(const path& pathDataLocation) const
-{
     {
-        CTxPoolDB dbTxPool;
-        if (dbTxPool.Initialize(pathDataLocation))
+        CTxPoolData datTxPool;
+        if (datTxPool.Initialize(pathDataLocation))
         {
-            if (!dbTxPool.RemoveAll())
+            if (!datTxPool.Remove())
             {
                 return false;
             }
-            dbTxPool.Deinitialize();
         }
     }
+
     return true;
 }
 

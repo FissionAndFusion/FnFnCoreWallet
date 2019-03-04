@@ -1,0 +1,111 @@
+// Copyright (c) 2017-2019 The Multiverse developers
+// Distributed under the MIT/X11 software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
+#include "fork.h"
+
+#include "walleve/util.h"
+
+#include "destination.h"
+#include "rpc/auto_protocol.h"
+#include "template.h"
+
+using namespace std;
+using namespace walleve;
+
+//////////////////////////////
+// CTemplateFork
+
+CTemplateFork::CTemplateFork(const CDestination& destRedeemIn, const uint256& hashForkIn)
+  : CTemplate(TEMPLATE_FORK), destRedeem(destRedeemIn), hashFork(hashForkIn)
+{
+}
+
+CTemplateFork* CTemplateFork::clone() const
+{
+    return new CTemplateFork(*this);
+}
+
+bool CTemplateFork::GetSignDestination(const CTransaction& tx, const std::vector<uint8>& vchSig,
+                                            std::set<CDestination>& setSubDest, std::vector<uint8>& vchSubSig) const
+{
+    if (!CTemplate::GetSignDestination(tx, vchSig, setSubDest, vchSubSig))
+    {
+        return false;
+    }
+
+    setSubDest.clear();
+    setSubDest.insert(destRedeem);
+    return true;
+}
+
+void CTemplateFork::GetTemplateData(rpc::CTemplateResponse& obj, CDestination&& destInstance) const
+{
+    obj.fork.strFork = hashFork.GetHex();
+    obj.fork.strRedeem = (destInstance = destRedeem).ToString();
+}
+
+bool CTemplateFork::ValidateParam() const
+{
+    if (!IsTxSpendable(destRedeem))
+    {
+        return false;
+    }
+
+    if (!hashFork)
+    {
+        return false;
+    }
+
+    return true;
+}
+
+bool CTemplateFork::SetTemplateData(const vector<uint8>& vchDataIn)
+{
+    CWalleveIDataStream is(vchDataIn);
+    try
+    {
+        is >> destRedeem >> hashFork;
+    }
+    catch (exception& e)
+    {
+        StdError(__PRETTY_FUNCTION__, e.what());
+        return false;
+    }
+
+    return true;
+}
+
+bool CTemplateFork::SetTemplateData(const rpc::CTemplateRequest& obj, CDestination&& destInstance)
+{
+    if (obj.strType != GetTypeName(TEMPLATE_FORK))
+    {
+        return false;
+    }
+
+    if (!destInstance.ParseString(obj.fork.strRedeem))
+    {
+        return false;
+    }
+    destRedeem = destInstance;
+
+    if (hashFork.SetHex(obj.fork.strFork) != obj.fork.strFork.size())
+    {
+        return false;
+    }
+
+    return true;
+}
+
+void CTemplateFork::BuildTemplateData()
+{
+    vchData.clear();
+    CWalleveODataStream os(vchData);
+    os << destRedeem << hashFork;
+}
+
+bool CTemplateFork::VerifyTxSignature(const uint256& hash, const uint256& hashAnchor, const CDestination& destTo,
+                                      const vector<uint8>& vchSig, bool& fCompleted) const
+{
+    return destRedeem.VerifyTxSignature(hash, hashAnchor, destTo, vchSig, fCompleted);
+}

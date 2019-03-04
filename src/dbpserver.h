@@ -61,12 +61,12 @@ public:
     unsigned int nSessionTimeout;
 };
 
-class CDbpClient
+class CDbpServerSocket
 {
 public:
-    CDbpClient(CDbpServer* pServerIn, CDbpProfile* pProfileIn,
+    CDbpServerSocket(CDbpServer* pServerIn, CDbpProfile* pProfileIn,
              CIOClient* pClientIn, uint64 nonce);
-    ~CDbpClient();
+    ~CDbpServerSocket();
 
     CDbpProfile* GetProfile();
     uint64 GetNonce();
@@ -116,7 +116,7 @@ protected:
 class CSessionProfile
 {
 public:
-    CDbpClient* pDbpClient;
+    CDbpServerSocket* pDbpClient;
     std::string strSessionId;
     std::string strClient;
     uint64 nTimeStamp;
@@ -132,19 +132,19 @@ public:
     virtual ~CDbpServer() noexcept;
     virtual CIOClient* CreateIOClient(CIOContainer* pContainer) override;
 
-    void HandleClientRecv(CDbpClient* pDbpClient, const boost::any& anyObj);
-    void HandleClientSent(CDbpClient* pDbpClient);
-    void HandleClientError(CDbpClient* pDbpClient);
+    void HandleClientRecv(CDbpServerSocket* pDbpClient, const boost::any& anyObj);
+    void HandleClientSent(CDbpServerSocket* pDbpClient);
+    void HandleClientError(CDbpServerSocket* pDbpClient);
 
-    void HandleClientConnect(CDbpClient* pDbpClient, google::protobuf::Any* any);
-    void HandleClientSub(CDbpClient* pDbpClient, google::protobuf::Any* any);
-    void HandleClientUnSub(CDbpClient* pDbpClient, google::protobuf::Any* any);
-    void HandleClientMethod(CDbpClient* pDbpClient, google::protobuf::Any* any);
-    void HandleClientPing(CDbpClient* pDbpClient, google::protobuf::Any* any);
-    void HandleClientPong(CDbpClient* pDbpClient, google::protobuf::Any* any);
+    void HandleClientConnect(CDbpServerSocket* pDbpClient, google::protobuf::Any* any);
+    void HandleClientSub(CDbpServerSocket* pDbpClient, google::protobuf::Any* any);
+    void HandleClientUnSub(CDbpServerSocket* pDbpClient, google::protobuf::Any* any);
+    void HandleClientMethod(CDbpServerSocket* pDbpClient, google::protobuf::Any* any);
+    void HandleClientPing(CDbpServerSocket* pDbpClient, google::protobuf::Any* any);
+    void HandleClientPong(CDbpServerSocket* pDbpClient, google::protobuf::Any* any);
 
-    void RespondError(CDbpClient* pDbpClient, const std::string& reason, const std::string& strError = "");
-    void RespondFailed(CDbpClient* pDbpClient, const std::string& reason);
+    void RespondError(CDbpServerSocket* pDbpClient, const std::string& reason, const std::string& strError = "");
+    void RespondFailed(CDbpServerSocket* pDbpClient, const std::string& reason);
 
     void AddNewHost(const CDbpHostConfig& confHost);
 
@@ -157,9 +157,9 @@ protected:
     bool ClientAccepted(const boost::asio::ip::tcp::endpoint& epService, CIOClient* pClient) override;
 
     bool CreateProfile(const CDbpHostConfig& confHost);
-    CDbpClient* AddNewClient(CIOClient* pClient, CDbpProfile* pDbpProfile);
-    void RemoveClient(CDbpClient* pDbpClient);
-    void RemoveSession(CDbpClient* pDbpClient);
+    CDbpServerSocket* AddNewClient(CIOClient* pClient, CDbpProfile* pDbpProfile);
+    void RemoveClient(CDbpServerSocket* pDbpClient);
+    void RemoveSession(CDbpServerSocket* pDbpClient);
 
     bool HandleEvent(CMvEventDbpConnected& event) override;
     bool HandleEvent(CMvEventDbpFailed& event) override;
@@ -170,27 +170,27 @@ protected:
 
     bool HandleEvent(CMvEventRPCRouteAdded & event) override;
 
-    bool IsSessionTimeOut(CDbpClient* pDbpClient);
-    bool GetSessionForkId(CDbpClient* pDbpClient, std::string& forkid);
+    bool IsSessionTimeOut(CDbpServerSocket* pDbpClient);
+    bool GetSessionForkId(CDbpServerSocket* pDbpClient, std::string& forkid);
     bool IsSessionReconnect(const std::string& session);
     bool IsSessionExist(const std::string& session);
-    bool HaveAssociatedSessionOf(CDbpClient* pDbpClient);
+    bool HaveAssociatedSessionOf(CDbpServerSocket* pDbpClient);
 
     std::string GetUdata(dbp::Connect* pConnect, const std::string& keyName);
     std::string GenerateSessionId();
-    void CreateSession(const std::string& session, const std::string& client, const std::string& forkID, CDbpClient* pDbpClient);
-    void UpdateSession(const std::string& session, CDbpClient* pDbpClient);
+    void CreateSession(const std::string& session, const std::string& client, const std::string& forkID, CDbpServerSocket* pDbpClient);
+    void UpdateSession(const std::string& session, CDbpServerSocket* pDbpClient);
 
     void SendPingHandler(const boost::system::error_code& err, const CSessionProfile& sessionProfile);
 
 protected:
     std::vector<CDbpHostConfig> vecHostConfig;
     std::map<boost::asio::ip::tcp::endpoint, CDbpProfile> mapProfile;
-    std::map<uint64, CDbpClient*> mapClient; // nonce => CDbpClient
+    std::map<uint64, CDbpServerSocket*> mapClient; // nonce => CDbpServerSocket
 
-    typedef boost::bimap<std::string, CDbpClient*> SessionClientBimapType;
+    typedef boost::bimap<std::string, CDbpServerSocket*> SessionClientBimapType;
     typedef SessionClientBimapType::value_type position_pair;
-    SessionClientBimapType bimapSessionClient;                // session id <=> CDbpClient
+    SessionClientBimapType bimapSessionClient;                // session id <=> CDbpServerSocket
     std::map<std::string, CSessionProfile> mapSessionProfile; // session id => session profile
 };
 } //namespace multiverse
