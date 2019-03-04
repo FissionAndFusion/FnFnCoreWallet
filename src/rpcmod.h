@@ -121,17 +121,17 @@ private:
     rpc::CRPCResultPtr RPCSubmitWork(rpc::CRPCParamPtr param);
 
 public:
-    virtual CRPCResultPtr SnRPCStop(CRPCParamPtr param);
-    virtual CRPCResultPtr SnRPCGetForkCount(CRPCParamPtr param);
-    virtual CRPCResultPtr SnRPCListFork(CRPCParamPtr param);
-    virtual CRPCResultPtr SnRPCGetBlockLocation(CRPCParamPtr param);
-    virtual CRPCResultPtr SnRPCGetBlockCount(CRPCParamPtr param);
-    virtual CRPCResultPtr SnRPCGetBlockHash(CRPCParamPtr param);
-    virtual CRPCResultPtr SnRPCGetBlock(CRPCParamPtr param);
-    virtual CRPCResultPtr SnRPCGetTxPool(CRPCParamPtr param);
-    virtual CRPCResultPtr SnRPCGetTransaction(CRPCParamPtr param);
-    virtual CRPCResultPtr SnRPCGetForkHeight(CRPCParamPtr param);
-    virtual CRPCResultPtr SnRPCSendTransaction(CRPCParamPtr param);
+    virtual rpc::CRPCResultPtr SnRPCStop(rpc::CRPCParamPtr param);
+    virtual rpc::CRPCResultPtr SnRPCGetForkCount(rpc::CRPCParamPtr param);
+    virtual rpc::CRPCResultPtr SnRPCListFork(rpc::CRPCParamPtr param);
+    virtual rpc::CRPCResultPtr SnRPCGetBlockLocation(rpc::CRPCParamPtr param);
+    virtual rpc::CRPCResultPtr SnRPCGetBlockCount(rpc::CRPCParamPtr param);
+    virtual rpc::CRPCResultPtr SnRPCGetBlockHash(rpc::CRPCParamPtr param);
+    virtual rpc::CRPCResultPtr SnRPCGetBlock(rpc::CRPCParamPtr param);
+    virtual rpc::CRPCResultPtr SnRPCGetTxPool(rpc::CRPCParamPtr param);
+    virtual rpc::CRPCResultPtr SnRPCGetTransaction(rpc::CRPCParamPtr param);
+    virtual rpc::CRPCResultPtr SnRPCGetForkHeight(rpc::CRPCParamPtr param);
+    virtual rpc::CRPCResultPtr SnRPCSendTransaction(rpc::CRPCParamPtr param);
 
 protected:
     walleve::IIOProc *pHttpServer;
@@ -147,17 +147,17 @@ class CSnRPCMod : public CRPCMod, virtual public CDBPEventListener
 public:
     CSnRPCMod();
     ~CSnRPCMod();
-    CRPCResultPtr SnRPCStop(CRPCParamPtr param) override;
-    CRPCResultPtr SnRPCGetForkCount(CRPCParamPtr param) override;
-    CRPCResultPtr SnRPCListFork(CRPCParamPtr param) override;
-    CRPCResultPtr SnRPCGetBlockLocation(CRPCParamPtr param) override;
-    CRPCResultPtr SnRPCGetBlockCount(CRPCParamPtr param) override;
-    CRPCResultPtr SnRPCGetBlockHash(CRPCParamPtr param) override;
-    CRPCResultPtr SnRPCGetBlock(CRPCParamPtr param) override;
-    CRPCResultPtr SnRPCGetTxPool(CRPCParamPtr param) override;
-    CRPCResultPtr SnRPCGetTransaction(CRPCParamPtr param) override;
-    CRPCResultPtr SnRPCGetForkHeight(CRPCParamPtr param) override;
-    CRPCResultPtr SnRPCSendTransaction(CRPCParamPtr param) override;
+    rpc::CRPCResultPtr SnRPCStop(rpc::CRPCParamPtr param) override;
+    rpc::CRPCResultPtr SnRPCGetForkCount(rpc::CRPCParamPtr param) override;
+    rpc::CRPCResultPtr SnRPCListFork(rpc::CRPCParamPtr param) override;
+    rpc::CRPCResultPtr SnRPCGetBlockLocation(rpc::CRPCParamPtr param) override;
+    rpc::CRPCResultPtr SnRPCGetBlockCount(rpc::CRPCParamPtr param) override;
+    rpc::CRPCResultPtr SnRPCGetBlockHash(rpc::CRPCParamPtr param) override;
+    rpc::CRPCResultPtr SnRPCGetBlock(rpc::CRPCParamPtr param) override;
+    rpc::CRPCResultPtr SnRPCGetTxPool(rpc::CRPCParamPtr param) override;
+    rpc::CRPCResultPtr SnRPCGetTransaction(rpc::CRPCParamPtr param) override;
+    rpc::CRPCResultPtr SnRPCGetForkHeight(rpc::CRPCParamPtr param) override;
+    rpc::CRPCResultPtr SnRPCSendTransaction(rpc::CRPCParamPtr param) override;
 
 protected:
     bool WalleveHandleInitialize() override;
