@@ -109,6 +109,7 @@ public:
 
 protected:
     // Constructor
+    CTemplate() = default;
     CTemplate(const uint16 nTypeIn);
 
     // Verify vchSig is begin with template data or not.
