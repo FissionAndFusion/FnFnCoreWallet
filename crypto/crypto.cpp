@@ -168,31 +168,27 @@ static vector<uint8> MultiSignPreApk(const set<uint256>& setPubKey)
 
 // H(Ai,A1,...,An)*Ai + ... + H(Aj,A1,...,An)*Aj
 // setPubKey = [A1 ... An], setPartKey = [Ai ... Aj], 1 <= i <= j <= n
-static uint256 MultiSignApk(const set<uint256>& setPubKey, const set<uint256>& setPartKey)
+static bool MultiSignApk(const set<uint256>& setPubKey, const set<uint256>& setPartKey, uint8* md32)
 {
     vector<uint8> vecHash = MultiSignPreApk(setPubKey);
 
-    uint256 apk;
-    uint8 point[32];
+    CEdwards25519 apk;
     bool fInitial = true;
     for (const uint256& key : setPartKey)
     {
         memcpy(&vecHash[0], key.begin(), key.size());
-        uint256 hash = CryptoHash(&vecHash[0], vecHash.size());
+        CSC25519 hash = CSC25519(CryptoHash(&vecHash[0], vecHash.size()).begin());
 
-        (void)crypto_scalarmult_ed25519_noclamp(point, hash.begin(), key.begin());
-        if (!apk)
+        CEdwards25519 point;
+        if (!point.Unpack(key.begin()))
         {
-            memcpy(apk.begin(), point, 32);
+            return false;
         }
-        else
-        {
-            crypto_core_ed25519_add(apk.begin(), apk.begin(), point);
-        }
+        apk += point.ScalarMult(hash);
     }
 
-    sodium_memzero(point, 32);
-    return apk;
+    apk.Pack(md32);
+    return true;
 }
 
 // hash = H(X,apk,M)
@@ -267,7 +263,11 @@ bool CryptoMultiSign(const set<uint256>& setPubKey, const CCryptoKey& privkey, c
     uint8* pIndex = &vchSig[0];
 
     // apk
-    uint256 apk = MultiSignApk(setPubKey, setPubKey);
+    uint256 apk;
+    if (! MultiSignApk(setPubKey, setPubKey, apk.begin()))
+    {
+        return false;
+    }
     // H(X,apk,M)
     CSC25519 hash = MultiSignHash(pX, lenX, apk.begin(), apk.size(), pM, lenM);
 
@@ -336,7 +336,11 @@ bool CryptoMultiVerify(const set<uint256>& setPubKey, const uint8* pX, const siz
     const uint8* pIndex = &vchSig[0];
 
     // apk
-    uint256 apk = MultiSignApk(setPubKey, setPubKey);
+    uint256 apk;
+    if (! MultiSignApk(setPubKey, setPubKey, apk.begin()))
+    {
+        return false;
+    }
     // H(X,apk,M)
     CSC25519 hash = MultiSignHash(pX, lenX, apk.begin(), apk.size(), pM, lenM);
 
