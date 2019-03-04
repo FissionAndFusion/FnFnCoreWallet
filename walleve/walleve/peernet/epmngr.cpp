@@ -244,6 +244,14 @@ void CEndpointManager::RewardEndpoint(const tcp::endpoint& ep,Bonus bonus)
 void CEndpointManager::CloseEndpoint(const tcp::endpoint& ep,CloseReason reason)
 {
     int64 now = GetTime();
+    /*
+        HOST_CLOSE => 0 points,
+        CONNECT_FAILURE => 1 points,
+        NETWORK_ERROR => 2 points,
+        RESPONSE_FAILURE => 2 points,
+        PROTOCOL_INVALID => 10 points,
+        DDOS_ATTACK => 25 points
+    */
     const int lost[NUM_CLOSEREASONS] = {0,1,2,2,10,25};
     int index = (int)reason;
     if (index < 0 || index >= NUM_CLOSEREASONS)
