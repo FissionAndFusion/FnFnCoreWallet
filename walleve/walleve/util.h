@@ -77,23 +77,23 @@ inline void StdError(const char* pszName, const char* pszErr)
     std::cerr << GetLocalTime() << " [ERROR] <" << pszName << "> " << pszErr << std::endl;
 }
 
-class MacAddress
+class CMacAddress
 {
 public:
-    MacAddress(){}
-    explicit MacAddress(const std::vector<unsigned char>& data)
+    CMacAddress(){}
+    explicit CMacAddress(const std::vector<unsigned char>& data)
     : macData(data)
     {}
-    explicit MacAddress(const MacAddress& addr)
+    explicit CMacAddress(const CMacAddress& addr)
     {
         macData = addr.macData;
     }
-    MacAddress& operator=(const MacAddress& addr)
+    CMacAddress& operator=(const CMacAddress& addr)
     {
         macData = addr.macData;
         return *this;
     }
-    ~MacAddress(){}
+    ~CMacAddress(){}
     
     std::vector<unsigned char> GetData() const
     {
@@ -114,7 +114,7 @@ private:
 };
 
 // Get Active interface's mac addr
-inline bool GetActiveIFMacAddress(MacAddress& mac)
+inline bool GetActiveIFMacAddress(CMacAddress& mac)
 {
     struct ifreq ifr;
     struct ifconf ifc;
@@ -158,7 +158,7 @@ inline bool GetActiveIFMacAddress(MacAddress& mac)
     {
         std::vector<unsigned char> data;
         std::copy_n(&(ifr.ifr_hwaddr.sa_data[0]), 6, std::back_inserter(data));
-        mac = MacAddress(data);
+        mac = CMacAddress(data);
     }
 
     close(sock);

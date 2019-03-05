@@ -50,7 +50,7 @@ public:
     int64 nTimeHello;
     std::string strSubVer;
     int nStartingHeight;
-    walleve::MacAddress macAddress;
+    walleve::CMacAddress macAddress;
 protected:
     uint32 nMsgMagic;
     uint32 nHsTimerId;
