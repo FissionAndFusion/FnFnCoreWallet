@@ -191,8 +191,7 @@ bool CMvPeer::HandshakeReadCompleted()
                 std::vector<unsigned char> macData;
                 ss >> nVersion >> nService >> nTime >> nNonceFrom >> strSubVer >> nStartingHeight >> macData;
                 
-                CMacAddress macAddr(macData);
-                macAddress = macAddr;
+                macAddress = CMacAddress(macData);
 
                 nTimeDelta = nTime - nTimeRecv;
                 if (!fInBound)
