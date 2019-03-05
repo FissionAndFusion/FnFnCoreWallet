@@ -76,14 +76,15 @@ protected:
 class CWalleveEventProc : public IWalleveBase
 {
 public:
-    CWalleveEventProc(const std::string& walleveOwnKeyIn);
+    CWalleveEventProc(const std::string& walleveOwnKeyIn, const size_t nThreadIn = 1);
     void PostEvent(CWalleveEvent * pEvent);
 protected:
     bool WalleveHandleInvoke() override;
     void WalleveHandleHalt() override;
     void EventThreadFunc();
 protected:
-    CWalleveThread thrEventQue;
+    size_t nThreadNum;
+    std::vector<CWalleveThread> vecThrEventQue;
     CWalleveEventQueue queEvent;
 };
 

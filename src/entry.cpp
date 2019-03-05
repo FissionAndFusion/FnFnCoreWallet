@@ -330,6 +330,10 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
             }
             dynamic_cast<CHttpServer*>(pBase)->AddNewHost(GetRPCHostConfig());
 
+            if (!AttachModule(new CRPCModWorker()))
+            {
+                return false;
+            }
             if (!AttachModule(new CRPCMod()))
             {
                 return false;

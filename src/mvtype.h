@@ -9,6 +9,7 @@
 #include "block.h"
 #include "transaction.h"
 #include "mvproto.h"
+#include "rpc/rpc.h"
 
 #include <vector>
 #include <map>
@@ -161,6 +162,24 @@ public:
     std::size_t nWeight;
     std::vector<CDestination> vBallot;
 };
+
+class CRPCModRequest
+{
+public:
+    rpc::CRPCReqPtr spReq;
+    size_t nWorkId;
+    size_t nSubWorkId;
+};
+
+class CRPCModResponse
+{
+public:
+    rpc::CRPCErrorPtr spError;
+    rpc::CRPCResultPtr spResult;
+    size_t nWorkId;
+    size_t nSubWorkId;
+};
+
 
 /* Net Channel */
 class CPeerKnownTx
