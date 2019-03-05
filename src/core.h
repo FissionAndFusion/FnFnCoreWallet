@@ -22,7 +22,7 @@ public:
     virtual MvErr ValidateOrigin(const CBlock& block, const CProfile& parentProfile, CProfile& forkProfile) override;
     virtual MvErr VerifyBlock(const CBlock& block, CBlockIndex* pIndexPrev) override;
     virtual MvErr VerifyBlockTx(const CTransaction& tx, const CTxContxt& txContxt, CBlockIndex *pIndexPrev) override;
-    virtual MvErr VerifyTransaction(const CTransaction& tx, const std::vector<CTxOutput>& vPrevOutput, int nForkHeight) override;
+    virtual MvErr VerifyTransaction(const CTransaction& tx, const std::vector<CTxOutput>& vPrevOutput, int32 nForkHeight) override;
     virtual bool GetProofOfWorkTarget(CBlockIndex* pIndexPrev, int nAlgo, int& nBits, int64& nReward) override;
     virtual int GetProofOfWorkRunTimeBits(int nBits, int64 nTime, int64 nPrevTime) override;
     virtual int64 GetDelegatedProofOfStakeReward(CBlockIndex* pIndexPrev, std::size_t nWeight) override;

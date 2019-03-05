@@ -315,7 +315,7 @@ MvErr CMvCoreProtocol::VerifyBlockTx(const CTransaction& tx,const CTxContxt& txC
     return MV_OK;
 }
 
-MvErr CMvCoreProtocol::VerifyTransaction(const CTransaction& tx,const vector<CTxOutput>& vPrevOutput,int nForkHeight)
+MvErr CMvCoreProtocol::VerifyTransaction(const CTransaction& tx,const vector<CTxOutput>& vPrevOutput,const int32 nForkHeight)
 {
     CDestination destIn = vPrevOutput[0].destTo;
     int64 nValueIn = 0;

@@ -251,7 +251,7 @@ MvErr CDispatcher::AddNewTx(const CTransaction& tx,uint64 nNonce)
 bool CDispatcher::AddNewDistribute(const uint256& hashAnchor,const CDestination& dest,const vector<unsigned char>& vchDistribute)
 {
     uint256 hashFork;
-    int nHeight;
+    int32 nHeight;
     if (pWorldLine->GetBlockLocation(hashAnchor,hashFork,nHeight) && hashFork == pCoreProtocol->GetGenesisBlockHash())
     {
         return pConsensus->AddNewDistribute(nHeight,dest,vchDistribute);
@@ -262,7 +262,7 @@ bool CDispatcher::AddNewDistribute(const uint256& hashAnchor,const CDestination&
 bool CDispatcher::AddNewPublish(const uint256& hashAnchor,const CDestination& dest,const vector<unsigned char>& vchPublish)
 {
     uint256 hashFork;
-    int nHeight;
+    int32 nHeight;
     if (pWorldLine->GetBlockLocation(hashAnchor,hashFork,nHeight) && hashFork == pCoreProtocol->GetGenesisBlockHash())
     {
         return pConsensus->AddNewPublish(nHeight,dest,vchPublish);
@@ -359,7 +359,7 @@ bool CDispatcher::ProcessForkTx(const uint256& txid,const CTransaction& tx)
     return true;
 }
 
-void CDispatcher::SyncForkHeight(int nPrimaryHeight)
+void CDispatcher::SyncForkHeight(const int32 nPrimaryHeight)
 {
     map<uint256,CForkStatus> mapForkStatus;
     pWorldLine->GetForkStatus(mapForkStatus);
@@ -373,13 +373,13 @@ void CDispatcher::SyncForkHeight(int nPrimaryHeight)
         }
 
         vector<int64> vTimeStamp;
-        int nDepth = nPrimaryHeight - status.nLastBlockHeight;
+        int32 nDepth = nPrimaryHeight - status.nLastBlockHeight;
 
         if (nDepth > 1 && hashFork != pCoreProtocol->GetGenesisBlockHash()
             && pWorldLine->GetLastBlockTime(pCoreProtocol->GetGenesisBlockHash(),nDepth,vTimeStamp))
         {
             uint256 hashPrev = status.hashLastBlock;
-            for (int nHeight = status.nLastBlockHeight + 1;nHeight < nPrimaryHeight;nHeight++)
+            for (int32 nHeight = status.nLastBlockHeight + 1;nHeight < nPrimaryHeight;nHeight++)
             {
                 CBlock block;
                 block.nType = CBlock::BLOCK_VACANT;

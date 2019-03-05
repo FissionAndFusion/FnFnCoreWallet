@@ -190,10 +190,10 @@ void CNetChannel::WalleveHandleHalt()
     }
 }
 
-int CNetChannel::GetPrimaryChainHeight()
+int32 CNetChannel::GetPrimaryChainHeight()
 {
     uint256 hashBlock = uint64(0);
-    int nHeight = 0;
+    int32 nHeight = 0;
     int64 nTime = 0;
     if (pWorldLine->GetLastBlock(pCoreProtocol->GetGenesisBlockHash(),hashBlock,nHeight,nTime))
     {
@@ -565,7 +565,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerTx& eventTx)
         }
         
         uint256 hashForkAnchor;
-        int nHeightAnchor;
+        int32 nHeightAnchor;
         if (pWorldLine->GetBlockLocation(tx.hashAnchor,hashForkAnchor,nHeightAnchor)
             && hashForkAnchor == hashFork)
         {
@@ -624,7 +624,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerBlock& eventBlock)
         }
 
         uint256 hashForkPrev;
-        int nHeightPrev;
+        int32 nHeightPrev;
         if (pWorldLine->GetBlockLocation(block.hashPrev,hashForkPrev,nHeightPrev))
         {
             if (hashForkPrev == hashFork)

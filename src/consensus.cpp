@@ -68,7 +68,7 @@ void CDelegateContext::ChangeTxSet(const CTxSetChange& change)
             mapTx.erase(it);
         }
     }
-    for (map<uint256,int>::const_iterator it = change.mapTxUpdate.begin();it != change.mapTxUpdate.end();++it)
+    for (map<uint256,int32>::const_iterator it = change.mapTxUpdate.begin();it != change.mapTxUpdate.end();++it)
     {
         const uint256& txid = (*it).first;
         map<uint256,CDelegateTx>::iterator mi = mapTx.find(txid);
@@ -118,7 +118,7 @@ void CDelegateContext::AddNewTx(const CAssembledTx& tx)
     } 
 }
 
-bool CDelegateContext::BuildEnrollTx(CTransaction& tx,int nBlockHeight,int64 nTime,
+bool CDelegateContext::BuildEnrollTx(CTransaction& tx,const int32 nBlockHeight,int64 nTime,
                                      const uint256& hashAnchor,int64 nTxFee,const vector<unsigned char>& vchData)
 {
     tx.SetNull();
@@ -266,10 +266,10 @@ void CConsensus::PrimaryUpdate(const CWorldLineUpdate& update,const CTxSetChange
 {
     boost::unique_lock<boost::mutex> lock(mutex);
 
-    int nStartHeight = update.nLastBlockHeight - update.vBlockAddNew.size();
+    int32 nStartHeight = update.nLastBlockHeight - update.vBlockAddNew.size();
     if (!update.vBlockRemove.empty())
     {
-        int nPrevBlockHeight = nStartHeight + update.vBlockRemove.size();
+        int32 nPrevBlockHeight = nStartHeight + update.vBlockRemove.size();
         mvDelegate.Rollback(nPrevBlockHeight,nStartHeight);
     }
 
@@ -278,9 +278,9 @@ void CConsensus::PrimaryUpdate(const CWorldLineUpdate& update,const CTxSetChange
         (*it).second.ChangeTxSet(change);
     }
 
-    int nBlockHeight = nStartHeight + 1;
+    int32 nBlockHeight = nStartHeight + 1;
 
-    for (int i = update.vBlockAddNew.size() - 1;i > 0;i--) 
+    for (size_t i = update.vBlockAddNew.size() - 1;i > 0;i--) 
     {
         uint256 hash = update.vBlockAddNew[i].GetHash();
 
@@ -310,8 +310,8 @@ void CConsensus::PrimaryUpdate(const CWorldLineUpdate& update,const CTxSetChange
             delegate::CMvDelegateEvolveResult result;
             mvDelegate.Evolve(nBlockHeight,mapWeight,mapEnrollData,result); 
             
-            int nDistributeTargetHeight = nBlockHeight + MV_CONSENSUS_DISTRIBUTE_INTERVAL + 1;
-            int nPublishTargetHeight = nBlockHeight + 1;
+            int32 nDistributeTargetHeight = nBlockHeight + MV_CONSENSUS_DISTRIBUTE_INTERVAL + 1;
+            int32 nPublishTargetHeight = nBlockHeight + 1;
             
             for (map<CDestination,vector<unsigned char> >::iterator it = result.mapEnrollData.begin();
                  it != result.mapEnrollData.end();++it)
@@ -355,22 +355,22 @@ void CConsensus::AddNewTx(const CAssembledTx& tx)
     }
 }
 
-bool CConsensus::AddNewDistribute(int nAnchorHeight,const CDestination& destFrom,const vector<unsigned char>& vchDistribute)
+bool CConsensus::AddNewDistribute(const int32 nAnchorHeight,const CDestination& destFrom,const vector<unsigned char>& vchDistribute)
 {
     boost::unique_lock<boost::mutex> lock(mutex);
-    int nDistributeTargetHeight = nAnchorHeight + MV_CONSENSUS_DISTRIBUTE_INTERVAL + 1;
+    int32 nDistributeTargetHeight = nAnchorHeight + MV_CONSENSUS_DISTRIBUTE_INTERVAL + 1;
     return mvDelegate.HandleDistribute(nDistributeTargetHeight,destFrom,vchDistribute);
 }
 
-bool CConsensus::AddNewPublish(int nAnchorHeight,const CDestination& destFrom,const vector<unsigned char>& vchPublish)
+bool CConsensus::AddNewPublish(const int32 nAnchorHeight,const CDestination& destFrom,const vector<unsigned char>& vchPublish)
 {
     boost::unique_lock<boost::mutex> lock(mutex);
-    int nPublishTargetHeight = nAnchorHeight + 1;
+    int32 nPublishTargetHeight = nAnchorHeight + 1;
     bool fCompleted = false;
     return mvDelegate.HandlePublish(nPublishTargetHeight,destFrom,vchPublish,fCompleted);
 }
 
-void CConsensus::GetAgreement(int nTargetHeight,uint256& nAgreement,size_t& nWeight,vector<CDestination>& vBallot)
+void CConsensus::GetAgreement(const int32 nTargetHeight,uint256& nAgreement,size_t& nWeight,vector<CDestination>& vBallot)
 {
     boost::unique_lock<boost::mutex> lock(mutex);
     map<CDestination,size_t> mapBallot;
@@ -378,7 +378,7 @@ void CConsensus::GetAgreement(int nTargetHeight,uint256& nAgreement,size_t& nWei
     pCoreProtocol->GetDelegatedBallot(nAgreement,nWeight,mapBallot,vBallot);
 }
 
-void CConsensus::GetProof(int nTargetHeight,vector<unsigned char>& vchProof)
+void CConsensus::GetProof(const int32 nTargetHeight,vector<unsigned char>& vchProof)
 {
     boost::unique_lock<boost::mutex> lock(mutex);
     mvDelegate.GetProof(nTargetHeight,vchProof);
@@ -400,13 +400,13 @@ bool CConsensus::LoadDelegateTx()
 
 bool CConsensus::LoadChain()
 {
-    int nLashBlockHeight = pWorldLine->GetBlockCount(pCoreProtocol->GetGenesisBlockHash()) - 1;
-    int nStartHeight = nLashBlockHeight - MV_CONSENSUS_ENROLL_INTERVAL + 1;
+    int32 nLashBlockHeight = pWorldLine->GetBlockCount(pCoreProtocol->GetGenesisBlockHash()) - 1;
+    int32 nStartHeight = nLashBlockHeight - MV_CONSENSUS_ENROLL_INTERVAL + 1;
     if (nStartHeight < 0)
     {
         nStartHeight = 0;
     }
-    for (int i = nStartHeight;i <= nLashBlockHeight;i++)
+    for (int32 i = nStartHeight;i <= nLashBlockHeight;i++)
     {
         uint256 hashBlock;
         if (!pWorldLine->GetBlockHash(pCoreProtocol->GetGenesisBlockHash(),i,hashBlock))

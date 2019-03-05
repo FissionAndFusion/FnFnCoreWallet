@@ -142,7 +142,7 @@ private:
 
     /*Event router*/
     typedef std::pair<uint256, uint64> ForkNonceKeyType;
-    typedef std::map<ForkNonceKeyType, int> MapForkCountType; 
+    typedef std::map<ForkNonceKeyType, uint32> MapForkCountType; 
     MapForkCountType mapChildNodeForkCount;
     MapForkCountType mapThisNodeForkCount;
     std::map<ForkNonceKeyType, std::set<uint256>> mapThisNodeGetData;

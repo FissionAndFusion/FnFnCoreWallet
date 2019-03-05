@@ -49,7 +49,7 @@ public:
     int64 nTimeDelta;
     int64 nTimeHello;
     std::string strSubVer;
-    int nStartingHeight;
+    int32 nStartingHeight;
 protected:
     uint32 nMsgMagic;
     uint32 nHsTimerId;
@@ -65,7 +65,7 @@ public:
     int  nVersion;
     uint64 nService;
     std::string strSubVer;
-    int nStartingHeight;
+    int32 nStartingHeight;
 };
 
 } // namespace network

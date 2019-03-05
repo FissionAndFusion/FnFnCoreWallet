@@ -47,7 +47,7 @@ static double ValueFromAmount(int64 amount)
     return ((double)amount / (double)COIN);
 }
 
-static CBlockData BlockToJSON(const uint256& hashBlock,const CBlock& block,const uint256& hashFork,int nHeight)
+static CBlockData BlockToJSON(const uint256& hashBlock,const CBlock& block,const uint256& hashFork,const int32 nHeight)
 {
     CBlockData data;
     data.strHash = hashBlock.GetHex();
@@ -544,19 +544,19 @@ CRPCResultPtr CRPCMod::RPCGetForkGenealogy(CRPCParamPtr param)
     	throw CRPCException(RPC_INVALID_PARAMETER, "Invalid fork");
     }
 
-    vector<pair<uint256,int> > vAncestry;
-    vector<pair<int,uint256> > vSubline;
+    vector<pair<uint256,int32> > vAncestry;
+    vector<pair<int32,uint256> > vSubline;
     if (!pService->GetForkGenealogy(fork,vAncestry,vSubline))
     {
         throw CRPCException(RPC_INVALID_PARAMETER, "Unknown fork");
     }
 
     auto spResult = MakeCGetGenealogyResultPtr();
-    for (int i = vAncestry.size();i > 0;i--)
+    for (size_t i = vAncestry.size();i > 0;i--)
     {
         spResult->vecAncestry.push_back({vAncestry[i - 1].first.GetHex(), vAncestry[i - 1].second});
     }
-    for (std::size_t i = 0;i < vSubline.size();i++)
+    for (size_t i = 0;i < vSubline.size();i++)
     {
         spResult->vecSubline.push_back({vSubline[i].second.GetHex(), vSubline[i].first});
     }
@@ -572,7 +572,7 @@ CRPCResultPtr CRPCMod::RPCGetBlockLocation(CRPCParamPtr param)
     hashBlock.SetHex(spParam->strBlock);
 
     uint256 fork;
-    int height;
+    int32 height;
     if (!pService->GetBlockLocation(hashBlock,fork,height))
     {
         throw CRPCException(RPC_INVALID_PARAMETER, "Unknown block");
@@ -608,7 +608,7 @@ CRPCResultPtr CRPCMod::RPCGetBlockHash(CRPCParamPtr param)
     auto spParam = CastParamPtr<CGetBlockHashParam>(param);
 
     //getblockhash <height> (-f="fork")
-    int nHeight = spParam->nHeight;
+    int32 nHeight = spParam->nHeight;
 
     uint256 hashFork;
     if (!GetForkHashOfDef(spParam->strFork, hashFork))
@@ -646,7 +646,7 @@ CRPCResultPtr CRPCMod::RPCGetBlock(CRPCParamPtr param)
 
     CBlock block;
     uint256 fork;
-    int height;
+    int32 height;
     if (!pService->GetBlock(hashBlock,block,fork,height))
     {
         throw CRPCException(RPC_INVALID_PARAMETER, "Unknown block");
@@ -706,7 +706,7 @@ CRPCResultPtr CRPCMod::RPCGetTransaction(CRPCParamPtr param)
 
     CTransaction tx;
     uint256 hashFork;
-    int nHeight;
+    int32 nHeight;
 
     if (!pService->GetTransaction(txid,tx,hashFork,nHeight))
     {
@@ -1712,7 +1712,7 @@ CRPCResultPtr CRPCMod::RPCMakeOrigin(CRPCParamPtr param)
  
     CBlock blockPrev;
     uint256 hashParent;
-    int nJointHeight;
+    int32 nJointHeight;
     if (!pService->GetBlock(hashPrev,blockPrev,hashParent,nJointHeight))
     {
         throw CRPCException(RPC_INVALID_PARAMETER, "Unknown prev block");
@@ -1888,7 +1888,7 @@ CRPCResultPtr CRPCMod::RPCDecodeTransaction(CRPCParamPtr param)
     }
     
     uint256 hashFork;
-    int nHeight;
+    int32 nHeight;
     if (!pService->GetBlockLocation(rawTx.hashAnchor,hashFork,nHeight))
     {
         throw CRPCException(RPC_INVALID_PARAMETER, "Unknown anchor block");

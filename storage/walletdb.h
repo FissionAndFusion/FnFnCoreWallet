@@ -38,7 +38,7 @@ public:
 class CWalletDBTxSeqWalker
 {
 public:
-    virtual bool Walk(const uint256& txid,const uint256& hashFork,const int nBlockHeight) = 0;
+    virtual bool Walk(const uint256& txid,const uint256& hashFork,const int32 nBlockHeight) = 0;
 };
 
 class CWalletAddrDB : public walleve::CKVDB
@@ -63,7 +63,7 @@ public:
     CWalletTxSeq(const CWalletTx& wtx) : txid(wtx.txid), hashFork(wtx.hashFork), nBlockHeight(wtx.nBlockHeight) {}
     uint256 txid;
     uint256 hashFork;
-    int nBlockHeight;
+    int32 nBlockHeight;
 protected:
     template <typename O>
     void WalleveSerialize(walleve::CWalleveStream& s,O& opt)
@@ -199,7 +199,7 @@ public:
     bool ExistsTx(const uint256& txid);
     std::size_t GetTxCount();
     bool ListTx(int nOffset,int nCount,std::vector<CWalletTx>& vWalletTx);
-    bool ListRollBackTx(const uint256& hashFork,int nMinHeight,std::vector<uint256>& vForkTx);
+    bool ListRollBackTx(const uint256& hashFork,const int32 nMinHeight,std::vector<uint256>& vForkTx);
     bool WalkThroughTx(CWalletDBTxWalker& walker);
     bool ClearTx();
 protected:

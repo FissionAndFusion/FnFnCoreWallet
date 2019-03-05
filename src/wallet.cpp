@@ -469,7 +469,7 @@ bool CWallet::ListTx(int nOffset,int nCount,vector<CWalletTx>& vWalletTx)
     return dbWallet.ListTx(nOffset,nCount,vWalletTx);
 }
 
-bool CWallet::GetBalance(const CDestination& dest,const uint256& hashFork,int nForkHeight,CWalletBalance& balance)
+bool CWallet::GetBalance(const CDestination& dest,const uint256& hashFork,const int32 nForkHeight,CWalletBalance& balance)
 {
     boost::shared_lock<boost::shared_mutex> rlock(rwWalletTx);
     map<CDestination,CWalletUnspent>::iterator it = mapWalletUnspent.find(dest);
@@ -537,7 +537,7 @@ bool CWallet::SignTransaction(const CDestination& destIn, CTransaction& tx, bool
     return true;
 }
 
-bool CWallet::ArrangeInputs(const CDestination& destIn,const uint256& hashFork,int nForkHeight,CTransaction& tx)
+bool CWallet::ArrangeInputs(const CDestination& destIn,const uint256& hashFork,const int32 nForkHeight,CTransaction& tx)
 {
     tx.vInput.clear();
     int nMaxInput = (MAX_TX_SIZE - MAX_SIGNATURE_SIZE - 4) / 33;
@@ -600,7 +600,7 @@ bool CWallet::LoadTx(const CWalletTx& wtx)
     return true; 
 }
 
-bool CWallet::AddNewFork(const uint256& hashFork,const uint256& hashParent,int nOriginHeight)
+bool CWallet::AddNewFork(const uint256& hashFork,const uint256& hashParent,const int32 nOriginHeight)
 {
     boost::unique_lock<boost::shared_mutex> wlock(rwWalletTx);
     
@@ -691,7 +691,7 @@ bool CWallet::SyncWalletTx(CTxFilter& txFilter)
             return false;
         }
        
-        for (multimap<int,uint256>::iterator mi = (*it).second.mapSubline.begin();
+        for (multimap<int32,uint256>::iterator mi = (*it).second.mapSubline.begin();
              mi != (*it).second.mapSubline.end(); ++mi)
         { 
             vFork.push_back((*mi).second);
@@ -706,7 +706,7 @@ bool CWallet::SyncWalletTx(CTxFilter& txFilter)
     return true;
 }
 
-bool CWallet::InspectWalletTx(int nCheckDepth)
+bool CWallet::InspectWalletTx(const int32 nCheckDepth)
 {
     set<CDestination> setAddr;
     GetDestinations(setAddr);
@@ -728,7 +728,7 @@ bool CWallet::InspectWalletTx(int nCheckDepth)
     {
         const auto& hashFork = it.first;
         const auto& status = it.second;
-        int nDepth = nCheckDepth;
+        int32 nDepth = nCheckDepth;
         if(nDepth > status.nLastBlockHeight || nDepth <= 0)
         {
             nDepth = status.nLastBlockHeight;
@@ -912,7 +912,7 @@ bool CWallet::SynchronizeTxSet(const CTxSetChange& change)
         }
     }
     
-    for (map<uint256,int>::const_iterator it = change.mapTxUpdate.begin();it != change.mapTxUpdate.end();++it)
+    for (map<uint256,int32>::const_iterator it = change.mapTxUpdate.begin();it != change.mapTxUpdate.end();++it)
     {
         const uint256& txid = (*it).first;
         std::shared_ptr<CWalletTx> spWalletTx = LoadWalletTx(txid);
@@ -923,7 +923,7 @@ bool CWallet::SynchronizeTxSet(const CTxSetChange& change)
         }
     }
 
-    map<int,vector<uint256> > mapPreFork;
+    map<int32,vector<uint256> > mapPreFork;
     BOOST_FOREACH(const CAssembledTx& tx,change.vTxAddNew)
     {
         bool fIsMine = IsMine(tx.sendTo);
@@ -1027,7 +1027,7 @@ std::shared_ptr<CWalletTx> CWallet::InsertWalletTx(const uint256& txid,const CAs
     return spWalletTx;
 }
 
-int64 CWallet::SelectCoins(const CDestination& dest,const uint256& hashFork,int nForkHeight,
+int64 CWallet::SelectCoins(const CDestination& dest,const uint256& hashFork,const int32 nForkHeight,
                            int64 nTxTime,int64 nTargetValue,size_t nMaxInput,vector<CTxOutPoint>& vCoins)
 {
     vCoins.clear();
@@ -1194,7 +1194,7 @@ bool CWallet::SignDestination(const CDestination& destIn, const CTransaction& tx
 bool CWallet::UpdateFork()
 {
     map<uint256,CForkStatus> mapForkStatus;
-    multimap<uint256,pair<int,uint256> > mapSubline;
+    multimap<uint256,pair<int32,uint256> > mapSubline;
 
     pWorldLine->GetForkStatus(mapForkStatus);
 
@@ -1217,14 +1217,14 @@ bool CWallet::UpdateFork()
         }
     }
 
-    for (multimap<uint256,pair<int,uint256> >::iterator it = mapSubline.begin();it != mapSubline.end();++it)
+    for (multimap<uint256,pair<int32,uint256> >::iterator it = mapSubline.begin();it != mapSubline.end();++it)
     {
         mapFork[(*it).first].InsertSubline((*it).second.first,(*it).second.second);
     }
     return true;
 }
 
-void CWallet::GetWalletTxFork(const uint256& hashFork,int nHeight,vector<uint256>& vFork)
+void CWallet::GetWalletTxFork(const uint256& hashFork,const int32 nHeight,vector<uint256>& vFork)
 {
     vector<pair<uint256,CWalletFork*> >vForkPtr;
     {
@@ -1239,7 +1239,7 @@ void CWallet::GetWalletTxFork(const uint256& hashFork,int nHeight,vector<uint256
         for (size_t i = 0;i < vForkPtr.size();i++)
         {
             CWalletFork* pFork = vForkPtr[i].second;
-            for (multimap<int,uint256>::iterator mi = pFork->mapSubline.lower_bound(nHeight);mi != pFork->mapSubline.end();++mi)
+            for (multimap<int32,uint256>::iterator mi = pFork->mapSubline.lower_bound(nHeight);mi != pFork->mapSubline.end();++mi)
             {
                 map<uint256,CWalletFork>::iterator it = mapFork.find((*mi).second);
                 if (it != mapFork.end() && !(*it).second.fIsolated)

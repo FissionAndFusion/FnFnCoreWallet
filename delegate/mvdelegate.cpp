@@ -40,13 +40,13 @@ void CMvDelegate::RemoveDelegate(const CDestination& destDelegate)
     setDelegate.erase(destDelegate);
 }
 
-void CMvDelegate::Evolve(int nBlockHeight,const map<CDestination,size_t>& mapWeight,
+void CMvDelegate::Evolve(const int32 nBlockHeight,const map<CDestination,size_t>& mapWeight,
                                           const map<CDestination,vector<unsigned char> >& mapEnrollData,
                                           CMvDelegateEvolveResult& result)
 {
-    const int nTarget = nBlockHeight + MV_CONSENSUS_INTERVAL;
-    const int nEnrollEnd = nBlockHeight + MV_CONSENSUS_DISTRIBUTE_INTERVAL + 1;
-    const int nPublish = nBlockHeight + 1;
+    const int32 nTarget = nBlockHeight + MV_CONSENSUS_INTERVAL;
+    const int32 nEnrollEnd = nBlockHeight + MV_CONSENSUS_DISTRIBUTE_INTERVAL + 1;
+    const int32 nPublish = nBlockHeight + 1;
 
     result.Clear();
 
@@ -63,7 +63,7 @@ void CMvDelegate::Evolve(int nBlockHeight,const map<CDestination,size_t>& mapWei
     }
     // enroll & distribute
     {
-        map<int,CMvDelegateVote>::iterator it = mapVote.find(nEnrollEnd);
+        map<int32,CMvDelegateVote>::iterator it = mapVote.find(nEnrollEnd);
         if (it != mapVote.end())
         { 
             auto t0 = boost::posix_time::microsec_clock::universal_time();
@@ -78,7 +78,7 @@ void CMvDelegate::Evolve(int nBlockHeight,const map<CDestination,size_t>& mapWei
     }
     // publish
     {
-        map<int,CMvDelegateVote>::iterator it = mapVote.find(nPublish);
+        map<int32,CMvDelegateVote>::iterator it = mapVote.find(nPublish);
         if (it != mapVote.end())
         {
             auto t0 = boost::posix_time::microsec_clock::universal_time();
@@ -92,7 +92,7 @@ void CMvDelegate::Evolve(int nBlockHeight,const map<CDestination,size_t>& mapWei
     }
 }    
 
-void CMvDelegate::Rollback(int nBlockHeightFrom,int nBlockHeightTo)
+void CMvDelegate::Rollback(const int32 nBlockHeightFrom,const int32 nBlockHeightTo)
 {
     // init
     {
@@ -114,10 +114,10 @@ void CMvDelegate::Rollback(int nBlockHeightFrom,int nBlockHeightTo)
     }
 }
 
-bool CMvDelegate::HandleDistribute(int nTargetHeight,const CDestination& destFrom,
+bool CMvDelegate::HandleDistribute(const int32 nTargetHeight,const CDestination& destFrom,
                                    const vector<unsigned char>& vchDistributeData)
 {
-    map<int,CMvDelegateVote>::iterator it = mapVote.find(nTargetHeight);
+    map<int32,CMvDelegateVote>::iterator it = mapVote.find(nTargetHeight);
     if (it != mapVote.end())
     {
         CMvDelegateVote& vote = (*it).second;
@@ -134,10 +134,10 @@ bool CMvDelegate::HandleDistribute(int nTargetHeight,const CDestination& destFro
     return false;
 }
 
-bool CMvDelegate::HandlePublish(int nTargetHeight,const CDestination& destFrom,
+bool CMvDelegate::HandlePublish(const int32 nTargetHeight,const CDestination& destFrom,
                                 const vector<unsigned char>& vchPublishData,bool& fCompleted)
 {
-    map<int,CMvDelegateVote>::iterator it = mapVote.find(nTargetHeight);
+    map<int32,CMvDelegateVote>::iterator it = mapVote.find(nTargetHeight);
     if (it != mapVote.end())
     {
         CMvDelegateVote& vote = (*it).second;
@@ -154,12 +154,12 @@ bool CMvDelegate::HandlePublish(int nTargetHeight,const CDestination& destFrom,
     return false;
 }
 
-void CMvDelegate::GetAgreement(int nTargetHeight,uint256& nAgreement,size_t& nWeight,map<CDestination,size_t>& mapBallot)
+void CMvDelegate::GetAgreement(const int32 nTargetHeight,uint256& nAgreement,size_t& nWeight,map<CDestination,size_t>& mapBallot)
 {
     nAgreement = 0;
     nWeight = 0;
 
-    map<int,CMvDelegateVote>::iterator it = mapVote.find(nTargetHeight);
+    map<int32,CMvDelegateVote>::iterator it = mapVote.find(nTargetHeight);
     if (it != mapVote.end())
     {
         CMvDelegateVote& vote = (*it).second;
@@ -173,9 +173,9 @@ void CMvDelegate::GetAgreement(int nTargetHeight,uint256& nAgreement,size_t& nWe
     }
 }
 
-void CMvDelegate::GetProof(int nTargetHeight,vector<unsigned char>& vchProof)
+void CMvDelegate::GetProof(const int32 nTargetHeight,vector<unsigned char>& vchProof)
 {
-    map<int,CMvDelegateVote>::iterator it = mapVote.find(nTargetHeight);
+    map<int32,CMvDelegateVote>::iterator it = mapVote.find(nTargetHeight);
     if (it != mapVote.end())
     {
         CMvDelegateVote& vote = (*it).second;

@@ -211,7 +211,7 @@ bool CService::HaveFork(const uint256& hashFork)
     return false;
 }
 
-int  CService::GetForkHeight(const uint256& hashFork)
+int32 CService::GetForkHeight(const uint256& hashFork)
 {
     boost::shared_lock<boost::shared_mutex> rlock(rwForkStatus);
 
@@ -254,12 +254,12 @@ void CService::ListFork(std::vector<std::pair<uint256,CProfile> >& vFork, bool f
     }
 }
 
-bool CService::GetForkGenealogy(const uint256& hashFork,vector<pair<uint256,int> >& vAncestry,vector<pair<int,uint256> >& vSubline)
+bool CService::GetForkGenealogy(const uint256& hashFork,vector<pair<uint256,int32> >& vAncestry,vector<pair<int32,uint256> >& vSubline)
 {
     boost::shared_lock<boost::shared_mutex> rlock(rwForkStatus);
     
     uint256 hashParent, hashJoint;
-    int nJointHeight;
+    int32 nJointHeight;
     if (!pForkManager->GetJoint(hashFork, hashParent, hashJoint, nJointHeight))
     {
         return false;
@@ -275,7 +275,7 @@ bool CService::GetForkGenealogy(const uint256& hashFork,vector<pair<uint256,int>
     return true;
 }
 
-bool CService::GetBlockLocation(const uint256& hashBlock,uint256& hashFork,int& nHeight)
+bool CService::GetBlockLocation(const uint256& hashBlock,uint256& hashFork,int32& nHeight)
 {
     return pWorldLine->GetBlockLocation(hashBlock,hashFork,nHeight);
 }
@@ -289,7 +289,7 @@ int CService::GetBlockCount(const uint256& hashFork)
     return pWorldLine->GetBlockCount(hashFork);
 }
 
-bool CService::GetBlockHash(const uint256& hashFork,int nHeight,uint256& hashBlock)
+bool CService::GetBlockHash(const uint256& hashFork,const int32 nHeight,uint256& hashBlock)
 {
     if (nHeight < 0)
     {
@@ -305,18 +305,18 @@ bool CService::GetBlockHash(const uint256& hashFork,int nHeight,uint256& hashBlo
     return pWorldLine->GetBlockHash(hashFork,nHeight,hashBlock);
 }
 
-bool CService::GetBlockHash(const uint256& hashFork,int nHeight,vector<uint256>& vBlockHash)
+bool CService::GetBlockHash(const uint256& hashFork,const int32 nHeight,vector<uint256>& vBlockHash)
 {
     return pWorldLine->GetBlockHash(hashFork,nHeight,vBlockHash);
 }
 
-bool CService::GetBlock(const uint256& hashBlock,CBlock& block,uint256& hashFork,int& nHeight)
+bool CService::GetBlock(const uint256& hashBlock,CBlock& block,uint256& hashFork,int32& nHeight)
 {
     return pWorldLine->GetBlock(hashBlock,block) 
            && pWorldLine->GetBlockLocation(hashBlock,hashFork,nHeight);
 }
 
-bool CService::GetBlockEx(const uint256& hashBlock, CBlockEx& block, uint256& hashFork, int& nHeight)
+bool CService::GetBlockEx(const uint256& hashBlock, CBlockEx& block, uint256& hashFork, int32& nHeight)
 {
     return pWorldLine->GetBlockEx(hashBlock,block)
            && pWorldLine->GetBlockLocation(hashBlock,hashFork,nHeight);
@@ -328,11 +328,11 @@ void CService::GetTxPool(const uint256& hashFork,vector<pair<uint256,size_t> >& 
     pTxPool->ListTx(hashFork,vTxPool);
 }
 
-bool CService::GetTransaction(const uint256& txid,CTransaction& tx,uint256& hashFork,int& nHeight)
+bool CService::GetTransaction(const uint256& txid,CTransaction& tx,uint256& hashFork,int32& nHeight)
 {
     if (pTxPool->Get(txid,tx))
     {
-        int nAnchorHeight;
+        int32 nAnchorHeight;
         if (!pWorldLine->GetBlockLocation(tx.hashAnchor,hashFork,nAnchorHeight))
         {
             return false;
@@ -435,7 +435,7 @@ bool CService::SignSignature(const crypto::CPubKey& pubkey,const uint256& hash,v
 bool CService::SignTransaction(CTransaction& tx,bool& fCompleted)
 {
     uint256 hashFork;
-    int nHeight;
+    int32 nHeight;
     if (!pWorldLine->GetBlockLocation(tx.hashAnchor,hashFork,nHeight))
     {
         return false;
@@ -478,7 +478,7 @@ CTemplatePtr CService::GetTemplate(const CTemplateId& tid)
 
 bool CService::GetBalance(const CDestination& dest,const uint256& hashFork,CWalletBalance& balance)
 {
-    int nForkHeight = GetForkHeight(hashFork);
+    int32 nForkHeight = GetForkHeight(hashFork);
     if (nForkHeight <= 0)
     {
         return false;
@@ -503,7 +503,7 @@ bool CService::CreateTransaction(const uint256& hashFork,const CDestination& des
                                  const CDestination& destSendTo,int64 nAmount,int64 nTxFee,
                                  const vector<unsigned char>& vchData,CTransaction& txNew)
 {
-    int nForkHeight = 0;
+    int32 nForkHeight = 0;
     txNew.SetNull();
     {
         boost::shared_lock<boost::shared_mutex> rlock(rwForkStatus);
