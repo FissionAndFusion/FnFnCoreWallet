@@ -2918,7 +2918,6 @@ void CDbpService::InitRPCTopicIds()
             vRPCTopicIds.push_back(id);
         }
     }
-    std::cout << "[<] topic id count:" << vRPCTopicIds.size() << std::endl;
 }
 
 void CDbpService::InitSessionCount()
@@ -2934,7 +2933,6 @@ void CDbpService::InitSessionCount()
         }
     }
     sessionCount = setSession.size();
-    std::cout << "[<] session count:" << setSession.size() << std::endl;
 }
 
 bool CDbpService::HandleEvent(CMvEventRPCRouteStop& event)

@@ -77,15 +77,7 @@ bool CIOCompletionUntil::WaitForComplete(bool& fResultRet)
     boost::unique_lock<boost::mutex> lock(mutex);
     boost::chrono::microseconds period(nTimeout);
     boost::chrono::system_clock::time_point wakeUpTime = boost::chrono::system_clock::now() + period;
-    if(cond.wait_until(lock, wakeUpTime, [this] { return fCompleted || fAborted; }))
-    {
-        std::cerr << "iocompletionuntil finished waiting. " << '\n';
-    }
-    else
-    {
-         std::cerr << "iocompletionuntil  timed out. " << '\n';
-    }
-    
+    cond.wait_until(lock, wakeUpTime, [this] { return fCompleted || fAborted; });
     fResultRet = fResult;
     return fCompleted;
 }
