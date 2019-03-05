@@ -331,24 +331,24 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
             dynamic_cast<CHttpServer*>(pBase)->AddNewHost(GetRPCHostConfig());
 
             auto config = GetDbpClientConfig();
-            CRPCMod* rpcMod;
+            CRPCModWorker* rpcModWorker;
 
             if (config.fEnableSuperNode && !config.fEnableForkNode) //supernode root
             {
-                rpcMod = new CSnRPCMod();
+                rpcModWorker = new CSnRPCModWorker();
             }
 
             if (config.fEnableSuperNode && config.fEnableForkNode) // supernode fork
             {
-                rpcMod = new CRPCMod();
+                rpcModWorker = new CRPCModWorker();
             }
 
             if (!config.fEnableSuperNode) //fnfncorewallet
             {
-                rpcMod = new CRPCMod();
+                rpcModWorker = new CRPCModWorker();
             }
 
-            if (!AttachModule(rpcMod))
+            if (!AttachModule(rpcModWorker))
             {
                 return false;
             }

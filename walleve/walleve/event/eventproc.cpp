@@ -12,24 +12,39 @@ using namespace walleve;
 ///////////////////////////////
 // CWalleveEventProc
 
-CWalleveEventProc::CWalleveEventProc(const string& walleveOwnKeyIn)
- : IWalleveBase(walleveOwnKeyIn) ,
-   thrEventQue(walleveOwnKeyIn + "-eventq",boost::bind(&CWalleveEventProc::EventThreadFunc,this))
+CWalleveEventProc::CWalleveEventProc(const string& walleveOwnKeyIn, const size_t nThreadNumIn)
+ : IWalleveBase(walleveOwnKeyIn), nThreadNum(nThreadNumIn)
 {
+    vecThrEventQue.reserve(nThreadNum);
+    for (size_t i = 0; i < nThreadNum; ++i)
+    {
+        vecThrEventQue.emplace_back(walleveOwnKeyIn + "-eventq-" + to_string(i),
+            boost::bind(&CWalleveEventProc::EventThreadFunc,this));
+    }
 }
 
 bool CWalleveEventProc::WalleveHandleInvoke()
 {   
     queEvent.Reset();
 
-    return WalleveThreadStart(thrEventQue);
+    for (CWalleveThread& thrEventQue : vecThrEventQue)
+    {
+        if (!WalleveThreadStart(thrEventQue))
+        {
+            return false;
+        }
+    }
+    return true;
 }   
 
 void CWalleveEventProc::WalleveHandleHalt()
 {
     queEvent.Interrupt();
     
-    WalleveThreadExit(thrEventQue);
+    for (CWalleveThread& thrEventQue : vecThrEventQue)
+    {
+        WalleveThreadExit(thrEventQue);
+    }
 }
 
 void CWalleveEventProc::PostEvent(CWalleveEvent * pEvent)
