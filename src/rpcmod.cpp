@@ -2116,3 +2116,606 @@ CRPCResultPtr CRPCModWorker::RPCSubmitWork(CRPCParamPtr param)
     return MakeCSubmitWorkResultPtr(hashBlock.GetHex());
 }
 
+CRPCResultPtr CRPCModWorker::SnRPCStop(CRPCParamPtr param)
+{
+    (void)param;
+    return NULL;
+}
+
+CRPCResultPtr CRPCModWorker::SnRPCGetForkCount(CRPCParamPtr param)
+{
+    (void)param;
+    return NULL;
+}
+
+CRPCResultPtr CRPCModWorker::SnRPCListFork(CRPCParamPtr param)
+{
+    (void)param;
+    return NULL;
+}
+
+CRPCResultPtr CRPCModWorker::SnRPCGetBlockLocation(CRPCParamPtr param)
+{
+    (void)param;
+    return NULL;
+}
+
+CRPCResultPtr CRPCModWorker::SnRPCGetBlockCount(CRPCParamPtr param)
+{
+    (void)param;
+    return NULL;
+}
+
+CRPCResultPtr CRPCModWorker::SnRPCGetBlockHash(CRPCParamPtr param)
+{
+    (void)param;
+    return NULL;
+}
+
+CRPCResultPtr CRPCModWorker::SnRPCGetBlock(CRPCParamPtr param)
+{
+    (void)param;
+    return NULL;
+}
+
+CRPCResultPtr CRPCModWorker::SnRPCGetTxPool(CRPCParamPtr param)
+{
+    (void)param;
+    return NULL;
+}
+
+CRPCResultPtr CRPCModWorker::SnRPCGetTransaction(CRPCParamPtr param)
+{
+    (void)param;
+    return NULL;
+}
+
+CRPCResultPtr CRPCModWorker::SnRPCGetForkHeight(CRPCParamPtr param)
+{
+    (void)param;
+    return NULL;
+}
+
+CRPCResultPtr CRPCModWorker::SnRPCSendTransaction(CRPCParamPtr param)
+{
+    (void)param;
+    return NULL;
+}
+
+CSnRPCModWorker::CSnRPCModWorker()
+{
+    mapRPCFunc["stop"] = &CRPCModWorker::SnRPCStop;
+    mapRPCFunc["getforkcount"] = &CRPCModWorker::SnRPCGetForkCount;
+    mapRPCFunc["listfork"] = &CRPCModWorker::SnRPCListFork;
+    mapRPCFunc["getblocklocation"] = &CRPCModWorker::SnRPCGetBlockLocation;
+    mapRPCFunc["getblockcount"] = &CRPCModWorker::SnRPCGetBlockCount;
+    mapRPCFunc["getblockhash"] = &CRPCModWorker::SnRPCGetBlockHash;
+    mapRPCFunc["getblock"] = &CRPCModWorker::SnRPCGetBlock;
+    mapRPCFunc["gettxpool"] = &CRPCModWorker::SnRPCGetTxPool;
+    mapRPCFunc["gettransaction"] = &CRPCModWorker::SnRPCGetTransaction;
+    mapRPCFunc["getforkheight"] = &CRPCModWorker::SnRPCGetForkHeight;
+    mapRPCFunc["sendtransaction"] = &CRPCModWorker::SnRPCSendTransaction;
+}
+
+CSnRPCModWorker::~CSnRPCModWorker()
+{
+}
+
+bool CSnRPCModWorker::WalleveHandleInitialize()
+{
+    CRPCModWorker::WalleveHandleInitialize();
+
+    if (!WalleveGetObject("dbpservice", pDbpService))
+    {
+        WalleveLog("Failed to request DBP service\n");
+        return false;
+    }
+
+    return true;
+}
+
+void CSnRPCModWorker::WalleveHandleDeinitialize()
+{
+    CRPCModWorker::WalleveHandleDeinitialize();
+    pDbpService = NULL;
+}
+
+uint64 CSnRPCModWorker::GenNonce()
+{
+    uint64 nNonce;
+    RAND_bytes((unsigned char*)&nNonce, sizeof(nNonce));
+    while(nNonce <= 0xFF || nNonce == std::numeric_limits<uint64>::max())
+    {
+        RAND_bytes((unsigned char*)&nNonce, sizeof(nNonce));
+    }
+    return nNonce;
+}
+
+void CSnRPCModWorker::DelCompltUntilByNonce(uint64 nNonce)
+{
+    CMvEventRPCRouteDelCompltUntil * pEvent = new CMvEventRPCRouteDelCompltUntil("");
+    pEvent->data.nNonce = nNonce;
+    if(!pEvent)
+    {
+        return;
+    }
+    pDbpService->PostEvent(pEvent);
+}
+
+CRPCResultPtr CSnRPCModWorker::SnRPCStop(CRPCParamPtr param)
+{
+    CMvEventRPCRouteStop* pEvent = new CMvEventRPCRouteStop("");
+    uint64 nNonce = GenNonce();
+    auto ptrCompltUntil =
+      std::make_shared<walleve::CIOCompletionUntil>(200 * 1000);
+    ptrCompltUntil->Reset();
+
+    pEvent->data.nNonce = nNonce;
+    pEvent->data.spIoCompltUntil = ptrCompltUntil;
+    if(!pEvent)
+    {
+        return NULL;
+    }
+    pDbpService->PostEvent(pEvent);
+
+    bool fResult = false;
+    ptrCompltUntil->WaitForComplete(fResult);
+    DelCompltUntilByNonce(nNonce);
+    if(!fResult)
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Timeout");
+    }
+
+    std::string reason = "[supernode]multiverse server stopping";
+    return MakeCStopResultPtr(reason);
+}
+
+CRPCResultPtr CSnRPCModWorker::SnRPCGetForkCount(CRPCParamPtr param)
+{
+    CMvEventRPCRouteGetForkCount* pEvent = new CMvEventRPCRouteGetForkCount("");
+    uint64 nNonce = GenNonce();
+    auto ptrCompltUntil =
+      std::make_shared<walleve::CIOCompletionUntil>(200 * 1000);
+    ptrCompltUntil->Reset();
+
+    pEvent->data.spIoCompltUntil = ptrCompltUntil;
+    pEvent->data.nNonce = nNonce;
+    if(!pEvent)
+    {
+        return NULL;
+    }
+    pDbpService->PostEvent(pEvent);
+
+    bool fResult = false;
+    ptrCompltUntil->WaitForComplete(fResult);
+    DelCompltUntilByNonce(nNonce);
+    if(!fResult)
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Timeout");
+    }
+
+    CMvRPCRouteGetForkCountRet ret =
+      boost::any_cast<CMvRPCRouteGetForkCountRet>(ptrCompltUntil->obj);
+    return MakeCGetForkCountResultPtr(ret.count);
+}
+
+CRPCResultPtr CSnRPCModWorker::SnRPCListFork(CRPCParamPtr param)
+{
+    auto spParam = CastParamPtr<CListForkParam>(param);
+    CMvEventRPCRouteListFork* pEvent = new CMvEventRPCRouteListFork("");
+    uint64 nNonce = GenNonce();
+    auto ptrCompltUntil =
+      std::make_shared<walleve::CIOCompletionUntil>(200 * 1000);
+    ptrCompltUntil->Reset();
+
+    pEvent->data.spIoCompltUntil = ptrCompltUntil;
+    pEvent->data.nNonce = nNonce;
+    pEvent->data.fAll = spParam->fAll;
+    if(!pEvent)
+    {
+        return NULL;
+    }
+    pDbpService->PostEvent(pEvent);
+
+    bool fResult = false;
+    ptrCompltUntil->WaitForComplete(fResult);
+    DelCompltUntilByNonce(nNonce);
+    if(!fResult)
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Timeout");
+    }
+
+    CMvRPCRouteListForkRet ret =
+      boost::any_cast<CMvRPCRouteListForkRet>(ptrCompltUntil->obj);
+    auto vFork = ret.vFork;
+    auto spResult = MakeCListForkResultPtr();
+    for (size_t i = 0; i < vFork.size(); i++)
+    {
+        CMvRPCProfile& profile = vFork[i];
+        spResult->vecProfile.push_back({ profile.strHex, profile.strName,
+                                         profile.strSymbol, profile.fIsolated,
+                                         profile.fPrivate, profile.fEnclosed,
+                                         profile.address });
+    }
+    return spResult;
+}
+
+CRPCResultPtr CSnRPCModWorker::SnRPCGetBlockLocation(CRPCParamPtr param)
+{
+    auto spParam = CastParamPtr<CGetBlockLocationParam>(param);
+    CMvEventRPCRouteGetBlockLocation* pEvent = new CMvEventRPCRouteGetBlockLocation("");
+    uint64 nNonce = GenNonce();
+    auto ptrCompltUntil =
+      std::make_shared<walleve::CIOCompletionUntil>(200 * 1000);
+    ptrCompltUntil->Reset();
+
+    pEvent->data.spIoCompltUntil = ptrCompltUntil;
+    pEvent->data.nNonce = nNonce;
+    pEvent->data.strBlock = spParam->strBlock;
+    if(!pEvent)
+    {
+        return NULL;
+    }
+    pDbpService->PostEvent(pEvent);
+
+    bool fResult = false;
+    ptrCompltUntil->WaitForComplete(fResult);
+    DelCompltUntilByNonce(nNonce);
+    if(!fResult)
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Timeout");
+    }
+
+    CMvRPCRouteGetBlockLocationRet ret =
+      boost::any_cast<CMvRPCRouteGetBlockLocationRet>(ptrCompltUntil->obj);
+    if (ret.strFork.empty())
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Unknown block");
+    }
+
+    auto spResult = MakeCGetBlockLocationResultPtr();
+    spResult->strFork = ret.strFork;
+    spResult->nHeight = ret.height;
+    return spResult;
+}
+
+CRPCResultPtr CSnRPCModWorker::SnRPCGetBlockCount(CRPCParamPtr param)
+{
+    auto spParam = CastParamPtr<CGetBlockCountParam>(param);
+    auto* pEvent = new CMvEventRPCRouteGetBlockCount("");
+    uint64 nNonce = GenNonce();
+    auto ptrCompltUntil =
+      std::make_shared<walleve::CIOCompletionUntil>(200 * 1000);
+    ptrCompltUntil->Reset();
+
+    pEvent->data.nNonce = nNonce;
+    pEvent->data.spIoCompltUntil = ptrCompltUntil;
+    pEvent->data.strFork = spParam->strFork;
+    if (!pEvent)
+    {
+        return NULL;
+    }
+    pDbpService->PostEvent(pEvent);
+
+    bool fResult = false;
+    ptrCompltUntil->WaitForComplete(fResult);
+    DelCompltUntilByNonce(nNonce);
+    if (!fResult)
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Timeout");
+    }
+
+    auto ret =
+      boost::any_cast<CMvRPCRouteGetBlockCountRet>(ptrCompltUntil->obj);
+
+    uint256 hashFork;
+    int height = 0;
+    if (ret.exception == 0)
+    {
+        height = ret.height;
+    }
+    else if (ret.exception == 1)
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Invalid fork");
+    }
+    else if (ret.exception == 2)
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Unknown fork");
+    }
+    return MakeCGetBlockCountResultPtr(height);
+}
+
+CRPCResultPtr CSnRPCModWorker::SnRPCGetBlockHash(CRPCParamPtr param)
+{
+    auto spParam = CastParamPtr<CGetBlockHashParam>(param);
+    auto* pEvent = new CMvEventRPCRouteGetBlockHash("");
+    uint64 nNonce = GenNonce();
+    auto ptrCompltUntil =
+      std::make_shared<walleve::CIOCompletionUntil>(200 * 1000);
+    ptrCompltUntil->Reset();
+
+    pEvent->data.spIoCompltUntil = ptrCompltUntil;
+    pEvent->data.nNonce = nNonce;
+    pEvent->data.height = spParam->nHeight;
+    pEvent->data.strFork = spParam->strFork;
+    if(!pEvent)
+    {
+        return NULL;
+    }
+    pDbpService->PostEvent(pEvent);
+
+    bool fResult = false;
+    ptrCompltUntil->WaitForComplete(fResult);
+    DelCompltUntilByNonce(nNonce);
+    if(!fResult)
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Timeout");
+    }
+
+    auto ret = boost::any_cast<CMvRPCRouteGetBlockHashRet>(ptrCompltUntil->obj);
+    int height = 0;
+    if (ret.exception == 0)
+    {
+    }
+    else if (ret.exception == 1)
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Invalid fork");
+    }
+    else if (ret.exception == 2)
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Unknown fork");
+    }
+    else if (ret.exception == 3)
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Block number out of range.");
+    }
+
+    auto spResult = MakeCGetBlockHashResultPtr();
+    for (const auto& hash: ret.vHash)
+    {
+        spResult->vecHash.push_back(hash);
+    }
+    return spResult;
+}
+
+CRPCResultPtr CSnRPCModWorker::SnRPCGetBlock(CRPCParamPtr param)
+{
+    auto spParam = CastParamPtr<CGetBlockParam>(param);
+    auto* pEvent = new CMvEventRPCRouteGetBlock("");
+    uint64 nNonce = GenNonce();
+    auto ptrCompltUntil =
+      std::make_shared<walleve::CIOCompletionUntil>(200 * 1000);
+    ptrCompltUntil->Reset();
+
+    pEvent->data.spIoCompltUntil = ptrCompltUntil;
+    pEvent->data.nNonce = nNonce;
+    pEvent->data.hash = spParam->strBlock;
+    if (!pEvent)
+    {
+        return NULL;
+    }
+    pDbpService->PostEvent(pEvent);
+
+    bool fResult = false;
+    ptrCompltUntil->WaitForComplete(fResult);
+    DelCompltUntilByNonce(nNonce);
+    if(!fResult)
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Timeout");
+    }
+
+    auto ret = boost::any_cast<CMvRPCRouteGetBlockRet>(ptrCompltUntil->obj);
+    if (ret.exception == 1)
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Unknown block");
+    }
+
+    uint256 fork;
+    fork.SetHex(ret.strFork);
+    return MakeCGetBlockResultPtr(BlockToJSON(ret.block.GetHash(), ret.block, fork, ret.height));
+}
+
+CRPCResultPtr CSnRPCModWorker::SnRPCGetTxPool(CRPCParamPtr param)
+{
+    auto spParam = CastParamPtr<CGetTxPoolParam>(param);
+    bool fDetail = spParam->fDetail.IsValid() ? bool(spParam->fDetail) : false;
+    auto* pEvent = new CMvEventRPCRouteGetTxPool("");
+    uint64 nNonce = GenNonce();
+    auto ptrCompltUntil =
+      std::make_shared<walleve::CIOCompletionUntil>(200 * 1000);
+    ptrCompltUntil->Reset();
+
+    pEvent->data.spIoCompltUntil = ptrCompltUntil;
+    pEvent->data.nNonce = nNonce;
+    pEvent->data.strFork = spParam->strFork;
+    pEvent->data.fDetail = fDetail;
+    if (!pEvent)
+    {
+        return NULL;
+    }
+    pDbpService->PostEvent(pEvent);
+
+    bool fResult = false;
+    ptrCompltUntil->WaitForComplete(fResult);
+    DelCompltUntilByNonce(nNonce);
+    if(!fResult)
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Timeout");
+    }
+
+    auto spResult = MakeCGetTxPoolResultPtr();
+    auto ret = boost::any_cast<CMvRPCRouteGetTxPoolRet>(ptrCompltUntil->obj);
+    if (ret.exception == 0)
+    {
+    }
+    else if (ret.exception == 1)
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Invalid fork");
+    }
+    else if (ret.exception == 2)
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Unknown fork");
+    }
+
+    if (!fDetail)
+    {
+        size_t nTotalSize = 0;
+        for (std::size_t i = 0; i < ret.vTxPool.size(); i++)
+        {
+            nTotalSize += ret.vTxPool[i].second;
+        }
+        spResult->nCount = ret.vTxPool.size();
+        spResult->nSize = nTotalSize;
+    }
+    else
+    {
+        for (std::size_t i = 0; i < ret.vTxPool.size(); i++)
+        {
+            spResult->vecList.push_back({ret.vTxPool[i].first, ret.vTxPool[i].second});
+        }
+    }
+    return spResult;
+}
+
+CRPCResultPtr CSnRPCModWorker::SnRPCGetTransaction(CRPCParamPtr param)
+{
+    auto spParam = CastParamPtr<CGetTransactionParam>(param);
+    auto* pEvent = new CMvEventRPCRouteGetTransaction("");
+    uint64 nNonce = GenNonce();
+    auto ptrCompltUntil =
+      std::make_shared<walleve::CIOCompletionUntil>(200 * 1000);
+    ptrCompltUntil->Reset();
+
+    pEvent->data.spIoCompltUntil = ptrCompltUntil;
+    pEvent->data.nNonce = nNonce;
+    pEvent->data.strTxid = spParam->strTxid;
+    if (!pEvent)
+    {
+        return NULL;
+    }
+    pDbpService->PostEvent(pEvent);
+
+    bool fResult = false;
+    ptrCompltUntil->WaitForComplete(fResult);
+    DelCompltUntilByNonce(nNonce);
+    if(!fResult)
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Timeout");
+    }
+
+    auto spResult = MakeCGetTransactionResultPtr();
+    auto ret = boost::any_cast<CMvRPCRouteGetTransactionRet>(ptrCompltUntil->obj);
+    if (ret.exception == 0)
+    {
+    }
+    else if (ret.exception == 1)
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "No information available about transaction");
+    }
+
+    if (spParam->fSerialized)
+    {
+        CWalleveBufStream ss;
+        ss << ret.tx;
+        spResult->strSerialization = ToHexString((const unsigned char*)ss.GetData(),ss.GetSize());
+        return spResult;
+    }
+
+    uint256 txid, hashFork;
+    txid.SetHex(spParam->strTxid);
+    spResult->transaction = TxToJSON(txid, ret.tx, hashFork.SetHex(ret.strFork), ret.nDepth);
+    return spResult;
+}
+
+CRPCResultPtr CSnRPCModWorker::SnRPCGetForkHeight(CRPCParamPtr param)
+{
+    auto spParam = CastParamPtr<CGetForkHeightParam>(param);
+    auto* pEvent = new CMvEventRPCRouteGetForkHeight("");
+    uint64 nNonce = GenNonce();
+    auto ptrCompltUntil =
+      std::make_shared<walleve::CIOCompletionUntil>(200 * 1000);
+    ptrCompltUntil->Reset();
+
+    pEvent->data.spIoCompltUntil = ptrCompltUntil;
+    pEvent->data.nNonce = nNonce;
+    pEvent->data.strFork = spParam->strFork;
+    if (!pEvent)
+    {
+        return NULL;
+    }
+    pDbpService->PostEvent(pEvent);
+
+    bool fResult = false;
+    ptrCompltUntil->WaitForComplete(fResult);
+    DelCompltUntilByNonce(nNonce);
+    if(!fResult)
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Timeout");
+    }
+
+    auto ret =
+      boost::any_cast<CMvRPCRouteGetForkHeightRet>(ptrCompltUntil->obj);
+    if (ret.exception == 0)
+    {
+    }
+    else if (ret.exception == 1)
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Invalid fork");
+    }
+    else if (ret.exception == 2)
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Unknown fork");
+    }
+    return MakeCGetForkHeightResultPtr(ret.height);
+}
+
+CRPCResultPtr CSnRPCModWorker::SnRPCSendTransaction(CRPCParamPtr param)
+{
+    auto spParam = CastParamPtr<CSendTransactionParam>(param);
+    vector<unsigned char> txData = ParseHexString(spParam->strTxdata);
+    CWalleveBufStream ss;
+    ss.Write((char *)&txData[0],txData.size());
+    CTransaction rawTx;
+    try
+    {
+        ss >> rawTx;
+    }
+    catch (const std::exception &e)
+    {
+        throw CRPCException(RPC_DESERIALIZATION_ERROR, "TX decode failed");
+    }
+
+    auto* pEvent = new CMvEventRPCRouteSendTransaction("");
+    uint64 nNonce = GenNonce();
+    auto ptrCompltUntil =
+      std::make_shared<walleve::CIOCompletionUntil>(200 * 1000);
+    ptrCompltUntil->Reset();
+
+    pEvent->data.spIoCompltUntil = ptrCompltUntil;
+    pEvent->data.nNonce = nNonce;
+    pEvent->data.rawTx = rawTx;
+    if (!pEvent)
+    {
+        return NULL;
+    }
+    pDbpService->PostEvent(pEvent);
+
+    bool fResult = false;
+    ptrCompltUntil->WaitForComplete(fResult);
+    DelCompltUntilByNonce(nNonce);
+    if(!fResult)
+    {
+        throw CRPCException(RPC_INVALID_PARAMETER, "Timeout");
+    }
+
+    auto ret =
+      boost::any_cast<CMvRPCRouteSendTransactionRet>(ptrCompltUntil->obj);
+    if (ret.exception == 0)
+    {
+    }
+    else if (ret.exception == 1)
+    {
+        throw CRPCException(RPC_TRANSACTION_REJECTED,string("Tx rejected : ") + MvErrString((MvErr)ret.err));
+    }
+    return MakeCSendTransactionResultPtr(rawTx.GetHash().GetHex());
+}

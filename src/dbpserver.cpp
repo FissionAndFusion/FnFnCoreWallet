@@ -253,6 +253,26 @@ void CDbpServerSocket::SendResponse(const std::string& client, CMvDbpMethodResul
     SendMessage(dbp::Msg::RESULT,anyResult);
 }
 
+void CDbpServerSocket::SendResponse(const std::string& client, CMvRPCRouteAdded& body)
+{
+    dbp::Added addedMsg;
+    addedMsg.set_id(body.id);
+    addedMsg.set_name(body.name);
+
+    sn::RPCRouteEvent routeEvent;
+    routeEvent.set_type(body.type);
+    routeEvent.set_data(std::string(body.vData.begin(), body.vData.end()));
+
+    google::protobuf::Any* anyEvent = new google::protobuf::Any();
+    anyEvent->PackFrom(routeEvent);
+    addedMsg.set_allocated_object(anyEvent);
+
+    google::protobuf::Any* anyAdded = new google::protobuf::Any();
+    anyAdded->PackFrom(addedMsg);
+
+    SendMessage(dbp::Msg::ADDED, anyAdded);
+}
+
 void CDbpServerSocket::SendPong(const std::string& id)
 {
     dbp::Pong msg;
@@ -599,6 +619,16 @@ void CDbpServer::HandleClientMethod(CDbpServerSocket* pDbpClient, google::protob
         methodBody.method = CMvDbpMethod::SnMethod::SEND_EVENT;
         methodBody.params.insert(std::make_pair("type", event.type()));
         methodBody.params.insert(std::make_pair("data", event.data()));
+    }
+    else if (methodMsg.method() == "rpcroute" &&
+             methodMsg.params().Is<sn::RPCRouteArgs>())
+    {
+        sn::RPCRouteArgs args;
+        methodMsg.params().UnpackTo(&args);
+        methodBody.method = CMvDbpMethod::SnMethod::RPC_ROUTE;
+        methodBody.params.insert(std::make_pair("type", args.type()));
+        methodBody.params.insert(std::make_pair("data", args.data()));
+        methodBody.params.insert(std::make_pair("rawdata", args.rawdata()));
     }
     else
     {
@@ -1077,6 +1107,32 @@ bool CDbpServer::HandleEvent(CMvEventDbpMethodResult& event)
 
     return true;
 }
+
+//rpc route
+
+bool CDbpServer::HandleEvent(CMvEventRPCRouteAdded & event)
+{
+    if(!event.strSessionId.empty())
+    {
+        auto it = mapSessionProfile.find(event.strSessionId);
+        if (it == mapSessionProfile.end())
+        {
+            std::cerr << "cannot find session [Added] " << event.strSessionId << std::endl;
+            return false;
+        }
+
+        if(it->second.strClient == "supernode")
+        {
+            CDbpServerSocket* socket = (*it).second.pDbpClient;
+            CMvRPCRouteAdded addedBody = event.data;
+            socket->SendResponse(it->second.strClient, addedBody);
+        }
+    }
+
+    return true;
+}
+
+//
 
 bool CDbpServer::IsSessionTimeOut(CDbpServerSocket* pDbpClient)
 {

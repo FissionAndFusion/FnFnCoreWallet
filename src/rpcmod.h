@@ -14,6 +14,7 @@
 #include "event.h"
 #include "mvbase.h"
 #include "rpc/rpc.h"
+#include "event.h"
 
 namespace multiverse
 {
@@ -187,6 +188,19 @@ private:
     rpc::CRPCResultPtr RPCGetWork(rpc::CRPCParamPtr param);
     rpc::CRPCResultPtr RPCSubmitWork(rpc::CRPCParamPtr param);
 
+public:
+    virtual rpc::CRPCResultPtr SnRPCStop(rpc::CRPCParamPtr param);
+    virtual rpc::CRPCResultPtr SnRPCGetForkCount(rpc::CRPCParamPtr param);
+    virtual rpc::CRPCResultPtr SnRPCListFork(rpc::CRPCParamPtr param);
+    virtual rpc::CRPCResultPtr SnRPCGetBlockLocation(rpc::CRPCParamPtr param);
+    virtual rpc::CRPCResultPtr SnRPCGetBlockCount(rpc::CRPCParamPtr param);
+    virtual rpc::CRPCResultPtr SnRPCGetBlockHash(rpc::CRPCParamPtr param);
+    virtual rpc::CRPCResultPtr SnRPCGetBlock(rpc::CRPCParamPtr param);
+    virtual rpc::CRPCResultPtr SnRPCGetTxPool(rpc::CRPCParamPtr param);
+    virtual rpc::CRPCResultPtr SnRPCGetTransaction(rpc::CRPCParamPtr param);
+    virtual rpc::CRPCResultPtr SnRPCGetForkHeight(rpc::CRPCParamPtr param);
+    virtual rpc::CRPCResultPtr SnRPCSendTransaction(rpc::CRPCParamPtr param);
+
 protected:
     ICoreProtocol* pCoreProtocol;
     IService* pService;
@@ -194,9 +208,34 @@ protected:
 
     mutable boost::mutex destForkMutex;
     std::map<CDestFork, CDestMutexPtr> mapDestMutex;
-
-private:
     std::map<std::string, RPCFunc> mapRPCFunc;
+};
+
+class CSnRPCModWorker : public CRPCModWorker, virtual public CDBPEventListener
+{
+public:
+    CSnRPCModWorker();
+    ~CSnRPCModWorker();
+    rpc::CRPCResultPtr SnRPCStop(rpc::CRPCParamPtr param) override;
+    rpc::CRPCResultPtr SnRPCGetForkCount(rpc::CRPCParamPtr param) override;
+    rpc::CRPCResultPtr SnRPCListFork(rpc::CRPCParamPtr param) override;
+    rpc::CRPCResultPtr SnRPCGetBlockLocation(rpc::CRPCParamPtr param) override;
+    rpc::CRPCResultPtr SnRPCGetBlockCount(rpc::CRPCParamPtr param) override;
+    rpc::CRPCResultPtr SnRPCGetBlockHash(rpc::CRPCParamPtr param) override;
+    rpc::CRPCResultPtr SnRPCGetBlock(rpc::CRPCParamPtr param) override;
+    rpc::CRPCResultPtr SnRPCGetTxPool(rpc::CRPCParamPtr param) override;
+    rpc::CRPCResultPtr SnRPCGetTransaction(rpc::CRPCParamPtr param) override;
+    rpc::CRPCResultPtr SnRPCGetForkHeight(rpc::CRPCParamPtr param) override;
+    rpc::CRPCResultPtr SnRPCSendTransaction(rpc::CRPCParamPtr param) override;
+
+protected:
+    bool WalleveHandleInitialize() override;
+    void WalleveHandleDeinitialize() override;
+    uint64 GenNonce();
+    void DelCompltUntilByNonce(uint64 nNonce);
+
+protected:
+    walleve::IIOModule* pDbpService;
 };
 
 } // namespace multiverse

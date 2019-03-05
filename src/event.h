@@ -44,6 +44,21 @@ enum
 
     /*super node*/
     MV_EVENT_DBP_VPEERNET,
+    MV_EVENT_RPCROUTE_COMMON,
+    MV_EVENT_RPCROUTE_ADDED,
+    MV_EVENT_RPCROUTE_RESULT,
+    MV_EVENT_RPCROUTE_DEL_COMPLTUNTIL,
+    MV_EVENT_RPCROUTE_STOP,
+    MV_EVENT_RPCROUTE_GET_FORK_COUNT,
+    MV_EVENT_RPCROUTE_LIST_FORK,
+    MV_EVENT_RPCROUTE_GET_BLOCK_LOCATION,
+    MV_EVENT_RPCROUTE_GET_BLOCK_COUNT,
+    MV_EVENT_RPCROUTE_GET_BLOCK_HASH,
+    MV_EVENT_RPCROUTE_GET_BLOCK,
+    MV_EVENT_RPCROUTE_GET_TXPOOL,
+    MV_EVENT_RPCROUTE_GET_TRANSACTION,
+    MV_EVENT_RPCROUTE_GET_FORK_HEIGHT,
+    MV_EVENT_RPCROUTE_SEND_TRANSACTION,
 
     MV_EVENT_DBP_PING,
     MV_EVENT_DBP_PONG,
@@ -119,6 +134,9 @@ class CDBPEventListener;
 #define TYPE_DBP_EVENT(type, body) \
     walleve::CWalleveEventCategory<type, CDBPEventListener, body, bool>
 
+#define TYPE_RPCROUTE_EVENT(type, body, result) \
+    walleve::CWalleveEventCategory<type, CDBPEventListener, body, result>
+
 typedef TYPE_DBPEVENT(MV_EVENT_DBP_SOCKET_ADD_NEW_BLOCK, CBlockEx) CMvEventDbpUpdateNewBlock;
 typedef TYPE_DBPEVENT(MV_EVENT_DBP_SOCKET_ADD_NEW_TX, CTransaction) CMvEventDbpUpdateNewTx;
 
@@ -138,6 +156,20 @@ typedef TYPE_DBP_EVENT(MV_EVENT_DBP_BROKEN, CMvDbpBroken) CMvEventDbpBroken;
 
 /*supernode*/
 typedef TYPE_DBP_EVENT(MV_EVENT_DBP_VPEERNET, CMvDbpVirtualPeerNetEvent) CMvEventDbpVirtualPeerNet;
+typedef TYPE_RPCROUTE_EVENT(MV_EVENT_RPCROUTE_STOP, CMvRPCRouteStop, bool) CMvEventRPCRouteStop;
+typedef TYPE_RPCROUTE_EVENT(MV_EVENT_RPCROUTE_GET_FORK_COUNT, CMvRPCRouteGetForkCount, bool) CMvEventRPCRouteGetForkCount;
+typedef TYPE_RPCROUTE_EVENT(MV_EVENT_RPCROUTE_LIST_FORK, CMvRPCRouteListFork, bool) CMvEventRPCRouteListFork;
+typedef TYPE_RPCROUTE_EVENT(MV_EVENT_RPCROUTE_GET_BLOCK_LOCATION, CMvRPCRouteGetBlockLocation, bool) CMvEventRPCRouteGetBlockLocation;
+typedef TYPE_RPCROUTE_EVENT(MV_EVENT_RPCROUTE_GET_BLOCK_COUNT, CMvRPCRouteGetBlockCount, bool) CMvEventRPCRouteGetBlockCount;
+typedef TYPE_RPCROUTE_EVENT(MV_EVENT_RPCROUTE_GET_BLOCK_HASH, CMvRPCRouteGetBlockHash, bool) CMvEventRPCRouteGetBlockHash;
+typedef TYPE_RPCROUTE_EVENT(MV_EVENT_RPCROUTE_GET_BLOCK, CMvRPCRouteGetBlock, bool) CMvEventRPCRouteGetBlock;
+typedef TYPE_RPCROUTE_EVENT(MV_EVENT_RPCROUTE_GET_TXPOOL, CMvRPCRouteGetTxPool, bool) CMvEventRPCRouteGetTxPool;
+typedef TYPE_RPCROUTE_EVENT(MV_EVENT_RPCROUTE_GET_TRANSACTION, CMvRPCRouteGetTransaction, bool) CMvEventRPCRouteGetTransaction;
+typedef TYPE_RPCROUTE_EVENT(MV_EVENT_RPCROUTE_GET_FORK_HEIGHT, CMvRPCRouteGetForkHeight, bool) CMvEventRPCRouteGetForkHeight;
+typedef TYPE_RPCROUTE_EVENT(MV_EVENT_RPCROUTE_SEND_TRANSACTION, CMvRPCRouteSendTransaction, bool) CMvEventRPCRouteSendTransaction;
+typedef TYPE_RPCROUTE_EVENT(MV_EVENT_RPCROUTE_ADDED, CMvRPCRouteAdded, bool) CMvEventRPCRouteAdded;
+typedef TYPE_RPCROUTE_EVENT(MV_EVENT_RPCROUTE_RESULT, CMvRPCRouteResult, bool) CMvEventRPCRouteResult;
+typedef TYPE_RPCROUTE_EVENT(MV_EVENT_RPCROUTE_DEL_COMPLTUNTIL, CMvRPCRouteDelCompltUntil, bool) CMvEventRPCRouteDelCompltUntil;
 
 // HeartBeats
 typedef TYPE_DBP_EVENT(MV_EVENT_DBP_PING, CMvDbpPing) CMvEventDbpPing;
@@ -171,7 +203,20 @@ public:
 
     /*supernode*/
     DECLARE_EVENTHANDLER(CMvEventDbpVirtualPeerNet);
-
+    DECLARE_EVENTHANDLER(CMvEventRPCRouteAdded);
+    DECLARE_EVENTHANDLER(CMvEventRPCRouteResult);
+    DECLARE_EVENTHANDLER(CMvEventRPCRouteStop);
+    DECLARE_EVENTHANDLER(CMvEventRPCRouteGetForkCount);
+    DECLARE_EVENTHANDLER(CMvEventRPCRouteListFork);
+    DECLARE_EVENTHANDLER(CMvEventRPCRouteGetBlockLocation);
+    DECLARE_EVENTHANDLER(CMvEventRPCRouteGetBlockCount);
+    DECLARE_EVENTHANDLER(CMvEventRPCRouteGetBlockHash);
+    DECLARE_EVENTHANDLER(CMvEventRPCRouteGetBlock);
+    DECLARE_EVENTHANDLER(CMvEventRPCRouteGetTxPool);
+    DECLARE_EVENTHANDLER(CMvEventRPCRouteGetTransaction);
+    DECLARE_EVENTHANDLER(CMvEventRPCRouteGetForkHeight);
+    DECLARE_EVENTHANDLER(CMvEventRPCRouteSendTransaction);
+    DECLARE_EVENTHANDLER(CMvEventRPCRouteDelCompltUntil);
     DECLARE_EVENTHANDLER(CMvEventDbpPing);
     DECLARE_EVENTHANDLER(CMvEventDbpPong);
 

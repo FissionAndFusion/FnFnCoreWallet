@@ -66,6 +66,50 @@ void CIOCompletion::Reset()
 }
 
 ///////////////////////////////
+// CIOCompletionUntil
+CIOCompletionUntil::CIOCompletionUntil(int nTimeout) 
+: fResult(false) , fCompleted(false), fAborted(false), nTimeout(nTimeout)
+{
+}
+
+bool CIOCompletionUntil::WaitForComplete(bool& fResultRet)
+{
+    boost::unique_lock<boost::mutex> lock(mutex);
+    boost::chrono::microseconds period(nTimeout);
+    boost::chrono::system_clock::time_point wakeUpTime = boost::chrono::system_clock::now() + period;
+    cond.wait_until(lock, wakeUpTime, [this] { return fCompleted || fAborted; });
+    fResultRet = fResult;
+    return fCompleted;
+}
+
+void CIOCompletionUntil::Completed(bool fResultIn)
+{
+    {
+        boost::lock_guard<boost::mutex> lock(mutex);
+        fResult = fResultIn;
+        fCompleted = true;
+    }
+    cond.notify_all();
+}
+
+void CIOCompletionUntil::Abort()
+{
+    {
+        boost::lock_guard<boost::mutex> lock(mutex);
+        fAborted = true;
+    }
+    cond.notify_all();
+}
+
+void CIOCompletionUntil::Reset()
+{
+    boost::lock_guard<boost::mutex> lock(mutex);
+    fResult = false;
+    fCompleted = false;
+    fAborted = false;
+}
+
+///////////////////////////////
 // CIOProc
 
 CIOProc::CIOProc(const string& walleveOwnKeyIn)
