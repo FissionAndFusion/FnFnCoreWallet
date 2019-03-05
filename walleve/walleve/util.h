@@ -77,8 +77,44 @@ inline void StdError(const char* pszName, const char* pszErr)
     std::cerr << GetLocalTime() << " [ERROR] <" << pszName << "> " << pszErr << std::endl;
 }
 
+class MacAddress
+{
+public:
+    MacAddress(){}
+    explicit MacAddress(const std::vector<unsigned char>& data)
+    : macData(data)
+    {}
+    explicit MacAddress(const MacAddress& addr)
+    {
+        macData = addr.macData;
+    }
+    MacAddress& operator=(const MacAddress& addr)
+    {
+        macData = addr.macData;
+        return *this;
+    }
+    ~MacAddress(){}
+    
+    std::vector<unsigned char> GetData() const
+    {
+        return macData;
+    }
+    
+    std::string ToString()
+    {
+        char buffer[128] = {0};
+        sprintf(buffer, "%02x:%02x:%02x:%02x:%02x:%02x", 
+            macData[0], macData[1], macData[2],
+            macData[3], macData[4], macData[5]);
+        return std::string(buffer);
+    }
+
+private:
+    std::vector<unsigned char> macData;
+};
+
 // Get Active interface's mac addr
-inline bool GetActiveIFMacAddress(std::vector<unsigned char>& mac)
+inline bool GetActiveIFMacAddress(MacAddress& mac)
 {
     struct ifreq ifr;
     struct ifconf ifc;
@@ -120,7 +156,9 @@ inline bool GetActiveIFMacAddress(std::vector<unsigned char>& mac)
 
     if (success) 
     {
-        std::copy_n(&(ifr.ifr_hwaddr.sa_data[0]), 6, std::back_inserter(mac));
+        std::vector<unsigned char> data;
+        std::copy_n(&(ifr.ifr_hwaddr.sa_data[0]), 6, std::back_inserter(data));
+        mac = MacAddress(data);
     }
 
     close(sock);

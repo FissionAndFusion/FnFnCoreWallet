@@ -188,7 +188,8 @@ bool CMvPeer::HandshakeReadCompleted()
                     return false;
                 }
                 int64 nTime;
-                ss >> nVersion >> nService >> nTime >> nNonceFrom >> strSubVer >> nStartingHeight;
+                std::vector<unsigned char> macData;
+                ss >> nVersion >> nService >> nTime >> nNonceFrom >> strSubVer >> nStartingHeight >> macData;
                 nTimeDelta = nTime - nTimeRecv;
                 if (!fInBound)
                 {
