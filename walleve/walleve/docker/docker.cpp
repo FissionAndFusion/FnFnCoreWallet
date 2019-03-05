@@ -365,10 +365,6 @@ bool CWalleveDocker::ThreadDelayStart(CWalleveThread& thr)
 
 void CWalleveDocker::ThreadExit(CWalleveThread& thr)
 {
-    if (!thr.IsRunning())
-    {
-        thr.Interrupt();
-    }
     thr.Exit();
 }
 
