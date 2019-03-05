@@ -43,4 +43,5 @@ target_link_libraries(common
 	OpenSSL::Crypto
 	walleve
 	crypto
+	jsonrpc
 )
