@@ -352,6 +352,11 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
             {
                 return false;
             }
+
+            if(!AttachModule(new CRPCMod()))
+            {
+                return false;
+            }
             break;
         }
         case EModuleType::SERVICE:
