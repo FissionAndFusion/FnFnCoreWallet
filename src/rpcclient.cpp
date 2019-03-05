@@ -91,9 +91,9 @@ void CRPCClient::WalleveHandleHalt()
     if (thrDispatch.IsRunning())
     {
         CancelCommand();
-        thrDispatch.Interrupt();
     }
-    thrDispatch.Exit();
+    thrDispatch.Interrupt();
+    WalleveThreadExit(thrDispatch);
 }
 
 const CMvRPCClientConfig * CRPCClient::WalleveConfig()

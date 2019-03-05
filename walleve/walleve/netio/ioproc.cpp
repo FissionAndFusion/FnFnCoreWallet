@@ -138,6 +138,7 @@ void CIOProc::WalleveHandleHalt()
         ioService.stop();
     }
 
+    thrIOProc.Interrupt();
     WalleveThreadExit(thrIOProc);
 
     ioOutBound.Halt();

@@ -94,15 +94,12 @@ void CMiner::WalleveHandleHalt()
     if (thrFetcher.IsRunning())
     {
         CancelRPC();
-        thrFetcher.Interrupt();
     }
-    thrFetcher.Exit();
+    thrFetcher.Interrupt();
+    WalleveThreadExit(thrFetcher);
 
-    if (thrMiner.IsRunning())
-    {
-        thrMiner.Interrupt();
-    }
-    thrMiner.Exit();
+    thrMiner.Interrupt();
+    WalleveThreadExit(thrMiner);
 }
 
 const CMvRPCClientConfig * CMiner::WalleveConfig()
