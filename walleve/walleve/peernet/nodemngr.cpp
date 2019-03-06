@@ -90,6 +90,7 @@ void CNodeManager::Clear()
 {
     mapNode.clear();
     mapIdle.clear();
+    bimapRemoteEPMac.clear();
 }
 
 void CNodeManager::Ban(const walleve::CMacAddress& address,int64 nBanTo)

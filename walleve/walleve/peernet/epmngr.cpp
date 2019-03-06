@@ -115,7 +115,8 @@ void CAddressStatus::Penalize(int nPoints,int64 ts)
 void CEndpointManager::Clear()
 {
     mapAddressStatus.clear();
-    mngrNode.Clear(); 
+    mngrNode.Clear();
+    bimapRemoteEPMac.clear();
 }
 
 int CEndpointManager::GetEndpointScore(const tcp::endpoint& ep)
