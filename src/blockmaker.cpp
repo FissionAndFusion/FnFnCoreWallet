@@ -182,8 +182,13 @@ void CBlockMaker::WalleveHandleHalt()
         nMakerStatus = MAKER_EXIT;
     }
     cond.notify_all();
+
+    thrMaker.Interrupt();
     WalleveThreadExit(thrMaker);
+
+    thrExtendedMaker.Interrupt();
     WalleveThreadExit(thrExtendedMaker);
+
     IBlockMaker::WalleveHandleHalt();
 }
 

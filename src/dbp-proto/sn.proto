@@ -29,3 +29,16 @@ message VPeerNetEvent
     int32 type = 1; // 事件类型
     bytes data = 2; // 虚拟PeerNet二进制数据
 }
+
+message RPCRouteEvent
+{
+	int32 type = 1;
+	bytes data = 2;
+}
+
+message RPCRouteArgs
+{
+	int32 type = 1;
+	bytes data = 2;
+	bytes rawdata = 3;
+}

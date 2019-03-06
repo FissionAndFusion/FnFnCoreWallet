@@ -11,6 +11,7 @@
 #include "virtualpeernetevent.h"
 #include "mvpeernet.h"
 #include "walleve/walleve.h"
+#include "address.h"
 
 #include <set>
 #include <utility>
@@ -21,6 +22,22 @@ namespace multiverse
 {
 
 using namespace network;
+
+#define HANDLE_RPC_ROUTE(data, result)                                         \
+    result r;                                                                  \
+    ss >> r;                                                                   \
+    data d;                                                                    \
+    ssRaw >> d;                                                                \
+                                                                               \
+    if (fEnableSuperNode && !fEnableForkNode)                                  \
+    {                                                                          \
+        RPCRootHandle(&d, &r);                                                 \
+    }                                                                          \
+                                                                               \
+    if (fEnableSuperNode && fEnableForkNode)                                   \
+    {                                                                          \
+        RPCForkHandle(&d, &r);                                                 \
+    }
 
 class CDbpService : public walleve::IIOModule, virtual public CDBPEventListener, 
                     virtual public CMvDBPEventListener, virtual public CMvPeerEventListener, 
@@ -60,6 +77,21 @@ public:
     // from up node
     bool HandleEvent(CMvEventDbpVirtualPeerNet& event) override;
 
+    //RPC Route
+    bool HandleEvent(CMvEventRPCRouteStop& event) override;
+    bool HandleEvent(CMvEventRPCRouteGetForkCount& event) override;
+    bool HandleEvent(CMvEventRPCRouteListFork& event) override;
+    bool HandleEvent(CMvEventRPCRouteAdded& event) override;
+    bool HandleEvent(CMvEventRPCRouteDelCompltUntil& event) override;
+    bool HandleEvent(CMvEventRPCRouteGetBlockLocation& event) override;
+    bool HandleEvent(CMvEventRPCRouteGetBlockCount& event) override;
+    bool HandleEvent(CMvEventRPCRouteGetBlockHash& event) override;
+    bool HandleEvent(CMvEventRPCRouteGetBlock& event) override;
+    bool HandleEvent(CMvEventRPCRouteGetTxPool& event) override;
+    bool HandleEvent(CMvEventRPCRouteGetTransaction& event) override;
+    bool HandleEvent(CMvEventRPCRouteGetForkHeight& event) override;
+    bool HandleEvent(CMvEventRPCRouteSendTransaction& event) override;
+
 protected:
     bool WalleveHandleInitialize() override;
     void WalleveHandleDeinitialize() override;
@@ -96,7 +128,66 @@ private:
     void PushBlock(const std::string& forkid, const CMvDbpBlock& block);
     void PushTx(const std::string& forkid, const CMvDbpTransaction& dbptx);
     bool PushEvent(const CMvDbpVirtualPeerNetEvent& event);
-   
+
+    template<typename T>
+    std::vector<uint8> RPCRouteRetToStream(T& ret)
+    {
+        walleve::CWalleveBufStream ss;
+        ss << ret;
+        std::vector<uint8> vData(ss.GetData(), ss.GetData() + ss.GetSize());
+        return vData;
+    };
+    void PushMsgToChild(std::vector<uint8>& data, int& type);
+    void SendRPCResult(CMvRPCRouteResult& result);
+    void HandleRPCRoute(CMvEventDbpMethod& event);
+    void PushRPC(std::vector<uint8>& data, int type);
+    void PushRPCOnece(std::string id, std::vector<uint8>& data, int type);
+    void CreateCompletion(uint64 nNonce, std::shared_ptr<walleve::CIOCompletionUntil> sPtr);
+    void CompletionByNonce(uint64& nNonce, boost::any obj);
+    void DeleteCompletionByNonce(uint64 nNonce);
+    void InitRPCTopicIds();
+    void InitSessionCount();
+    void InsertQueCount(uint64 nNonce, boost::any obj);
+    bool RouteAddedHandle(boost::any obj, CMvEventRPCRouteAdded& event, CMvRPCRoute* route);
+    void SwrapForks(std::vector<std::pair<uint256,CProfile>>& vFork, std::vector<CMvRPCProfile>& vRpcFork);
+    void ListForkUnique(std::vector<CMvRPCProfile>& vFork);
+    bool GetForkHashOfDef(const rpc::CRPCString& hex, uint256& hashFork);
+    void RPCRootHandle(CMvRPCRouteStop* data, CMvRPCRouteStopRet* ret);
+    void RPCRootHandle(CMvRPCRouteGetForkCount* data, CMvRPCRouteGetForkCountRet* ret);
+    void RPCRootHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRet* ret);
+    void RPCRootHandle(CMvRPCRouteGetBlockLocation* data, CMvRPCRouteGetBlockLocationRet* ret);
+    void RPCRootHandle(CMvRPCRouteGetBlockCount* data, CMvRPCRouteGetBlockCountRet* ret);
+    void RPCRootHandle(CMvRPCRouteGetBlockHash * data, CMvRPCRouteGetBlockHashRet* ret);
+    void RPCRootHandle(CMvRPCRouteGetBlock* data, CMvRPCRouteGetBlockRet* ret);
+    void RPCRootHandle(CMvRPCRouteGetTxPool* data, CMvRPCRouteGetTxPoolRet* ret);
+    void RPCRootHandle(CMvRPCRouteGetTransaction* data, CMvRPCRouteGetTransactionRet* ret);
+    void RPCRootHandle(CMvRPCRouteGetForkHeight* data, CMvRPCRouteGetForkHeightRet* ret);
+    void RPCRootHandle(CMvRPCRouteSendTransaction* data, CMvRPCRouteSendTransactionRet* ret);
+
+    void RPCForkHandle(CMvRPCRouteStop* data, CMvRPCRouteStopRet* ret);
+    void RPCForkHandle(CMvRPCRouteGetForkCount* data, CMvRPCRouteGetForkCountRet* ret);
+    void RPCForkHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRet* ret);
+    void RPCForkHandle(CMvRPCRouteGetBlockLocation* data, CMvRPCRouteGetBlockLocationRet* ret);
+    void RPCForkHandle(CMvRPCRouteGetBlockCount* data, CMvRPCRouteGetBlockCountRet* ret);
+    void RPCForkHandle(CMvRPCRouteGetBlockHash* data, CMvRPCRouteGetBlockHashRet* ret);
+    void RPCForkHandle(CMvRPCRouteGetBlock* data, CMvRPCRouteGetBlockRet* ret);
+    void RPCForkHandle(CMvRPCRouteGetTxPool* data, CMvRPCRouteGetTxPoolRet* ret);
+    void RPCForkHandle(CMvRPCRouteGetTransaction* data, CMvRPCRouteGetTransactionRet* ret);
+    void RPCForkHandle(CMvRPCRouteGetForkHeight* data, CMvRPCRouteGetForkHeightRet* ret);
+    void RPCForkHandle(CMvRPCRouteSendTransaction* data, CMvRPCRouteSendTransactionRet* ret);
+
+    bool HandleAddedEventStop(CMvEventRPCRouteAdded& event, walleve::CWalleveBufStream& ss);
+    bool HandleAddedEventGetForkCount(CMvEventRPCRouteAdded& event, walleve::CWalleveBufStream& ss);
+    bool HandleAddedEventListFork(CMvEventRPCRouteAdded& event, walleve::CWalleveBufStream& ss);
+    bool HandleAddedEventGetBlockLocation(CMvEventRPCRouteAdded& event, walleve::CWalleveBufStream& ss);
+    bool HandleAddedEventGetBlockCount(CMvEventRPCRouteAdded& event, walleve::CWalleveBufStream& ss);
+    bool HandleAddedEventGetBlockHash(CMvEventRPCRouteAdded& event, walleve::CWalleveBufStream& ss);
+    bool HandleAddedEventGetBlock(CMvEventRPCRouteAdded& event, walleve::CWalleveBufStream& ss);
+    bool HandleAddedEventGetTxPool(CMvEventRPCRouteAdded& event, walleve::CWalleveBufStream& ss);
+    bool HandleAddedEventGetTransaction(CMvEventRPCRouteAdded& event, walleve::CWalleveBufStream& ss);
+    bool HandleAddedEventGetForkHeight(CMvEventRPCRouteAdded& event, walleve::CWalleveBufStream& ss);
+    bool HandleAddedEventSendTransaction(CMvEventRPCRouteAdded& event, walleve::CWalleveBufStream& ss);
+
     void SendEventToParentNode(CMvDbpVirtualPeerNetEvent& event);
     void UpdateGetDataEventRecord(const CMvEventPeerGetData& event);
     bool IsThisNodeData(const uint256& hashFork, uint64 nNonce, const uint256& dataHash);
@@ -127,6 +218,8 @@ protected:
     ICoreProtocol* pCoreProtocol;
     IWallet* pWallet;
     IMvNetChannel* pNetChannel;
+    walleve::IIOModule* pRPCMod;
+    int sessionCount;
 
 private:
     std::map<std::string, std::string> mapIdSubedSession;       // id => session
@@ -142,6 +235,9 @@ private:
 
     /*Event router*/
     typedef std::pair<uint256, uint64> ForkNonceKeyType;
+    std::deque<std::pair<uint64, boost::any>> queCount;
+    std::deque<std::pair<uint64, std::shared_ptr<walleve::CIOCompletionUntil>>> queCompletion;
+    std::vector<std::string> vRPCTopicIds;
     typedef std::map<ForkNonceKeyType, uint32> MapForkCountType; 
     MapForkCountType mapChildNodeForkCount;
     MapForkCountType mapThisNodeForkCount;

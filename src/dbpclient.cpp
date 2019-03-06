@@ -99,6 +99,26 @@ void CDbpClientSocket::SendPing(const std::string& id)
     SendMessage(dbp::Msg::PING,any);
 }
 
+void CDbpClientSocket::SendSubScribeTopics(const std::vector<std::string>& topics)
+{
+    for(const auto& topic : topics)
+    {
+        SendSubscribeTopic(topic);
+    }
+}
+
+void CDbpClientSocket::SendSubscribeTopic(const std::string& topic)
+{
+    dbp::Sub sub;
+    sub.set_name(topic);
+    std::string id(CDbpUtils::RandomString());
+    sub.set_id(id);
+    google::protobuf::Any *any = new google::protobuf::Any();
+    any->PackFrom(sub);
+
+    SendMessage(dbp::Msg::SUB,any);
+}
+
 void CDbpClientSocket::SendConnectSession(const std::string& session, const std::vector<std::string>& forks)
 {
     dbp::Connect connect;
@@ -460,6 +480,7 @@ void CDbpClient::HandleConnected(CDbpClientSocket* pClientSocket, google::protob
     if(IsSessionExist(connected.session()))
     {
         StartPingTimer(connected.session());
+        SubscribeDefaultTopics(pClientSocket);
     }
 }
 
@@ -535,6 +556,20 @@ void CDbpClient::HandleAdded(CDbpClientSocket* pClientSocket, google::protobuf::
         dbpEvent->data.type = event.type();
         dbpEvent->data.data = std::vector<uint8>(event.data().begin(), event.data().end());
         pDbpService->PostEvent(dbpEvent);
+    }
+
+    // rpc route
+
+    if (added.name() == RPC_CMD_TOPIC)
+    {
+        sn::RPCRouteEvent routeEvent;
+        added.object().UnpackTo(&routeEvent);
+        CMvEventRPCRouteAdded* pEvent = new CMvEventRPCRouteAdded("");
+        pEvent->data.id = added.id();
+        pEvent->data.name = added.name();
+        pEvent->data.type = routeEvent.type();
+        pEvent->data.vData = std::vector<uint8>(routeEvent.data().begin(), routeEvent.data().end());
+        pDbpService->PostEvent(pEvent);
     }
 }
 
@@ -745,6 +780,12 @@ void CDbpClient::StartPingTimer(const std::string& session)
                                                     boost::ref(profile)));
 }
 
+void CDbpClient::SubscribeDefaultTopics(CDbpClientSocket* pClientSocket)
+{
+    std::vector<std::string> vTopics{ RPC_CMD_TOPIC };
+    pClientSocket->SendSubScribeTopics(vTopics);
+}
+
 void CDbpClient::CreateSession(const std::string& session, CDbpClientSocket* pClientSocket)
 {
     CDbpClientSessionProfile profile;
@@ -858,4 +899,36 @@ bool CDbpClient::HandleEvent(CMvEventDbpVirtualPeerNet& event)
     return true;
 }
 
+// rpc route
+
+void CDbpClientSocket::SendRPCRouteResult(CMvRPCRouteResult& result)
+{
+    dbp::Method method;
+    method.set_id(CDbpUtils::RandomString());
+    method.set_method("rpcroute");
+
+    google::protobuf::Any *params = new google::protobuf::Any();
+    sn::RPCRouteArgs args;
+    args.set_type(result.type);
+    args.set_data(std::string(result.vData.begin(), result.vData.end()));
+    args.set_rawdata(std::string(result.vRawData.begin(), result.vRawData.end()));
+    params->PackFrom(args);
+    method.set_allocated_params(params);
+
+    google::protobuf::Any *any = new google::protobuf::Any();
+    any->PackFrom(method);
+
+    SendMessage(dbp::Msg::METHOD, any);
+}
+
+bool CDbpClient::HandleEvent(CMvEventRPCRouteResult& event)
+{
+    CDbpClientSocket* pClientSocket = PickOneSessionSocket();
+    if(!pClientSocket) return false;
+    
+    pClientSocket->SendRPCRouteResult(event.data);
+    return true;
+}
+
+//
 } // namespace multiverse
