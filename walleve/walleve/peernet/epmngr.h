@@ -6,6 +6,7 @@
 #define  WALLEVE_EPMANAGER_H
 
 #include "walleve/type.h"
+#include "walleve/util.h"
 #include "walleve/peernet/nodemngr.h"
 
 #include <map>
@@ -118,12 +119,15 @@ public:
     void RetrieveGoodNode(std::vector<CNodeAvail>& vGoodNode,
                           int64 nActiveTime,std::size_t nMaxCount);
     int GetCandidateNodeCount(){ return mngrNode.GetCandidateNodeCount(); }
+    void AddNewEndPointMac(const boost::asio::ip::tcp::endpoint& ep, const walleve::CMacAddress& addr);
+    void RemoveEndPointMac(const boost::asio::ip::tcp::endpoint& ep);
 protected:
     void CleanInactiveAddress();
 protected:
     enum {MAX_ADDRESS_COUNT = 2048,MAX_INACTIVE_TIME = 864000};
     CNodeManager mngrNode;
     std::map<boost::asio::ip::address,CAddressStatus> mapAddressStatus;
+    std::map<boost::asio::ip::tcp::endpoint, walleve::CMacAddress> mapRemoteEPMac;
 };
 
 } // namespace walleve

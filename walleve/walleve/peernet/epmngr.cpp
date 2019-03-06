@@ -328,3 +328,17 @@ void CEndpointManager::CleanInactiveAddress()
     }
 }
 
+void CEndpointManager::AddNewEndPointMac(const boost::asio::ip::tcp::endpoint& ep, const walleve::CMacAddress& addr)
+{
+    mapRemoteEPMac[ep] = addr;
+}
+
+void CEndpointManager::RemoveEndPointMac(const boost::asio::ip::tcp::endpoint& ep)
+{
+    auto it = mapRemoteEPMac.find(ep);
+    if(it != mapRemoteEPMac.end())
+    {
+        mapRemoteEPMac.erase(it);
+    }
+}
+

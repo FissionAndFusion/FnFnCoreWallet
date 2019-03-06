@@ -101,7 +101,6 @@ protected:
 private:
     CEndpointManager epMngr;
     std::map<uint64, CPeer*> mapPeer;
-    std::map<uint64, walleve::CMacAddress> mapPeerMacAddr;
 };
 
 } // namespace walleve

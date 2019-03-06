@@ -39,7 +39,7 @@ void CPeerNet::AddPeerRecord(CPeer* pPeer)
 
 void CPeerNet::AddPeerMacAddress(CPeer* pPeer, const CMacAddress& addr)
 {
-    mapPeerMacAddr[pPeer->GetNonce()] = addr;
+    epMngr.AddNewEndPointMac(pPeer->GetRemote(), addr);
 }
 
 void CPeerNet::HandlePeerClose(CPeer * pPeer)
@@ -209,7 +209,7 @@ void CPeerNet::RemovePeer(CPeer *pPeer,const CEndpointManager::CloseReason& reas
    
     CancelClientTimers(pPeer->GetNonce()); 
     mapPeer.erase(pPeer->GetNonce());
-    mapPeerMacAddr.erase(pPeer->GetNonce());
+    epMngr.RemoveEndPointMac(pPeer->GetRemote());
     DestroyPeer(pPeer);
 }
 
