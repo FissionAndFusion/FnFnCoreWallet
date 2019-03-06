@@ -6,10 +6,12 @@
 #define  WALLEVE_NODEMANAGER_H
 
 #include "walleve/type.h"
+#include "walleve/util.h"
 #include <map>
 #include <string>
 #include <boost/asio.hpp>
 #include <boost/any.hpp>
+#include <boost/bimap.hpp>
 
 namespace walleve
 {
@@ -18,11 +20,12 @@ class CNode
 {
 public:
     CNode() {}
-    CNode(const boost::asio::ip::tcp::endpoint& epIn,const std::string& strNameIn,
+    CNode(const boost::asio::ip::tcp::endpoint& epIn, const walleve::CMacAddress& macAddrIn, const std::string& strNameIn,
           const boost::any& dataIn) 
-    : ep(epIn),strName(strNameIn),data(dataIn),nRetries(0) {}
+    : ep(epIn),macAddr(macAddrIn),strName(strNameIn),data(dataIn),nRetries(0) {}
 public:
     boost::asio::ip::tcp::endpoint ep;
+    walleve::CMacAddress macAddr;
     std::string strName; 
     boost::any data;
     int nRetries;
@@ -39,11 +42,14 @@ public:
     bool GetData(const boost::asio::ip::tcp::endpoint& ep,boost::any& dataRet);
     bool SetData(const boost::asio::ip::tcp::endpoint& ep,const boost::any& dataIn);
     void Clear();
-    void Ban(const boost::asio::ip::address& address,int64 nBanTo);
+    void Ban(const walleve::CMacAddress& address,int64 nBanTo);
     bool Employ(boost::asio::ip::tcp::endpoint& ep);
     void Dismiss(const boost::asio::ip::tcp::endpoint& ep,bool fForceRetry);
     void Retrieve(std::vector<CNode>& vNode);
     int GetCandidateNodeCount(){ return mapNode.size(); }
+
+    void AddNewEndPointMac(const boost::asio::ip::tcp::endpoint& ep, const walleve::CMacAddress& addr);
+    void RemoveEndPointMac(const boost::asio::ip::tcp::endpoint& ep);
 protected:
     void RemoveInactiveNodes();
 protected:
@@ -51,6 +57,9 @@ protected:
     enum {RETRY_INTERVAL_BASE = 30,MAX_RETRIES = 16,MAX_IDLETIME = 28800};
     std::map<boost::asio::ip::tcp::endpoint,CNode> mapNode;
     std::multimap<int64,boost::asio::ip::tcp::endpoint> mapIdle;
+
+    typedef boost::bimap<boost::asio::ip::tcp::endpoint, walleve::CMacAddress>::value_type position_pair;
+    boost::bimap<boost::asio::ip::tcp::endpoint, walleve::CMacAddress> bimapRemoteEPMac;
 };
 
 } // namespace walleve
