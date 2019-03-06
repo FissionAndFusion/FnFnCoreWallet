@@ -298,6 +298,7 @@ void CMvPeerNet::HandlePeerWriten(CPeer *pPeer)
 bool CMvPeerNet::HandlePeerHandshaked(CPeer *pPeer,uint32 nTimerId)
 {
     CMvPeer *pMvPeer = static_cast<CMvPeer *>(pPeer);
+    AddPeerMacAddress(pPeer, pMvPeer->macAddress);
     CancelTimer(nTimerId);
     if (!CheckPeerVersion(pMvPeer->nVersion,pMvPeer->nService,pMvPeer->strSubVer))
     {

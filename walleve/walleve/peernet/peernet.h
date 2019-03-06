@@ -93,6 +93,7 @@ protected:
     int GetCandidateNodeCount() { return epMngr.GetCandidateNodeCount(); }
 
     void AddPeerRecord(CPeer* pPeer);
+    void AddPeerMacAddress(CPeer* pPeer, const CMacAddress& addr);
 protected:
     CPeerNetConfig confNetwork;
     boost::asio::ip::address localIP;
@@ -100,6 +101,7 @@ protected:
 private:
     CEndpointManager epMngr;
     std::map<uint64, CPeer*> mapPeer;
+    std::map<uint64, walleve::CMacAddress> mapPeerMacAddr;
 };
 
 } // namespace walleve

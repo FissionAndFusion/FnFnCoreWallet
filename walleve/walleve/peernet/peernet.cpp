@@ -37,6 +37,11 @@ void CPeerNet::AddPeerRecord(CPeer* pPeer)
     setIP.insert(pPeer->GetRemote().address());
 }
 
+void CPeerNet::AddPeerMacAddress(CPeer* pPeer, const CMacAddress& addr)
+{
+    mapPeerMacAddr[pPeer->GetNonce()] = addr;
+}
+
 void CPeerNet::HandlePeerClose(CPeer * pPeer)
 {
     RemovePeer(pPeer,CEndpointManager::HOST_CLOSE);
@@ -204,6 +209,7 @@ void CPeerNet::RemovePeer(CPeer *pPeer,const CEndpointManager::CloseReason& reas
    
     CancelClientTimers(pPeer->GetNonce()); 
     mapPeer.erase(pPeer->GetNonce());
+    mapPeerMacAddr.erase(pPeer->GetNonce());
     DestroyPeer(pPeer);
 }
 
