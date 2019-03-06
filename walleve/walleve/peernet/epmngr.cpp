@@ -207,6 +207,16 @@ bool CEndpointManager::SetOutBoundData(const tcp::endpoint& ep,const boost::any&
     return mngrNode.SetData(ep,dataIn);
 }
 
+bool CEndpointManager::GetOutBoundMacAddress(const boost::asio::ip::tcp::endpoint& ep,CMacAddress& addr)
+{
+    return mngrNode.GetMacAddress(ep, addr);
+}
+
+bool CEndpointManager::SetOutBoundMacAddress(const boost::asio::ip::tcp::endpoint& ep,const CMacAddress& addr)
+{
+    return mngrNode.SetMacAddress(ep, addr);
+}
+
 bool CEndpointManager::FetchOutBound(tcp::endpoint& ep)
 {
     while (mngrNode.Employ(ep))

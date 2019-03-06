@@ -281,6 +281,16 @@ bool CPeerNet::SetNodeData(const tcp::endpoint& epNode,const boost::any& data)
     return epMngr.SetOutBoundData(epNode,data);
 }
 
+bool CPeerNet::GetNodeMacAddress(const boost::asio::ip::tcp::endpoint& epNode, CMacAddress& addr)
+{
+    return epMngr.GetOutBoundMacAddress(epNode, addr);
+}
+
+bool CPeerNet::SetNodeMacAddress(const boost::asio::ip::tcp::endpoint& epNode, const CMacAddress& addr)
+{
+    return epMngr.SetOutBoundMacAddress(epNode, addr);
+}
+
 void CPeerNet::RetrieveGoodNode(vector<CNodeAvail>& vGoodNode,int64 nActiveTime,size_t nMaxCount)
 {
     return epMngr.RetrieveGoodNode(vGoodNode,nActiveTime,nMaxCount);

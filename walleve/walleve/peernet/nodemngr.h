@@ -41,6 +41,8 @@ public:
     std::string GetName(const boost::asio::ip::tcp::endpoint& ep);
     bool GetData(const boost::asio::ip::tcp::endpoint& ep,boost::any& dataRet);
     bool SetData(const boost::asio::ip::tcp::endpoint& ep,const boost::any& dataIn);
+    bool GetMacAddress(const boost::asio::ip::tcp::endpoint& ep,CMacAddress& addr);
+    bool SetMacAddress(const boost::asio::ip::tcp::endpoint& ep,const CMacAddress& addr);
     void Clear();
     void Ban(const walleve::CMacAddress& address,int64 nBanTo);
     bool Employ(boost::asio::ip::tcp::endpoint& ep);

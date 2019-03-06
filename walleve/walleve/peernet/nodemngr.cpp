@@ -86,6 +86,33 @@ bool CNodeManager::SetData(const tcp::endpoint& ep,const boost::any& dataIn)
     return false;
 }
 
+bool CNodeManager::GetMacAddress(const boost::asio::ip::tcp::endpoint& ep,CMacAddress& addr)
+{
+    map<tcp::endpoint,CNode>::iterator mi = mapNode.find(ep);
+    if (mi != mapNode.end())
+    {
+        CNode& node = (*mi).second;
+        if (!node.macAddr.IsEmpty())
+        {
+            addr = node.macAddr;
+            return true;
+        }
+    }
+    return false;
+}
+
+bool CNodeManager::SetMacAddress(const boost::asio::ip::tcp::endpoint& ep,const CMacAddress& addr)
+{
+    map<tcp::endpoint,CNode>::iterator mi = mapNode.find(ep);
+    if (mi != mapNode.end())
+    {
+        CNode& node = (*mi).second;
+        node.macAddr = addr;
+        return true;
+    }
+    return false;
+}
+
 void CNodeManager::Clear()
 {
     mapNode.clear();

@@ -113,6 +113,8 @@ public:
     std::string GetOutBoundName(const boost::asio::ip::tcp::endpoint& ep);
     bool GetOutBoundData(const boost::asio::ip::tcp::endpoint& ep,boost::any& dataRet);
     bool SetOutBoundData(const boost::asio::ip::tcp::endpoint& ep,const boost::any& dataIn);
+    bool GetOutBoundMacAddress(const boost::asio::ip::tcp::endpoint& ep,CMacAddress& addr);
+    bool SetOutBoundMacAddress(const boost::asio::ip::tcp::endpoint& ep,const CMacAddress& addr);
     bool FetchOutBound(boost::asio::ip::tcp::endpoint& ep);
     bool AcceptInBound(const boost::asio::ip::tcp::endpoint& ep);
     void RewardEndpoint(const boost::asio::ip::tcp::endpoint& ep,Bonus bonus);

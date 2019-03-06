@@ -320,6 +320,7 @@ bool CMvPeerNet::HandlePeerHandshaked(CPeer *pPeer,uint32 nTimerId)
         }
 
         SetNodeData(ep,boost::any(pMvPeer->nService));
+        SetNodeMacAddress(ep, pMvPeer->macAddress);
     }
 
     WalleveUpdateNetTime(pMvPeer->GetRemote().address(),pMvPeer->nTimeDelta);
