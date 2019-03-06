@@ -100,7 +100,7 @@ public:
         return macData;
     }
     
-    std::string ToString()
+    std::string ToString() const
     {
         char buffer[128] = {0};
         sprintf(buffer, "%02x:%02x:%02x:%02x:%02x:%02x", 
@@ -108,7 +108,11 @@ public:
             macData[3], macData[4], macData[5]);
         return std::string(buffer);
     }
-
+public:
+    friend bool operator==(const CMacAddress& left, const CMacAddress& right) 
+    {
+        return left.ToString() == right.ToString();
+    }
 private:
     std::vector<unsigned char> macData;
 };
