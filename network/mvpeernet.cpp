@@ -319,7 +319,6 @@ bool CMvPeerNet::HandlePeerHandshaked(CPeer *pPeer,uint32 nTimerId)
             setDNSeed.insert(ep);
         }
 
-        SetNodeData(ep,boost::any(pMvPeer->nService));
         SetNodeMacAddress(ep, pMvPeer->macAddress);
     }
 
