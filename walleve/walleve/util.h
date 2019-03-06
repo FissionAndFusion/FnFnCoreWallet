@@ -94,6 +94,11 @@ public:
         return *this;
     }
     ~CMacAddress(){}
+
+    bool IsEmpty() const
+    {
+        return macData.empty();
+    }
     
     std::vector<unsigned char> GetData() const
     {
