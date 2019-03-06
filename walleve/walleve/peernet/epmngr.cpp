@@ -120,13 +120,13 @@ void CEndpointManager::Clear()
 
 int CEndpointManager::GetEndpointScore(const tcp::endpoint& ep)
 {
-    return mapAddressStatus[ep.address()].nScore;
+    return mapAddressStatus[bimapRemoteEPMac.left.at(ep)].nScore;
 }
 
 void CEndpointManager::GetBanned(std::vector<CAddressBanned>& vBanned)
 {
     int64 now = GetTime();
-    map<boost::asio::ip::address,CAddressStatus>::iterator it = mapAddressStatus.begin();
+    map<CMacAddress,CAddressStatus>::iterator it = mapAddressStatus.begin();
     while (it != mapAddressStatus.end())
     {
         CAddressStatus& status = (*it).second;
@@ -138,10 +138,10 @@ void CEndpointManager::GetBanned(std::vector<CAddressBanned>& vBanned)
     }
 }
 
-void CEndpointManager::SetBan(std::vector<boost::asio::ip::address>& vAddrToBan,int64 nBanTime)
+void CEndpointManager::SetBan(std::vector<CMacAddress>& vAddrToBan,int64 nBanTime)
 {
     int64 now = GetTime();
-    BOOST_FOREACH(const boost::asio::ip::address& addr,vAddrToBan)
+    BOOST_FOREACH(const CMacAddress& addr,vAddrToBan)
     {
         CAddressStatus& status = mapAddressStatus[addr];
         status.nBanTo = now + nBanTime;
@@ -150,12 +150,12 @@ void CEndpointManager::SetBan(std::vector<boost::asio::ip::address>& vAddrToBan,
     }
 }
 
-void CEndpointManager::ClearBanned(vector<boost::asio::ip::address>& vAddrToClear)
+void CEndpointManager::ClearBanned(vector<CMacAddress>& vAddrToClear)
 {
     int64 now = GetTime();
-    BOOST_FOREACH(const boost::asio::ip::address& addr,vAddrToClear)
+    BOOST_FOREACH(const CMacAddress& addr,vAddrToClear)
     {
-        map<boost::asio::ip::address,CAddressStatus>::iterator it = mapAddressStatus.find(addr);
+        map<CMacAddress,CAddressStatus>::iterator it = mapAddressStatus.find(addr);
         if (it != mapAddressStatus.end() && now < (*it).second.nBanTo)
         {
             mapAddressStatus.erase(it);
@@ -166,7 +166,7 @@ void CEndpointManager::ClearBanned(vector<boost::asio::ip::address>& vAddrToClea
 void CEndpointManager::ClearAllBanned()
 {
     int64 now = GetTime();
-    map<boost::asio::ip::address,CAddressStatus>::iterator it = mapAddressStatus.begin();
+    map<CMacAddress,CAddressStatus>::iterator it = mapAddressStatus.begin();
     while (it != mapAddressStatus.end())
     {
         if (now < (*it).second.nBanTo)
@@ -210,7 +210,7 @@ bool CEndpointManager::FetchOutBound(tcp::endpoint& ep)
 {
     while (mngrNode.Employ(ep))
     {
-        CAddressStatus& status = mapAddressStatus[ep.address()];
+        CAddressStatus& status = mapAddressStatus[bimapRemoteEPMac.left.at(ep)];
         if (status.AddConnection(false))
         {
             return true;
@@ -223,7 +223,7 @@ bool CEndpointManager::FetchOutBound(tcp::endpoint& ep)
 bool CEndpointManager::AcceptInBound(const tcp::endpoint& ep)
 {
     int64 now = GetTime();
-    CAddressStatus& status = mapAddressStatus[ep.address()];
+    CAddressStatus& status = mapAddressStatus[bimapRemoteEPMac.left.at(ep)];
     return (status.InBoundAttempt(now) && status.AddConnection(true));
 }
 
@@ -235,7 +235,7 @@ void CEndpointManager::RewardEndpoint(const tcp::endpoint& ep,Bonus bonus)
     {
         index = 0;
     }
-    CAddressStatus& status = mapAddressStatus[ep.address()];
+    CAddressStatus& status = mapAddressStatus[bimapRemoteEPMac.left.at(ep)];
     status.Reward(award[index],GetTime());
 
     CleanInactiveAddress();
@@ -258,14 +258,14 @@ void CEndpointManager::CloseEndpoint(const tcp::endpoint& ep,CloseReason reason)
     {
         index = 0;
     }
-    CAddressStatus& status = mapAddressStatus[ep.address()];
+    CAddressStatus& status = mapAddressStatus[bimapRemoteEPMac.left.at(ep)];
     status.Penalize(lost[index],now);
     mngrNode.Dismiss(ep,(reason == NETWORK_ERROR)); 
     status.RemoveConnection();
 
     if (now < status.nBanTo)
     {
-        mngrNode.Ban(ep.address(),status.nBanTo);
+        mngrNode.Ban(bimapRemoteEPMac.left.at(ep),status.nBanTo);
     }
 
     CleanInactiveAddress();
@@ -280,8 +280,8 @@ void CEndpointManager::RetrieveGoodNode(vector<CNodeAvail>& vGoodNode,
     multimap<int,CNodeAvail> mapScore;
     BOOST_FOREACH(const CNode& node,vNode)
     {
-        const boost::asio::ip::address addr = node.ep.address();
-        map<boost::asio::ip::address,CAddressStatus>::iterator it = mapAddressStatus.find(addr);
+        const CMacAddress& addr = node.macAddr;
+        map<CMacAddress,CAddressStatus>::iterator it = mapAddressStatus.find(addr);
         if (it != mapAddressStatus.end() 
             && (*it).second.nLastSeen > nActive && (*it).second.nScore >= 0)
         {
@@ -304,14 +304,16 @@ void CEndpointManager::CleanInactiveAddress()
     }
     
     int64 inactive = GetTime() - MAX_INACTIVE_TIME; 
-    multimap<int64,boost::asio::ip::address>mapLastSeen;
-    map<boost::asio::ip::address,CAddressStatus>::iterator it = mapAddressStatus.begin();
+    //multimap<int64,walleve::CMacAddress> mapLastSeen;
+    std::vector<std::pair<int64,walleve::CMacAddress>> vLastSeen;
+    map<walleve::CMacAddress,CAddressStatus>::iterator it = mapAddressStatus.begin();
     while (it != mapAddressStatus.end())
     {
         CAddressStatus& status = (*it).second;
         if (status.nLastSeen > inactive)
         {
-            mapLastSeen.insert(make_pair(status.nLastSeen,(*it).first));
+            //mapLastSeen.insert(make_pair(status.nLastSeen,(*it).first));
+            vLastSeen.push_back(make_pair(status.nLastSeen,(*it).first));
             ++it;
         }
         else
@@ -320,8 +322,9 @@ void CEndpointManager::CleanInactiveAddress()
         }
     }
 
-    multimap<int64,boost::asio::ip::address>::iterator mi = mapLastSeen.begin();
-    while (mapAddressStatus.size() > MAX_ADDRESS_COUNT && mi != mapLastSeen.end())
+    //multimap<int64,CMacAddress>::iterator mi = mapLastSeen.begin();
+    auto mi = vLastSeen.begin();
+    while (mapAddressStatus.size() > MAX_ADDRESS_COUNT && mi != vLastSeen.end())
     {
         mapAddressStatus.erase((*mi).second);
         ++mi;
@@ -330,15 +333,15 @@ void CEndpointManager::CleanInactiveAddress()
 
 void CEndpointManager::AddNewEndPointMac(const boost::asio::ip::tcp::endpoint& ep, const walleve::CMacAddress& addr)
 {
-    mapRemoteEPMac[ep] = addr;
+    bimapRemoteEPMac.insert(position_pair(ep, addr));
 }
 
 void CEndpointManager::RemoveEndPointMac(const boost::asio::ip::tcp::endpoint& ep)
 {
-    auto it = mapRemoteEPMac.find(ep);
-    if(it != mapRemoteEPMac.end())
+    auto it =  bimapRemoteEPMac.left.find(ep);
+    if(it != bimapRemoteEPMac.left.end())
     {
-        mapRemoteEPMac.erase(it);
+        bimapRemoteEPMac.left.erase(it);
     }
 }
 

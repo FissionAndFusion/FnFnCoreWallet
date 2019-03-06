@@ -13,6 +13,7 @@
 #include <vector>
 #include <boost/asio.hpp>
 #include <boost/any.hpp>
+#include <boost/bimap.hpp>
 
 namespace walleve
 {
@@ -55,12 +56,12 @@ protected:
 class CAddressBanned
 {
 public:
-    CAddressBanned(const boost::asio::ip::address addrBannedIn,int nScoreIn,int64 nBanTimeIn)
-    : addrBanned(addrBannedIn),nScore(nScoreIn),nBanTime(nBanTimeIn)
+    CAddressBanned(const CMacAddress& addrBannedIn,int nScoreIn,int64 nBanTimeIn)
+    : macAddrBanned(addrBannedIn),nScore(nScoreIn),nBanTime(nBanTimeIn)
     {
     }
 public:
-    boost::asio::ip::address addrBanned;
+    CMacAddress macAddrBanned;
     int nScore;
     int64 nBanTime;
 };
@@ -102,8 +103,8 @@ public:
     void Clear();
     int  GetEndpointScore(const boost::asio::ip::tcp::endpoint& ep);
     void GetBanned(std::vector<CAddressBanned>& vBanned);
-    void SetBan(std::vector<boost::asio::ip::address>& vAddrToBan,int64 nBanTime);
-    void ClearBanned(std::vector<boost::asio::ip::address>& vAddrToClear);
+    void SetBan(std::vector<CMacAddress>& vAddrToBan,int64 nBanTime);
+    void ClearBanned(std::vector<CMacAddress>& vAddrToClear);
     void ClearAllBanned();
 
     void AddNewOutBound(const boost::asio::ip::tcp::endpoint& ep,const std::string& strName,
@@ -126,8 +127,11 @@ protected:
 protected:
     enum {MAX_ADDRESS_COUNT = 2048,MAX_INACTIVE_TIME = 864000};
     CNodeManager mngrNode;
-    std::map<boost::asio::ip::address,CAddressStatus> mapAddressStatus;
-    std::map<boost::asio::ip::tcp::endpoint, walleve::CMacAddress> mapRemoteEPMac;
+    
+    std::map<walleve::CMacAddress,CAddressStatus> mapAddressStatus;
+    typedef boost::bimap<boost::asio::ip::tcp::endpoint, walleve::CMacAddress>::value_type position_pair;
+    boost::bimap<boost::asio::ip::tcp::endpoint, walleve::CMacAddress> bimapRemoteEPMac;
+    
 };
 
 } // namespace walleve
