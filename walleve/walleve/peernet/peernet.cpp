@@ -377,15 +377,16 @@ bool CPeerNet::HandleEvent(CWalleveEventPeerNetGetBanned& eventGetBanned)
  
 bool CPeerNet::HandleEvent(CWalleveEventPeerNetSetBan& eventSetBan)
 {
-    vector<boost::asio::ip::address> vAddrToBan;
+    vector<CMacAddress> vAddrToBan;
     BOOST_FOREACH(const string& strAddress,eventSetBan.data.first)
     {
         boost::system::error_code ec;
-        boost::asio::ip::address addr = boost::asio::ip::address::from_string(strAddress,ec);
-        if (!ec)
-        {
+        //boost::asio::ip::address addr = boost::asio::ip::address::from_string(strAddress,ec);
+        CMacAddress addr;
+       // if (!ec)
+        //{
             vAddrToBan.push_back(addr);
-        }
+       // }
     }
     epMngr.SetBan(vAddrToBan,eventSetBan.data.second);
     eventSetBan.result = vAddrToBan.size();
@@ -394,15 +395,16 @@ bool CPeerNet::HandleEvent(CWalleveEventPeerNetSetBan& eventSetBan)
  
 bool CPeerNet::HandleEvent(CWalleveEventPeerNetClrBanned& eventClrBanned)
 {
-    vector<boost::asio::ip::address> vAddrToClear;
+    vector<CMacAddress> vAddrToClear;
     BOOST_FOREACH(const string& strAddress,eventClrBanned.data)
     {
         boost::system::error_code ec;
-        boost::asio::ip::address addr = boost::asio::ip::address::from_string(strAddress,ec);
-        if (!ec)
-        {
+        CMacAddress addr;
+        //boost::asio::ip::address addr = boost::asio::ip::address::from_string(strAddress,ec);
+        //if (!ec)
+       // {
             vAddrToClear.push_back(addr);
-        }
+        //}
     }
     epMngr.ClearBanned(vAddrToClear);
     eventClrBanned.result = vAddrToClear.size();
