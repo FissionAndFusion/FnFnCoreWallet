@@ -113,6 +113,10 @@ public:
     {
         return left.ToString() == right.ToString();
     }
+    friend bool operator<(const CMacAddress& left, const CMacAddress& right)
+    {
+        return left.ToString() < right.ToString();
+    }
 private:
     std::vector<unsigned char> macData;
 };
