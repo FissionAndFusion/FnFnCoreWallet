@@ -102,11 +102,19 @@ public:
     
     std::string ToString() const
     {
-        char buffer[128] = {0};
-        sprintf(buffer, "%02x:%02x:%02x:%02x:%02x:%02x", 
-            macData[0], macData[1], macData[2],
-            macData[3], macData[4], macData[5]);
-        return std::string(buffer);
+        if(macData.size() == 6)
+        {
+            char buffer[128] = {0};
+            sprintf(buffer, "%02x:%02x:%02x:%02x:%02x:%02x", 
+                macData[0], macData[1], macData[2],
+                macData[3], macData[4], macData[5]);
+            return std::string(buffer);
+        }
+        else
+        {
+            return std::string();
+        }
+        
     }
 public:
     friend bool operator==(const CMacAddress& left, const CMacAddress& right) 
