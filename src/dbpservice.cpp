@@ -3643,6 +3643,7 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteAdded& event)
     {
         return HandleAddedEventSendTransaction(event, ss);
     }
+    return true;
 }
 
 bool CDbpService::HandleEvent(CMvEventRPCRouteDelCompltUntil& event)
