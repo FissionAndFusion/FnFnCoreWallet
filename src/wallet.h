@@ -116,7 +116,7 @@ public:
 
     bool Encrypt(const crypto::CPubKey& pubkey,const crypto::CCryptoString& strPassphrase,
                                                const crypto::CCryptoString& strCurrentPassphrase) override;
-    bool GetKeyStatus(const crypto::CPubKey& pubkey,int& nVersion,bool& fLocked,int64& nAutoLockTime) const override;
+    bool GetKeyStatus(const crypto::CPubKey& pubkey,uint32& nVersion,bool& fLocked,int64& nAutoLockTime) const override;
     bool IsLocked(const crypto::CPubKey& pubkey) const override;
     bool Lock(const crypto::CPubKey& pubkey) override;
     bool Unlock(const crypto::CPubKey& pubkey,const crypto::CCryptoString& strPassphrase,int64 nTimeout) override;
@@ -215,7 +215,7 @@ public:
     {
         return false;
     }
-    virtual bool GetKeyStatus(const crypto::CPubKey& pubkey, int& nVersion,
+    virtual bool GetKeyStatus(const crypto::CPubKey& pubkey, uint32& nVersion,
                               bool& fLocked,
                               int64& nAutoLockTime) const override
     {

@@ -26,7 +26,7 @@ enum
 class CProfile
 {
 public:
-    int nVersion;
+    uint16 nVersion;
     std::string strName;
     std::string strSymbol;
     uint8 nFlag;

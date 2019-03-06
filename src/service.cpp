@@ -372,7 +372,7 @@ void CService::GetPubKeys(set<crypto::CPubKey>& setPubKey)
     pWallet->GetPubKeys(setPubKey);
 }
 
-bool CService::GetKeyStatus(const crypto::CPubKey& pubkey,int& nVersion,bool& fLocked,int64& nAutoLockTime)
+bool CService::GetKeyStatus(const crypto::CPubKey& pubkey,uint32& nVersion,bool& fLocked,int64& nAutoLockTime)
 {
     return pWallet->GetKeyStatus(pubkey,nVersion,fLocked,nAutoLockTime);
 }

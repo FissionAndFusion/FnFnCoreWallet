@@ -315,7 +315,7 @@ void CRPCMod::JsonReply(uint64 nNonce, const std::string& result)
 
 bool CRPCMod::CheckVersion(string& strVersion)
 {
-    int nMajor, nMinor, nRevision;
+    uint32 nMajor, nMinor, nRevision;
     if (!ResolveVersion(strVersion, nMajor, nMinor, nRevision))
     {
         return false;
@@ -922,7 +922,7 @@ CRPCResultPtr CRPCModWorker::RPCListKey(CRPCParamPtr param)
     auto spResult = MakeCListKeyResultPtr();
     BOOST_FOREACH(const crypto::CPubKey& pubkey,setPubKey)
     {
-        int nVersion;
+        uint32 nVersion;
         bool fLocked;
         int64 nAutoLockTime;
         if (pService->GetKeyStatus(pubkey,nVersion,fLocked,nAutoLockTime))
@@ -1011,7 +1011,7 @@ CRPCResultPtr CRPCModWorker::RPCLockKey(CRPCParamPtr param)
         pubkey.SetHex(spParam->strPubkey);
     }
 
-    int nVersion;
+    uint32 nVersion;
     bool fLocked;
     int64 nAutoLockTime; 
     if (!pService->GetKeyStatus(pubkey,nVersion,fLocked,nAutoLockTime))
@@ -1057,7 +1057,7 @@ CRPCResultPtr CRPCModWorker::RPCUnlockKey(CRPCParamPtr param)
          nTimeout = spParam->nTimeout;
     }
 
-    int nVersion;
+    uint32 nVersion;
     bool fLocked;
     int64 nAutoLockTime; 
     if (!pService->GetKeyStatus(pubkey,nVersion,fLocked,nAutoLockTime))
@@ -1559,7 +1559,7 @@ CRPCResultPtr CRPCModWorker::RPCSignMessage(CRPCParamPtr param)
 
     string strMessage = spParam->strMessage;
 
-    int nVersion;
+    uint32 nVersion;
     bool fLocked;
     int64 nAutoLockTime; 
     if (!pService->GetKeyStatus(pubkey,nVersion,fLocked,nAutoLockTime))
@@ -1897,7 +1897,7 @@ CRPCResultPtr CRPCModWorker::RPCMakeOrigin(CRPCParamPtr param)
         throw CRPCException(RPC_INVALID_ADDRESS_OR_KEY,"Owner' address should be pubkey address");
     }
 
-    int nVersion;
+    uint32 nVersion;
     bool fLocked;
     int64 nAutoLockTime; 
     if (!pService->GetKeyStatus(pubkey,nVersion,fLocked,nAutoLockTime))

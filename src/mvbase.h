@@ -175,7 +175,7 @@ public:
     virtual bool Import(const std::vector<unsigned char>& vchKey, crypto::CPubKey& pubkey) = 0;
     virtual bool Encrypt(const crypto::CPubKey& pubkey, const crypto::CCryptoString& strPassphrase,
                          const crypto::CCryptoString& strCurrentPassphrase) = 0;
-    virtual bool GetKeyStatus(const crypto::CPubKey& pubkey, int& nVersion, bool& fLocked, int64& nAutoLockTime) const = 0;
+    virtual bool GetKeyStatus(const crypto::CPubKey& pubkey, uint32& nVersion, bool& fLocked, int64& nAutoLockTime) const = 0;
     virtual bool IsLocked(const crypto::CPubKey& pubkey) const = 0;
     virtual bool Lock(const crypto::CPubKey& pubkey) = 0;
     virtual bool Unlock(const crypto::CPubKey& pubkey, const crypto::CCryptoString& strPassphrase, int64 nTimeout) = 0;
@@ -256,7 +256,7 @@ public:
     /* Wallet */
     virtual bool HaveKey(const crypto::CPubKey& pubkey) = 0;
     virtual void GetPubKeys(std::set<crypto::CPubKey>& setPubKey) = 0;
-    virtual bool GetKeyStatus(const crypto::CPubKey& pubkey, int& nVersion, bool& fLocked, int64& nAutoLockTime) = 0;
+    virtual bool GetKeyStatus(const crypto::CPubKey& pubkey, uint32& nVersion, bool& fLocked, int64& nAutoLockTime) = 0;
     virtual bool MakeNewKey(const crypto::CCryptoString& strPassphrase, crypto::CPubKey& pubkey) = 0;
     virtual bool AddKey(const crypto::CKey& key) = 0;
     virtual bool ImportKey(const std::vector<unsigned char>& vchKey, crypto::CPubKey& pubkey) = 0;

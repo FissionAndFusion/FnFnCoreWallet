@@ -43,7 +43,7 @@ protected:
     bool HandleReadHeader();
     bool HandleReadCompleted();
 public:
-    int nVersion;
+    uint32 nVersion;
     uint64 nService;
     uint64 nNonceFrom;
     int64 nTimeDelta;
@@ -62,7 +62,7 @@ protected:
 class CMvPeerInfo : public walleve::CPeerInfo
 {
 public:
-    int  nVersion;
+    uint32 nVersion;
     uint64 nService;
     std::string strSubVer;
     int32 nStartingHeight;

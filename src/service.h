@@ -49,7 +49,7 @@ public:
     /* Wallet */
     bool HaveKey(const crypto::CPubKey& pubkey) override;
     void GetPubKeys(std::set<crypto::CPubKey>& setPubKey) override;
-    bool GetKeyStatus(const crypto::CPubKey& pubkey,int& nVersion,bool& fLocked,int64& nAutoLockTime) override;
+    bool GetKeyStatus(const crypto::CPubKey& pubkey,uint32& nVersion,bool& fLocked,int64& nAutoLockTime) override;
     bool MakeNewKey(const crypto::CCryptoString& strPassphrase,crypto::CPubKey& pubkey) override;
     bool AddKey(const crypto::CKey& key) override;
     bool ImportKey(const std::vector<unsigned char>& vchKey,crypto::CPubKey& pubkey) override;

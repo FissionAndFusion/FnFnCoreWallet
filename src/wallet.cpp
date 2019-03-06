@@ -300,7 +300,7 @@ bool CWallet::Encrypt(const crypto::CPubKey& pubkey,const crypto::CCryptoString&
     return false;
 }
 
-bool CWallet::GetKeyStatus(const crypto::CPubKey& pubkey,int& nVersion,bool& fLocked,int64& nAutoLockTime) const
+bool CWallet::GetKeyStatus(const crypto::CPubKey& pubkey,uint32& nVersion,bool& fLocked,int64& nAutoLockTime) const
 {
     boost::shared_lock<boost::shared_mutex> rlock(rwKeyStore);
     map<crypto::CPubKey,CWalletKeyStore>::const_iterator it = mapKeyStore.find(pubkey);
