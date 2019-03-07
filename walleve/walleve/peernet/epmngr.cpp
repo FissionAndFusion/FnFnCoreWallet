@@ -247,8 +247,18 @@ bool CEndpointManager::FetchOutBound(tcp::endpoint& ep)
 bool CEndpointManager::AcceptInBound(const tcp::endpoint& ep)
 {
     int64 now = GetTime();
-    CAddressStatus& status = mapAddressStatus[bimapRemoteEPMac.left.at(ep)];
-    return (status.InBoundAttempt(now) && status.AddConnection(true));
+    
+    auto iter = bimapRemoteEPMac.left.find(ep);
+    if(iter != bimapRemoteEPMac.left.end())
+    {
+        CAddressStatus& status = mapAddressStatus[bimapRemoteEPMac.left.at(ep)];
+        return (status.InBoundAttempt(now) && status.AddConnection(true));
+    }
+    else
+    {
+        CAddressStatus& status = mapAddressStatus[CMacAddress()];
+        return (status.InBoundAttempt(now) && status.AddConnection(true));
+    }
 }
 
 void CEndpointManager::RewardEndpoint(const tcp::endpoint& ep,Bonus bonus)
