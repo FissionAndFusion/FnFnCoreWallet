@@ -526,7 +526,7 @@ void CForkBlockMaker::BlockMakerThreadFunc()
 
             for(const auto& ballot : agree.vBallot)
             {
-                std::cout << "ballot hex: " << ballot.GetHex() << '\n';
+                std::cout << "ballot hex: " << ballot.ToString() << '\n';
             }
 
             nMakerStatus = ForkMakerStatus::MAKER_RUN;
