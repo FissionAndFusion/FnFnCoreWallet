@@ -221,12 +221,26 @@ bool CEndpointManager::FetchOutBound(tcp::endpoint& ep)
 {
     while (mngrNode.Employ(ep))
     {
-        CAddressStatus& status = mapAddressStatus[bimapRemoteEPMac.left.at(ep)];
-        if (status.AddConnection(false))
+        auto iter = bimapRemoteEPMac.left.find(ep);
+        if(iter != bimapRemoteEPMac.left.end())
         {
-            return true;
+            CAddressStatus& status = mapAddressStatus[bimapRemoteEPMac.left.at(ep)];
+            if (status.AddConnection(false))
+            {
+                return true;
+            }
+            mngrNode.Dismiss(ep,false);
         }
-        mngrNode.Dismiss(ep,false);
+        else
+        {
+            mapAddressStatus[CMacAddress()] = CAddressStatus();
+            CAddressStatus& status = mapAddressStatus[CMacAddress()];
+            if (status.AddConnection(false))
+            {
+                return true;
+            }
+            mngrNode.Dismiss(ep,false);
+        }
     }
     return false;
 }
