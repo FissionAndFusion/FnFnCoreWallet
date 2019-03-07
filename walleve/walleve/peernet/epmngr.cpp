@@ -233,7 +233,6 @@ bool CEndpointManager::FetchOutBound(tcp::endpoint& ep)
         }
         else
         {
-            mapAddressStatus[CMacAddress()] = CAddressStatus();
             CAddressStatus& status = mapAddressStatus[CMacAddress()];
             if (status.AddConnection(false))
             {
