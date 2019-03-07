@@ -117,7 +117,7 @@ public:
         }
         else
         {
-            return std::string();
+            return std::string("00:00:00:00:00:00");
         }
         
     }
