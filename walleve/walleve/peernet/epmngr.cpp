@@ -358,6 +358,12 @@ void CEndpointManager::CleanInactiveAddress()
 void CEndpointManager::AddNewEndPointMac(const boost::asio::ip::tcp::endpoint& ep, const walleve::CMacAddress& addr)
 {
     bimapRemoteEPMac.insert(position_pair(ep, addr));
+    auto iter = mapAddressStatus.find(CMacAddress());
+    if(iter != mapAddressStatus.end())
+    {
+        mapAddressStatus[addr] = iter->second;
+        mapAddressStatus.erase(iter);
+    }
 }
 
 void CEndpointManager::RemoveEndPointMac(const boost::asio::ip::tcp::endpoint& ep)
