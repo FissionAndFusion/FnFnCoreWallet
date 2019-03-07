@@ -6,6 +6,7 @@
 #define MULTIVERSE_DBP_TYPE_H
 
 #include <boost/any.hpp>
+#include "profile.h"
 
 namespace multiverse
 {
@@ -17,6 +18,7 @@ static const std::string BLOCK_CMD_TOPIC("block-cmd");
 static const std::string TX_CMD_TOPIC("tx-cmd");
 static const std::string CHANGED_TOPIC("changed");
 static const std::string REMOVED_TOPIC("removed");
+static const std::string RPC_CMD_TOPIC("rpc-cmd");
 
 class CMvDbpContent
 {
@@ -40,7 +42,6 @@ public:
     std::string session;
     int32 version;
     std::string client;
-    std::string forks; // supre node child node fork ids
 };
 
 class CMvDbpSub : public CMvDbpRequest
@@ -92,6 +93,459 @@ public:
     uint256 hashFork;
     std::vector<uint8> data;
 };
+
+//rpc route
+
+class CMvRPCRouteAdded : public CMvDbpRespond
+{
+public:
+    std::string name;
+    std::string id;
+    int type;
+    std::vector<uint8> vData;
+};
+
+class CMvRPCRoute
+{
+    friend class walleve::CWalleveStream;
+public:
+    enum
+    {
+        DBP_RPCROUTE_STOP = 0,
+        DBP_RPCROUTE_GET_FORK_COUNT = 1,
+        DBP_RPCROUTE_LIST_FORK = 2,
+        DBP_RPCROUTE_GET_BLOCK_LOCATION = 3,
+        DBP_RPCROUTE_GET_BLOCK_COUNT = 4,
+        DBP_RPCROUTE_GET_BLOCK_HASH = 5,
+        DBP_RPCROUTE_GET_BLOCK = 6,
+        DBP_RPCROUTE_GET_TXPOOL = 7,
+        DBP_RPCROUTE_GET_TRANSACTION = 8,
+        DBP_RPCROUTE_GET_FORK_HEIGHT = 9,
+        DBP_RPCROUTE_SEND_TRANSACTION = 10
+    };
+
+    std::shared_ptr<walleve::CIOCompletionUntil> spIoCompltUntil;
+    int type;
+    uint64 nNonce;
+
+protected:
+    template <typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s,O& opt)
+    {
+        s.Serialize(type,opt);
+        s.Serialize(nNonce, opt);
+    }    
+};
+
+class CMvRPCRouteStop : public CMvRPCRoute
+{
+    friend class walleve::CWalleveStream;
+public:
+
+protected:
+    template <typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s,O& opt)
+    {
+        CMvRPCRoute::WalleveSerialize(s, opt);
+    } 
+};
+
+class CMvRPCRouteGetForkCount : public CMvRPCRoute
+{
+    friend class walleve::CWalleveStream;
+public:
+
+protected:
+    template <typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s,O& opt)
+    {
+        CMvRPCRoute::WalleveSerialize(s, opt);
+    } 
+};
+
+class CMvRPCRouteListFork : public CMvRPCRoute
+{
+    friend class walleve::CWalleveStream;
+public:
+    bool fAll;
+
+protected:
+    template<typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
+    {
+        CMvRPCRoute::WalleveSerialize(s, opt);
+        s.Serialize(fAll, opt);
+    }
+};
+
+class CMvRPCRouteGetBlockLocation : public CMvRPCRoute
+{
+    friend class walleve::CWalleveStream;
+public:
+    std::string strBlock;
+
+protected:
+    template<typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
+    {
+        CMvRPCRoute::WalleveSerialize(s, opt);
+        s.Serialize(strBlock, opt);
+    }
+};
+
+class CMvRPCRouteGetBlockCount: public CMvRPCRoute
+{
+    friend class walleve::CWalleveStream;
+public:
+    std::string strFork;
+
+protected:
+    template<typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
+    {
+        CMvRPCRoute::WalleveSerialize(s, opt);
+        s.Serialize(strFork, opt);
+    }
+};
+
+class CMvRPCRouteGetBlockHash : public CMvRPCRoute
+{
+    friend class walleve::CWalleveStream;
+public:
+    int height;
+    std::string strFork;
+
+protected:
+    template<typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
+    {
+        CMvRPCRoute::WalleveSerialize(s, opt);
+        s.Serialize(height, opt);
+        s.Serialize(strFork, opt);
+    }
+};
+
+class CMvRPCRouteGetBlock : public CMvRPCRoute
+{
+    friend class walleve::CWalleveStream;
+public:
+    std::string hash;
+
+protected:
+    template<typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
+    {
+        CMvRPCRoute::WalleveSerialize(s, opt);
+        s.Serialize(hash, opt);
+    }
+};
+
+class CMvRPCRouteGetTxPool: public CMvRPCRoute
+{
+    friend class walleve::CWalleveStream;
+public:
+    std::string strFork;
+    bool fDetail;
+
+protected:
+    template<typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
+    {
+        CMvRPCRoute::WalleveSerialize(s, opt);
+        s.Serialize(strFork, opt);
+        s.Serialize(fDetail, opt);
+    }
+};
+
+class CMvRPCRouteGetTransaction: public CMvRPCRoute
+{
+    friend class walleve::CWalleveStream;
+public:
+    std::string strTxid;
+
+protected:
+    template<typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
+    {
+        CMvRPCRoute::WalleveSerialize(s, opt);
+        s.Serialize(strTxid, opt);
+    }
+};
+
+class CMvRPCRouteGetForkHeight : public CMvRPCRoute
+{
+    friend class walleve::CWalleveStream;
+public:
+    std::string strFork;
+
+protected:
+    template<typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
+    {
+        CMvRPCRoute::WalleveSerialize(s, opt);
+        s.Serialize(strFork, opt);
+    }
+};
+
+class CMvRPCRouteSendTransaction: public CMvRPCRoute
+{
+    friend class walleve::CWalleveStream;
+public:
+    CTransaction rawTx;
+
+protected:
+    template<typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
+    {
+        CMvRPCRoute::WalleveSerialize(s, opt);
+        s.Serialize(rawTx, opt);
+    }
+};
+
+class CMvRPCRouteResult
+{
+public:
+    int type;
+    std::vector<uint8> vData;
+    std::vector<uint8> vRawData;
+};
+
+class CMvRPCRouteDelCompltUntil
+{
+public:
+    uint64 nNonce;
+};
+
+class CMvRPCRouteRet
+{
+    friend class walleve::CWalleveStream;
+public:
+    int type;
+    uint64 nNonce;
+
+protected:
+    template<typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
+    {
+        s.Serialize(type, opt);
+        s.Serialize(nNonce, opt);
+    }
+};
+
+class CMvRPCRouteStopRet : public CMvRPCRouteRet
+{
+    friend class walleve::CWalleveStream;
+public:
+protected:
+    template<typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
+    {
+        CMvRPCRouteRet::WalleveSerialize(s, opt);
+    }
+};
+
+class CMvRPCRouteGetForkCountRet : public CMvRPCRouteRet
+{
+    friend class walleve::CWalleveStream;
+public:
+    int count;
+
+protected:
+    template<typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
+    {
+        CMvRPCRouteRet::WalleveSerialize(s, opt);
+        s.Serialize(count, opt);
+    }
+};
+
+class CMvRPCProfile
+{
+    friend class walleve::CWalleveStream;
+public:
+    std::string strHex;
+    std::string strName;
+    std::string strSymbol;
+    bool fIsolated;
+    bool fPrivate;
+    bool fEnclosed;
+    std::string address;
+protected:
+    template <typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
+    {
+        s.Serialize(strHex, opt);
+        s.Serialize(strName, opt);
+        s.Serialize(strSymbol, opt);
+        s.Serialize(fIsolated, opt);
+        s.Serialize(fPrivate, opt);
+        s.Serialize(fEnclosed, opt);
+        s.Serialize(address, opt);
+    }
+};
+
+class CMvRPCRouteListForkRet: public CMvRPCRouteRet
+{
+    friend class walleve::CWalleveStream;
+public:
+    std::vector<CMvRPCProfile> vFork;
+
+protected:
+    template<typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
+    {
+        CMvRPCRouteRet::WalleveSerialize(s, opt);
+        s.Serialize(vFork, opt);
+    }
+};
+
+class CMvRPCRouteGetBlockLocationRet : public CMvRPCRouteRet
+{
+    friend class walleve::CWalleveStream;
+public:
+    std::string strFork;
+    int height;
+
+protected:
+    template<typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
+    {
+        CMvRPCRouteRet::WalleveSerialize(s, opt);
+        s.Serialize(strFork, opt);
+        s.Serialize(height, opt);
+    }
+};
+
+class CMvRPCRouteGetBlockCountRet : public CMvRPCRouteRet
+{
+    friend class walleve::CWalleveStream;
+public:
+    std::string strFork;
+    int height;
+    int exception; // 0-nomal, 1-invalid fork, 2-unknow fork
+
+protected:
+    template<typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
+    {
+        CMvRPCRouteRet::WalleveSerialize(s, opt);
+        s.Serialize(strFork, opt);
+        s.Serialize(height, opt);
+        s.Serialize(exception, opt);
+    }
+};
+
+class CMvRPCRouteGetBlockHashRet : public CMvRPCRouteRet
+{
+    friend class walleve::CWalleveStream;
+public:
+    std::vector<std::string> vHash;
+    int exception; // 0-nomal, 1-invalid fork, 2-unknow fork, 3-out of range
+
+protected:
+    template<typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
+    {
+        CMvRPCRouteRet::WalleveSerialize(s, opt);
+        s.Serialize(vHash, opt);
+        s.Serialize(exception, opt);
+    }
+};
+
+class CMvRPCRouteGetBlockRet : public CMvRPCRouteRet
+{
+    friend class walleve::CWalleveStream;
+public:
+    CBlock block;
+    int height;
+    std::string strFork;
+    int exception; // 0-nomal, 1-unknown block
+
+protected:
+    template<typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
+    {
+        CMvRPCRouteRet::WalleveSerialize(s, opt);
+        s.Serialize(block, opt);
+        s.Serialize(height, opt);
+        s.Serialize(strFork, opt);
+        s.Serialize(exception, opt);
+    }
+};
+
+class CMvRPCRouteGetTxPoolRet: public CMvRPCRouteRet
+{
+    friend class walleve::CWalleveStream;
+public:
+    std::vector<std::pair<std::string, size_t>> vTxPool;
+    int exception; // 0-nomal, 1-invalid block, 2-unknown fork
+
+protected:
+    template<typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
+    {
+        CMvRPCRouteRet::WalleveSerialize(s, opt);
+        s.Serialize(vTxPool, opt);
+        s.Serialize(exception, opt);
+    }
+};
+
+class CMvRPCRouteGetTransactionRet: public CMvRPCRouteRet
+{
+    friend class walleve::CWalleveStream;
+public:
+    CTransaction tx;
+    std::string strFork;
+    int nDepth;
+    int exception; // 0-nomal, 1-no information
+
+protected:
+    template<typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
+    {
+        CMvRPCRouteRet::WalleveSerialize(s, opt);
+        s.Serialize(tx, opt);
+        s.Serialize(strFork, opt);
+        s.Serialize(nDepth, opt);
+        s.Serialize(exception, opt);
+    }
+};
+
+class CMvRPCRouteGetForkHeightRet: public CMvRPCRouteRet
+{
+    friend class walleve::CWalleveStream;
+public:
+    int height;
+    int exception; // 0-nomal, 1-invalid fork, 2-unknown fork 
+
+protected:
+    template<typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
+    {
+        CMvRPCRouteRet::WalleveSerialize(s, opt);
+        s.Serialize(height, opt);
+        s.Serialize(exception, opt);
+    }
+};
+
+class CMvRPCRouteSendTransactionRet : public CMvRPCRouteRet
+{
+    friend class walleve::CWalleveStream;
+public:
+    int err;
+    int exception; // 0-nomal, 1-unknown block
+
+protected:
+    template<typename O>
+    void WalleveSerialize(walleve::CWalleveStream& s, O& opt)
+    {
+        CMvRPCRouteRet::WalleveSerialize(s, opt);
+        s.Serialize(err, opt);
+        s.Serialize(exception, opt);
+    }
+};
+
+//
 
 class CMvDbpTxIn
 {
@@ -167,7 +621,8 @@ public:
 
     enum SnMethod : uint32_t
     {
-        SEND_EVENT = 0x03
+        SEND_EVENT = 0x03,
+        RPC_ROUTE = 0x04
     };
     
     enum  LwsMethod : uint32_t
@@ -237,12 +692,8 @@ class CMvDbpBroken
 {
 public:
     std::string session;
+    std::string from; // event from [dbpserver | dbpclient]
 };
 
-class CMvDbpRemoveSession
-{
-public:
-    std::string session;
-};
 } // namespace multiverse
 #endif //MULTIVERSE_DBP_TYPE_H

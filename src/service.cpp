@@ -12,23 +12,6 @@ using namespace multiverse;
 extern void MvShutdown();
 
 //////////////////////////////
-// CServiceWalletTxFilter
-class CServiceWalletTxFilter : public CTxFilter
-{
-public:
-    CServiceWalletTxFilter(IWallet* pWalletIn,const CDestination& destNew)
-    : CTxFilter(destNew,destNew),pWallet(pWalletIn)
-    {
-    }
-    bool FoundTx(const uint256& hashFork,const CAssembledTx& tx)
-    {
-        return pWallet->UpdateTx(hashFork,tx);
-    }
-public:
-    IWallet* pWallet;
-};
-
-//////////////////////////////
 // CService 
 
 CService::CService()
@@ -463,7 +446,7 @@ bool CService::SignTransaction(CTransaction& tx,bool& fCompleted)
         return false;
     }
 
-    CDestination destIn = vUnspent[0].destTo;
+    const CDestination& destIn = vUnspent[0].destTo;
     if (!pWallet->SignTransaction(destIn,tx,fCompleted))
     {
         return false;
@@ -488,9 +471,9 @@ bool CService::AddTemplate(CTemplatePtr& ptr)
     return pWallet->AddTemplate(ptr);
 }
 
-bool CService::GetTemplate(const CTemplateId& tid,CTemplatePtr& ptr)
+CTemplatePtr CService::GetTemplate(const CTemplateId& tid)
 {
-    return pWallet->GetTemplate(tid,ptr);
+    return pWallet->GetTemplate(tid);
 }
 
 bool CService::GetBalance(const CDestination& dest,const uint256& hashFork,CWalletBalance& balance)
@@ -533,6 +516,7 @@ bool CService::CreateTransaction(const uint256& hashFork,const CDestination& des
         txNew.hashAnchor = (*it).second.hashLastBlock;
     }
     txNew.nType = CTransaction::TX_TOKEN;
+    txNew.nTimeStamp = WalleveGetNetTime();
     txNew.nLockUntil = 0;
     txNew.sendTo = destSendTo;
     txNew.nAmount = nAmount;
@@ -544,36 +528,12 @@ bool CService::CreateTransaction(const uint256& hashFork,const CDestination& des
 
 bool CService::SynchronizeWalletTx(const CDestination& destNew)
 {
-    CServiceWalletTxFilter txFilter(pWallet,destNew);
-    return (pWorldLine->FilterTx(txFilter) && pTxPool->FilterTx(txFilter));
+    return pWallet->SynchronizeWalletTx(destNew);
 }
 
 bool CService::ResynchronizeWalletTx()
 {
-    if (!pWallet->ClearTx())
-    {
-        return false;
-    }
-    
-    set<crypto::CPubKey> setPubKey;
-    pWallet->GetPubKeys(setPubKey);
-    BOOST_FOREACH(const crypto::CPubKey& pubkey,setPubKey)
-    {
-        if (!SynchronizeWalletTx(CDestination(pubkey)))
-        {
-            return false;
-        }
-    }
-    set<CTemplateId> setTemplateId;
-    pWallet->GetTemplateIds(setTemplateId);
-    BOOST_FOREACH(const CTemplateId& tid,setTemplateId)
-    {
-        if (!SynchronizeWalletTx(CDestination(tid)))
-        {
-            return false;
-        }
-    }
-    return true;
+    return pWallet->ResynchronizeWalletTx();
 }
 
 bool CService::GetWork(vector<unsigned char>& vchWorkData,uint256& hashPrev,uint32& nPrevTime,int& nAlgo,int& nBits)
@@ -613,7 +573,7 @@ bool CService::GetWork(vector<unsigned char>& vchWorkData,uint256& hashPrev,uint
     return true;
 }
 
-MvErr CService::SubmitWork(const vector<unsigned char>& vchWorkData,CTemplatePtr& templMint,crypto::CKey& keyMint,uint256& hashBlock)
+MvErr CService::SubmitWork(const vector<unsigned char>& vchWorkData,CTemplateMintPtr& templMint,crypto::CKey& keyMint,uint256& hashBlock)
 {
     if (vchWorkData.empty())
     {
@@ -645,15 +605,16 @@ MvErr CService::SubmitWork(const vector<unsigned char>& vchWorkData,CTemplatePtr
     }
 
     CTransaction& txMint = block.txMint;
-    txMint.nType = CTransaction::TX_WORK;
-    txMint.hashAnchor = block.hashPrev;
-    txMint.sendTo = CDestination(templMint->GetTemplateId());
-    txMint.nAmount = nReward;
+    txMint.nType         = CTransaction::TX_WORK;
+    txMint.nTimeStamp    = block.nTimeStamp;
+    txMint.hashAnchor    = block.hashPrev;
+    txMint.sendTo        = CDestination(templMint->GetTemplateId());
+    txMint.nAmount       = nReward;
 
-    size_t nSigSize = templMint->GetTemplateDataSize() + 64 + 2;
+    size_t nSigSize = templMint->GetTemplateData().size() + 64 + 2;
     size_t nMaxTxSize = MAX_BLOCK_SIZE - GetSerializeSize(block) - nSigSize;
     int64 nTotalTxFee = 0;
-    pTxPool->ArrangeBlockTx(pCoreProtocol->GetGenesisBlockHash(),nMaxTxSize,block.vtx,nTotalTxFee);
+    pTxPool->ArrangeBlockTx(pCoreProtocol->GetGenesisBlockHash(),block.nTimeStamp,nMaxTxSize,block.vtx,nTotalTxFee);
     block.hashMerkle = block.CalcMerkleTreeRoot();
     block.txMint.nAmount += nTotalTxFee;
 

@@ -19,7 +19,7 @@ public:
 class IIOModule : public CWalleveEventProc 
 {
 public:
-    IIOModule(const std::string& walleveOwnKeyIn) : CWalleveEventProc(walleveOwnKeyIn) {}
+    IIOModule(const std::string& walleveOwnKeyIn, const size_t nThreadIn = 1) : CWalleveEventProc(walleveOwnKeyIn, nThreadIn) {}
 };
 
 } // namespace walleve

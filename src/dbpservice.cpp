@@ -16,10 +16,11 @@ CDbpService::CDbpService()
 {
     pService = NULL;
     pCoreProtocol = NULL;
-    pWallet = NULL;
+    pDbpClient = NULL;
     pDbpServer = NULL;
     pNetChannel = NULL;
     pVirtualPeerNet = NULL;
+    pRPCMod = NULL;
 
     std::unordered_map<std::string, IdsType> temp_map = 
         boost::assign::map_list_of(ALL_BLOCK_TOPIC, std::set<std::string>())
@@ -28,12 +29,14 @@ CDbpService::CDbpService()
                                   (TX_CMD_TOPIC,    std::set<std::string>())
                                   (BLOCK_CMD_TOPIC, std::set<std::string>())
                                   (CHANGED_TOPIC,   std::set<std::string>())
-                                  (REMOVED_TOPIC,   std::set<std::string>());
+                                  (REMOVED_TOPIC,   std::set<std::string>())
+                                  (RPC_CMD_TOPIC,   std::set<std::string>());
 
     mapTopicIds = temp_map;
 
     fEnableSuperNode = false;
     fEnableForkNode = false;
+    sessionCount = 0;
 }
 
 CDbpService::~CDbpService() noexcept
@@ -51,12 +54,6 @@ bool CDbpService::WalleveHandleInitialize()
     if (!WalleveGetObject("service", pService))
     {
         WalleveError("Failed to request service\n");
-        return false;
-    }
-
-    if (!WalleveGetObject("wallet", pWallet))
-    {
-        WalleveError("Failed to request wallet\n");
         return false;
     }
 
@@ -84,15 +81,21 @@ bool CDbpService::WalleveHandleInitialize()
         return false;
     }
 
+    if(!WalleveGetObject("rpcmod", pRPCMod))
+    {
+        WalleveLog("Failed to request rpc mod\n");
+        return false;
+    }
+
     return true;
 }
 
 void CDbpService::WalleveHandleDeinitialize()
 {
+    pDbpClient = NULL;
     pDbpServer = NULL;
     pService = NULL;
     pCoreProtocol = NULL;
-    pWallet = NULL;
     pNetChannel = NULL;
     pVirtualPeerNet = NULL;
 }
@@ -107,50 +110,117 @@ void CDbpService::EnableSuperNode(bool enable)
     fEnableSuperNode = enable;
 }
 
-bool CDbpService::HandleEvent(CMvEventDbpPong& event)
+void CDbpService::DeactiveNodeTree(const std::string& session)
 {
-    (void)event;
-    return true;
+    for(const auto& ele : mapPeerEventActive)
+    {
+        uint64 nNonce = ele.first;
+        auto &event = ele.second;
+   
+        CWalleveBufStream ss;
+        decltype(event.data) bytes = event.data;
+        ss.Write((char*)bytes.data(), bytes.size());
+        
+        CMvEventPeerActive eventActive(0);
+        ss >> eventActive;
+        
+        CMvEventPeerDeactive eventDeactive(nNonce);
+        eventDeactive.data = eventActive.data;  
+        pVirtualPeerNet->DispatchEvent(&eventDeactive);
+
+        CWalleveBufStream ssDeactive;
+        ssDeactive << eventDeactive;
+        std::string data(ssDeactive.GetData(), ssDeactive.GetSize());
+
+        CMvDbpVirtualPeerNetEvent eventVPeer;
+        eventVPeer.nNonce = nNonce;
+        eventVPeer.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_DEACTIVE;
+        eventVPeer.data = std::vector<uint8>(data.begin(), data.end());
+
+        PushEvent(eventVPeer);
+    }
+}
+
+void CDbpService::UnsubscribeChildNodeForks(const std::string& session)
+{
+    std::vector<ForkNonceKeyType> beDeleteKeys;
+    std::vector<ForkNonceKeyType>& beFindKeys = mapSessionForkNonceKey[session];
+
+    for(const auto& key : beFindKeys)
+    {
+        auto iter = mapChildNodeForkCount.find(key);
+        if(iter != mapChildNodeForkCount.end())
+        {
+            uint64 nNonce = key.second;
+            uint256 forkHash = key.first;
+            int& forkCount = iter->second;
+            if(forkCount == 1)
+            {
+                forkCount = 0;
+                beDeleteKeys.push_back(key);
+                
+                CMvEventPeerUnsubscribe eventUpUnSub(nNonce, pCoreProtocol->GetGenesisBlockHash());
+                eventUpUnSub.data.push_back(forkHash);
+
+                CWalleveBufStream eventSs;
+                eventSs << eventUpUnSub;
+                std::string data(eventSs.GetData(), eventSs.GetSize());
+                
+                if(IsForkNodeOfSuperNode())
+                {
+                    CMvDbpVirtualPeerNetEvent vpeerEvent;
+                    vpeerEvent.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_UNSUBSCRIBE;
+                    vpeerEvent.data = std::vector<uint8>(data.begin(), data.end());
+                    SendEventToParentNode(vpeerEvent);
+                }
+
+                if(IsRootNodeOfSuperNode())
+                {
+                    eventUpUnSub.flow = "up";
+                    eventUpUnSub.sender = "dbpservice";
+                    pVirtualPeerNet->DispatchEvent(&eventUpUnSub);
+                }
+            }
+
+            if(forkCount > 1)
+            {
+                forkCount--;
+            }
+        } 
+    }
+    
+    for(const auto& key : beDeleteKeys)
+    {
+        mapChildNodeForkCount.erase(key);
+    }
+}
+
+void CDbpService::HandleDbpClientBroken(const std::string& session)
+{
+    DeactiveNodeTree(session);
+    mapThisNodeForkCount.clear();
+    mapThisNodeGetData.clear();
+}
+
+void CDbpService::HandleDbpServerBroken(const std::string& session)
+{
+    UnsubscribeChildNodeForks(session);
+    RemoveSession(session);
 }
 
 bool CDbpService::HandleEvent(CMvEventDbpBroken& event)
 {
-    mapSessionChildNodeForks.erase(event.strSessionId);
-    return true;
-}
-
-bool CDbpService::HandleEvent(CMvEventDbpRemoveSession& event)
-{
-    RemoveSession(event.data.session);
-    return true;
-}
-
-static std::string GetHex(std::string data)
-{
-    int n = 2 * data.length() + 1;
-    std::string ret;
-    const char c_map[16] = {'0', '1', '2', '3', '4', '5', '6', '7',
-                            '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
-
-    ret.reserve(n);
-    for (const unsigned char &c : data)
+    if(event.data.from == "dbpserver")
     {
-        ret.push_back(c_map[c >> 4]);
-        ret.push_back(c_map[c & 15]);
+        HandleDbpServerBroken(event.strSessionId);
     }
 
-    return ret;
-}
+    if(event.data.from == "dbpclient")
+    {
+        HandleDbpClientBroken(event.strSessionId);
+    }
 
-static void print_block(const CBlock &block)
-{
-   
-
-}
-
-static void print_tx(const CTransaction &tx)
-{
-    
+    return true;
 }
 
 bool CDbpService::HandleEvent(CMvEventDbpConnect& event)
@@ -176,10 +246,9 @@ bool CDbpService::HandleEvent(CMvEventDbpConnect& event)
 
             std::cout << "[>] Sent Connected " << event.strSessionId << " [dbpservice]\n";
 
-            std::cout << "[>] MapPeerEvent Size " << mapPeerEvent.size() << " [dbpservice]\n";
+            std::cout << "[>] MapPeerEventActive Size " << mapPeerEventActive.size() << " [dbpservice]\n";
 
-
-            for(const auto& virtualevent : mapPeerEvent)
+            for(const auto& virtualevent : mapPeerEventActive)
             {
                 std::string session(event.strSessionId);
                 CMvEventDbpAdded eventAdd(session);
@@ -188,7 +257,7 @@ bool CDbpService::HandleEvent(CMvEventDbpConnect& event)
                 return pDbpServer->DispatchEvent(&eventAdd);
             }
 
-            if(mapPeerEvent.size() == 0)
+            if(mapPeerEventActive.size() == 0)
             {
                 CWalleveBufStream ss;
                 CMvEventPeerActive eventAct(std::numeric_limits<uint64>::max());
@@ -355,6 +424,8 @@ void CDbpService::RemoveSession(const std::string& session)
     {
         UnSubTopic(id);
     }
+
+    mapSessionForkNonceKey.erase(session);
 }
 
 bool CDbpService::IsEmpty(const uint256& hash)
@@ -581,6 +652,44 @@ void CDbpService::FilterChildUnsubscribeFork(const CMvEventPeerUnsubscribe& in, 
     }
 }
 
+void CDbpService::CollectSessionSubForks(const std::string& session, const CMvEventPeerSubscribe& sub)
+{
+    if(mapSessionForkNonceKey.find(session) != mapSessionForkNonceKey.end())
+    {
+        for(const uint256& fork : sub.data)
+        {
+            mapSessionForkNonceKey[session].push_back(std::make_pair(fork, sub.nNonce));
+        }
+    }
+    else
+    {
+        std::vector<ForkNonceKeyType> vForkNonceKey;
+        for(const uint256& fork : sub.data)
+        {
+            vForkNonceKey.push_back(std::make_pair(fork, sub.nNonce));
+        }
+        
+        mapSessionForkNonceKey[session] = vForkNonceKey;
+    }
+}
+
+void CDbpService::CollectSessionUnSubForks(const std::string& session, const CMvEventPeerUnsubscribe& unsub)
+{
+    if(mapSessionForkNonceKey.find(session) != mapSessionForkNonceKey.end())
+    {
+        auto& sessionForkNonceKeys = mapSessionForkNonceKey[session];
+        for(const uint256& fork : unsub.data)
+        {
+            auto iter = std::find(sessionForkNonceKeys.begin(), sessionForkNonceKeys.end(), 
+                std::make_pair(fork, unsub.nNonce));
+            if(iter != sessionForkNonceKeys.end())
+            {
+                sessionForkNonceKeys.erase(iter);
+            }
+        }
+    }
+}
+
 // event from down to up
 void CDbpService::HandleSendEvent(CMvEventDbpMethod& event)
 {
@@ -643,9 +752,8 @@ void CDbpService::HandleSendEvent(CMvEventDbpMethod& event)
         ss >> eventSub;
 
         CMvEventPeerSubscribe eventUpSub(eventSub.nNonce, eventSub.hashFork);
-
-
         FilterChildSubscribeFork(eventSub, eventUpSub);
+        CollectSessionSubForks(event.strSessionId, eventSub);
 
         if(!eventUpSub.data.empty())
         {
@@ -681,8 +789,8 @@ void CDbpService::HandleSendEvent(CMvEventDbpMethod& event)
         ss >> eventUnSub;
 
         CMvEventPeerUnsubscribe eventUpUnSub(eventUnSub.nNonce, eventUnSub.hashFork);
-
         FilterChildUnsubscribeFork(eventUnSub, eventUpUnSub);
+        CollectSessionUnSubForks(event.strSessionId, eventUnSub);
 
         if(!eventUpUnSub.data.empty())
         {
@@ -859,6 +967,10 @@ bool CDbpService::HandleEvent(CMvEventDbpMethod& event)
     {
         HandleSendEvent(event);
     }
+    else if (event.data.method == CMvDbpMethod::SnMethod::RPC_ROUTE)
+    {
+        HandleRPCRoute(event);
+    }
     else
     {
         return false;
@@ -986,7 +1098,7 @@ bool CDbpService::HandleEvent(CMvEventPeerActive& event)
         eventVPeer.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_ACTIVE;
         eventVPeer.data = std::vector<uint8>(data.begin(), data.end());
        
-        mapPeerEvent[event.nNonce] = eventVPeer;
+        mapPeerEventActive[event.nNonce] = eventVPeer;
         PushEvent(eventVPeer);
     }
 
@@ -1006,7 +1118,7 @@ bool CDbpService::HandleEvent(CMvEventPeerDeactive& event)
         eventVPeer.type = CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_DEACTIVE;
         eventVPeer.data = std::vector<uint8>(data.begin(), data.end());
         
-        mapPeerEvent.erase(event.nNonce);
+        mapPeerEventActive.erase(event.nNonce);
         PushEvent(eventVPeer);
     }
     
@@ -1356,7 +1468,7 @@ bool CDbpService::HandleEvent(CMvEventDbpVirtualPeerNet& event)
 
         pVirtualPeerNet->DispatchEvent(&eventActive);
 
-        mapPeerEvent[eventActive.nNonce] = event.data;
+        mapPeerEventActive[eventActive.nNonce] = event.data;
         PushEvent(event.data);
     }
 
@@ -1371,7 +1483,7 @@ bool CDbpService::HandleEvent(CMvEventDbpVirtualPeerNet& event)
         
         pVirtualPeerNet->DispatchEvent(&eventDeactive);
 
-        mapPeerEvent.erase(eventDeactive.nNonce);
+        mapPeerEventActive.erase(eventDeactive.nNonce);
         PushEvent(event.data);
     }
 
@@ -1558,3 +1670,2135 @@ bool CDbpService::IsThisNodeData(const uint256& hashFork, uint64 nNonce, const u
 
     return true;
 }
+
+//rpc route
+
+void CDbpService::RPCRootHandle(CMvRPCRouteStop* data, CMvRPCRouteStopRet* ret)
+{
+    if (ret == NULL)
+    {
+        if (sessionCount == 0)
+        {
+            CMvRPCRouteStopRet stopRet;
+            CompletionByNonce(data->nNonce, stopRet);
+            pService->Shutdown();
+        }
+    }
+
+    if (ret != NULL)
+    {
+        if (sessionCount == 0)
+        {
+            CMvRPCRouteStopRet stopRet;
+            CompletionByNonce(data->nNonce, stopRet);
+            pService->Shutdown();
+        }
+    }
+}
+
+void CDbpService::RPCRootHandle(CMvRPCRouteGetForkCount* data, CMvRPCRouteGetForkCountRet* ret)
+{
+    if (ret == NULL)
+    {
+       if (sessionCount == 0)
+        {
+            CMvRPCRouteGetForkCountRet ret;
+            ret.count = pService->GetForkCount();
+            CompletionByNonce(data->nNonce, ret);
+        }
+        return;
+    }
+
+    if (ret != NULL)
+    {
+        CMvRPCRouteGetForkCountRet getForkCountRetIn = *((CMvRPCRouteGetForkCountRet*)ret);
+        int count = 0;
+
+        uint64 nNonce = getForkCountRetIn.nNonce;
+        auto compare = [nNonce](std::pair<uint64, boost::any>& element) { return nNonce == element.first; };
+        auto iter = std::find_if(queCount.begin(), queCount.end(), compare);
+        if(iter != queCount.end() && (iter->second).type() == typeid(CMvRPCRouteGetForkCountRet))
+        {
+            int& c = boost::any_cast<CMvRPCRouteGetForkCountRet&>(iter->second).count;
+            c = c + getForkCountRetIn.count;
+            count = c;
+        }
+
+        if (sessionCount == 0)
+        {
+            CMvRPCRouteGetForkCountRet ret;
+            ret.count = pService->GetForkCount() + count;
+            CompletionByNonce(data->nNonce, ret);
+        }
+        return;
+    }
+}
+
+void CDbpService::SwrapForks(std::vector<std::pair<uint256, CProfile>>& vFork, std::vector<CMvRPCProfile>& vRpcFork)
+{
+    for (auto& fork : vFork)
+    {
+        CMvRPCProfile profile;
+        profile.strHex = fork.first.GetHex();
+        profile.strName = fork.second.strName;
+        profile.strSymbol = fork.second.strSymbol;
+        profile.fIsolated = fork.second.IsIsolated();
+        profile.fPrivate = fork.second.IsPrivate();
+        profile.fEnclosed = fork.second.IsEnclosed();
+        profile.address = CMvAddress(fork.second.destOwner).ToString();
+        vRpcFork.push_back(profile);
+    }
+}
+
+void CDbpService::ListForkUnique(std::vector<CMvRPCProfile>& vFork)
+{
+    std::sort(vFork.begin(), vFork.end(), [](CMvRPCProfile& i, CMvRPCProfile& j) { return i.strHex > j.strHex; });
+    auto it = std::unique(vFork.begin(), vFork.end(), [](CMvRPCProfile& i, CMvRPCProfile& j) { return i.strHex == j.strHex; });
+    vFork.resize(std::distance(vFork.begin(), it));
+}
+
+void CDbpService::RPCRootHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRet* ret)
+{
+    if(ret == NULL)
+    {
+       if (sessionCount == 0)
+        {
+            CMvRPCRouteListForkRet ret;
+            std::vector<std::pair<uint256,CProfile>> vFork;
+            pService->ListFork(vFork, data->fAll);
+            std::vector<CMvRPCProfile> vRpcFork;
+            SwrapForks(vFork, vRpcFork);
+            ret.vFork.insert(ret.vFork.end(), vRpcFork.begin(), vRpcFork.end());
+            CompletionByNonce(data->nNonce, ret);
+        }
+        return;
+    }
+
+    if(ret != NULL)
+    {
+        CMvRPCRouteListForkRet listForkRetIn = *((CMvRPCRouteListForkRet*)ret);
+        std::vector<CMvRPCProfile> vTempFork;
+        uint64 nNonce = listForkRetIn.nNonce;
+        auto compare = [nNonce](std::pair<uint64, boost::any>& element) { return nNonce == element.first; };
+        auto iter = std::find_if(queCount.begin(), queCount.end(), compare);
+        if (iter != queCount.end() && (iter->second).type() == typeid(CMvRPCRouteListForkRet))
+        {
+            auto& vForkSelf = boost::any_cast<CMvRPCRouteListForkRet&>(iter->second).vFork;
+            vForkSelf.insert(vForkSelf.end(), listForkRetIn.vFork.begin(), listForkRetIn.vFork.end());
+            ListForkUnique(vForkSelf);
+            vTempFork.insert(vTempFork.end(), vForkSelf.begin(), vForkSelf.end());
+        }
+
+        if (sessionCount == 0)
+        {
+            CMvRPCRouteListForkRet retOut;
+            std::vector<std::pair<uint256, CProfile>> vFork;
+            pService->ListFork(vFork, data->fAll);
+            std::vector<CMvRPCProfile> vRpcFork;
+            SwrapForks(vFork, vRpcFork);
+            retOut.vFork.insert(retOut.vFork.end(), vTempFork.begin(), vTempFork.end());
+            retOut.vFork.insert(retOut.vFork.end(), vRpcFork.begin(), vRpcFork.end());
+            ListForkUnique(retOut.vFork);
+            CompletionByNonce(data->nNonce, retOut);
+        }
+        return;
+    }
+}
+
+void CDbpService::RPCRootHandle(CMvRPCRouteGetBlockLocation* data, CMvRPCRouteGetBlockLocationRet* ret)
+{
+    if (ret == NULL)
+    {
+        if (sessionCount == 0)
+        {
+            CMvRPCRouteGetBlockLocationRet getBlockLocationRet;
+            getBlockLocationRet.nNonce = data->nNonce;
+            getBlockLocationRet.type = data->type;
+            getBlockLocationRet.strFork = "";
+            getBlockLocationRet.height = 0;
+            CompletionByNonce(data->nNonce, getBlockLocationRet);
+            return;
+        }
+
+        if (sessionCount != 0)
+        {
+            auto vRawData = RPCRouteRetToStream(*data);
+            PushMsgToChild(vRawData, data->type);
+            return;
+        }
+    }
+
+    if (ret != NULL)
+    {
+        if(!ret->strFork.empty())
+        {
+            CMvRPCRouteGetBlockLocationRet getBlockLocationRet;
+            getBlockLocationRet.nNonce = data->nNonce;
+            getBlockLocationRet.type = data->type;
+            getBlockLocationRet.strFork = ret->strFork;
+            getBlockLocationRet.height = ret->height;
+            CompletionByNonce(data->nNonce, getBlockLocationRet);
+            return;
+        }
+
+        if (sessionCount == 0)
+        {
+            CMvRPCRouteGetBlockLocationRet getBlockLocationRet;
+            getBlockLocationRet.nNonce = data->nNonce;
+            getBlockLocationRet.type = data->type;
+            getBlockLocationRet.strFork = "";
+            getBlockLocationRet.height = 0;
+            CompletionByNonce(data->nNonce, getBlockLocationRet);
+            return;
+        }
+
+        if (sessionCount != 0)
+        {
+            auto vRawData = RPCRouteRetToStream(*data);
+            PushMsgToChild(vRawData, data->type);
+            return;
+        }
+    }
+}
+
+void CDbpService::RPCRootHandle(CMvRPCRouteGetBlockCount* data, CMvRPCRouteGetBlockCountRet* ret)
+{
+    if(ret == NULL)
+    {
+        if (sessionCount == 0)
+        {
+            CMvRPCRouteGetBlockCountRet getBlockCountRet;
+            getBlockCountRet.nNonce = data->nNonce;
+            getBlockCountRet.type = data->type;
+            getBlockCountRet.exception = 2;
+            getBlockCountRet.height = 0;
+            CompletionByNonce(data->nNonce, getBlockCountRet);
+            return;
+        }
+
+        if (sessionCount != 0)
+        {
+            auto vRawData = RPCRouteRetToStream(*data);
+            PushMsgToChild(vRawData, data->type);
+            return;
+        }
+    }
+
+    if(ret != NULL)
+    {
+        if(ret->exception == 0)
+        {
+            CMvRPCRouteGetBlockCountRet getBlockCountRet;
+            getBlockCountRet.nNonce = data->nNonce;
+            getBlockCountRet.type = data->type;
+            getBlockCountRet.exception = ret->exception;
+            getBlockCountRet.height = ret->height;
+            CompletionByNonce(data->nNonce, getBlockCountRet);
+            return;
+        }
+
+        if (sessionCount == 0)
+        {
+            CMvRPCRouteGetBlockCountRet getBlockCountRet;
+            getBlockCountRet.nNonce = data->nNonce;
+            getBlockCountRet.type = data->type;
+            getBlockCountRet.exception = 2;
+            getBlockCountRet.height = 0;
+            CompletionByNonce(data->nNonce, getBlockCountRet);
+            return;
+        }
+
+        if (sessionCount != 0)
+        {
+            auto vRawData = RPCRouteRetToStream(*data);
+            PushMsgToChild(vRawData, data->type);
+            return;
+        }
+    }
+}
+
+void CDbpService::RPCRootHandle(CMvRPCRouteGetBlockHash * data, CMvRPCRouteGetBlockHashRet* ret)
+{
+    if(ret == NULL)
+    {
+        if (sessionCount == 0)
+        {
+            CMvRPCRouteGetBlockHashRet getBlockHashRet;
+            getBlockHashRet.nNonce = data->nNonce;
+            getBlockHashRet.type = data->type;
+            getBlockHashRet.exception = 2;
+            CompletionByNonce(data->nNonce, getBlockHashRet);
+            return;
+        }
+
+        if (sessionCount != 0)
+        {
+            auto vRawData = RPCRouteRetToStream(*data);
+            PushMsgToChild(vRawData, data->type);
+            return;
+        }
+    }
+
+    if(ret != NULL)
+    {
+        if(ret->exception == 0 || ret->exception == 3)
+        {
+            CMvRPCRouteGetBlockHashRet getBlockHashRet;
+            getBlockHashRet.nNonce = data->nNonce;
+            getBlockHashRet.type = data->type;
+            getBlockHashRet.exception = ret->exception;
+            getBlockHashRet.vHash = ret->vHash;
+            CompletionByNonce(data->nNonce, getBlockHashRet);
+            return;
+        }
+
+        if (sessionCount == 0)
+        {
+            CMvRPCRouteGetBlockHashRet getBlockHashRet;
+            getBlockHashRet.nNonce = data->nNonce;
+            getBlockHashRet.type = data->type;
+            getBlockHashRet.exception = 2;
+            CompletionByNonce(data->nNonce, getBlockHashRet);
+            return;
+        }
+
+        if (sessionCount != 0)
+        {
+            auto vRawData = RPCRouteRetToStream(*data);
+            PushMsgToChild(vRawData, data->type);
+            return;
+        }
+    }
+}
+
+void CDbpService::RPCRootHandle(CMvRPCRouteGetBlock* data, CMvRPCRouteGetBlockRet* ret)
+{
+    auto vRawData = RPCRouteRetToStream(*data);
+
+    if (ret == NULL)
+    {
+        if (sessionCount == 0)
+        {
+            CMvRPCRouteGetBlockRet getBlockRet;
+            getBlockRet.nNonce = data->nNonce;
+            getBlockRet.type = data->type;
+            getBlockRet.exception = 1;
+            CompletionByNonce(data->nNonce, getBlockRet);
+            return;
+        }
+
+        if (sessionCount != 0)
+        {
+            PushMsgToChild(vRawData, data->type);
+            return;
+        }
+    }
+
+    if (ret != NULL)
+    {
+        CMvRPCRouteGetBlockRet getBlockRet;
+        getBlockRet.nNonce = data->nNonce;
+        getBlockRet.type = data->type;
+
+        if(ret->exception == 0)
+        {
+            getBlockRet.exception = ret->exception;
+            getBlockRet.strFork = ret->strFork;
+            getBlockRet.height = ret->height;
+            getBlockRet.block = ret->block;
+            CompletionByNonce(data->nNonce, getBlockRet);
+            return;
+        }
+
+        if (sessionCount == 0)
+        {
+            getBlockRet.exception = 1;
+            CompletionByNonce(data->nNonce, getBlockRet);
+            return;
+        }
+
+        if (sessionCount != 0)
+        {
+            PushMsgToChild(vRawData, data->type);
+            return;
+        }
+    }
+}
+
+
+void CDbpService::RPCRootHandle(CMvRPCRouteGetTxPool* data, CMvRPCRouteGetTxPoolRet* ret)
+{
+    auto vRawData = RPCRouteRetToStream(*data);
+
+    if(ret == NULL)
+    {
+        if (sessionCount == 0)
+        {
+            CMvRPCRouteGetTxPoolRet getTxPoolRet;
+            getTxPoolRet.nNonce = data->nNonce;
+            getTxPoolRet.type = data->type;
+            getTxPoolRet.exception = 2;
+            CompletionByNonce(data->nNonce, getTxPoolRet);
+            return;
+        }
+
+        if (sessionCount != 0)
+        {
+            PushMsgToChild(vRawData, data->type);
+            return;
+        }
+    }
+
+    if(ret != NULL)
+    {
+        CMvRPCRouteGetTxPoolRet getTxPoolRet;
+        getTxPoolRet.nNonce = data->nNonce;
+        getTxPoolRet.type = data->type;
+
+        if (ret->exception == 0)
+        {
+            getTxPoolRet.exception = ret->exception;
+            getTxPoolRet.vTxPool = ret->vTxPool;
+            CompletionByNonce(data->nNonce, getTxPoolRet);
+            return;
+        }
+
+        if (sessionCount == 0)
+        {
+            getTxPoolRet.exception = 2;
+            CompletionByNonce(data->nNonce, getTxPoolRet);
+            return;
+        }
+
+        if (sessionCount != 0)
+        {
+            PushMsgToChild(vRawData, data->type);
+            return;
+        }
+    }
+}
+
+void CDbpService::RPCRootHandle(CMvRPCRouteGetTransaction* data, CMvRPCRouteGetTransactionRet* ret)
+{
+    auto vRawData = RPCRouteRetToStream(*data);
+
+    if(ret == NULL)
+    {
+        if (sessionCount == 0)
+        {
+            CMvRPCRouteGetTransactionRet getTransactionRet;
+            getTransactionRet.nNonce = data->nNonce;
+            getTransactionRet.type = data->type;
+            getTransactionRet.exception = 1;
+            CompletionByNonce(data->nNonce, getTransactionRet);
+            return;
+        }
+
+        if (sessionCount != 0)
+        {
+            PushMsgToChild(vRawData, data->type);
+            return;
+        }
+    }
+
+    if(ret != NULL)
+    {
+        CMvRPCRouteGetTransactionRet getTransactionRet;
+        getTransactionRet.nNonce = data->nNonce;
+        getTransactionRet.type = data->type;
+
+        if (ret->exception == 0)
+        {
+            getTransactionRet.exception = ret->exception;
+            getTransactionRet.tx = ret->tx;
+            getTransactionRet.strFork = ret->strFork;
+            getTransactionRet.nDepth = ret->nDepth;
+            CompletionByNonce(data->nNonce, getTransactionRet);
+            return;
+        }
+
+        if (sessionCount == 0)
+        {
+            getTransactionRet.exception = 2;
+            CompletionByNonce(data->nNonce, getTransactionRet);
+            return;
+        }
+
+        if (sessionCount != 0)
+        {
+            PushMsgToChild(vRawData, data->type);
+            return;
+        }
+    }
+}
+
+void CDbpService::RPCRootHandle(CMvRPCRouteGetForkHeight* data, CMvRPCRouteGetForkHeightRet* ret)
+{
+    auto vRawData = RPCRouteRetToStream(*data);
+
+    if(ret == NULL)
+    {
+        if (sessionCount == 0)
+        {
+            CMvRPCRouteGetForkHeightRet getForkHeightRet;
+            getForkHeightRet.nNonce = data->nNonce;
+            getForkHeightRet.type = data->type;
+            getForkHeightRet.exception = 2;
+            CompletionByNonce(data->nNonce, getForkHeightRet);
+            return;
+        }
+
+        if (sessionCount != 0)
+        {
+            PushMsgToChild(vRawData, data->type);
+            return;
+        }
+    }
+
+    if(ret != NULL)
+    {
+        CMvRPCRouteGetForkHeightRet getForkHeightRet;
+        getForkHeightRet.nNonce = data->nNonce;
+        getForkHeightRet.type = data->type;
+
+        if (ret->exception == 0)
+        {
+            getForkHeightRet.exception = ret->exception;
+            getForkHeightRet.height = ret->height;
+            CompletionByNonce(data->nNonce, getForkHeightRet);
+            return;
+        }
+
+        if (sessionCount == 0)
+        {
+            getForkHeightRet.exception = 2;
+            CompletionByNonce(data->nNonce, getForkHeightRet);
+            return;
+        }
+
+        if (sessionCount != 0)
+        {
+            PushMsgToChild(vRawData, data->type);
+            return;
+        }
+    }
+}
+
+void CDbpService::RPCRootHandle(CMvRPCRouteSendTransaction* data, CMvRPCRouteSendTransactionRet* ret)
+{
+    auto vRawData = RPCRouteRetToStream(*data);
+
+    if(ret == NULL)
+    {
+        if (sessionCount == 0)
+        {
+            CMvRPCRouteSendTransactionRet sendTransactionRet;
+            sendTransactionRet.nNonce = data->nNonce;
+            sendTransactionRet.type = data->type;
+            sendTransactionRet.exception = 1;
+            CompletionByNonce(data->nNonce, sendTransactionRet);
+            return;
+        }
+
+        if (sessionCount != 0)
+        {
+            PushMsgToChild(vRawData, data->type);
+            return;
+        }
+    }
+
+    if(ret != NULL)
+    {
+        CMvRPCRouteSendTransactionRet  sendTransactionRet;
+        sendTransactionRet.nNonce = data->nNonce;
+        sendTransactionRet.type = data->type;
+
+        if (ret->exception == 0)
+        {
+            sendTransactionRet.exception = ret->exception;
+            CompletionByNonce(data->nNonce, sendTransactionRet);
+            return;
+        }
+
+        if (sessionCount == 0)
+        {
+            sendTransactionRet.exception = 1;
+            sendTransactionRet.err = ret->err;
+            CompletionByNonce(data->nNonce, sendTransactionRet);
+            return;
+        }
+
+        if (sessionCount != 0)
+        {
+            PushMsgToChild(vRawData, data->type);
+            return;
+        }
+    }
+}
+
+void CDbpService::RPCForkHandle(CMvRPCRouteStop* data, CMvRPCRouteStopRet* ret)
+{
+    if (ret == NULL)
+    {
+        if (sessionCount == 0)
+        {
+            CMvRPCRouteResult result;
+            result.type = CMvRPCRoute::DBP_RPCROUTE_STOP;
+            result.vRawData = RPCRouteRetToStream(*data);
+            SendRPCResult(result);
+            pService->Shutdown();
+        }
+    }
+
+    if (ret != NULL)
+    {
+        if (sessionCount == 0)
+        {
+            CMvRPCRouteResult result;
+            result.type = CMvRPCRoute::DBP_RPCROUTE_STOP;
+            result.vRawData = RPCRouteRetToStream(*data);
+            SendRPCResult(result);
+            pService->Shutdown();
+        }
+    }
+}
+
+void CDbpService::RPCForkHandle(CMvRPCRouteGetForkCount* data, CMvRPCRouteGetForkCountRet* ret)
+{
+    if (ret == NULL)
+    {
+        if (sessionCount == 0)
+        {
+            CMvRPCRouteResult result;
+            result.type = CMvRPCRoute::DBP_RPCROUTE_GET_FORK_COUNT;
+            result.vRawData = RPCRouteRetToStream(*data);
+
+            CMvRPCRouteGetForkCountRet getForkCountRet;
+            getForkCountRet.nNonce = data->nNonce;
+            getForkCountRet.count = pService->GetForkCount() - 1;
+            result.vData = RPCRouteRetToStream(getForkCountRet);
+            SendRPCResult(result);
+        }
+        return;
+    }
+
+    if (ret != NULL)
+    {
+        CMvRPCRouteGetForkCountRet getForkCountRetIn = *((CMvRPCRouteGetForkCountRet*)ret);
+        CMvRPCRouteGetForkCountRet tempRet;
+        int count = 0;
+
+        uint64 nNonce = getForkCountRetIn.nNonce;
+        auto compare = [nNonce](std::pair<uint64, boost::any>& element) { return nNonce == element.first; };
+        auto iter = std::find_if(queCount.begin(), queCount.end(), compare);
+        if (iter != queCount.end() && (iter->second).type() == typeid(CMvRPCRouteGetForkCountRet))
+        {
+            int &c = boost::any_cast<CMvRPCRouteGetForkCountRet&>(iter->second).count;
+            c = c + getForkCountRetIn.count;
+            count = c;
+        }
+
+        if (sessionCount == 0)
+        {
+            CMvRPCRouteResult result;
+            result.type = CMvRPCRoute::DBP_RPCROUTE_GET_FORK_COUNT;
+            result.vRawData = RPCRouteRetToStream(*data);
+
+            CMvRPCRouteGetForkCountRet getForkCountRetOut;
+            getForkCountRetOut.type = getForkCountRetIn.type;
+            getForkCountRetOut.nNonce = getForkCountRetIn.nNonce;
+            getForkCountRetOut.count = pService->GetForkCount() - 1 + count;
+            result.vData = RPCRouteRetToStream(getForkCountRetOut);
+            SendRPCResult(result);
+        }
+        return;
+    }
+}
+
+void CDbpService::RPCForkHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRet* ret)
+{
+    if(ret == NULL)
+    {
+        if (sessionCount == 0)
+        {
+            CMvRPCRouteResult result;
+            result.type = CMvRPCRoute::DBP_RPCROUTE_LIST_FORK;
+            result.vRawData = RPCRouteRetToStream(*data);
+
+            CMvRPCRouteListForkRet retOut;
+            retOut.nNonce = data->nNonce;
+            retOut.type = data->type;
+
+            std::vector<std::pair<uint256, CProfile>> vFork;
+            pService->ListFork(vFork, data->fAll);
+            std::vector<CMvRPCProfile> vRpcFork;
+            SwrapForks(vFork, vRpcFork);
+            retOut.vFork.insert(retOut.vFork.end(), vRpcFork.begin(), vRpcFork.end());
+
+            result.vData = RPCRouteRetToStream(retOut);
+            SendRPCResult(result);
+        }
+        return;
+    }
+
+    if(ret != NULL)
+    {
+        CMvRPCRouteListForkRet listForkRetIn = *ret;
+        std::vector<CMvRPCProfile> vTempFork;
+        uint64 nNonce = listForkRetIn.nNonce;
+        auto compare = [nNonce](std::pair<uint64, boost::any>& element) { return nNonce == element.first; };
+        auto iter = std::find_if(queCount.begin(), queCount.end(), compare);
+        if (iter != queCount.end() && (iter->second).type() == typeid(CMvRPCRouteListForkRet))
+        {
+            auto& vForkSelf = boost::any_cast<CMvRPCRouteListForkRet&>(iter->second).vFork;
+            vForkSelf.insert(vForkSelf.end(), listForkRetIn.vFork.begin(), listForkRetIn.vFork.end());
+            ListForkUnique(vForkSelf);
+            vTempFork.insert(vTempFork.end(), vForkSelf.begin(), vForkSelf.end());
+        }
+
+        if (sessionCount == 0)
+        {
+            CMvRPCRouteResult result;
+            result.type = CMvRPCRoute::DBP_RPCROUTE_LIST_FORK;
+            result.vRawData = RPCRouteRetToStream(*data);
+
+            CMvRPCRouteListForkRet listForkRetOut;
+            listForkRetOut.type = listForkRetIn.type;
+            listForkRetOut.nNonce = listForkRetIn.nNonce;
+
+            std::vector<std::pair<uint256, CProfile>> vFork;
+            pService->ListFork(vFork, data->fAll);
+            std::vector<CMvRPCProfile> vRpcFork;
+            SwrapForks(vFork, vRpcFork);
+
+            listForkRetOut.vFork.insert(listForkRetOut.vFork.end(), vTempFork.begin(), vTempFork.end());
+            listForkRetOut.vFork.insert(listForkRetOut.vFork.end(), vRpcFork.begin(), vRpcFork.end());
+            ListForkUnique(listForkRetOut.vFork);
+            result.vData = RPCRouteRetToStream(listForkRetOut);
+            SendRPCResult(result);
+        }
+        return;
+    }
+}
+
+void CDbpService::RPCForkHandle(CMvRPCRouteGetBlockLocation* data, CMvRPCRouteGetBlockLocationRet* ret)
+{
+    auto vRawData = RPCRouteRetToStream(*data);
+
+    if (ret == NULL)
+    {
+        if (sessionCount == 0)
+        {
+            CMvRPCRouteGetBlockLocationRet getBlockLocationRet;
+            CMvRPCRouteResult result;
+            result.type = CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK_LOCATION;
+            result.vRawData = vRawData;
+            getBlockLocationRet.nNonce = data->nNonce;
+            getBlockLocationRet.type = data->type;
+            getBlockLocationRet.strFork = "";
+            getBlockLocationRet.height = 0;
+            result.vData = RPCRouteRetToStream(getBlockLocationRet);
+            SendRPCResult(result);
+            return;
+        }
+
+        if (sessionCount != 0)
+        {
+            PushMsgToChild(vRawData, data->type);
+            return;
+        }
+    }
+
+    if (ret != NULL)
+    {
+        if (!ret->strFork.empty())
+        {
+            CMvRPCRouteGetBlockLocationRet getBlockLocationRet;
+            CMvRPCRouteResult result;
+            result.type = CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK_LOCATION;
+            result.vRawData = vRawData;
+            getBlockLocationRet.nNonce = data->nNonce;
+            getBlockLocationRet.type = data->type;
+            getBlockLocationRet.strFork = ret->strFork;
+            getBlockLocationRet.height = ret->height;
+            result.vData = RPCRouteRetToStream(getBlockLocationRet);
+            SendRPCResult(result);
+            return;
+        }
+
+        if (sessionCount == 0)
+        {
+            CMvRPCRouteGetBlockLocationRet getBlockLocationRet;
+            CMvRPCRouteResult result;
+            result.type = CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK_LOCATION;
+            result.vRawData = vRawData;
+            getBlockLocationRet.nNonce = data->nNonce;
+            getBlockLocationRet.type = data->type;
+            getBlockLocationRet.strFork = "";
+            getBlockLocationRet.height = 0;
+            result.vData = RPCRouteRetToStream(getBlockLocationRet);
+            SendRPCResult(result);
+            return;
+        }
+
+        if (sessionCount != 0)
+        {
+            PushMsgToChild(vRawData, data->type);
+            return;
+        }
+    }
+}
+
+void CDbpService::RPCForkHandle(CMvRPCRouteGetBlockCount* data, CMvRPCRouteGetBlockCountRet* ret)
+{
+    auto vRawData = RPCRouteRetToStream(*data);
+
+    if (ret == NULL)
+    {
+        if (sessionCount == 0)
+        {
+            CMvRPCRouteGetBlockCountRet getBlockCountRet;
+            CMvRPCRouteResult result;
+            result.type = CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK_COUNT;
+            result.vRawData = vRawData;
+            getBlockCountRet.nNonce = data->nNonce;
+            getBlockCountRet.type = data->type;
+            getBlockCountRet.exception = 2;
+            getBlockCountRet.height = 0;
+            result.vData = RPCRouteRetToStream(getBlockCountRet);
+            SendRPCResult(result);
+            return;
+        }
+
+        if (sessionCount != 0)
+        {
+            PushMsgToChild(vRawData, data->type);
+            return;
+        }
+    }
+
+    if (ret != NULL)
+    {
+        if(ret->exception == 0)
+        {
+            CMvRPCRouteGetBlockCountRet getBlockCountRet;
+            CMvRPCRouteResult result;
+            result.type = CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK_COUNT;
+            result.vRawData = vRawData;
+            getBlockCountRet.nNonce = data->nNonce;
+            getBlockCountRet.type = data->type;
+            getBlockCountRet.exception = ret->exception;
+            getBlockCountRet.height = ret->height;
+            result.vData = RPCRouteRetToStream(getBlockCountRet);
+            SendRPCResult(result);
+            return;
+        }
+
+        if (sessionCount == 0)
+        {
+            CMvRPCRouteGetBlockCountRet getBlockCountRet;
+            CMvRPCRouteResult result;
+            result.type = CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK_COUNT;
+            result.vRawData = vRawData;
+            getBlockCountRet.nNonce = data->nNonce;
+            getBlockCountRet.type = data->type;
+            getBlockCountRet.exception = 2;
+            getBlockCountRet.height = 0;
+            result.vData = RPCRouteRetToStream(getBlockCountRet);
+            SendRPCResult(result);
+            return;
+        }
+
+        if (sessionCount != 0)
+        {
+            PushMsgToChild(vRawData, data->type);
+            return;
+        }
+    }
+}
+
+void CDbpService::RPCForkHandle(CMvRPCRouteGetBlockHash* data, CMvRPCRouteGetBlockHashRet* ret)
+{
+    auto vRawData = RPCRouteRetToStream(*data);
+
+    if (ret == NULL)
+    {
+        if (sessionCount == 0)
+        {
+            CMvRPCRouteGetBlockHashRet getBlockHashRet;
+            CMvRPCRouteResult result;
+            result.type = CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK_HASH;
+            result.vRawData = vRawData;
+            getBlockHashRet.nNonce = data->nNonce;
+            getBlockHashRet.type = data->type;
+            getBlockHashRet.exception = 2;
+            result.vData = RPCRouteRetToStream(getBlockHashRet);
+            SendRPCResult(result);
+            return;
+        }
+
+        if (sessionCount != 0)
+        {
+            PushMsgToChild(vRawData, data->type);
+            return;
+        }
+    }
+
+    if (ret != NULL)
+    {
+        if(ret->exception == 0 || ret->exception == 3)
+        {
+            CMvRPCRouteGetBlockHashRet getBlockHashRet;
+            CMvRPCRouteResult result;
+            result.type = CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK_HASH;
+            result.vRawData = vRawData;
+            getBlockHashRet.nNonce = data->nNonce;
+            getBlockHashRet.type = data->type;
+            getBlockHashRet.exception = ret->exception;
+            getBlockHashRet.vHash = ret->vHash;
+            result.vData = RPCRouteRetToStream(getBlockHashRet);
+            SendRPCResult(result);
+            return;
+        }
+
+        if (sessionCount == 0)
+        {
+            CMvRPCRouteGetBlockHashRet getBlockHashRet;
+            CMvRPCRouteResult result;
+            result.type = CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK_HASH;
+            result.vRawData = vRawData;
+            getBlockHashRet.nNonce = data->nNonce;
+            getBlockHashRet.type = data->type;
+            getBlockHashRet.exception = 2;
+            result.vData = RPCRouteRetToStream(getBlockHashRet);
+            SendRPCResult(result);
+            return;
+        }
+
+        if (sessionCount != 0)
+        {
+            PushMsgToChild(vRawData, data->type);
+            return;
+        }
+    }
+}
+
+void CDbpService::RPCForkHandle(CMvRPCRouteGetBlock* data, CMvRPCRouteGetBlockRet* ret)
+{
+    auto vRawData = RPCRouteRetToStream(*data);
+
+    if (ret == NULL)
+    {
+        if (sessionCount == 0)
+        {
+            CMvRPCRouteGetBlockRet getBlockRet;
+            CMvRPCRouteResult result;
+            result.type = CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK;
+            result.vRawData = vRawData;
+            getBlockRet.nNonce = data->nNonce;
+            getBlockRet.type = data->type;
+            getBlockRet.exception = 1;
+            result.vData = RPCRouteRetToStream(getBlockRet);
+            SendRPCResult(result);
+            return;
+        }
+
+        if (sessionCount != 0)
+        {
+            PushMsgToChild(vRawData, data->type);
+            return;
+        }
+    }
+
+    if (ret != NULL)
+    {
+        CMvRPCRouteGetBlockRet getBlockRet;
+        CMvRPCRouteResult result;
+        result.type = CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK;
+        result.vRawData = vRawData;
+        getBlockRet.nNonce = data->nNonce;
+        getBlockRet.type = data->type;
+
+        if(ret->exception == 0)
+        {
+            getBlockRet.exception = ret->exception;
+            getBlockRet.strFork = ret->strFork;
+            getBlockRet.height = ret->height;
+            getBlockRet.block = ret->block;
+            result.vData = RPCRouteRetToStream(getBlockRet);
+            SendRPCResult(result);
+            return;
+        }
+
+        if (sessionCount == 0)
+        {
+            getBlockRet.exception = 1;
+            result.vData = RPCRouteRetToStream(getBlockRet);
+            SendRPCResult(result);
+            return;
+        }
+
+        if (sessionCount != 0)
+        {
+            PushMsgToChild(vRawData, data->type);
+            return;
+        }
+    }
+}
+
+void CDbpService::RPCForkHandle(CMvRPCRouteGetTxPool* data, CMvRPCRouteGetTxPoolRet* ret)
+{
+    auto vRawData = RPCRouteRetToStream(*data);
+
+    if (ret == NULL)
+    {
+        if (sessionCount == 0)
+        {
+            CMvRPCRouteGetTxPoolRet getTxPoolRet;
+            CMvRPCRouteResult result;
+            result.type = CMvRPCRoute::DBP_RPCROUTE_GET_TXPOOL;
+            result.vRawData = vRawData;
+            getTxPoolRet.nNonce = data->nNonce;
+            getTxPoolRet.type = data->type;
+            getTxPoolRet.exception = 2;
+            result.vData = RPCRouteRetToStream(getTxPoolRet);
+            SendRPCResult(result);
+            return;
+        }
+
+        if (sessionCount != 0)
+        {
+            PushMsgToChild(vRawData, data->type);
+            return;
+        }
+    }
+
+    if (ret != NULL)
+    {
+        CMvRPCRouteGetTxPoolRet getTxPoolRet;
+        CMvRPCRouteResult result;
+        result.type = CMvRPCRoute::DBP_RPCROUTE_GET_TXPOOL;
+        result.vRawData = vRawData;
+        getTxPoolRet.nNonce = data->nNonce;
+        getTxPoolRet.type = data->type;
+
+        if(ret->exception == 0)
+        {
+            getTxPoolRet.exception = ret->exception;
+            getTxPoolRet.vTxPool = ret->vTxPool;
+            result.vData = RPCRouteRetToStream(getTxPoolRet);
+            SendRPCResult(result);
+            return;
+        }
+
+        if (sessionCount == 0)
+        {
+            getTxPoolRet.exception = 2;
+            result.vData = RPCRouteRetToStream(getTxPoolRet);
+            SendRPCResult(result);
+            return;
+        }
+
+        if (sessionCount != 0)
+        {
+            PushMsgToChild(vRawData, data->type);
+            return;
+        }
+    }
+}
+
+void CDbpService::RPCForkHandle(CMvRPCRouteGetTransaction* data, CMvRPCRouteGetTransactionRet* ret)
+{
+    auto vRawData = RPCRouteRetToStream(*data);
+
+    if (ret == NULL)
+    {
+        if (sessionCount == 0)
+        {
+            CMvRPCRouteGetTransactionRet getTransactionRet;
+            CMvRPCRouteResult result;
+            result.type = CMvRPCRoute::DBP_RPCROUTE_GET_TRANSACTION;
+            result.vRawData = vRawData;
+            getTransactionRet.nNonce = data->nNonce;
+            getTransactionRet.type = data->type;
+            getTransactionRet.exception = 1;
+            result.vData = RPCRouteRetToStream(getTransactionRet);
+            SendRPCResult(result);
+            return;
+        }
+
+        if (sessionCount != 0)
+        {
+            PushMsgToChild(vRawData, data->type);
+            return;
+        }
+    }
+
+    if (ret != NULL)
+    {
+        CMvRPCRouteGetTransactionRet getTransactionRet;
+        CMvRPCRouteResult result;
+        result.type = CMvRPCRoute::DBP_RPCROUTE_GET_TRANSACTION;
+        result.vRawData = vRawData;
+        getTransactionRet.nNonce = data->nNonce;
+        getTransactionRet.type = data->type;
+
+        if(ret->exception == 0)
+        {
+            getTransactionRet.exception = ret->exception;
+            getTransactionRet.tx = ret->tx;
+            getTransactionRet.strFork = ret->strFork;
+            getTransactionRet.nDepth = ret->nDepth;
+            result.vData = RPCRouteRetToStream(getTransactionRet);
+            SendRPCResult(result);
+            return;
+        }
+
+        if (sessionCount == 0) 
+        {
+            getTransactionRet.exception = 2;
+            result.vData = RPCRouteRetToStream(getTransactionRet);
+            SendRPCResult(result);
+            return;
+        }
+
+        if (sessionCount != 0)
+        {
+            PushMsgToChild(vRawData, data->type);
+            return;
+        }
+    }
+}
+
+
+void CDbpService::RPCForkHandle(CMvRPCRouteGetForkHeight* data, CMvRPCRouteGetForkHeightRet* ret)
+{
+    auto vRawData = RPCRouteRetToStream(*data);
+
+    if (ret == NULL)
+    {
+        if (sessionCount == 0)
+        {
+            CMvRPCRouteGetForkHeightRet getForkHeightRet;
+            CMvRPCRouteResult result;
+            result.type = CMvRPCRoute::DBP_RPCROUTE_GET_FORK_HEIGHT;
+            result.vRawData = vRawData;
+            getForkHeightRet.nNonce = data->nNonce;
+            getForkHeightRet.type = data->type;
+            getForkHeightRet.exception = 2;
+            result.vData = RPCRouteRetToStream(getForkHeightRet);
+            SendRPCResult(result);
+            return;
+        }
+
+        if (sessionCount != 0)
+        {
+            PushMsgToChild(vRawData, data->type);
+            return;
+        }
+    }
+
+    if (ret != NULL)
+    {
+        CMvRPCRouteGetForkHeightRet getForkHeightRet;
+        CMvRPCRouteResult result;
+        result.type = CMvRPCRoute::DBP_RPCROUTE_GET_FORK_HEIGHT;
+        result.vRawData = vRawData;
+        getForkHeightRet.nNonce = data->nNonce;
+        getForkHeightRet.type = data->type;
+
+        if(ret->exception == 0)
+        {
+            getForkHeightRet.exception = ret->exception;
+            getForkHeightRet.height = ret->height;
+            result.vData = RPCRouteRetToStream(getForkHeightRet);
+            SendRPCResult(result);
+            return;
+        }
+
+        if (sessionCount == 0)
+        {
+            getForkHeightRet.exception = 2;
+            result.vData = RPCRouteRetToStream(getForkHeightRet);
+            SendRPCResult(result);
+            return;
+        }
+
+        if (sessionCount != 0)
+        {
+            PushMsgToChild(vRawData, data->type);
+            return;
+        }
+    }
+}
+
+void CDbpService::RPCForkHandle(CMvRPCRouteSendTransaction* data, CMvRPCRouteSendTransactionRet* ret)
+{
+    auto vRawData = RPCRouteRetToStream(*data);
+
+    if (ret == NULL)
+    {
+        if (sessionCount == 0)
+        {
+            CMvRPCRouteSendTransactionRet sendTransactionRet;
+            CMvRPCRouteResult result;
+            result.type = CMvRPCRoute::DBP_RPCROUTE_SEND_TRANSACTION;
+            result.vRawData = vRawData;
+            sendTransactionRet.nNonce = data->nNonce;
+            sendTransactionRet.type = data->type;
+            sendTransactionRet.exception = 1;
+            result.vData = RPCRouteRetToStream(sendTransactionRet);
+            SendRPCResult(result);
+            return;
+        }
+
+        if (sessionCount != 0)
+        {
+            PushMsgToChild(vRawData, data->type);
+            return;
+        }
+    }
+
+    if (ret != NULL)
+    {
+        CMvRPCRouteSendTransactionRet sendTransactionRet;
+        CMvRPCRouteResult result;
+        result.type = CMvRPCRoute::DBP_RPCROUTE_SEND_TRANSACTION;
+        result.vRawData = vRawData;
+        sendTransactionRet.nNonce = data->nNonce;
+        sendTransactionRet.type = data->type;
+
+        if(ret->exception == 0)
+        {
+            sendTransactionRet.exception = ret->exception;
+            result.vData = RPCRouteRetToStream(sendTransactionRet);
+            SendRPCResult(result);
+            return;
+        }
+
+        if (sessionCount == 0)
+        {
+            sendTransactionRet.exception = 1;
+            result.vData = RPCRouteRetToStream(sendTransactionRet);
+            SendRPCResult(result);
+            return;
+        }
+
+        if (sessionCount != 0)
+        {
+            PushMsgToChild(vRawData, data->type);
+            return;
+        }
+    }
+}
+
+void CDbpService::InsertQueCount(uint64 nNonce, boost::any obj)
+{
+    if(queCount.size() > 100)
+    {
+        queCount.pop_back();
+    }
+    std::pair<uint64, boost::any> pair(nNonce, obj);
+    queCount.push_front(pair);
+}
+
+void CDbpService::PushMsgToChild(std::vector<uint8>& data, int& type)
+{
+    if (!vRPCTopicIds.empty())
+    {
+        auto id = vRPCTopicIds.back();
+        PushRPCOnece(id, data, type);
+        vRPCTopicIds.pop_back();
+    }
+}
+
+void CDbpService::SendRPCResult(CMvRPCRouteResult& result)
+{
+    CMvEventRPCRouteResult event(""); 
+    event.data.type = result.type;
+    event.data.vData = result.vData;
+    event.data.vRawData = result.vRawData;
+    pDbpClient->DispatchEvent(&event);
+}
+
+void CDbpService::PushRPCOnece(std::string id, std::vector<uint8>& data, int type)
+{
+    auto it = mapIdSubedSession.find(id);
+    if (it != mapIdSubedSession.end())
+    {
+        CMvEventRPCRouteAdded eventAdded(it->second);
+        eventAdded.data.id = id;
+        eventAdded.data.name = RPC_CMD_TOPIC;
+        eventAdded.data.type = type;
+        eventAdded.data.vData = data;
+        pDbpServer->DispatchEvent(&eventAdded);
+    }
+}
+
+void CDbpService::PushRPC(std::vector<uint8>& data, int type)
+{
+    const auto& allIds = mapTopicIds[RPC_CMD_TOPIC];
+    for (const auto& id : allIds)
+    {
+        auto it = mapIdSubedSession.find(id);
+        if (it != mapIdSubedSession.end())
+        {
+            CMvEventRPCRouteAdded eventAdded(it->second);
+            eventAdded.data.id = id;
+            eventAdded.data.name = RPC_CMD_TOPIC;
+            eventAdded.data.type = type;
+            eventAdded.data.vData = data;
+            pDbpServer->DispatchEvent(&eventAdded);
+        }
+    }
+}
+
+void CDbpService::CreateCompletion(uint64 nNonce, std::shared_ptr<walleve::CIOCompletionUntil> sPtr)
+{
+    if(queCompletion.size() > 100)
+    {
+        queCompletion.pop_back();
+    }
+    std::pair<uint64, std::shared_ptr<walleve::CIOCompletionUntil>> pair(nNonce, sPtr);
+    queCompletion.push_front(pair);
+}
+
+void CDbpService::CompletionByNonce(uint64& nNonce, boost::any obj)
+{
+    auto compare = [nNonce](std::pair<uint64, std::shared_ptr<walleve::CIOCompletionUntil>>& element) {
+        return nNonce == element.first;
+    };
+    auto iter = std::find_if(queCompletion.begin(), queCompletion.end(), compare);
+    if (iter != queCompletion.end())
+    {
+        iter->second->obj = obj;
+        iter->second->Completed(true);
+    }
+}
+
+void CDbpService::DeleteCompletionByNonce(uint64 nNonce)
+{
+    auto compare = [nNonce](std::pair<uint64, std::shared_ptr<walleve::CIOCompletionUntil>>& element) {
+        return nNonce == element.first;
+    };
+    auto iter = std::find_if(queCompletion.begin(), queCompletion.end(), compare);
+    if (iter != queCompletion.end())
+    {
+        queCompletion.erase(iter);
+    }
+}
+
+void CDbpService::InitRPCTopicIds()
+{
+    vRPCTopicIds.clear();
+    const auto& allIds = mapTopicIds[RPC_CMD_TOPIC];
+    for (const auto id : allIds)
+    {
+        auto it = mapIdSubedSession.find(id);
+        if (it != mapIdSubedSession.end())
+        {
+            vRPCTopicIds.push_back(id);
+        }
+    }
+}
+
+void CDbpService::InitSessionCount()
+{
+    std::set<std::string> setSession;
+    const auto& allIds = mapTopicIds[RPC_CMD_TOPIC];
+    for (const auto id : allIds)
+    {
+        auto it = mapIdSubedSession.find(id);
+        if (it != mapIdSubedSession.end())
+        {
+            setSession.insert(it->second);
+        }
+    }
+    sessionCount = setSession.size();
+}
+
+bool CDbpService::HandleEvent(CMvEventRPCRouteStop& event)
+{
+    event.data.type = CMvRPCRoute::DBP_RPCROUTE_STOP;
+    CreateCompletion(event.data.nNonce, event.data.spIoCompltUntil);
+    CMvRPCRouteStopRet stopRet;
+    InsertQueCount(event.data.nNonce, stopRet);
+
+    InitSessionCount();
+    if(sessionCount > 0)
+    {
+        auto data = RPCRouteRetToStream(event.data);
+        PushRPC(data, CMvRPCRoute::DBP_RPCROUTE_STOP);
+        return true;
+    }
+
+    RPCRootHandle(&event.data, NULL);
+    return true;
+}
+
+bool CDbpService::HandleEvent(CMvEventRPCRouteGetForkCount& event)
+{
+    event.data.type = CMvRPCRoute::DBP_RPCROUTE_GET_FORK_COUNT;
+    CreateCompletion(event.data.nNonce, event.data.spIoCompltUntil);
+    CMvRPCRouteGetForkCountRet getForkCountRet;
+    getForkCountRet.count = 0;
+    InsertQueCount(event.data.nNonce, getForkCountRet);
+
+    InitSessionCount();
+    if(sessionCount > 0)
+    {
+        auto data = RPCRouteRetToStream(event.data);
+        PushRPC(data, CMvRPCRoute::DBP_RPCROUTE_GET_FORK_COUNT);
+        return true;
+    }
+    RPCRootHandle(&event.data, NULL);
+    return true;
+}
+
+bool CDbpService::HandleEvent(CMvEventRPCRouteListFork& event)
+{
+    event.data.type = CMvRPCRoute::DBP_RPCROUTE_LIST_FORK;
+    CreateCompletion(event.data.nNonce, event.data.spIoCompltUntil);
+    CMvRPCRouteListForkRet listForkRet;
+    InsertQueCount(event.data.nNonce, listForkRet);
+
+    InitSessionCount();
+    if(sessionCount > 0)
+    {
+        auto data = RPCRouteRetToStream(event.data);
+        PushRPC(data, CMvRPCRoute::DBP_RPCROUTE_LIST_FORK);
+        return true;
+    }
+    RPCRootHandle(&event.data, NULL);
+    return true;
+}
+
+bool CDbpService::HandleEvent(CMvEventRPCRouteGetBlockLocation& event)
+{
+    event.data.type = CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK_LOCATION;
+    CreateCompletion(event.data.nNonce, event.data.spIoCompltUntil);
+
+    CMvRPCRouteGetBlockLocationRet getBlockLocationRet;
+    getBlockLocationRet.strFork = "";
+    getBlockLocationRet.height = 0;
+
+    uint256 hashBlock;
+    hashBlock.SetHex(event.data.strBlock);
+    uint256 fork;
+    int height;
+    if (pService->GetBlockLocation(hashBlock, fork, height))
+    {
+        getBlockLocationRet.height = height;
+        getBlockLocationRet.strFork = fork.GetHex();
+        CompletionByNonce(event.data.nNonce, getBlockLocationRet);
+        return true;
+    }
+
+    InitRPCTopicIds();
+    InitSessionCount();
+    InsertQueCount(event.data.nNonce, getBlockLocationRet);
+    RPCRootHandle(&event.data, NULL);
+    return true;
+}
+
+bool CDbpService::GetForkHashOfDef(const rpc::CRPCString& hex, uint256& hashFork)
+{
+    if (!hex.empty())
+    {
+        if (hashFork.SetHex(hex) != hex.size())
+        {
+            return false;
+        }
+    }
+    else
+    {
+        hashFork = pCoreProtocol->GetGenesisBlockHash();
+    }
+    return true;
+}
+
+bool CDbpService::HandleEvent(CMvEventRPCRouteGetBlockCount& event)
+{
+    event.data.type = CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK_COUNT;
+    CreateCompletion(event.data.nNonce, event.data.spIoCompltUntil);
+
+    CMvRPCRouteGetBlockCountRet getBlockCountRet;
+    getBlockCountRet.nNonce = event.data.nNonce;
+
+    uint256 hashFork;
+    if (!GetForkHashOfDef(event.data.strFork, hashFork))
+    {
+        getBlockCountRet.height = 0;
+        getBlockCountRet.exception = 1;
+        CompletionByNonce(event.data.nNonce, getBlockCountRet);
+        return true;
+    }
+
+    if (pService->HaveFork(hashFork))
+    {
+        getBlockCountRet.height = pService->GetBlockCount(hashFork);
+        getBlockCountRet.exception = 0;
+        CompletionByNonce(event.data.nNonce, getBlockCountRet);
+        return true;
+    }
+
+    InitRPCTopicIds();
+    InitSessionCount();
+    InsertQueCount(event.data.nNonce, getBlockCountRet);
+    RPCRootHandle(&event.data, NULL);
+    return true;
+}
+
+bool CDbpService::HandleEvent(CMvEventRPCRouteGetBlockHash& event)
+{
+    event.data.type = CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK_HASH;
+    CreateCompletion(event.data.nNonce, event.data.spIoCompltUntil);
+
+    CMvRPCRouteGetBlockHashRet getBlockHashRet;
+    getBlockHashRet.nNonce = event.data.nNonce;
+
+    uint256 hashFork;
+    if (!GetForkHashOfDef(event.data.strFork, hashFork))
+    {
+        getBlockHashRet.exception = 1;
+        CompletionByNonce(event.data.nNonce, getBlockHashRet);
+        return true;
+    }
+
+    if (pService->HaveFork(hashFork))
+    {
+        vector<uint256> vBlockHash;
+        if (!pService->GetBlockHash(hashFork, event.data.height, vBlockHash))
+        {
+            getBlockHashRet.exception = 3;
+            CompletionByNonce(event.data.nNonce, getBlockHashRet);
+            return true;
+        }
+
+        for (const uint256& hash : vBlockHash)
+        {
+            getBlockHashRet.vHash.push_back(hash.GetHex());
+        }
+
+        getBlockHashRet.exception = 0;
+        CompletionByNonce(event.data.nNonce, getBlockHashRet);
+        return true;
+    }
+
+    InitRPCTopicIds();
+    InitSessionCount();
+    InsertQueCount(event.data.nNonce, getBlockHashRet);
+    RPCRootHandle(&event.data, NULL);
+    return true;
+}
+
+bool CDbpService::HandleEvent(CMvEventRPCRouteGetBlock& event)
+{
+    event.data.type = CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK;
+    CreateCompletion(event.data.nNonce, event.data.spIoCompltUntil);
+
+    CMvRPCRouteGetBlockRet getBlockRet;
+    getBlockRet.nNonce = event.data.nNonce;
+
+    uint256 hashBlock;
+    hashBlock.SetHex(event.data.hash);
+
+    CBlock block;
+    uint256 fork;
+    int height;
+    if (pService->GetBlock(hashBlock, block, fork, height))
+    {
+        getBlockRet.exception = 0;
+        getBlockRet.strFork = fork.GetHex();
+        getBlockRet.height = height;
+        getBlockRet.block = block;
+        CompletionByNonce(event.data.nNonce, getBlockRet);
+        return true;
+    }
+
+    InitRPCTopicIds();
+    InitSessionCount();
+    InsertQueCount(event.data.nNonce, getBlockRet);
+    RPCRootHandle(&event.data, NULL);
+    return true;
+}
+
+bool CDbpService::HandleEvent(CMvEventRPCRouteGetTxPool& event)
+{
+    event.data.type = CMvRPCRoute::DBP_RPCROUTE_GET_TXPOOL;
+    CreateCompletion(event.data.nNonce, event.data.spIoCompltUntil);
+
+    CMvRPCRouteGetTxPoolRet getTxPoolRet;
+    getTxPoolRet.nNonce = event.data.nNonce;
+
+    uint256 hashFork;
+    if (!GetForkHashOfDef(event.data.strFork, hashFork))
+    {
+        getTxPoolRet.exception = 1;
+        CompletionByNonce(event.data.nNonce, getTxPoolRet);
+        return true;
+    }
+
+    if (pService->HaveFork(hashFork))
+    {
+        std::vector<std::pair<uint256, size_t>> vTxPool;
+        pService->GetTxPool(hashFork, vTxPool);
+        for (auto& txPool : vTxPool)
+        {
+            getTxPoolRet.vTxPool.push_back({txPool.first.GetHex(), txPool.second});
+        }
+
+        getTxPoolRet.exception = 0;
+        CompletionByNonce(event.data.nNonce, getTxPoolRet);
+        return true;
+    }
+
+    InitRPCTopicIds();
+    InitSessionCount();
+    InsertQueCount(event.data.nNonce, getTxPoolRet);
+    RPCRootHandle(&event.data, NULL);
+    return true;
+}
+
+bool CDbpService::HandleEvent(CMvEventRPCRouteGetTransaction& event) 
+{
+    event.data.type = CMvRPCRoute::DBP_RPCROUTE_GET_TRANSACTION;
+    CreateCompletion(event.data.nNonce, event.data.spIoCompltUntil);
+
+    CMvRPCRouteGetTransactionRet getTransactionRet;
+    getTransactionRet.nNonce = event.data.nNonce;
+
+    uint256 txid;
+    txid.SetHex(event.data.strTxid);
+
+    CTransaction tx;
+    uint256 hashFork;
+    int nHeight;
+
+    if (pService->GetTransaction(txid, tx, hashFork, nHeight))
+    {
+        getTransactionRet.exception = 0;
+        getTransactionRet.tx = tx;
+        getTransactionRet.strFork = hashFork.GetHex();
+        getTransactionRet.nDepth = nHeight < 0 ? 0 : pService->GetBlockCount(hashFork) - nHeight;
+        CompletionByNonce(event.data.nNonce, getTransactionRet);
+        return true;
+    }
+
+    InitRPCTopicIds();
+    InitSessionCount();
+    InsertQueCount(event.data.nNonce, getTransactionRet);
+    RPCRootHandle(&event.data, NULL);
+    return true;
+}
+
+bool CDbpService::HandleEvent(CMvEventRPCRouteGetForkHeight& event)
+{
+    event.data.type = CMvRPCRoute::DBP_RPCROUTE_GET_FORK_HEIGHT;
+    CreateCompletion(event.data.nNonce, event.data.spIoCompltUntil);
+
+    CMvRPCRouteGetForkHeightRet getForkHeightRet;
+    getForkHeightRet.nNonce = event.data.nNonce;
+
+    uint256 hashFork;
+    if (!GetForkHashOfDef(event.data.strFork, hashFork))
+    {
+        getForkHeightRet.exception = 1;
+        CompletionByNonce(event.data.nNonce, getForkHeightRet);
+        return true;
+    }
+
+    if (pService->HaveFork(hashFork))
+    {
+        getForkHeightRet.exception = 0;
+        getForkHeightRet.height = pService->GetForkHeight(hashFork);
+        CompletionByNonce(event.data.nNonce, getForkHeightRet);
+        return true;
+    }
+
+    InitRPCTopicIds();
+    InitSessionCount();
+    InsertQueCount(event.data.nNonce, getForkHeightRet);
+    RPCRootHandle(&event.data, NULL);
+    return true;
+}
+
+bool CDbpService::HandleEvent(CMvEventRPCRouteSendTransaction& event)
+{
+    event.data.type = CMvRPCRoute::DBP_RPCROUTE_SEND_TRANSACTION;
+    CreateCompletion(event.data.nNonce, event.data.spIoCompltUntil);
+
+    CMvRPCRouteSendTransactionRet sendTransactionRet;
+    sendTransactionRet.nNonce = event.data.nNonce;
+
+    MvErr err = pService->SendTransaction(event.data.rawTx);
+    if (err == MV_OK)
+    {
+        sendTransactionRet.exception = 0;
+        CompletionByNonce(event.data.nNonce, sendTransactionRet);
+        return true;
+    }
+
+    InitRPCTopicIds();
+    InitSessionCount();
+    InsertQueCount(event.data.nNonce, sendTransactionRet);
+    RPCRootHandle(&event.data, NULL);
+    return true;
+}
+
+bool CDbpService::HandleAddedEventStop(CMvEventRPCRouteAdded& event, walleve::CWalleveBufStream& ss)
+{
+    CMvRPCRouteStop stop;
+    ss >> stop;
+    CMvRPCRouteStopRet stopRet;
+    InsertQueCount(stop.nNonce, stopRet);
+    if (sessionCount > 0)
+    {
+        PushRPC(event.data.vData, event.data.type);
+        return true;
+    }
+    RPCForkHandle(&stop, NULL);
+    return true;
+}
+
+bool CDbpService::HandleAddedEventGetForkCount(CMvEventRPCRouteAdded& event, walleve::CWalleveBufStream& ss)
+{
+    CMvRPCRouteGetForkCount getForkCount;
+    ss >> getForkCount;
+    CMvRPCRouteGetForkCountRet getForkCountRet;
+    getForkCountRet.count = 0;
+    InsertQueCount(getForkCount.nNonce, getForkCountRet);
+    if (sessionCount > 0)
+    {
+        PushRPC(event.data.vData, event.data.type);
+        return true;
+    }
+    RPCForkHandle(&getForkCount, NULL);
+    return true;
+}
+
+bool CDbpService::HandleAddedEventListFork(CMvEventRPCRouteAdded& event, walleve::CWalleveBufStream& ss)
+{
+    CMvRPCRouteListFork listFork;
+    ss >> listFork;
+    CMvRPCRouteListForkRet listForkRet;
+    InsertQueCount(listFork.nNonce, listForkRet);
+    if (sessionCount > 0)
+    {
+        PushRPC(event.data.vData, event.data.type);
+        return true;
+    }
+    RPCForkHandle(&listFork, NULL);
+    return true;
+}
+
+bool CDbpService::HandleAddedEventGetBlockLocation(CMvEventRPCRouteAdded& event, walleve::CWalleveBufStream& ss)
+{
+    CMvRPCRouteGetBlockLocation getBlockLocation;
+    ss >> getBlockLocation;
+    CMvRPCRouteGetBlockLocationRet getBlockLocationRet;
+
+    InitRPCTopicIds();
+    InsertQueCount(getBlockLocation.nNonce, getBlockLocationRet);
+
+    uint256 hashBlock;
+    hashBlock.SetHex(getBlockLocation.strBlock);
+    uint256 fork;
+    int height;
+    if (pService->GetBlockLocation(hashBlock, fork, height))
+    {
+        CMvRPCRouteResult result;
+        result.type = CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK_LOCATION;
+        result.vRawData = event.data.vData;
+        getBlockLocationRet.nNonce = getBlockLocation.nNonce;
+        getBlockLocationRet.height = height;
+        getBlockLocationRet.strFork = fork.GetHex();
+        result.vData = RPCRouteRetToStream(getBlockLocationRet);
+        SendRPCResult(result);
+        return true;
+    }
+    RPCForkHandle(&getBlockLocation, NULL);
+    return true;
+}
+
+bool CDbpService::HandleAddedEventGetBlockCount(CMvEventRPCRouteAdded& event, walleve::CWalleveBufStream& ss)
+{
+    CMvRPCRouteGetBlockCount getBlockCount;
+    ss >> getBlockCount;
+    CMvRPCRouteGetBlockCountRet getBlockCountRet;
+
+    InitRPCTopicIds();
+    InsertQueCount(getBlockCount.nNonce, getBlockCountRet);
+
+    uint256 hashFork;
+    if (!GetForkHashOfDef(getBlockCount.strFork, hashFork))
+    {
+        CMvRPCRouteResult result;
+        result.type = CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK_COUNT;
+        result.vRawData = event.data.vData;
+        getBlockCountRet.nNonce = getBlockCount.nNonce;
+        getBlockCountRet.height = 0;
+        getBlockCountRet.exception = 1;
+        result.vData = RPCRouteRetToStream(getBlockCountRet);
+        SendRPCResult(result);
+        return true;
+    }
+
+    if (pService->HaveFork(hashFork))
+    {
+        CMvRPCRouteResult result;
+        result.type = CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK_COUNT;
+        result.vRawData = event.data.vData;
+        getBlockCountRet.nNonce = getBlockCount.nNonce;
+        getBlockCountRet.height = pService->GetBlockCount(hashFork);
+        getBlockCountRet.exception = 0;
+        result.vData = RPCRouteRetToStream(getBlockCountRet);
+        SendRPCResult(result);
+        return true;
+    }
+    RPCForkHandle(&getBlockCount, NULL);
+    return true;
+}
+
+bool CDbpService::HandleAddedEventGetBlockHash(CMvEventRPCRouteAdded& event, walleve::CWalleveBufStream& ss)
+{
+    CMvRPCRouteGetBlockHash getBlockHash;
+    ss >> getBlockHash;
+    CMvRPCRouteGetBlockHashRet getBlockHashRet;
+
+    CMvRPCRouteResult result;
+    result.type = CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK_HASH;
+    result.vRawData = event.data.vData;
+    getBlockHashRet.nNonce = getBlockHash.nNonce;
+
+    InitRPCTopicIds();
+    InsertQueCount(getBlockHash.nNonce, getBlockHashRet);
+
+    uint256 hashFork;
+    if (!GetForkHashOfDef(getBlockHash.strFork, hashFork))
+    {
+        getBlockHashRet.exception = 1;
+        result.vData = RPCRouteRetToStream(getBlockHashRet);
+        SendRPCResult(result);
+        return true;
+    }
+
+    if (pService->HaveFork(hashFork))
+    {
+        vector<uint256> vBlockHash;
+        if (!pService->GetBlockHash(hashFork, getBlockHash.height, vBlockHash))
+        {
+            getBlockHashRet.exception = 3;
+            result.vData = RPCRouteRetToStream(getBlockHashRet);
+            SendRPCResult(result);
+            return true;
+        }
+
+        for (const uint256& hash : vBlockHash)
+        {
+            getBlockHashRet.vHash.push_back(hash.GetHex());
+        }
+
+        getBlockHashRet.exception = 0;
+        result.vData = RPCRouteRetToStream(getBlockHashRet);
+        SendRPCResult(result);
+        return true;
+    }
+    RPCForkHandle(&getBlockHash, NULL);
+    return true;
+}
+
+bool CDbpService::HandleAddedEventGetBlock(CMvEventRPCRouteAdded& event, walleve::CWalleveBufStream& ss)
+{
+    CMvRPCRouteGetBlock getBlock;
+    ss >> getBlock;
+    CMvRPCRouteGetBlockRet getBlockRet;
+
+    CMvRPCRouteResult result;
+    result.type = CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK;
+    result.vRawData = event.data.vData;
+    getBlockRet.nNonce = getBlock.nNonce;
+
+    InitRPCTopicIds();
+    InsertQueCount(getBlock.nNonce, getBlockRet);
+
+    uint256 hashBlock, fork;
+    hashBlock.SetHex(getBlock.hash);
+    CBlock block;
+    int height;
+    if (pService->GetBlock(hashBlock, block, fork, height))
+    {
+        getBlockRet.exception = 0;
+        getBlockRet.strFork = fork.GetHex();
+        getBlockRet.height = height;
+        getBlockRet.block = block;
+        result.vData = RPCRouteRetToStream(getBlockRet);
+        SendRPCResult(result);
+        return true;
+    }
+    RPCForkHandle(&getBlock, NULL);
+    return true;
+}
+
+bool CDbpService::HandleAddedEventGetTxPool(CMvEventRPCRouteAdded& event, walleve::CWalleveBufStream& ss)
+{
+    CMvRPCRouteGetTxPool getTxPool;
+    ss >> getTxPool;
+    CMvRPCRouteGetTxPoolRet getTxPoolRet;
+
+    CMvRPCRouteResult result;
+    result.type = CMvRPCRoute::DBP_RPCROUTE_GET_TXPOOL;
+    result.vRawData = event.data.vData;
+    getTxPoolRet.nNonce = getTxPool.nNonce;
+
+    InitRPCTopicIds();
+    InsertQueCount(getTxPool.nNonce, getTxPoolRet);
+
+    uint256 hashFork;
+    hashFork.SetHex(getTxPool.strFork);
+
+    if (pService->HaveFork(hashFork))
+    {
+        std::vector<std::pair<uint256, size_t>> vTxPool;
+        pService->GetTxPool(hashFork, vTxPool);
+        for (auto& txPool : vTxPool)
+        {
+            getTxPoolRet.vTxPool.push_back(
+              { txPool.first.GetHex(), txPool.second });
+        }
+
+        getTxPoolRet.exception = 0;
+        result.vData = RPCRouteRetToStream(getTxPoolRet);
+        SendRPCResult(result);
+        return true;
+    }
+    RPCForkHandle(&getTxPool, NULL);
+    return true;
+}
+
+bool CDbpService::HandleAddedEventGetTransaction(CMvEventRPCRouteAdded& event, walleve::CWalleveBufStream& ss)
+{
+    CMvRPCRouteGetTransaction getTransaction;
+    ss >> getTransaction;
+    CMvRPCRouteGetTransactionRet getTransactionRet;
+
+    CMvRPCRouteResult result;
+    result.type = CMvRPCRoute::DBP_RPCROUTE_GET_TRANSACTION;
+    result.vRawData = event.data.vData;
+    getTransactionRet.nNonce = getTransaction.nNonce;
+
+    InitRPCTopicIds();
+    InsertQueCount(getTransaction.nNonce, getTransactionRet);
+
+    uint256 txid, hashFork;
+    txid.SetHex(getTransaction.strTxid);
+    CTransaction tx;
+    int nHeight;
+    if (pService->GetTransaction(txid, tx, hashFork, nHeight))
+    {
+        getTransactionRet.exception = 0;
+        getTransactionRet.tx = tx;
+        getTransactionRet.strFork = hashFork.GetHex();
+        getTransactionRet.nDepth =
+          nHeight < 0 ? 0 : pService->GetBlockCount(hashFork) - nHeight;
+        result.vData = RPCRouteRetToStream(getTransactionRet);
+        SendRPCResult(result);
+        return true;
+    }
+    RPCForkHandle(&getTransaction, NULL);
+    return true;
+}
+
+bool CDbpService::HandleAddedEventGetForkHeight(CMvEventRPCRouteAdded& event, walleve::CWalleveBufStream& ss)
+{
+    CMvRPCRouteGetForkHeight getForkHeight;
+    ss >> getForkHeight;
+    CMvRPCRouteGetForkHeightRet getForkHeightRet;
+
+    CMvRPCRouteResult result;
+    result.type = CMvRPCRoute::DBP_RPCROUTE_GET_FORK_HEIGHT;
+    result.vRawData = event.data.vData;
+    getForkHeightRet.nNonce = getForkHeight.nNonce;
+
+    InitRPCTopicIds();
+    InsertQueCount(getForkHeight.nNonce, getForkHeightRet);
+
+    uint256 hashFork;
+    hashFork.SetHex(getForkHeight.strFork);
+
+    if (pService->HaveFork(hashFork))
+    {
+        getForkHeightRet.exception = 0;
+        getForkHeightRet.height = pService->GetForkHeight(hashFork);
+        result.vData = RPCRouteRetToStream(getForkHeightRet);
+        SendRPCResult(result);
+        return true;
+    }
+    RPCForkHandle(&getForkHeight, NULL);
+    return true;
+}
+
+bool CDbpService::HandleAddedEventSendTransaction(CMvEventRPCRouteAdded& event, walleve::CWalleveBufStream& ss)
+{
+    CMvRPCRouteSendTransaction sendTransaction;
+    ss >> sendTransaction;
+    CMvRPCRouteSendTransactionRet sendTransactionRet;
+
+    CMvRPCRouteResult result;
+    result.type = CMvRPCRoute::DBP_RPCROUTE_SEND_TRANSACTION;
+    result.vRawData = event.data.vData;
+    sendTransactionRet.nNonce = sendTransaction.nNonce;
+
+    InitRPCTopicIds();
+    InsertQueCount(sendTransaction.nNonce, sendTransactionRet);
+
+    MvErr err = pService->SendTransaction(sendTransaction.rawTx);
+    if (err == MV_OK)
+    {
+        sendTransactionRet.exception = 0;
+        result.vData = RPCRouteRetToStream(sendTransactionRet);
+        SendRPCResult(result);
+        return true;
+    }
+    RPCForkHandle(&sendTransaction, NULL);
+    return true;
+}
+
+bool CDbpService::HandleEvent(CMvEventRPCRouteAdded& event)
+{
+    InitSessionCount();
+
+    walleve::CWalleveBufStream ss;
+    ss.Write((char*)event.data.vData.data(), event.data.vData.size());
+
+    if (event.data.type == CMvRPCRoute::DBP_RPCROUTE_STOP)
+    {
+        return HandleAddedEventStop(event, ss);
+    }
+
+    if(event.data.type == CMvRPCRoute::DBP_RPCROUTE_GET_FORK_COUNT)
+    {
+        return HandleAddedEventGetForkCount(event, ss);
+    }
+
+    if(event.data.type == CMvRPCRoute::DBP_RPCROUTE_LIST_FORK)
+    {
+        return HandleAddedEventListFork(event, ss);
+    }
+
+    if(event.data.type == CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK_LOCATION)
+    {
+        return HandleAddedEventGetBlockLocation(event, ss);
+    }
+
+    if (event.data.type == CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK_COUNT)
+    {
+        return HandleAddedEventGetBlockCount(event, ss);
+    }
+
+    if(event.data.type == CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK_HASH)
+    {
+        return HandleAddedEventGetBlockHash(event, ss);
+    }
+
+    if (event.data.type == CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK)
+    {
+        return HandleAddedEventGetBlock(event, ss);
+    }
+
+    if (event.data.type == CMvRPCRoute::DBP_RPCROUTE_GET_TXPOOL)
+    {
+        return HandleAddedEventGetTxPool(event, ss);
+    }
+
+    if (event.data.type == CMvRPCRoute::DBP_RPCROUTE_GET_TRANSACTION)
+    {
+        return HandleAddedEventGetTransaction(event, ss);
+    }
+
+    if (event.data.type == CMvRPCRoute::DBP_RPCROUTE_GET_FORK_HEIGHT)
+    {
+        return HandleAddedEventGetForkHeight(event, ss);
+    }
+
+    if (event.data.type == CMvRPCRoute::DBP_RPCROUTE_SEND_TRANSACTION)
+    {
+        return HandleAddedEventSendTransaction(event, ss);
+    }
+    return true;
+}
+
+bool CDbpService::HandleEvent(CMvEventRPCRouteDelCompltUntil& event)
+{
+    DeleteCompletionByNonce(event.data.nNonce);
+    return true;
+}
+
+void CDbpService::HandleRPCRoute(CMvEventDbpMethod& event)
+{
+    sessionCount--;
+    int type = boost::any_cast<int>(event.data.params["type"]);
+    std::string data = boost::any_cast<std::string>(event.data.params["data"]);
+    std::string rawData = boost::any_cast<std::string>(event.data.params["rawdata"]);
+
+    walleve::CWalleveBufStream ss, ssRaw;
+    ss.Write(data.data(), data.size());
+    ssRaw.Write(rawData.data(), rawData.size());
+
+    if (type == CMvRPCRoute::DBP_RPCROUTE_STOP)
+    {
+        HANDLE_RPC_ROUTE(CMvRPCRouteStop, CMvRPCRouteStopRet);
+    }
+
+    if (type == CMvRPCRoute::DBP_RPCROUTE_GET_FORK_COUNT)
+    {
+        HANDLE_RPC_ROUTE(CMvRPCRouteGetForkCount, CMvRPCRouteGetForkCountRet);
+    }
+
+    if(type == CMvRPCRoute::DBP_RPCROUTE_LIST_FORK)
+    {
+        HANDLE_RPC_ROUTE(CMvRPCRouteListFork, CMvRPCRouteListForkRet);
+    }
+
+    if(type == CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK_LOCATION)
+    {
+        HANDLE_RPC_ROUTE(CMvRPCRouteGetBlockLocation, CMvRPCRouteGetBlockLocationRet);
+    }
+
+    if (type == CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK_COUNT)
+    {
+        HANDLE_RPC_ROUTE(CMvRPCRouteGetBlockCount, CMvRPCRouteGetBlockCountRet);
+    }
+
+    if(type == CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK_HASH)
+    {
+        HANDLE_RPC_ROUTE(CMvRPCRouteGetBlockHash, CMvRPCRouteGetBlockHashRet);
+    }
+
+    if(type == CMvRPCRoute::DBP_RPCROUTE_GET_BLOCK)
+    {
+        HANDLE_RPC_ROUTE(CMvRPCRouteGetBlock, CMvRPCRouteGetBlockRet);
+    }
+
+    if(type == CMvRPCRoute::DBP_RPCROUTE_GET_TXPOOL)
+    {
+        HANDLE_RPC_ROUTE(CMvRPCRouteGetTxPool, CMvRPCRouteGetTxPoolRet);
+    }
+
+    if(type == CMvRPCRoute::DBP_RPCROUTE_GET_TRANSACTION)
+    {
+        HANDLE_RPC_ROUTE(CMvRPCRouteGetTransaction, CMvRPCRouteGetTransactionRet);
+    }
+
+    if(type == CMvRPCRoute::DBP_RPCROUTE_GET_FORK_HEIGHT)
+    {
+        HANDLE_RPC_ROUTE(CMvRPCRouteGetForkHeight, CMvRPCRouteGetForkHeightRet);
+    }
+
+    if(type == CMvRPCRoute::DBP_RPCROUTE_SEND_TRANSACTION)
+    {
+        HANDLE_RPC_ROUTE(CMvRPCRouteSendTransaction, CMvRPCRouteSendTransactionRet);
+    }
+}
+
+//

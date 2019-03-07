@@ -8,21 +8,19 @@
 
 # auto generate files
 set(auto_files
-	${CMAKE_CURRENT_BINARY_DIR}/rpc/auto_protocol.cpp
-	${CMAKE_CURRENT_BINARY_DIR}/rpc/auto_protocol.h
-	${CMAKE_CURRENT_BINARY_DIR}/rpc/auto_rpc.cpp
-	${CMAKE_CURRENT_BINARY_DIR}/rpc/auto_rpc.h
 	${CMAKE_CURRENT_BINARY_DIR}/mode/auto_options.h
+	${CMAKE_CURRENT_BINARY_DIR}/mode/auto_config.cpp
+	${CMAKE_CURRENT_BINARY_DIR}/mode/auto_config.h
 )
 add_custom_command(OUTPUT ${auto_files}
-	COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/../script/generator.py" "'${CMAKE_CURRENT_BINARY_DIR}'"
+	COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/../script/generator.py" "'mode'" "'${CMAKE_CURRENT_BINARY_DIR}'"
 	DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/../script/template/rpc.json"
 			"${CMAKE_CURRENT_SOURCE_DIR}/../script/template/options.json"
 			"${CMAKE_CURRENT_SOURCE_DIR}/../script/template/mode.json"
 			"${CMAKE_CURRENT_SOURCE_DIR}/../script/generator.py"
-			"${CMAKE_CURRENT_SOURCE_DIR}/../script/options_generator.py"
-			"${CMAKE_CURRENT_SOURCE_DIR}/../script/rpc_generator.py"
-			"${CMAKE_CURRENT_SOURCE_DIR}/../script/rpc_protocol_generator.py"
+			"${CMAKE_CURRENT_SOURCE_DIR}/../script/auto_options.py"
+			"${CMAKE_CURRENT_SOURCE_DIR}/../script/auto_rpc.py"
+			"${CMAKE_CURRENT_SOURCE_DIR}/../script/auto_protocol.py"
 )
 
 set(src
@@ -39,7 +37,6 @@ set(src
 	delegatedchn.cpp delegatedchn.h
 	network.cpp network.h
 	rpcclient.cpp rpcclient.h
-	rpcjson.cpp rpcjson.h
 	rpcmod.cpp rpcmod.h
 	consensus.cpp consensus.h
 	blockmaker.cpp blockmaker.h
@@ -51,7 +48,6 @@ set(src
 	dbpserver.cpp dbpserver.h
 	dbpservice.cpp dbpservice.h
 	dbpclient.cpp dbpclient.h
-	dnseed.cpp dnseed.h
 	schedule.cpp schedule.h
 	service.cpp service.h
 	txpool.cpp txpool.h
@@ -81,19 +77,11 @@ set(mode_src
 	mode/mode_type.h
 	mode/module_type.h
 )
-set(rpc_src
-	rpc/rpc.h
-	rpc/rpc_error.cpp rpc/rpc_error.h
-	rpc/rpc_req.cpp rpc/rpc_req.h
-	rpc/rpc_resp.cpp rpc/rpc_resp.h
-	rpc/rpc_type.h
-)
 
 set(sources
 	${auto_files}
 	${src}
 	${mode_src}
-	${rpc_src}
 )
 
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS 
@@ -103,8 +91,9 @@ dbp-proto/sn.proto)
 
 add_executable(multiverse ${sources} ${PROTO_SRCS} ${PROTO_HDRS})
 
-include_directories(../walleve ../crypto ../common ../storage ../network ../delegate ../mpvss ./)
+include_directories(../walleve ../crypto ../common ../storage ../network ../delegate ../mpvss ../jsonrpc ./)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
+include_directories(${CMAKE_BINARY_DIR}/jsonrpc)
 include_directories(${Protobuf_INCLUDE_DIRS})
 
 target_link_libraries(multiverse
@@ -116,17 +105,19 @@ target_link_libraries(multiverse
 	Boost::regex
 	OpenSSL::SSL
 	OpenSSL::Crypto
+	${Protobuf_LIBRARIES}
+	${Readline_LIBRARY}
 	walleve
 	crypto	
 	storage	
 	network
-	${Protobuf_LIBRARIES}
 	delegate	
-	${Readline_LIBRARY}
+	jsonrpc
+	common
 )
 
 # create symbol link
-set(exec_link multiverse-cli multiverse-server multiverse-miner multiverse-dnseed)
+set(exec_link multiverse-cli multiverse-server multiverse-miner)
 foreach(link ${exec_link})
 	add_custom_command(TARGET multiverse POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E create_symlink multiverse ${link}

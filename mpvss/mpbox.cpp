@@ -33,7 +33,7 @@ static inline bool MPEccPubkeyValidate(const uint256& pubkey)
 static inline const uint256 MPEccSign(const uint256& key,const uint256& r,const uint256& hash)
 {
     CSC25519 sign = CSC25519(key.begin()) + CSC25519(r.begin()) * CSC25519(hash.begin());
-    return uint256(sign.value);
+    return uint256(sign.Data());
 }
 
 static inline bool MPEccVerify(const uint256& pubkey,const uint256& rG,const uint256& signature,const uint256& hash)
@@ -102,7 +102,7 @@ const uint256 CMPOpenedBox::Polynomial(std::size_t nThresh,uint32_t nX) const
     {
         f += CSC25519(vCoeff[i].begin()) * CSC25519::naturalPowTable[nX-1][i-1];
     }
-    return uint256(f.value);
+    return uint256(f.Data());
 }
 
 void CMPOpenedBox::Signature(const uint256& hash,const uint256& r,uint256& nR,uint256& nS) const

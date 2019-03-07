@@ -21,8 +21,8 @@ services:
     depends_on:
       - db
     environment:
-      DNSEED: '192.168.199.50'
-      DNSEED_PORT: 6811 
+      #DNSEED: '192.168.199.50'
+      #DNSEED_PORT: 6811 
       DB_HOST: db 
       DB_PORT: 3306
       DB_NAME: 'sn_root'
@@ -67,6 +67,7 @@ services:
     container_name: fork2
     depends_on:
       - db
+      - fork1
     environment:
       DB_HOST: db 
       DB_PORT: 3306
@@ -84,6 +85,30 @@ services:
     ports:
       - 5152:6815
       - 5122:6812
+
+  fork3:
+    image: multiverse:latest
+    container_name: fork3
+    depends_on:
+      - db
+      - fork1
+    environment:
+      DB_HOST: db 
+      DB_PORT: 3306
+      DB_NAME: 'sn_fork3'
+      DBP_R_HOST: fork1
+      DBP_ALLOW_IP: '*.*.*.*' 
+      ENABLE_SN: 'true' 
+      ENABLE_FN: 'true'
+      FORK_ID: ''
+    volumes:
+      - './apps:/home/apps'
+      - './nodes/fork3:/home/fnfn'
+    networks:
+      - sn
+    ports:
+      - 4152:6815
+      - 4122:6812
 
 networks:
   sn:

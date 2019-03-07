@@ -10,16 +10,7 @@
 #     add_definitions(-D__GLIBCXX_TYPE_INT_N_0=__int128 -D__GLIBCXX_BITSIZE_INT_N_0=128)
 # endif()
 
-set(curve25519
-    curve25519/base25519.cpp curve25519/base25519.h
-    curve25519/fp25519.cpp curve25519/fp25519.h
-    curve25519/sc25519.cpp curve25519/sc25519.h
-    curve25519/ed25519.cpp curve25519/ed25519.h
-    curve25519/curve25519.h
-)
-
 set(sources
-    ${curve25519}
     parallel.h
     mpbox.cpp mpbox.h
     mpinterpolation.cpp mpinterpolation.h

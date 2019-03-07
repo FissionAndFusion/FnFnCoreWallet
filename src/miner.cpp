@@ -15,7 +15,7 @@ using namespace multiverse;
 using namespace walleve;
 using namespace json_spirit;
 using boost::asio::ip::tcp;
-using namespace multiverse::rpc;
+using namespace rpc;
 
 extern void MvShutdown();
 
@@ -94,15 +94,12 @@ void CMiner::WalleveHandleHalt()
     if (thrFetcher.IsRunning())
     {
         CancelRPC();
-        thrFetcher.Interrupt();
     }
-    thrFetcher.Exit();
+    thrFetcher.Interrupt();
+    WalleveThreadExit(thrFetcher);
 
-    if (thrMiner.IsRunning())
-    {
-        thrMiner.Interrupt();
-    }
-    thrMiner.Exit();
+    thrMiner.Interrupt();
+    WalleveThreadExit(thrMiner);
 }
 
 const CMvRPCClientConfig * CMiner::WalleveConfig()

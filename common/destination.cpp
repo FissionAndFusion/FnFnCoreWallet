@@ -3,8 +3,15 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "destination.h"
-#include "template.h"
-#include <walleve/stream/datastream.h>
+
+#include "walleve/stream/datastream.h"
+#include "walleve/util.h"
+
+#include "block.h"
+#include "key.h"
+#include "template/mint.h"
+#include "template/template.h"
+#include "transaction.h"
 
 using namespace std;
 using namespace walleve;
@@ -13,19 +20,184 @@ using namespace multiverse::crypto;
 //////////////////////////////
 // CDestination
 
-bool CDestination::VerifySignature(const uint256& hash,const vector<unsigned char>& vchSig) const
+CDestination::CDestination()
+{
+    SetNull();
+}
+
+CDestination::CDestination(const CPubKey& pubkey)
+{
+    SetPubKey(pubkey);
+}
+
+CDestination::CDestination(const CTemplateId& tid)
+{
+    SetTemplateId(tid);
+}
+
+void CDestination::SetNull()
+{
+    prefix = PREFIX_NULL;
+    data = 0;
+}
+
+bool CDestination::IsNull() const
+{
+    return (prefix == PREFIX_NULL);
+}
+
+bool CDestination::IsPubKey() const
+{
+    return (prefix == PREFIX_PUBKEY);
+}
+
+bool CDestination::SetPubKey(const std::string& str)
+{
+    if (ParseString(str))
+    {
+        if (IsNull() || !IsPubKey())
+        {
+            return false;
+        }
+    }
+    else
+    {
+        if (data.SetHex(str) != str.size())
+        {
+            return false;
+        }
+        prefix = PREFIX_PUBKEY;
+    }
+
+    return true;
+}
+
+CDestination& CDestination::SetPubKey(const CPubKey& pubkey)
+{
+    prefix = PREFIX_PUBKEY;
+    data = pubkey;
+    return *this;
+}
+
+bool CDestination::GetPubKey(CPubKey& pubkey) const
+{
+    if (prefix == PREFIX_PUBKEY)
+    {
+        pubkey = CPubKey(data);
+        return true;
+    }
+    return false;
+}
+
+const CPubKey CDestination::GetPubKey() const
+{
+    return (prefix == PREFIX_PUBKEY) ? CPubKey(data) : CPubKey(uint64(0));
+}
+
+bool CDestination::IsTemplate() const
+{
+    return (prefix == PREFIX_TEMPLATE);
+}
+
+bool CDestination::SetTemplateId(const std::string& str)
+{
+    if (ParseString(str))
+    {
+        if (IsNull() || !IsTemplate())
+        {
+            return false;
+        }
+    }
+    else
+    {
+        if (data.SetHex(str) != str.size())
+        {
+            return false;
+        }
+        prefix = PREFIX_TEMPLATE;
+    }
+
+    return true;
+}
+
+CDestination& CDestination::SetTemplateId(const CTemplateId& tid)
+{
+    prefix = PREFIX_TEMPLATE;
+    data = tid;
+    return *this;
+}
+
+bool CDestination::GetTemplateId(CTemplateId& tid) const
+{
+    if (prefix == PREFIX_TEMPLATE)
+    {
+        tid = CTemplateId(data);
+        return true;
+    }
+    return false;
+}
+
+const CTemplateId CDestination::GetTemplateId() const
+{
+    return (prefix == PREFIX_TEMPLATE) ? CTemplateId(data) : CTemplateId(uint64(0));
+}
+
+bool CDestination::VerifyTxSignature(const uint256& hash, const uint256& hashAnchor, const CDestination& destTo,
+                                     const std::vector<uint8>& vchSig, bool& fCompleted) const
 {
     if (IsPubKey())
     {
-        return CPubKey(data).Verify(hash,vchSig);
+        fCompleted = GetPubKey().Verify(hash, vchSig);
+        return fCompleted;
     }
     else if (IsTemplate())
     {
-        CTemplatePtr ptr = CTemplateGeneric::GetTemplatePtr(data,vchSig);
-        if (ptr != NULL)
-        {
-            return ptr->VerifyTxSignature(hash,vchSig);
-        }
+        return CTemplate::VerifyTxSignature(GetTemplateId(), hash, hashAnchor, destTo, vchSig, fCompleted);
     }
     return false;
+}
+
+bool CDestination::VerifyTxSignature(const uint256& hash, const uint256& hashAnchor, const CDestination& destTo,
+                                     const std::vector<uint8>& vchSig) const
+{
+    bool fCompleted = false;
+    return VerifyTxSignature(hash, hashAnchor, destTo, vchSig, fCompleted) && fCompleted;
+}
+
+bool CDestination::VerifyBlockSignature(const uint256& hash, const vector<uint8>& vchSig) const
+{
+    if (IsPubKey())
+    {
+        return GetPubKey().Verify(hash, vchSig);
+    }
+    else if (IsTemplate())
+    {
+        return CTemplateMint::VerifyBlockSignature(GetTemplateId(), hash, vchSig);
+    }
+    return false;
+}
+
+bool CDestination::ParseString(const string& str)
+{
+    if (str.size() != DESTINATION_SIZE * 2 - 1 || str[0] < '0' || str[0] >= '0' + PREFIX_MAX)
+    {
+        return false;
+    }
+    prefix = str[0] - '0';
+    return ParseHexString(&str[1], data.begin(), uint256::size()) == uint256::size();
+}
+
+string CDestination::ToString() const
+{
+    return (string(1, '0' + prefix) + ToHexString(data.begin(), data.size()));
+}
+
+void CDestination::ToDataStream(walleve::CWalleveODataStream& os) const
+{
+    os << prefix << data;
+}
+
+void CDestination::FromDataStream(walleve::CWalleveIDataStream& is)
+{
+    is >> prefix >> data;
 }

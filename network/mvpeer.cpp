@@ -132,7 +132,7 @@ bool CMvPeer::ParseMessageHeader()
     try
     {
         ReadStream() >> hdrRecv;
-        return (hdrRecv.nMagic == nMsgMagic || hdrRecv.Verify());
+        return (hdrRecv.nMagic == nMsgMagic && hdrRecv.Verify());
     }
     catch (exception& e)
     {

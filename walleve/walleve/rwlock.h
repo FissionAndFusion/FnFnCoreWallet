@@ -25,6 +25,16 @@ public:
         }
         ++nRead;
     }
+    bool ReadTryLock()
+    {
+        boost::unique_lock<boost::mutex> lock(mutex);
+        if (nWrite || fUpgraded)
+        {
+            return false;
+        }
+        ++nRead;
+        return true;
+    }
     void ReadUnlock()
     {
         bool fNotifyWrite   = false;

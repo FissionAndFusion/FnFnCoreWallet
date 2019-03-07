@@ -361,7 +361,7 @@ public:
         return (unsigned char*)&pn[WIDTH];
     }
 
-    unsigned int size()
+    static unsigned int size()
     {
         return sizeof(pn);
     }
@@ -384,7 +384,7 @@ public:
         is.Pop(pn,sizeof(pn));
     }
 protected:
-    void WalleveSerialize(walleve::CWalleveStream& s,walleve::SaveType&)
+    void WalleveSerialize(walleve::CWalleveStream& s,walleve::SaveType&) const
     {
         s.Write((char *)pn, sizeof(pn));
     }
@@ -392,7 +392,7 @@ protected:
     {
         s.Read((char *)pn, sizeof(pn));
     }
-    void WalleveSerialize(walleve::CWalleveStream& s,std::size_t& serSize)
+    void WalleveSerialize(walleve::CWalleveStream& s,std::size_t& serSize) const
     {
         (void)s;
         serSize += sizeof(pn);

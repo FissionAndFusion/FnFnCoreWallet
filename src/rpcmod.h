@@ -5,129 +5,237 @@
 #ifndef MULTIVERSE_RPCMOD_H
 #define MULTIVERSE_RPCMOD_H
 
-#include <boost/function.hpp>
-
-#include "mvbase.h"
-#include "walleve/walleve.h"
 #include "json/json_spirit.h"
-#include "rpcjson.h"
+#include <boost/function.hpp>
+#include <thread>
+
+#include "walleve/walleve.h"
+
+#include "event.h"
+#include "mvbase.h"
 #include "rpc/rpc.h"
+#include "event.h"
 
 namespace multiverse
 {
 
-class CRPCMod : public walleve::IIOModule, virtual public walleve::CWalleveHttpEventListener
+class CRPCMod : public walleve::IIOModule, virtual public walleve::CWalleveHttpEventListener, virtual public CMvRPCModEventListener
 {
 public:
-    typedef CRPCResultPtr (CRPCMod::*RPCFunc)(CRPCParamPtr param);
     CRPCMod();
     ~CRPCMod();
     bool HandleEvent(walleve::CWalleveEventHttpReq& eventHttpReq) override;
     bool HandleEvent(walleve::CWalleveEventHttpBroken& eventHttpBroken) override;
+    bool HandleEvent(CMvEventRPCModResponse& eventRPCModResponse) override;
+
+protected:
+    struct CWork
+    {
+        size_t nWorkId;
+        size_t nRemainder;
+        bool fArray;
+        rpc::CRPCReqVec vecReq;
+        rpc::CRPCRespVec vecResp;
+    };
 
 protected:
     bool WalleveHandleInitialize() override;
     void WalleveHandleDeinitialize() override;
-    const CMvNetworkConfig* WalleveConfig()
-    {
-        return dynamic_cast<const CMvNetworkConfig*>(walleve::IWalleveBase::WalleveConfig());
-    }
-
     void JsonReply(uint64 nNonce, const std::string& result);
 
-    int GetInt(const rpc::CRPCInt64& i, int valDefault)
-    {
-        return i.IsValid() ? int(i) : valDefault;
-    }
-    unsigned int GetUint(const rpc::CRPCUint64& i,unsigned int valDefault)
-    {
-        return i.IsValid() ? uint64(i) : valDefault;
-    }
-    const bool GetForkHashOfDef(const rpc::CRPCString& hex, uint256& hashFork)
-    {
-        if (!hex.empty())
-        {  
-            if (hashFork.SetHex(hex) != hex.size())
-            {
-                return false;
-            }
-        }
-        else
-        {
-            hashFork = pCoreProtocol->GetGenesisBlockHash();
-        }
-        return true;
-    }
-    bool CheckWalletError(MvErr err);
-    multiverse::crypto::CPubKey GetPubKey(const std::string& addr);
-    CTemplatePtr MakeTemplate(const rpc::CTemplateRequest& obj);
-    void ListDestination(std::vector<CDestination>& vDestination);
     bool CheckVersion(std::string& strVersion);
-private:
-    /* System */
-    CRPCResultPtr RPCHelp(CRPCParamPtr param);
-    CRPCResultPtr RPCStop(CRPCParamPtr param);
-    CRPCResultPtr RPCVersion(CRPCParamPtr param);
-    /* Network */
-    CRPCResultPtr RPCGetPeerCount(CRPCParamPtr param);
-    CRPCResultPtr RPCListPeer(CRPCParamPtr param);
-    CRPCResultPtr RPCAddNode(CRPCParamPtr param);
-    CRPCResultPtr RPCRemoveNode(CRPCParamPtr param);
-    /* Worldline & TxPool */
-    CRPCResultPtr RPCGetForkCount(CRPCParamPtr param);
-    CRPCResultPtr RPCListFork(CRPCParamPtr param);
-    CRPCResultPtr RPCGetForkGenealogy(CRPCParamPtr param);
-    CRPCResultPtr RPCGetBlockLocation(CRPCParamPtr param);
-    CRPCResultPtr RPCGetBlockCount(CRPCParamPtr param);
-    CRPCResultPtr RPCGetBlockHash(CRPCParamPtr param);
-    CRPCResultPtr RPCGetBlock(CRPCParamPtr param);
-    CRPCResultPtr RPCGetTxPool(CRPCParamPtr param);
-    // CRPCResultPtr RPCRemovePendingTx(CRPCParamPtr param);
-    CRPCResultPtr RPCGetTransaction(CRPCParamPtr param);
-    CRPCResultPtr RPCSendTransaction(CRPCParamPtr param);
-    CRPCResultPtr RPCGetForkHeight(CRPCParamPtr param);
-    /* Wallet */
-    CRPCResultPtr RPCListKey(CRPCParamPtr param);
-    CRPCResultPtr RPCGetNewKey(CRPCParamPtr param);
-    CRPCResultPtr RPCEncryptKey(CRPCParamPtr param);
-    CRPCResultPtr RPCLockKey(CRPCParamPtr param);
-    CRPCResultPtr RPCUnlockKey(CRPCParamPtr param);
-    CRPCResultPtr RPCImportPrivKey(CRPCParamPtr param);
-    CRPCResultPtr RPCImportKey(CRPCParamPtr param);
-    CRPCResultPtr RPCExportKey(CRPCParamPtr param);
-    CRPCResultPtr RPCAddNewTemplate(CRPCParamPtr param);
-    CRPCResultPtr RPCImportTemplate(CRPCParamPtr param);
-    CRPCResultPtr RPCExportTemplate(CRPCParamPtr param);
-    CRPCResultPtr RPCValidateAddress(CRPCParamPtr param);
-    CRPCResultPtr RPCResyncWallet(CRPCParamPtr param);
-    CRPCResultPtr RPCGetBalance(CRPCParamPtr param);
-    CRPCResultPtr RPCListTransaction(CRPCParamPtr param);
-    CRPCResultPtr RPCSendFrom(CRPCParamPtr param);
-    CRPCResultPtr RPCCreateTransaction(CRPCParamPtr param);
-    CRPCResultPtr RPCSignTransaction(CRPCParamPtr param);
-    CRPCResultPtr RPCSignMessage(CRPCParamPtr param);
-    CRPCResultPtr RPCListAddress(CRPCParamPtr param);
-    CRPCResultPtr RPCExportWallet(CRPCParamPtr param);
-    CRPCResultPtr RPCImportWallet(CRPCParamPtr param);
-    CRPCResultPtr RPCMakeOrigin(CRPCParamPtr param);
-    /* Util */
-    CRPCResultPtr RPCVerifyMessage(CRPCParamPtr param);
-    CRPCResultPtr RPCMakeKeyPair(CRPCParamPtr param);
-    CRPCResultPtr RPCGetPubKeyAddress(CRPCParamPtr param);
-    CRPCResultPtr RPCGetTemplateAddress(CRPCParamPtr param);
-    CRPCResultPtr RPCMakeTemplate(CRPCParamPtr param);
-    CRPCResultPtr RPCDecodeTransaction(CRPCParamPtr param);
-    /* Mint */
-    CRPCResultPtr RPCGetWork(CRPCParamPtr param);
-    CRPCResultPtr RPCSubmitWork(CRPCParamPtr param);
+    void AssignWork(const uint64 nNonce, const CWork& work);
 
 protected:
-    walleve::IIOProc *pHttpServer;
-    ICoreProtocol *pCoreProtocol;
-    IService *pService;
+    walleve::IIOProc* pHttpServer;
+    walleve::IIOModule* pRPCModWorker;
+
+    std::map<uint64, std::list<CWork>> mapWork;
+    size_t nWorkId;
+};
+
+class CRPCModWorker : public walleve::IIOModule, virtual public CMvRPCModEventListener
+{
+    typedef rpc::CRPCResultPtr (CRPCModWorker::*RPCFunc)(rpc::CRPCParamPtr param);
+
+public:
+    CRPCModWorker(uint nThreadIn = std::thread::hardware_concurrency() / 2 + 1);
+    ~CRPCModWorker();
+    bool HandleEvent(CMvEventRPCModRequest& eventRPCModRequest) override;
+
+protected:
+    struct CDestFork
+    {
+        CDestination dest;
+        uint256 hashFork;
+        friend inline bool operator<(const CDestFork& lhs, const CDestFork& rhs)
+        {
+            return (lhs.dest < rhs.dest) || (lhs.dest == rhs.dest && lhs.hashFork < rhs.hashFork);
+        }
+    };
+
+    struct CDestMutex
+    {
+        size_t nRef = 0;
+        mutable boost::mutex mtx;
+    };
+    typedef std::shared_ptr<CDestMutex> CDestMutexPtr;
+
+    class CDestForkLock
+    {
+    public:
+        CDestForkLock(const CDestFork& destForkIn, boost::mutex& destForkMutexIn,
+                      std::map<CDestFork, CDestMutexPtr>& mapDestMutexIn)
+        : destFork(destForkIn), destForkMutex(destForkMutexIn), mapDestMutex(mapDestMutexIn)
+        {
+            {
+                boost::unique_lock<boost::mutex> lock(destForkMutex);
+                auto it = mapDestMutex.find(destFork);
+                if (it == mapDestMutex.end())
+                {
+                    it = mapDestMutex.insert(make_pair(destFork, CDestMutexPtr(new CDestMutex))).first;
+                }
+                spDestMutex = it->second;
+                ++spDestMutex->nRef;
+            }
+            spDestMutex->mtx.lock();
+        }
+        ~CDestForkLock()
+        {
+            spDestMutex->mtx.unlock();
+            {
+                boost::unique_lock<boost::mutex> lock(destForkMutex);
+                if (--spDestMutex->nRef == 0)
+                {
+                    mapDestMutex.erase(destFork);
+                }
+            }
+        }
+    protected:
+        const CDestFork& destFork;
+        std::map<CDestFork, CDestMutexPtr>& mapDestMutex;
+        boost::mutex& destForkMutex;
+        CDestMutexPtr spDestMutex;
+    };
+
+protected:
+    bool WalleveHandleInitialize() override;
+    void WalleveHandleDeinitialize() override;
+
+    const CMvNetworkConfig* WalleveConfig();
+    int GetInt(const rpc::CRPCInt64& i, int valDefault);
+    unsigned int GetUint(const rpc::CRPCUint64& i, unsigned int valDefault);
+    const bool GetForkHashOfDef(const rpc::CRPCString& hex, uint256& hashFork);
+    bool CheckWalletError(MvErr err);
+    multiverse::crypto::CPubKey GetPubKey(const std::string& addr);
+    void ListDestination(std::vector<CDestination>& vDestination);
 
 private:
+    /* System */
+    rpc::CRPCResultPtr RPCHelp(rpc::CRPCParamPtr param);
+    rpc::CRPCResultPtr RPCStop(rpc::CRPCParamPtr param);
+    rpc::CRPCResultPtr RPCVersion(rpc::CRPCParamPtr param);
+    /* Network */
+    rpc::CRPCResultPtr RPCGetPeerCount(rpc::CRPCParamPtr param);
+    rpc::CRPCResultPtr RPCListPeer(rpc::CRPCParamPtr param);
+    rpc::CRPCResultPtr RPCAddNode(rpc::CRPCParamPtr param);
+    rpc::CRPCResultPtr RPCRemoveNode(rpc::CRPCParamPtr param);
+    /* Worldline & TxPool */
+    rpc::CRPCResultPtr RPCGetForkCount(rpc::CRPCParamPtr param);
+    rpc::CRPCResultPtr RPCListFork(rpc::CRPCParamPtr param);
+    rpc::CRPCResultPtr RPCGetForkGenealogy(rpc::CRPCParamPtr param);
+    rpc::CRPCResultPtr RPCGetBlockLocation(rpc::CRPCParamPtr param);
+    rpc::CRPCResultPtr RPCGetBlockCount(rpc::CRPCParamPtr param);
+    rpc::CRPCResultPtr RPCGetBlockHash(rpc::CRPCParamPtr param);
+    rpc::CRPCResultPtr RPCGetBlock(rpc::CRPCParamPtr param);
+    rpc::CRPCResultPtr RPCGetTxPool(rpc::CRPCParamPtr param);
+    // CRPCResultPtr RPCRemovePendingTx(rpc::CRPCParamPtr param);
+    rpc::CRPCResultPtr RPCGetTransaction(rpc::CRPCParamPtr param);
+    rpc::CRPCResultPtr RPCSendTransaction(rpc::CRPCParamPtr param);
+    rpc::CRPCResultPtr RPCGetForkHeight(rpc::CRPCParamPtr param);
+    /* Wallet */
+    rpc::CRPCResultPtr RPCListKey(rpc::CRPCParamPtr param);
+    rpc::CRPCResultPtr RPCGetNewKey(rpc::CRPCParamPtr param);
+    rpc::CRPCResultPtr RPCEncryptKey(rpc::CRPCParamPtr param);
+    rpc::CRPCResultPtr RPCLockKey(rpc::CRPCParamPtr param);
+    rpc::CRPCResultPtr RPCUnlockKey(rpc::CRPCParamPtr param);
+    rpc::CRPCResultPtr RPCImportPrivKey(rpc::CRPCParamPtr param);
+    rpc::CRPCResultPtr RPCImportKey(rpc::CRPCParamPtr param);
+    rpc::CRPCResultPtr RPCExportKey(rpc::CRPCParamPtr param);
+    rpc::CRPCResultPtr RPCAddNewTemplate(rpc::CRPCParamPtr param);
+    rpc::CRPCResultPtr RPCImportTemplate(rpc::CRPCParamPtr param);
+    rpc::CRPCResultPtr RPCExportTemplate(rpc::CRPCParamPtr param);
+    rpc::CRPCResultPtr RPCValidateAddress(rpc::CRPCParamPtr param);
+    rpc::CRPCResultPtr RPCResyncWallet(rpc::CRPCParamPtr param);
+    rpc::CRPCResultPtr RPCGetBalance(rpc::CRPCParamPtr param);
+    rpc::CRPCResultPtr RPCListTransaction(rpc::CRPCParamPtr param);
+    rpc::CRPCResultPtr RPCSendFrom(rpc::CRPCParamPtr param);
+    rpc::CRPCResultPtr RPCCreateTransaction(rpc::CRPCParamPtr param);
+    rpc::CRPCResultPtr RPCSignTransaction(rpc::CRPCParamPtr param);
+    rpc::CRPCResultPtr RPCSignMessage(rpc::CRPCParamPtr param);
+    rpc::CRPCResultPtr RPCListAddress(rpc::CRPCParamPtr param);
+    rpc::CRPCResultPtr RPCExportWallet(rpc::CRPCParamPtr param);
+    rpc::CRPCResultPtr RPCImportWallet(rpc::CRPCParamPtr param);
+    rpc::CRPCResultPtr RPCMakeOrigin(rpc::CRPCParamPtr param);
+    /* Util */
+    rpc::CRPCResultPtr RPCVerifyMessage(rpc::CRPCParamPtr param);
+    rpc::CRPCResultPtr RPCMakeKeyPair(rpc::CRPCParamPtr param);
+    rpc::CRPCResultPtr RPCGetPubKeyAddress(rpc::CRPCParamPtr param);
+    rpc::CRPCResultPtr RPCGetTemplateAddress(rpc::CRPCParamPtr param);
+    rpc::CRPCResultPtr RPCMakeTemplate(rpc::CRPCParamPtr param);
+    rpc::CRPCResultPtr RPCDecodeTransaction(rpc::CRPCParamPtr param);
+    /* Mint */
+    rpc::CRPCResultPtr RPCGetWork(rpc::CRPCParamPtr param);
+    rpc::CRPCResultPtr RPCSubmitWork(rpc::CRPCParamPtr param);
+
+public:
+    virtual rpc::CRPCResultPtr SnRPCStop(rpc::CRPCParamPtr param);
+    virtual rpc::CRPCResultPtr SnRPCGetForkCount(rpc::CRPCParamPtr param);
+    virtual rpc::CRPCResultPtr SnRPCListFork(rpc::CRPCParamPtr param);
+    virtual rpc::CRPCResultPtr SnRPCGetBlockLocation(rpc::CRPCParamPtr param);
+    virtual rpc::CRPCResultPtr SnRPCGetBlockCount(rpc::CRPCParamPtr param);
+    virtual rpc::CRPCResultPtr SnRPCGetBlockHash(rpc::CRPCParamPtr param);
+    virtual rpc::CRPCResultPtr SnRPCGetBlock(rpc::CRPCParamPtr param);
+    virtual rpc::CRPCResultPtr SnRPCGetTxPool(rpc::CRPCParamPtr param);
+    virtual rpc::CRPCResultPtr SnRPCGetTransaction(rpc::CRPCParamPtr param);
+    virtual rpc::CRPCResultPtr SnRPCGetForkHeight(rpc::CRPCParamPtr param);
+    virtual rpc::CRPCResultPtr SnRPCSendTransaction(rpc::CRPCParamPtr param);
+
+protected:
+    ICoreProtocol* pCoreProtocol;
+    IService* pService;
+    walleve::IIOModule* pRPCMod;
+
+    mutable boost::mutex destForkMutex;
+    std::map<CDestFork, CDestMutexPtr> mapDestMutex;
     std::map<std::string, RPCFunc> mapRPCFunc;
+};
+
+class CSnRPCModWorker : public CRPCModWorker, virtual public CDBPEventListener
+{
+public:
+    CSnRPCModWorker();
+    ~CSnRPCModWorker();
+    rpc::CRPCResultPtr SnRPCStop(rpc::CRPCParamPtr param) override;
+    rpc::CRPCResultPtr SnRPCGetForkCount(rpc::CRPCParamPtr param) override;
+    rpc::CRPCResultPtr SnRPCListFork(rpc::CRPCParamPtr param) override;
+    rpc::CRPCResultPtr SnRPCGetBlockLocation(rpc::CRPCParamPtr param) override;
+    rpc::CRPCResultPtr SnRPCGetBlockCount(rpc::CRPCParamPtr param) override;
+    rpc::CRPCResultPtr SnRPCGetBlockHash(rpc::CRPCParamPtr param) override;
+    rpc::CRPCResultPtr SnRPCGetBlock(rpc::CRPCParamPtr param) override;
+    rpc::CRPCResultPtr SnRPCGetTxPool(rpc::CRPCParamPtr param) override;
+    rpc::CRPCResultPtr SnRPCGetTransaction(rpc::CRPCParamPtr param) override;
+    rpc::CRPCResultPtr SnRPCGetForkHeight(rpc::CRPCParamPtr param) override;
+    rpc::CRPCResultPtr SnRPCSendTransaction(rpc::CRPCParamPtr param) override;
+
+protected:
+    bool WalleveHandleInitialize() override;
+    void WalleveHandleDeinitialize() override;
+    uint64 GenNonce();
+    void DelCompltUntilByNonce(uint64 nNonce);
+
+protected:
+    walleve::IIOModule* pDbpService;
 };
 
 } // namespace multiverse

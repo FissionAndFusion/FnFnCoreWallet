@@ -21,7 +21,6 @@
 #include "miner.h"
 #include "dbpservice.h"
 #include "dbpclient.h"
-#include "dnseed.h"
 #include "version.h"
 #include "purger.h"
 
@@ -136,7 +135,7 @@ bool CMvEntry::Initialize(int argc, char *argv[])
     }
 
     // log
-    if ((mvConfig.GetModeType() == EModeType::SERVER || mvConfig.GetModeType() == EModeType::MINER || mvConfig.GetModeType() == EModeType::DNSEED) && !walleveLog.SetLogFilePath((pathData / "multiverse.log").string()))
+    if ((mvConfig.GetModeType() == EModeType::SERVER || mvConfig.GetModeType() == EModeType::MINER) && !walleveLog.SetLogFilePath((pathData / "multiverse.log").string()))
     {
         cerr << "Failed to open log file : " << (pathData / "multiverse.log") << "\n";
         return false;
@@ -331,7 +330,30 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
             }
             dynamic_cast<CHttpServer*>(pBase)->AddNewHost(GetRPCHostConfig());
 
-            if (!AttachModule(new CRPCMod()))
+            auto config = GetDbpClientConfig();
+            CRPCModWorker* rpcModWorker;
+
+            if (config.fEnableSuperNode && !config.fEnableForkNode) //supernode root
+            {
+                rpcModWorker = new CSnRPCModWorker();
+            }
+
+            if (config.fEnableSuperNode && config.fEnableForkNode) // supernode fork
+            {
+                rpcModWorker = new CRPCModWorker();
+            }
+
+            if (!config.fEnableSuperNode) //fnfncorewallet
+            {
+                rpcModWorker = new CRPCModWorker();
+            }
+
+            if (!AttachModule(rpcModWorker))
+            {
+                return false;
+            }
+
+            if(!AttachModule(new CRPCMod()))
             {
                 return false;
             }
@@ -405,7 +427,7 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
         }
         case EModuleType::DBPCLIENT:
         {
-            if(!AttachModule(new CMvDbpClient()))
+            if(!AttachModule(new CDbpClient()))
             {
                 return false;
             }
@@ -446,21 +468,13 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
                 dynamic_cast<CNetChannel*>(pNetChannelBase)->EnableSuperNode(config.fEnableForkNode);
             }
             
-            dynamic_cast<CMvDbpClient*>(pClientBase)->AddNewClient(config);
+            dynamic_cast<CDbpClient*>(pClientBase)->AddNewClient(config);
 
             CDbpService* pDbpService = new CDbpService();
             pDbpService->EnableSuperNode(config.fEnableSuperNode);
             pDbpService->EnableForkNode(config.fEnableForkNode);
 
             if (!AttachModule(pDbpService))
-            {
-                return false;
-            }
-            break;
-        }
-        case EModuleType::DNSEED:
-        {
-            if (!AttachModule(new CDNSeed()))
             {
                 return false;
             }
@@ -516,7 +530,7 @@ CDbpClientConfig CMvEntry::GetDbpClientConfig()
                         config->strDbpCAFile, config->strDbpCertFile,
                         config->strDbpPKFile, config->strDbpCiphers);
     
-    return CDbpClientConfig(config->epParentHost,config->strPrivateKey,sslDbp,"dbpservice", 
+    return CDbpClientConfig(config->epParentHost,config->nDbpSessionTimeout,config->strPrivateKey,sslDbp,"dbpservice", 
             config->fEnableForkNode, config->fEnableSuperNode);
 }
 
@@ -531,11 +545,8 @@ void CMvEntry::PurgeStorage()
         return;
     }
 
-    const CMvStorageConfig* config = CastConfigPtr<CMvStorageConfig*>(mvConfig.GetConfig());
-    storage::CMvDBConfig dbConfig(config->strDBHost,config->nDBPort,
-                                  config->strDBName,config->strDBUser,config->strDBPass);
     storage::CPurger purger;
-    if (purger(dbConfig,pathData))
+    if (purger(pathData))
     {
         cout << "Reset database and removed blockfiles\n";
     }

@@ -4,6 +4,9 @@
 
 #include "forkblockmaker.h"
 #include "address.h"
+#include "template/proof.h"
+#include "template/delegate.h"
+
 using namespace std;
 using namespace walleve;
 using namespace multiverse;
@@ -35,15 +38,11 @@ bool CForkBlockMakerProfile::BuildTemplate()
     }
     if (nAlgo == CM_MPVSS)
     {
-        templMint = CTemplatePtr(new CTemplateDelegate(keyMint.GetPubKey(),destMint));
+        templMint = CTemplateMint::CreateTemplatePtr(new CTemplateDelegate(keyMint.GetPubKey(),destMint));
     }
     else if (nAlgo < CM_MAX)
     {
-        templMint = CTemplatePtr(new CTemplateMint(keyMint.GetPubKey(),destMint));
-    }
-    if (templMint != NULL && templMint->IsNull())
-    {
-        templMint.reset();
+        templMint = CTemplateMint::CreateTemplatePtr(new CTemplateProof(keyMint.GetPubKey(),destMint));
     }
     return (templMint != NULL);
 }
@@ -198,7 +197,11 @@ void CForkBlockMaker::WalleveHandleHalt()
         nMakerStatus = ForkMakerStatus::MAKER_EXIT;
     }
     cond.notify_all();
+
+    thrMaker.Interrupt();
     WalleveThreadExit(thrMaker);
+
+    thrExtendedMaker.Interrupt();
     WalleveThreadExit(thrExtendedMaker);
     IBlockMaker::WalleveHandleHalt();
 }
@@ -237,7 +240,7 @@ void CForkBlockMaker::ArrangeBlockTx(CBlock& block,const uint256& hashFork,const
 {
     size_t nMaxTxSize = MAX_BLOCK_SIZE - GetSerializeSize(block) - profile.GetSignatureSize();
     int64 nTotalTxFee = 0;
-    pTxPool->ArrangeBlockTx(hashFork,nMaxTxSize,block.vtx,nTotalTxFee); 
+    pTxPool->ArrangeBlockTx(hashFork,block.GetBlockTime(),nMaxTxSize,block.vtx,nTotalTxFee); 
     block.hashMerkle = block.CalcMerkleTreeRoot();
     block.txMint.nAmount += nTotalTxFee;
 }
@@ -253,7 +256,7 @@ bool CForkBlockMaker::SignBlock(CBlock& block,const CForkBlockMakerProfile& prof
     return profile.templMint->BuildBlockSignature(hashSig,vchMintSig,block.vchSig);
 }
     
-bool CForkBlockMaker::DispatchBlock(CBlock& block)
+bool CForkBlockMaker::DispatchBlock(const CBlock& block)
 {
     int nWait = block.nTimeStamp - WalleveGetNetTime();
     if (nWait > 0 && !Wait(nWait))
@@ -286,7 +289,7 @@ void CForkBlockMaker::ProcessExtended(const CBlockMakerAgreement& agreement,cons
     vector<CForkBlockMakerProfile*> vProfile;
     set<uint256> setFork;
 
-    if (!GetAvailiableDelegatedProfile(agreement.vBallot,vProfile) || !GetAvailiableExtendedFork(setFork))
+    if (!GetAvailableDelegatedProfile(agreement.vBallot,vProfile) || !GetAvailableExtendedFork(setFork))
     {
         std::cout << "Get Availiable failed\n";
         return;
@@ -413,7 +416,7 @@ void CForkBlockMaker::CreateExtended(const CForkBlockMakerProfile& profile,const
     }
 }
     
-bool CForkBlockMaker::GetAvailiableDelegatedProfile(const std::vector<CDestination>& vBallot,std::vector<CForkBlockMakerProfile*>& vProfile)
+bool CForkBlockMaker::GetAvailableDelegatedProfile(const std::vector<CDestination>& vBallot,std::vector<CForkBlockMakerProfile*>& vProfile)
 {
     int nAvailProfile = 0;
     vProfile.reserve(vBallot.size());
@@ -434,7 +437,7 @@ bool CForkBlockMaker::GetAvailiableDelegatedProfile(const std::vector<CDestinati
     return (!!nAvailProfile);
 }
     
-bool CForkBlockMaker::GetAvailiableExtendedFork(std::set<uint256>& setFork)
+bool CForkBlockMaker::GetAvailableExtendedFork(std::set<uint256>& setFork)
 {
     map<uint256,CForkStatus> mapForkStatus;
     pWorldLine->GetForkStatus(mapForkStatus);
@@ -504,6 +507,12 @@ void CForkBlockMaker::BlockMakerThreadFunc()
             {
                 std::cout << "called GetBlockDelegateAgreement failed: " << 
                     hashLastBlock.ToString() << '\n';
+                nMakerStatus = ForkMakerStatus::MAKER_SKIP;
+                continue;
+            }
+
+            if(agree.vBallot.empty())
+            {
                 nMakerStatus = ForkMakerStatus::MAKER_SKIP;
                 continue;
             }
