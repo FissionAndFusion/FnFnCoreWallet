@@ -368,7 +368,7 @@ void CEndpointManager::CleanInactiveAddress()
 void CEndpointManager::AddNewEndPointMac(const boost::asio::ip::tcp::endpoint& ep, const walleve::CMacAddress& addr, bool IsInBound)
 {
     bimapRemoteEPMac.insert(position_pair(ep, addr));
-    
+    mngrNode.AddNewEndPointMac(ep, addr);
     if(IsInBound)
     {
         int64 now = GetTime();
@@ -391,6 +391,7 @@ void CEndpointManager::AddNewEndPointMac(const boost::asio::ip::tcp::endpoint& e
 
 void CEndpointManager::RemoveEndPointMac(const boost::asio::ip::tcp::endpoint& ep)
 {
+    mngrNode.RemoveEndPointMac(ep);
     auto it =  bimapRemoteEPMac.left.find(ep);
     if(it != bimapRemoteEPMac.left.end())
     {
