@@ -231,15 +231,15 @@ bool CEndpointManager::FetchOutBound(tcp::endpoint& ep)
             }
             mngrNode.Dismiss(ep,false);
         }
-        else
-        {
-            CAddressStatus& status = mapAddressStatus[CMacAddress()];
-            if (status.AddConnection(false))
-            {
-                return true;
-            }
-            mngrNode.Dismiss(ep,false);
-        }
+       // else
+       // {
+         //   CAddressStatus& status = mapAddressStatus[CMacAddress()];
+         //   if (status.AddConnection(false))
+           // {
+           //     return true;
+         //   }
+         //   mngrNode.Dismiss(ep,false);
+       // }
     }
     return false;
 }
@@ -254,11 +254,11 @@ bool CEndpointManager::AcceptInBound(const tcp::endpoint& ep)
         CAddressStatus& status = mapAddressStatus[bimapRemoteEPMac.left.at(ep)];
         return (status.InBoundAttempt(now) && status.AddConnection(true));
     }
-    else
-    {
-        CAddressStatus& status = mapAddressStatus[CMacAddress()];
-        return (status.InBoundAttempt(now) && status.AddConnection(true));
-    }
+   // else
+   // {
+     //   CAddressStatus& status = mapAddressStatus[CMacAddress()];
+      //  return (status.InBoundAttempt(now) && status.AddConnection(true));
+   // }
 }
 
 void CEndpointManager::RewardEndpoint(const tcp::endpoint& ep,Bonus bonus)
@@ -365,14 +365,27 @@ void CEndpointManager::CleanInactiveAddress()
     }
 }
 
-void CEndpointManager::AddNewEndPointMac(const boost::asio::ip::tcp::endpoint& ep, const walleve::CMacAddress& addr)
+void CEndpointManager::AddNewEndPointMac(const boost::asio::ip::tcp::endpoint& ep, const walleve::CMacAddress& addr, bool IsInBound)
 {
     bimapRemoteEPMac.insert(position_pair(ep, addr));
-    auto iter = mapAddressStatus.find(CMacAddress());
-    if(iter != mapAddressStatus.end())
+    
+    if(IsInBound)
     {
-        mapAddressStatus[addr] = iter->second;
-        mapAddressStatus.erase(iter);
+        int64 now = GetTime();
+        CAddressStatus& status = mapAddressStatus[bimapRemoteEPMac.left.at(ep)];
+        if(status.InBoundAttempt(now))
+        {
+            status.AddConnection(true);
+        }
+    }
+    else
+    {
+        CAddressStatus& status = mapAddressStatus[bimapRemoteEPMac.left.at(ep)];
+        if (!status.AddConnection(false))
+        {
+            mngrNode.Dismiss(ep,false);
+        }
+        
     }
 }
 
