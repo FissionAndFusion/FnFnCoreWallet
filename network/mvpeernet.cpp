@@ -320,9 +320,11 @@ bool CMvPeerNet::HandlePeerHandshaked(CPeer *pPeer,uint32 nTimerId)
 
     }
 
+    /*If */
     if(!AddPeerMacAddress(pPeer, pMvPeer->remoteMacAddress, pMvPeer->IsInBound()))
     {
-        return false;
+        DestroyPeer(pPeer);
+        return true;
     }
     SetNodeMacAddress(pMvPeer->GetRemote(), pMvPeer->remoteMacAddress);
 
