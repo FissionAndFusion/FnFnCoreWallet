@@ -231,15 +231,11 @@ bool CEndpointManager::FetchOutBound(tcp::endpoint& ep)
             }
             mngrNode.Dismiss(ep,false);
         }
-       // else
-       // {
-         //   CAddressStatus& status = mapAddressStatus[CMacAddress()];
-         //   if (status.AddConnection(false))
-           // {
-           //     return true;
-         //   }
-         //   mngrNode.Dismiss(ep,false);
-       // }
+        else
+        {
+            return true;
+        }
+        
     }
     return false;
 }
@@ -254,11 +250,11 @@ bool CEndpointManager::AcceptInBound(const tcp::endpoint& ep)
         CAddressStatus& status = mapAddressStatus[bimapRemoteEPMac.left.at(ep)];
         return (status.InBoundAttempt(now) && status.AddConnection(true));
     }
-   // else
-   // {
-     //   CAddressStatus& status = mapAddressStatus[CMacAddress()];
-      //  return (status.InBoundAttempt(now) && status.AddConnection(true));
-   // }
+    else
+    {
+        return true;
+    }
+    
 }
 
 void CEndpointManager::RewardEndpoint(const tcp::endpoint& ep,Bonus bonus)
