@@ -320,7 +320,10 @@ bool CMvPeerNet::HandlePeerHandshaked(CPeer *pPeer,uint32 nTimerId)
 
     }
 
-    AddPeerMacAddress(pPeer, pMvPeer->remoteMacAddress, pMvPeer->IsInBound());
+    if(!AddPeerMacAddress(pPeer, pMvPeer->remoteMacAddress, pMvPeer->IsInBound()))
+    {
+        return false;
+    }
     SetNodeMacAddress(pMvPeer->GetRemote(), pMvPeer->remoteMacAddress);
 
     WalleveUpdateNetTime(pMvPeer->GetRemote().address(),pMvPeer->nTimeDelta);

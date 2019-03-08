@@ -122,7 +122,7 @@ public:
     void RetrieveGoodNode(std::vector<CNodeAvail>& vGoodNode,
                           int64 nActiveTime,std::size_t nMaxCount);
     int GetCandidateNodeCount(){ return mngrNode.GetCandidateNodeCount(); }
-    void AddNewEndPointMac(const boost::asio::ip::tcp::endpoint& ep, const walleve::CMacAddress& addr, bool IsInBound);
+    bool AddNewEndPointMac(const boost::asio::ip::tcp::endpoint& ep, const walleve::CMacAddress& addr, bool IsInBound);
     void RemoveEndPointMac(const boost::asio::ip::tcp::endpoint& ep);
 protected:
     void CleanInactiveAddress();

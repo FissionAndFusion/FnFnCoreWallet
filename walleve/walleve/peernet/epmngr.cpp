@@ -365,7 +365,7 @@ void CEndpointManager::CleanInactiveAddress()
     }
 }
 
-void CEndpointManager::AddNewEndPointMac(const boost::asio::ip::tcp::endpoint& ep, const walleve::CMacAddress& addr, bool IsInBound)
+bool CEndpointManager::AddNewEndPointMac(const boost::asio::ip::tcp::endpoint& ep, const walleve::CMacAddress& addr, bool IsInBound)
 {
     bimapRemoteEPMac.insert(position_pair(ep, addr));
     mngrNode.AddNewEndPointMac(ep, addr);
@@ -373,10 +373,7 @@ void CEndpointManager::AddNewEndPointMac(const boost::asio::ip::tcp::endpoint& e
     {
         int64 now = GetTime();
         CAddressStatus& status = mapAddressStatus[bimapRemoteEPMac.left.at(ep)];
-        if(status.InBoundAttempt(now))
-        {
-            status.AddConnection(true);
-        }
+        return (status.InBoundAttempt(now) && status.AddConnection(true));
     }
     else
     {
@@ -384,8 +381,9 @@ void CEndpointManager::AddNewEndPointMac(const boost::asio::ip::tcp::endpoint& e
         if (!status.AddConnection(false))
         {
             mngrNode.Dismiss(ep,false);
+            return false;
         }
-        
+        return true;
     }
 }
 

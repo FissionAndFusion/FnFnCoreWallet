@@ -95,7 +95,7 @@ protected:
     int GetCandidateNodeCount() { return epMngr.GetCandidateNodeCount(); }
 
     void AddPeerRecord(CPeer* pPeer);
-    void AddPeerMacAddress(CPeer* pPeer, const CMacAddress& addr, bool fIsInbound);
+    bool AddPeerMacAddress(CPeer* pPeer, const CMacAddress& addr, bool fIsInbound);
 protected:
     CPeerNetConfig confNetwork;
     boost::asio::ip::address localIP;
