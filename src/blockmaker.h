@@ -63,19 +63,19 @@ protected:
     bool Interrupted() { return (nMakerStatus != MAKER_RUN); }
     bool Wait(long nSeconds);
     bool Wait(long nSeconds,const uint256& hashPrimaryBlock);
-    void PrepareBlock(CBlock& block,const uint256& hashPrev,int64 nPrevTime,int nPrevHeight,const CBlockMakerAgreement& agreement);
+    void PrepareBlock(CBlock& block,const uint256& hashPrev,int64 nPrevTime,const int32 nPrevHeight,const CBlockMakerAgreement& agreement);
     void ArrangeBlockTx(CBlock& block,const uint256& hashFork,const CBlockMakerProfile& profile);
     bool SignBlock(CBlock& block,const CBlockMakerProfile& profile);
     bool DispatchBlock(const CBlock& block);
     bool CreateProofOfWorkBlock(CBlock& block);
-    void ProcessDelegatedProofOfStake(CBlock& block,const CBlockMakerAgreement& agreement,int nPrevHeight);
+    void ProcessDelegatedProofOfStake(CBlock& block,const CBlockMakerAgreement& agreement,const int32 nPrevHeight);
     void ProcessExtended(const CBlockMakerAgreement& agreement,const uint256& hashPrimaryBlock,
-                                                               int64 nPrimaryBlockTime,int nPrimaryBlockHeight);
+                                                               int64 nPrimaryBlockTime,const int32 nPrimaryBlockHeight);
     bool CreateDelegatedBlock(CBlock& block,const uint256& hashFork,const CBlockMakerProfile& profile,std::size_t nWeight);
     bool CreateProofOfWork(CBlock& block,CBlockMakerHashAlgo* pHashAlgo);
     void CreatePiggyback(const CBlockMakerProfile& profile,const CBlockMakerAgreement& agreement,
-                         const uint256& hashRefBlock,int64 nRefBlockTime,int nPrevHeight); 
-    void CreateExtended(const CBlockMakerProfile& profile,const CBlockMakerAgreement& agreement,const std::set<uint256>& setFork,int nPrimaryBlockHeight,int64 nTime); 
+                         const uint256& hashRefBlock,int64 nRefBlockTime,const int32 nPrevHeight); 
+    void CreateExtended(const CBlockMakerProfile& profile,const CBlockMakerAgreement& agreement,const std::set<uint256>& setFork,const int32 nPrimaryBlockHeight,int64 nTime); 
     bool GetAvailableDelegatedProfile(const std::vector<CDestination>& vBallot,std::vector<CBlockMakerProfile*>& vProfile);
     bool GetAvailableExtendedFork(std::set<uint256>& setFork);
 private:
@@ -91,7 +91,7 @@ protected:
     int nMakerStatus;
     uint256 hashLastBlock;
     int64 nLastBlockTime;
-    int nLastBlockHeight;
+    int32 nLastBlockHeight;
     uint256 nLastAgreement;
     std::size_t nLastWeight;
     CBlockMakerAgreement currentAgreement;

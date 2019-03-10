@@ -320,7 +320,7 @@ MvErr CTxPool::Push(const CTransaction& tx,uint256& hashFork,CDestination& destI
         return MV_ERR_TRANSACTION_INVALID;
     }
 
-    int nHeight;
+    int32 nHeight;
     if (!pWorldLine->GetBlockLocation(tx.hashAnchor,hashFork,nHeight))
     {
         return MV_ERR_TRANSACTION_INVALID;
@@ -352,7 +352,7 @@ void CTxPool::Pop(const uint256& txid)
     }   
     CPooledTx& tx = (*it).second;
     uint256 hashFork;
-    int nHeight;
+    int32 nHeight;
     if (!pWorldLine->GetBlockLocation(tx.hashAnchor,hashFork,nHeight))
     {
         return;
@@ -498,7 +498,7 @@ bool CTxPool::SynchronizeWorldLine(const CWorldLineUpdate& update,CTxSetChange& 
     vector<uint256> vInvalidTx;
     CTxPoolView& txView = mapPoolView[update.hashFork];
 
-    int nHeight = update.nLastBlockHeight - update.vBlockAddNew.size() + 1;
+    int32 nHeight = update.nLastBlockHeight - update.vBlockAddNew.size() + 1;
     BOOST_REVERSE_FOREACH(const CBlockEx& block,update.vBlockAddNew)
     {
         if (block.txMint.nAmount != 0)
@@ -636,7 +636,7 @@ bool CTxPool::SaveData()
     return datTxPool.Save(vTx);
 }
 
-MvErr CTxPool::AddNew(CTxPoolView& txView,const uint256& txid,const CTransaction& tx,const uint256& hashFork,int nForkHeight)
+MvErr CTxPool::AddNew(CTxPoolView& txView,const uint256& txid,const CTransaction& tx,const uint256& hashFork,const int32 nForkHeight)
 {
     vector<CTxOutput> vPrevOutput;
     vPrevOutput.resize(tx.vInput.size());

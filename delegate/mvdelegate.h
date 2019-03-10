@@ -39,19 +39,19 @@ public:
     void AddNewDelegate(const CDestination& destDelegate);
     void RemoveDelegate(const CDestination& destDelegate);
     
-    void Evolve(int nBlockHeight,const std::map<CDestination,std::size_t>& mapWeight,
+    void Evolve(const int32 nBlockHeight,const std::map<CDestination,std::size_t>& mapWeight,
                                  const std::map<CDestination,std::vector<unsigned char> >& mapEnrollData,
                                  CMvDelegateEvolveResult& result);
-    void Rollback(int nBlockHeightFrom,int nBlockHeightTo);
-    bool HandleDistribute(int nTargetHeight,const CDestination& destFrom,
+    void Rollback(const int32 nBlockHeightFrom,const int32 nBlockHeightTo);
+    bool HandleDistribute(const int32 nTargetHeight,const CDestination& destFrom,
                           const std::vector<unsigned char>& vchDistributeData);
-    bool HandlePublish(int nTargetHeight,const CDestination& destFrom,
+    bool HandlePublish(const int32 nTargetHeight,const CDestination& destFrom,
                        const std::vector<unsigned char>& vchPublishData,bool& fCompleted);
-    void GetAgreement(int nTargetHeight,uint256& nAgreement,std::size_t& nWeight,std::map<CDestination,std::size_t>& mapBallot);
-    void GetProof(int nTargetHeight,std::vector<unsigned char>& vchProof);
+    void GetAgreement(const int32 nTargetHeight,uint256& nAgreement,std::size_t& nWeight,std::map<CDestination,std::size_t>& mapBallot);
+    void GetProof(const int32 nTargetHeight,std::vector<unsigned char>& vchProof);
 protected:
     std::set<CDestination> setDelegate;
-    std::map<int,CMvDelegateVote> mapVote;
+    std::map<int32,CMvDelegateVote> mapVote;
 };
 
 } // namespace delegate

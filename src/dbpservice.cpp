@@ -153,7 +153,7 @@ void CDbpService::UnsubscribeChildNodeForks(const std::string& session)
         {
             uint64 nNonce = key.second;
             uint256 forkHash = key.first;
-            int& forkCount = iter->second;
+            uint32& forkCount = iter->second;
             if(forkCount == 1)
             {
                 forkCount = 0;
@@ -308,7 +308,7 @@ void CDbpService::HandleGetTransaction(CMvEventDbpMethod& event)
     uint256 txHash(txid);
     CTransaction tx;
     uint256 forkHash;
-    int blockHeight;
+    int32 blockHeight;
 
     if (pService->GetTransaction(txHash, tx, forkHash, blockHeight))
     {
@@ -470,8 +470,8 @@ void CDbpService::TrySwitchFork(const uint256& blockHash,uint256& forkHash)
 
 bool CDbpService::CalcForkPoints(const uint256& forkHash)
 {
-    std::vector<std::pair<uint256,int>> vAncestors;
-    std::vector<std::pair<int,uint256>> vSublines;
+    std::vector<std::pair<uint256,int32>> vAncestors;
+    std::vector<std::pair<int32,uint256>> vSublines;
     std::vector<std::pair<uint256,uint256>> path;
     if(!pService->GetForkGenealogy(forkHash,vAncestors,vSublines))
     {
@@ -483,7 +483,7 @@ bool CDbpService::CalcForkPoints(const uint256& forkHash)
     {
         CBlock block;
         uint256 tempFork;
-        int nHeight = 0;
+        int32 nHeight = 0;
         pService->GetBlock(vAncestors[i].first,block,tempFork,nHeight);
         forkAncestors.push_back(std::make_pair(vAncestors[i].first,block.hashPrev));
     }
@@ -491,7 +491,7 @@ bool CDbpService::CalcForkPoints(const uint256& forkHash)
     path = forkAncestors;
     CBlock block;
     uint256 tempFork;
-    int nHeight = 0;
+    int32 nHeight = 0;
     pService->GetBlock(forkHash,block,tempFork,nHeight);
     path.push_back(std::make_pair(forkHash,block.hashPrev));
 
@@ -525,7 +525,7 @@ bool CDbpService::GetLwsBlocks(const uint256& forkHash, const uint256& startHash
         blockHash = pCoreProtocol->GetGenesisBlockHash();
     }
 
-    int blockHeight = 0;
+    int32 blockHeight = 0;
     uint256 tempForkHash;
     if (!pService->GetBlockLocation(blockHash, tempForkHash, blockHeight))
     {
@@ -551,7 +551,7 @@ bool CDbpService::GetLwsBlocks(const uint256& forkHash, const uint256& startHash
         for(int i = 0; i < blocksHash.size(); ++i)
         {
             CBlockEx block;
-            int height;
+            int32 height;
             pService->GetBlockEx(blocksHash[i], block, tempForkHash, height);
             if (block.nType != CBlock::BLOCK_EXTENDED)
             {
@@ -1041,7 +1041,7 @@ bool CDbpService::HandleEvent(CMvEventDbpUpdateNewBlock& event)
     // get details about new block
     CBlockEx& newBlock = event.data;
     uint256 forkHash;
-    int blockHeight = 0;
+    int32 blockHeight = 0;
     if (pService->GetBlockLocation(newBlock.GetHash(),forkHash,blockHeight))
     {
         CMvDbpBlock block;

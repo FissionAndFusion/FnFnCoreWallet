@@ -85,19 +85,19 @@ public:
 class CWalletFork
 {
 public:
-    CWalletFork(const uint256& hashParentIn=uint64(0),int nOriginHeightIn=-1,bool fIsolatedIn=true)
+    CWalletFork(const uint256& hashParentIn=uint64(0),const int32 nOriginHeightIn=-1,bool fIsolatedIn=true)
     : hashParent(hashParentIn),nOriginHeight(nOriginHeightIn),fIsolated(fIsolatedIn)
     {
     }
-    void InsertSubline(int nHeight,const uint256& hashSubline)
+    void InsertSubline(const int32 nHeight,const uint256& hashSubline)
     {
         mapSubline.insert(std::make_pair(nHeight,hashSubline));
     }
 public:
     uint256 hashParent;
-    int nOriginHeight;
+    int32 nOriginHeight;
     bool fIsolated;
-    std::multimap<int,uint256> mapSubline;
+    std::multimap<int32,uint256> mapSubline;
 };
 
 class CWallet : public IWallet
@@ -116,7 +116,7 @@ public:
 
     bool Encrypt(const crypto::CPubKey& pubkey,const crypto::CCryptoString& strPassphrase,
                                                const crypto::CCryptoString& strCurrentPassphrase) override;
-    bool GetKeyStatus(const crypto::CPubKey& pubkey,int& nVersion,bool& fLocked,int64& nAutoLockTime) const override;
+    bool GetKeyStatus(const crypto::CPubKey& pubkey,uint32& nVersion,bool& fLocked,int64& nAutoLockTime) const override;
     bool IsLocked(const crypto::CPubKey& pubkey) const override;
     bool Lock(const crypto::CPubKey& pubkey) override;
     bool Unlock(const crypto::CPubKey& pubkey,const crypto::CCryptoString& strPassphrase,int64 nTimeout) override;
@@ -133,15 +133,15 @@ public:
     /* Wallet Tx */
     std::size_t GetTxCount() override;
     bool ListTx(int nOffset,int nCount,std::vector<CWalletTx>& vWalletTx) override;
-    bool GetBalance(const CDestination& dest,const uint256& hashFork,int nForkHeight,CWalletBalance& balance) override;
+    bool GetBalance(const CDestination& dest,const uint256& hashFork,const int32 nForkHeight,CWalletBalance& balance) override;
     bool SignTransaction(const CDestination& destIn, CTransaction& tx, bool& fCompleted) const override;
-    bool ArrangeInputs(const CDestination& destIn,const uint256& hashFork,int nForkHeight,CTransaction& tx) override;
+    bool ArrangeInputs(const CDestination& destIn,const uint256& hashFork,const int32 nForkHeight,CTransaction& tx) override;
     /* Update */
     bool SynchronizeTxSet(const CTxSetChange& change) override;
     bool AddNewTx(const uint256& hashFork,const CAssembledTx& tx) override;
     bool UpdateTx(const uint256& hashFork,const CAssembledTx& tx);
     bool LoadTx(const CWalletTx& wtx);
-    bool AddNewFork(const uint256& hashFork,const uint256& hashParent,int nOriginHeight) override;
+    bool AddNewFork(const uint256& hashFork,const uint256& hashParent,const int32 nOriginHeight) override;
     /* Resync */
     bool SynchronizeWalletTx(const CDestination& destNew) override;
     bool ResynchronizeWalletTx() override;
@@ -156,7 +156,7 @@ protected:
     void Clear();
     bool ClearTx();
     bool InsertKey(const crypto::CKey& key);
-    int64 SelectCoins(const CDestination& dest,const uint256& hashFork,int nForkHeight,int64 nTxTime,
+    int64 SelectCoins(const CDestination& dest,const uint256& hashFork,const int32 nForkHeight,int64 nTxTime,
                       int64 nTargetValue,std::size_t nMaxInput,std::vector<CTxOutPoint>& vCoins);
     std::shared_ptr<CWalletTx> LoadWalletTx(const uint256& txid);
     std::shared_ptr<CWalletTx> InsertWalletTx(const uint256& txid,const CAssembledTx &tx,const uint256& hashFork,bool fIsMine,bool fFromMe);
@@ -164,11 +164,11 @@ protected:
     bool SignMultiPubKey(const std::set<crypto::CPubKey>& setPubKey,const uint256& seed,const uint256& hash,std::vector<uint8>& vchSig) const;
     bool SignDestination(const CDestination& destIn, const CTransaction& tx, const uint256& hash, std::vector<uint8>& vchSig, bool& fCompleted) const;
     bool UpdateFork();
-    void GetWalletTxFork(const uint256& hashFork,int nHeight,std::vector<uint256>& vFork);
+    void GetWalletTxFork(const uint256& hashFork,const int32 nHeight,std::vector<uint256>& vFork);
     void AddNewWalletTx(std::shared_ptr<CWalletTx>& spWalletTx,std::vector<uint256>& vFork);
     void RemoveWalletTx(std::shared_ptr<CWalletTx>& spWalletTx,const uint256& hashFork);
     bool SyncWalletTx(CTxFilter& txFilter);
-    bool InspectWalletTx(int nCheckDepth);
+    bool InspectWalletTx(const int32 nCheckDepth);
 protected:
     storage::CWalletDB dbWallet;
     ICoreProtocol* pCoreProtocol;
@@ -215,7 +215,7 @@ public:
     {
         return false;
     }
-    virtual bool GetKeyStatus(const crypto::CPubKey& pubkey, int& nVersion,
+    virtual bool GetKeyStatus(const crypto::CPubKey& pubkey, uint32& nVersion,
                               bool& fLocked,
                               int64& nAutoLockTime) const override
     {
@@ -264,7 +264,7 @@ public:
         return true;
     }
     virtual bool GetBalance(const CDestination& dest, const uint256& hashFork,
-                            int nForkHeight, CWalletBalance& balance) override
+                            const int32 nForkHeight, CWalletBalance& balance) override
     {
         return false;
     }
@@ -273,7 +273,7 @@ public:
         return false;
     }
     virtual bool ArrangeInputs(const CDestination& destIn,
-                               const uint256& hashFork, int nForkHeight,
+                               const uint256& hashFork, const int32 nForkHeight,
                                CTransaction& tx) override
     {
         return false;
@@ -288,7 +288,7 @@ public:
         return true;
     }
     virtual bool AddNewFork(const uint256& hashFork, const uint256& hashParent,
-                            int nOriginHeight) override
+                            const int32 nOriginHeight) override
     {
         return true;
     }

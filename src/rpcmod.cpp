@@ -54,7 +54,7 @@ static double ValueFromAmount(int64 amount)
     return ((double)amount / (double)COIN);
 }
 
-static CBlockData BlockToJSON(const uint256& hashBlock,const CBlock& block,const uint256& hashFork,int nHeight)
+static CBlockData BlockToJSON(const uint256& hashBlock,const CBlock& block,const uint256& hashFork,const int32 nHeight)
 {
     CBlockData data;
     data.strHash = hashBlock.GetHex();
@@ -315,7 +315,7 @@ void CRPCMod::JsonReply(uint64 nNonce, const std::string& result)
 
 bool CRPCMod::CheckVersion(string& strVersion)
 {
-    int nMajor, nMinor, nRevision;
+    uint32 nMajor, nMinor, nRevision;
     if (!ResolveVersion(strVersion, nMajor, nMinor, nRevision))
     {
         return false;
@@ -683,19 +683,19 @@ CRPCResultPtr CRPCModWorker::RPCGetForkGenealogy(CRPCParamPtr param)
     	throw CRPCException(RPC_INVALID_PARAMETER, "Invalid fork");
     }
 
-    vector<pair<uint256,int> > vAncestry;
-    vector<pair<int,uint256> > vSubline;
+    vector<pair<uint256,int32> > vAncestry;
+    vector<pair<int32,uint256> > vSubline;
     if (!pService->GetForkGenealogy(fork,vAncestry,vSubline))
     {
         throw CRPCException(RPC_INVALID_PARAMETER, "Unknown fork");
     }
 
     auto spResult = MakeCGetGenealogyResultPtr();
-    for (int i = vAncestry.size();i > 0;i--)
+    for (size_t i = vAncestry.size();i > 0;i--)
     {
         spResult->vecAncestry.push_back({vAncestry[i - 1].first.GetHex(), vAncestry[i - 1].second});
     }
-    for (std::size_t i = 0;i < vSubline.size();i++)
+    for (size_t i = 0;i < vSubline.size();i++)
     {
         spResult->vecSubline.push_back({vSubline[i].second.GetHex(), vSubline[i].first});
     }
@@ -711,7 +711,7 @@ CRPCResultPtr CRPCModWorker::RPCGetBlockLocation(CRPCParamPtr param)
     hashBlock.SetHex(spParam->strBlock);
 
     uint256 fork;
-    int height;
+    int32 height;
     if (!pService->GetBlockLocation(hashBlock,fork,height))
     {
         throw CRPCException(RPC_INVALID_PARAMETER, "Unknown block");
@@ -747,7 +747,7 @@ CRPCResultPtr CRPCModWorker::RPCGetBlockHash(CRPCParamPtr param)
     auto spParam = CastParamPtr<CGetBlockHashParam>(param);
 
     //getblockhash <height> (-f="fork")
-    int nHeight = spParam->nHeight;
+    int32 nHeight = spParam->nHeight;
 
     uint256 hashFork;
     if (!GetForkHashOfDef(spParam->strFork, hashFork))
@@ -785,7 +785,7 @@ CRPCResultPtr CRPCModWorker::RPCGetBlock(CRPCParamPtr param)
 
     CBlock block;
     uint256 fork;
-    int height;
+    int32 height;
     if (!pService->GetBlock(hashBlock,block,fork,height))
     {
         throw CRPCException(RPC_INVALID_PARAMETER, "Unknown block");
@@ -845,7 +845,7 @@ CRPCResultPtr CRPCModWorker::RPCGetTransaction(CRPCParamPtr param)
 
     CTransaction tx;
     uint256 hashFork;
-    int nHeight;
+    int32 nHeight;
 
     if (!pService->GetTransaction(txid,tx,hashFork,nHeight))
     {
@@ -922,7 +922,7 @@ CRPCResultPtr CRPCModWorker::RPCListKey(CRPCParamPtr param)
     auto spResult = MakeCListKeyResultPtr();
     BOOST_FOREACH(const crypto::CPubKey& pubkey,setPubKey)
     {
-        int nVersion;
+        uint32 nVersion;
         bool fLocked;
         int64 nAutoLockTime;
         if (pService->GetKeyStatus(pubkey,nVersion,fLocked,nAutoLockTime))
@@ -1011,7 +1011,7 @@ CRPCResultPtr CRPCModWorker::RPCLockKey(CRPCParamPtr param)
         pubkey.SetHex(spParam->strPubkey);
     }
 
-    int nVersion;
+    uint32 nVersion;
     bool fLocked;
     int64 nAutoLockTime; 
     if (!pService->GetKeyStatus(pubkey,nVersion,fLocked,nAutoLockTime))
@@ -1057,7 +1057,7 @@ CRPCResultPtr CRPCModWorker::RPCUnlockKey(CRPCParamPtr param)
          nTimeout = spParam->nTimeout;
     }
 
-    int nVersion;
+    uint32 nVersion;
     bool fLocked;
     int64 nAutoLockTime; 
     if (!pService->GetKeyStatus(pubkey,nVersion,fLocked,nAutoLockTime))
@@ -1559,7 +1559,7 @@ CRPCResultPtr CRPCModWorker::RPCSignMessage(CRPCParamPtr param)
 
     string strMessage = spParam->strMessage;
 
-    int nVersion;
+    uint32 nVersion;
     bool fLocked;
     int64 nAutoLockTime; 
     if (!pService->GetKeyStatus(pubkey,nVersion,fLocked,nAutoLockTime))
@@ -1856,7 +1856,7 @@ CRPCResultPtr CRPCModWorker::RPCMakeOrigin(CRPCParamPtr param)
  
     CBlock blockPrev;
     uint256 hashParent;
-    int nJointHeight;
+    int32 nJointHeight;
     if (!pService->GetBlock(hashPrev,blockPrev,hashParent,nJointHeight))
     {
         throw CRPCException(RPC_INVALID_PARAMETER, "Unknown prev block");
@@ -1897,7 +1897,7 @@ CRPCResultPtr CRPCModWorker::RPCMakeOrigin(CRPCParamPtr param)
         throw CRPCException(RPC_INVALID_ADDRESS_OR_KEY,"Owner' address should be pubkey address");
     }
 
-    int nVersion;
+    uint32 nVersion;
     bool fLocked;
     int64 nAutoLockTime; 
     if (!pService->GetKeyStatus(pubkey,nVersion,fLocked,nAutoLockTime))
@@ -2032,7 +2032,7 @@ CRPCResultPtr CRPCModWorker::RPCDecodeTransaction(CRPCParamPtr param)
     }
     
     uint256 hashFork;
-    int nHeight;
+    int32 nHeight;
     if (!pService->GetBlockLocation(rawTx.hashAnchor,hashFork,nHeight))
     {
         throw CRPCException(RPC_INVALID_PARAMETER, "Unknown anchor block");

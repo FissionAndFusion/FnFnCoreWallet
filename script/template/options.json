@@ -388,7 +388,7 @@
         },
         {
             "name": "nCheckDepth",
-            "type": "int",
+            "type": "int32",
             "opt": "chkdpth",
             "default": "1440",
             "format": "-chkdpth=<n>",

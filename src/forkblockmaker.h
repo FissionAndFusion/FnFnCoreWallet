@@ -68,12 +68,12 @@ protected:
     void ArrangeBlockTx(CBlock& block,const uint256& hashFork,const CForkBlockMakerProfile& profile);
     bool SignBlock(CBlock& block,const CForkBlockMakerProfile& profile);
     bool DispatchBlock(const CBlock& block);
-    void ProcessDelegatedProofOfStake(CBlock& block,const CBlockMakerAgreement& agreement,int nPrevHeight);
+    void ProcessDelegatedProofOfStake(CBlock& block,const CBlockMakerAgreement& agreement,const int32 nPrevHeight);
     void ProcessExtended(const CBlockMakerAgreement& agreement,const uint256& hashPrimaryBlock,
-                                                               int64 nPrimaryBlockTime,int nPrimaryBlockHeight);
+                                                               int64 nPrimaryBlockTime,const int32 nPrimaryBlockHeight);
     bool CreateDelegatedBlock(CBlock& block,const uint256& hashFork,const CForkBlockMakerProfile& profile,std::size_t nWeight);
-    void CreatePiggyback(const CForkBlockMakerProfile& profile,const CBlockMakerAgreement& agreement,const CBlock& refblock,int nPrevHeight); 
-    void CreateExtended(const CForkBlockMakerProfile& profile,const CBlockMakerAgreement& agreement,const std::set<uint256>& setFork,int nPrimaryBlockHeight,int64 nTime); 
+    void CreatePiggyback(const CForkBlockMakerProfile& profile,const CBlockMakerAgreement& agreement,const CBlock& refblock,const int32 nPrevHeight); 
+    void CreateExtended(const CForkBlockMakerProfile& profile,const CBlockMakerAgreement& agreement,const std::set<uint256>& setFork,const int32 nPrimaryBlockHeight,int64 nTime); 
     bool GetAvailableDelegatedProfile(const std::vector<CDestination>& vBallot,std::vector<CForkBlockMakerProfile*>& vProfile);
     bool GetAvailableExtendedFork(std::set<uint256>& setFork);
 private:
@@ -90,7 +90,7 @@ protected:
     ForkMakerStatus nMakerStatus;
     uint256 hashLastBlock;
     int64 nLastBlockTime;
-    int nLastBlockHeight;
+    int32 nLastBlockHeight;
     uint256 nLastAgreement;
     std::size_t nLastWeight;
     CBlockMakerAgreement currentAgreement;

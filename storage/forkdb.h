@@ -32,9 +32,9 @@ public:
     void Clear();
 protected:
     bool LoadCtxtWalker(walleve::CWalleveBufStream& ssKey,walleve::CWalleveBufStream& ssValue,
-                        std::multimap<int,CForkContext>& mapCtxt);
+                        std::multimap<int32,CForkContext>& mapCtxt);
     bool LoadForkWalker(walleve::CWalleveBufStream& ssKey,walleve::CWalleveBufStream& ssValue,
-                        std::multimap<int,uint256>& mapJoint,std::map<uint256,uint256>& mapFork);
+                        std::multimap<int32,uint256>& mapJoint,std::map<uint256,uint256>& mapFork);
 };
 
 } // namespace storage
