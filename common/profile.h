@@ -26,7 +26,7 @@ enum
 class CProfile
 {
 public:
-    int nVersion;
+    uint16 nVersion;
     std::string strName;
     std::string strSymbol;
     uint8 nFlag;
@@ -34,7 +34,7 @@ public:
     int64 nMintReward;
     CDestination destOwner;
     uint256 hashParent;
-    int nJointHeight;
+    int32 nJointHeight;
 public:
     enum {PROFILE_FLAG_ISOLATED=1,PROFILE_FLAG_PRIVATE=2,PROFILE_FLAG_ENCLOSED=4};
     CProfile() { SetNull(); }

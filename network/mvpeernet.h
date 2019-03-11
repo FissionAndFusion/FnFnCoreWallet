@@ -19,7 +19,7 @@ class IMvNetChannel : public walleve::IIOModule, virtual public CMvPeerEventList
 {
 public:
     IMvNetChannel() : IIOModule("netchannel") {}
-    virtual int GetPrimaryChainHeight() = 0;
+    virtual int32 GetPrimaryChainHeight() = 0;
     virtual bool IsForkSynchronized(const uint256& hashFork) const = 0;
     virtual void BroadcastBlockInv(const uint256& hashFork,const uint256& hashBlock,const std::set<uint64>& setKnownPeer=std::set<uint64>()) = 0;
     virtual void BroadcastTxInv(const uint256& hashFork) = 0;
@@ -33,7 +33,7 @@ class IMvDelegatedChannel : public walleve::IIOModule, virtual public CMvPeerEve
 {
 public:
     IMvDelegatedChannel() : IIOModule("delegatedchannel") {}
-    virtual void PrimaryUpdate(int nStartHeight,
+    virtual void PrimaryUpdate(const int32 nStartHeight,
                                const std::vector<std::pair<uint256,std::map<CDestination,size_t> > >& vEnrolledWeight,
                                const std::map<CDestination,std::vector<unsigned char> >& mapDistributeData, 
                                const std::map<CDestination,std::vector<unsigned char> >& mapPublishData) = 0;

@@ -55,7 +55,7 @@ bool CForkDB::RetrieveForkContext(const uint256& hashFork,CForkContext& ctxt)
 
 bool CForkDB::ListForkContext(vector<CForkContext>& vForkCtxt)
 {
-    multimap<int,CForkContext> mapCtxt;
+    multimap<int32,CForkContext> mapCtxt;
 
     if (!WalkThrough(boost::bind(&CForkDB::LoadCtxtWalker,this,_1,_2,boost::ref(mapCtxt))))
     {
@@ -63,7 +63,7 @@ bool CForkDB::ListForkContext(vector<CForkContext>& vForkCtxt)
     }
 
     vForkCtxt.reserve(mapCtxt.size());
-    for (multimap<int,CForkContext>::iterator it = mapCtxt.begin();it != mapCtxt.end();++it)
+    for (multimap<int32,CForkContext>::iterator it = mapCtxt.begin();it != mapCtxt.end();++it)
     {
         vForkCtxt.push_back((*it).second);
     } 
@@ -88,7 +88,7 @@ bool CForkDB::RetrieveFork(const uint256& hashFork,uint256& hashLastBlock)
 
 bool CForkDB::ListFork(vector<pair<uint256,uint256> >& vFork)
 {
-    multimap<int,uint256> mapJoint;
+    multimap<int32,uint256> mapJoint;
     map<uint256,uint256> mapFork;
 
     if (!WalkThrough(boost::bind(&CForkDB::LoadForkWalker,this,_1,_2,boost::ref(mapJoint),boost::ref(mapFork))))
@@ -97,7 +97,7 @@ bool CForkDB::ListFork(vector<pair<uint256,uint256> >& vFork)
     }
 
     vFork.reserve(mapFork.size());
-    for (multimap<int,uint256>::iterator it = mapJoint.begin();it != mapJoint.end();++it)
+    for (multimap<int32,uint256>::iterator it = mapJoint.begin();it != mapJoint.end();++it)
     {
         map<uint256,uint256>::iterator mi = mapFork.find((*it).second);
         if (mi != mapFork.end())
@@ -113,7 +113,7 @@ void CForkDB::Clear()
     RemoveAll();
 }
 
-bool CForkDB::LoadCtxtWalker(CWalleveBufStream& ssKey,CWalleveBufStream& ssValue,multimap<int,CForkContext>& mapCtxt)
+bool CForkDB::LoadCtxtWalker(CWalleveBufStream& ssKey,CWalleveBufStream& ssValue,multimap<int32,CForkContext>& mapCtxt)
 {
     string strPrefix;
     ssKey >> strPrefix;
@@ -128,7 +128,7 @@ bool CForkDB::LoadCtxtWalker(CWalleveBufStream& ssKey,CWalleveBufStream& ssValue
 }
 
 bool CForkDB::LoadForkWalker(CWalleveBufStream& ssKey,CWalleveBufStream& ssValue,
-                             multimap<int,uint256>& mapJoint,map<uint256,uint256>& mapFork)
+                             multimap<int32,uint256>& mapJoint,map<uint256,uint256>& mapFork)
 {
     string strPrefix;
     uint256 hashFork;

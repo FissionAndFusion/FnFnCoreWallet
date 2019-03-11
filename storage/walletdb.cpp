@@ -349,7 +349,7 @@ public:
     : nOffset(nOffsetIn), nMaxCount(nMaxCountIn), nIndex(0)
     {
     }
-    bool Walk(const uint256& txid,const uint256& hashFork,const int nBlockHeight) override
+    bool Walk(const uint256& txid,const uint256& hashFork,const int32 nBlockHeight) override
     {
         if (nIndex++ < nOffset)
         {
@@ -371,11 +371,11 @@ public:
 class CWalletDBRollBackTxSeqWalker : public CWalletDBTxSeqWalker
 {
 public:
-    CWalletDBRollBackTxSeqWalker(const uint256& hashForkIn,int nMinHeightIn,vector<uint256>& vForkTxIn)
+    CWalletDBRollBackTxSeqWalker(const uint256& hashForkIn,const int32 nMinHeightIn,vector<uint256>& vForkTxIn)
     : hashFork(hashForkIn), nMinHeight(nMinHeightIn), vForkTx(vForkTxIn)
     {
     }
-    bool Walk(const uint256& txidIn,const uint256& hashForkIn,const int nBlockHeightIn) override
+    bool Walk(const uint256& txidIn,const uint256& hashForkIn,const int32 nBlockHeightIn) override
     {
         if (hashForkIn == hashFork && (nBlockHeightIn < 0 || nBlockHeightIn >= nMinHeight))
         {
@@ -385,7 +385,7 @@ public:
     }
 public:
     uint256 hashFork;
-    int nMinHeight;
+    int32 nMinHeight;
     vector<uint256>& vForkTx;
 };
 
@@ -552,7 +552,7 @@ bool CWalletDB::ListDBTx(int nOffset,int nCount,vector<CWalletTx>& vWalletTx)
     return true;
 }
 
-bool CWalletDB::ListRollBackTx(const uint256& hashFork,int nMinHeight,vector<uint256>& vForkTx)
+bool CWalletDB::ListRollBackTx(const uint256& hashFork,const int32 nMinHeight,vector<uint256>& vForkTx)
 {
     CWalletDBRollBackTxSeqWalker walker(hashFork,nMinHeight,vForkTx);
     if (!dbWtx.WalkThroughTxSeq(walker))

@@ -38,7 +38,7 @@ void CDelegatedChannelChain::Clear()
     nLastBlockHeight = -1;
 }
 
-void CDelegatedChannelChain::Update(int nStartHeight,
+void CDelegatedChannelChain::Update(const int32 nStartHeight,
                                     const vector<pair<uint256,map<CDestination,size_t> > >& vEnrolledWeight,
                                     const map<CDestination,vector<unsigned char> >& mapDistributeData,
                                     const map<CDestination,vector<unsigned char> >& mapPublishData)
@@ -447,7 +447,7 @@ bool CDelegatedChannel::HandleEvent(network::CMvEventPeerPublish& eventPublish)
     return true;
 }
 
-void CDelegatedChannel::PrimaryUpdate(int nStartHeight,
+void CDelegatedChannel::PrimaryUpdate(const int32 nStartHeight,
                                       const vector<pair<uint256,map<CDestination,size_t> > >& vEnrolledWeight,
                                       const map<CDestination,vector<unsigned char> >& mapDistributeData,
                                       const map<CDestination,vector<unsigned char> >& mapPublishData)
@@ -598,7 +598,7 @@ CDummyDelegatedChannel::~CDummyDelegatedChannel()
 
 }
 
-void CDummyDelegatedChannel::PrimaryUpdate(int nStartHeight,
+void CDummyDelegatedChannel::PrimaryUpdate(const int32 nStartHeight,
                        const std::vector<std::pair<uint256,std::map<CDestination,size_t> > >& vEnrolledWeight,
                        const std::map<CDestination,std::vector<unsigned char> >& mapDistributeData,
                        const std::map<CDestination,std::vector<unsigned char> >& mapPublishData)

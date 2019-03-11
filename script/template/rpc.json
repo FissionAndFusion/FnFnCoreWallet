@@ -370,7 +370,7 @@
                 "desc": "fork hash"
             },
             "height": {
-                "type": "uint",
+                "type": "int",
                 "desc": "block height"
             },
             "txmint": {

@@ -222,7 +222,7 @@ public:
     uint16  nVersion;
     uint16  nType;
     uint32  nTimeStamp;
-    uint32  nHeight;
+    int32   nHeight;
     uint64  nRandBeacon;
     uint64  nChainTrust;
     int64   nMoneySupply;
@@ -285,7 +285,7 @@ public:
     {
         return *phashBlock;
     }
-    int GetBlockHeight() const
+    int32 GetBlockHeight() const
     {
         return nHeight;
     }

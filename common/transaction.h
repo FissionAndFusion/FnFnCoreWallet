@@ -155,7 +155,7 @@ public:
         }
         return 0;
     }
-    bool SetLockUntil(const uint32 nHeight, const uint32 n = 0)
+    bool SetLockUntil(const int32 nHeight, const uint32 n = 0)
     {
         if (nHeight >> 31)
         {
@@ -228,7 +228,7 @@ public:
         nLockUntil = 0;
     }
     bool IsNull() const { return (destTo.IsNull() || nAmount <= 0); }
-    bool IsLocked(int nBlockHeight) const { return (nBlockHeight < (nLockUntil & 0x7FFFFFFF)); } 
+    bool IsLocked(const int32 nBlockHeight) const { return (nBlockHeight < (nLockUntil & 0x7FFFFFFF)); } 
     int64 GetTxTime() const { return nTxTime; }
     std::string ToString() const 
     {
@@ -268,10 +268,10 @@ class CAssembledTx : public CTransaction
 public:
     CDestination destIn;
     int64 nValueIn;
-    int nBlockHeight;
+    int32 nBlockHeight;
 public:
     CAssembledTx() { SetNull(); }
-    CAssembledTx(const CTransaction& tx,int nBlockHeightIn,const CDestination& destInIn=CDestination(),int64 nValueInIn=0) 
+    CAssembledTx(const CTransaction& tx,const int32 nBlockHeightIn,const CDestination& destInIn=CDestination(),int64 nValueInIn=0) 
     : CTransaction(tx),destIn(destInIn),nValueIn(nValueInIn),nBlockHeight(nBlockHeightIn) 
     { 
     }
@@ -328,7 +328,7 @@ public:
         nTxTime    = prevOutput.nTxTime;
         nLockUntil = prevOutput.nLockUntil;
     }
-    bool IsLocked(int nBlockHeight) const { return (nBlockHeight < (nLockUntil & 0x7FFFFFFF)); } 
+    bool IsLocked(const int32 nBlockHeight) const { return (nBlockHeight < (nLockUntil & 0x7FFFFFFF)); } 
 protected:
     template <typename O>
     void WalleveSerialize(walleve::CWalleveStream& s,O& opt)
@@ -371,7 +371,7 @@ protected:
 class CTxIndex
 {
 public:
-    int nBlockHeight;
+    int32 nBlockHeight;
     uint32 nFile;
     uint32 nOffset;
 public:
@@ -379,7 +379,7 @@ public:
     {
         SetNull();
     }
-    CTxIndex(int nBlockHeightIn,uint32 nFileIn,uint32 nOffsetIn)
+    CTxIndex(const int32 nBlockHeightIn,const uint32 nFileIn,const uint32 nOffsetIn)
     {
         nBlockHeight = nBlockHeightIn;
         nFile        = nFileIn;

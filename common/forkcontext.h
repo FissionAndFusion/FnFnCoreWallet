@@ -25,7 +25,7 @@ public:
     uint16  nFlag;
     int64   nMintReward;
     int64   nMinTxFee;
-    int     nJointHeight;
+    int32   nJointHeight;
     CDestination destOwner;
 public:
     enum 

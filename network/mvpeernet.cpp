@@ -283,7 +283,7 @@ void CMvPeerNet::BuildHello(CPeer *pPeer,CWalleveBufStream& ssPayload)
 {
     uint64 nNonce = pPeer->GetNonce();
     int64 nTime = WalleveGetNetTime();
-    int nHeight = pNetChannel->GetPrimaryChainHeight();
+    int32 nHeight = pNetChannel->GetPrimaryChainHeight();
     ssPayload << nVersion << nService << nTime << nNonce << subVersion << nHeight; 
 }
 
