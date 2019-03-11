@@ -295,7 +295,7 @@ void CMvPeerNet::HandlePeerWriten(CPeer *pPeer)
     ProcessAskFor(pPeer);
 }
 
-bool CMvPeerNet::HandlePeerHandshaked(CPeer *pPeer,uint32 nTimerId)
+bool CMvPeerNet::HandlePeerHandshaked(CPeer *pPeer,uint32 nTimerId,bool& fIsBanned)
 {
     CMvPeer *pMvPeer = static_cast<CMvPeer *>(pPeer);
     CancelTimer(nTimerId);
@@ -320,9 +320,11 @@ bool CMvPeerNet::HandlePeerHandshaked(CPeer *pPeer,uint32 nTimerId)
 
     }
 
-    /*Warning*/
     if(!AddPeerMacAddress(pPeer, pMvPeer->remoteMacAddress, pMvPeer->IsInBound()))
     {
+        tcp::endpoint ep = pMvPeer->GetRemote();
+        RemoveNode(ep);
+        fIsBanned = true;
         return false;
     }
     SetNodeMacAddress(pMvPeer->GetRemote(), pMvPeer->remoteMacAddress);

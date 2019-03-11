@@ -198,7 +198,9 @@ bool CMvPeer::HandshakeReadCompleted()
                 {
                     nTimeDelta += (nTimeRecv - nTimeHello) / 2;
                     SendHelloAck();
-                    return HandshakeCompleted();
+                    bool fIsBanned = false;
+                    bool fIsSuccess = HandshakeCompleted(fIsBanned);
+                    return (!fIsSuccess && fIsBanned) ? true : fIsSuccess;
                 }
                 SendHello();
                 Read(MESSAGE_HEADER_SIZE,boost::bind(&CMvPeer::HandshakeReadHeader,this));
@@ -211,7 +213,9 @@ bool CMvPeer::HandshakeReadCompleted()
                     return false;
                 }
                 nTimeDelta += (nTimeRecv - nTimeHello) / 2;
-                return HandshakeCompleted();
+                bool fIsBanned = false;
+                bool fIsSuccess = HandshakeCompleted(fIsBanned);
+                return (!fIsSuccess && fIsBanned) ? true : fIsSuccess;
             }
         }
         catch (exception& e)
@@ -222,9 +226,9 @@ bool CMvPeer::HandshakeReadCompleted()
     return false;
 }
 
-bool CMvPeer::HandshakeCompleted()
+bool CMvPeer::HandshakeCompleted(bool& fIsBanned)
 {
-    if (!(static_cast<CMvPeerNet*>(pPeerNet))->HandlePeerHandshaked(this,nHsTimerId))
+    if (!(static_cast<CMvPeerNet*>(pPeerNet))->HandlePeerHandshaked(this,nHsTimerId,fIsBanned))
     {
         return false;
     }
