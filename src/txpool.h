@@ -23,7 +23,7 @@ public:
     {
         nSerializeSize = walleve::GetSerializeSize(static_cast<const CTransaction&>(tx));
     }
-    CPooledTx(const CTransaction& tx,int nBlockHeightIn,std::size_t nSequenceNumberIn,const CDestination& destInIn=CDestination(),int64 nValueInIn=0)
+    CPooledTx(const CTransaction& tx,const int32 nBlockHeightIn,std::size_t nSequenceNumberIn,const CDestination& destInIn=CDestination(),int64 nValueInIn=0)
     : CAssembledTx(tx,nBlockHeightIn,destInIn,nValueInIn),nSequenceNumber(nSequenceNumberIn)
     {
         nSerializeSize = walleve::GetSerializeSize(tx);
@@ -179,7 +179,7 @@ protected:
     void WalleveHandleHalt() override;
     bool LoadData();
     bool SaveData();
-    MvErr AddNew(CTxPoolView& txView,const uint256& txid,const CTransaction& tx,const uint256& hashFork,int nForkHeight);
+    MvErr AddNew(CTxPoolView& txView,const uint256& txid,const CTransaction& tx,const uint256& hashFork,const int32 nForkHeight);
     std::size_t GetSequenceNumber()
     {
         if (mapTx.empty())

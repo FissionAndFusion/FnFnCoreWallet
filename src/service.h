@@ -32,24 +32,24 @@ public:
     /* Worldline & Tx Pool*/
     int  GetForkCount() override;
     bool HaveFork(const uint256& hashFork) override;
-    int  GetForkHeight(const uint256& hashFork) override;
+    int32 GetForkHeight(const uint256& hashFork) override;
     void ListFork(std::vector<std::pair<uint256,CProfile> >& vFork, bool fAll = false) override;
-    bool GetForkGenealogy(const uint256& hashFork,std::vector<std::pair<uint256,int> >& vAncestry,
-                                                  std::vector<std::pair<int,uint256> >& vSubline) override;
-    bool GetBlockLocation(const uint256& hashBlock,uint256& hashFork,int& nHeight) override;
+    bool GetForkGenealogy(const uint256& hashFork,std::vector<std::pair<uint256,int32> >& vAncestry,
+                                                  std::vector<std::pair<int32,uint256> >& vSubline) override;
+    bool GetBlockLocation(const uint256& hashBlock,uint256& hashFork,int32& nHeight) override;
     int  GetBlockCount(const uint256& hashFork) override;
-    bool GetBlockHash(const uint256& hashFork,int nHeight,uint256& hashBlock) override;
-    bool GetBlockHash(const uint256& hashFork,int nHeight,std::vector<uint256>& vBlockHash) override;
-    bool GetBlock(const uint256& hashBlock,CBlock& block,uint256& hashFork,int& nHeight) override;
-    bool GetBlockEx(const uint256& hashBlock, CBlockEx& block, uint256& hashFork, int& nHeight) override;
+    bool GetBlockHash(const uint256& hashFork,const int32 nHeight,uint256& hashBlock) override;
+    bool GetBlockHash(const uint256& hashFork,const int32 nHeight,std::vector<uint256>& vBlockHash) override;
+    bool GetBlock(const uint256& hashBlock,CBlock& block,uint256& hashFork,int32& nHeight) override;
+    bool GetBlockEx(const uint256& hashBlock, CBlockEx& block, uint256& hashFork, int32& nHeight) override;
     void GetTxPool(const uint256& hashFork,std::vector<std::pair<uint256,std::size_t> >& vTxPool) override;
-    bool GetTransaction(const uint256& txid,CTransaction& tx,uint256& hashFork,int& nHeight) override;
+    bool GetTransaction(const uint256& txid,CTransaction& tx,uint256& hashFork,int32& nHeight) override;
     MvErr SendTransaction(CTransaction& tx) override;
     bool RemovePendingTx(const uint256& txid) override;
     /* Wallet */
     bool HaveKey(const crypto::CPubKey& pubkey) override;
     void GetPubKeys(std::set<crypto::CPubKey>& setPubKey) override;
-    bool GetKeyStatus(const crypto::CPubKey& pubkey,int& nVersion,bool& fLocked,int64& nAutoLockTime) override;
+    bool GetKeyStatus(const crypto::CPubKey& pubkey,uint32& nVersion,bool& fLocked,int64& nAutoLockTime) override;
     bool MakeNewKey(const crypto::CCryptoString& strPassphrase,crypto::CPubKey& pubkey) override;
     bool AddKey(const crypto::CKey& key) override;
     bool ImportKey(const std::vector<unsigned char>& vchKey,crypto::CPubKey& pubkey) override;

@@ -43,13 +43,13 @@ protected:
     bool HandleReadHeader();
     bool HandleReadCompleted();
 public:
-    int nVersion;
+    uint32 nVersion;
     uint64 nService;
     uint64 nNonceFrom;
     int64 nTimeDelta;
     int64 nTimeHello;
     std::string strSubVer;
-    int nStartingHeight;
+    int32 nStartingHeight;
     walleve::CMacAddress remoteMacAddress;
 protected:
     uint32 nMsgMagic;
@@ -63,10 +63,10 @@ protected:
 class CMvPeerInfo : public walleve::CPeerInfo
 {
 public:
-    int  nVersion;
+    uint32 nVersion;
     uint64 nService;
     std::string strSubVer;
-    int nStartingHeight;
+    int32 nStartingHeight;
 };
 
 } // namespace network

@@ -54,7 +54,7 @@ CBlockMaker::CBlockMaker()
 : thrMaker("blockmaker",boost::bind(&CBlockMaker::BlockMakerThreadFunc,this)), 
   thrExtendedMaker("extendedmaker",boost::bind(&CBlockMaker::ExtendedMakerThreadFunc,this)), 
   nMakerStatus(MAKER_HOLD),hashLastBlock(uint64(0)),nLastBlockTime(0),
-  nLastBlockHeight(uint64(0)),nLastAgreement(uint64(0)),nLastWeight(0)
+  nLastBlockHeight(0),nLastAgreement(uint64(0)),nLastWeight(0)
 {
     pCoreProtocol = NULL;
     pWorldLine = NULL;
@@ -182,8 +182,13 @@ void CBlockMaker::WalleveHandleHalt()
         nMakerStatus = MAKER_EXIT;
     }
     cond.notify_all();
+
+    thrMaker.Interrupt();
     WalleveThreadExit(thrMaker);
+
+    thrExtendedMaker.Interrupt();
     WalleveThreadExit(thrExtendedMaker);
+
     IBlockMaker::WalleveHandleHalt();
 }
 
@@ -233,7 +238,7 @@ bool CBlockMaker::Wait(long nSeconds,const uint256& hashPrimaryBlock)
     return false;
 }
 
-void CBlockMaker::PrepareBlock(CBlock& block,const uint256& hashPrev,int64 nPrevTime,int nPrevHeight,const CBlockMakerAgreement& agreement)
+void CBlockMaker::PrepareBlock(CBlock& block,const uint256& hashPrev,int64 nPrevTime,const int32 nPrevHeight,const CBlockMakerAgreement& agreement)
 {
     block.SetNull();
     block.nType = CBlock::BLOCK_PRIMARY;
@@ -330,7 +335,7 @@ bool CBlockMaker::CreateProofOfWorkBlock(CBlock& block)
     return SignBlock(block,profile);
 }
 
-void CBlockMaker::ProcessDelegatedProofOfStake(CBlock& block,const CBlockMakerAgreement& agreement,int nPrevHeight)
+void CBlockMaker::ProcessDelegatedProofOfStake(CBlock& block,const CBlockMakerAgreement& agreement,const int32 nPrevHeight)
 {
     map<CDestination,CBlockMakerProfile>::iterator it = mapDelegatedProfile.find(agreement.vBallot[0]);
     if (it != mapDelegatedProfile.end())
@@ -347,7 +352,7 @@ void CBlockMaker::ProcessDelegatedProofOfStake(CBlock& block,const CBlockMakerAg
 }
 
 void CBlockMaker::ProcessExtended(const CBlockMakerAgreement& agreement,
-                                  const uint256& hashPrimaryBlock,int64 nPrimaryBlockTime,int nPrimaryBlockHeight)
+                                  const uint256& hashPrimaryBlock,int64 nPrimaryBlockTime,const int32 nPrimaryBlockHeight)
 {
     vector<CBlockMakerProfile*> vProfile;
     set<uint256> setFork;
@@ -402,7 +407,7 @@ bool CBlockMaker::CreateDelegatedBlock(CBlock& block,const uint256& hashFork,con
 }
 
 void CBlockMaker::CreatePiggyback(const CBlockMakerProfile& profile,const CBlockMakerAgreement& agreement,
-                                  const uint256& hashRefBlock,int64 nRefBlockTime,int nPrevHeight)
+                                  const uint256& hashRefBlock,int64 nRefBlockTime,const int32 nPrevHeight)
 {
     CProofOfPiggyback proof;
     proof.nWeight = agreement.nWeight;
@@ -434,7 +439,7 @@ void CBlockMaker::CreatePiggyback(const CBlockMakerProfile& profile,const CBlock
 }
 
 void CBlockMaker::CreateExtended(const CBlockMakerProfile& profile,const CBlockMakerAgreement& agreement,
-                                 const set<uint256>& setFork,int nPrimaryBlockHeight,int64 nTime)
+                                 const set<uint256>& setFork,const int32 nPrimaryBlockHeight,int64 nTime)
 {
     CProofOfSecretShare proof;
     proof.nWeight = agreement.nWeight;
@@ -442,7 +447,7 @@ void CBlockMaker::CreateExtended(const CBlockMakerProfile& profile,const CBlockM
     BOOST_FOREACH(const uint256& hashFork,setFork)
     {
         uint256 hashLastBlock;
-        int nLastBlockHeight;
+        int32 nLastBlockHeight;
         int64 nLastBlockTime;
         if (pTxPool->Count(hashFork) 
             && pWorldLine->GetLastBlock(hashFork,hashLastBlock,nLastBlockHeight,nLastBlockTime)
@@ -592,7 +597,7 @@ void CBlockMaker::BlockMakerThreadFunc()
 
     uint256 hashPrimaryBlock = uint64(0);
     int64 nPrimaryBlockTime  = 0;
-    int nPrimaryBlockHeight  = 0;
+    int32 nPrimaryBlockHeight  = 0;
 
     {
         boost::unique_lock<boost::mutex> lock(mutex);
@@ -697,7 +702,7 @@ void CBlockMaker::ExtendedMakerThreadFunc()
 {
     uint256 hashPrimaryBlock = uint64(0);
     int64 nPrimaryBlockTime  = 0;
-    int nPrimaryBlockHeight  = 0;
+    int32 nPrimaryBlockHeight  = 0;
 
     {
         boost::unique_lock<boost::mutex> lock(mutex);

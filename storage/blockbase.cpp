@@ -675,7 +675,7 @@ bool CBlockBase::RetrieveTx(const uint256& hashFork,const uint256& txid,CTransac
     return true;
 }
 
-bool CBlockBase::RetrieveTxLocation(const uint256& txid,uint256& hashFork,int& nHeight)
+bool CBlockBase::RetrieveTxLocation(const uint256& txid,uint256& hashFork,int32& nHeight)
 {
     CTxIndex txIndex;
     if (!dbBlock.RetrieveTxIndex(txid,txIndex,hashFork))
@@ -725,7 +725,7 @@ bool CBlockBase::RetrieveAvailDelegate(const uint256& hash,const uint256& hashAn
     return true;
 }
 
-void CBlockBase::ListForkIndex(multimap<int,CBlockIndex*>& mapForkIndex)
+void CBlockBase::ListForkIndex(multimap<int32,CBlockIndex*>& mapForkIndex)
 {
     CWalleveReadLock rlock(rwAccess);
 
@@ -947,7 +947,7 @@ bool CBlockBase::FilterTx(const uint256& hashFork,CTxFilter& filter)
         {
             return false;
         }
-        int nBlockHeight = pIndex->GetBlockHeight();
+        int32 nBlockHeight = pIndex->GetBlockHeight();
         if (filter.setDest.count(block.txMint.sendTo))
         {
             if (!filter.FoundTx(hashFork,CAssembledTx(block.txMint,nBlockHeight)))
@@ -972,7 +972,7 @@ bool CBlockBase::FilterTx(const uint256& hashFork,CTxFilter& filter)
     return true;
 }
 
-bool CBlockBase::FilterTx(const uint256& hashFork, int nDepth, CTxFilter& filter)
+bool CBlockBase::FilterTx(const uint256& hashFork, const int32 nDepth, CTxFilter& filter)
 {
     CWalleveReadLock rlock(rwAccess);
 
@@ -992,7 +992,7 @@ bool CBlockBase::FilterTx(const uint256& hashFork, int nDepth, CTxFilter& filter
         {
             return false;
         }
-        int nBlockHeight = pIndex->GetBlockHeight();
+        int32 nBlockHeight = pIndex->GetBlockHeight();
         if (filter.setDest.count(block.txMint.sendTo))
         {
             if (!filter.FoundTx(hashFork,CAssembledTx(block.txMint,nBlockHeight)))
@@ -1100,7 +1100,7 @@ bool CBlockBase::GetForkBlockInv(const uint256& hashFork,const CBlockLocator& lo
     return true;
 }
 
-bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
+bool CBlockBase::CheckConsistency(int nCheckLevel, const int32 nCheckDepth)
 {
     boost::timer::cpu_timer t_lock;
     t_lock.start();
@@ -1123,7 +1123,7 @@ bool CBlockBase::CheckConsistency(int nCheckLevel, int nCheckDepth)
     {
         nLevel = 3;
     }
-    int nDepth = nCheckDepth;
+    int32 nDepth = nCheckDepth;
 
     Log("B", "Consistency checking level is %d\n", nLevel);
 
@@ -1745,7 +1745,7 @@ bool CBlockBase::GetTxNewIndex(CBlockView& view,CBlockIndex* pIndexNew,vector<pa
         {
             return false;
         }
-        int nHeight = pIndex->GetBlockHeight();
+        int32 nHeight = pIndex->GetBlockHeight();
         uint32 nOffset = pIndex->nOffset + block.GetTxSerializedOffset();
 
         if (!block.txMint.IsNull())

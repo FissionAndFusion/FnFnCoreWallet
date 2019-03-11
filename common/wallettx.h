@@ -21,7 +21,7 @@ public:
     int64 nTxFee;
     CDestination destIn;
     int64 nValueIn;
-    mutable int nBlockHeight;
+    mutable int32 nBlockHeight;
     mutable int nFlags;
     uint256 txid;
     uint256 hashFork;
@@ -145,8 +145,8 @@ class CWalletTxOut
 public:
     CWalletTxOut(const std::shared_ptr<CWalletTx>& spWalletTxIn=NULL,int nIn=-1) : spWalletTx(spWalletTxIn),n(nIn) {}
     bool IsNull() const { return (spWalletTx == NULL || spWalletTx->GetOutput(n).IsNull()); }
-    bool IsLocked(int nHeight) const { return nHeight < spWalletTx->GetLockUntil(n); } 
-    int GetDepth(int nHeight) const { return (spWalletTx->nBlockHeight >= 0 ? nHeight - spWalletTx->nBlockHeight + 1 : 0); }
+    bool IsLocked(const int32 nHeight) const { return nHeight < spWalletTx->GetLockUntil(n); } 
+    int32 GetDepth(const int32 nHeight) const { return (spWalletTx->nBlockHeight >= 0 ? nHeight - spWalletTx->nBlockHeight + 1 : 0); }
     int64 GetAmount() const { return (n == 0 ? spWalletTx->nAmount : spWalletTx->GetChange()); }
     int64 GetTxTime() const { return spWalletTx->GetTxTime(); }
     CTxOutPoint GetTxOutPoint() const { return CTxOutPoint(spWalletTx->txid,n); }

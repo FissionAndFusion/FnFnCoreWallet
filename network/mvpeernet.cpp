@@ -283,11 +283,11 @@ void CMvPeerNet::BuildHello(CPeer *pPeer,CWalleveBufStream& ssPayload)
 {
     uint64 nNonce = pPeer->GetNonce();
     int64 nTime = WalleveGetNetTime();
-    int nHeight = pNetChannel->GetPrimaryChainHeight();
+    int32 nHeight = pNetChannel->GetPrimaryChainHeight();
     CMacAddress macAddr;
     GetActiveIFMacAddress(macAddr);
     std::vector<unsigned char> macData = macAddr.GetData();
-    ssPayload << nVersion << nService << nTime << nNonce << subVersion << nHeight << macData; 
+    ssPayload << nVersion << nService << nTime << nNonce << subVersion << nHeight << macData;
 }
 
 void CMvPeerNet::HandlePeerWriten(CPeer *pPeer)

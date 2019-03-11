@@ -92,7 +92,7 @@ bool CForkManager::IsAllowed(const uint256& hashFork) const
     return (it != mapForkSched.end() && (*it).second.IsAllowed());
 }
 
-bool CForkManager::GetJoint(const uint256& hashFork,uint256& hashParent,uint256& hashJoint,int& nHeight) const
+bool CForkManager::GetJoint(const uint256& hashFork,uint256& hashParent,uint256& hashJoint,int32& nHeight) const
 {
     boost::shared_lock<boost::shared_mutex> rlock(rwAccess);
 
@@ -228,7 +228,7 @@ void CForkManager::GetForkList(std::vector<uint256>& vFork) const
     }
 }
 
-bool CForkManager::GetSubline(const uint256& hashFork, vector<pair<int, uint256> >& vSubline) const
+bool CForkManager::GetSubline(const uint256& hashFork, vector<pair<int32, uint256> >& vSubline) const
 {
     boost::shared_lock<boost::shared_mutex> rlock(rwAccess);
 
@@ -240,7 +240,7 @@ bool CForkManager::GetSubline(const uint256& hashFork, vector<pair<int, uint256>
         return false;
     }
 
-    multimap<int, uint256> mapSubline;
+    multimap<int32, uint256> mapSubline;
     for (;itBegin != itEnd; ++itBegin)
     {
         mapSubline.insert(make_pair(itBegin->nJointHeight, itBegin->hashFork));

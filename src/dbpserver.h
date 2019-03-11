@@ -81,6 +81,7 @@ public:
     void SendResponse(CMvDbpReady& body);
     void SendResponse(const std::string& client, CMvDbpAdded& body);
     void SendResponse(const std::string& client, CMvDbpMethodResult& body);
+    void SendResponse(const std::string& client, CMvRPCRouteAdded& body);
     void SendPong(const std::string& id);
     void SendPing(const std::string& id);
     void SendResponse(const std::string& reason, const std::string& description);
@@ -166,6 +167,8 @@ protected:
     bool HandleEvent(CMvEventDbpReady& event) override;
     bool HandleEvent(CMvEventDbpAdded& event) override;
     bool HandleEvent(CMvEventDbpMethodResult& event) override;
+
+    bool HandleEvent(CMvEventRPCRouteAdded & event) override;
 
     bool IsSessionTimeOut(CDbpServerSocket* pDbpClient);
     bool GetSessionForkId(CDbpServerSocket* pDbpClient, std::string& forkid);

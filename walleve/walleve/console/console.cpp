@@ -90,7 +90,10 @@ void CConsole::WalleveHandleHalt()
     {
         ioService.stop();
     }
+
+    thrConsole.Interrupt();
     WalleveThreadExit(thrConsole);
+
     UninstallReadline();
 }
 

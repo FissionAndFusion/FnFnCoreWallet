@@ -270,7 +270,7 @@ public:
     }
 
     static void RawToDbpBlock(const CBlockEx& blockDetail, const uint256& forkHash,
-                                 int blockHeight, CMvDbpBlock& block)
+                              const int32 blockHeight, CMvDbpBlock& block)
     {
         block.nVersion = blockDetail.nVersion;
         block.nType = blockDetail.nType;

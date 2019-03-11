@@ -11,7 +11,7 @@ BOOST_FIXTURE_TEST_SUITE(version_tests, BasicUtfSetup)
 
 BOOST_AUTO_TEST_CASE( format )
 {
-    int nVersion;
+    uint32 nVersion;
     std::string strVersion;
 
     // FormatVersion
@@ -28,11 +28,11 @@ BOOST_AUTO_TEST_CASE( format )
 
 BOOST_AUTO_TEST_CASE( resolve )
 {
-    int nVersion, nMajor, nMinor, nRevision;
+    uint32 nVersion, nMajor, nMinor, nRevision;
     std::string strVersion;
     bool fRet;
 
-    // void ResolveVersion(const int nVersion, int& nMajor, int& nMinor, int& nRevision)
+    // void ResolveVersion(const uint32 nVersion, uint32& nMajor, uint32& nMinor, uint32& nRevision)
     // case 1
     nVersion = 106600;
     ResolveVersion(nVersion, nMajor, nMinor, nRevision);

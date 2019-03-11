@@ -172,12 +172,12 @@ public:
     bool RetrieveOrigin(const uint256& hash,CBlock& block);
     bool RetrieveTx(const uint256& txid,CTransaction& tx);
     bool RetrieveTx(const uint256& hashFork,const uint256& txid,CTransaction& tx);
-    bool RetrieveTxLocation(const uint256& txid,uint256& hashFork,int& nHeight);
+    bool RetrieveTxLocation(const uint256& txid,uint256& hashFork,int32& nHeight);
     bool RetrieveAvailDelegate(const uint256& hash,const uint256& hashAnchor,const std::vector<uint256>& vBlockRange,
                                                    int64 nDelegateWeightRatio,
                                                    std::map<CDestination,std::size_t>& mapWeight,
                                                    std::map<CDestination,std::vector<unsigned char> >& mapEnrollData);
-    void ListForkIndex(std::multimap<int,CBlockIndex*>& mapForkIndex);
+    void ListForkIndex(std::multimap<int32,CBlockIndex*>& mapForkIndex);
     bool GetBlockView(CBlockView& view);
     bool GetBlockView(const uint256& hash,CBlockView& view,bool fCommitable=false);
     bool GetForkBlockView(const uint256& hashFork,CBlockView& view);
@@ -185,11 +185,11 @@ public:
     bool LoadIndex(CBlockOutline& diskIndex);
     bool LoadTx(CTransaction& tx,uint32 nTxFile,uint32 nTxOffset,uint256& hashFork);
     bool FilterTx(const uint256& hashFork,CTxFilter& filter);
-    bool FilterTx(const uint256& hashFork, int nDepth, CTxFilter& filter);
+    bool FilterTx(const uint256& hashFork, const int32 nDepth, CTxFilter& filter);
     bool ListForkContext(std::vector<CForkContext>& vForkCtxt);
     bool GetForkBlockLocator(const uint256& hashFork,CBlockLocator& locator);
     bool GetForkBlockInv(const uint256& hashFork,const CBlockLocator& locator,std::vector<uint256>& vBlockHash,size_t nMaxCount);
-    bool CheckConsistency(int nCheckLevel, int nCheckDepth);
+    bool CheckConsistency(int nCheckLevel, const int32 nCheckDepth);
     bool CheckInputSingleAddressForTxWithChange(const uint256& txid);
 protected:
     CBlockIndex* GetIndex(const uint256& hash) const;
