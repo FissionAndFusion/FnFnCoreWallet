@@ -2624,7 +2624,8 @@ CRPCResultPtr CSnRPCModWorker::SnRPCGetTransaction(CRPCParamPtr param)
 
     uint256 txid, hashFork;
     txid.SetHex(spParam->strTxid);
-    spResult->transaction = TxToJSON(txid, ret.tx, hashFork.SetHex(ret.strFork), ret.nDepth);
+    hashFork.SetHex(ret.strFork);
+    spResult->transaction = TxToJSON(txid, ret.tx, hashFork, ret.nDepth);
     return spResult;
 }
 
