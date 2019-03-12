@@ -861,16 +861,15 @@ void CNetChannel::PostAddNew(const uint256& hashFork,CSchedule& sched,
 
 void CNetChannel::SetPeerSyncStatus(uint64 nNonce,const uint256& hashFork,bool fSync)
 {
+    boost::unique_lock<boost::shared_mutex> wlock(rwNetPeer);
+    
     bool fInverted = false;
+    CNetChannelPeer& peer = mapPeer[nNonce];
+    if (!peer.SetSyncStatus(hashFork,fSync,fInverted))
     {
-        boost::unique_lock<boost::shared_mutex> wlock(rwNetPeer);    
-        CNetChannelPeer& peer = mapPeer[nNonce];
-        if (!peer.SetSyncStatus(hashFork,fSync,fInverted))
-        {
-            return;
-        }
+        return;
     }
-
+    
     if (fInverted)
     {
         if (fSync)
