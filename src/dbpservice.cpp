@@ -1632,8 +1632,8 @@ void CDbpService::SwrapForks(std::vector<std::pair<uint256, CProfile>>& vFork, s
 
 void CDbpService::ListForkUnique(std::vector<CMvRPCProfile>& vFork)
 {
-    std::sort(vFork.begin(), vFork.end(), [](CMvRPCProfile& i, CMvRPCProfile& j) { return i.strHex > j.strHex; });
-    auto it = std::unique(vFork.begin(), vFork.end(), [](CMvRPCProfile& i, CMvRPCProfile& j) { return i.strHex == j.strHex; });
+    std::sort(vFork.begin(), vFork.end(), [](const CMvRPCProfile& i, const CMvRPCProfile& j) { return i.strHex > j.strHex; });
+    auto it = std::unique(vFork.begin(), vFork.end(), [](const CMvRPCProfile& i, const CMvRPCProfile& j) { return i.strHex == j.strHex; });
     vFork.resize(std::distance(vFork.begin(), it));
 }
 
@@ -1659,7 +1659,7 @@ void CDbpService::RPCRootHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRe
         CMvRPCRouteListForkRet listForkRetIn = *((CMvRPCRouteListForkRet*)ret);
         std::vector<CMvRPCProfile> vTempFork;
         uint64 nNonce = listForkRetIn.nNonce;
-        auto compare = [nNonce](std::pair<uint64, boost::any>& element) { return nNonce == element.first; };
+        auto compare = [nNonce](const std::pair<uint64, boost::any>& element) { return nNonce == element.first; };
         auto iter = std::find_if(queCount.begin(), queCount.end(), compare);
         if (iter != queCount.end() && (iter->second).type() == typeid(CMvRPCRouteListForkRet))
         {
@@ -2174,7 +2174,7 @@ void CDbpService::RPCForkHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRe
         CMvRPCRouteListForkRet listForkRetIn = *ret;
         std::vector<CMvRPCProfile> vTempFork;
         uint64 nNonce = listForkRetIn.nNonce;
-        auto compare = [nNonce](std::pair<uint64, boost::any>& element) { return nNonce == element.first; };
+        auto compare = [nNonce](const std::pair<uint64, boost::any>& element) { return nNonce == element.first; };
         auto iter = std::find_if(queCount.begin(), queCount.end(), compare);
         if (iter != queCount.end() && (iter->second).type() == typeid(CMvRPCRouteListForkRet))
         {
@@ -2793,7 +2793,7 @@ void CDbpService::CreateCompletion(uint64 nNonce, std::shared_ptr<walleve::CIOCo
 
 void CDbpService::CompletionByNonce(uint64& nNonce, boost::any obj)
 {
-    auto compare = [nNonce](std::pair<uint64, std::shared_ptr<walleve::CIOCompletionUntil>>& element) {
+    auto compare = [nNonce](const std::pair<uint64, std::shared_ptr<walleve::CIOCompletionUntil>>& element) {
         return nNonce == element.first;
     };
     auto iter = std::find_if(queCompletion.begin(), queCompletion.end(), compare);
@@ -2806,7 +2806,7 @@ void CDbpService::CompletionByNonce(uint64& nNonce, boost::any obj)
 
 void CDbpService::DeleteCompletionByNonce(uint64 nNonce)
 {
-    auto compare = [nNonce](std::pair<uint64, std::shared_ptr<walleve::CIOCompletionUntil>>& element) {
+    auto compare = [nNonce](const std::pair<uint64, std::shared_ptr<walleve::CIOCompletionUntil>>& element) {
         return nNonce == element.first;
     };
     auto iter = std::find_if(queCompletion.begin(), queCompletion.end(), compare);
