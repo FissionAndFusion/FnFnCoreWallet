@@ -2272,7 +2272,7 @@ CRPCResultPtr CSnRPCModWorker::SnRPCStop(CRPCParamPtr param)
 
 CRPCResultPtr CSnRPCModWorker::SnRPCGetForkCount(CRPCParamPtr param)
 {
-    CMvEventRPCRouteGetForkCount* pEvent = new CMvEventRPCRouteGetForkCount("");
+    CMvEventRPCRouteListFork* pEvent = new CMvEventRPCRouteListFork("");
     uint64 nNonce = GenNonce();
     auto ptrCompltUntil =
       std::make_shared<walleve::CIOCompletionUntil>(200 * 1000);
@@ -2280,6 +2280,7 @@ CRPCResultPtr CSnRPCModWorker::SnRPCGetForkCount(CRPCParamPtr param)
 
     pEvent->data.spIoCompltUntil = ptrCompltUntil;
     pEvent->data.nNonce = nNonce;
+    pEvent->data.fAll = false;
     if(!pEvent)
     {
         return NULL;
@@ -2294,9 +2295,9 @@ CRPCResultPtr CSnRPCModWorker::SnRPCGetForkCount(CRPCParamPtr param)
         throw CRPCException(RPC_INVALID_PARAMETER, "Timeout");
     }
 
-    CMvRPCRouteGetForkCountRet ret =
-      boost::any_cast<CMvRPCRouteGetForkCountRet>(ptrCompltUntil->obj);
-    return MakeCGetForkCountResultPtr(ret.count);
+    CMvRPCRouteListForkRet ret =
+      boost::any_cast<CMvRPCRouteListForkRet>(ptrCompltUntil->obj);
+    return MakeCGetForkCountResultPtr(ret.vFork.size());
 }
 
 CRPCResultPtr CSnRPCModWorker::SnRPCListFork(CRPCParamPtr param)
