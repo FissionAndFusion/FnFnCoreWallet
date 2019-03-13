@@ -285,7 +285,10 @@ void CMvPeerNet::BuildHello(CPeer *pPeer,CWalleveBufStream& ssPayload)
     int64 nTime = WalleveGetNetTime();
     int32 nHeight = pNetChannel->GetPrimaryChainHeight();
     CMacAddress macAddr;
-    GetActiveIFMacAddress(macAddr);
+    if(!GetActiveIFMacAddress(macAddr))
+    {
+        WalleveDebug("Get Active Interface Mac Address failed.");
+    }
     std::vector<unsigned char> macData = macAddr.GetData();
     ssPayload << nVersion << nService << nTime << nNonce << subVersion << nHeight << macData;
 }
@@ -327,7 +330,12 @@ bool CMvPeerNet::HandlePeerHandshaked(CPeer *pPeer,uint32 nTimerId,bool& fIsBann
         fIsBanned = true;
         return false;
     }
-    SetNodeMacAddress(pMvPeer->GetRemote(), pMvPeer->remoteMacAddress);
+    else
+    {
+        fIsBanned = false;
+        SetNodeMacAddress(pMvPeer->GetRemote(), pMvPeer->remoteMacAddress);
+    }
+    
 
     WalleveUpdateNetTime(pMvPeer->GetRemote().address(),pMvPeer->nTimeDelta);
 

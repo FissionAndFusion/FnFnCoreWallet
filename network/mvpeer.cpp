@@ -191,8 +191,9 @@ bool CMvPeer::HandshakeReadCompleted()
                 std::vector<unsigned char> macData;
                 ss >> nVersion >> nService >> nTime >> nNonceFrom >> strSubVer >> nStartingHeight >> macData;
                 
-                remoteMacAddress = CMacAddress(macData);
-
+                if(!macData.empty()) { remoteMacAddress = CMacAddress(macData); }
+                else { throw std::runtime_error("Received Mac Address Invalid"); }
+                
                 nTimeDelta = nTime - nTimeRecv;
                 if (!fInBound)
                 {
@@ -218,7 +219,7 @@ bool CMvPeer::HandshakeReadCompleted()
                 return (!fIsSuccess && fIsBanned) ? true : fIsSuccess;
             }
         }
-        catch (exception& e)
+        catch (const std::exception& e)
         {
             StdError(__PRETTY_FUNCTION__, e.what());
         }
