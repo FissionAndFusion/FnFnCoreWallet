@@ -137,10 +137,11 @@ private:
 // Get Active interface's mac addr
 inline bool GetActiveIFMacAddress(CMacAddress& mac)
 {
+    bool success = false;
+#ifdef __linux__
     struct ifreq ifr;
     struct ifconf ifc;
     char buf[1024];
-    bool success = false;
 
     int sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
     if (sock == -1) 
@@ -183,7 +184,7 @@ inline bool GetActiveIFMacAddress(CMacAddress& mac)
     }
 
     close(sock);
-    
+ #endif   
     return success;
 }
 
