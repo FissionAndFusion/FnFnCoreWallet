@@ -153,12 +153,22 @@ bool CMvDbpClientConfig::PostLoad()
 
     CMvDbpBasicConfig::PostLoad();
 
-    epParentHost = 
-    tcp::endpoint(!strParentHost.empty()
-                    ? boost::asio::ip::address::from_string(strParentHost)
-                    : boost::asio::ip::address_v4::loopback(),
-                    nDbpPort);
-    
+    if(strParentHost.empty())
+    {
+        epParentHost = tcp::endpoint(boost::asio::ip::address_v4::loopback(), nDbpPort);
+        return true;
+    }
+
+    boost::asio::io_service io_service;
+    boost::asio::ip::tcp::resolver resolver(io_service);
+    boost::asio::ip::tcp::resolver::query query(strParentHost, boost::lexical_cast<string>(nDbpPort));
+    boost::asio::ip::tcp::resolver::iterator iter = resolver.resolve(query);
+    boost::asio::ip::tcp::resolver::iterator end;
+    if (iter != end)
+    {
+        epParentHost = *iter;
+    }
+
     return true;
 }
 
