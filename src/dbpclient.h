@@ -27,14 +27,16 @@ class CDbpClientConfig
 {
 public:
     CDbpClientConfig(){}
-    CDbpClientConfig(const boost::asio::ip::tcp::endpoint& epParentHostIn,
+    CDbpClientConfig(const std::string strParentHostIn,
+                    unsigned int nDbpPortIn,
                     unsigned int nSessionTimeoutIn,
                     const std::string& strPrivateKeyIn,
                     const CIOSSLOption& optSSLIn, 
                     const std::string& strIOModuleIn,
                     bool enableForkNode,
                     bool enableSuperNode)
-    : epParentHost(epParentHostIn),
+    : strParentHost(strParentHostIn),
+      nDbpPort(nDbpPortIn),
       nSessionTimeout(nSessionTimeoutIn),
       strPrivateKey(strPrivateKeyIn),
       optSSL(optSSLIn),
@@ -45,6 +47,8 @@ public:
     }
 public:
     boost::asio::ip::tcp::endpoint epParentHost;
+    std::string strParentHost;
+    unsigned int nDbpPort;
     unsigned int nSessionTimeout;
     std::string strPrivateKey;
     CIOSSLOption optSSL;
@@ -162,6 +166,8 @@ protected:
     bool ClientConnected(CIOClient* pClient) override;
     void ClientFailToConnect(const boost::asio::ip::tcp::endpoint& epRemote) override;
     void Timeout(uint64 nNonce,uint32 nTimerId) override;
+    void HostResolved(const CNetHost& host,const boost::asio::ip::tcp::endpoint& ep) override;
+    void HostFailToResolve(const CNetHost& host) override;
 
     bool CreateProfile(const CDbpClientConfig& confClient);
     bool StartConnection(const boost::asio::ip::tcp::endpoint& epRemote, int64 nTimeout, bool fEnableSSL,

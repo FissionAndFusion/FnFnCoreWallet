@@ -616,31 +616,6 @@ void CDbpClient::EnterLoop()
 {
     // start resource
     WalleveLog("Dbp Client starting:\n");
-    
-    for(std::map<boost::asio::ip::tcp::endpoint, CDbpClientProfile>::iterator it = mapProfile.begin();
-         it != mapProfile.end(); ++it)
-    {
-        bool fEnableSSL = (*it).second.optSSL.fEnable;
-
-        if((*it).second.epParentHost.address().is_loopback())
-        {
-            continue;
-        }
-       
-        if(!StartConnection(it->first,DBPCLIENT_CONNECT_TIMEOUT,fEnableSSL,it->second.optSSL))
-        {
-            WalleveWarn("Start to connect parent node %s failed,  port = %d\n",
-                       (*it).first.address().to_string().c_str(),
-                       (*it).first.port());
-        }
-        else
-        {
-            WalleveLog("Start to connect parent node %s,  port = %d\n",
-                    (*it).first.address().to_string().c_str(),
-                    (*it).first.port());
-        } 
-       
-    }
 }
 
 void CDbpClient::LeaveLoop()
@@ -710,6 +685,50 @@ void CDbpClient::Timeout(uint64 nNonce,uint32 nTimerId)
                        nTimerId);
 }
 
+void CDbpClient::HostResolved(const CNetHost& host, const boost::asio::ip::tcp::endpoint& ep)
+{
+    CDbpClientConfig confClient = boost::any_cast<CDbpClientConfig>(host.data);
+    CDbpClientProfile profile;
+    if (!WalleveGetObject(confClient.strIOModule, profile.pIOModule))
+    {
+        WalleveError("Failed to request %s\n", confClient.strIOModule.c_str());
+        return;
+    }
+
+    if (confClient.optSSL.fEnable)
+        profile.optSSL = confClient.optSSL;
+
+    profile.strPrivateKey = confClient.strPrivateKey;
+    profile.epParentHost = confClient.epParentHost;
+    profile.nSessionTimeout = confClient.nSessionTimeout;
+    mapProfile[ep] = profile;
+    confClient.epParentHost = ep;
+
+    bool fEnableSSL = profile.optSSL.fEnable;
+
+    if (ep.address().is_loopback())
+    {
+        return;
+    }
+
+    if (!StartConnection(ep, DBPCLIENT_CONNECT_TIMEOUT, fEnableSSL, profile.optSSL))
+    {
+        WalleveWarn("Start to connect parent node %s failed,  port = %d\n",
+                    ep.address().to_string().c_str(),
+                    ep.port());
+    }
+    else
+    {
+        WalleveLog("Start to connect parent node %s,  port = %d\n",
+                   ep.address().to_string().c_str(),
+                   ep.port());
+    }
+}
+
+void CDbpClient::HostFailToResolve(const CNetHost& host)
+{
+}
+
 bool CDbpClient::CreateProfile(const CDbpClientConfig& confClient)
 {
     CDbpClientProfile profile;
@@ -719,13 +738,11 @@ bool CDbpClient::CreateProfile(const CDbpClientConfig& confClient)
         return false;
     }
 
-    if(confClient.optSSL.fEnable)
-        profile.optSSL = confClient.optSSL;
-    
-    profile.strPrivateKey = confClient.strPrivateKey;
-    profile.epParentHost = confClient.epParentHost;
-    profile.nSessionTimeout = confClient.nSessionTimeout;
-    mapProfile[confClient.epParentHost] = profile;
+    CNetHost netHost;
+    netHost.strHost = confClient.strParentHost;
+    netHost.nPort = confClient.nDbpPort;
+    netHost.data = confClient;
+    ResolveHost(netHost);
 
     return true;
 }
