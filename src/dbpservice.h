@@ -148,7 +148,7 @@ private:
     void InitSessionCount();
     void InsertQueCount(uint64 nNonce, boost::any obj);
     bool RouteAddedHandle(boost::any obj, CMvEventRPCRouteAdded& event, CMvRPCRoute* route);
-    void SwrapForks(std::vector<std::pair<uint256,CProfile>>& vFork, std::vector<CMvRPCProfile>& vRpcFork);
+    void TransformForks(std::vector<std::pair<uint256,CProfile>>& vFork, std::vector<CMvRPCProfile>& vRpcFork);
     void ListForkUnique(std::vector<CMvRPCProfile>& vFork);
     bool GetForkHashOfDef(const rpc::CRPCString& hex, uint256& hashFork);
     void RPCRootHandle(CMvRPCRouteStop* data, CMvRPCRouteStopRet* ret);

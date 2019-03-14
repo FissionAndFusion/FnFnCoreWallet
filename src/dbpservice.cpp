@@ -1614,7 +1614,7 @@ void CDbpService::RPCRootHandle(CMvRPCRouteStop* data, CMvRPCRouteStopRet* ret)
     }
 }
 
-void CDbpService::SwrapForks(std::vector<std::pair<uint256, CProfile>>& vFork, std::vector<CMvRPCProfile>& vRpcFork)
+void CDbpService::TransformForks(std::vector<std::pair<uint256, CProfile>>& vFork, std::vector<CMvRPCProfile>& vRpcFork)
 {
     for (auto& fork : vFork)
     {
@@ -1647,7 +1647,7 @@ void CDbpService::RPCRootHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRe
             std::vector<std::pair<uint256,CProfile>> vFork;
             pService->ListFork(vFork, data->fAll);
             std::vector<CMvRPCProfile> vRpcFork;
-            SwrapForks(vFork, vRpcFork);
+            TransformForks(vFork, vRpcFork);
             ret.vFork.insert(ret.vFork.end(), vRpcFork.begin(), vRpcFork.end());
             CompletionByNonce(data->nNonce, ret);
         }
@@ -1675,7 +1675,7 @@ void CDbpService::RPCRootHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRe
             std::vector<std::pair<uint256, CProfile>> vFork;
             pService->ListFork(vFork, data->fAll);
             std::vector<CMvRPCProfile> vRpcFork;
-            SwrapForks(vFork, vRpcFork);
+            TransformForks(vFork, vRpcFork);
             retOut.vFork.insert(retOut.vFork.end(), vTempFork.begin(), vTempFork.end());
             retOut.vFork.insert(retOut.vFork.end(), vRpcFork.begin(), vRpcFork.end());
             ListForkUnique(retOut.vFork);
@@ -2160,7 +2160,7 @@ void CDbpService::RPCForkHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRe
             std::vector<std::pair<uint256, CProfile>> vFork;
             pService->ListFork(vFork, data->fAll);
             std::vector<CMvRPCProfile> vRpcFork;
-            SwrapForks(vFork, vRpcFork);
+            TransformForks(vFork, vRpcFork);
             retOut.vFork.insert(retOut.vFork.end(), vRpcFork.begin(), vRpcFork.end());
 
             result.vData = RPCRouteRetToStream(retOut);
@@ -2197,7 +2197,7 @@ void CDbpService::RPCForkHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRe
             std::vector<std::pair<uint256, CProfile>> vFork;
             pService->ListFork(vFork, data->fAll);
             std::vector<CMvRPCProfile> vRpcFork;
-            SwrapForks(vFork, vRpcFork);
+            TransformForks(vFork, vRpcFork);
 
             listForkRetOut.vFork.insert(listForkRetOut.vFork.end(), vTempFork.begin(), vTempFork.end());
             listForkRetOut.vFork.insert(listForkRetOut.vFork.end(), vRpcFork.begin(), vRpcFork.end());
