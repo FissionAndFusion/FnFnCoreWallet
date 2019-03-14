@@ -39,7 +39,7 @@ protected:
     bool ParseMessageHeader();
     bool HandshakeReadHeader();
     bool HandshakeReadCompleted();
-    virtual bool HandshakeCompleted();
+    virtual bool HandshakeCompleted(bool& fIsBanned);
     bool HandleReadHeader();
     bool HandleReadCompleted();
 public:
@@ -50,6 +50,7 @@ public:
     int64 nTimeHello;
     std::string strSubVer;
     int32 nStartingHeight;
+    walleve::CMacAddress remoteMacAddress;
 protected:
     uint32 nMsgMagic;
     uint32 nHsTimerId;

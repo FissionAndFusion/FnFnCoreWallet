@@ -188,13 +188,20 @@ bool CMvPeer::HandshakeReadCompleted()
                     return false;
                 }
                 int64 nTime;
-                ss >> nVersion >> nService >> nTime >> nNonceFrom >> strSubVer >> nStartingHeight;
+                std::vector<unsigned char> macData;
+                ss >> nVersion >> nService >> nTime >> nNonceFrom >> strSubVer >> nStartingHeight >> macData;
+                
+                if(!macData.empty()) { remoteMacAddress = CMacAddress(macData); }
+                else { throw std::runtime_error("Received Mac Address Invalid"); }
+                
                 nTimeDelta = nTime - nTimeRecv;
                 if (!fInBound)
                 {
                     nTimeDelta += (nTimeRecv - nTimeHello) / 2;
                     SendHelloAck();
-                    return HandshakeCompleted();
+                    bool fIsBanned = false;
+                    bool fIsSuccess = HandshakeCompleted(fIsBanned);
+                    return (!fIsSuccess && fIsBanned) ? true : fIsSuccess;
                 }
                 SendHello();
                 Read(MESSAGE_HEADER_SIZE,boost::bind(&CMvPeer::HandshakeReadHeader,this));
@@ -207,10 +214,12 @@ bool CMvPeer::HandshakeReadCompleted()
                     return false;
                 }
                 nTimeDelta += (nTimeRecv - nTimeHello) / 2;
-                return HandshakeCompleted();
+                bool fIsBanned = false;
+                bool fIsSuccess = HandshakeCompleted(fIsBanned);
+                return (!fIsSuccess && fIsBanned) ? true : fIsSuccess;
             }
         }
-        catch (exception& e)
+        catch (const std::exception& e)
         {
             StdError(__PRETTY_FUNCTION__, e.what());
         }
@@ -218,9 +227,9 @@ bool CMvPeer::HandshakeReadCompleted()
     return false;
 }
 
-bool CMvPeer::HandshakeCompleted()
+bool CMvPeer::HandshakeCompleted(bool& fIsBanned)
 {
-    if (!(static_cast<CMvPeerNet*>(pPeerNet))->HandlePeerHandshaked(this,nHsTimerId))
+    if (!(static_cast<CMvPeerNet*>(pPeerNet))->HandlePeerHandshaked(this,nHsTimerId,fIsBanned))
     {
         return false;
     }

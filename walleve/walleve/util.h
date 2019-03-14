@@ -9,6 +9,13 @@
 #include <boost/date_time.hpp>
 #include <boost/asio/ip/address.hpp>
 
+#ifdef __linux__
+#include <sys/ioctl.h>
+#include <net/if.h> 
+#include <unistd.h>
+#include <netinet/in.h>
+#endif
+
 namespace walleve
 {
 extern bool STD_DEBUG;
@@ -68,6 +75,117 @@ inline void StdWarn(const char* pszName, const char* pszErr)
 inline void StdError(const char* pszName, const char* pszErr)
 {
     std::cerr << GetLocalTime() << " [ERROR] <" << pszName << "> " << pszErr << std::endl;
+}
+
+class CMacAddress
+{
+public:
+    CMacAddress(){}
+    explicit CMacAddress(const std::vector<unsigned char>& data)
+    : macData(data)
+    {}
+    explicit CMacAddress(const CMacAddress& addr)
+    {
+        macData = addr.macData;
+    }
+    CMacAddress& operator=(const CMacAddress& addr)
+    {
+        macData = addr.macData;
+        return *this;
+    }
+    ~CMacAddress(){}
+
+    bool IsEmpty() const
+    {
+        return macData.empty();
+    }
+    
+    std::vector<unsigned char> GetData() const
+    {
+        return macData;
+    }
+    
+    std::string ToString() const
+    {
+        if(macData.size() == 6)
+        {
+            char buffer[128] = {0};
+            sprintf(buffer, "%02x:%02x:%02x:%02x:%02x:%02x", 
+                macData[0], macData[1], macData[2],
+                macData[3], macData[4], macData[5]);
+            return std::string(buffer);
+        }
+        else
+        {
+            return std::string("00:00:00:00:00:00");
+        }
+        
+    }
+public:
+    friend bool operator==(const CMacAddress& left, const CMacAddress& right) 
+    {
+        return left.ToString() == right.ToString();
+    }
+    friend bool operator<(const CMacAddress& left, const CMacAddress& right)
+    {
+        return left.ToString() < right.ToString();
+    }
+private:
+    std::vector<unsigned char> macData;
+};
+
+// Get Active interface's mac addr
+inline bool GetActiveIFMacAddress(CMacAddress& mac)
+{
+    bool success = false;
+#ifdef __linux__
+    struct ifreq ifr;
+    struct ifconf ifc;
+    char buf[1024];
+
+    int sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
+    if (sock == -1) 
+    { 
+        return success;
+    }
+
+    ifc.ifc_len = sizeof(buf);
+    ifc.ifc_buf = buf;
+    if (ioctl(sock, SIOCGIFCONF, &ifc) == -1) 
+    { 
+        close(sock);
+        return success;
+    }
+
+    struct ifreq* it = ifc.ifc_req;
+    const struct ifreq* const end = it + (ifc.ifc_len / sizeof(struct ifreq));
+
+    for (; it != end; ++it) 
+    {
+        strcpy(ifr.ifr_name, it->ifr_name);
+        if (ioctl(sock, SIOCGIFFLAGS, &ifr) == 0) 
+        {
+            if (! (ifr.ifr_flags & IFF_LOOPBACK)) // don't count loopback
+            { 
+                if (ioctl(sock, SIOCGIFHWADDR, &ifr) == 0) 
+                {
+                    success = true;
+                    break;
+                }
+            }
+        }
+    }
+
+    if (success) 
+    {
+        std::vector<unsigned char> data;
+        std::copy_n(&(ifr.ifr_hwaddr.sa_data[0]), 6, std::back_inserter(data));
+        mac = CMacAddress(data);
+    }
+
+    close(sock);
+ #endif   
+    return success;
 }
 
 inline bool IsRoutable(const boost::asio::ip::address& address)
