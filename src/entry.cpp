@@ -262,7 +262,8 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
         }
         case EModuleType::NETCHANNEL:
         {
-            if (!AttachModule(new CNetChannel()))
+            const CMvNetworkConfig* networkConfig = CastConfigPtr<CMvNetworkConfig*>(mvConfig.GetConfig());
+            if (!AttachModule(new CNetChannel(networkConfig->nThreadNumber, networkConfig->fThreadAffinity)))
             {
                 return false;
             }
@@ -330,22 +331,23 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
             }
             dynamic_cast<CHttpServer*>(pBase)->AddNewHost(GetRPCHostConfig());
 
+            const CMvRPCServerConfig* rpcConfig = CastConfigPtr<CMvRPCServerConfig*>(mvConfig.GetConfig());
             auto config = GetDbpClientConfig();
-            CRPCModWorker* rpcModWorker;
 
+            CRPCModWorker* rpcModWorker;
             if (config.fEnableSuperNode && !config.fEnableForkNode) //supernode root
             {
-                rpcModWorker = new CSnRPCModWorker();
+                rpcModWorker = new CSnRPCModWorker(rpcConfig->nRPCThreadNumber, rpcConfig->fRPCThreadAffinity);
             }
 
             if (config.fEnableSuperNode && config.fEnableForkNode) // supernode fork
             {
-                rpcModWorker = new CRPCModWorker();
+                rpcModWorker = new CRPCModWorker(rpcConfig->nRPCThreadNumber, rpcConfig->fRPCThreadAffinity);
             }
 
             if (!config.fEnableSuperNode) //fnfncorewallet
             {
-                rpcModWorker = new CRPCModWorker();
+                rpcModWorker = new CRPCModWorker(rpcConfig->nRPCThreadNumber, rpcConfig->fRPCThreadAffinity);
             }
 
             if (!AttachModule(rpcModWorker))

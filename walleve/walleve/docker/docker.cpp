@@ -371,6 +371,7 @@ void CWalleveDocker::ThreadExit(CWalleveThread& thr)
 void CWalleveDocker::ThreadRun(CWalleveThread& thr)
 {
     Log("Thread %s started\n",thr.strThreadName.c_str());
+    thr.SetAffinity();
     try
     {
         thr.fRunning = true;
@@ -392,6 +393,7 @@ void CWalleveDocker::ThreadRun(CWalleveThread& thr)
 
 void CWalleveDocker::ThreadDelayRun(CWalleveThread& thr)
 {
+    thr.SetAffinity();
     {    
         boost::unique_lock<boost::mutex> lock(mtxDocker);
         if (!fActived)

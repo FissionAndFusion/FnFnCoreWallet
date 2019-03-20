@@ -95,7 +95,7 @@ public:
         NODE_TYPE_FORK
     };
 
-    CNetChannel();
+    CNetChannel(const uint nThreadIn = 1, const bool fAffinityIn = false);
     ~CNetChannel();
     int32 GetPrimaryChainHeight() override;
     bool IsForkSynchronized(const uint256& hashFork) const override;
