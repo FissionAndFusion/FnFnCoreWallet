@@ -171,6 +171,11 @@ void CPeerNet::HostResolved(const CNetHost& host,const tcp::endpoint& ep)
     if (host.strName == "toremove")
     {
         epMngr.RemoveOutBound(ep);
+        CPeer* pPeer = GetPeer(ep);
+        if(pPeer)
+        {
+            HandlePeerClose(pPeer);
+        }
     }
     else
     {
@@ -230,6 +235,19 @@ CPeer* CPeerNet::GetPeer(uint64 nNonce)
     return NULL;
 }
 
+CPeer* CPeerNet::GetPeer(const boost::asio::ip::tcp::endpoint& epNode)
+{
+    for(const auto& peer : mapPeer)
+    {
+        CPeer* pPeer = peer.second;
+        if(pPeer->GetRemote() == epNode)
+        {
+            return pPeer;
+        }
+    }
+    return NULL;
+}
+
 void CPeerNet::AddNewNode(const CNetHost& host)
 {
     const tcp::endpoint ep = host.ToEndPoint();
@@ -254,6 +272,11 @@ void CPeerNet::RemoveNode(const CNetHost& host)
     if (ep != tcp::endpoint())
     {
         epMngr.RemoveOutBound(ep);
+        CPeer* pPeer = GetPeer(ep); 
+        if(pPeer)
+        {
+            HandlePeerClose(pPeer);
+        }
     }
     else 
     {

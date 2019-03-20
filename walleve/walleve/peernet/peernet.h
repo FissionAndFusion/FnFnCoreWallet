@@ -67,6 +67,7 @@ protected:
     void RewardPeer(CPeer* pPeer, const CEndpointManager::Bonus& bonus);
     void RemovePeer(CPeer* pPeer, const CEndpointManager::CloseReason& reason);
     CPeer* GetPeer(uint64 nNonce);
+    CPeer* GetPeer(const boost::asio::ip::tcp::endpoint& epNode);
     void AddNewNode(const CNetHost& host);
     void AddNewNode(const boost::asio::ip::tcp::endpoint& epNode,
                     const std::string& strName = "", const boost::any& data = boost::any());
