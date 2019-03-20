@@ -262,8 +262,8 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
         }
         case EModuleType::NETCHANNEL:
         {
-            const CMvNetworkConfig* rpcConfig = CastConfigPtr<CMvNetworkConfig*>(mvConfig.GetConfig());
-            if (!AttachModule(new CNetChannel(rpcConfig->nThreadNumber, rpcConfig->fThreadAffinity)))
+            const CMvNetworkConfig* networkConfig = CastConfigPtr<CMvNetworkConfig*>(mvConfig.GetConfig());
+            if (!AttachModule(new CNetChannel(networkConfig->nThreadNumber, networkConfig->fThreadAffinity)))
             {
                 return false;
             }
