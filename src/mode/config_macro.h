@@ -6,6 +6,7 @@
 #define MULTIVERSE_CONFIG_MACRO_H
 
 #include <boost/program_options.hpp>
+#include <thread>
 
 // basic config
 #define MAINNET_MAGICNUM 0xd5f97d23
@@ -16,6 +17,7 @@
 #define DEFAULT_TESTNET_RPCPORT 6814
 #define DEFAULT_RPC_MAX_CONNECTIONS 5
 #define DEFAULT_RPC_CONNECT_TIMEOUT 120
+#define DEFAULT_RPC_THREAD_NUMBER (std::thread::hardware_concurrency() / 2 + 1)
 
 // dbp config
 #define DEFAULT_DBPPORT 6815
@@ -29,6 +31,7 @@
 #define DEFAULT_MAX_INBOUNDS 125
 #define DEFAULT_MAX_OUTBOUNDS 10
 #define DEFAULT_CONNECT_TIMEOUT 5
+#define DEFAULT_THREAD_NUMBER (std::thread::hardware_concurrency() / 2 + 1)
 
 // storage config
 #define DEFAULT_DB_CONNECTION 8

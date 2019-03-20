@@ -222,7 +222,8 @@ void CNetChannelPeer::MakeTxInv(const uint256& hashFork,const vector<uint256>& v
 //////////////////////////////
 // CNetChannel 
 
-CNetChannel::CNetChannel()
+CNetChannel::CNetChannel(const uint nThreadIn, const bool fAffinityIn)
+: IMvNetChannel(nThreadIn, fAffinityIn)
 {
     pPeerNet = NULL;
     pCoreProtocol = NULL;
