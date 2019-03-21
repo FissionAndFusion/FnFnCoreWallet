@@ -6,7 +6,6 @@
 #include "walleve/base/base.h"
 #include "walleve/util.h"
 #include <vector>
-#include <boost/foreach.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/bind.hpp>
 
@@ -582,7 +581,7 @@ void CWalleveDocker::TimerProc()
                 }
             }
         }
-        BOOST_FOREACH(const uint32& nTimerId,vWorkQueue)
+        for(const uint32& nTimerId : vWorkQueue)
         {
             if (fShutdown)
             {

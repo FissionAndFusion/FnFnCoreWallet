@@ -4,7 +4,6 @@
 
 #include "ioproc.h"
 #include <boost/bind.hpp>
-#include <boost/foreach.hpp>
 using namespace std;
 using namespace walleve;
 using boost::asio::ip::tcp;
@@ -251,7 +250,7 @@ void CIOProc::CancelClientTimers(uint64 nNonce)
         }
     }
 
-    BOOST_FOREACH(const uint32 nTimerId,vTimerId)
+    for(const uint32 nTimerId : vTimerId)
     {
         CancelTimer(nTimerId);
     }
@@ -395,7 +394,7 @@ void CIOProc::IOProcPollTimer()
 
     mapTimerByExpiry.erase(mapTimerByExpiry.begin(),ui);
         
-    BOOST_FOREACH(uint32& nTimerId,vecExpires)
+    for(uint32& nTimerId : vecExpires)
     {
         map<uint32,CIOTimer>::iterator it = mapTimerById.find(nTimerId);
         if (it != mapTimerById.end())

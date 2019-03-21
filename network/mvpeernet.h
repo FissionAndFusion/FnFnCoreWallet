@@ -58,7 +58,7 @@ public:
     ~CMvPeerNet();
     virtual void BuildHello(walleve::CPeer *pPeer,walleve::CWalleveBufStream& ssPayload);
     void HandlePeerWriten(walleve::CPeer *pPeer) override;
-    virtual bool HandlePeerHandshaked(walleve::CPeer *pPeer,uint32 nTimerId);
+    virtual bool HandlePeerHandshaked(walleve::CPeer *pPeer,uint32 nTimerId,bool& fIsBanned);
     virtual bool HandlePeerRecvMessage(walleve::CPeer *pPeer,int nChannel,int nCommand,
                                walleve::CWalleveBufStream& ssPayload);
 protected:

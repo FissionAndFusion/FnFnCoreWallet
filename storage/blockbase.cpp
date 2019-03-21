@@ -1069,7 +1069,7 @@ bool CBlockBase::GetForkBlockInv(const uint256& hashFork,const CBlockLocator& lo
     }
     
     CBlockIndex* pIndex = NULL;
-    BOOST_FOREACH(const uint256& hash,locator.vBlockHash)
+    for(const uint256& hash : locator.vBlockHash)
     {
         pIndex = GetIndex(hash);
         if (pIndex != NULL)

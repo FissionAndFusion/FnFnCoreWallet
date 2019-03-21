@@ -69,7 +69,7 @@ static CBlockData BlockToJSON(const uint256& hashBlock,const CBlock& block,const
     data.nHeight = nHeight;
     
     data.strTxmint = block.txMint.GetHash().GetHex();
-    BOOST_FOREACH(const CTransaction& tx,block.vtx)
+    for(const CTransaction& tx : block.vtx)
     {
         data.vecTx.push_back(tx.GetHash().GetHex());
     }
@@ -85,7 +85,7 @@ static CTransactionData TxToJSON(const uint256& txid,const CTransaction& tx,cons
     ret.nTime = tx.nTimeStamp;
     ret.nLockuntil = tx.nLockUntil;
     ret.strAnchor = tx.hashAnchor.GetHex();
-    BOOST_FOREACH(const CTxIn& txin, tx.vInput)
+    for(const CTxIn& txin : tx.vInput)
     {
         CTransactionData::CVin vin;
         vin.nVout = txin.prevout.n;
@@ -562,11 +562,11 @@ void CRPCModWorker::ListDestination(vector<CDestination>& vDestination)
     pService->GetTemplateIds(setTid);
 
     vDestination.clear();
-    BOOST_FOREACH(const crypto::CPubKey& pubkey,setPubKey)
+    for(const crypto::CPubKey& pubkey : setPubKey)
     {
         vDestination.push_back(CDestination(pubkey));
     }
-    BOOST_FOREACH(const CTemplateId& tid,setTid)
+    for(const CTemplateId& tid : setTid)
     {
         vDestination.push_back(CDestination(tid));
     }
@@ -604,7 +604,7 @@ CRPCResultPtr CRPCModWorker::RPCListPeer(CRPCParamPtr param)
     pService->GetPeers(vPeerInfo);
 
     auto spResult = MakeCListPeerResultPtr();
-    BOOST_FOREACH(const network::CMvPeerInfo& info,vPeerInfo)
+    for(const network::CMvPeerInfo& info : vPeerInfo)
     {
         CListPeerResult::CPeer peer;
         peer.strAddress = info.strAddress;
@@ -920,7 +920,7 @@ CRPCResultPtr CRPCModWorker::RPCListKey(CRPCParamPtr param)
     pService->GetPubKeys(setPubKey);
 
     auto spResult = MakeCListKeyResultPtr();
-    BOOST_FOREACH(const crypto::CPubKey& pubkey,setPubKey)
+    for(const crypto::CPubKey& pubkey : setPubKey)
     {
         uint32 nVersion;
         bool fLocked;
@@ -1343,7 +1343,7 @@ CRPCResultPtr CRPCModWorker::RPCGetBalance(CRPCParamPtr param)
     }
 
     auto spResult = MakeCGetBalanceResultPtr();
-    BOOST_FOREACH(const CDestination& dest,vDest)
+    for(const CDestination& dest : vDest)
     {
         CWalletBalance balance;
         if (pService->GetBalance(dest,hashFork,balance))
@@ -1378,7 +1378,7 @@ CRPCResultPtr CRPCModWorker::RPCListTransaction(CRPCParamPtr param)
     }
 
     auto spResult = MakeCListTransactionResultPtr();
-    BOOST_FOREACH(const CWalletTx& wtx,vWalletTx)
+    for(const CWalletTx& wtx : vWalletTx)
     {
         spResult->vecTransaction.push_back(WalletTxToJSON(wtx));
     }
@@ -2272,7 +2272,7 @@ CRPCResultPtr CSnRPCModWorker::SnRPCStop(CRPCParamPtr param)
 
 CRPCResultPtr CSnRPCModWorker::SnRPCGetForkCount(CRPCParamPtr param)
 {
-    CMvEventRPCRouteGetForkCount* pEvent = new CMvEventRPCRouteGetForkCount("");
+    CMvEventRPCRouteListFork* pEvent = new CMvEventRPCRouteListFork("");
     uint64 nNonce = GenNonce();
     auto ptrCompltUntil =
       std::make_shared<walleve::CIOCompletionUntil>(200 * 1000);
@@ -2280,6 +2280,7 @@ CRPCResultPtr CSnRPCModWorker::SnRPCGetForkCount(CRPCParamPtr param)
 
     pEvent->data.spIoCompltUntil = ptrCompltUntil;
     pEvent->data.nNonce = nNonce;
+    pEvent->data.fAll = false;
     if(!pEvent)
     {
         return NULL;
@@ -2294,9 +2295,9 @@ CRPCResultPtr CSnRPCModWorker::SnRPCGetForkCount(CRPCParamPtr param)
         throw CRPCException(RPC_INVALID_PARAMETER, "Timeout");
     }
 
-    CMvRPCRouteGetForkCountRet ret =
-      boost::any_cast<CMvRPCRouteGetForkCountRet>(ptrCompltUntil->obj);
-    return MakeCGetForkCountResultPtr(ret.count);
+    CMvRPCRouteListForkRet ret =
+      boost::any_cast<CMvRPCRouteListForkRet>(ptrCompltUntil->obj);
+    return MakeCGetForkCountResultPtr(ret.vFork.size());
 }
 
 CRPCResultPtr CSnRPCModWorker::SnRPCListFork(CRPCParamPtr param)
@@ -2623,7 +2624,8 @@ CRPCResultPtr CSnRPCModWorker::SnRPCGetTransaction(CRPCParamPtr param)
 
     uint256 txid, hashFork;
     txid.SetHex(spParam->strTxid);
-    spResult->transaction = TxToJSON(txid, ret.tx, hashFork.SetHex(ret.strFork), ret.nDepth);
+    hashFork.SetHex(ret.strFork);
+    spResult->transaction = TxToJSON(txid, ret.tx, hashFork, ret.nDepth);
     return spResult;
 }
 

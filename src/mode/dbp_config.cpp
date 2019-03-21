@@ -152,13 +152,6 @@ bool CMvDbpClientConfig::PostLoad()
     }
 
     CMvDbpBasicConfig::PostLoad();
-
-    epParentHost = 
-    tcp::endpoint(!strParentHost.empty()
-                    ? boost::asio::ip::address::from_string(strParentHost)
-                    : boost::asio::ip::address_v4::loopback(),
-                    nDbpPort);
-    
     return true;
 }
 

@@ -57,7 +57,7 @@ void CDelegateContext::ChangeTxSet(const CTxSetChange& change)
         map<uint256,CDelegateTx>::iterator it = mapTx.find(txid);
         if (it != mapTx.end())
         {
-            BOOST_FOREACH(const CTxIn& txin,change.vTxRemove[i].second)
+            for(const CTxIn& txin : change.vTxRemove[i].second)
             {
                 map<uint256,CDelegateTx>::iterator mi = mapTx.find(txin.prevout.hash);
                 if (mi != mapTx.end())
@@ -78,7 +78,7 @@ void CDelegateContext::ChangeTxSet(const CTxSetChange& change)
         }
     }
     
-    BOOST_FOREACH(const CAssembledTx& tx,change.vTxAddNew)
+    for(const CAssembledTx& tx : change.vTxAddNew)
     {
         AddNewTx(tx);
     }
@@ -111,7 +111,7 @@ void CDelegateContext::AddNewTx(const CAssembledTx& tx)
     }
     if (tx.destIn == destDelegate)
     {
-        BOOST_FOREACH(const CTxIn& txin,tx.vInput)
+        for(const CTxIn& txin : tx.vInput)
         {
             mapUnspent.erase(txin.prevout);
         }

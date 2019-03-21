@@ -5,7 +5,6 @@
 #include "httpsse.h"
 #include "walleve/util.h"
 #include <string.h>
-#include <boost/foreach.hpp>
 
 using namespace std;
 using namespace boost;
@@ -102,7 +101,7 @@ bool CHttpEventStream::ConstructResponse(uint64 nLastEventId,CWalleveHttpRsp& rs
     {
         vector<string> vEventData;
         (*it).second->GenerateEventData(nLastEventId,nEventId,vEventData);
-        BOOST_FOREACH(const string& strData,vEventData)
+        for(const string& strData : vEventData)
         {
             oss << "event: " << (*it).first << "\ndata: " << strData << "\n\n"; 
         }

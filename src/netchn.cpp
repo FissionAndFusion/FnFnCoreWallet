@@ -146,7 +146,7 @@ void CConcurrentPeerNetData::MakeTxInvByFork(const uint256& hashFork, const std:
 void CNetChannelPeer::CNetChannelPeerFork::AddKnownTx(const vector<uint256>& vTxHash)
 {
     ClearExpiredTx(vTxHash.size());
-    BOOST_FOREACH(const uint256& txid,vTxHash)
+    for(const uint256& txid : vTxHash)
     {
         setKnownTx.insert(CPeerKnownTx(txid));
     }
@@ -203,7 +203,7 @@ void CNetChannelPeer::MakeTxInv(const uint256& hashFork,const vector<uint256>& v
     {
         vector<uint256> vTxHash;
         CNetChannelPeerFork& peerFork = (*it).second;
-        BOOST_FOREACH(const uint256& txid,vTxPool)
+        for(const uint256& txid : vTxPool)
         {
             if (vInv.size() >= nMaxCount)
             {
@@ -469,7 +469,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerDeactive& eventDeactive)
             set<uint64> setSchedPeer;
             sched.RemovePeer(nNonce,setSchedPeer);
 
-            BOOST_FOREACH(const uint64 nNonceSched,setSchedPeer)
+            for(const uint64 nNonceSched : setSchedPeer)
             {
                 SchedulePeerInv(nNonceSched,(*it).first,sched);
             }
@@ -541,7 +541,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerInv& eventInv)
             boost::recursive_mutex::scoped_lock scoped_lock(mtxSched);
             CSchedule& sched = GetSchedule(hashFork);
             vector<uint256> vTxHash;
-            BOOST_FOREACH(const network::CInv& inv,eventInv.data)
+            for(const network::CInv& inv : eventInv.data)
             {
                 if ((inv.nType == network::CInv::MSG_TX && !pTxPool->Exists(inv.nHash)) 
                     || (inv.nType == network::CInv::MSG_BLOCK && !pWorldLine->Exists(inv.nHash)))
@@ -572,7 +572,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerGetData& eventGetData)
     uint64 nNonce = eventGetData.nNonce;
     uint256& hashFork = eventGetData.hashFork;
     std::string flow = eventGetData.flow;
-    BOOST_FOREACH(const network::CInv& inv,eventGetData.data)
+    for(const network::CInv& inv : eventGetData.data)
     {
         if (inv.nType == network::CInv::MSG_TX)
         {
@@ -620,7 +620,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerGetBlocks& eventGetBlocks)
         return true;
     }
     network::CMvEventPeerInv eventInv(nNonce,hashFork);
-    BOOST_FOREACH(const uint256& hash,vBlockHash)
+    for(const uint256& hash : vBlockHash)
     {
         eventInv.data.push_back(network::CInv(network::CInv::MSG_BLOCK,hash));
     }
@@ -666,13 +666,13 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerTx& eventTx)
             }
             else
             {
-                BOOST_FOREACH(const uint256& prev,setMissingPrevTx)
+                for(const uint256& prev : setMissingPrevTx)
                 {
                     sched.AddOrphanTxPrev(txid,prev);
                     network::CInv inv(network::CInv::MSG_TX,prev);
                     if (!sched.Exists(inv))
                     {
-                        BOOST_FOREACH(const uint64 nNonceSched,setSchedPeer)
+                        for(const uint64 nNonceSched : setSchedPeer)
                         {
                             sched.AddNewInv(inv,nNonceSched);
                         }
@@ -827,7 +827,7 @@ void CNetChannel::SchedulePeerInv(uint64 nNonce,const uint256& hashFork,CSchedul
 bool CNetChannel::GetMissingPrevTx(CTransaction& tx,set<uint256>& setMissingPrevTx)
 {
     setMissingPrevTx.clear();
-    BOOST_FOREACH(const CTxIn& txin,tx.vInput)
+    for(const CTxIn& txin : tx.vInput)
     {
         const uint256 &prev = txin.prevout.hash;
         if (!setMissingPrevTx.count(prev))
@@ -856,7 +856,7 @@ void CNetChannel::AddNewBlock(const uint256& hashFork,const uint256& hash,CSched
             MvErr err = pDispatcher->AddNewBlock(*pBlock,nNonceSender);
             if (err == MV_OK)
             {
-                BOOST_FOREACH(const CTransaction& tx,pBlock->vtx)
+                for(const CTransaction& tx : pBlock->vtx)
                 {
                     uint256 txid = tx.GetHash();
                     sched.RemoveInv(network::CInv(network::CInv::MSG_TX,txid),setSchedPeer);
@@ -932,7 +932,7 @@ void CNetChannel::AddNewTx(const uint256& hashFork,const uint256& txid,CSchedule
 void CNetChannel::PostAddNew(const uint256& hashFork,CSchedule& sched,
                              set<uint64>& setSchedPeer,set<uint64>& setMisbehavePeer)
 {
-    BOOST_FOREACH(const uint64 nNonceSched,setSchedPeer)
+    for(const uint64 nNonceSched : setSchedPeer)
     {
         if (!setMisbehavePeer.count(nNonceSched))
         {
@@ -940,7 +940,7 @@ void CNetChannel::PostAddNew(const uint256& hashFork,CSchedule& sched,
         }
     }
 
-    BOOST_FOREACH(const uint64 nNonceMisbehave,setMisbehavePeer)
+    for(const uint64 nNonceMisbehave : setMisbehavePeer)
     {
         if(nNonceMisbehave != std::numeric_limits<uint64>::max())
         {

@@ -79,7 +79,6 @@ public:
 
     //RPC Route
     bool HandleEvent(CMvEventRPCRouteStop& event) override;
-    bool HandleEvent(CMvEventRPCRouteGetForkCount& event) override;
     bool HandleEvent(CMvEventRPCRouteListFork& event) override;
     bool HandleEvent(CMvEventRPCRouteAdded& event) override;
     bool HandleEvent(CMvEventRPCRouteDelCompltUntil& event) override;
@@ -149,11 +148,10 @@ private:
     void InitSessionCount();
     void InsertQueCount(uint64 nNonce, boost::any obj);
     bool RouteAddedHandle(boost::any obj, CMvEventRPCRouteAdded& event, CMvRPCRoute* route);
-    void SwrapForks(std::vector<std::pair<uint256,CProfile>>& vFork, std::vector<CMvRPCProfile>& vRpcFork);
+    void TransformForks(std::vector<std::pair<uint256,CProfile>>& vFork, std::vector<CMvRPCProfile>& vRpcFork);
     void ListForkUnique(std::vector<CMvRPCProfile>& vFork);
     bool GetForkHashOfDef(const rpc::CRPCString& hex, uint256& hashFork);
     void RPCRootHandle(CMvRPCRouteStop* data, CMvRPCRouteStopRet* ret);
-    void RPCRootHandle(CMvRPCRouteGetForkCount* data, CMvRPCRouteGetForkCountRet* ret);
     void RPCRootHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRet* ret);
     void RPCRootHandle(CMvRPCRouteGetBlockLocation* data, CMvRPCRouteGetBlockLocationRet* ret);
     void RPCRootHandle(CMvRPCRouteGetBlockCount* data, CMvRPCRouteGetBlockCountRet* ret);
@@ -165,7 +163,6 @@ private:
     void RPCRootHandle(CMvRPCRouteSendTransaction* data, CMvRPCRouteSendTransactionRet* ret);
 
     void RPCForkHandle(CMvRPCRouteStop* data, CMvRPCRouteStopRet* ret);
-    void RPCForkHandle(CMvRPCRouteGetForkCount* data, CMvRPCRouteGetForkCountRet* ret);
     void RPCForkHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRet* ret);
     void RPCForkHandle(CMvRPCRouteGetBlockLocation* data, CMvRPCRouteGetBlockLocationRet* ret);
     void RPCForkHandle(CMvRPCRouteGetBlockCount* data, CMvRPCRouteGetBlockCountRet* ret);

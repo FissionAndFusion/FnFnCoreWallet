@@ -444,7 +444,7 @@ void CBlockMaker::CreateExtended(const CBlockMakerProfile& profile,const CBlockM
     CProofOfSecretShare proof;
     proof.nWeight = agreement.nWeight;
     proof.nAgreement = agreement.nAgreement;
-    BOOST_FOREACH(const uint256& hashFork,setFork)
+    for(const uint256& hashFork : setFork)
     {
         uint256 hashLastBlock;
         int32 nLastBlockHeight;
@@ -538,7 +538,7 @@ bool CBlockMaker::GetAvailableDelegatedProfile(const vector<CDestination>& vBall
 {
     int nAvailProfile = 0;
     vProfile.reserve(vBallot.size());
-    BOOST_FOREACH(const CDestination& dest,vBallot)
+    for(const CDestination& dest : vBallot)
     {
         map<CDestination,CBlockMakerProfile>::iterator it = mapDelegatedProfile.find(dest);
         if (it != mapDelegatedProfile.end())

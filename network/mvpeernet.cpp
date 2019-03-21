@@ -251,7 +251,7 @@ void CMvPeerNet::SetInvTimer(uint64 nNonce,vector<CInv>& vInv)
     if (pMvPeer != NULL)
     {
         int64 nElapse = 0;
-        BOOST_FOREACH(CInv &inv,vInv)
+        for(CInv& inv : vInv)
         {
             if (inv.nType >= CInv::MSG_TX && inv.nType <= CInv::MSG_PUBLISH)
             {
@@ -284,7 +284,13 @@ void CMvPeerNet::BuildHello(CPeer *pPeer,CWalleveBufStream& ssPayload)
     uint64 nNonce = pPeer->GetNonce();
     int64 nTime = WalleveGetNetTime();
     int32 nHeight = pNetChannel->GetPrimaryChainHeight();
-    ssPayload << nVersion << nService << nTime << nNonce << subVersion << nHeight; 
+    CMacAddress macAddr;
+    if(!GetActiveIFMacAddress(macAddr))
+    {
+        WalleveDebug("Get Active Interface Mac Address failed.");
+    }
+    std::vector<unsigned char> macData = macAddr.GetData();
+    ssPayload << nVersion << nService << nTime << nNonce << subVersion << nHeight << macData;
 }
 
 void CMvPeerNet::HandlePeerWriten(CPeer *pPeer)
@@ -292,7 +298,7 @@ void CMvPeerNet::HandlePeerWriten(CPeer *pPeer)
     ProcessAskFor(pPeer);
 }
 
-bool CMvPeerNet::HandlePeerHandshaked(CPeer *pPeer,uint32 nTimerId)
+bool CMvPeerNet::HandlePeerHandshaked(CPeer *pPeer,uint32 nTimerId,bool& fIsBanned)
 {
     CMvPeer *pMvPeer = static_cast<CMvPeer *>(pPeer);
     CancelTimer(nTimerId);
@@ -315,8 +321,21 @@ bool CMvPeerNet::HandlePeerHandshaked(CPeer *pPeer,uint32 nTimerId)
             setDNSeed.insert(ep);
         }
 
-        SetNodeData(ep,boost::any(pMvPeer->nService));
     }
+
+    if(!AddPeerMacAddress(pPeer, pMvPeer->remoteMacAddress, pMvPeer->IsInBound()))
+    {
+        tcp::endpoint ep = pMvPeer->GetRemote();
+        RemoveNode(ep);
+        fIsBanned = true;
+        return false;
+    }
+    else
+    {
+        fIsBanned = false;
+        SetNodeMacAddress(pMvPeer->GetRemote(), pMvPeer->remoteMacAddress);
+    }
+    
 
     WalleveUpdateNetTime(pMvPeer->GetRemote().address(),pMvPeer->nTimeDelta);
 
@@ -481,7 +500,7 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                     vAddr.push_back(CAddress(nService, gateWayNode.ToEndPoint()));
                 }
                 
-                BOOST_FOREACH(const CNodeAvail& node,vNode)
+                for(const CNodeAvail& node : vNode)
                 {
                     if (node.data.type() == typeid(uint64) && IsRoutable(node.ep.address()))
                     {
@@ -503,7 +522,7 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                 {
                     return false;
                 }
-                BOOST_FOREACH(CAddress& addr,vAddr)
+                for(CAddress& addr : vAddr)
                 {
                     tcp::endpoint ep;
                     addr.ssEndpoint.GetEndpoint(ep);          

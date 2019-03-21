@@ -6,7 +6,6 @@
 #include "iocontainer.h"
 
 #include <boost/bind.hpp>
-#include <boost/foreach.hpp>
 #include <boost/asio/ssl/rfc2818_verification.hpp>
 
 #include "walleve/util.h"
