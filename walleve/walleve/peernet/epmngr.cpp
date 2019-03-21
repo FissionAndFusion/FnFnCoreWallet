@@ -5,7 +5,6 @@
 #include "epmngr.h"
 #include "walleve/util.h"
 #include <vector>
-#include <boost/foreach.hpp>
 
 using namespace std;
 using namespace walleve;

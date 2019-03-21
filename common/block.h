@@ -9,7 +9,6 @@
 #include "proof.h"
 #include "transaction.h"
 #include <vector>
-#include <boost/foreach.hpp>
 #include <walleve/stream/stream.h>
 #include <walleve/stream/datastream.h>
 

@@ -4,7 +4,6 @@
 
 #include "dispatcher.h"
 #include "event.h"
-#include <boost/foreach.hpp>
 
 using namespace std;
 using namespace walleve;

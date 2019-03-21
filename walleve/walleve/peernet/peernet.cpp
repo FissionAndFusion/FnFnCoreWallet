@@ -7,7 +7,6 @@
 #include "walleve/util.h"
 #include <string>
 #include <boost/bind.hpp>
-#include <boost/foreach.hpp>
 #include <openssl/rand.h>
 using namespace std;
 using namespace walleve;

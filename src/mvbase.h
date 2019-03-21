@@ -23,7 +23,6 @@
 #include "mvpeer.h"
 
 #include <walleve/walleve.h>
-#include <boost/foreach.hpp>
 
 namespace multiverse
 {

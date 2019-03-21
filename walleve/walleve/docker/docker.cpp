@@ -6,7 +6,6 @@
 #include "walleve/base/base.h"
 #include "walleve/util.h"
 #include <vector>
-#include <boost/foreach.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/bind.hpp>
 

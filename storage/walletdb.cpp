@@ -5,7 +5,6 @@
 #include "walletdb.h"
 #include "leveldbeng.h"
 
-#include <boost/foreach.hpp>    
 #include <boost/bind.hpp>    
 
 using namespace std;

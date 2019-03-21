@@ -5,7 +5,6 @@
 #include "httpsse.h"
 #include "walleve/util.h"
 #include <string.h>
-#include <boost/foreach.hpp>
 
 using namespace std;
 using namespace boost;

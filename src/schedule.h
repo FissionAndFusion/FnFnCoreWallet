@@ -11,7 +11,6 @@
 #include "block.h"
 #include "transaction.h"
 
-#include <boost/foreach.hpp>
 #include <boost/variant.hpp>
 
 namespace multiverse

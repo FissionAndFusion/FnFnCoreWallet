@@ -5,7 +5,6 @@
 #include "iocontainer.h"
 #include "ioproc.h"
 #include <boost/bind.hpp>
-#include <boost/foreach.hpp>
 using namespace std;
 using namespace walleve;
 using boost::asio::ip::tcp;

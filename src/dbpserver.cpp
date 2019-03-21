@@ -8,7 +8,6 @@
 #include <algorithm>
 #include <chrono>
 #include <openssl/rand.h>
-#include <boost/foreach.hpp>
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/lexical_cast.hpp>
 

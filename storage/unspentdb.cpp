@@ -5,8 +5,7 @@
 #include "unspentdb.h"
 #include "leveldbeng.h"
 
-#include <boost/bind.hpp>
-#include <boost/foreach.hpp>    
+#include <boost/bind.hpp>   
 
 using namespace std;
 using namespace walleve;

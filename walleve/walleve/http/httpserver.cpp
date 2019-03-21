@@ -4,7 +4,6 @@
 
 #include "httpserver.h"
 #include <openssl/rand.h>
-#include <boost/foreach.hpp>
 #include <boost/algorithm/string/trim.hpp>
 using namespace std;
 using namespace walleve;

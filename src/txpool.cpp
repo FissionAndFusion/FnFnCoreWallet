@@ -3,6 +3,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "txpool.h"
+#include <boost/foreach.hpp>
 
 using namespace std;
 using namespace walleve;

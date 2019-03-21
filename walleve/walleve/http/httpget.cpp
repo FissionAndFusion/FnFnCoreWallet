@@ -5,7 +5,6 @@
 #include "httpget.h"
 #include "httputil.h"
 #include "walleve/netio/netio.h"
-#include <boost/foreach.hpp>
 #include <boost/algorithm/string/trim.hpp>
 
 #define HTTPGET_CONNET_TIMEOUT		10

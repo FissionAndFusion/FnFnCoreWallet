@@ -3,10 +3,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "mode/fork_config.h"
-
 #include "mode/config_macro.h"
-
-#include <boost/foreach.hpp>
 
 namespace multiverse
 {
