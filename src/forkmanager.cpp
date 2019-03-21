@@ -5,6 +5,8 @@
 #include "forkmanager.h"
 #include <boost/foreach.hpp>
 
+#include "template/fork.h"
+
 using namespace std;
 using namespace walleve;
 using namespace multiverse;
@@ -155,7 +157,9 @@ void CForkManager::ForkUpdate(const CWorldLineUpdate& update,vector<uint256>& vA
             BOOST_FOREACH(const CTransaction& tx,block.vtx)
             {
                 CTemplateId tid;
-                if (tx.sendTo.GetTemplateId(tid) && tid.GetType() == TEMPLATE_FORK && !tx.vchData.empty())
+                if (tx.sendTo.GetTemplateId(tid) && tid.GetType() == TEMPLATE_FORK
+                    && !tx.vchData.empty() 
+                    && tx.nAmount >= CTemplateFork::LockedCoin(update.nLastBlockHeight))
                 {
                     CForkContext ctxt;
                     if (pWorldLine->AddNewForkContext(tx,ctxt) == MV_OK)

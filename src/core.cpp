@@ -344,6 +344,7 @@ MvErr CMvCoreProtocol::VerifyTransaction(const CTransaction& tx,const vector<CTx
         return DEBUG(MV_ERR_TRANSACTION_INPUT_INVALID,"valuein is not enough (%ld : %ld)\n",nValueIn,tx.nAmount + tx.nTxFee);
     }
 
+    // record destIn in vchSig
     vector<uint8> vchSig;
     if (CTemplate::IsDestInRecorded(tx.sendTo))
     {
@@ -360,6 +361,21 @@ MvErr CMvCoreProtocol::VerifyTransaction(const CTransaction& tx,const vector<CTx
     if (!destIn.VerifyTxSignature(tx.GetSignatureHash(), tx.hashAnchor, tx.sendTo, vchSig))
     {
         return DEBUG(MV_ERR_TRANSACTION_SIGNATURE_INVALID,"invalid signature\n");
+    }
+
+    // locked coin template: nValueIn >= tx.nAmount + tx.nTxFee + nLockedCoin
+    if (CTemplate::IsLockedCoin(destIn))
+    {
+        CTemplatePtr ptr = CTemplate::CreateTemplatePtr(destIn.GetTemplateId(), vchSig);
+        if (!ptr)
+        {
+            return DEBUG(MV_ERR_TRANSACTION_SIGNATURE_INVALID,"invalid locked coin template destination\n");
+        }
+        int64 nLockedCoin = boost::dynamic_pointer_cast<CLockedCoinTemplate>(ptr)->LockedCoin(tx.sendTo, nForkHeight);
+        if (nValueIn < tx.nAmount + tx.nTxFee + nLockedCoin)
+        {
+            return DEBUG(MV_ERR_TRANSACTION_INPUT_INVALID,"valuein is not enough to locked coin (%ld : %ld)\n",nValueIn,tx.nAmount + tx.nTxFee + nLockedCoin);
+        }
     }
     return MV_OK;
 }
