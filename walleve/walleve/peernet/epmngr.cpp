@@ -142,7 +142,7 @@ void CEndpointManager::GetBanned(std::vector<CAddressBanned>& vBanned)
 void CEndpointManager::SetBan(std::vector<CMacAddress>& vAddrToBan,int64 nBanTime)
 {
     int64 now = GetTime();
-    BOOST_FOREACH(const CMacAddress& addr,vAddrToBan)
+    for(const CMacAddress& addr : vAddrToBan)
     {
         CAddressStatus& status = mapAddressStatus[addr];
         status.nBanTo = now + nBanTime;
@@ -154,7 +154,7 @@ void CEndpointManager::SetBan(std::vector<CMacAddress>& vAddrToBan,int64 nBanTim
 void CEndpointManager::ClearBanned(vector<CMacAddress>& vAddrToClear)
 {
     int64 now = GetTime();
-    BOOST_FOREACH(const CMacAddress& addr,vAddrToClear)
+    for(const CMacAddress& addr : vAddrToClear)
     {
         map<CMacAddress,CAddressStatus>::iterator it = mapAddressStatus.find(addr);
         if (it != mapAddressStatus.end() && now < (*it).second.nBanTo)
@@ -308,7 +308,7 @@ void CEndpointManager::RetrieveGoodNode(vector<CNodeAvail>& vGoodNode,
     mngrNode.Retrieve(vNode);
     int64 nActive = GetTime() - nActiveTime;
     multimap<int,CNodeAvail> mapScore;
-    BOOST_FOREACH(const CNode& node,vNode)
+    for(const CNode& node : vNode)
     {
         const CMacAddress& addr = node.macAddr;
         map<CMacAddress,CAddressStatus>::iterator it = mapAddressStatus.find(addr);

@@ -41,21 +41,21 @@ bool CNetwork::WalleveHandleInitialize()
     }
     config.nMaxOutBounds = NetworkConfig()->nMaxOutBounds;
     config.nPortDefault = NetworkConfig()->nPort;
-    BOOST_FOREACH(const string& conn,NetworkConfig()->vConnectTo)
+    for(const string& conn : NetworkConfig()->vConnectTo)
     {
         config.vecNode.push_back(CNetHost(conn,config.nPortDefault,conn,
                                           boost::any(uint64(network::NODE_NETWORK))));
     }
     if (config.vecNode.empty())
     {
-        BOOST_FOREACH(const string& seed,NetworkConfig()->vDNSeed)
+        for(const string& seed : NetworkConfig()->vDNSeed)
         {
             // HACK: dnseed port is different from peer port
             //       dnseed port should be hardcode rather than in configuration
             config.vecNode.push_back(CNetHost(seed,config.nPortDefault,"dnseed",
                                               boost::any(uint64(network::NODE_NETWORK))));
         }
-        BOOST_FOREACH(const string& node,NetworkConfig()->vNode)
+        for(const string& node : NetworkConfig()->vNode)
         {
             config.vecNode.push_back(CNetHost(node,config.nPortDefault,node,
                                               boost::any(uint64(network::NODE_NETWORK))));

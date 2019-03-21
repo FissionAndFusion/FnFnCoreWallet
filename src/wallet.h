@@ -60,7 +60,7 @@ public:
         if (it != mapWalletCoins.end())
         {
             CWalletCoins& coin = mapWalletCoins[hashTo];
-            BOOST_FOREACH(const CWalletTxOut& out,(*it).second.setCoins)
+            for(const CWalletTxOut& out : (*it).second.setCoins)
             {
                 coin.Push(out);
             }

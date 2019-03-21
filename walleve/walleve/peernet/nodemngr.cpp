@@ -140,7 +140,7 @@ void CNodeManager::Ban(const walleve::CMacAddress& address,int64 nBanTo)
        
     }
 
-    BOOST_FOREACH(const tcp::endpoint& ep,vNode)
+    for(const tcp::endpoint& ep : vNode)
     {
         mapIdle.insert(make_pair(nBanTo,ep));
     }

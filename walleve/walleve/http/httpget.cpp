@@ -256,7 +256,7 @@ void CHttpGet::LeaveLoop()
     {   
         vClient.push_back((*it).second);
     }
-    BOOST_FOREACH(CHttpGetClient *pGetClient,vClient)
+    for(CHttpGetClient *pGetClient : vClient)
     {   
         CloseConn(pGetClient,HTTPGET_ABORTED);
     }
@@ -431,7 +431,7 @@ bool CHttpGet::HandleEvent(CWalleveEventHttpAbort& eventAbort)
     set<uint64> setAbort;
     const string& strIOModule = eventAbort.data.strIOModule;
 
-    BOOST_FOREACH(const uint64 nNonce,eventAbort.data.vNonce)
+    for(const uint64 nNonce : eventAbort.data.vNonce)
     {
         for (multimap<uint64,CHttpGetClient*>::iterator it = mapGetClient.lower_bound(nNonce);
              it != mapGetClient.upper_bound(nNonce); ++it)

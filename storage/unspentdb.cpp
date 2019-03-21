@@ -52,12 +52,12 @@ bool CForkUnspentDB::UpdateUnspent(const vector<CTxUnspent>& vAddNew,const vecto
 
     MapType& mapUpper = dblCache.GetUpperMap();
 
-    BOOST_FOREACH(const CTxUnspent& unspent,vAddNew)
+    for(const CTxUnspent& unspent : vAddNew)
     {
         mapUpper[static_cast<const CTxOutPoint&>(unspent)] = unspent.output;
     }
 
-    BOOST_FOREACH(const CTxOutPoint& txout,vRemove)
+    for(const CTxOutPoint& txout : vRemove)
     {
         mapUpper[txout].SetNull();
     }

@@ -132,7 +132,7 @@ public:
     int64 GetBlockMint() const
     {
         int64 nTotalTxFee = 0;
-        BOOST_FOREACH(const CTransaction& tx, vtx)
+        for(const CTransaction& tx : vtx)
         {
             nTotalTxFee += tx.nTxFee;
         }
@@ -141,7 +141,7 @@ public:
     uint256 BuildMerkleTree(std::vector<uint256>& vMerkleTree) const
     {
         vMerkleTree.clear();
-        BOOST_FOREACH(const CTransaction& tx, vtx)
+        for(const CTransaction& tx : vtx)
             vMerkleTree.push_back(tx.GetHash());
         int j = 0;
         for (int nSize = vtx.size(); nSize > 1; nSize = (nSize + 1) / 2)

@@ -582,7 +582,7 @@ void CWalleveDocker::TimerProc()
                 }
             }
         }
-        BOOST_FOREACH(const uint32& nTimerId,vWorkQueue)
+        for(const uint32& nTimerId : vWorkQueue)
         {
             if (fShutdown)
             {

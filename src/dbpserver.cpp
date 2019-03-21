@@ -785,7 +785,7 @@ void CDbpServer::AddNewHost(const CDbpHostConfig& confHost)
 
 bool CDbpServer::WalleveHandleInitialize()
 {
-    BOOST_FOREACH (const CDbpHostConfig& confHost, vecHostConfig)
+    for (const CDbpHostConfig& confHost : vecHostConfig)
     {
         if (!CreateProfile(confHost))
         {
@@ -835,7 +835,7 @@ void CDbpServer::LeaveLoop()
         vClient.push_back((*it).second);
     }
 
-    BOOST_FOREACH (CDbpServerSocket *pClient, vClient)
+    for (CDbpServerSocket *pClient : vClient)
     {
         RemoveClient(pClient);
     }

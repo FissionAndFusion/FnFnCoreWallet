@@ -74,7 +74,7 @@ CIOClient *CIOCachedContainer::ClientAlloc()
 void CIOCachedContainer::Deactivate()
 {
     vector<CIOClient *> vecClient(setInuseClient.begin(),setInuseClient.end());
-    BOOST_FOREACH(CIOClient * pClient,vecClient)
+    for(CIOClient * pClient : vecClient)
     {
         pClient->Close();
     }
@@ -185,7 +185,7 @@ bool CIOInBound::BuildWhiteList(const vector<string>& vAllowMask)
     vWhiteList.clear();
     try
     {
-        BOOST_FOREACH(const string& mask,vAllowMask)
+        for(const string& mask : vAllowMask)
         {
             string strRegex = boost::regex_replace(mask,expr,fmt,
                                                    boost::match_default | boost::format_all);
@@ -205,7 +205,7 @@ bool CIOInBound::IsAllowedRemote(const tcp::endpoint& ep)
     string strAddress = ep.address().to_string();
     try
     {
-        BOOST_FOREACH(const boost::regex& expr,vWhiteList)
+        for(const boost::regex& expr : vWhiteList)
         {
             if (boost::regex_match(strAddress, expr))
             {
@@ -457,7 +457,7 @@ void CIOSSLOutBound::Halt()
     mapPending.clear();
  
     vector<CIOClient *> vecClient(setInuseClient.begin(),setInuseClient.end());
-    BOOST_FOREACH(CIOClient * pClient,vecClient)
+    for(CIOClient * pClient : vecClient)
     {
         pClient->Close();
     }

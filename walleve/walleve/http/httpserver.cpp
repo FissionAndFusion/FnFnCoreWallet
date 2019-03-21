@@ -211,7 +211,7 @@ bool CHttpServer::CreateProfile(const CHttpHostConfig& confHost)
 
 bool CHttpServer::WalleveHandleInitialize()
 {
-    BOOST_FOREACH(const CHttpHostConfig& confHost,vecHostConfig)
+    for(const CHttpHostConfig& confHost : vecHostConfig)
     {
         if (!CreateProfile(confHost))
         {
@@ -259,7 +259,7 @@ void CHttpServer::LeaveLoop()
     {
         vClient.push_back((*it).second);
     }
-    BOOST_FOREACH(CHttpClient *pClient,vClient)
+    for(CHttpClient *pClient : vClient)
     {
         RemoveClient(pClient);
     }

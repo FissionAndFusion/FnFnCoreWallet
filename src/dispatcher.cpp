@@ -119,7 +119,7 @@ bool CDispatcher::WalleveHandleInvoke()
         return false;
     }
 
-    BOOST_FOREACH(const uint256& hashFork,vActive)
+    for(const uint256& hashFork : vActive)
     {
         ActivateFork(hashFork); 
     }
@@ -186,12 +186,12 @@ MvErr CDispatcher::AddNewBlock(const CBlock& block,uint64 nNonce)
         vector<uint256> vActive,vDeactive;
         pForkManager->ForkUpdate(updateWorldLine,vActive,vDeactive);
 
-        BOOST_FOREACH(const uint256 hashFork,vActive)
+        for(const uint256 hashFork : vActive)
         {
             ActivateFork(hashFork);
         }
 
-        BOOST_FOREACH(const uint256 hashFork,vDeactive)
+        for(const uint256 hashFork : vDeactive)
         {
             pNetChannel->UnsubscribeFork(hashFork);
         }
@@ -278,7 +278,7 @@ void CDispatcher::UpdatePrimaryBlock(const CBlock& block,const CWorldLineUpdate&
     pDelegatedChannel->PrimaryUpdate(updateWorldLine.nLastBlockHeight - updateWorldLine.vBlockAddNew.size(),
                                      routineDelegate.vEnrolledWeight,routineDelegate.mapDistributeData,routineDelegate.mapPublishData);
 
-    BOOST_FOREACH(const CTransaction& tx,routineDelegate.vEnrollTx)
+    for(const CTransaction& tx : routineDelegate.vEnrollTx)
     {
         MvErr err = AddNewTx(tx);
         WalleveLog("Send DelegateTx %s (%s)\n",MvErrString(err),tx.GetHash().GetHex().c_str());

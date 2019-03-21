@@ -27,7 +27,7 @@ CMvForkConfig::~CMvForkConfig() {}
 
 bool CMvForkConfig::PostLoad()
 {
-    BOOST_FOREACH(const string& strFork,vFork)
+    for(const string& strFork : vFork)
     {
         if (strFork == "any")
         {

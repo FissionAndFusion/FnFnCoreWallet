@@ -44,11 +44,11 @@ public:
     }
     void GetKnownInv(std::vector<network::CInv>& vInv)
     {
-        BOOST_FOREACH(const uint256& hash,invKnown[1].listKnown)
+        for(const uint256& hash : invKnown[1].listKnown)
         {
             vInv.push_back(network::CInv(network::CInv::MSG_BLOCK,hash));
         }
-        BOOST_FOREACH(const uint256& hash,invKnown[0].listKnown)
+        for(const uint256& hash : invKnown[0].listKnown)
         {
             vInv.push_back(network::CInv(network::CInv::MSG_TX,hash));
         }

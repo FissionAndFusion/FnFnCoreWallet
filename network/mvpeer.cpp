@@ -96,7 +96,7 @@ uint32 CMvPeer::Responded(CInv& inv)
 
 void CMvPeer::AskFor(const uint256& hashFork, const vector<CInv>& vInv)
 {
-    BOOST_FOREACH(const CInv& inv,vInv)
+    for(const CInv& inv : vInv)
     {
         queAskFor.push(make_pair(hashFork,inv));
     }
