@@ -20,7 +20,10 @@ namespace network
 class IMvNetChannel : public walleve::IIOModule, virtual public CMvPeerEventListener
 {
 public:
-    IMvNetChannel() : IIOModule("netchannel", std::thread::hardware_concurrency() / 2 + 1) {}
+    IMvNetChannel(const uint nThreadIn = 1, const bool fAffinityIn = false)
+    : IIOModule("netchannel", nThreadIn, fAffinityIn)
+    {}
+
     virtual int32 GetPrimaryChainHeight() = 0;
     virtual bool IsForkSynchronized(const uint256& hashFork) const = 0;
     virtual void BroadcastBlockInv(const uint256& hashFork,const uint256& hashBlock,const std::set<uint64>& setKnownPeer=std::set<uint64>()) = 0;

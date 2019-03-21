@@ -19,8 +19,8 @@ class CWalleveThread
     friend class CWalleveDocker;
 public:
     typedef boost::function<void()> ThreadFunc;
-    CWalleveThread(const std::string& strNameIn,ThreadFunc fnCallbackIn)
-    : strThreadName(strNameIn),pThread(NULL),fnCallback(fnCallbackIn),fRunning(false)
+    CWalleveThread(const std::string& strNameIn,ThreadFunc fnCallbackIn, const int nCPUIn = -1)
+    : strThreadName(strNameIn),pThread(NULL),fnCallback(fnCallbackIn),fRunning(false), nCPU(nCPUIn)
     {
     }
 
@@ -52,11 +52,29 @@ public:
         }
     }
 
+    void SetAffinity()
+    {
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+
+#ifdef __USE_GNU
+        if (pThread && nCPU >= 0)
+        {
+            cpu_set_t set;
+            CPU_ZERO(&set);
+            CPU_SET(nCPU, &set);
+            pthread_setaffinity_np(pThread->native_handle(), sizeof(set), &set);
+        }
+#endif
+    }
+
 protected:
     const std::string strThreadName;
     boost::thread* pThread;
     ThreadFunc fnCallback;
     bool fRunning;
+    int nCPU;
 };
 
 } // namespace walleve

@@ -121,6 +121,11 @@ bool CMvRPCServerConfig::PostLoad()
                               : boost::asio::ip::address_v6::loopback(),
                           nRPCPort);
     }
+
+    if (nRPCThreadNumber <= 0)
+    {
+        nRPCThreadNumber = 1;
+    }
     
     return true;
 }

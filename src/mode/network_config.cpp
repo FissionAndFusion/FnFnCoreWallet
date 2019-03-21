@@ -55,6 +55,12 @@ bool CMvNetworkConfig::PostLoad()
     {
         // vDNSeed.push_back("118.193.83.220");
     }
+
+    if (nThreadNumber <= 0)
+    {
+        nThreadNumber = 1;
+    }
+
     return true;
 }
 
