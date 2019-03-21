@@ -3,7 +3,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "forkmanager.h"
-#include <boost/foreach.hpp>
+#include <boost/range/adaptor/reversed.hpp>
 
 using namespace std;
 using namespace walleve;
@@ -136,7 +136,7 @@ void CForkManager::ForkUpdate(const CWorldLineUpdate& update,vector<uint256>& vA
     CForkSchedule& sched = mapForkSched[update.hashFork];
     if (!sched.IsJointEmpty())
     {
-        BOOST_REVERSE_FOREACH(const CBlockEx& block,update.vBlockAddNew)
+        for(const CBlockEx& block : boost::adaptors::reverse(update.vBlockAddNew))
         {
             if (!block.IsExtended() && !block.IsVacant())
             {
@@ -150,7 +150,7 @@ void CForkManager::ForkUpdate(const CWorldLineUpdate& update,vector<uint256>& vA
     }
     if (update.hashFork == pCoreProtocol->GetGenesisBlockHash())
     {
-        BOOST_REVERSE_FOREACH(const CBlockEx& block,update.vBlockAddNew)
+        for(const CBlockEx& block : boost::adaptors::reverse(update.vBlockAddNew))
         {
             for(const CTransaction& tx : block.vtx)
             {

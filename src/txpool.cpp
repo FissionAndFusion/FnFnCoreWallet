@@ -3,8 +3,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "txpool.h"
-#include <boost/foreach.hpp>
-
+#include <boost/range/adaptor/reversed.hpp>
 using namespace std;
 using namespace walleve;
 using namespace multiverse;
@@ -500,7 +499,7 @@ bool CTxPool::SynchronizeWorldLine(const CWorldLineUpdate& update,CTxSetChange& 
     CTxPoolView& txView = mapPoolView[update.hashFork];
 
     int32 nHeight = update.nLastBlockHeight - update.vBlockAddNew.size() + 1;
-    BOOST_REVERSE_FOREACH(const CBlockEx& block,update.vBlockAddNew)
+    for(const CBlockEx& block : boost::adaptors::reverse(update.vBlockAddNew))
     {
         if (block.txMint.nAmount != 0)
         {
@@ -575,7 +574,7 @@ bool CTxPool::SynchronizeWorldLine(const CWorldLineUpdate& update,CTxSetChange& 
     }
 
     change.vTxRemove.reserve(vInvalidTx.size() + vTxRemove.size());
-    BOOST_REVERSE_FOREACH(const uint256& txid,vInvalidTx)
+    for(const uint256& txid : boost::adaptors::reverse(vInvalidTx))
     {
         map<uint256,CPooledTx>::iterator it = mapTx.find(txid);
         if (it != mapTx.end())
