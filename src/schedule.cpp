@@ -101,7 +101,7 @@ void CSchedule::RemovePeer(uint64 nPeerNonce,set<uint64>& setSchedPeer)
     {
         vector<network::CInv> vInvKnown;
         (*it).second.GetKnownInv(vInvKnown);
-        BOOST_FOREACH(const network::CInv& inv,vInvKnown)
+        for(const network::CInv& inv : vInvKnown)
         {
             CInvState& state = mapState[inv];
             state.setKnownPeer.erase(nPeerNonce);
@@ -137,7 +137,7 @@ void CSchedule::RemoveInv(const network::CInv& inv,set<uint64>& setKnownPeer)
     map<network::CInv,CInvState>::iterator it = mapState.find(inv);
     if (it != mapState.end())
     {
-        BOOST_FOREACH(const uint64& nPeerNonce,(*it).second.setKnownPeer)
+        for(const uint64& nPeerNonce : (*it).second.setKnownPeer)
         {
             mapPeer[nPeerNonce].RemoveInv(inv);
         }
@@ -266,14 +266,14 @@ void CSchedule::InvalidateBlock(const uint256& hash,set<uint64>& setMisbehavePee
 {
     vector<uint256> vInvalid;
     orphanBlock.RemoveBranch(hash,vInvalid);
-    BOOST_FOREACH(const uint256& hashInvalid,vInvalid)
+    for(const uint256& hashInvalid : vInvalid)
     {
         network::CInv inv(network::CInv::MSG_BLOCK,hashInvalid);
         map<network::CInv,CInvState>::iterator it = mapState.find(inv);
         if (it != mapState.end())
         {
             CInvState& state = (*it).second;
-            BOOST_FOREACH(const uint64& nPeerNonce,state.setKnownPeer)
+            for(const uint64& nPeerNonce : state.setKnownPeer)
             {
                 mapPeer[nPeerNonce].RemoveInv(inv);
             }
@@ -288,14 +288,14 @@ void CSchedule::InvalidateTx(const uint256& txid,set<uint64>& setMisbehavePeer)
 {
     vector<uint256> vInvalid;
     orphanTx.RemoveBranch(txid,vInvalid); 
-    BOOST_FOREACH(const uint256& hashInvalid,vInvalid)
+    for(const uint256& hashInvalid : vInvalid)
     {
         network::CInv inv(network::CInv::MSG_TX,hashInvalid);
         map<network::CInv,CInvState>::iterator it = mapState.find(inv);
         if (it != mapState.end())
         {
             CInvState& state = (*it).second;
-            BOOST_FOREACH(const uint64& nPeerNonce,state.setKnownPeer)
+            for(const uint64& nPeerNonce : state.setKnownPeer)
             {
                 mapPeer[nPeerNonce].RemoveInv(inv);
             }
@@ -365,7 +365,7 @@ bool CSchedule::ScheduleKnownInv(uint64 nPeerNonce,CInvPeer& peer,uint32 type,
     size_t nReceived = 0;
     vInv.clear();
     CUInt256List& listKnown = peer.GetKnownList(type);
-    BOOST_FOREACH(const uint256& hash,listKnown)
+    for(const uint256& hash : listKnown)
     {
         network::CInv inv(type,hash);
         CInvState& state = mapState[inv];

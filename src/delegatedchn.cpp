@@ -508,7 +508,7 @@ void CDelegatedChannel::AddPeerKnownDistrubute(uint64 nNonce, const uint256& has
 {
     set<CDestination> setDestination;
     dataChain.AskForDistribute(hashAnchor, bmDistrubute, setDestination);
-    BOOST_FOREACH(const CDestination& dest,setDestination)
+    for(const CDestination& dest : setDestination)
     {
         schedPeer.AddKnownData(nNonce, CDelegatedDataIdent(hashAnchor, network::CInv::MSG_DISTRIBUTE, dest));
     }
@@ -518,7 +518,7 @@ void CDelegatedChannel::AddPeerKnownPublish(uint64 nNonce, const uint256& hashAn
 {
     set<CDestination> setDestination;
     dataChain.AskForPublish(hashAnchor, bmPublish, setDestination);
-    BOOST_FOREACH(const CDestination& dest, setDestination)
+    for(const CDestination& dest : setDestination)
     {
         schedPeer.AddKnownData(nNonce, CDelegatedDataIdent(hashAnchor, network::CInv::MSG_PUBLISH, dest));
     }
@@ -575,7 +575,7 @@ void CDelegatedChannel::PushBulletin()
                 eventBulletin.data.AddBitmap(hash,bitmap);
             }
         }
-        BOOST_FOREACH(const uint64& nNonce, vPeer)
+        for(const uint64& nNonce : vPeer)
         {
             std::shared_ptr<CDelegatedChannelPeer> spPeer = GetPeer(nNonce);
             if (spPeer != NULL && spPeer->HaveUnknown(hashAnchor,eventBulletin.data))

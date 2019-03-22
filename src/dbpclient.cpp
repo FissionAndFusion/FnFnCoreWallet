@@ -12,7 +12,6 @@
 #include <memory>
 #include <algorithm>
 #include <openssl/rand.h>
-#include <boost/foreach.hpp>
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/lexical_cast.hpp>
 

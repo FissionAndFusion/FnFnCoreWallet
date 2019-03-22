@@ -7,7 +7,6 @@
 #include "walleve/util.h"
 #include <string>
 #include <boost/bind.hpp>
-#include <boost/foreach.hpp>
 #include <openssl/rand.h>
 using namespace std;
 using namespace walleve;
@@ -63,7 +62,7 @@ void CPeerNet::HandlePeerWriten(CPeer *pPeer)
 
 void CPeerNet::EnterLoop()
 {
-    BOOST_FOREACH(const CPeerService& service,confNetwork.vecService)
+    for(const CPeerService& service : confNetwork.vecService)
     {
         if (StartService(service.epListen,service.nMaxInBounds))
         {
@@ -78,7 +77,7 @@ void CPeerNet::EnterLoop()
         }
     }
 
-    BOOST_FOREACH(const CNetHost& host,confNetwork.vecNode)
+    for(const CNetHost& host : confNetwork.vecNode)
     {
         AddNewNode(host);
     }
@@ -92,12 +91,12 @@ void CPeerNet::LeaveLoop()
         vPeer.push_back((*it).second);
     }
 
-    BOOST_FOREACH(CPeer *pPeer,vPeer)
+    for(CPeer *pPeer : vPeer)
     {
         RemovePeer(pPeer,CEndpointManager::HOST_CLOSE);
     }
  
-    BOOST_FOREACH(const CPeerService& service,confNetwork.vecService)
+    for(const CPeerService& service : confNetwork.vecService)
     {
         StopService(service.epListen);
     }
@@ -388,7 +387,7 @@ bool CPeerNet::HandleEvent(CWalleveEventPeerNetGetBanned& eventGetBanned)
 bool CPeerNet::HandleEvent(CWalleveEventPeerNetSetBan& eventSetBan)
 {
     vector<CMacAddress> vAddrToBan;
-    BOOST_FOREACH(const string& strAddress,eventSetBan.data.first)
+    for(const string& strAddress : eventSetBan.data.first)
     {
         CMacAddress addr;
         vAddrToBan.push_back(addr);
@@ -401,7 +400,7 @@ bool CPeerNet::HandleEvent(CWalleveEventPeerNetSetBan& eventSetBan)
 bool CPeerNet::HandleEvent(CWalleveEventPeerNetClrBanned& eventClrBanned)
 {
     vector<CMacAddress> vAddrToClear;
-    BOOST_FOREACH(const string& strAddress,eventClrBanned.data)
+    for(const string& strAddress : eventClrBanned.data)
     {
         CMacAddress addr;
         vAddrToClear.push_back(addr);

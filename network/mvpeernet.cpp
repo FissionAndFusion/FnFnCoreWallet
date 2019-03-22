@@ -251,7 +251,7 @@ void CMvPeerNet::SetInvTimer(uint64 nNonce,vector<CInv>& vInv)
     if (pMvPeer != NULL)
     {
         int64 nElapse = 0;
-        BOOST_FOREACH(CInv &inv,vInv)
+        for(CInv& inv : vInv)
         {
             if (inv.nType >= CInv::MSG_TX && inv.nType <= CInv::MSG_PUBLISH)
             {
@@ -511,7 +511,7 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                     vAddr.push_back(CAddress(nService, defaulGateWay.ToEndPoint()));
                 }
                 
-                BOOST_FOREACH(const CNodeAvail& node,vNode)
+                for(const CNodeAvail& node : vNode)
                 {
                     if (node.data.type() == typeid(uint64) && IsRoutable(node.ep.address()))
                     {
@@ -533,7 +533,7 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                 {
                     return false;
                 }
-                BOOST_FOREACH(CAddress& addr,vAddr)
+                for(CAddress& addr : vAddr)
                 {
                     tcp::endpoint ep;
                     addr.ssEndpoint.GetEndpoint(ep);          

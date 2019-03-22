@@ -3,7 +3,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "forkmanager.h"
-#include <boost/foreach.hpp>
+#include <boost/range/adaptor/reversed.hpp>
 
 using namespace std;
 using namespace walleve;
@@ -54,7 +54,7 @@ bool CForkManager::WalleveHandleInvoke()
     if (!fAllowAnyFork)
     {
         setForkAllowed.insert(pCoreProtocol->GetGenesisBlockHash());
-        BOOST_FOREACH(const string& strFork,ForkConfig()->vFork)
+        for(const string& strFork : ForkConfig()->vFork)
         {
             uint256 hashFork(strFork);
             if (hashFork != 0)
@@ -62,7 +62,7 @@ bool CForkManager::WalleveHandleInvoke()
                 setForkAllowed.insert(hashFork);
             }
         }
-        BOOST_FOREACH(const string& strFork,ForkConfig()->vGroup)
+        for(const string& strFork : ForkConfig()->vGroup)
         {
             uint256 hashFork(strFork);
             if (hashFork != 0)
@@ -118,7 +118,7 @@ bool CForkManager::LoadForkContext(vector<uint256>& vActive)
         return false;
     }
 
-    BOOST_FOREACH(const CForkContext& ctxt,vForkCtxt)
+    for(const CForkContext& ctxt : vForkCtxt)
     {
         if (!AddNewForkContext(ctxt,vActive))
         {
@@ -136,7 +136,7 @@ void CForkManager::ForkUpdate(const CWorldLineUpdate& update,vector<uint256>& vA
     CForkSchedule& sched = mapForkSched[update.hashFork];
     if (!sched.IsJointEmpty())
     {
-        BOOST_REVERSE_FOREACH(const CBlockEx& block,update.vBlockAddNew)
+        for(const CBlockEx& block : boost::adaptors::reverse(update.vBlockAddNew))
         {
             if (!block.IsExtended() && !block.IsVacant())
             {
@@ -150,9 +150,9 @@ void CForkManager::ForkUpdate(const CWorldLineUpdate& update,vector<uint256>& vA
     }
     if (update.hashFork == pCoreProtocol->GetGenesisBlockHash())
     {
-        BOOST_REVERSE_FOREACH(const CBlockEx& block,update.vBlockAddNew)
+        for(const CBlockEx& block : boost::adaptors::reverse(update.vBlockAddNew))
         {
-            BOOST_FOREACH(const CTransaction& tx,block.vtx)
+            for(const CTransaction& tx : block.vtx)
             {
                 CTemplateId tid;
                 if (tx.sendTo.GetTemplateId(tid) && tid.GetType() == TEMPLATE_FORK && !tx.vchData.empty())

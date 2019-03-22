@@ -363,7 +363,7 @@ void CForkBlockMaker::CreateExtended(const CForkBlockMakerProfile& profile,const
     CProofOfSecretShare proof;
     proof.nWeight = agreement.nWeight;
     proof.nAgreement = agreement.nAgreement;
-    BOOST_FOREACH(const uint256& hashFork,setFork)
+    for(const uint256& hashFork : setFork)
     {
         uint256 hashLastBlock;
         int32 nLastBlockHeight;
@@ -396,7 +396,7 @@ bool CForkBlockMaker::GetAvailableDelegatedProfile(const std::vector<CDestinatio
 {
     int nAvailProfile = 0;
     vProfile.reserve(vBallot.size());
-    BOOST_FOREACH(const CDestination& dest,vBallot)
+    for(const CDestination& dest : vBallot)
     {
         map<CDestination,CForkBlockMakerProfile>::iterator it = mapDelegatedProfile.find(dest);
         if (it != mapDelegatedProfile.end())

@@ -4,8 +4,7 @@
     
 #include "delegatedb.h"
 #include "leveldbeng.h"
-
-#include <boost/foreach.hpp>
+#include <boost/range/adaptor/reversed.hpp>
 
 using namespace std;
 using namespace walleve;
@@ -83,7 +82,7 @@ bool CDelegateDB::RetrieveDelegatedVote(const uint256& hashBlock,map<CDestinatio
 bool CDelegateDB::RetrieveEnrollTx(const uint256& hashAnchor,const vector<uint256>& vBlockRange,
                                    map<CDestination,CDiskPos>& mapEnrollTxPos)
 {
-    BOOST_REVERSE_FOREACH(const uint256& hash,vBlockRange)
+    for(const uint256& hash : boost::adaptors::reverse(vBlockRange))
     {
         CDelegateContext ctxtDelegate;
         if (!Retrieve(hash,ctxtDelegate))

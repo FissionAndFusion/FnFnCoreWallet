@@ -397,7 +397,7 @@ MvErr CWorldLine::AddNewBlock(const CBlock& block,CWorldLineUpdate& update)
 
     vTxContxt.reserve(block.vtx.size());
 
-    BOOST_FOREACH(const CTransaction& tx,block.vtx)
+    for(const CTransaction& tx : block.vtx)
     {
         uint256 txid = tx.GetHash();
         CTxContxt txContxt;
@@ -711,7 +711,7 @@ bool CWorldLine::InsertGenesisBlock(CBlock& block)
 MvErr CWorldLine::GetTxContxt(storage::CBlockView& view,const CTransaction& tx,CTxContxt& txContxt)
 {
     txContxt.SetNull();
-    BOOST_FOREACH(const CTxIn& txin,tx.vInput)
+    for(const CTxIn& txin : tx.vInput)
     {
         CTxOutput output;
         if (!view.RetrieveUnspent(txin.prevout,output))
