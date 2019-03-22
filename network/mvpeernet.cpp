@@ -14,6 +14,8 @@
 #define RESPONSE_PUBLISH_TIMEOUT        (10)
 #define NODE_ACTIVE_TIME                (3 * 60 * 60)
 
+#define NODE_DEFAULT_GATEWAY "0.0.0.0"
+
 using namespace std;
 using namespace walleve;
 using namespace multiverse::network;
@@ -504,7 +506,7 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                 }
                 else
                 {
-                    CNetHost defaulGateWay("0.0.0.0", confNetwork.nPortDefault, "", 
+                    CNetHost defaulGateWay(NODE_DEFAULT_GATEWAY, confNetwork.nPortDefault, "", 
                         boost::any(uint64(network::NODE_NETWORK)));
                     
                     uint64 nService = boost::any_cast<uint64>(defaulGateWay.data);
@@ -537,7 +539,8 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                 {
                     tcp::endpoint ep;
                     addr.ssEndpoint.GetEndpoint(ep);          
-                    if ((addr.nService & NODE_NETWORK) == NODE_NETWORK 
+                    if ((ep.address().to_string() != NODE_DEFAULT_GATEWAY
+                         && addr.nService & NODE_NETWORK) == NODE_NETWORK 
                          && IsRoutable(ep.address()) 
                          && !setDNSeed.count(ep) 
                          && !setIP.count(ep.address()))
