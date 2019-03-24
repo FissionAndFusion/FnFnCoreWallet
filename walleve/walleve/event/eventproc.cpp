@@ -5,6 +5,7 @@
 #include "eventproc.h"
 
 #include <boost/bind.hpp>
+#include <thread>
 
 using namespace std;
 using namespace walleve;
@@ -12,14 +13,19 @@ using namespace walleve;
 ///////////////////////////////
 // CWalleveEventProc
 
-CWalleveEventProc::CWalleveEventProc(const string& walleveOwnKeyIn, const size_t nThreadNumIn)
- : IWalleveBase(walleveOwnKeyIn), nThreadNum(nThreadNumIn)
+CWalleveEventProc::CWalleveEventProc(const string& walleveOwnKeyIn, const size_t nThreadNumIn, const bool fAffinityIn)
+ : IWalleveBase(walleveOwnKeyIn), nThreadNum(nThreadNumIn), fAffinity(fAffinityIn)
 {
     vecThrEventQue.reserve(nThreadNum);
+    auto nextCPU = fAffinity
+        ? [](int& x) -> int { return x++ % thread::hardware_concurrency(); }
+        : [](int& x) -> int { return -1; };
+    
+    int nCPU = 0;
     for (size_t i = 0; i < nThreadNum; ++i)
     {
         vecThrEventQue.emplace_back(walleveOwnKeyIn + "-eventq-" + to_string(i),
-            boost::bind(&CWalleveEventProc::EventThreadFunc,this));
+            boost::bind(&CWalleveEventProc::EventThreadFunc,this), nextCPU(nCPU));
     }
 }
 
