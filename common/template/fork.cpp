@@ -13,6 +13,10 @@
 using namespace std;
 using namespace walleve;
 
+const int64 MORTGAGE_BASE = 10000000000;    // initial mortgage 
+const int32 MORTGAGE_DECAY_CYCLE = 525600;  // decay cycle
+const double MORTGAGE_DECAY_QUANTITY = 0.5; // decay quantity
+
 //////////////////////////////
 // CTemplateFork
 
@@ -43,6 +47,16 @@ void CTemplateFork::GetTemplateData(rpc::CTemplateResponse& obj, CDestination&& 
 {
     obj.fork.strFork = hashFork.GetHex();
     obj.fork.strRedeem = (destInstance = destRedeem).ToString();
+}
+
+int64 CTemplateFork::LockedCoin(const int32 nForkHeight)
+{
+    return (int64)(MORTGAGE_BASE * pow(MORTGAGE_DECAY_QUANTITY, nForkHeight / MORTGAGE_DECAY_CYCLE));
+}
+
+int64 CTemplateFork::LockedCoin(const CDestination& destTo, const int32 nForkHeight) const
+{
+    return LockedCoin(nForkHeight);
 }
 
 bool CTemplateFork::ValidateParam() const

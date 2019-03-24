@@ -203,7 +203,20 @@ bool CTemplate::IsDestInRecorded(const CDestination& dest)
             return (dynamic_cast<CDestInRecordedTemplate*>(pTypeInfo->ptr) != NULL);
         }
     }
+    return false;
+}
 
+bool CTemplate::IsLockedCoin(const CDestination& dest)
+{
+    if (dest.IsTemplate())
+    {
+        uint16 nType = dest.GetTemplateId().GetType();
+        const CTypeInfo* pTypeInfo = GetTypeInfoByType(nType);
+        if (pTypeInfo)
+        {
+            return (dynamic_cast<CLockedCoinTemplate*>(pTypeInfo->ptr) != NULL);
+        }
+    }
     return false;
 }
 

@@ -52,4 +52,10 @@ public:
     }
 };
 
+class CLockedCoinTemplate
+{
+public:
+    virtual int64 LockedCoin(const CDestination& destTo, const int32 nForkHeight) const = 0;
+};
+
 #endif // MULTIVERSE_TEMPLATE_CATAGORY_H

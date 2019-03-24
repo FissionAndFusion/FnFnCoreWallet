@@ -493,6 +493,25 @@ bool CWallet::GetBalance(const CDestination& dest,const uint256& hashFork,const 
             }
         }
     }
+
+    // locked coin template
+    if (CTemplate::IsLockedCoin(dest))
+    {
+        CTemplatePtr ptr = GetTemplate(dest.GetTemplateId());
+        if (!ptr)
+        {
+            return false;
+        }
+        int64 nLockedCoin = boost::dynamic_pointer_cast<CLockedCoinTemplate>(ptr)->LockedCoin(CDestination(), nForkHeight);
+        if (balance.nLocked < nLockedCoin)
+        {
+            balance.nLocked = nLockedCoin;
+        }
+        if (balance.nLocked > coins.nTotalValue)
+        {
+            balance.nLocked = coins.nTotalValue;
+        }
+    }
     balance.nAvailable = coins.nTotalValue - balance.nLocked;
     return true;
 }
@@ -542,6 +561,18 @@ bool CWallet::ArrangeInputs(const CDestination& destIn,const uint256& hashFork,c
     tx.vInput.clear();
     int nMaxInput = (MAX_TX_SIZE - MAX_SIGNATURE_SIZE - 4) / 33;
     int64 nTargeValue = tx.nAmount + tx.nTxFee;
+
+    // locked coin template
+    if (CTemplate::IsLockedCoin(destIn))
+    {
+        CTemplatePtr ptr = GetTemplate(destIn.GetTemplateId());
+        if (!ptr)
+        {
+            return false;
+        }
+        nTargeValue += boost::dynamic_pointer_cast<CLockedCoinTemplate>(ptr)->LockedCoin(tx.sendTo, nForkHeight);
+    }
+
     vector<CTxOutPoint> vCoins;
     {
         boost::shared_lock<boost::shared_mutex> rlock(rwWalletTx);

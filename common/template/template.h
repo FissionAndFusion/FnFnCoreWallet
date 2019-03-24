@@ -77,6 +77,9 @@ public:
     // Return dest is destIn recorded or not.
     static bool IsDestInRecorded(const CDestination& dest);
 
+    // Return dest limits coin on transaction or not.
+    static bool IsLockedCoin(const CDestination& dest);
+
 public:
     // Deconstructor
     virtual ~CTemplate(){};
