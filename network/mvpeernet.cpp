@@ -536,23 +536,17 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                     return false;
                 }
                 
-                bool enableBroadcast = true;
-                for(CAddress& addr : vAddr)
+                for(int i = 1; i < vAddr.size(); ++i)
                 {
+                    CAddress& addr = vAddr[i];
                     tcp::endpoint ep;
-                    addr.ssEndpoint.GetEndpoint(ep);          
-                    if ((ep.address().to_string() != NODE_DEFAULT_GATEWAY
-                         && addr.nService & NODE_NETWORK) == NODE_NETWORK 
+                    addr.ssEndpoint.GetEndpoint(ep);
+                    if ((addr.nService & NODE_NETWORK) == NODE_NETWORK 
                          && IsRoutable(ep.address()) 
                          && !setDNSeed.count(ep) 
                          && !setIP.count(ep.address()))
                     {   
                         AddNewNode(ep,ep.address().to_string(),boost::any(addr.nService));
-                    }
-
-                    if(ep.address().to_string() == NODE_DEFAULT_GATEWAY)
-                    {
-                        enableBroadcast = false;
                     }
                 }
 
@@ -561,13 +555,16 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                     RemoveNode(pMvPeer->GetRemote());
                 }
 
-                if(!enableBroadcast)
+                CAddress& firstAddress = vAddr[0];
+                tcp::endpoint firstEp;
+                firstAddress.ssEndpoint.GetEndpoint(firstEp);
+                if(firstEp.address().to_string() == NODE_DEFAULT_GATEWAY)
                 {
                     RemoveNode(pMvPeer->GetRemote());
                 }
                 else
                 {
-
+                    // TODO
                 }
                 return true;
             }
