@@ -535,6 +535,8 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                 {
                     return false;
                 }
+                
+                bool enableBroadcast = true;
                 for(CAddress& addr : vAddr)
                 {
                     tcp::endpoint ep;
@@ -547,10 +549,25 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                     {   
                         AddNewNode(ep,ep.address().to_string(),boost::any(addr.nService));
                     }
+
+                    if(ep.address().to_string() == NODE_DEFAULT_GATEWAY)
+                    {
+                        enableBroadcast = false;
+                    }
                 }
+
                 if (setDNSeed.count(pMvPeer->GetRemote()))
                 {
                     RemoveNode(pMvPeer->GetRemote());
+                }
+
+                if(!enableBroadcast)
+                {
+                    RemoveNode(pMvPeer->GetRemote());
+                }
+                else
+                {
+
                 }
                 return true;
             }
