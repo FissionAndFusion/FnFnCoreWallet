@@ -19,7 +19,8 @@ public:
 class IIOModule : public CWalleveEventProc 
 {
 public:
-    IIOModule(const std::string& walleveOwnKeyIn, const size_t nThreadIn = 1) : CWalleveEventProc(walleveOwnKeyIn, nThreadIn) {}
+    IIOModule(const std::string& walleveOwnKeyIn, const size_t nThreadIn = 1, const bool fAffinityIn = false)
+        : CWalleveEventProc(walleveOwnKeyIn, nThreadIn, fAffinityIn) {}
 };
 
 } // namespace walleve

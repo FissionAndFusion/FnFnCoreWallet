@@ -29,7 +29,7 @@ bool CNetwork::WalleveHandleInitialize()
               FormatSubVersion(),!NetworkConfig()->vConnectTo.empty());
 
     CPeerNetConfig config;
-    if (NetworkConfig()->fListen4)
+    if (NetworkConfig()->fListen || NetworkConfig()->fListen4)
     {
         config.vecService.push_back(CPeerService(tcp::endpoint(tcp::v4(), NetworkConfig()->nPort),
                                                  NetworkConfig()->nMaxInBounds));
@@ -62,7 +62,7 @@ bool CNetwork::WalleveHandleInitialize()
         }
     }
 
-    if(NetworkConfig()->fListen4 || NetworkConfig()->fListen6)
+    if(NetworkConfig()->fListen || NetworkConfig()->fListen4 || NetworkConfig()->fListen6)
     {
         config.gateWayNode = CNetHost(NetworkConfig()->strGateWay, config.nPortDefault, NetworkConfig()->strGateWay,
                                               boost::any(uint64(network::NODE_NETWORK)));

@@ -39,7 +39,7 @@ bool CMvNetworkConfig::PostLoad()
     nMaxOutBounds = DEFAULT_MAX_OUTBOUNDS;
     if (nMaxConnection <= DEFAULT_MAX_OUTBOUNDS)
     {
-        nMaxInBounds = (fListen4 || fListen6) ? 1 : 0;
+        nMaxInBounds = (fListen || fListen4 || fListen6) ? 1 : 0;
     }
     else
     {
@@ -55,6 +55,12 @@ bool CMvNetworkConfig::PostLoad()
     {
         // vDNSeed.push_back("118.193.83.220");
     }
+
+    if (nThreadNumber <= 0)
+    {
+        nThreadNumber = 1;
+    }
+
     return true;
 }
 

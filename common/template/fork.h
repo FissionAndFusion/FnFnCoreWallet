@@ -7,14 +7,18 @@
 
 #include "template.h"
 
-class CTemplateFork : virtual public CTemplate
+class CTemplateFork : virtual public CTemplate, virtual public CLockedCoinTemplate
 {
+public:
+    static int64 LockedCoin(const int32 nForkHeight);
+
 public:
     CTemplateFork(const CDestination& destRedeemIn = CDestination(), const uint256& hashForkIn = uint256());
     virtual CTemplateFork* clone() const;
     virtual bool GetSignDestination(const CTransaction& tx, const std::vector<uint8>& vchSig,
                                          std::set<CDestination>& setSubDest, std::vector<uint8>& vchSubSig) const;
     virtual void GetTemplateData(rpc::CTemplateResponse& obj, CDestination&& destInstance) const;
+    virtual int64 LockedCoin(const CDestination& destTo, const int32 nForkHeight) const;
 
 protected:
     virtual bool ValidateParam() const;

@@ -348,8 +348,9 @@ void CRPCMod::AssignWork(const uint64 nNonce, const CWork& work)
 
 ///////////////////////////////
 // CRPCModWorker
-CRPCModWorker::CRPCModWorker(uint nThreadIn)
-: IIOModule("rpcmodworker", nThreadIn)
+
+CRPCModWorker::CRPCModWorker(const uint nThreadIn, const bool fAffinity)
+: IIOModule("rpcmodworker", nThreadIn, fAffinity)
 {
     pCoreProtocol = NULL;
     pService = NULL;
@@ -2182,7 +2183,11 @@ CRPCResultPtr CRPCModWorker::SnRPCSendTransaction(CRPCParamPtr param)
     return NULL;
 }
 
-CSnRPCModWorker::CSnRPCModWorker()
+///////////////////////////////
+// CSnRPCModWorker
+
+CSnRPCModWorker::CSnRPCModWorker(const uint nThreadIn, const bool fAffinity)
+: CRPCModWorker(nThreadIn, fAffinity)
 {
     mapRPCFunc["stop"] = &CRPCModWorker::SnRPCStop;
     mapRPCFunc["getforkcount"] = &CRPCModWorker::SnRPCGetForkCount;

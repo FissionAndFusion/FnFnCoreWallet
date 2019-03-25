@@ -55,6 +55,35 @@ public:
     std::map<uint256,CNetChannelPeerFork> mapSubscribedFork;
 };
 
+class CConcurrentPeerNetData
+{
+public:
+    typedef  boost::unique_lock<boost::shared_mutex> WriteLocker;
+    typedef  boost::shared_lock<boost::shared_mutex> ReadLocker;
+    typedef  std::vector<network::CInv> VecInv; 
+
+    CConcurrentPeerNetData(){}
+    ~CConcurrentPeerNetData(){}
+public:
+    bool IsForkSynchronized(const uint256& hashFork) const;
+    std::vector<std::pair<uint64, CNetChannelPeer>> KeyValues() const;
+    void ActivePeer(uint64 nNonce, uint64 nService, const uint256& forkHash);
+    void DeactivePeer(uint64 nNonce);
+    void SubscribeForks(uint64 nNonce, const std::vector<uint256>& hashForks);
+    void UnsubscribeForks(uint64 nNonce, const std::vector<uint256>& hashForks);
+    void AddKnownTx(uint64 nNonce, const uint256& hashFork, const std::vector<uint256>& vTxHash);
+    bool SetPeerSyncStatus(uint64 nNonce, const uint256& hashFork, bool fSync, bool fInverted);
+    void DeletePeerUnSyncByFork(uint64 nNonce, const uint256& hashFork);
+    void InsertPeerUnSyncByFork(uint64 nNonce, const uint256& hashFork);
+    bool IsPeerEmpty();
+    void MakeTxInvByFork(const uint256& hashFork, const std::vector<uint256>& vTxPool, std::vector<std::pair<uint64,VecInv>>& InvData);
+private:
+    mutable boost::shared_mutex rwPeer;
+    mutable boost::shared_mutex rwUnsync;
+    std::map<uint64,CNetChannelPeer> mapPeer;
+    std::map<uint256, std::set<uint64> > mapUnsync;
+};
+
 class CNetChannel : public network::IMvNetChannel
 {
 public:
@@ -66,7 +95,7 @@ public:
         NODE_TYPE_FORK
     };
 
-    CNetChannel();
+    CNetChannel(const uint nThreadIn = 1, const bool fAffinityIn = false);
     ~CNetChannel();
     int32 GetPrimaryChainHeight() override;
     bool IsForkSynchronized(const uint256& hashFork) const override;
@@ -124,9 +153,7 @@ protected:
     mutable boost::recursive_mutex mtxSched; 
     std::map<uint256,CSchedule> mapSched; 
 
-    mutable boost::shared_mutex rwNetPeer; 
-    std::map<uint64,CNetChannelPeer> mapPeer;
-    std::map<uint256, std::set<uint64> > mapUnsync;
+    CConcurrentPeerNetData conPeerNetData;
 
     mutable boost::mutex mtxPushTx; 
     uint32 nTimerPushTx;
