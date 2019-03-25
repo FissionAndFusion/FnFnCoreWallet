@@ -39,7 +39,7 @@ bool CMvNetworkConfig::PostLoad()
     nMaxOutBounds = DEFAULT_MAX_OUTBOUNDS;
     if (nMaxConnection <= DEFAULT_MAX_OUTBOUNDS)
     {
-        nMaxInBounds = (fListen4 || fListen6) ? 1 : 0;
+        nMaxInBounds = (fListen || fListen4 || fListen6) ? 1 : 0;
     }
     else
     {

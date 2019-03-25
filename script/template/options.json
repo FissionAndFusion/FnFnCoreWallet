@@ -408,6 +408,16 @@
         }
     ],
     "CMvNetworkConfigOption": [
+        
+        {
+            "name": "fListen",
+            "type": "bool",
+            "opt": "listen",
+            "default": false,
+            "format": "-listen",
+            "desc": "Accept IPv4 connections from outside (default: 0)"
+        },
+        
         {
             "name": "fListen4",
             "type": "bool",
