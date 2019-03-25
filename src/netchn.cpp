@@ -492,7 +492,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerSubscribe& eventSubscribe)
     {
         conPeerNetData.SubscribeForks(nNonce, eventSubscribe.data);
         
-        BOOST_FOREACH(const uint256& hash,eventSubscribe.data)
+        for(const uint256& hash : eventSubscribe.data)
         {
             boost::recursive_mutex::scoped_lock scoped_lock(mtxSched);
             if (mapSched.count(hash))
