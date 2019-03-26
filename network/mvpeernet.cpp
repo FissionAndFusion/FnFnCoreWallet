@@ -290,7 +290,7 @@ void CMvPeerNet::BuildHello(CPeer *pPeer,CWalleveBufStream& ssPayload)
         WalleveDebug("Get Active Interface Mac Address failed.");
     }
     std::vector<unsigned char> macData = macAddr.GetData();
-    ssPayload << nVersion << nService << nTime << nNonce << subVersion << nHeight << macData;
+    ssPayload << nVersion << nService << nTime << nNonce << subVersion << nHeight << macData << rootPath;
 }
 
 void CMvPeerNet::HandlePeerWriten(CPeer *pPeer)

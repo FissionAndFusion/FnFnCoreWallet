@@ -134,6 +134,51 @@ private:
     std::vector<unsigned char> macData;
 };
 
+class CUniqueAddress
+{
+public:
+    CUniqueAddress();
+    CUniqueAddress(const CMacAddress& macAddrIn, const std::string& rootPathIn)
+    : macAddress(macAddrIn), rootPath(rootPathIn.begin(), rootPathIn.end())
+    {}
+    explicit CUniqueAddress(const CUniqueAddress& addr)
+    {
+        macAddress = addr.macAddress;
+        rootPath = addr.rootPath;
+    }
+    CUniqueAddress& operator=(const CUniqueAddress& addr)
+    {
+        macAddress = addr.macAddress;
+        rootPath = addr.rootPath;
+        return *this;
+    }
+    ~CUniqueAddress(){}
+
+    bool IsEmpty() const
+    {
+        return macAddress.IsEmpty() || rootPath.empty();
+    }
+    std::string ToString() const
+    {
+        if(!rootPath.empty())
+            return macAddress.ToString() + "&" + std::string(rootPath.begin(), rootPath.end());
+        else
+            return macAddress.ToString() + "&" + std::string("empty");
+    }
+public:
+    friend bool operator==(const CUniqueAddress& left, const CUniqueAddress& right) 
+    {
+        return left.ToString() == right.ToString();
+    }
+    friend bool operator<(const CUniqueAddress& left, const CUniqueAddress& right)
+    {
+        return left.ToString() < right.ToString();
+    }
+private:
+    CMacAddress macAddress;
+    std::vector<char> rootPath;
+};
+
 // Get Active interface's mac addr
 inline bool GetActiveIFMacAddress(CMacAddress& mac)
 {
