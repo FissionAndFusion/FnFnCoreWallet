@@ -36,7 +36,7 @@ void CPeerNet::AddPeerRecord(CPeer* pPeer)
     setIP.insert(pPeer->GetRemote().address());
 }
 
-bool CPeerNet::AddPeerMacAddress(CPeer* pPeer, const CMacAddress& addr, bool fIsInbound)
+bool CPeerNet::AddPeerMacAddress(CPeer* pPeer, const CUniqueAddress& addr, bool fIsInbound)
 {
     return epMngr.AddNewEndPointMac(pPeer->GetRemote(), addr, fIsInbound);
 }
@@ -303,12 +303,12 @@ bool CPeerNet::SetNodeData(const tcp::endpoint& epNode,const boost::any& data)
     return epMngr.SetOutBoundData(epNode,data);
 }
 
-bool CPeerNet::GetNodeMacAddress(const boost::asio::ip::tcp::endpoint& epNode, CMacAddress& addr)
+bool CPeerNet::GetNodeMacAddress(const boost::asio::ip::tcp::endpoint& epNode, CUniqueAddress& addr)
 {
     return epMngr.GetOutBoundMacAddress(epNode, addr);
 }
 
-bool CPeerNet::SetNodeMacAddress(const boost::asio::ip::tcp::endpoint& epNode, const CMacAddress& addr)
+bool CPeerNet::SetNodeMacAddress(const boost::asio::ip::tcp::endpoint& epNode, const CUniqueAddress& addr)
 {
     return epMngr.SetOutBoundMacAddress(epNode, addr);
 }
@@ -409,10 +409,10 @@ bool CPeerNet::HandleEvent(CWalleveEventPeerNetGetBanned& eventGetBanned)
  
 bool CPeerNet::HandleEvent(CWalleveEventPeerNetSetBan& eventSetBan)
 {
-    vector<CMacAddress> vAddrToBan;
+    vector<CUniqueAddress> vAddrToBan;
     for(const string& strAddress : eventSetBan.data.first)
     {
-        CMacAddress addr;
+        CUniqueAddress addr;
         vAddrToBan.push_back(addr);
     }
     epMngr.SetBan(vAddrToBan,eventSetBan.data.second);
@@ -422,10 +422,10 @@ bool CPeerNet::HandleEvent(CWalleveEventPeerNetSetBan& eventSetBan)
  
 bool CPeerNet::HandleEvent(CWalleveEventPeerNetClrBanned& eventClrBanned)
 {
-    vector<CMacAddress> vAddrToClear;
+    vector<CUniqueAddress> vAddrToClear;
     for(const string& strAddress : eventClrBanned.data)
     {
-        CMacAddress addr;
+        CUniqueAddress addr;
         vAddrToClear.push_back(addr);
     }
     epMngr.ClearBanned(vAddrToClear);

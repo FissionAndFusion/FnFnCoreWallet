@@ -20,12 +20,12 @@ class CNode
 {
 public:
     CNode() {}
-    CNode(const boost::asio::ip::tcp::endpoint& epIn, const walleve::CMacAddress& macAddrIn, const std::string& strNameIn,
+    CNode(const boost::asio::ip::tcp::endpoint& epIn, const walleve::CUniqueAddress& macAddrIn, const std::string& strNameIn,
           const boost::any& dataIn) 
     : ep(epIn),macAddr(macAddrIn),strName(strNameIn),data(dataIn),nRetries(0) {}
 public:
     boost::asio::ip::tcp::endpoint ep;
-    walleve::CMacAddress macAddr;
+    walleve::CUniqueAddress macAddr;
     std::string strName; 
     boost::any data;
     int nRetries;
@@ -41,16 +41,16 @@ public:
     std::string GetName(const boost::asio::ip::tcp::endpoint& ep);
     bool GetData(const boost::asio::ip::tcp::endpoint& ep,boost::any& dataRet);
     bool SetData(const boost::asio::ip::tcp::endpoint& ep,const boost::any& dataIn);
-    bool GetMacAddress(const boost::asio::ip::tcp::endpoint& ep,CMacAddress& addr);
-    bool SetMacAddress(const boost::asio::ip::tcp::endpoint& ep,const CMacAddress& addr);
+    bool GetMacAddress(const boost::asio::ip::tcp::endpoint& ep,CUniqueAddress& addr);
+    bool SetMacAddress(const boost::asio::ip::tcp::endpoint& ep,const CUniqueAddress& addr);
     void Clear();
-    void Ban(const walleve::CMacAddress& address,int64 nBanTo);
+    void Ban(const walleve::CUniqueAddress& address,int64 nBanTo);
     bool Employ(boost::asio::ip::tcp::endpoint& ep);
     void Dismiss(const boost::asio::ip::tcp::endpoint& ep,bool fForceRetry);
     void Retrieve(std::vector<CNode>& vNode);
     int GetCandidateNodeCount(){ return mapNode.size(); }
 
-    void AddNewEndPointMac(const boost::asio::ip::tcp::endpoint& ep, const walleve::CMacAddress& addr);
+    void AddNewEndPointMac(const boost::asio::ip::tcp::endpoint& ep, const walleve::CUniqueAddress& addr);
     void RemoveEndPointMac(const boost::asio::ip::tcp::endpoint& ep);
 protected:
     void RemoveInactiveNodes();
@@ -60,8 +60,8 @@ protected:
     std::map<boost::asio::ip::tcp::endpoint,CNode> mapNode;
     std::multimap<int64,boost::asio::ip::tcp::endpoint> mapIdle;
 
-    typedef boost::bimap<boost::asio::ip::tcp::endpoint, walleve::CMacAddress>::value_type position_pair;
-    boost::bimap<boost::asio::ip::tcp::endpoint, walleve::CMacAddress> bimapRemoteEPMac;
+    typedef boost::bimap<boost::asio::ip::tcp::endpoint, walleve::CUniqueAddress>::value_type position_pair;
+    boost::bimap<boost::asio::ip::tcp::endpoint, walleve::CUniqueAddress> bimapRemoteEPMac;
 };
 
 } // namespace walleve

@@ -76,8 +76,8 @@ protected:
     std::string GetNodeName(const boost::asio::ip::tcp::endpoint& epNode);
     bool GetNodeData(const boost::asio::ip::tcp::endpoint& epNode, boost::any& data);
     bool SetNodeData(const boost::asio::ip::tcp::endpoint& epNode, const boost::any& data);
-    bool GetNodeMacAddress(const boost::asio::ip::tcp::endpoint& epNode, CMacAddress& addr);
-    bool SetNodeMacAddress(const boost::asio::ip::tcp::endpoint& epNode, const CMacAddress& addr);
+    bool GetNodeMacAddress(const boost::asio::ip::tcp::endpoint& epNode, CUniqueAddress& addr);
+    bool SetNodeMacAddress(const boost::asio::ip::tcp::endpoint& epNode, const CUniqueAddress& addr);
     void RetrieveGoodNode(std::vector<CNodeAvail>& vGoodNode, int64 nActiveTime, std::size_t nMaxCount);
     virtual std::string GetLocalIP();
     virtual CPeer* CreatePeer(CIOClient* pClient, uint64 nNonce, bool fInBound);
@@ -96,7 +96,7 @@ protected:
     int GetCandidateNodeCount() { return epMngr.GetCandidateNodeCount(); }
 
     void AddPeerRecord(CPeer* pPeer);
-    bool AddPeerMacAddress(CPeer* pPeer, const CMacAddress& addr, bool fIsInbound);
+    bool AddPeerMacAddress(CPeer* pPeer, const CUniqueAddress& addr, bool fIsInbound);
 protected:
     CPeerNetConfig confNetwork;
     boost::asio::ip::address localIP;

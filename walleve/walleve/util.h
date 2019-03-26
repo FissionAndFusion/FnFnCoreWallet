@@ -137,9 +137,9 @@ private:
 class CUniqueAddress
 {
 public:
-    CUniqueAddress();
+    CUniqueAddress(){};
     CUniqueAddress(const CMacAddress& macAddrIn, const std::string& rootPathIn)
-    : macAddress(macAddrIn), rootPath(rootPathIn.begin(), rootPathIn.end())
+    : macAddress(macAddrIn), rootPath(rootPathIn)
     {}
     explicit CUniqueAddress(const CUniqueAddress& addr)
     {
@@ -161,7 +161,7 @@ public:
     std::string ToString() const
     {
         if(!rootPath.empty())
-            return macAddress.ToString() + "&" + std::string(rootPath.begin(), rootPath.end());
+            return macAddress.ToString() + "&" + rootPath;
         else
             return macAddress.ToString() + "&" + std::string("empty");
     }
@@ -176,7 +176,7 @@ public:
     }
 private:
     CMacAddress macAddress;
-    std::vector<char> rootPath;
+    std::string rootPath;
 };
 
 // Get Active interface's mac addr

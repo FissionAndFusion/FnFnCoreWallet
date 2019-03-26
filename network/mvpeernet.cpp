@@ -323,7 +323,7 @@ bool CMvPeerNet::HandlePeerHandshaked(CPeer *pPeer,uint32 nTimerId,bool& fIsBann
 
     }
 
-    if(!AddPeerMacAddress(pPeer, pMvPeer->remoteMacAddress, pMvPeer->IsInBound()))
+    if(!AddPeerMacAddress(pPeer, pMvPeer->remoteUniqueAddress, pMvPeer->IsInBound()))
     {
         tcp::endpoint ep = pMvPeer->GetRemote();
         RemoveNode(ep);
@@ -333,7 +333,7 @@ bool CMvPeerNet::HandlePeerHandshaked(CPeer *pPeer,uint32 nTimerId,bool& fIsBann
     else
     {
         fIsBanned = false;
-        SetNodeMacAddress(pMvPeer->GetRemote(), pMvPeer->remoteMacAddress);
+        SetNodeMacAddress(pMvPeer->GetRemote(), pMvPeer->remoteUniqueAddress);
     }
     
 

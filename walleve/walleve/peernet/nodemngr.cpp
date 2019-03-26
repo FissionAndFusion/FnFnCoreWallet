@@ -19,7 +19,7 @@ CNodeManager::CNodeManager()
 
 void CNodeManager::AddNew(const tcp::endpoint& ep,const string& strName,const boost::any& data)
 {
-    if (mapNode.insert(make_pair(ep,CNode(ep,CMacAddress(),strName,data))).second)
+    if (mapNode.insert(make_pair(ep,CNode(ep,CUniqueAddress(),strName,data))).second)
     {
         mapIdle.insert(make_pair(GetTime(),ep)); 
         if (mapIdle.size() > MAX_IDLENODES)
@@ -85,7 +85,7 @@ bool CNodeManager::SetData(const tcp::endpoint& ep,const boost::any& dataIn)
     return false;
 }
 
-bool CNodeManager::GetMacAddress(const boost::asio::ip::tcp::endpoint& ep,CMacAddress& addr)
+bool CNodeManager::GetMacAddress(const boost::asio::ip::tcp::endpoint& ep,CUniqueAddress& addr)
 {
     map<tcp::endpoint,CNode>::iterator mi = mapNode.find(ep);
     if (mi != mapNode.end())
@@ -100,7 +100,7 @@ bool CNodeManager::GetMacAddress(const boost::asio::ip::tcp::endpoint& ep,CMacAd
     return false;
 }
 
-bool CNodeManager::SetMacAddress(const boost::asio::ip::tcp::endpoint& ep,const CMacAddress& addr)
+bool CNodeManager::SetMacAddress(const boost::asio::ip::tcp::endpoint& ep,const CUniqueAddress& addr)
 {
     map<tcp::endpoint,CNode>::iterator mi = mapNode.find(ep);
     if (mi != mapNode.end())
@@ -119,7 +119,7 @@ void CNodeManager::Clear()
     bimapRemoteEPMac.clear();
 }
 
-void CNodeManager::Ban(const walleve::CMacAddress& address,int64 nBanTo)
+void CNodeManager::Ban(const walleve::CUniqueAddress& address,int64 nBanTo)
 {
     vector<tcp::endpoint> vNode;
     multimap<int64,tcp::endpoint>::iterator it = mapIdle.begin();
@@ -209,7 +209,7 @@ void CNodeManager::RemoveInactiveNodes()
     }
 }
 
-void CNodeManager::AddNewEndPointMac(const boost::asio::ip::tcp::endpoint& ep, const walleve::CMacAddress& addr)
+void CNodeManager::AddNewEndPointMac(const boost::asio::ip::tcp::endpoint& ep, const walleve::CUniqueAddress& addr)
 {
     bimapRemoteEPMac.insert(position_pair(ep, addr));
 }

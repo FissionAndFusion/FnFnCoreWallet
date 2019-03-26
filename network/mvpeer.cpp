@@ -189,10 +189,17 @@ bool CMvPeer::HandshakeReadCompleted()
                 }
                 int64 nTime;
                 std::vector<unsigned char> macData;
-                ss >> nVersion >> nService >> nTime >> nNonceFrom >> strSubVer >> nStartingHeight >> macData;
+                std::string rootPath;
+                ss >> nVersion >> nService >> nTime >> nNonceFrom >> strSubVer >> nStartingHeight >> macData >> rootPath;
                 
-                if(!macData.empty()) { remoteMacAddress = CMacAddress(macData); }
-                else { throw std::runtime_error("Received Mac Address Invalid"); }
+                if(!macData.empty() && !rootPath.empty()) 
+                { 
+                    remoteUniqueAddress = CUniqueAddress(CMacAddress(macData), rootPath);
+                }
+                else 
+                { 
+                    throw std::runtime_error("Received Unique Address Invalid"); 
+                }
                 
                 nTimeDelta = nTime - nTimeRecv;
                 if (!fInBound)
