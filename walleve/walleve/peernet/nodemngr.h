@@ -60,8 +60,7 @@ protected:
     std::map<boost::asio::ip::tcp::endpoint,CNode> mapNode;
     std::multimap<int64,boost::asio::ip::tcp::endpoint> mapIdle;
 
-    typedef boost::bimap<boost::asio::ip::tcp::endpoint, walleve::CUniqueAddress>::value_type position_pair;
-    boost::bimap<boost::asio::ip::tcp::endpoint, walleve::CUniqueAddress> bimapRemoteEPMac;
+    std::map<boost::asio::ip::tcp::endpoint, walleve::CUniqueAddress> mapRemoteEPMac;
 };
 
 } // namespace walleve

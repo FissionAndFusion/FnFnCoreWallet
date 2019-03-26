@@ -116,7 +116,7 @@ void CNodeManager::Clear()
 {
     mapNode.clear();
     mapIdle.clear();
-    bimapRemoteEPMac.clear();
+    mapRemoteEPMac.clear();
 }
 
 void CNodeManager::Ban(const walleve::CUniqueAddress& address,int64 nBanTo)
@@ -126,8 +126,8 @@ void CNodeManager::Ban(const walleve::CUniqueAddress& address,int64 nBanTo)
     while (it != mapIdle.upper_bound(nBanTo))
     {
        
-       auto iter = bimapRemoteEPMac.left.find(it->second);
-       if(iter != bimapRemoteEPMac.left.end() && iter->second == address)
+       auto iter = mapRemoteEPMac.find(it->second);
+       if(iter != mapRemoteEPMac.end() && iter->second == address)
        {
            vNode.push_back((*it).second);
            mapIdle.erase(it++);
@@ -211,14 +211,14 @@ void CNodeManager::RemoveInactiveNodes()
 
 void CNodeManager::AddNewEndPointMac(const boost::asio::ip::tcp::endpoint& ep, const walleve::CUniqueAddress& addr)
 {
-    bimapRemoteEPMac.insert(position_pair(ep, addr));
+    mapRemoteEPMac[ep] = addr;
 }
 
 void CNodeManager::RemoveEndPointMac(const boost::asio::ip::tcp::endpoint& ep)
 {
-    auto it =  bimapRemoteEPMac.left.find(ep);
-    if(it != bimapRemoteEPMac.left.end())
+    auto it =  mapRemoteEPMac.find(ep);
+    if(it != mapRemoteEPMac.end())
     {
-        bimapRemoteEPMac.left.erase(it);
+        mapRemoteEPMac.erase(it);
     }
 }

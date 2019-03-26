@@ -115,12 +115,12 @@ void CEndpointManager::Clear()
 {
     mapAddressStatus.clear();
     mngrNode.Clear();
-    bimapRemoteEPMac.clear();
+    mapRemoteEPMac.clear();
 }
 
 int CEndpointManager::GetEndpointScore(const tcp::endpoint& ep)
 {
-    return mapAddressStatus[bimapRemoteEPMac.left.at(ep)].nScore;
+    return mapAddressStatus[mapRemoteEPMac[ep]].nScore;
 }
 
 void CEndpointManager::GetBanned(std::vector<CAddressBanned>& vBanned)
@@ -220,11 +220,11 @@ bool CEndpointManager::FetchOutBound(tcp::endpoint& ep)
 {
     while (mngrNode.Employ(ep))
     {
-        auto iter = bimapRemoteEPMac.left.find(ep);
-        if(iter != bimapRemoteEPMac.left.end())
+        auto iter = mapRemoteEPMac.find(ep);
+        if(iter != mapRemoteEPMac.end())
         {
             std::cout << "FetchOutBound left at entry\n";
-            CAddressStatus& status = mapAddressStatus[bimapRemoteEPMac.left.at(ep)];
+            CAddressStatus& status = mapAddressStatus[mapRemoteEPMac[ep]];
             std::cout << "FetchOutBound left at leave\n";
             if (status.AddConnection(false))
             {
@@ -245,11 +245,11 @@ bool CEndpointManager::AcceptInBound(const tcp::endpoint& ep)
 {
     int64 now = GetTime();
     
-    auto iter = bimapRemoteEPMac.left.find(ep);
-    if(iter != bimapRemoteEPMac.left.end())
+    auto iter = mapRemoteEPMac.find(ep);
+    if(iter != mapRemoteEPMac.end())
     {
         std::cout << "AcceptInBound left at entry\n";
-        CAddressStatus& status = mapAddressStatus[bimapRemoteEPMac.left.at(ep)];
+        CAddressStatus& status = mapAddressStatus[mapRemoteEPMac[ep]];
         std::cout << "AcceptInBound left at leave\n";
         return (status.InBoundAttempt(now) && status.AddConnection(true));
     }
@@ -268,7 +268,7 @@ void CEndpointManager::RewardEndpoint(const tcp::endpoint& ep,Bonus bonus)
     {
         index = 0;
     }
-    CAddressStatus& status = mapAddressStatus[bimapRemoteEPMac.left.at(ep)];
+    CAddressStatus& status = mapAddressStatus[mapRemoteEPMac[ep]];
     status.Reward(award[index],GetTime());
 
     CleanInactiveAddress();
@@ -292,7 +292,7 @@ void CEndpointManager::CloseEndpoint(const tcp::endpoint& ep,CloseReason reason)
         index = 0;
     }
     std::cout << "CloseEndpoint left at entry\n";
-    CAddressStatus& status = mapAddressStatus[bimapRemoteEPMac.left.at(ep)];
+    CAddressStatus& status = mapAddressStatus[mapRemoteEPMac[ep]];
     std::cout << "CloseEndpoint left at leave\n";
     status.Penalize(lost[index],now);
     mngrNode.Dismiss(ep,(reason == NETWORK_ERROR)); 
@@ -300,7 +300,7 @@ void CEndpointManager::CloseEndpoint(const tcp::endpoint& ep,CloseReason reason)
 
     if (now < status.nBanTo)
     {
-        mngrNode.Ban(bimapRemoteEPMac.left.at(ep),status.nBanTo);
+        mngrNode.Ban(mapRemoteEPMac[ep],status.nBanTo);
     }
 
     CleanInactiveAddress();
@@ -371,7 +371,7 @@ bool CEndpointManager::AddNewEndPointMac(const boost::asio::ip::tcp::endpoint& e
     std::cout << "AddNewEndPointMac insert entry\n";
     std::cout << "insert ep " << ep.address().to_string() <<'\n';
     std::cout << "insert unique address " << ep.address().to_string() <<'\n';
-    bimapRemoteEPMac.insert(position_pair(ep, addr));
+    mapRemoteEPMac[ep] = addr;
     std::cout << "AddNewEndPointMac insert leave\n";
     mngrNode.AddNewEndPointMac(ep, addr);
     std::cout << "IsInBound " << IsInBound << " \n";
@@ -381,14 +381,14 @@ bool CEndpointManager::AddNewEndPointMac(const boost::asio::ip::tcp::endpoint& e
         
         int64 now = GetTime();
         std::cout << "AddNewEndPointMac left at entry\n";
-        CAddressStatus& status = mapAddressStatus[bimapRemoteEPMac.left.at(ep)];
+        CAddressStatus& status = mapAddressStatus[mapRemoteEPMac[ep]];
         std::cout << "AddNewEndPointMac left at leave\n";
         return (status.InBoundAttempt(now) && status.AddConnection(true));
     }
     else
     {
         std::cout << "AddNewEndPointMac left at entry\n";
-        CAddressStatus& status = mapAddressStatus[bimapRemoteEPMac.left.at(ep)];
+        CAddressStatus& status = mapAddressStatus[mapRemoteEPMac[ep]];
         std::cout << "AddNewEndPointMac left at leave\n";
         if (!status.AddConnection(false))
         {
@@ -402,10 +402,10 @@ bool CEndpointManager::AddNewEndPointMac(const boost::asio::ip::tcp::endpoint& e
 void CEndpointManager::RemoveEndPointMac(const boost::asio::ip::tcp::endpoint& ep)
 {
     mngrNode.RemoveEndPointMac(ep);
-    auto it =  bimapRemoteEPMac.left.find(ep);
-    if(it != bimapRemoteEPMac.left.end())
+    auto it =  mapRemoteEPMac.find(ep);
+    if(it != mapRemoteEPMac.end())
     {
-        bimapRemoteEPMac.left.erase(it);
+        mapRemoteEPMac.erase(it);
     }
 }
 

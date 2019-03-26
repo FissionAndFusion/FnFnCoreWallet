@@ -131,8 +131,7 @@ protected:
     CNodeManager mngrNode;
     
     std::map<walleve::CUniqueAddress,CAddressStatus> mapAddressStatus;
-    typedef boost::bimap<boost::asio::ip::tcp::endpoint, walleve::CUniqueAddress>::value_type position_pair;
-    boost::bimap<boost::asio::ip::tcp::endpoint, walleve::CUniqueAddress> bimapRemoteEPMac;
+    std::map<boost::asio::ip::tcp::endpoint, walleve::CUniqueAddress> mapRemoteEPMac;
     
 };
 
