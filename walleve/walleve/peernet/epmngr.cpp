@@ -369,12 +369,16 @@ void CEndpointManager::CleanInactiveAddress()
 bool CEndpointManager::AddNewEndPointMac(const boost::asio::ip::tcp::endpoint& ep, const walleve::CUniqueAddress& addr, bool IsInBound)
 {
     std::cout << "AddNewEndPointMac insert entry\n";
+    std::cout << "insert ep " << ep.address().to_string() <<'\n';
+    std::cout << "insert unique address " << ep.address().to_string() <<'\n';
     bimapRemoteEPMac.insert(position_pair(ep, addr));
     std::cout << "AddNewEndPointMac insert leave\n";
     mngrNode.AddNewEndPointMac(ep, addr);
     std::cout << "IsInBound " << IsInBound << " \n";
     if(IsInBound)
     {
+        
+        
         int64 now = GetTime();
         std::cout << "AddNewEndPointMac left at entry\n";
         CAddressStatus& status = mapAddressStatus[bimapRemoteEPMac.left.at(ep)];
