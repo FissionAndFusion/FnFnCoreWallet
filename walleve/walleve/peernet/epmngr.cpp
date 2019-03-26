@@ -223,9 +223,7 @@ bool CEndpointManager::FetchOutBound(tcp::endpoint& ep)
         auto iter = mapRemoteEPMac.find(ep);
         if(iter != mapRemoteEPMac.end())
         {
-            std::cout << "FetchOutBound left at entry\n";
             CAddressStatus& status = mapAddressStatus[mapRemoteEPMac[ep]];
-            std::cout << "FetchOutBound left at leave\n";
             if (status.AddConnection(false))
             {
                 return true;
@@ -248,9 +246,7 @@ bool CEndpointManager::AcceptInBound(const tcp::endpoint& ep)
     auto iter = mapRemoteEPMac.find(ep);
     if(iter != mapRemoteEPMac.end())
     {
-        std::cout << "AcceptInBound left at entry\n";
         CAddressStatus& status = mapAddressStatus[mapRemoteEPMac[ep]];
-        std::cout << "AcceptInBound left at leave\n";
         return (status.InBoundAttempt(now) && status.AddConnection(true));
     }
     else
@@ -291,9 +287,7 @@ void CEndpointManager::CloseEndpoint(const tcp::endpoint& ep,CloseReason reason)
     {
         index = 0;
     }
-    std::cout << "CloseEndpoint left at entry\n";
     CAddressStatus& status = mapAddressStatus[mapRemoteEPMac[ep]];
-    std::cout << "CloseEndpoint left at leave\n";
     status.Penalize(lost[index],now);
     mngrNode.Dismiss(ep,(reason == NETWORK_ERROR)); 
     status.RemoveConnection();
@@ -368,28 +362,17 @@ void CEndpointManager::CleanInactiveAddress()
 
 bool CEndpointManager::AddNewEndPointMac(const boost::asio::ip::tcp::endpoint& ep, const walleve::CUniqueAddress& addr, bool IsInBound)
 {
-    std::cout << "AddNewEndPointMac insert entry\n";
-    std::cout << "insert ep " << ep.address().to_string() <<'\n';
-    std::cout << "insert unique address " << ep.address().to_string() <<'\n';
     mapRemoteEPMac[ep] = addr;
-    std::cout << "AddNewEndPointMac insert leave\n";
     mngrNode.AddNewEndPointMac(ep, addr);
-    std::cout << "IsInBound " << IsInBound << " \n";
     if(IsInBound)
     {
-        
-        
         int64 now = GetTime();
-        std::cout << "AddNewEndPointMac left at entry\n";
         CAddressStatus& status = mapAddressStatus[mapRemoteEPMac[ep]];
-        std::cout << "AddNewEndPointMac left at leave\n";
         return (status.InBoundAttempt(now) && status.AddConnection(true));
     }
     else
     {
-        std::cout << "AddNewEndPointMac left at entry\n";
         CAddressStatus& status = mapAddressStatus[mapRemoteEPMac[ep]];
-        std::cout << "AddNewEndPointMac left at leave\n";
         if (!status.AddConnection(false))
         {
             mngrNode.Dismiss(ep,false);

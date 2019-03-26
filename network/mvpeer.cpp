@@ -195,8 +195,6 @@ bool CMvPeer::HandshakeReadCompleted()
                 if(!macData.empty() && !rootPath.empty()) 
                 { 
                     remoteUniqueAddress = CUniqueAddress(CMacAddress(macData), rootPath);
-                    std::cout << "Recved remote unique address " << 
-                        remoteUniqueAddress.ToString() << '\n';
                 }
                 else 
                 { 
