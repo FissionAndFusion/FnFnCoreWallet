@@ -35,7 +35,7 @@ void CMvPeer::Activate()
     strSubVer.clear();
     nStartingHeight = 0;
 
-    Read(MESSAGE_HEADER_SIZE,boost::bind(&CMvPeer::HandshakeReadHeader,this));
+    Read(MESSAGE_HEADER_SIZE,boost::bind(&CMvPeer::HandshakeReadHeader,this,_1));
     if (!fInBound)
     {
         SendHello();
@@ -141,7 +141,7 @@ bool CMvPeer::ParseMessageHeader()
     return false;
 }
 
-bool CMvPeer::HandshakeReadHeader()
+bool CMvPeer::HandshakeReadHeader(bool& fIsBanned)
 {
     if (!ParseMessageHeader())
     {
@@ -150,13 +150,13 @@ bool CMvPeer::HandshakeReadHeader()
 
     if (hdrRecv.nPayloadSize != 0)
     {
-        Read(hdrRecv.nPayloadSize,boost::bind(&CMvPeer::HandshakeReadCompleted,this));
+        Read(hdrRecv.nPayloadSize,boost::bind(&CMvPeer::HandshakeReadCompleted,this,_1));
         return true;
     }
-    return HandshakeReadCompleted();
+    return HandshakeReadCompleted(fIsBanned);
 }
 
-bool CMvPeer::HandleReadHeader()
+bool CMvPeer::HandleReadHeader(bool& fIsBanned)
 {
     if (!ParseMessageHeader())
     {
@@ -165,13 +165,13 @@ bool CMvPeer::HandleReadHeader()
 
     if (hdrRecv.nPayloadSize != 0)
     {
-        Read(hdrRecv.nPayloadSize,boost::bind(&CMvPeer::HandleReadCompleted,this));
+        Read(hdrRecv.nPayloadSize,boost::bind(&CMvPeer::HandleReadCompleted,this,_1));
         return true;
     }
-    return HandleReadCompleted();
+    return HandleReadCompleted(fIsBanned);
 }
 
-bool CMvPeer::HandshakeReadCompleted()
+bool CMvPeer::HandshakeReadCompleted(bool& fIsBanned)
 {
     CWalleveBufStream& ss = ReadStream();
     uint256 hash = multiverse::crypto::CryptoHash(ss.GetData(),ss.GetSize());
@@ -211,7 +211,7 @@ bool CMvPeer::HandshakeReadCompleted()
                     return (!fIsSuccess && fIsBanned) ? true : fIsSuccess;
                 }
                 SendHello();
-                Read(MESSAGE_HEADER_SIZE,boost::bind(&CMvPeer::HandshakeReadHeader,this));
+                Read(MESSAGE_HEADER_SIZE,boost::bind(&CMvPeer::HandshakeReadHeader,this,_1));
                 return true;
             }
             else if (nCmd == MVPROTO_CMD_HELLO_ACK && fInBound)
@@ -241,11 +241,11 @@ bool CMvPeer::HandshakeCompleted(bool& fIsBanned)
         return false;
     }
     nHsTimerId = 0;
-    Read(MESSAGE_HEADER_SIZE,boost::bind(&CMvPeer::HandleReadHeader,this)); 
+    Read(MESSAGE_HEADER_SIZE,boost::bind(&CMvPeer::HandleReadHeader,this,_1)); 
     return true;
 }
 
-bool CMvPeer::HandleReadCompleted()
+bool CMvPeer::HandleReadCompleted(bool& fIsBanned)
 {
     CWalleveBufStream& ss = ReadStream();
     uint256 hash = multiverse::crypto::CryptoHash(ss.GetData(),ss.GetSize());
@@ -255,7 +255,7 @@ bool CMvPeer::HandleReadCompleted()
         {
             if ((static_cast<CMvPeerNet*>(pPeerNet))->HandlePeerRecvMessage(this,hdrRecv.GetChannel(),hdrRecv.GetCommand(),ss))
             {
-                Read(MESSAGE_HEADER_SIZE,boost::bind(&CMvPeer::HandleReadHeader,this));
+                Read(MESSAGE_HEADER_SIZE,boost::bind(&CMvPeer::HandleReadHeader,this,_1));
                 return true;
             }
         }

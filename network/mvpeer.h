@@ -37,11 +37,11 @@ protected:
     void SendHello();
     void SendHelloAck();
     bool ParseMessageHeader();
-    bool HandshakeReadHeader();
-    bool HandshakeReadCompleted();
+    bool HandshakeReadHeader(bool& fIsBanned);
+    bool HandshakeReadCompleted(bool& fIsBanned);
     virtual bool HandshakeCompleted(bool& fIsBanned);
-    bool HandleReadHeader();
-    bool HandleReadCompleted();
+    bool HandleReadHeader(bool& fIsBanned);
+    bool HandleReadCompleted(bool& fIsBanned);
 public:
     uint32 nVersion;
     uint64 nService;

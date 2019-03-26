@@ -20,7 +20,7 @@ class CPeerNet;
 class CPeer
 {
 public:
-    typedef boost::function<bool()> CompltFunc;
+    typedef boost::function<bool(bool&)> CompltFunc;
 
     CPeer(CPeerNet *pPeerNetIn, CIOClient* pClientIn,uint64 nNonceIn,bool fInBoundIn);
     virtual ~CPeer();
