@@ -100,10 +100,11 @@ protected:
     bool SendDelegatedMessage(uint64 nNonce,int nCommand,walleve::CWalleveBufStream& ssPayload);
     void SetInvTimer(uint64 nNonce,std::vector<CInv>& vInv);
     virtual void ProcessAskFor(walleve::CPeer* pPeer);
-    void Configure(uint32 nMagicNumIn,uint32 nVersionIn,uint64 nServiceIn,const std::string& subVersionIn,bool fEnclosedIn)
+    void Configure(uint32 nMagicNumIn,uint32 nVersionIn,uint64 nServiceIn,const std::string& subVersionIn,const std::string& rootPathIn,
+        bool fEnclosedIn)
     {
         nMagicNum = nMagicNumIn; nVersion = nVersionIn; nService = nServiceIn;
-        subVersion = subVersionIn; fEnclosed = fEnclosedIn;
+        subVersion = subVersionIn; rootPath = rootPathIn; fEnclosed = fEnclosedIn;
     }
     virtual bool CheckPeerVersion(uint32 nVersionIn,uint64 nServiceIn,const std::string& subVersionIn) = 0;
 protected:
@@ -113,7 +114,8 @@ protected:
     uint32 nVersion;
     uint64 nService;
     bool fEnclosed;
-    std::string subVersion;    
+    std::string subVersion;
+    std::string rootPath;    
     std::set<boost::asio::ip::tcp::endpoint> setDNSeed;
     SUPER_NODE_TYPE typeNode;
     typedef std::pair<uint256, uint64> ForkNonceKeyType;

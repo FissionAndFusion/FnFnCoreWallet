@@ -115,18 +115,18 @@ void CEndpointManager::Clear()
 {
     mapAddressStatus.clear();
     mngrNode.Clear();
-    bimapRemoteEPMac.clear();
+    mapRemoteEPMac.clear();
 }
 
 int CEndpointManager::GetEndpointScore(const tcp::endpoint& ep)
 {
-    return mapAddressStatus[bimapRemoteEPMac.left.at(ep)].nScore;
+    return mapAddressStatus[mapRemoteEPMac[ep]].nScore;
 }
 
 void CEndpointManager::GetBanned(std::vector<CAddressBanned>& vBanned)
 {
     int64 now = GetTime();
-    map<CMacAddress,CAddressStatus>::iterator it = mapAddressStatus.begin();
+    map<CUniqueAddress,CAddressStatus>::iterator it = mapAddressStatus.begin();
     while (it != mapAddressStatus.end())
     {
         CAddressStatus& status = (*it).second;
@@ -138,10 +138,10 @@ void CEndpointManager::GetBanned(std::vector<CAddressBanned>& vBanned)
     }
 }
 
-void CEndpointManager::SetBan(std::vector<CMacAddress>& vAddrToBan,int64 nBanTime)
+void CEndpointManager::SetBan(std::vector<CUniqueAddress>& vAddrToBan,int64 nBanTime)
 {
     int64 now = GetTime();
-    for(const CMacAddress& addr : vAddrToBan)
+    for(const CUniqueAddress& addr : vAddrToBan)
     {
         CAddressStatus& status = mapAddressStatus[addr];
         status.nBanTo = now + nBanTime;
@@ -150,12 +150,12 @@ void CEndpointManager::SetBan(std::vector<CMacAddress>& vAddrToBan,int64 nBanTim
     }
 }
 
-void CEndpointManager::ClearBanned(vector<CMacAddress>& vAddrToClear)
+void CEndpointManager::ClearBanned(vector<CUniqueAddress>& vAddrToClear)
 {
     int64 now = GetTime();
-    for(const CMacAddress& addr : vAddrToClear)
+    for(const CUniqueAddress& addr : vAddrToClear)
     {
-        map<CMacAddress,CAddressStatus>::iterator it = mapAddressStatus.find(addr);
+        map<CUniqueAddress,CAddressStatus>::iterator it = mapAddressStatus.find(addr);
         if (it != mapAddressStatus.end() && now < (*it).second.nBanTo)
         {
             mapAddressStatus.erase(it);
@@ -166,7 +166,7 @@ void CEndpointManager::ClearBanned(vector<CMacAddress>& vAddrToClear)
 void CEndpointManager::ClearAllBanned()
 {
     int64 now = GetTime();
-    map<CMacAddress,CAddressStatus>::iterator it = mapAddressStatus.begin();
+    map<CUniqueAddress,CAddressStatus>::iterator it = mapAddressStatus.begin();
     while (it != mapAddressStatus.end())
     {
         if (now < (*it).second.nBanTo)
@@ -206,12 +206,12 @@ bool CEndpointManager::SetOutBoundData(const tcp::endpoint& ep,const boost::any&
     return mngrNode.SetData(ep,dataIn);
 }
 
-bool CEndpointManager::GetOutBoundMacAddress(const boost::asio::ip::tcp::endpoint& ep,CMacAddress& addr)
+bool CEndpointManager::GetOutBoundMacAddress(const boost::asio::ip::tcp::endpoint& ep,CUniqueAddress& addr)
 {
     return mngrNode.GetMacAddress(ep, addr);
 }
 
-bool CEndpointManager::SetOutBoundMacAddress(const boost::asio::ip::tcp::endpoint& ep,const CMacAddress& addr)
+bool CEndpointManager::SetOutBoundMacAddress(const boost::asio::ip::tcp::endpoint& ep,const CUniqueAddress& addr)
 {
     return mngrNode.SetMacAddress(ep, addr);
 }
@@ -220,10 +220,10 @@ bool CEndpointManager::FetchOutBound(tcp::endpoint& ep)
 {
     while (mngrNode.Employ(ep))
     {
-        auto iter = bimapRemoteEPMac.left.find(ep);
-        if(iter != bimapRemoteEPMac.left.end())
+        auto iter = mapRemoteEPMac.find(ep);
+        if(iter != mapRemoteEPMac.end())
         {
-            CAddressStatus& status = mapAddressStatus[bimapRemoteEPMac.left.at(ep)];
+            CAddressStatus& status = mapAddressStatus[mapRemoteEPMac[ep]];
             if (status.AddConnection(false))
             {
                 return true;
@@ -243,10 +243,10 @@ bool CEndpointManager::AcceptInBound(const tcp::endpoint& ep)
 {
     int64 now = GetTime();
     
-    auto iter = bimapRemoteEPMac.left.find(ep);
-    if(iter != bimapRemoteEPMac.left.end())
+    auto iter = mapRemoteEPMac.find(ep);
+    if(iter != mapRemoteEPMac.end())
     {
-        CAddressStatus& status = mapAddressStatus[bimapRemoteEPMac.left.at(ep)];
+        CAddressStatus& status = mapAddressStatus[mapRemoteEPMac[ep]];
         return (status.InBoundAttempt(now) && status.AddConnection(true));
     }
     else
@@ -264,7 +264,7 @@ void CEndpointManager::RewardEndpoint(const tcp::endpoint& ep,Bonus bonus)
     {
         index = 0;
     }
-    CAddressStatus& status = mapAddressStatus[bimapRemoteEPMac.left.at(ep)];
+    CAddressStatus& status = mapAddressStatus[mapRemoteEPMac[ep]];
     status.Reward(award[index],GetTime());
 
     CleanInactiveAddress();
@@ -287,14 +287,14 @@ void CEndpointManager::CloseEndpoint(const tcp::endpoint& ep,CloseReason reason)
     {
         index = 0;
     }
-    CAddressStatus& status = mapAddressStatus[bimapRemoteEPMac.left.at(ep)];
+    CAddressStatus& status = mapAddressStatus[mapRemoteEPMac[ep]];
     status.Penalize(lost[index],now);
     mngrNode.Dismiss(ep,(reason == NETWORK_ERROR)); 
     status.RemoveConnection();
 
     if (now < status.nBanTo)
     {
-        mngrNode.Ban(bimapRemoteEPMac.left.at(ep),status.nBanTo);
+        mngrNode.Ban(mapRemoteEPMac[ep],status.nBanTo);
     }
 
     CleanInactiveAddress();
@@ -309,8 +309,8 @@ void CEndpointManager::RetrieveGoodNode(vector<CNodeAvail>& vGoodNode,
     multimap<int,CNodeAvail> mapScore;
     for(const CNode& node : vNode)
     {
-        const CMacAddress& addr = node.macAddr;
-        map<CMacAddress,CAddressStatus>::iterator it = mapAddressStatus.find(addr);
+        const CUniqueAddress& addr = node.macAddr;
+        map<CUniqueAddress,CAddressStatus>::iterator it = mapAddressStatus.find(addr);
         if (it != mapAddressStatus.end() 
             && (*it).second.nLastSeen > nActive && (*it).second.nScore >= 0)
         {
@@ -339,9 +339,9 @@ void CEndpointManager::CleanInactiveAddress()
     }
     
     int64 inactive = GetTime() - MAX_INACTIVE_TIME; 
-    //multimap<int64,walleve::CMacAddress> mapLastSeen;
-    std::vector<std::pair<int64,walleve::CMacAddress>> vLastSeen;
-    map<walleve::CMacAddress,CAddressStatus>::iterator it = mapAddressStatus.begin();
+    //multimap<int64,walleve::CUniqueAddress> mapLastSeen;
+    std::vector<std::pair<int64,walleve::CUniqueAddress>> vLastSeen;
+    map<walleve::CUniqueAddress,CAddressStatus>::iterator it = mapAddressStatus.begin();
     while (it != mapAddressStatus.end())
     {
         CAddressStatus& status = (*it).second;
@@ -357,7 +357,7 @@ void CEndpointManager::CleanInactiveAddress()
         }
     }
 
-    //multimap<int64,CMacAddress>::iterator mi = mapLastSeen.begin();
+    //multimap<int64,CUniqueAddress>::iterator mi = mapLastSeen.begin();
     auto mi = vLastSeen.begin();
     while (mapAddressStatus.size() > MAX_ADDRESS_COUNT && mi != vLastSeen.end())
     {
@@ -366,19 +366,19 @@ void CEndpointManager::CleanInactiveAddress()
     }
 }
 
-bool CEndpointManager::AddNewEndPointMac(const boost::asio::ip::tcp::endpoint& ep, const walleve::CMacAddress& addr, bool IsInBound)
+bool CEndpointManager::AddNewEndPointMac(const boost::asio::ip::tcp::endpoint& ep, const walleve::CUniqueAddress& addr, bool IsInBound)
 {
-    bimapRemoteEPMac.insert(position_pair(ep, addr));
+    mapRemoteEPMac[ep] = addr;
     mngrNode.AddNewEndPointMac(ep, addr);
     if(IsInBound)
     {
         int64 now = GetTime();
-        CAddressStatus& status = mapAddressStatus[bimapRemoteEPMac.left.at(ep)];
+        CAddressStatus& status = mapAddressStatus[mapRemoteEPMac[ep]];
         return (status.InBoundAttempt(now) && status.AddConnection(true));
     }
     else
     {
-        CAddressStatus& status = mapAddressStatus[bimapRemoteEPMac.left.at(ep)];
+        CAddressStatus& status = mapAddressStatus[mapRemoteEPMac[ep]];
         if (!status.AddConnection(false))
         {
             mngrNode.Dismiss(ep,false);
@@ -391,10 +391,10 @@ bool CEndpointManager::AddNewEndPointMac(const boost::asio::ip::tcp::endpoint& e
 void CEndpointManager::RemoveEndPointMac(const boost::asio::ip::tcp::endpoint& ep)
 {
     mngrNode.RemoveEndPointMac(ep);
-    auto it =  bimapRemoteEPMac.left.find(ep);
-    if(it != bimapRemoteEPMac.left.end())
+    auto it =  mapRemoteEPMac.find(ep);
+    if(it != mapRemoteEPMac.end())
     {
-        bimapRemoteEPMac.left.erase(it);
+        mapRemoteEPMac.erase(it);
     }
 }
 

@@ -141,37 +141,37 @@ bool CMvPeer::ParseMessageHeader()
     return false;
 }
 
-bool CMvPeer::HandshakeReadHeader()
+int CMvPeer::HandshakeReadHeader()
 {
     if (!ParseMessageHeader())
     {
-        return false;
+        return CPeer::FAILED;
     }
 
     if (hdrRecv.nPayloadSize != 0)
     {
         Read(hdrRecv.nPayloadSize,boost::bind(&CMvPeer::HandshakeReadCompleted,this));
-        return true;
+        return CPeer::SUCCESS;
     }
     return HandshakeReadCompleted();
 }
 
-bool CMvPeer::HandleReadHeader()
+int CMvPeer::HandleReadHeader()
 {
     if (!ParseMessageHeader())
     {
-        return false;
+        return CPeer::FAILED;
     }
 
     if (hdrRecv.nPayloadSize != 0)
     {
         Read(hdrRecv.nPayloadSize,boost::bind(&CMvPeer::HandleReadCompleted,this));
-        return true;
+        return CPeer::SUCCESS;
     }
     return HandleReadCompleted();
 }
 
-bool CMvPeer::HandshakeReadCompleted()
+int CMvPeer::HandshakeReadCompleted()
 {
     CWalleveBufStream& ss = ReadStream();
     uint256 hash = multiverse::crypto::CryptoHash(ss.GetData(),ss.GetSize());
@@ -185,14 +185,21 @@ bool CMvPeer::HandshakeReadCompleted()
             {
                 if (nVersion != 0)
                 {
-                    return false;
+                    return CPeer::FAILED;
                 }
                 int64 nTime;
                 std::vector<unsigned char> macData;
-                ss >> nVersion >> nService >> nTime >> nNonceFrom >> strSubVer >> nStartingHeight >> macData;
+                std::string rootPath;
+                ss >> nVersion >> nService >> nTime >> nNonceFrom >> strSubVer >> nStartingHeight >> macData >> rootPath;
                 
-                if(!macData.empty()) { remoteMacAddress = CMacAddress(macData); }
-                else { throw std::runtime_error("Received Mac Address Invalid"); }
+                if(!macData.empty() && !rootPath.empty()) 
+                { 
+                    remoteUniqueAddress = CUniqueAddress(CMacAddress(macData), rootPath);
+                }
+                else 
+                { 
+                    throw std::runtime_error("Received Unique Address Invalid"); 
+                }
                 
                 nTimeDelta = nTime - nTimeRecv;
                 if (!fInBound)
@@ -201,22 +208,33 @@ bool CMvPeer::HandshakeReadCompleted()
                     SendHelloAck();
                     bool fIsBanned = false;
                     bool fIsSuccess = HandshakeCompleted(fIsBanned);
-                    return (!fIsSuccess && fIsBanned) ? true : fIsSuccess;
+                    if(!fIsSuccess && fIsBanned)
+                    {
+                        return CPeer::BAN;
+                    }
+
+                    return fIsSuccess ? CPeer::SUCCESS : CPeer::FAILED;
+                    
                 }
                 SendHello();
                 Read(MESSAGE_HEADER_SIZE,boost::bind(&CMvPeer::HandshakeReadHeader,this));
-                return true;
+                return CPeer::SUCCESS;
             }
             else if (nCmd == MVPROTO_CMD_HELLO_ACK && fInBound)
             {
                 if (nVersion == 0)
                 {
-                    return false;
+                    return CPeer::FAILED;
                 }
                 nTimeDelta += (nTimeRecv - nTimeHello) / 2;
                 bool fIsBanned = false;
                 bool fIsSuccess = HandshakeCompleted(fIsBanned);
-                return (!fIsSuccess && fIsBanned) ? true : fIsSuccess;
+                if(!fIsSuccess && fIsBanned)
+                {
+                    return CPeer::BAN;
+                }
+
+                return fIsSuccess ? CPeer::SUCCESS : CPeer::FAILED;
             }
         }
         catch (const std::exception& e)
@@ -224,7 +242,7 @@ bool CMvPeer::HandshakeReadCompleted()
             StdError(__PRETTY_FUNCTION__, e.what());
         }
     }
-    return false;
+    return CPeer::FAILED;
 }
 
 bool CMvPeer::HandshakeCompleted(bool& fIsBanned)
@@ -238,7 +256,7 @@ bool CMvPeer::HandshakeCompleted(bool& fIsBanned)
     return true;
 }
 
-bool CMvPeer::HandleReadCompleted()
+int CMvPeer::HandleReadCompleted()
 {
     CWalleveBufStream& ss = ReadStream();
     uint256 hash = multiverse::crypto::CryptoHash(ss.GetData(),ss.GetSize());
@@ -249,7 +267,7 @@ bool CMvPeer::HandleReadCompleted()
             if ((static_cast<CMvPeerNet*>(pPeerNet))->HandlePeerRecvMessage(this,hdrRecv.GetChannel(),hdrRecv.GetCommand(),ss))
             {
                 Read(MESSAGE_HEADER_SIZE,boost::bind(&CMvPeer::HandleReadHeader,this));
-                return true;
+                return CPeer::SUCCESS;
             }
         }
         catch (exception& e)
@@ -257,6 +275,6 @@ bool CMvPeer::HandleReadCompleted()
             StdError(__PRETTY_FUNCTION__, e.what());
         }
     }
-    return false;
+    return CPeer::FAILED;
 }
 

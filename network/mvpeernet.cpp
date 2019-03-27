@@ -292,7 +292,7 @@ void CMvPeerNet::BuildHello(CPeer *pPeer,CWalleveBufStream& ssPayload)
         WalleveDebug("Get Active Interface Mac Address failed.");
     }
     std::vector<unsigned char> macData = macAddr.GetData();
-    ssPayload << nVersion << nService << nTime << nNonce << subVersion << nHeight << macData;
+    ssPayload << nVersion << nService << nTime << nNonce << subVersion << nHeight << macData << rootPath;
 }
 
 void CMvPeerNet::HandlePeerWriten(CPeer *pPeer)
@@ -325,7 +325,7 @@ bool CMvPeerNet::HandlePeerHandshaked(CPeer *pPeer,uint32 nTimerId,bool& fIsBann
 
     }
 
-    if(!AddPeerMacAddress(pPeer, pMvPeer->remoteMacAddress, pMvPeer->IsInBound()))
+    if(!AddPeerMacAddress(pPeer, pMvPeer->remoteUniqueAddress, pMvPeer->IsInBound()))
     {
         tcp::endpoint ep = pMvPeer->GetRemote();
         RemoveNode(ep);
@@ -335,7 +335,7 @@ bool CMvPeerNet::HandlePeerHandshaked(CPeer *pPeer,uint32 nTimerId,bool& fIsBann
     else
     {
         fIsBanned = false;
-        SetNodeMacAddress(pMvPeer->GetRemote(), pMvPeer->remoteMacAddress);
+        SetNodeMacAddress(pMvPeer->GetRemote(), pMvPeer->remoteUniqueAddress);
     }
     
 
