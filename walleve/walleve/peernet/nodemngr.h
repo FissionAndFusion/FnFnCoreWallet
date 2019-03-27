@@ -23,6 +23,9 @@ public:
     CNode(const boost::asio::ip::tcp::endpoint& epIn, const walleve::CUniqueAddress& macAddrIn, const std::string& strNameIn,
           const boost::any& dataIn) 
     : ep(epIn),macAddr(macAddrIn),strName(strNameIn),data(dataIn),nRetries(0) {}
+    CNode(const CNode& node)
+    : ep(node.ep),macAddr(node.macAddr),strName(node.strName),data(node.data),nRetries(node.nRetries)
+    {}
 public:
     boost::asio::ip::tcp::endpoint ep;
     walleve::CUniqueAddress macAddr;
