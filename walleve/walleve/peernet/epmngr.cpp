@@ -325,6 +325,12 @@ void CEndpointManager::RetrieveGoodNode(vector<CNodeAvail>& vGoodNode,
     }
 }
 
+void CEndpointManager::AddNewGateWay(const boost::asio::ip::tcp::endpoint& epGateWay, 
+                            const boost::asio::ip::tcp::endpoint& epNode)
+{
+    mapRemoteGateWay[epNode] = epGateWay;
+}
+
 void CEndpointManager::CleanInactiveAddress()
 {
     if (mapAddressStatus.size() <= MAX_ADDRESS_COUNT)

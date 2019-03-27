@@ -555,16 +555,23 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                     RemoveNode(pMvPeer->GetRemote());
                 }
 
-                CAddress& firstAddress = vAddr[0];
-                tcp::endpoint firstEp;
-                firstAddress.ssEndpoint.GetEndpoint(firstEp);
-                if(firstEp.address().to_string() == NODE_DEFAULT_GATEWAY)
+                CAddress& gateWayAddress = vAddr[0];
+                tcp::endpoint epGateWay;
+                gateWayAddress.ssEndpoint.GetEndpoint(epGateWay);
+                if(epGateWay.address().to_string() == NODE_DEFAULT_GATEWAY)
                 {
                     RemoveNode(pMvPeer->GetRemote());
                 }
                 else
                 {
-                    // TODO
+                    if ((gateWayAddress.nService & NODE_NETWORK) == NODE_NETWORK 
+                         && IsRoutable(epGateWay.address()) 
+                         && !setDNSeed.count(epGateWay) 
+                         && !setIP.count(epGateWay.address()))
+                    {   
+                        AddNewNode(epGateWay,epGateWay.address().to_string(),boost::any(gateWayAddress.nService));
+                        AddNewGateWay(epGateWay,pMvPeer->GetRemote());
+                    }
                 }
                 return true;
             }
