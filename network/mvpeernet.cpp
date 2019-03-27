@@ -4,6 +4,7 @@
 
 #include "mvpeernet.h"
 #include "mvpeer.h"
+#include "crypto.h"
 #include <boost/bind.hpp>
 #include <boost/any.hpp>
 
@@ -285,12 +286,13 @@ void CMvPeerNet::BuildHello(CPeer *pPeer,CWalleveBufStream& ssPayload)
     int64 nTime = WalleveGetNetTime();
     int32 nHeight = pNetChannel->GetPrimaryChainHeight();
     CMacAddress macAddr;
-    if(!GetActiveIFMacAddress(macAddr))
+    if(!GetAnIFMacAddress(macAddr))
     {
-        WalleveDebug("Get Active Interface Mac Address failed.");
+        throw std::runtime_error("Get An Interface Mac Address failed.");
     }
     std::vector<unsigned char> macData = macAddr.GetData();
-    ssPayload << nVersion << nService << nTime << nNonce << subVersion << nHeight << macData << rootPath;
+    uint256 hashPathRoot = crypto::CryptoHash(rootPath.data(), rootPath.size());
+    ssPayload << nVersion << nService << nTime << nNonce << subVersion << nHeight << macData << hashPathRoot.ToString();
 }
 
 void CMvPeerNet::HandlePeerWriten(CPeer *pPeer)

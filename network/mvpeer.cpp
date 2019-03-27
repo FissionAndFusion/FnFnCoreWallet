@@ -189,12 +189,12 @@ int CMvPeer::HandshakeReadCompleted()
                 }
                 int64 nTime;
                 std::vector<unsigned char> macData;
-                std::string rootPath;
-                ss >> nVersion >> nService >> nTime >> nNonceFrom >> strSubVer >> nStartingHeight >> macData >> rootPath;
+                std::string rootPathHex;
+                ss >> nVersion >> nService >> nTime >> nNonceFrom >> strSubVer >> nStartingHeight >> macData >> rootPathHex;
                 
-                if(!macData.empty() && !rootPath.empty()) 
+                if(!macData.empty() && !rootPathHex.empty())
                 { 
-                    remoteUniqueAddress = CUniqueAddress(CMacAddress(macData), rootPath);
+                    remoteUniqueAddress = CUniqueAddress(CMacAddress(macData), rootPathHex);
                 }
                 else 
                 { 
