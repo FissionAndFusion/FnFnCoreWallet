@@ -20,7 +20,13 @@ class CPeerNet;
 class CPeer
 {
 public:
-    typedef boost::function<bool(bool&)> CompltFunc;
+    typedef enum : int{
+        SUCCESS = 0,
+        BAN = 1,
+        FAILED = 2
+    }CompltRetStatus;
+    
+    typedef boost::function<int()> CompltFunc;
 
     CPeer(CPeerNet *pPeerNetIn, CIOClient* pClientIn,uint64 nNonceIn,bool fInBoundIn);
     virtual ~CPeer();

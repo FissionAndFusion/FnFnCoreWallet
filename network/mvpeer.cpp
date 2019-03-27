@@ -35,7 +35,7 @@ void CMvPeer::Activate()
     strSubVer.clear();
     nStartingHeight = 0;
 
-    Read(MESSAGE_HEADER_SIZE,boost::bind(&CMvPeer::HandshakeReadHeader,this,_1));
+    Read(MESSAGE_HEADER_SIZE,boost::bind(&CMvPeer::HandshakeReadHeader,this));
     if (!fInBound)
     {
         SendHello();
@@ -141,37 +141,37 @@ bool CMvPeer::ParseMessageHeader()
     return false;
 }
 
-bool CMvPeer::HandshakeReadHeader(bool& fIsBanned)
+int CMvPeer::HandshakeReadHeader()
 {
     if (!ParseMessageHeader())
     {
-        return false;
+        return CPeer::FAILED;
     }
 
     if (hdrRecv.nPayloadSize != 0)
     {
-        Read(hdrRecv.nPayloadSize,boost::bind(&CMvPeer::HandshakeReadCompleted,this,_1));
-        return true;
+        Read(hdrRecv.nPayloadSize,boost::bind(&CMvPeer::HandshakeReadCompleted,this));
+        return CPeer::SUCCESS;
     }
-    return HandshakeReadCompleted(fIsBanned);
+    return HandshakeReadCompleted();
 }
 
-bool CMvPeer::HandleReadHeader(bool& fIsBanned)
+int CMvPeer::HandleReadHeader()
 {
     if (!ParseMessageHeader())
     {
-        return false;
+        return CPeer::FAILED;
     }
 
     if (hdrRecv.nPayloadSize != 0)
     {
-        Read(hdrRecv.nPayloadSize,boost::bind(&CMvPeer::HandleReadCompleted,this,_1));
-        return true;
+        Read(hdrRecv.nPayloadSize,boost::bind(&CMvPeer::HandleReadCompleted,this));
+        return CPeer::SUCCESS;
     }
-    return HandleReadCompleted(fIsBanned);
+    return HandleReadCompleted();
 }
 
-bool CMvPeer::HandshakeReadCompleted(bool& fIsBanned)
+int CMvPeer::HandshakeReadCompleted()
 {
     CWalleveBufStream& ss = ReadStream();
     uint256 hash = multiverse::crypto::CryptoHash(ss.GetData(),ss.GetSize());
@@ -185,7 +185,7 @@ bool CMvPeer::HandshakeReadCompleted(bool& fIsBanned)
             {
                 if (nVersion != 0)
                 {
-                    return false;
+                    return CPeer::FAILED;
                 }
                 int64 nTime;
                 std::vector<unsigned char> macData;
@@ -208,22 +208,33 @@ bool CMvPeer::HandshakeReadCompleted(bool& fIsBanned)
                     SendHelloAck();
                     bool fIsBanned = false;
                     bool fIsSuccess = HandshakeCompleted(fIsBanned);
-                    return (!fIsSuccess && fIsBanned) ? true : fIsSuccess;
+                    if(!fIsSuccess && fIsBanned)
+                    {
+                        return CPeer::BAN;
+                    }
+
+                    return fIsSuccess ? CPeer::SUCCESS : CPeer::FAILED;
+                    
                 }
                 SendHello();
-                Read(MESSAGE_HEADER_SIZE,boost::bind(&CMvPeer::HandshakeReadHeader,this,_1));
-                return true;
+                Read(MESSAGE_HEADER_SIZE,boost::bind(&CMvPeer::HandshakeReadHeader,this));
+                return CPeer::SUCCESS;
             }
             else if (nCmd == MVPROTO_CMD_HELLO_ACK && fInBound)
             {
                 if (nVersion == 0)
                 {
-                    return false;
+                    return CPeer::FAILED;
                 }
                 nTimeDelta += (nTimeRecv - nTimeHello) / 2;
                 bool fIsBanned = false;
                 bool fIsSuccess = HandshakeCompleted(fIsBanned);
-                return (!fIsSuccess && fIsBanned) ? true : fIsSuccess;
+                if(!fIsSuccess && fIsBanned)
+                {
+                    return CPeer::BAN;
+                }
+
+                return fIsSuccess ? CPeer::SUCCESS : CPeer::FAILED;
             }
         }
         catch (const std::exception& e)
@@ -231,7 +242,7 @@ bool CMvPeer::HandshakeReadCompleted(bool& fIsBanned)
             StdError(__PRETTY_FUNCTION__, e.what());
         }
     }
-    return false;
+    return CPeer::FAILED;
 }
 
 bool CMvPeer::HandshakeCompleted(bool& fIsBanned)
@@ -241,11 +252,11 @@ bool CMvPeer::HandshakeCompleted(bool& fIsBanned)
         return false;
     }
     nHsTimerId = 0;
-    Read(MESSAGE_HEADER_SIZE,boost::bind(&CMvPeer::HandleReadHeader,this,_1)); 
+    Read(MESSAGE_HEADER_SIZE,boost::bind(&CMvPeer::HandleReadHeader,this)); 
     return true;
 }
 
-bool CMvPeer::HandleReadCompleted(bool& fIsBanned)
+int CMvPeer::HandleReadCompleted()
 {
     CWalleveBufStream& ss = ReadStream();
     uint256 hash = multiverse::crypto::CryptoHash(ss.GetData(),ss.GetSize());
@@ -255,8 +266,8 @@ bool CMvPeer::HandleReadCompleted(bool& fIsBanned)
         {
             if ((static_cast<CMvPeerNet*>(pPeerNet))->HandlePeerRecvMessage(this,hdrRecv.GetChannel(),hdrRecv.GetCommand(),ss))
             {
-                Read(MESSAGE_HEADER_SIZE,boost::bind(&CMvPeer::HandleReadHeader,this,_1));
-                return true;
+                Read(MESSAGE_HEADER_SIZE,boost::bind(&CMvPeer::HandleReadHeader,this));
+                return CPeer::SUCCESS;
             }
         }
         catch (exception& e)
@@ -264,6 +275,6 @@ bool CMvPeer::HandleReadCompleted(bool& fIsBanned)
             StdError(__PRETTY_FUNCTION__, e.what());
         }
     }
-    return false;
+    return CPeer::FAILED;
 }
 

@@ -94,13 +94,16 @@ void CPeer::HandleRead(size_t nTransferred,CompltFunc fnComplt)
     if (nTransferred != 0)
     {
         nTimeRecv = GetTime();
-        bool isBanned = false;
-        if (!fnComplt(isBanned))
+        CompltRetStatus status = (CompltRetStatus)fnComplt();
+        if (status == CompltRetStatus::FAILED)
         {
             pPeerNet->HandlePeerViolate(this);
         }
 
-        //std::cout << "CPeer IS banned " << isBanned << '\n';
+        if(status == CompltRetStatus::BAN)
+        {
+            pPeerNet->HandlePeerClose(this);
+        }
     }
     else 
     {
