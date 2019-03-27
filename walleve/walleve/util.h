@@ -10,10 +10,9 @@
 #include <boost/asio/ip/address.hpp>
 
 #ifdef __linux__
-#include <sys/ioctl.h>
-#include <net/if.h> 
-#include <unistd.h>
-#include <netinet/in.h>
+#include <net/if.h>
+#include <ifaddrs.h>
+#include <netpacket/packet.h>
 #endif
 
 namespace walleve
@@ -179,56 +178,43 @@ private:
     std::string rootPath;
 };
 
-// Get Active interface's mac addr
-inline bool GetActiveIFMacAddress(CMacAddress& mac)
+// Get An interface's mac addr
+inline bool GetAnIFMacAddress(CMacAddress& mac)
 {
     bool success = false;
 #ifdef __linux__
-    struct ifreq ifr;
-    struct ifconf ifc;
-    char buf[1024];
+    struct ifaddrs *ifaddr=NULL;
+    struct ifaddrs *ifa = NULL;
+    int i = 0;
 
-    int sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
-    if (sock == -1) 
-    { 
-        return success;
-    }
-
-    ifc.ifc_len = sizeof(buf);
-    ifc.ifc_buf = buf;
-    if (ioctl(sock, SIOCGIFCONF, &ifc) == -1) 
-    { 
-        close(sock);
-        return success;
-    }
-
-    struct ifreq* it = ifc.ifc_req;
-    const struct ifreq* const end = it + (ifc.ifc_len / sizeof(struct ifreq));
-
-    for (; it != end; ++it) 
+    std::vector<std::vector<unsigned char>> vMacAddress;
+    if (getifaddrs(&ifaddr) == -1)
     {
-        strcpy(ifr.ifr_name, it->ifr_name);
-        if (ioctl(sock, SIOCGIFFLAGS, &ifr) == 0) 
+        return success;
+    }
+    else
+    {
+        for ( ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next)
         {
-            if (! (ifr.ifr_flags & IFF_LOOPBACK)) // don't count loopback
-            { 
-                if (ioctl(sock, SIOCGIFHWADDR, &ifr) == 0) 
-                {
-                    success = true;
-                    break;
-                }
+            if ( ifa->ifa_addr && ifa->ifa_addr->sa_family == AF_PACKET 
+            && !(ifa->ifa_flags & IFF_LOOPBACK) )
+            {
+                struct sockaddr_ll *s = (struct sockaddr_ll*)ifa->ifa_addr;
+                std::vector<unsigned char> data;
+                std::copy_n(&(s->sll_addr[0]), s->sll_halen, std::back_inserter(data));
+                vMacAddress.push_back(data);
             }
         }
+        freeifaddrs(ifaddr);
     }
-
+    
+    success = vMacAddress.size() > 0 ? true : false;
     if (success) 
     {
-        std::vector<unsigned char> data;
-        std::copy_n(&(ifr.ifr_hwaddr.sa_data[0]), 6, std::back_inserter(data));
+        std::sort(vMacAddress.begin(), vMacAddress.end());
+        std::vector<unsigned char> data = *(vMacAddress.begin());
         mac = CMacAddress(data);
     }
-
-    close(sock);
  #endif   
     return success;
 }
