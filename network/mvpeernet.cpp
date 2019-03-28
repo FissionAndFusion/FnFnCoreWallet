@@ -480,6 +480,32 @@ bool CMvPeerNet::IsThisNodeData(const uint256& hashFork, uint64 nNonce, const ui
     return true;
 }
 
+CAddress CMvPeerNet::ToGateWayAddress(const CNetHost& gateWayNode)
+{
+    if(!gateWayNode.ToEndPoint().address().is_unspecified())
+    {
+        if(gateWayNode.data.type() == typeid(uint64) && 
+            IsRoutable(gateWayNode.ToEndPoint().address()))
+        {
+            uint64 nService = boost::any_cast<uint64>(gateWayNode.data);
+            return CAddress(nService, gateWayNode.ToEndPoint());
+        }
+        else
+        {
+            CNetHost defaultGateWay(NODE_DEFAULT_GATEWAY, confNetwork.nPortDefault, "", 
+                boost::any(uint64(network::NODE_NETWORK)));
+            uint64 nService = boost::any_cast<uint64>(defaultGateWay.data);
+            return CAddress(nService, defaultGateWay.ToEndPoint());
+        }
+    }
+    else
+    {
+        CNetHost defaultGateWay(NODE_DEFAULT_GATEWAY, confNetwork.nPortDefault, "", 
+            boost::any(uint64(network::NODE_NETWORK)));
+        uint64 nService = boost::any_cast<uint64>(defaultGateWay.data);
+        return CAddress(nService, defaultGateWay.ToEndPoint());
+    }
+}
 
 bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CWalleveBufStream& ssPayload)
 {
@@ -495,23 +521,8 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                 vector<CAddress> vAddr;
                 
                 const CNetHost& gateWayNode = confNetwork.gateWayNode;
-                if(!gateWayNode.ToEndPoint().address().is_unspecified())
-                {
-                    if(gateWayNode.data.type() == typeid(uint64) && 
-                        IsRoutable(gateWayNode.ToEndPoint().address()))
-                    {
-                        uint64 nService = boost::any_cast<uint64>(gateWayNode.data);
-                        vAddr.push_back(CAddress(nService, gateWayNode.ToEndPoint()));
-                    }
-                }
-                else
-                {
-                    CNetHost defaulGateWay(NODE_DEFAULT_GATEWAY, confNetwork.nPortDefault, "", 
-                        boost::any(uint64(network::NODE_NETWORK)));
-                    
-                    uint64 nService = boost::any_cast<uint64>(defaulGateWay.data);
-                    vAddr.push_back(CAddress(nService, defaulGateWay.ToEndPoint()));
-                }
+                CAddress gatewayAddress = ToGateWayAddress(gateWayNode);
+                vAddr.push_back(gatewayAddress);
                 
                 for(const CNodeAvail& node : vNode)
                 {
