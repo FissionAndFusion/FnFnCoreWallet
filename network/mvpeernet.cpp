@@ -518,11 +518,9 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
             {
                 vector<CNodeAvail> vNode;
                 RetrieveGoodNode(vNode,NODE_ACTIVE_TIME,500);
-                vector<CAddress> vAddr;
                 
-                const CNetHost& gateWayNode = confNetwork.gateWayNode;
-                CAddress gatewayAddress = ToGateWayAddress(gateWayNode);
-                vAddr.push_back(gatewayAddress);
+                vector<CAddress> vAddr;
+                vAddr.push_back(ToGateWayAddress(confNetwork.gateWayNode));
                 
                 for(const CNodeAvail& node : vNode)
                 {
