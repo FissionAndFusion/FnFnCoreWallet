@@ -233,7 +233,7 @@ private:
     /*Event router*/
     typedef std::pair<uint256, uint64> ForkNonceKeyType;
     std::deque<std::pair<uint64, boost::any>> queCount;
-    std::deque<std::pair<uint64, std::shared_ptr<walleve::CIOCompletionUntil>>> queCompletion;
+    std::vector<std::pair<uint64, std::shared_ptr<walleve::CIOCompletionUntil>>> vCompletion;
     std::vector<std::string> vRPCTopicIds;
     typedef std::map<ForkNonceKeyType, uint32> MapForkCountType; 
     MapForkCountType mapChildNodeForkCount;

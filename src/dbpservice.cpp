@@ -2784,7 +2784,7 @@ void CDbpService::PushRPC(std::vector<uint8>& data, int type)
 void CDbpService::CreateCompletion(uint64 nNonce, std::shared_ptr<walleve::CIOCompletionUntil> sPtr)
 {
     std::pair<uint64, std::shared_ptr<walleve::CIOCompletionUntil>> pair(nNonce, sPtr);
-    queCompletion.push_front(pair);
+    vCompletion.push_back(pair);
 }
 
 void CDbpService::CompletionByNonce(uint64& nNonce, boost::any obj)
@@ -2792,8 +2792,9 @@ void CDbpService::CompletionByNonce(uint64& nNonce, boost::any obj)
     auto compare = [nNonce](const std::pair<uint64, std::shared_ptr<walleve::CIOCompletionUntil>>& element) {
         return nNonce == element.first;
     };
-    auto iter = std::find_if(queCompletion.begin(), queCompletion.end(), compare);
-    if (iter != queCompletion.end())
+
+    auto iter = std::find_if(vCompletion.begin(), vCompletion.end(), compare);
+    if (iter != vCompletion.end())
     {
         iter->second->obj = obj;
         iter->second->Completed(true);
@@ -2805,10 +2806,11 @@ void CDbpService::DeleteCompletionByNonce(uint64 nNonce)
     auto compare = [nNonce](const std::pair<uint64, std::shared_ptr<walleve::CIOCompletionUntil>>& element) {
         return nNonce == element.first;
     };
-    auto iter = std::find_if(queCompletion.begin(), queCompletion.end(), compare);
-    if (iter != queCompletion.end())
+
+    auto iter = std::find_if(vCompletion.begin(), vCompletion.end(), compare);
+    if (iter != vCompletion.end())
     {
-        queCompletion.erase(iter);
+        vCompletion.erase(iter);
     }
 }
 
