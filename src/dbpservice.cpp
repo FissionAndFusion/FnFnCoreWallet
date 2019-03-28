@@ -1644,7 +1644,7 @@ void CDbpService::RPCRootHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRe
        if (sessionCount == 0)
         {
             CMvRPCRouteListForkRet ret;
-            std::vector<std::pair<uint256,CProfile>> vFork;
+            std::vector<std::pair<uint256, CProfile>> vFork;
             pService->ListFork(vFork, data->fAll);
             std::vector<CMvRPCProfile> vRpcFork;
             TransformForks(vFork, vRpcFork);
@@ -2783,10 +2783,6 @@ void CDbpService::PushRPC(std::vector<uint8>& data, int type)
 
 void CDbpService::CreateCompletion(uint64 nNonce, std::shared_ptr<walleve::CIOCompletionUntil> sPtr)
 {
-    if(queCompletion.size() > 100)
-    {
-        queCompletion.pop_back();
-    }
     std::pair<uint64, std::shared_ptr<walleve::CIOCompletionUntil>> pair(nNonce, sPtr);
     queCompletion.push_front(pair);
 }
