@@ -204,6 +204,7 @@ int CMvPeer::HandshakeReadCompleted()
                 nTimeDelta = nTime - nTimeRecv;
                 if (!fInBound)
                 {
+                    // Client
                     nTimeDelta += (nTimeRecv - nTimeHello) / 2;
                     SendHelloAck();
                     bool fIsBanned = false;
@@ -216,9 +217,13 @@ int CMvPeer::HandshakeReadCompleted()
                     return fIsSuccess ? CPeer::SUCCESS : CPeer::FAILED;
                     
                 }
-                SendHello();
-                Read(MESSAGE_HEADER_SIZE,boost::bind(&CMvPeer::HandshakeReadHeader,this));
-                return CPeer::SUCCESS;
+                else
+                {
+                    // Server
+                    SendHello();
+                    Read(MESSAGE_HEADER_SIZE,boost::bind(&CMvPeer::HandshakeReadHeader,this));
+                    return CPeer::SUCCESS;
+                }
             }
             else if (nCmd == MVPROTO_CMD_HELLO_ACK && fInBound)
             {
