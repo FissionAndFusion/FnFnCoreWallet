@@ -285,11 +285,12 @@ void CMvPeerNet::BuildHello(CPeer *pPeer,CWalleveBufStream& ssPayload)
     uint64 nNonce = pPeer->GetNonce();
     int64 nTime = WalleveGetNetTime();
     int32 nHeight = pNetChannel->GetPrimaryChainHeight();
-    CMacAddress macAddr;
-    if(!GetAnIFMacAddress(macAddr))
+    vector<uint8> vecMac;
+    if(!GetAnIFMacAddress(vecMac))
     {
         throw std::runtime_error("Get An Interface Mac Address failed.");
     }
+    CMacAddress macAddr(vecMac);
     std::vector<unsigned char> macData = macAddr.GetData();
     uint256 hashPathRoot = crypto::CryptoHash(rootPath.data(), rootPath.size());
     ssPayload << nVersion << nService << nTime << nNonce << subVersion << nHeight << macData << hashPathRoot.ToString();

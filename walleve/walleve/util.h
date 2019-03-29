@@ -9,10 +9,15 @@
 #include <boost/date_time.hpp>
 #include <boost/asio/ip/address.hpp>
 
-#ifdef __linux__
+#if defined __linux__
 #include <net/if.h>
 #include <ifaddrs.h>
 #include <netpacket/packet.h>
+#elif defined __APPLE__
+#include <ifaddrs.h>
+#include <net/if.h>
+#include <net/if_types.h>
+#include <net/if_dl.h>
 #endif
 
 namespace walleve
@@ -179,43 +184,54 @@ private:
 };
 
 // Get An interface's mac addr
-inline bool GetAnIFMacAddress(CMacAddress& mac)
+inline bool GetAnIFMacAddress(std::vector<uint8>& vecMac)
 {
     bool success = false;
-#ifdef __linux__
+#if (defined __linux__) || (defined __APPLE__)
     struct ifaddrs *ifaddr=NULL;
     struct ifaddrs *ifa = NULL;
     int i = 0;
 
-    std::vector<std::vector<unsigned char>> vMacAddress;
+    std::vector<std::vector<uint8>> vecMacList;
     if (getifaddrs(&ifaddr) == -1)
     {
         return success;
     }
-    else
+
+    for ( ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next)
     {
-        for ( ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next)
+        std::vector<uint8> data;
+#if defined __linux__
+        if (ifa->ifa_addr && ifa->ifa_addr->sa_family == AF_PACKET && !(ifa->ifa_flags & IFF_LOOPBACK))
         {
-            if ( ifa->ifa_addr && ifa->ifa_addr->sa_family == AF_PACKET 
-            && !(ifa->ifa_flags & IFF_LOOPBACK) )
+            struct sockaddr_ll *s = (struct sockaddr_ll*)ifa->ifa_addr;
+            std::copy_n(&(s->sll_addr[0]), s->sll_halen, std::back_inserter(data));
+            vecMacList.push_back(data);
+        }
+#else
+        if (ifa->ifa_addr && ifa->ifa_addr->sa_family == AF_LINK && !(ifa->ifa_flags & IFF_LOOPBACK))
+        {
+            struct sockaddr_dl * sdl = (struct sockaddr_dl *) ifa->ifa_addr;
+            if (sdl->sdl_type == IFT_ETHER)
             {
-                struct sockaddr_ll *s = (struct sockaddr_ll*)ifa->ifa_addr;
-                std::vector<unsigned char> data;
-                std::copy_n(&(s->sll_addr[0]), s->sll_halen, std::back_inserter(data));
-                vMacAddress.push_back(data);
+                std::copy_n((uint8*)sdl->sdl_data + sdl->sdl_nlen, sdl->sdl_alen, std::back_inserter(data));
             }
         }
-        freeifaddrs(ifaddr);
+#endif
+        if (!data.empty())
+        {
+            vecMacList.push_back(data);
+        }
     }
+    freeifaddrs(ifaddr);
     
-    success = vMacAddress.size() > 0 ? true : false;
+    success = vecMacList.size() > 0 ? true : false;
     if (success) 
     {
-        std::sort(vMacAddress.begin(), vMacAddress.end());
-        std::vector<unsigned char> data = *(vMacAddress.begin());
-        mac = CMacAddress(data);
+        std::sort(vecMacList.begin(), vecMacList.end());
+        vecMac = std::move(vecMacList.front());
     }
- #endif   
+#endif
     return success;
 }
 
