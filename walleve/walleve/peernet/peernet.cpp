@@ -36,9 +36,9 @@ void CPeerNet::AddPeerRecord(CPeer* pPeer)
     setIP.insert(pPeer->GetRemote().address());
 }
 
-bool CPeerNet::AddRemotePeerId(CPeer* pPeer, const uint256& addr, bool fIsInbound)
+bool CPeerNet::AddRemotePeerId(CPeer* pPeer, const uint256& hashId, bool fIsInbound)
 {
-    return epMngr.AddNewEndPointMac(pPeer->GetRemote(), addr, fIsInbound);
+    return epMngr.AddNewEndPointMac(pPeer->GetRemote(), hashId, fIsInbound);
 }
 
 void CPeerNet::HandlePeerClose(CPeer * pPeer)

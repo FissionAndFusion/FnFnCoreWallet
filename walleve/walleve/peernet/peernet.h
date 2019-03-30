@@ -96,7 +96,7 @@ protected:
     int GetCandidateNodeCount() { return epMngr.GetCandidateNodeCount(); }
 
     void AddPeerRecord(CPeer* pPeer);
-    bool AddRemotePeerId(CPeer* pPeer, const uint256& addr, bool fIsInbound);
+    bool AddRemotePeerId(CPeer* pPeer, const uint256& hashId, bool fIsInbound);
 protected:
     CPeerNetConfig confNetwork;
     boost::asio::ip::address localIP;
