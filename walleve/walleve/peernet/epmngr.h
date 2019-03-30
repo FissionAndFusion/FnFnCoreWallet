@@ -113,8 +113,8 @@ public:
     std::string GetOutBoundName(const boost::asio::ip::tcp::endpoint& ep);
     bool GetOutBoundData(const boost::asio::ip::tcp::endpoint& ep,boost::any& dataRet);
     bool SetOutBoundData(const boost::asio::ip::tcp::endpoint& ep,const boost::any& dataIn);
-    bool GetOutBoundMacAddress(const boost::asio::ip::tcp::endpoint& ep,uint256& addr);
-    bool SetOutBoundMacAddress(const boost::asio::ip::tcp::endpoint& ep,const uint256& addr);
+    bool GetOutBoundNodeId(const boost::asio::ip::tcp::endpoint& ep,uint256& addr);
+    bool SetOutBoundNodeId(const boost::asio::ip::tcp::endpoint& ep,const uint256& addr);
     bool FetchOutBound(boost::asio::ip::tcp::endpoint& ep);
     bool AcceptInBound(const boost::asio::ip::tcp::endpoint& ep);
     void RewardEndpoint(const boost::asio::ip::tcp::endpoint& ep,Bonus bonus);
@@ -122,8 +122,8 @@ public:
     void RetrieveGoodNode(std::vector<CNodeAvail>& vGoodNode,
                           int64 nActiveTime,std::size_t nMaxCount);
     int GetCandidateNodeCount(){ return mngrNode.GetCandidateNodeCount(); }
-    bool AddNewEndPointMac(const boost::asio::ip::tcp::endpoint& ep, const uint256& addr, bool IsInBound);
-    void RemoveEndPointMac(const boost::asio::ip::tcp::endpoint& ep);
+    bool AddNewEndPointNodeId(const boost::asio::ip::tcp::endpoint& ep, const uint256& addr, bool IsInBound);
+    void RemoveEndPointNodeId(const boost::asio::ip::tcp::endpoint& ep);
 protected:
     void CleanInactiveAddress();
 protected:
@@ -131,7 +131,7 @@ protected:
     CNodeManager mngrNode;
     
     std::map<uint256,CAddressStatus> mapAddressStatus;
-    std::map<boost::asio::ip::tcp::endpoint,uint256> mapRemoteEPMac;
+    std::map<boost::asio::ip::tcp::endpoint,uint256> mapRemoteEPNodeId;
     
 };
 

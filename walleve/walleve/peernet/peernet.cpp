@@ -38,7 +38,7 @@ void CPeerNet::AddPeerRecord(CPeer* pPeer)
 
 bool CPeerNet::AddRemotePeerId(CPeer* pPeer, const uint256& hashId, bool fIsInbound)
 {
-    return epMngr.AddNewEndPointMac(pPeer->GetRemote(), hashId, fIsInbound);
+    return epMngr.AddNewEndPointNodeId(pPeer->GetRemote(), hashId, fIsInbound);
 }
 
 void CPeerNet::HandlePeerClose(CPeer * pPeer)
@@ -213,7 +213,7 @@ void CPeerNet::RemovePeer(CPeer *pPeer,const CEndpointManager::CloseReason& reas
    
     CancelClientTimers(pPeer->GetNonce()); 
     mapPeer.erase(pPeer->GetNonce());
-    epMngr.RemoveEndPointMac(pPeer->GetRemote());
+    epMngr.RemoveEndPointNodeId(pPeer->GetRemote());
     DestroyPeer(pPeer);
 }
 
@@ -303,14 +303,14 @@ bool CPeerNet::SetNodeData(const tcp::endpoint& epNode,const boost::any& data)
     return epMngr.SetOutBoundData(epNode,data);
 }
 
-bool CPeerNet::GetNodeMacAddress(const boost::asio::ip::tcp::endpoint& epNode, uint256& addr)
+bool CPeerNet::GetNodeRemoteId(const boost::asio::ip::tcp::endpoint& epNode, uint256& addr)
 {
-    return epMngr.GetOutBoundMacAddress(epNode, addr);
+    return epMngr.GetOutBoundNodeId(epNode, addr);
 }
 
 bool CPeerNet::SetNodeRemoteId(const boost::asio::ip::tcp::endpoint& epNode, const uint256& addr)
 {
-    return epMngr.SetOutBoundMacAddress(epNode, addr);
+    return epMngr.SetOutBoundNodeId(epNode, addr);
 }
 
 void CPeerNet::RetrieveGoodNode(vector<CNodeAvail>& vGoodNode,int64 nActiveTime,size_t nMaxCount)
