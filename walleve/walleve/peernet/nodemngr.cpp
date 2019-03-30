@@ -19,7 +19,7 @@ CNodeManager::CNodeManager()
 
 void CNodeManager::AddNew(const tcp::endpoint& ep,const string& strName,const boost::any& data)
 {
-    if (mapNode.insert(make_pair(ep,CNode(ep,CUniqueAddress(),strName,data))).second)
+    if (mapNode.insert(make_pair(ep,CNode(ep,uint256(),strName,data))).second)
     {
         mapIdle.insert(make_pair(GetTime(),ep)); 
         if (mapIdle.size() > MAX_IDLENODES)
@@ -85,13 +85,13 @@ bool CNodeManager::SetData(const tcp::endpoint& ep,const boost::any& dataIn)
     return false;
 }
 
-bool CNodeManager::GetMacAddress(const boost::asio::ip::tcp::endpoint& ep,CUniqueAddress& addr)
+bool CNodeManager::GetMacAddress(const boost::asio::ip::tcp::endpoint& ep,uint256& addr)
 {
     map<tcp::endpoint,CNode>::iterator mi = mapNode.find(ep);
     if (mi != mapNode.end())
     {
         CNode& node = (*mi).second;
-        if (!node.macAddr.IsEmpty())
+        if (node.macAddr.size() != 0)
         {
             addr = node.macAddr;
             return true;
@@ -100,7 +100,7 @@ bool CNodeManager::GetMacAddress(const boost::asio::ip::tcp::endpoint& ep,CUniqu
     return false;
 }
 
-bool CNodeManager::SetMacAddress(const boost::asio::ip::tcp::endpoint& ep,const CUniqueAddress& addr)
+bool CNodeManager::SetMacAddress(const boost::asio::ip::tcp::endpoint& ep,const uint256& addr)
 {
     map<tcp::endpoint,CNode>::iterator mi = mapNode.find(ep);
     if (mi != mapNode.end())
@@ -119,7 +119,7 @@ void CNodeManager::Clear()
     mapRemoteEPMac.clear();
 }
 
-void CNodeManager::Ban(const walleve::CUniqueAddress& address,int64 nBanTo)
+void CNodeManager::Ban(const uint256& address,int64 nBanTo)
 {
     vector<tcp::endpoint> vNode;
     multimap<int64,tcp::endpoint>::iterator it = mapIdle.begin();
@@ -209,7 +209,7 @@ void CNodeManager::RemoveInactiveNodes()
     }
 }
 
-void CNodeManager::AddNewEndPointMac(const boost::asio::ip::tcp::endpoint& ep, const walleve::CUniqueAddress& addr)
+void CNodeManager::AddNewEndPointMac(const boost::asio::ip::tcp::endpoint& ep, const uint256& addr)
 {
     mapRemoteEPMac[ep] = addr;
 }

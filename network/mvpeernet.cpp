@@ -285,15 +285,21 @@ void CMvPeerNet::BuildHello(CPeer *pPeer,CWalleveBufStream& ssPayload)
     uint64 nNonce = pPeer->GetNonce();
     int64 nTime = WalleveGetNetTime();
     int32 nHeight = pNetChannel->GetPrimaryChainHeight();
-    vector<uint8> vecMac;
+    std::vector<uint8> vecMac;
     if(!GetAnIFMacAddress(vecMac))
     {
         throw std::runtime_error("Get An Interface Mac Address failed.");
     }
-    CMacAddress macAddr(vecMac);
-    std::vector<unsigned char> macData = macAddr.GetData();
-    uint256 hashPathRoot = crypto::CryptoHash(rootPath.data(), rootPath.size());
-    ssPayload << nVersion << nService << nTime << nNonce << subVersion << nHeight << macData << hashPathRoot.ToString();
+   
+    std::vector<uint8> vRootPath(rootPath.begin(), rootPath.end());
+    std::vector<uint8> dataSecret;
+    std::copy(vecMac.begin(), vecMac.end(), std::back_inserter(dataSecret));
+    std::copy(vRootPath.begin(), vRootPath.end(), std::back_inserter(dataSecret));
+   
+    std::vector<uint8> vchSig;
+    crypto::CryptoSign(nodeKey, dataSecret.data(), dataSecret.size(), vchSig);
+    ssPayload << nVersion << nService << nTime << nNonce << subVersion << nHeight << 
+        dataSecret << vchSig << nodeKey.pubkey;
 }
 
 void CMvPeerNet::HandlePeerWriten(CPeer *pPeer)
@@ -326,7 +332,7 @@ bool CMvPeerNet::HandlePeerHandshaked(CPeer *pPeer,uint32 nTimerId,bool& fIsBann
 
     }
 
-    if(!AddPeerMacAddress(pPeer, pMvPeer->remoteUniqueAddress, pMvPeer->IsInBound()))
+    if(!AddRemotePeerId(pPeer, pMvPeer->hashRemoteId, pMvPeer->IsInBound()))
     {
         tcp::endpoint ep = pMvPeer->GetRemote();
         RemoveNode(ep);
@@ -336,7 +342,7 @@ bool CMvPeerNet::HandlePeerHandshaked(CPeer *pPeer,uint32 nTimerId,bool& fIsBann
     else
     {
         fIsBanned = false;
-        SetNodeMacAddress(pMvPeer->GetRemote(), pMvPeer->remoteUniqueAddress);
+        SetNodeRemoteId(pMvPeer->GetRemote(), pMvPeer->hashRemoteId);
     }
     
 

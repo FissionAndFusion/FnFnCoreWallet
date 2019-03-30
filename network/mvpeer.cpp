@@ -188,17 +188,24 @@ int CMvPeer::HandshakeReadCompleted()
                     return CPeer::FAILED;
                 }
                 int64 nTime;
-                std::vector<unsigned char> macData;
-                std::string rootPathHex;
-                ss >> nVersion >> nService >> nTime >> nNonceFrom >> strSubVer >> nStartingHeight >> macData >> rootPathHex;
+              
+                std::vector<uint8> dataSecret, vchSig;
+                uint256 pubKey;
+                ss >> nVersion >> nService >> nTime >> nNonceFrom >> strSubVer >> nStartingHeight 
+                    >> dataSecret >> vchSig >> pubKey;
                 
-                if(!macData.empty() && !rootPathHex.empty())
+                if(!dataSecret.empty() && !vchSig.empty() && pubKey.size() != 0)
                 { 
-                    remoteUniqueAddress = CUniqueAddress(CMacAddress(macData), rootPathHex);
+                    if(!crypto::CryptoVerify(pubKey, dataSecret.data(), dataSecret.size(), vchSig))
+                    {
+                        return CPeer::FAILED;
+                    }
+
+                    hashRemoteId = crypto::CryptoHash(dataSecret.data(), dataSecret.size());
                 }
                 else 
                 { 
-                    throw std::runtime_error("Received Unique Address Invalid"); 
+                    throw std::runtime_error("Received dataSecret,vchSig,PubKey Invalid");
                 }
                 
                 nTimeDelta = nTime - nTimeRecv;

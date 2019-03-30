@@ -56,12 +56,12 @@ protected:
 class CAddressBanned
 {
 public:
-    CAddressBanned(const CUniqueAddress& addrBannedIn,int nScoreIn,int64 nBanTimeIn)
+    CAddressBanned(const uint256& addrBannedIn,int nScoreIn,int64 nBanTimeIn)
     : macAddrBanned(addrBannedIn),nScore(nScoreIn),nBanTime(nBanTimeIn)
     {
     }
 public:
-    CUniqueAddress macAddrBanned;
+    uint256 macAddrBanned;
     int nScore;
     int64 nBanTime;
 };
@@ -103,8 +103,8 @@ public:
     void Clear();
     int  GetEndpointScore(const boost::asio::ip::tcp::endpoint& ep);
     void GetBanned(std::vector<CAddressBanned>& vBanned);
-    void SetBan(std::vector<CUniqueAddress>& vAddrToBan,int64 nBanTime);
-    void ClearBanned(std::vector<CUniqueAddress>& vAddrToClear);
+    void SetBan(std::vector<uint256>& vAddrToBan,int64 nBanTime);
+    void ClearBanned(std::vector<uint256>& vAddrToClear);
     void ClearAllBanned();
 
     void AddNewOutBound(const boost::asio::ip::tcp::endpoint& ep,const std::string& strName,
@@ -113,8 +113,8 @@ public:
     std::string GetOutBoundName(const boost::asio::ip::tcp::endpoint& ep);
     bool GetOutBoundData(const boost::asio::ip::tcp::endpoint& ep,boost::any& dataRet);
     bool SetOutBoundData(const boost::asio::ip::tcp::endpoint& ep,const boost::any& dataIn);
-    bool GetOutBoundMacAddress(const boost::asio::ip::tcp::endpoint& ep,CUniqueAddress& addr);
-    bool SetOutBoundMacAddress(const boost::asio::ip::tcp::endpoint& ep,const CUniqueAddress& addr);
+    bool GetOutBoundMacAddress(const boost::asio::ip::tcp::endpoint& ep,uint256& addr);
+    bool SetOutBoundMacAddress(const boost::asio::ip::tcp::endpoint& ep,const uint256& addr);
     bool FetchOutBound(boost::asio::ip::tcp::endpoint& ep);
     bool AcceptInBound(const boost::asio::ip::tcp::endpoint& ep);
     void RewardEndpoint(const boost::asio::ip::tcp::endpoint& ep,Bonus bonus);
@@ -122,7 +122,7 @@ public:
     void RetrieveGoodNode(std::vector<CNodeAvail>& vGoodNode,
                           int64 nActiveTime,std::size_t nMaxCount);
     int GetCandidateNodeCount(){ return mngrNode.GetCandidateNodeCount(); }
-    bool AddNewEndPointMac(const boost::asio::ip::tcp::endpoint& ep, const walleve::CUniqueAddress& addr, bool IsInBound);
+    bool AddNewEndPointMac(const boost::asio::ip::tcp::endpoint& ep, const uint256& addr, bool IsInBound);
     void RemoveEndPointMac(const boost::asio::ip::tcp::endpoint& ep);
 protected:
     void CleanInactiveAddress();
@@ -130,8 +130,8 @@ protected:
     enum {MAX_ADDRESS_COUNT = 2048,MAX_INACTIVE_TIME = 864000};
     CNodeManager mngrNode;
     
-    std::map<walleve::CUniqueAddress,CAddressStatus> mapAddressStatus;
-    std::map<boost::asio::ip::tcp::endpoint, walleve::CUniqueAddress> mapRemoteEPMac;
+    std::map<uint256,CAddressStatus> mapAddressStatus;
+    std::map<boost::asio::ip::tcp::endpoint,uint256> mapRemoteEPMac;
     
 };
 
