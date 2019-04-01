@@ -318,6 +318,11 @@ void CPeerNet::RetrieveGoodNode(vector<CNodeAvail>& vGoodNode,int64 nActiveTime,
     return epMngr.RetrieveGoodNode(vGoodNode,nActiveTime,nMaxCount);
 }
 
+void CPeerNet::AddNewGateWay(const boost::asio::ip::tcp::endpoint& epGateWay, const boost::asio::ip::tcp::endpoint& epNode)
+{
+    return epMngr.AddNewGateWay(epGateWay,epNode);
+}
+
 std::string CPeerNet::GetLocalIP()
 {
     if (IsRoutable(localIP))

@@ -121,6 +121,8 @@ public:
     void CloseEndpoint(const boost::asio::ip::tcp::endpoint& ep,CloseReason reason);
     void RetrieveGoodNode(std::vector<CNodeAvail>& vGoodNode,
                           int64 nActiveTime,std::size_t nMaxCount);
+    void AddNewGateWay(const boost::asio::ip::tcp::endpoint& epGateWay, 
+                            const boost::asio::ip::tcp::endpoint& epNode);
     int GetCandidateNodeCount(){ return mngrNode.GetCandidateNodeCount(); }
     bool AddNewEndPointNodeId(const boost::asio::ip::tcp::endpoint& ep, const uint256& addr, bool IsInBound);
     void RemoveEndPointNodeId(const boost::asio::ip::tcp::endpoint& ep);
@@ -132,6 +134,7 @@ protected:
     
     std::map<uint256,CAddressStatus> mapAddressStatus;
     std::map<boost::asio::ip::tcp::endpoint,uint256> mapRemoteEPNodeId;
+    std::map<boost::asio::ip::tcp::endpoint, boost::asio::ip::tcp::endpoint> mapRemoteGateWay;
     
 };
 
