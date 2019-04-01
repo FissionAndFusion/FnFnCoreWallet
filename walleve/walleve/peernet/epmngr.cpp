@@ -314,7 +314,17 @@ void CEndpointManager::RetrieveGoodNode(vector<CNodeAvail>& vGoodNode,
         if (it != mapAddressStatus.end() 
             && (*it).second.nLastSeen > nActive && (*it).second.nScore >= 0)
         {
-            mapScore.insert(make_pair(-(*it).second.nScore,CNodeAvail(node,(*it).second.nLastSeen)));
+            auto iter = mapRemoteGateWay.find(node.ep);
+            if(iter != mapRemoteGateWay.end())
+            {
+                CNode nodeGateWay(node);
+                nodeGateWay.ep = mapRemoteGateWay[node.ep];
+                mapScore.insert(make_pair(-(*it).second.nScore,CNodeAvail(nodeGateWay,(*it).second.nLastSeen)));
+            }
+            else
+            {
+                mapScore.insert(make_pair(-(*it).second.nScore,CNodeAvail(node,(*it).second.nLastSeen)));
+            }
         }
     }
 
@@ -323,6 +333,12 @@ void CEndpointManager::RetrieveGoodNode(vector<CNodeAvail>& vGoodNode,
     {
         vGoodNode.push_back((*it).second);
     }
+}
+
+void CEndpointManager::AddNewGateWay(const boost::asio::ip::tcp::endpoint& epGateWay, 
+                            const boost::asio::ip::tcp::endpoint& epNode)
+{
+    mapRemoteGateWay[epNode] = epGateWay;
 }
 
 void CEndpointManager::CleanInactiveAddress()
