@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "mode/basic_config.h"
+#include "crypto.h"
 
 namespace multiverse
 {
@@ -27,6 +28,7 @@ public:
     unsigned int nMaxInBounds;
     unsigned int nMaxOutBounds;
     std::vector<std::string> vDNSeed;
+    crypto::CCryptoKey nodeKey;
 };
 
 }  // namespace multiverse

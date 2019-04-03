@@ -52,7 +52,7 @@ set(sources
 add_library(walleve ${sources})
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
-include_directories(./)
+include_directories(./ ../crypto)
 
 target_link_libraries(walleve
 	Boost::system

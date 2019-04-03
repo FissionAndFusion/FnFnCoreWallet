@@ -50,7 +50,7 @@ public:
     int64 nTimeHello;
     std::string strSubVer;
     int32 nStartingHeight;
-    walleve::CUniqueAddress remoteUniqueAddress;
+    uint256 hashRemoteId;
 protected:
     uint32 nMsgMagic;
     uint32 nHsTimerId;

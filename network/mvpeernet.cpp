@@ -4,6 +4,7 @@
 
 #include "mvpeernet.h"
 #include "mvpeer.h"
+#include "crypto.h"
 #include <boost/bind.hpp>
 #include <boost/any.hpp>
 
@@ -286,13 +287,21 @@ void CMvPeerNet::BuildHello(CPeer *pPeer,CWalleveBufStream& ssPayload)
     uint64 nNonce = pPeer->GetNonce();
     int64 nTime = WalleveGetNetTime();
     int32 nHeight = pNetChannel->GetPrimaryChainHeight();
-    CMacAddress macAddr;
-    if(!GetActiveIFMacAddress(macAddr))
+    std::vector<uint8> vecMac;
+    if(!GetAnIFMacAddress(vecMac))
     {
-        WalleveDebug("Get Active Interface Mac Address failed.");
+        throw std::runtime_error("Get An Interface Mac Address failed.");
     }
-    std::vector<unsigned char> macData = macAddr.GetData();
-    ssPayload << nVersion << nService << nTime << nNonce << subVersion << nHeight << macData << rootPath;
+   
+    std::vector<uint8> vRootPath(rootPath.begin(), rootPath.end());
+    std::vector<uint8> dataSecret;
+    std::copy(vecMac.begin(), vecMac.end(), std::back_inserter(dataSecret));
+    std::copy(vRootPath.begin(), vRootPath.end(), std::back_inserter(dataSecret));
+   
+    std::vector<uint8> vchSig;
+    crypto::CryptoSign(nodeKey, dataSecret.data(), dataSecret.size(), vchSig);
+    ssPayload << nVersion << nService << nTime << nNonce << subVersion << nHeight << 
+        dataSecret << vchSig << nodeKey.pubkey;
 }
 
 void CMvPeerNet::HandlePeerWriten(CPeer *pPeer)
@@ -325,7 +334,7 @@ bool CMvPeerNet::HandlePeerHandshaked(CPeer *pPeer,uint32 nTimerId,bool& fIsBann
 
     }
 
-    if(!AddPeerMacAddress(pPeer, pMvPeer->remoteUniqueAddress, pMvPeer->IsInBound()))
+    if(!AddRemotePeerId(pPeer, pMvPeer->hashRemoteId, pMvPeer->IsInBound()))
     {
         tcp::endpoint ep = pMvPeer->GetRemote();
         RemoveNode(ep);
@@ -335,7 +344,7 @@ bool CMvPeerNet::HandlePeerHandshaked(CPeer *pPeer,uint32 nTimerId,bool& fIsBann
     else
     {
         fIsBanned = false;
-        SetNodeMacAddress(pMvPeer->GetRemote(), pMvPeer->remoteUniqueAddress);
+        SetNodeRemoteId(pMvPeer->GetRemote(), pMvPeer->hashRemoteId);
     }
     
 
