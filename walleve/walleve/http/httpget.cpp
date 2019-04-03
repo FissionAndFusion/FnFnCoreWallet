@@ -219,12 +219,14 @@ void CHttpGet::HandleClientCompleted(CHttpGetClient *pGetClient)
         CWalleveHttpRsp& rsp = pEventGetRsp->data;
         pGetClient->GetResponse(rsp);
         CancelTimer(pGetClient->GetTimerId());
+        string strConnection = rsp.mapHeader["connection"];
+
         if (!PostResponse(pGetClient->GetIOModule(),pEventGetRsp))
         {
             CloseConn(pGetClient);
             delete pEventGetRsp;
         }      
-        else if (strcasecmp(rsp.mapHeader["connection"].c_str(),"Close") == 0)
+        else if (strcasecmp(strConnection.c_str(),"Close") == 0)
         {
             CloseConn(pGetClient);
         }
