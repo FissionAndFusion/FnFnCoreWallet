@@ -14,6 +14,8 @@
 #define RESPONSE_PUBLISH_TIMEOUT        (10)
 #define NODE_ACTIVE_TIME                (3 * 60 * 60)
 
+#define NODE_DEFAULT_GATEWAY "0.0.0.0"
+
 using namespace std;
 using namespace walleve;
 using namespace multiverse::network;
@@ -478,6 +480,32 @@ bool CMvPeerNet::IsThisNodeData(const uint256& hashFork, uint64 nNonce, const ui
     return true;
 }
 
+CAddress CMvPeerNet::ToGateWayAddress(const CNetHost& gateWayNode)
+{
+    if(!gateWayNode.ToEndPoint().address().is_unspecified())
+    {
+        if(gateWayNode.data.type() == typeid(uint64) && 
+            IsRoutable(gateWayNode.ToEndPoint().address()))
+        {
+            uint64 nService = boost::any_cast<uint64>(gateWayNode.data);
+            return CAddress(nService, gateWayNode.ToEndPoint());
+        }
+        else
+        {
+            CNetHost defaultGateWay(NODE_DEFAULT_GATEWAY, confNetwork.nPortDefault, "", 
+                boost::any(uint64(network::NODE_NETWORK)));
+            uint64 nService = boost::any_cast<uint64>(defaultGateWay.data);
+            return CAddress(nService, defaultGateWay.ToEndPoint());
+        }
+    }
+    else
+    {
+        CNetHost defaultGateWay(NODE_DEFAULT_GATEWAY, confNetwork.nPortDefault, "", 
+            boost::any(uint64(network::NODE_NETWORK)));
+        uint64 nService = boost::any_cast<uint64>(defaultGateWay.data);
+        return CAddress(nService, defaultGateWay.ToEndPoint());
+    }
+}
 
 bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CWalleveBufStream& ssPayload)
 {
@@ -490,15 +518,9 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
             {
                 vector<CNodeAvail> vNode;
                 RetrieveGoodNode(vNode,NODE_ACTIVE_TIME,500);
-                vector<CAddress> vAddr;
                 
-                const CNetHost& gateWayNode = confNetwork.gateWayNode;
-                if(gateWayNode.data.type() == typeid(uint64) && 
-                    IsRoutable(gateWayNode.ToEndPoint().address()))
-                {
-                    uint64 nService = boost::any_cast<uint64>(gateWayNode.data);
-                    vAddr.push_back(CAddress(nService, gateWayNode.ToEndPoint()));
-                }
+                vector<CAddress> vAddr;
+                vAddr.push_back(ToGateWayAddress(confNetwork.gateWayNode));
                 
                 for(const CNodeAvail& node : vNode)
                 {
@@ -522,10 +544,12 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                 {
                     return false;
                 }
-                for(CAddress& addr : vAddr)
+                
+                for(int i = 1; i < vAddr.size(); ++i)
                 {
+                    CAddress& addr = vAddr[i];
                     tcp::endpoint ep;
-                    addr.ssEndpoint.GetEndpoint(ep);          
+                    addr.ssEndpoint.GetEndpoint(ep);
                     if ((addr.nService & NODE_NETWORK) == NODE_NETWORK 
                          && IsRoutable(ep.address()) 
                          && !setDNSeed.count(ep) 
@@ -534,9 +558,29 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                         AddNewNode(ep,ep.address().to_string(),boost::any(addr.nService));
                     }
                 }
+
                 if (setDNSeed.count(pMvPeer->GetRemote()))
                 {
                     RemoveNode(pMvPeer->GetRemote());
+                }
+
+                CAddress& gateWayAddress = vAddr[0];
+                tcp::endpoint epGateWay;
+                gateWayAddress.ssEndpoint.GetEndpoint(epGateWay);
+                if(epGateWay.address().to_string() == NODE_DEFAULT_GATEWAY)
+                {
+                    RemoveNode(pMvPeer->GetRemote());
+                }
+                else
+                {
+                    if ((gateWayAddress.nService & NODE_NETWORK) == NODE_NETWORK 
+                         && IsRoutable(epGateWay.address()) 
+                         && !setDNSeed.count(epGateWay) 
+                         && !setIP.count(epGateWay.address()))
+                    {   
+                        AddNewNode(epGateWay,epGateWay.address().to_string(),boost::any(gateWayAddress.nService));
+                        AddNewGateWay(epGateWay,pMvPeer->GetRemote());
+                    }
                 }
                 return true;
             }

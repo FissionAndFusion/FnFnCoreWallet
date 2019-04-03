@@ -107,6 +107,7 @@ protected:
         subVersion = subVersionIn; rootPath = rootPathIn; fEnclosed = fEnclosedIn;
     }
     virtual bool CheckPeerVersion(uint32 nVersionIn,uint64 nServiceIn,const std::string& subVersionIn) = 0;
+    CAddress ToGateWayAddress(const CNetHost& gateWayNode);
 protected:
     IMvNetChannel* pNetChannel;
     IMvDelegatedChannel* pDelegatedChannel;

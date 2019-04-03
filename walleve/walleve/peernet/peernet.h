@@ -79,6 +79,7 @@ protected:
     bool GetNodeMacAddress(const boost::asio::ip::tcp::endpoint& epNode, CUniqueAddress& addr);
     bool SetNodeMacAddress(const boost::asio::ip::tcp::endpoint& epNode, const CUniqueAddress& addr);
     void RetrieveGoodNode(std::vector<CNodeAvail>& vGoodNode, int64 nActiveTime, std::size_t nMaxCount);
+    void AddNewGateWay(const boost::asio::ip::tcp::endpoint& epGateWay, const boost::asio::ip::tcp::endpoint& epNode);
     virtual std::string GetLocalIP();
     virtual CPeer* CreatePeer(CIOClient* pClient, uint64 nNonce, bool fInBound);
     virtual void DestroyPeer(CPeer* pPeer);
