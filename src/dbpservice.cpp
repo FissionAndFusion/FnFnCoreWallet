@@ -1641,7 +1641,7 @@ void CDbpService::RPCRootHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRe
 {
     if(ret == NULL)
     {
-       if (sessionCount == 0)
+        if (GetSessionCountByNonce(data->nNonce) == 0)
         {
             CMvRPCRouteListForkRet ret;
             std::vector<std::pair<uint256, CProfile>> vFork;
@@ -1650,6 +1650,7 @@ void CDbpService::RPCRootHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRe
             TransformForks(vFork, vRpcFork);
             ret.vFork.insert(ret.vFork.end(), vRpcFork.begin(), vRpcFork.end());
             CompletionByNonce(data->nNonce, ret);
+            DeleteSessionCountByNonce(data->nNonce);
         }
         return;
     }
@@ -1669,7 +1670,7 @@ void CDbpService::RPCRootHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRe
             vTempFork.insert(vTempFork.end(), vForkSelf.begin(), vForkSelf.end());
         }
 
-        if (sessionCount == 0)
+        if (GetSessionCountByNonce(data->nNonce) == 0)
         {
             CMvRPCRouteListForkRet retOut;
             std::vector<std::pair<uint256, CProfile>> vFork;
@@ -1680,6 +1681,7 @@ void CDbpService::RPCRootHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRe
             retOut.vFork.insert(retOut.vFork.end(), vRpcFork.begin(), vRpcFork.end());
             ListForkUnique(retOut.vFork);
             CompletionByNonce(data->nNonce, retOut);
+            DeleteSessionCountByNonce(data->nNonce);
         }
         return;
     }
@@ -2147,7 +2149,7 @@ void CDbpService::RPCForkHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRe
 {
     if(ret == NULL)
     {
-        if (sessionCount == 0)
+        if (GetSessionCountByNonce(data->nNonce) == 0)
         {
             CMvRPCRouteResult result;
             result.type = CMvRPCRoute::DBP_RPCROUTE_LIST_FORK;
@@ -2165,6 +2167,7 @@ void CDbpService::RPCForkHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRe
 
             result.vData = RPCRouteRetToStream(retOut);
             SendRPCResult(result);
+            DeleteSessionCountByNonce(data->nNonce);
         }
         return;
     }
@@ -2184,7 +2187,7 @@ void CDbpService::RPCForkHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRe
             vTempFork.insert(vTempFork.end(), vForkSelf.begin(), vForkSelf.end());
         }
 
-        if (sessionCount == 0)
+        if (GetSessionCountByNonce(data->nNonce) == 0)
         {
             CMvRPCRouteResult result;
             result.type = CMvRPCRoute::DBP_RPCROUTE_LIST_FORK;
@@ -2204,6 +2207,7 @@ void CDbpService::RPCForkHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRe
             ListForkUnique(listForkRetOut.vFork);
             result.vData = RPCRouteRetToStream(listForkRetOut);
             SendRPCResult(result);
+            DeleteSessionCountByNonce(data->nNonce);
         }
         return;
     }
@@ -2598,7 +2602,6 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetTransaction* data, CMvRPCRouteGetT
     }
 }
 
-
 void CDbpService::RPCForkHandle(CMvRPCRouteGetForkHeight* data, CMvRPCRouteGetForkHeightRet* ret)
 {
     auto vRawData = RPCRouteRetToStream(*data);
@@ -2735,7 +2738,7 @@ void CDbpService::PushMsgToChild(std::vector<uint8>& data, int& type)
     if (!vRPCTopicIds.empty())
     {
         auto id = vRPCTopicIds.back();
-        PushRPCOnece(id, data, type);
+        PushRPCOnce(id, data, type);
         vRPCTopicIds.pop_back();
     }
 }
@@ -2749,7 +2752,7 @@ void CDbpService::SendRPCResult(CMvRPCRouteResult& result)
     pDbpClient->DispatchEvent(&event);
 }
 
-void CDbpService::PushRPCOnece(std::string id, std::vector<uint8>& data, int type)
+void CDbpService::PushRPCOnce(std::string id, std::vector<uint8>& data, int type)
 {
     auto it = mapIdSubedSession.find(id);
     if (it != mapIdSubedSession.end())
@@ -2843,6 +2846,68 @@ void CDbpService::InitSessionCount()
     sessionCount = setSession.size();
 }
 
+void CDbpService::InitSessionCount(uint64 nNonce)
+{
+    if(vSessionCount.size() >= 100)
+    {
+        vSessionCount.erase(vSessionCount.begin());
+    }
+
+    std::set<std::string> setSession;
+    const auto& allIds = mapTopicIds[RPC_CMD_TOPIC];
+    for (const auto id : allIds)
+    {
+        auto it = mapIdSubedSession.find(id);
+        if (it != mapIdSubedSession.end())
+        {
+            setSession.insert(it->second);
+        }
+    }
+    std::pair<uint64, int> pair(nNonce, setSession.size());
+    vSessionCount.push_back(pair);
+}
+
+int CDbpService::GetSessionCountByNonce(uint64 nNonce)
+{
+    auto compare = [nNonce](const std::pair<uint64, int>& element) {
+        return nNonce == element.first;
+    };
+
+    auto iter = std::find_if(vSessionCount.begin(), vSessionCount.end(), compare);
+    if (iter != vSessionCount.end())
+    {
+        return iter->second;
+    }
+    return -1;
+}
+
+void CDbpService::CountDownSessionCountByNonce(uint64 nNonce)
+{
+    auto compare = [nNonce](const std::pair<uint64, int>& element) {
+        return nNonce == element.first;
+    };
+
+    auto iter = std::find_if(vSessionCount.begin(), vSessionCount.end(), compare);
+    if (iter != vSessionCount.end())
+    {
+        int& count = iter->second;
+        count--;
+    }
+}
+
+void CDbpService::DeleteSessionCountByNonce(uint64 nNonce)
+{
+    auto compare = [nNonce](const std::pair<uint64, int>& element) {
+        return nNonce == element.first;
+    };
+
+    auto iter = std::find_if(vSessionCount.begin(), vSessionCount.end(), compare);
+    if (iter != vSessionCount.end())
+    {
+        vSessionCount.erase(iter);
+    }
+}
+
 bool CDbpService::HandleEvent(CMvEventRPCRouteStop& event)
 {
     event.data.type = CMvRPCRoute::DBP_RPCROUTE_STOP;
@@ -2870,6 +2935,7 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteListFork& event)
     InsertQueCount(event.data.nNonce, listForkRet);
 
     InitSessionCount();
+    InitSessionCount(event.data.nNonce);
     if(sessionCount > 0)
     {
         auto data = RPCRouteRetToStream(event.data);
@@ -3172,9 +3238,11 @@ bool CDbpService::HandleAddedEventListFork(CMvEventRPCRouteAdded& event, walleve
 {
     CMvRPCRouteListFork listFork;
     ss >> listFork;
+
     CMvRPCRouteListForkRet listForkRet;
+    InitSessionCount(listFork.nNonce);
     InsertQueCount(listFork.nNonce, listForkRet);
-    if (sessionCount > 0)
+    if (GetSessionCountByNonce(listFork.nNonce) > 0)
     {
         PushRPC(event.data.vData, event.data.type);
         return true;

@@ -29,6 +29,8 @@ using namespace network;
     data d;                                                                    \
     ssRaw >> d;                                                                \
                                                                                \
+    CountDownSessionCountByNonce(d.nNonce);                                    \
+                                                                               \
     if (fEnableSuperNode && !fEnableForkNode)                                  \
     {                                                                          \
         RPCRootHandle(&d, &r);                                                 \
@@ -140,14 +142,17 @@ private:
     void SendRPCResult(CMvRPCRouteResult& result);
     void HandleRPCRoute(CMvEventDbpMethod& event);
     void PushRPC(std::vector<uint8>& data, int type);
-    void PushRPCOnece(std::string id, std::vector<uint8>& data, int type);
+    void PushRPCOnce(std::string id, std::vector<uint8>& data, int type);
     void CreateCompletion(uint64 nNonce, std::shared_ptr<walleve::CIOCompletionUntil> sPtr);
     void CompletionByNonce(uint64& nNonce, boost::any obj);
     void DeleteCompletionByNonce(uint64 nNonce);
     void InitRPCTopicIds();
     void InitSessionCount();
+    void InitSessionCount(uint64 nNonce);
+    int GetSessionCountByNonce(uint64 nNonce);
+    void CountDownSessionCountByNonce(uint64 nNonce);
+    void DeleteSessionCountByNonce(uint64 nNonce);
     void InsertQueCount(uint64 nNonce, boost::any obj);
-    bool RouteAddedHandle(boost::any obj, CMvEventRPCRouteAdded& event, CMvRPCRoute* route);
     void TransformForks(std::vector<std::pair<uint256,CProfile>>& vFork, std::vector<CMvRPCProfile>& vRpcFork);
     void ListForkUnique(std::vector<CMvRPCProfile>& vFork);
     bool GetForkHashOfDef(const rpc::CRPCString& hex, uint256& hashFork);
@@ -174,7 +179,6 @@ private:
     void RPCForkHandle(CMvRPCRouteSendTransaction* data, CMvRPCRouteSendTransactionRet* ret);
 
     bool HandleAddedEventStop(CMvEventRPCRouteAdded& event, walleve::CWalleveBufStream& ss);
-    bool HandleAddedEventGetForkCount(CMvEventRPCRouteAdded& event, walleve::CWalleveBufStream& ss);
     bool HandleAddedEventListFork(CMvEventRPCRouteAdded& event, walleve::CWalleveBufStream& ss);
     bool HandleAddedEventGetBlockLocation(CMvEventRPCRouteAdded& event, walleve::CWalleveBufStream& ss);
     bool HandleAddedEventGetBlockCount(CMvEventRPCRouteAdded& event, walleve::CWalleveBufStream& ss);
@@ -234,6 +238,7 @@ private:
     typedef std::pair<uint256, uint64> ForkNonceKeyType;
     std::deque<std::pair<uint64, boost::any>> queCount;
     std::vector<std::pair<uint64, std::shared_ptr<walleve::CIOCompletionUntil>>> vCompletion;
+    std::vector<std::pair<uint64, int>> vSessionCount;
     std::vector<std::string> vRPCTopicIds;
     typedef std::map<ForkNonceKeyType, uint32> MapForkCountType; 
     MapForkCountType mapChildNodeForkCount;
