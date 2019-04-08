@@ -13,8 +13,6 @@
 #include <map>
 #include <mutex>
 #include <condition_variable>
-#include <boost/ptr_container/ptr_map.hpp>
-//#include <boost/thread/thread.hpp>
 
 #include "walleve/util.h"
 
@@ -143,7 +141,6 @@ protected:
     std::mutex mtxEvent;
     const std::string strEntry;
     uint64 nEventId;
-    //boost::ptr_map<std::string,CHttpSSEGenerator> mapGenerator;
     std::map<std::string, std::unique_ptr<CHttpSSEGenerator>> mapGenerator;
 
 }; 
