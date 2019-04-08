@@ -28,7 +28,7 @@ CIOCompletion::CIOCompletion()
 
 bool CIOCompletion::WaitForComplete(bool& fResultRet)
 {
-    boost::unique_lock<boost::mutex> lock(mutex);
+    std::unique_lock<std::mutex> lock(mutex);
     while (!fCompleted && !fAborted)
     {
         cond.wait(lock);
@@ -40,7 +40,7 @@ bool CIOCompletion::WaitForComplete(bool& fResultRet)
 void CIOCompletion::Completed(bool fResultIn)
 {
     {
-        boost::lock_guard<boost::mutex> lock(mutex);
+        std::lock_guard<std::mutex> lock(mutex);
         fResult = fResultIn;
         fCompleted = true;
     }
@@ -50,7 +50,7 @@ void CIOCompletion::Completed(bool fResultIn)
 void CIOCompletion::Abort()
 {
     {
-        boost::lock_guard<boost::mutex> lock(mutex);
+        std::lock_guard<std::mutex> lock(mutex);
         fAborted = true;
     }
     cond.notify_all();
@@ -58,7 +58,7 @@ void CIOCompletion::Abort()
 
 void CIOCompletion::Reset()
 {
-    boost::lock_guard<boost::mutex> lock(mutex);
+    std::lock_guard<std::mutex> lock(mutex);
     fResult = false;
     fCompleted = false;
     fAborted = false;
@@ -73,9 +73,9 @@ CIOCompletionUntil::CIOCompletionUntil(int nTimeout)
 
 bool CIOCompletionUntil::WaitForComplete(bool& fResultRet)
 {
-    boost::unique_lock<boost::mutex> lock(mutex);
-    boost::chrono::microseconds period(nTimeout);
-    boost::chrono::system_clock::time_point wakeUpTime = boost::chrono::system_clock::now() + period;
+    std::unique_lock<std::mutex> lock(mutex);
+    std::chrono::microseconds period(nTimeout);
+    std::chrono::system_clock::time_point wakeUpTime = std::chrono::system_clock::now() + period;
     cond.wait_until(lock, wakeUpTime, [this] { return fCompleted || fAborted; });
     fResultRet = fResult;
     return fCompleted;
@@ -84,7 +84,7 @@ bool CIOCompletionUntil::WaitForComplete(bool& fResultRet)
 void CIOCompletionUntil::Completed(bool fResultIn)
 {
     {
-        boost::lock_guard<boost::mutex> lock(mutex);
+        std::lock_guard<std::mutex> lock(mutex);
         fResult = fResultIn;
         fCompleted = true;
     }
@@ -94,7 +94,7 @@ void CIOCompletionUntil::Completed(bool fResultIn)
 void CIOCompletionUntil::Abort()
 {
     {
-        boost::lock_guard<boost::mutex> lock(mutex);
+        std::lock_guard<std::mutex> lock(mutex);
         fAborted = true;
     }
     cond.notify_all();
@@ -102,7 +102,7 @@ void CIOCompletionUntil::Abort()
 
 void CIOCompletionUntil::Reset()
 {
-    boost::lock_guard<boost::mutex> lock(mutex);
+    std::lock_guard<std::mutex> lock(mutex);
     fResult = false;
     fCompleted = false;
     fAborted = false;
