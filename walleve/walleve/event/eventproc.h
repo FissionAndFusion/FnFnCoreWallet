@@ -9,8 +9,8 @@
 #include "walleve/event/event.h"
 
 #include <queue>
-#include <boost/thread/mutex.hpp>
-#include <boost/thread/condition_variable.hpp>
+#include <mutex>
+#include <condition_variable>
 
 namespace walleve
 {
@@ -23,7 +23,7 @@ public:
     void AddNew(CWalleveEvent* p)
     {
         {
-            boost::unique_lock<boost::mutex> lock(mutex);
+            std::unique_lock<std::mutex> lock(mutex);
             que.push(p);
         }
         cond.notify_one();
@@ -31,7 +31,7 @@ public:
     CWalleveEvent* Fetch()
     {
         CWalleveEvent* p = NULL;
-        boost::unique_lock<boost::mutex> lock(mutex);
+        std::unique_lock<std::mutex> lock(mutex);
         while (!fAbort && que.empty())
         {
             cond.wait(lock);
@@ -45,7 +45,7 @@ public:
     }
     void Reset()
     {
-        boost::unique_lock<boost::mutex> lock(mutex);
+        std::unique_lock<std::mutex> lock(mutex);
         while(!que.empty())
         {
             que.front()->Free();
@@ -56,7 +56,7 @@ public:
     void Interrupt()
     {
         {
-            boost::unique_lock<boost::mutex> lock(mutex);
+            std::unique_lock<std::mutex> lock(mutex);
             while(!que.empty())
             {
                 que.front()->Free();
@@ -67,8 +67,8 @@ public:
         cond.notify_all();
     }
 protected:
-    boost::condition_variable cond;
-    boost::mutex mutex;
+    std::condition_variable cond;
+    std::mutex mutex;
     std::queue<CWalleveEvent*> que;
     bool fAbort;
 };
