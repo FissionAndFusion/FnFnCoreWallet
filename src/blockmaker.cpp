@@ -613,6 +613,10 @@ void CBlockMaker::BlockMakerThreadFunc()
             boost::unique_lock<boost::mutex> lock(mutex);
 
             int64 nWaitBlockTime = nPrimaryBlockTime + WAIT_NEWBLOCK_TIME - WalleveGetNetTime();
+            if (nWaitBlockTime <= 0)
+            {
+                nWaitBlockTime = 1;
+            }
             boost::system_time const toWaitBlock = boost::get_system_time() + boost::posix_time::seconds(nWaitBlockTime);
             
             while (hashPrimaryBlock == hashLastBlock && nMakerStatus == MAKER_HOLD)
@@ -634,7 +638,12 @@ void CBlockMaker::BlockMakerThreadFunc()
                 nPrimaryBlockTime    = nLastBlockTime;
                 nPrimaryBlockHeight  = nLastBlockHeight; 
                 int64 nWaitAgreement = nPrimaryBlockTime + WAIT_AGREEMENT_TIME - WalleveGetNetTime();
+                if (nWaitAgreement <= 0)
+                {
+                    nWaitAgreement = 1;
+                }
                 boost::system_time const toWaitAgree = boost::get_system_time() + boost::posix_time::seconds(nWaitAgreement);
+
                 while (hashPrimaryBlock == hashLastBlock && nMakerStatus != MAKER_EXIT)
                 {
                     if (!cond.timed_wait(lock,toWaitAgree))
