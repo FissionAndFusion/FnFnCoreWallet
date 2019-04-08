@@ -11,8 +11,10 @@
 #include <vector>
 #include <queue>
 #include <map>
+#include <mutex>
+#include <condition_variable>
 #include <boost/ptr_container/ptr_map.hpp>
-#include <boost/thread/thread.hpp>
+//#include <boost/thread/thread.hpp>
 
 #include "walleve/util.h"
 
@@ -138,7 +140,7 @@ public:
     bool UpdateEventData(const std::string& strEventName,CHttpSSEData& data);
     bool ConstructResponse(uint64 nLastEventId,CWalleveHttpRsp& rsp);
 protected:
-    boost::mutex mtxEvent;
+    std::mutex mtxEvent;
     const std::string strEntry;
     uint64 nEventId;
     //boost::ptr_map<std::string,CHttpSSEGenerator> mapGenerator;
