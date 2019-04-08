@@ -5,8 +5,9 @@
 #ifndef  WALLEVE_RWLOCK_H
 #define  WALLEVE_RWLOCK_H
 
+#include <mutex>
+#include <condition_variable>
 #include <boost/noncopyable.hpp>
-#include <boost/thread/thread.hpp>
 
 namespace walleve
 {
@@ -18,7 +19,7 @@ public:
 
     void ReadLock()
     {
-        boost::unique_lock<boost::mutex> lock(mutex);
+        std::unique_lock<std::mutex> lock(mutex);
         while (nWrite || fUpgraded)
         {
             condRead.wait(lock);
@@ -27,7 +28,7 @@ public:
     }
     bool ReadTryLock()
     {
-        boost::unique_lock<boost::mutex> lock(mutex);
+        std::unique_lock<std::mutex> lock(mutex);
         if (nWrite || fUpgraded)
         {
             return false;
@@ -40,7 +41,7 @@ public:
         bool fNotifyWrite   = false;
         bool fNotifyUpgrade = false;
         {
-            boost::unique_lock<boost::mutex> lock(mutex);
+            std::unique_lock<std::mutex> lock(mutex);
             
             if (--nRead == 0)
             {
@@ -59,7 +60,7 @@ public:
     }
     void WriteLock()
     {
-        boost::unique_lock<boost::mutex> lock(mutex);
+        std::unique_lock<std::mutex> lock(mutex);
 
         ++nWrite;
 
@@ -74,7 +75,7 @@ public:
     {
         bool fNotifyWrite = false;
         {
-            boost::unique_lock<boost::mutex> lock(mutex);
+            std::unique_lock<std::mutex> lock(mutex);
             fNotifyWrite = (--nWrite != 0);
             fExclusive = false;
         }
@@ -89,7 +90,7 @@ public:
     }
     void UpgradeLock()
     {
-        boost::unique_lock<boost::mutex> lock(mutex);
+        std::unique_lock<std::mutex> lock(mutex);
 
         while (fExclusive)
         {
@@ -100,7 +101,7 @@ public:
     }
     void UpgradeToWriteLock()
     {
-        boost::unique_lock<boost::mutex> lock(mutex);
+        std::unique_lock<std::mutex> lock(mutex);
 
         fUpgraded = true;
 
@@ -113,7 +114,7 @@ public:
     {
         bool fNotifyWrite = false;
         {
-            boost::unique_lock<boost::mutex> lock(mutex);
+            std::unique_lock<std::mutex> lock(mutex);
 
             fNotifyWrite = (nWrite != 0);
 
@@ -140,10 +141,10 @@ protected:
     int nWrite;
     bool fExclusive;
     bool fUpgraded;
-    boost::mutex mutex;
-    boost::condition_variable_any condRead;
-    boost::condition_variable_any condWrite;
-    boost::condition_variable_any condUpgrade;
+    std::mutex mutex;
+    std::condition_variable_any condRead;
+    std::condition_variable_any condWrite;
+    std::condition_variable_any condUpgrade;
 };
 
 class CWalleveReadLock
