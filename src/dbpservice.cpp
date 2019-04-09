@@ -36,7 +36,6 @@ CDbpService::CDbpService()
 
     fEnableSuperNode = false;
     fEnableForkNode = false;
-    sessionCount = 0;
 }
 
 CDbpService::~CDbpService() noexcept
@@ -1595,20 +1594,22 @@ void CDbpService::RPCRootHandle(CMvRPCRouteStop* data, CMvRPCRouteStopRet* ret)
 {
     if (ret == NULL)
     {
-        if (sessionCount == 0)
+        if (GetSessionCountByNonce(data->nNonce) == 0)
         {
             CMvRPCRouteStopRet stopRet;
             CompletionByNonce(data->nNonce, stopRet);
+            DeleteSessionCountByNonce(data->nNonce);
             pService->Shutdown();
         }
     }
 
     if (ret != NULL)
     {
-        if (sessionCount == 0)
+        if (GetSessionCountByNonce(data->nNonce) == 0)
         {
             CMvRPCRouteStopRet stopRet;
             CompletionByNonce(data->nNonce, stopRet);
+            DeleteSessionCountByNonce(data->nNonce);
             pService->Shutdown();
         }
     }
@@ -1691,7 +1692,7 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetBlockLocation* data, CMvRPCRouteGe
 {
     if (ret == NULL)
     {
-        if (sessionCount == 0)
+        if (GetSessionCountByNonce(data->nNonce) == 0)
         {
             CMvRPCRouteGetBlockLocationRet getBlockLocationRet;
             getBlockLocationRet.nNonce = data->nNonce;
@@ -1699,10 +1700,11 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetBlockLocation* data, CMvRPCRouteGe
             getBlockLocationRet.strFork = "";
             getBlockLocationRet.height = 0;
             CompletionByNonce(data->nNonce, getBlockLocationRet);
+            DeleteSessionCountByNonce(data->nNonce);
             return;
         }
 
-        if (sessionCount != 0)
+        if (GetSessionCountByNonce(data->nNonce) != 0)
         {
             auto vRawData = RPCRouteRetToStream(*data);
             PushMsgToChild(vRawData, data->type);
@@ -1723,7 +1725,7 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetBlockLocation* data, CMvRPCRouteGe
             return;
         }
 
-        if (sessionCount == 0)
+        if (GetSessionCountByNonce(data->nNonce) == 0)
         {
             CMvRPCRouteGetBlockLocationRet getBlockLocationRet;
             getBlockLocationRet.nNonce = data->nNonce;
@@ -1731,10 +1733,11 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetBlockLocation* data, CMvRPCRouteGe
             getBlockLocationRet.strFork = "";
             getBlockLocationRet.height = 0;
             CompletionByNonce(data->nNonce, getBlockLocationRet);
+            DeleteSessionCountByNonce(data->nNonce);
             return;
         }
 
-        if (sessionCount != 0)
+        if (GetSessionCountByNonce(data->nNonce) != 0)
         {
             auto vRawData = RPCRouteRetToStream(*data);
             PushMsgToChild(vRawData, data->type);
@@ -1747,7 +1750,7 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetBlockCount* data, CMvRPCRouteGetBl
 {
     if(ret == NULL)
     {
-        if (sessionCount == 0)
+        if (GetSessionCountByNonce(data->nNonce) == 0)
         {
             CMvRPCRouteGetBlockCountRet getBlockCountRet;
             getBlockCountRet.nNonce = data->nNonce;
@@ -1755,10 +1758,11 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetBlockCount* data, CMvRPCRouteGetBl
             getBlockCountRet.exception = 2;
             getBlockCountRet.height = 0;
             CompletionByNonce(data->nNonce, getBlockCountRet);
+            DeleteSessionCountByNonce(data->nNonce);
             return;
         }
 
-        if (sessionCount != 0)
+        if (GetSessionCountByNonce(data->nNonce) != 0)
         {
             auto vRawData = RPCRouteRetToStream(*data);
             PushMsgToChild(vRawData, data->type);
@@ -1779,7 +1783,7 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetBlockCount* data, CMvRPCRouteGetBl
             return;
         }
 
-        if (sessionCount == 0)
+        if (GetSessionCountByNonce(data->nNonce) == 0)
         {
             CMvRPCRouteGetBlockCountRet getBlockCountRet;
             getBlockCountRet.nNonce = data->nNonce;
@@ -1787,10 +1791,11 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetBlockCount* data, CMvRPCRouteGetBl
             getBlockCountRet.exception = 2;
             getBlockCountRet.height = 0;
             CompletionByNonce(data->nNonce, getBlockCountRet);
+            DeleteSessionCountByNonce(data->nNonce);
             return;
         }
 
-        if (sessionCount != 0)
+        if (GetSessionCountByNonce(data->nNonce) != 0)
         {
             auto vRawData = RPCRouteRetToStream(*data);
             PushMsgToChild(vRawData, data->type);
@@ -1803,17 +1808,18 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetBlockHash * data, CMvRPCRouteGetBl
 {
     if(ret == NULL)
     {
-        if (sessionCount == 0)
+        if (GetSessionCountByNonce(data->nNonce) == 0)
         {
             CMvRPCRouteGetBlockHashRet getBlockHashRet;
             getBlockHashRet.nNonce = data->nNonce;
             getBlockHashRet.type = data->type;
             getBlockHashRet.exception = 2;
             CompletionByNonce(data->nNonce, getBlockHashRet);
+            DeleteSessionCountByNonce(data->nNonce);
             return;
         }
 
-        if (sessionCount != 0)
+        if (GetSessionCountByNonce(data->nNonce) != 0)
         {
             auto vRawData = RPCRouteRetToStream(*data);
             PushMsgToChild(vRawData, data->type);
@@ -1831,20 +1837,22 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetBlockHash * data, CMvRPCRouteGetBl
             getBlockHashRet.exception = ret->exception;
             getBlockHashRet.vHash = ret->vHash;
             CompletionByNonce(data->nNonce, getBlockHashRet);
+            DeleteSessionCountByNonce(data->nNonce);
             return;
         }
 
-        if (sessionCount == 0)
+        if (GetSessionCountByNonce(data->nNonce) == 0)
         {
             CMvRPCRouteGetBlockHashRet getBlockHashRet;
             getBlockHashRet.nNonce = data->nNonce;
             getBlockHashRet.type = data->type;
             getBlockHashRet.exception = 2;
             CompletionByNonce(data->nNonce, getBlockHashRet);
+            DeleteSessionCountByNonce(data->nNonce);
             return;
         }
 
-        if (sessionCount != 0)
+        if (GetSessionCountByNonce(data->nNonce) != 0)
         {
             auto vRawData = RPCRouteRetToStream(*data);
             PushMsgToChild(vRawData, data->type);
@@ -1859,17 +1867,18 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetBlock* data, CMvRPCRouteGetBlockRe
 
     if (ret == NULL)
     {
-        if (sessionCount == 0)
+        if (GetSessionCountByNonce(data->nNonce) == 0)
         {
             CMvRPCRouteGetBlockRet getBlockRet;
             getBlockRet.nNonce = data->nNonce;
             getBlockRet.type = data->type;
             getBlockRet.exception = 1;
             CompletionByNonce(data->nNonce, getBlockRet);
+            DeleteSessionCountByNonce(data->nNonce);
             return;
         }
 
-        if (sessionCount != 0)
+        if (GetSessionCountByNonce(data->nNonce) != 0)
         {
             PushMsgToChild(vRawData, data->type);
             return;
@@ -1889,17 +1898,19 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetBlock* data, CMvRPCRouteGetBlockRe
             getBlockRet.height = ret->height;
             getBlockRet.block = ret->block;
             CompletionByNonce(data->nNonce, getBlockRet);
+            DeleteSessionCountByNonce(data->nNonce);
             return;
         }
 
-        if (sessionCount == 0)
+        if (GetSessionCountByNonce(data->nNonce) == 0)
         {
             getBlockRet.exception = 1;
             CompletionByNonce(data->nNonce, getBlockRet);
+            DeleteSessionCountByNonce(data->nNonce);
             return;
         }
 
-        if (sessionCount != 0)
+        if (GetSessionCountByNonce(data->nNonce) != 0)
         {
             PushMsgToChild(vRawData, data->type);
             return;
@@ -1907,24 +1918,24 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetBlock* data, CMvRPCRouteGetBlockRe
     }
 }
 
-
 void CDbpService::RPCRootHandle(CMvRPCRouteGetTxPool* data, CMvRPCRouteGetTxPoolRet* ret)
 {
     auto vRawData = RPCRouteRetToStream(*data);
 
     if(ret == NULL)
     {
-        if (sessionCount == 0)
+        if (GetSessionCountByNonce(data->nNonce) == 0)
         {
             CMvRPCRouteGetTxPoolRet getTxPoolRet;
             getTxPoolRet.nNonce = data->nNonce;
             getTxPoolRet.type = data->type;
             getTxPoolRet.exception = 2;
             CompletionByNonce(data->nNonce, getTxPoolRet);
+            DeleteSessionCountByNonce(data->nNonce);
             return;
         }
 
-        if (sessionCount != 0)
+        if (GetSessionCountByNonce(data->nNonce) != 0)
         {
             PushMsgToChild(vRawData, data->type);
             return;
@@ -1942,17 +1953,19 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetTxPool* data, CMvRPCRouteGetTxPool
             getTxPoolRet.exception = ret->exception;
             getTxPoolRet.vTxPool = ret->vTxPool;
             CompletionByNonce(data->nNonce, getTxPoolRet);
+            DeleteSessionCountByNonce(data->nNonce);
             return;
         }
 
-        if (sessionCount == 0)
+        if (GetSessionCountByNonce(data->nNonce) == 0)
         {
             getTxPoolRet.exception = 2;
             CompletionByNonce(data->nNonce, getTxPoolRet);
+            DeleteSessionCountByNonce(data->nNonce);
             return;
         }
 
-        if (sessionCount != 0)
+        if (GetSessionCountByNonce(data->nNonce) != 0)
         {
             PushMsgToChild(vRawData, data->type);
             return;
@@ -1966,17 +1979,18 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetTransaction* data, CMvRPCRouteGetT
 
     if(ret == NULL)
     {
-        if (sessionCount == 0)
+        if (GetSessionCountByNonce(data->nNonce) == 0)
         {
             CMvRPCRouteGetTransactionRet getTransactionRet;
             getTransactionRet.nNonce = data->nNonce;
             getTransactionRet.type = data->type;
             getTransactionRet.exception = 1;
             CompletionByNonce(data->nNonce, getTransactionRet);
+            DeleteSessionCountByNonce(data->nNonce);
             return;
         }
 
-        if (sessionCount != 0)
+        if (GetSessionCountByNonce(data->nNonce) != 0)
         {
             PushMsgToChild(vRawData, data->type);
             return;
@@ -1996,17 +2010,19 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetTransaction* data, CMvRPCRouteGetT
             getTransactionRet.strFork = ret->strFork;
             getTransactionRet.nDepth = ret->nDepth;
             CompletionByNonce(data->nNonce, getTransactionRet);
+            DeleteSessionCountByNonce(data->nNonce);
             return;
         }
 
-        if (sessionCount == 0)
+        if (GetSessionCountByNonce(data->nNonce) == 0)
         {
             getTransactionRet.exception = 2;
             CompletionByNonce(data->nNonce, getTransactionRet);
+            DeleteSessionCountByNonce(data->nNonce);
             return;
         }
 
-        if (sessionCount != 0)
+        if (GetSessionCountByNonce(data->nNonce) != 0)
         {
             PushMsgToChild(vRawData, data->type);
             return;
@@ -2020,17 +2036,18 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetForkHeight* data, CMvRPCRouteGetFo
 
     if(ret == NULL)
     {
-        if (sessionCount == 0)
+        if (GetSessionCountByNonce(data->nNonce) == 0)
         {
             CMvRPCRouteGetForkHeightRet getForkHeightRet;
             getForkHeightRet.nNonce = data->nNonce;
             getForkHeightRet.type = data->type;
             getForkHeightRet.exception = 2;
             CompletionByNonce(data->nNonce, getForkHeightRet);
+            DeleteSessionCountByNonce(data->nNonce);
             return;
         }
 
-        if (sessionCount != 0)
+        if (GetSessionCountByNonce(data->nNonce) != 0)
         {
             PushMsgToChild(vRawData, data->type);
             return;
@@ -2048,17 +2065,19 @@ void CDbpService::RPCRootHandle(CMvRPCRouteGetForkHeight* data, CMvRPCRouteGetFo
             getForkHeightRet.exception = ret->exception;
             getForkHeightRet.height = ret->height;
             CompletionByNonce(data->nNonce, getForkHeightRet);
+            DeleteSessionCountByNonce(data->nNonce);
             return;
         }
 
-        if (sessionCount == 0)
+        if (GetSessionCountByNonce(data->nNonce) == 0)
         {
             getForkHeightRet.exception = 2;
             CompletionByNonce(data->nNonce, getForkHeightRet);
+            DeleteSessionCountByNonce(data->nNonce);
             return;
         }
 
-        if (sessionCount != 0)
+        if (GetSessionCountByNonce(data->nNonce) != 0)
         {
             PushMsgToChild(vRawData, data->type);
             return;
@@ -2072,17 +2091,18 @@ void CDbpService::RPCRootHandle(CMvRPCRouteSendTransaction* data, CMvRPCRouteSen
 
     if(ret == NULL)
     {
-        if (sessionCount == 0)
+        if (GetSessionCountByNonce(data->nNonce) == 0)
         {
             CMvRPCRouteSendTransactionRet sendTransactionRet;
             sendTransactionRet.nNonce = data->nNonce;
             sendTransactionRet.type = data->type;
             sendTransactionRet.exception = 1;
             CompletionByNonce(data->nNonce, sendTransactionRet);
+            DeleteSessionCountByNonce(data->nNonce);
             return;
         }
 
-        if (sessionCount != 0)
+        if (GetSessionCountByNonce(data->nNonce) != 0)
         {
             PushMsgToChild(vRawData, data->type);
             return;
@@ -2099,18 +2119,20 @@ void CDbpService::RPCRootHandle(CMvRPCRouteSendTransaction* data, CMvRPCRouteSen
         {
             sendTransactionRet.exception = ret->exception;
             CompletionByNonce(data->nNonce, sendTransactionRet);
+            DeleteSessionCountByNonce(data->nNonce);
             return;
         }
 
-        if (sessionCount == 0)
+        if (GetSessionCountByNonce(data->nNonce) == 0)
         {
             sendTransactionRet.exception = 1;
             sendTransactionRet.err = ret->err;
             CompletionByNonce(data->nNonce, sendTransactionRet);
+            DeleteSessionCountByNonce(data->nNonce);
             return;
         }
 
-        if (sessionCount != 0)
+        if (GetSessionCountByNonce(data->nNonce) != 0)
         {
             PushMsgToChild(vRawData, data->type);
             return;
@@ -2122,24 +2144,26 @@ void CDbpService::RPCForkHandle(CMvRPCRouteStop* data, CMvRPCRouteStopRet* ret)
 {
     if (ret == NULL)
     {
-        if (sessionCount == 0)
+        if (GetSessionCountByNonce(data->nNonce) == 0)
         {
             CMvRPCRouteResult result;
             result.type = CMvRPCRoute::DBP_RPCROUTE_STOP;
             result.vRawData = RPCRouteRetToStream(*data);
             SendRPCResult(result);
+            DeleteSessionCountByNonce(data->nNonce);
             pService->Shutdown();
         }
     }
 
     if (ret != NULL)
     {
-        if (sessionCount == 0)
+        if (GetSessionCountByNonce(data->nNonce) == 0)
         {
             CMvRPCRouteResult result;
             result.type = CMvRPCRoute::DBP_RPCROUTE_STOP;
             result.vRawData = RPCRouteRetToStream(*data);
             SendRPCResult(result);
+            DeleteSessionCountByNonce(data->nNonce);
             pService->Shutdown();
         }
     }
@@ -2219,7 +2243,7 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetBlockLocation* data, CMvRPCRouteGe
 
     if (ret == NULL)
     {
-        if (sessionCount == 0)
+        if (GetSessionCountByNonce(data->nNonce) == 0)
         {
             CMvRPCRouteGetBlockLocationRet getBlockLocationRet;
             CMvRPCRouteResult result;
@@ -2231,10 +2255,11 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetBlockLocation* data, CMvRPCRouteGe
             getBlockLocationRet.height = 0;
             result.vData = RPCRouteRetToStream(getBlockLocationRet);
             SendRPCResult(result);
+            DeleteSessionCountByNonce(data->nNonce);
             return;
         }
 
-        if (sessionCount != 0)
+        if (GetSessionCountByNonce(data->nNonce) != 0)
         {
             PushMsgToChild(vRawData, data->type);
             return;
@@ -2255,10 +2280,11 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetBlockLocation* data, CMvRPCRouteGe
             getBlockLocationRet.height = ret->height;
             result.vData = RPCRouteRetToStream(getBlockLocationRet);
             SendRPCResult(result);
+            DeleteSessionCountByNonce(data->nNonce);
             return;
         }
 
-        if (sessionCount == 0)
+        if (GetSessionCountByNonce(data->nNonce) == 0)
         {
             CMvRPCRouteGetBlockLocationRet getBlockLocationRet;
             CMvRPCRouteResult result;
@@ -2270,10 +2296,11 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetBlockLocation* data, CMvRPCRouteGe
             getBlockLocationRet.height = 0;
             result.vData = RPCRouteRetToStream(getBlockLocationRet);
             SendRPCResult(result);
+            DeleteSessionCountByNonce(data->nNonce);
             return;
         }
 
-        if (sessionCount != 0)
+        if (GetSessionCountByNonce(data->nNonce) != 0)
         {
             PushMsgToChild(vRawData, data->type);
             return;
@@ -2287,7 +2314,7 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetBlockCount* data, CMvRPCRouteGetBl
 
     if (ret == NULL)
     {
-        if (sessionCount == 0)
+        if (GetSessionCountByNonce(data->nNonce) == 0)
         {
             CMvRPCRouteGetBlockCountRet getBlockCountRet;
             CMvRPCRouteResult result;
@@ -2299,10 +2326,11 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetBlockCount* data, CMvRPCRouteGetBl
             getBlockCountRet.height = 0;
             result.vData = RPCRouteRetToStream(getBlockCountRet);
             SendRPCResult(result);
+            DeleteSessionCountByNonce(data->nNonce);
             return;
         }
 
-        if (sessionCount != 0)
+        if (GetSessionCountByNonce(data->nNonce) != 0)
         {
             PushMsgToChild(vRawData, data->type);
             return;
@@ -2323,10 +2351,11 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetBlockCount* data, CMvRPCRouteGetBl
             getBlockCountRet.height = ret->height;
             result.vData = RPCRouteRetToStream(getBlockCountRet);
             SendRPCResult(result);
+            DeleteSessionCountByNonce(data->nNonce);
             return;
         }
 
-        if (sessionCount == 0)
+        if (GetSessionCountByNonce(data->nNonce) == 0)
         {
             CMvRPCRouteGetBlockCountRet getBlockCountRet;
             CMvRPCRouteResult result;
@@ -2338,10 +2367,11 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetBlockCount* data, CMvRPCRouteGetBl
             getBlockCountRet.height = 0;
             result.vData = RPCRouteRetToStream(getBlockCountRet);
             SendRPCResult(result);
+            DeleteSessionCountByNonce(data->nNonce);
             return;
         }
 
-        if (sessionCount != 0)
+        if (GetSessionCountByNonce(data->nNonce) != 0)
         {
             PushMsgToChild(vRawData, data->type);
             return;
@@ -2355,7 +2385,7 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetBlockHash* data, CMvRPCRouteGetBlo
 
     if (ret == NULL)
     {
-        if (sessionCount == 0)
+        if (GetSessionCountByNonce(data->nNonce) == 0)
         {
             CMvRPCRouteGetBlockHashRet getBlockHashRet;
             CMvRPCRouteResult result;
@@ -2366,10 +2396,11 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetBlockHash* data, CMvRPCRouteGetBlo
             getBlockHashRet.exception = 2;
             result.vData = RPCRouteRetToStream(getBlockHashRet);
             SendRPCResult(result);
+            DeleteSessionCountByNonce(data->nNonce);
             return;
         }
 
-        if (sessionCount != 0)
+        if (GetSessionCountByNonce(data->nNonce) != 0)
         {
             PushMsgToChild(vRawData, data->type);
             return;
@@ -2390,10 +2421,11 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetBlockHash* data, CMvRPCRouteGetBlo
             getBlockHashRet.vHash = ret->vHash;
             result.vData = RPCRouteRetToStream(getBlockHashRet);
             SendRPCResult(result);
+            DeleteSessionCountByNonce(data->nNonce);
             return;
         }
 
-        if (sessionCount == 0)
+        if (GetSessionCountByNonce(data->nNonce) == 0)
         {
             CMvRPCRouteGetBlockHashRet getBlockHashRet;
             CMvRPCRouteResult result;
@@ -2404,10 +2436,11 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetBlockHash* data, CMvRPCRouteGetBlo
             getBlockHashRet.exception = 2;
             result.vData = RPCRouteRetToStream(getBlockHashRet);
             SendRPCResult(result);
+            DeleteSessionCountByNonce(data->nNonce);
             return;
         }
 
-        if (sessionCount != 0)
+        if (GetSessionCountByNonce(data->nNonce) != 0)
         {
             PushMsgToChild(vRawData, data->type);
             return;
@@ -2421,7 +2454,7 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetBlock* data, CMvRPCRouteGetBlockRe
 
     if (ret == NULL)
     {
-        if (sessionCount == 0)
+        if (GetSessionCountByNonce(data->nNonce) == 0)
         {
             CMvRPCRouteGetBlockRet getBlockRet;
             CMvRPCRouteResult result;
@@ -2432,10 +2465,11 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetBlock* data, CMvRPCRouteGetBlockRe
             getBlockRet.exception = 1;
             result.vData = RPCRouteRetToStream(getBlockRet);
             SendRPCResult(result);
+            DeleteSessionCountByNonce(data->nNonce);
             return;
         }
 
-        if (sessionCount != 0)
+        if (GetSessionCountByNonce(data->nNonce) != 0)
         {
             PushMsgToChild(vRawData, data->type);
             return;
@@ -2459,18 +2493,20 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetBlock* data, CMvRPCRouteGetBlockRe
             getBlockRet.block = ret->block;
             result.vData = RPCRouteRetToStream(getBlockRet);
             SendRPCResult(result);
+            DeleteSessionCountByNonce(data->nNonce);
             return;
         }
 
-        if (sessionCount == 0)
+        if (GetSessionCountByNonce(data->nNonce) == 0)
         {
             getBlockRet.exception = 1;
             result.vData = RPCRouteRetToStream(getBlockRet);
             SendRPCResult(result);
+            DeleteSessionCountByNonce(data->nNonce);
             return;
         }
 
-        if (sessionCount != 0)
+        if (GetSessionCountByNonce(data->nNonce) != 0)
         {
             PushMsgToChild(vRawData, data->type);
             return;
@@ -2484,7 +2520,7 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetTxPool* data, CMvRPCRouteGetTxPool
 
     if (ret == NULL)
     {
-        if (sessionCount == 0)
+        if (GetSessionCountByNonce(data->nNonce) == 0)
         {
             CMvRPCRouteGetTxPoolRet getTxPoolRet;
             CMvRPCRouteResult result;
@@ -2495,10 +2531,11 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetTxPool* data, CMvRPCRouteGetTxPool
             getTxPoolRet.exception = 2;
             result.vData = RPCRouteRetToStream(getTxPoolRet);
             SendRPCResult(result);
+            DeleteSessionCountByNonce(data->nNonce);
             return;
         }
 
-        if (sessionCount != 0)
+        if (GetSessionCountByNonce(data->nNonce) != 0)
         {
             PushMsgToChild(vRawData, data->type);
             return;
@@ -2520,18 +2557,20 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetTxPool* data, CMvRPCRouteGetTxPool
             getTxPoolRet.vTxPool = ret->vTxPool;
             result.vData = RPCRouteRetToStream(getTxPoolRet);
             SendRPCResult(result);
+            DeleteSessionCountByNonce(data->nNonce);
             return;
         }
 
-        if (sessionCount == 0)
+        if (GetSessionCountByNonce(data->nNonce) == 0)
         {
             getTxPoolRet.exception = 2;
             result.vData = RPCRouteRetToStream(getTxPoolRet);
             SendRPCResult(result);
+            DeleteSessionCountByNonce(data->nNonce);
             return;
         }
 
-        if (sessionCount != 0)
+        if (GetSessionCountByNonce(data->nNonce) != 0)
         {
             PushMsgToChild(vRawData, data->type);
             return;
@@ -2545,7 +2584,7 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetTransaction* data, CMvRPCRouteGetT
 
     if (ret == NULL)
     {
-        if (sessionCount == 0)
+        if (GetSessionCountByNonce(data->nNonce) == 0)
         {
             CMvRPCRouteGetTransactionRet getTransactionRet;
             CMvRPCRouteResult result;
@@ -2556,10 +2595,11 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetTransaction* data, CMvRPCRouteGetT
             getTransactionRet.exception = 1;
             result.vData = RPCRouteRetToStream(getTransactionRet);
             SendRPCResult(result);
+            DeleteSessionCountByNonce(data->nNonce);
             return;
         }
 
-        if (sessionCount != 0)
+        if (GetSessionCountByNonce(data->nNonce) != 0)
         {
             PushMsgToChild(vRawData, data->type);
             return;
@@ -2583,18 +2623,20 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetTransaction* data, CMvRPCRouteGetT
             getTransactionRet.nDepth = ret->nDepth;
             result.vData = RPCRouteRetToStream(getTransactionRet);
             SendRPCResult(result);
+            DeleteSessionCountByNonce(data->nNonce);
             return;
         }
 
-        if (sessionCount == 0) 
+        if (GetSessionCountByNonce(data->nNonce) == 0) 
         {
             getTransactionRet.exception = 2;
             result.vData = RPCRouteRetToStream(getTransactionRet);
             SendRPCResult(result);
+            DeleteSessionCountByNonce(data->nNonce);
             return;
         }
 
-        if (sessionCount != 0)
+        if (GetSessionCountByNonce(data->nNonce) != 0)
         {
             PushMsgToChild(vRawData, data->type);
             return;
@@ -2608,7 +2650,7 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetForkHeight* data, CMvRPCRouteGetFo
 
     if (ret == NULL)
     {
-        if (sessionCount == 0)
+        if (GetSessionCountByNonce(data->nNonce) == 0)
         {
             CMvRPCRouteGetForkHeightRet getForkHeightRet;
             CMvRPCRouteResult result;
@@ -2619,10 +2661,11 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetForkHeight* data, CMvRPCRouteGetFo
             getForkHeightRet.exception = 2;
             result.vData = RPCRouteRetToStream(getForkHeightRet);
             SendRPCResult(result);
+            DeleteSessionCountByNonce(data->nNonce);
             return;
         }
 
-        if (sessionCount != 0)
+        if (GetSessionCountByNonce(data->nNonce) != 0)
         {
             PushMsgToChild(vRawData, data->type);
             return;
@@ -2644,18 +2687,20 @@ void CDbpService::RPCForkHandle(CMvRPCRouteGetForkHeight* data, CMvRPCRouteGetFo
             getForkHeightRet.height = ret->height;
             result.vData = RPCRouteRetToStream(getForkHeightRet);
             SendRPCResult(result);
+            DeleteSessionCountByNonce(data->nNonce);
             return;
         }
 
-        if (sessionCount == 0)
+        if (GetSessionCountByNonce(data->nNonce) == 0)
         {
             getForkHeightRet.exception = 2;
             result.vData = RPCRouteRetToStream(getForkHeightRet);
             SendRPCResult(result);
+            DeleteSessionCountByNonce(data->nNonce);
             return;
         }
 
-        if (sessionCount != 0)
+        if (GetSessionCountByNonce(data->nNonce) != 0)
         {
             PushMsgToChild(vRawData, data->type);
             return;
@@ -2669,7 +2714,7 @@ void CDbpService::RPCForkHandle(CMvRPCRouteSendTransaction* data, CMvRPCRouteSen
 
     if (ret == NULL)
     {
-        if (sessionCount == 0)
+        if (GetSessionCountByNonce(data->nNonce) == 0)
         {
             CMvRPCRouteSendTransactionRet sendTransactionRet;
             CMvRPCRouteResult result;
@@ -2680,10 +2725,11 @@ void CDbpService::RPCForkHandle(CMvRPCRouteSendTransaction* data, CMvRPCRouteSen
             sendTransactionRet.exception = 1;
             result.vData = RPCRouteRetToStream(sendTransactionRet);
             SendRPCResult(result);
+            DeleteSessionCountByNonce(data->nNonce);
             return;
         }
 
-        if (sessionCount != 0)
+        if (GetSessionCountByNonce(data->nNonce) != 0)
         {
             PushMsgToChild(vRawData, data->type);
             return;
@@ -2704,18 +2750,20 @@ void CDbpService::RPCForkHandle(CMvRPCRouteSendTransaction* data, CMvRPCRouteSen
             sendTransactionRet.exception = ret->exception;
             result.vData = RPCRouteRetToStream(sendTransactionRet);
             SendRPCResult(result);
+            DeleteSessionCountByNonce(data->nNonce);
             return;
         }
 
-        if (sessionCount == 0)
+        if (GetSessionCountByNonce(data->nNonce) == 0)
         {
             sendTransactionRet.exception = 1;
             result.vData = RPCRouteRetToStream(sendTransactionRet);
             SendRPCResult(result);
+            DeleteSessionCountByNonce(data->nNonce);
             return;
         }
 
-        if (sessionCount != 0)
+        if (GetSessionCountByNonce(data->nNonce) != 0)
         {
             PushMsgToChild(vRawData, data->type);
             return;
@@ -2831,21 +2879,6 @@ void CDbpService::InitRPCTopicIds()
     }
 }
 
-void CDbpService::InitSessionCount()
-{
-    std::set<std::string> setSession;
-    const auto& allIds = mapTopicIds[RPC_CMD_TOPIC];
-    for (const auto id : allIds)
-    {
-        auto it = mapIdSubedSession.find(id);
-        if (it != mapIdSubedSession.end())
-        {
-            setSession.insert(it->second);
-        }
-    }
-    sessionCount = setSession.size();
-}
-
 void CDbpService::InitSessionCount(uint64 nNonce)
 {
     if(vSessionCount.size() >= 100)
@@ -2915,8 +2948,8 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteStop& event)
     CMvRPCRouteStopRet stopRet;
     InsertQueCount(event.data.nNonce, stopRet);
 
-    InitSessionCount();
-    if(sessionCount > 0)
+    InitSessionCount(event.data.nNonce);
+    if(GetSessionCountByNonce(event.data.nNonce) > 0)
     {
         auto data = RPCRouteRetToStream(event.data);
         PushRPC(data, CMvRPCRoute::DBP_RPCROUTE_STOP);
@@ -2934,9 +2967,8 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteListFork& event)
     CMvRPCRouteListForkRet listForkRet;
     InsertQueCount(event.data.nNonce, listForkRet);
 
-    InitSessionCount();
     InitSessionCount(event.data.nNonce);
-    if(sessionCount > 0)
+    if(GetSessionCountByNonce(event.data.nNonce) > 0)
     {
         auto data = RPCRouteRetToStream(event.data);
         PushRPC(data, CMvRPCRoute::DBP_RPCROUTE_LIST_FORK);
@@ -2968,7 +3000,7 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetBlockLocation& event)
     }
 
     InitRPCTopicIds();
-    InitSessionCount();
+    InitSessionCount(event.data.nNonce);
     InsertQueCount(event.data.nNonce, getBlockLocationRet);
     RPCRootHandle(&event.data, NULL);
     return true;
@@ -3016,7 +3048,7 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetBlockCount& event)
     }
 
     InitRPCTopicIds();
-    InitSessionCount();
+    InitSessionCount(event.data.nNonce);
     InsertQueCount(event.data.nNonce, getBlockCountRet);
     RPCRootHandle(&event.data, NULL);
     return true;
@@ -3059,7 +3091,7 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetBlockHash& event)
     }
 
     InitRPCTopicIds();
-    InitSessionCount();
+    InitSessionCount(event.data.nNonce);
     InsertQueCount(event.data.nNonce, getBlockHashRet);
     RPCRootHandle(&event.data, NULL);
     return true;
@@ -3090,7 +3122,7 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetBlock& event)
     }
 
     InitRPCTopicIds();
-    InitSessionCount();
+    InitSessionCount(event.data.nNonce);
     InsertQueCount(event.data.nNonce, getBlockRet);
     RPCRootHandle(&event.data, NULL);
     return true;
@@ -3127,7 +3159,7 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetTxPool& event)
     }
 
     InitRPCTopicIds();
-    InitSessionCount();
+    InitSessionCount(event.data.nNonce);
     InsertQueCount(event.data.nNonce, getTxPoolRet);
     RPCRootHandle(&event.data, NULL);
     return true;
@@ -3159,7 +3191,7 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetTransaction& event)
     }
 
     InitRPCTopicIds();
-    InitSessionCount();
+    InitSessionCount(event.data.nNonce);
     InsertQueCount(event.data.nNonce, getTransactionRet);
     RPCRootHandle(&event.data, NULL);
     return true;
@@ -3190,7 +3222,7 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetForkHeight& event)
     }
 
     InitRPCTopicIds();
-    InitSessionCount();
+    InitSessionCount(event.data.nNonce);
     InsertQueCount(event.data.nNonce, getForkHeightRet);
     RPCRootHandle(&event.data, NULL);
     return true;
@@ -3213,7 +3245,7 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteSendTransaction& event)
     }
 
     InitRPCTopicIds();
-    InitSessionCount();
+    InitSessionCount(event.data.nNonce);
     InsertQueCount(event.data.nNonce, sendTransactionRet);
     RPCRootHandle(&event.data, NULL);
     return true;
@@ -3224,8 +3256,9 @@ bool CDbpService::HandleAddedEventStop(CMvEventRPCRouteAdded& event, walleve::CW
     CMvRPCRouteStop stop;
     ss >> stop;
     CMvRPCRouteStopRet stopRet;
+    InitSessionCount(stop.nNonce);
     InsertQueCount(stop.nNonce, stopRet);
-    if (sessionCount > 0)
+    if (GetSessionCountByNonce(stop.nNonce) > 0)
     {
         PushRPC(event.data.vData, event.data.type);
         return true;
@@ -3257,6 +3290,7 @@ bool CDbpService::HandleAddedEventGetBlockLocation(CMvEventRPCRouteAdded& event,
     ss >> getBlockLocation;
     CMvRPCRouteGetBlockLocationRet getBlockLocationRet;
 
+    InitSessionCount(getBlockLocation.nNonce);
     InitRPCTopicIds();
     InsertQueCount(getBlockLocation.nNonce, getBlockLocationRet);
 
@@ -3286,6 +3320,7 @@ bool CDbpService::HandleAddedEventGetBlockCount(CMvEventRPCRouteAdded& event, wa
     ss >> getBlockCount;
     CMvRPCRouteGetBlockCountRet getBlockCountRet;
 
+    InitSessionCount(getBlockCount.nNonce);
     InitRPCTopicIds();
     InsertQueCount(getBlockCount.nNonce, getBlockCountRet);
 
@@ -3330,6 +3365,7 @@ bool CDbpService::HandleAddedEventGetBlockHash(CMvEventRPCRouteAdded& event, wal
     result.vRawData = event.data.vData;
     getBlockHashRet.nNonce = getBlockHash.nNonce;
 
+    InitSessionCount(getBlockHash.nNonce);
     InitRPCTopicIds();
     InsertQueCount(getBlockHash.nNonce, getBlockHashRet);
 
@@ -3378,6 +3414,7 @@ bool CDbpService::HandleAddedEventGetBlock(CMvEventRPCRouteAdded& event, walleve
     result.vRawData = event.data.vData;
     getBlockRet.nNonce = getBlock.nNonce;
 
+    InitSessionCount(getBlock.nNonce);
     InitRPCTopicIds();
     InsertQueCount(getBlock.nNonce, getBlockRet);
 
@@ -3410,6 +3447,7 @@ bool CDbpService::HandleAddedEventGetTxPool(CMvEventRPCRouteAdded& event, wallev
     result.vRawData = event.data.vData;
     getTxPoolRet.nNonce = getTxPool.nNonce;
 
+    InitSessionCount(getTxPool.nNonce);
     InitRPCTopicIds();
     InsertQueCount(getTxPool.nNonce, getTxPoolRet);
 
@@ -3446,6 +3484,7 @@ bool CDbpService::HandleAddedEventGetTransaction(CMvEventRPCRouteAdded& event, w
     result.vRawData = event.data.vData;
     getTransactionRet.nNonce = getTransaction.nNonce;
 
+    InitSessionCount(getTransaction.nNonce);
     InitRPCTopicIds();
     InsertQueCount(getTransaction.nNonce, getTransactionRet);
 
@@ -3479,6 +3518,7 @@ bool CDbpService::HandleAddedEventGetForkHeight(CMvEventRPCRouteAdded& event, wa
     result.vRawData = event.data.vData;
     getForkHeightRet.nNonce = getForkHeight.nNonce;
 
+    InitSessionCount(getForkHeight.nNonce);
     InitRPCTopicIds();
     InsertQueCount(getForkHeight.nNonce, getForkHeightRet);
 
@@ -3508,6 +3548,7 @@ bool CDbpService::HandleAddedEventSendTransaction(CMvEventRPCRouteAdded& event, 
     result.vRawData = event.data.vData;
     sendTransactionRet.nNonce = sendTransaction.nNonce;
 
+    InitSessionCount(sendTransaction.nNonce);
     InitRPCTopicIds();
     InsertQueCount(sendTransaction.nNonce, sendTransactionRet);
 
@@ -3525,8 +3566,6 @@ bool CDbpService::HandleAddedEventSendTransaction(CMvEventRPCRouteAdded& event, 
 
 bool CDbpService::HandleEvent(CMvEventRPCRouteAdded& event)
 {
-    InitSessionCount();
-
     walleve::CWalleveBufStream ss;
     ss.Write((char*)event.data.vData.data(), event.data.vData.size());
 
@@ -3590,7 +3629,6 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteDelCompltUntil& event)
 
 void CDbpService::HandleRPCRoute(CMvEventDbpMethod& event)
 {
-    sessionCount--;
     int type = boost::any_cast<int>(event.data.params["type"]);
     std::string data = boost::any_cast<std::string>(event.data.params["data"]);
     std::string rawData = boost::any_cast<std::string>(event.data.params["rawdata"]);

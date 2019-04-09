@@ -147,7 +147,6 @@ private:
     void CompletionByNonce(uint64& nNonce, boost::any obj);
     void DeleteCompletionByNonce(uint64 nNonce);
     void InitRPCTopicIds();
-    void InitSessionCount();
     void InitSessionCount(uint64 nNonce);
     int GetSessionCountByNonce(uint64 nNonce);
     void CountDownSessionCountByNonce(uint64 nNonce);
@@ -220,7 +219,6 @@ protected:
     IWallet* pWallet;
     IMvNetChannel* pNetChannel;
     walleve::IIOModule* pRPCMod;
-    int sessionCount;
 
 private:
     std::map<std::string, std::string> mapIdSubedSession;       // id => session
