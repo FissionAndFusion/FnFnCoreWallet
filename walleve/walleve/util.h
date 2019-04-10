@@ -9,11 +9,15 @@
 #include <boost/date_time.hpp>
 #include <boost/asio/ip/address.hpp>
 
-#ifdef __linux__
-#include <sys/ioctl.h>
-#include <net/if.h> 
-#include <unistd.h>
-#include <netinet/in.h>
+#if defined __linux__
+#include <net/if.h>
+#include <ifaddrs.h>
+#include <netpacket/packet.h>
+#elif defined __APPLE__
+#include <ifaddrs.h>
+#include <net/if.h>
+#include <net/if_types.h>
+#include <net/if_dl.h>
 #endif
 
 namespace walleve
@@ -77,159 +81,55 @@ inline void StdError(const char* pszName, const char* pszErr)
     std::cerr << GetLocalTime() << " [ERROR] <" << pszName << "> " << pszErr << std::endl;
 }
 
-class CMacAddress
-{
-public:
-    CMacAddress(){}
-    explicit CMacAddress(const std::vector<unsigned char>& data)
-    : macData(data)
-    {}
-    explicit CMacAddress(const CMacAddress& addr)
-    {
-        macData = addr.macData;
-    }
-    CMacAddress& operator=(const CMacAddress& addr)
-    {
-        macData = addr.macData;
-        return *this;
-    }
-    ~CMacAddress(){}
-
-    bool IsEmpty() const
-    {
-        return macData.empty();
-    }
-    
-    std::vector<unsigned char> GetData() const
-    {
-        return macData;
-    }
-    
-    std::string ToString() const
-    {
-        if(macData.size() == 6)
-        {
-            char buffer[128] = {0};
-            sprintf(buffer, "%02x:%02x:%02x:%02x:%02x:%02x", 
-                macData[0], macData[1], macData[2],
-                macData[3], macData[4], macData[5]);
-            return std::string(buffer);
-        }
-        else
-        {
-            return std::string("00:00:00:00:00:00");
-        }
-        
-    }
-public:
-    friend bool operator==(const CMacAddress& left, const CMacAddress& right) 
-    {
-        return left.ToString() == right.ToString();
-    }
-    friend bool operator<(const CMacAddress& left, const CMacAddress& right)
-    {
-        return left.ToString() < right.ToString();
-    }
-private:
-    std::vector<unsigned char> macData;
-};
-
-class CUniqueAddress
-{
-public:
-    CUniqueAddress(){};
-    CUniqueAddress(const CMacAddress& macAddrIn, const std::string& rootPathIn)
-    : macAddress(macAddrIn), rootPath(rootPathIn)
-    {}
-    explicit CUniqueAddress(const CUniqueAddress& addr)
-    {
-        macAddress = addr.macAddress;
-        rootPath = addr.rootPath;
-    }
-    CUniqueAddress& operator=(const CUniqueAddress& addr)
-    {
-        macAddress = addr.macAddress;
-        rootPath = addr.rootPath;
-        return *this;
-    }
-    ~CUniqueAddress(){}
-
-    bool IsEmpty() const
-    {
-        return macAddress.IsEmpty() || rootPath.empty();
-    }
-    std::string ToString() const
-    {
-        if(!rootPath.empty())
-            return macAddress.ToString() + "&" + rootPath;
-        else
-            return macAddress.ToString() + "&" + std::string("empty");
-    }
-public:
-    friend bool operator==(const CUniqueAddress& left, const CUniqueAddress& right) 
-    {
-        return left.ToString() == right.ToString();
-    }
-    friend bool operator<(const CUniqueAddress& left, const CUniqueAddress& right)
-    {
-        return left.ToString() < right.ToString();
-    }
-private:
-    CMacAddress macAddress;
-    std::string rootPath;
-};
-
-// Get Active interface's mac addr
-inline bool GetActiveIFMacAddress(CMacAddress& mac)
+// Get An interface's mac addr
+inline bool GetAnIFMacAddress(std::vector<uint8>& vecMac)
 {
     bool success = false;
-#ifdef __linux__
-    struct ifreq ifr;
-    struct ifconf ifc;
-    char buf[1024];
+#if (defined __linux__) || (defined __APPLE__)
+    struct ifaddrs *ifaddr=NULL;
+    struct ifaddrs *ifa = NULL;
+    int i = 0;
 
-    int sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
-    if (sock == -1) 
-    { 
-        return success;
-    }
-
-    ifc.ifc_len = sizeof(buf);
-    ifc.ifc_buf = buf;
-    if (ioctl(sock, SIOCGIFCONF, &ifc) == -1) 
-    { 
-        close(sock);
-        return success;
-    }
-
-    struct ifreq* it = ifc.ifc_req;
-    const struct ifreq* const end = it + (ifc.ifc_len / sizeof(struct ifreq));
-
-    for (; it != end; ++it) 
+    std::vector<std::vector<uint8>> vecMacList;
+    if (getifaddrs(&ifaddr) == -1)
     {
-        strcpy(ifr.ifr_name, it->ifr_name);
-        if (ioctl(sock, SIOCGIFFLAGS, &ifr) == 0) 
+        return success;
+    }
+
+    for ( ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next)
+    {
+        std::vector<uint8> data;
+#if defined __linux__
+        if (ifa->ifa_addr && ifa->ifa_addr->sa_family == AF_PACKET && !(ifa->ifa_flags & IFF_LOOPBACK))
         {
-            if (! (ifr.ifr_flags & IFF_LOOPBACK)) // don't count loopback
-            { 
-                if (ioctl(sock, SIOCGIFHWADDR, &ifr) == 0) 
-                {
-                    success = true;
-                    break;
-                }
+            struct sockaddr_ll *s = (struct sockaddr_ll*)ifa->ifa_addr;
+            std::copy_n(&(s->sll_addr[0]), s->sll_halen, std::back_inserter(data));
+            vecMacList.push_back(data);
+        }
+#else
+        if (ifa->ifa_addr && ifa->ifa_addr->sa_family == AF_LINK && !(ifa->ifa_flags & IFF_LOOPBACK))
+        {
+            struct sockaddr_dl * sdl = (struct sockaddr_dl *) ifa->ifa_addr;
+            if (sdl->sdl_type == IFT_ETHER)
+            {
+                std::copy_n((uint8*)sdl->sdl_data + sdl->sdl_nlen, sdl->sdl_alen, std::back_inserter(data));
             }
         }
+#endif
+        if (!data.empty())
+        {
+            vecMacList.push_back(data);
+        }
     }
-
+    freeifaddrs(ifaddr);
+    
+    success = vecMacList.size() > 0 ? true : false;
     if (success) 
     {
-        std::vector<unsigned char> data;
-        std::copy_n(&(ifr.ifr_hwaddr.sa_data[0]), 6, std::back_inserter(data));
-        mac = CMacAddress(data);
+        std::sort(vecMacList.begin(), vecMacList.end());
+        vecMac = std::move(vecMacList.front());
     }
-
-    close(sock);
- #endif   
+#endif
     return success;
 }
 

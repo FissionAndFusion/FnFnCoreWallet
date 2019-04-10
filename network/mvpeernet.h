@@ -100,13 +100,16 @@ protected:
     bool SendDelegatedMessage(uint64 nNonce,int nCommand,walleve::CWalleveBufStream& ssPayload);
     void SetInvTimer(uint64 nNonce,std::vector<CInv>& vInv);
     virtual void ProcessAskFor(walleve::CPeer* pPeer);
-    void Configure(uint32 nMagicNumIn,uint32 nVersionIn,uint64 nServiceIn,const std::string& subVersionIn,const std::string& rootPathIn,
-        bool fEnclosedIn)
+    void Configure(uint32 nMagicNumIn,uint32 nVersionIn,uint64 nServiceIn,
+                   const std::string& subVersionIn,const std::string& rootPathIn,
+                   bool fEnclosedIn,const crypto::CCryptoKey& nodeKeyIn)
     {
         nMagicNum = nMagicNumIn; nVersion = nVersionIn; nService = nServiceIn;
         subVersion = subVersionIn; rootPath = rootPathIn; fEnclosed = fEnclosedIn;
+        nodeKey = nodeKeyIn;
     }
     virtual bool CheckPeerVersion(uint32 nVersionIn,uint64 nServiceIn,const std::string& subVersionIn) = 0;
+    CAddress ToGateWayAddress(const CNetHost& gateWayNode);
 protected:
     IMvNetChannel* pNetChannel;
     IMvDelegatedChannel* pDelegatedChannel;
@@ -120,6 +123,7 @@ protected:
     SUPER_NODE_TYPE typeNode;
     typedef std::pair<uint256, uint64> ForkNonceKeyType;
     std::map<ForkNonceKeyType, std::set<uint256>> mapThisNodeGetData; 
+    crypto::CCryptoKey nodeKey;
 };
 
 } // namespace network

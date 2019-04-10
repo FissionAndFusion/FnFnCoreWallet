@@ -228,7 +228,7 @@ void CConsensus::WalleveHandleDeinitialize()
 
 bool CConsensus::WalleveHandleInvoke()
 {
-    boost::unique_lock<boost::mutex> lock(mutex);
+    std::unique_lock<std::mutex> lock(mutex);
 
     if (!mvDelegate.Initialize())
     {
@@ -253,7 +253,7 @@ bool CConsensus::WalleveHandleInvoke()
 
 void CConsensus::WalleveHandleHalt()
 {
-    boost::unique_lock<boost::mutex> lock(mutex);
+    std::unique_lock<std::mutex> lock(mutex);
 
     mvDelegate.Deinitialize();
     for (map<CDestination,CDelegateContext>::iterator it = mapContext.begin();it != mapContext.end();++it)
@@ -264,7 +264,7 @@ void CConsensus::WalleveHandleHalt()
 
 void CConsensus::PrimaryUpdate(const CWorldLineUpdate& update,const CTxSetChange& change,CDelegateRoutine& routine)
 {
-    boost::unique_lock<boost::mutex> lock(mutex);
+    std::unique_lock<std::mutex> lock(mutex);
 
     int32 nStartHeight = update.nLastBlockHeight - update.vBlockAddNew.size();
     if (!update.vBlockRemove.empty())
@@ -348,7 +348,7 @@ void CConsensus::PrimaryUpdate(const CWorldLineUpdate& update,const CTxSetChange
 
 void CConsensus::AddNewTx(const CAssembledTx& tx)
 {
-    boost::unique_lock<boost::mutex> lock(mutex);
+    std::unique_lock<std::mutex> lock(mutex);
     for (map<CDestination,CDelegateContext>::iterator it = mapContext.begin();it != mapContext.end();++it)
     {
         (*it).second.AddNewTx(tx);
@@ -357,14 +357,14 @@ void CConsensus::AddNewTx(const CAssembledTx& tx)
 
 bool CConsensus::AddNewDistribute(const int32 nAnchorHeight,const CDestination& destFrom,const vector<unsigned char>& vchDistribute)
 {
-    boost::unique_lock<boost::mutex> lock(mutex);
+    std::unique_lock<std::mutex> lock(mutex);
     int32 nDistributeTargetHeight = nAnchorHeight + MV_CONSENSUS_DISTRIBUTE_INTERVAL + 1;
     return mvDelegate.HandleDistribute(nDistributeTargetHeight,destFrom,vchDistribute);
 }
 
 bool CConsensus::AddNewPublish(const int32 nAnchorHeight,const CDestination& destFrom,const vector<unsigned char>& vchPublish)
 {
-    boost::unique_lock<boost::mutex> lock(mutex);
+    std::unique_lock<std::mutex> lock(mutex);
     int32 nPublishTargetHeight = nAnchorHeight + 1;
     bool fCompleted = false;
     return mvDelegate.HandlePublish(nPublishTargetHeight,destFrom,vchPublish,fCompleted);
@@ -372,7 +372,7 @@ bool CConsensus::AddNewPublish(const int32 nAnchorHeight,const CDestination& des
 
 void CConsensus::GetAgreement(const int32 nTargetHeight,uint256& nAgreement,size_t& nWeight,vector<CDestination>& vBallot)
 {
-    boost::unique_lock<boost::mutex> lock(mutex);
+    std::unique_lock<std::mutex> lock(mutex);
     map<CDestination,size_t> mapBallot;
     mvDelegate.GetAgreement(nTargetHeight,nAgreement,nWeight,mapBallot);
     pCoreProtocol->GetDelegatedBallot(nAgreement,nWeight,mapBallot,vBallot);
@@ -380,7 +380,7 @@ void CConsensus::GetAgreement(const int32 nTargetHeight,uint256& nAgreement,size
 
 void CConsensus::GetProof(const int32 nTargetHeight,vector<unsigned char>& vchProof)
 {
-    boost::unique_lock<boost::mutex> lock(mutex);
+    std::unique_lock<std::mutex> lock(mutex);
     mvDelegate.GetProof(nTargetHeight,vchProof);
 }
 

@@ -188,22 +188,30 @@ int CMvPeer::HandshakeReadCompleted()
                     return CPeer::FAILED;
                 }
                 int64 nTime;
-                std::vector<unsigned char> macData;
-                std::string rootPath;
-                ss >> nVersion >> nService >> nTime >> nNonceFrom >> strSubVer >> nStartingHeight >> macData >> rootPath;
+              
+                std::vector<uint8> dataSecret, vchSig;
+                uint256 pubKey;
+                ss >> nVersion >> nService >> nTime >> nNonceFrom >> strSubVer >> nStartingHeight 
+                    >> dataSecret >> vchSig >> pubKey;
                 
-                if(!macData.empty() && !rootPath.empty()) 
+                if(!dataSecret.empty() && !vchSig.empty() && pubKey.size() != 0)
                 { 
-                    remoteUniqueAddress = CUniqueAddress(CMacAddress(macData), rootPath);
+                    if(!crypto::CryptoVerify(pubKey, dataSecret.data(), dataSecret.size(), vchSig))
+                    {
+                        return CPeer::FAILED;
+                    }
+
+                    hashRemoteId = crypto::CryptoHash(dataSecret.data(), dataSecret.size());
                 }
                 else 
                 { 
-                    throw std::runtime_error("Received Unique Address Invalid"); 
+                    throw std::runtime_error("Received dataSecret,vchSig,PubKey Invalid");
                 }
                 
                 nTimeDelta = nTime - nTimeRecv;
                 if (!fInBound)
                 {
+                    // Client
                     nTimeDelta += (nTimeRecv - nTimeHello) / 2;
                     SendHelloAck();
                     bool fIsBanned = false;
@@ -216,9 +224,13 @@ int CMvPeer::HandshakeReadCompleted()
                     return fIsSuccess ? CPeer::SUCCESS : CPeer::FAILED;
                     
                 }
-                SendHello();
-                Read(MESSAGE_HEADER_SIZE,boost::bind(&CMvPeer::HandshakeReadHeader,this));
-                return CPeer::SUCCESS;
+                else
+                {
+                    // Server
+                    SendHello();
+                    Read(MESSAGE_HEADER_SIZE,boost::bind(&CMvPeer::HandshakeReadHeader,this));
+                    return CPeer::SUCCESS;
+                }
             }
             else if (nCmd == MVPROTO_CMD_HELLO_ACK && fInBound)
             {

@@ -535,12 +535,13 @@ void CDelegatedChannel::DispatchMisbehaveEvent(uint64 nNonce, CEndpointManager::
 
 void CDelegatedChannel::PushBulletinTimerFunc(uint32 nTimerId)
 {
-    boost::unique_lock<boost::mutex> lock(mtxBulletin);
+    boost::unique_lock<boost::shared_mutex> wlock(rwPeer, boost::defer_lock);
+    boost::unique_lock<boost::mutex> lock(mtxBulletin, boost::defer_lock);
+    boost::lock(wlock, lock);
     if (nTimerBulletin == nTimerId)
     {
         if (fBulletin)
         {
-            boost::unique_lock<boost::shared_mutex> wlock(rwPeer);
             PushBulletin();
             fBulletin = false;
             nTimerBulletin = WalleveSetTimer(BULLETIN_TIMEOUT,boost::bind(&CDelegatedChannel::PushBulletinTimerFunc,this,_1));

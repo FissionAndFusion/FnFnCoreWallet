@@ -61,6 +61,18 @@ bool CMvNetworkConfig::PostLoad()
         nThreadNumber = 1;
     }
 
+    vector<uint8> vecMac;
+    if (!walleve::GetAnIFMacAddress(vecMac))
+    {
+        return false;
+    }
+
+    string strPath = pathRoot.string();
+    vecMac.insert(vecMac.end(), strPath.begin(), strPath.end());
+
+    uint256 seed = crypto::CryptoHash(&vecMac[0], vecMac.size());
+    crypto::CryptoImportKey(nodeKey, seed);
+
     return true;
 }
 

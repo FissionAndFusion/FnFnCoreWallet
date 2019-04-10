@@ -12,6 +12,8 @@
 #include "walleve/netio/iocontainer.h"
 #include <string>
 #include <map>
+#include <mutex>
+#include <condition_variable>
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp> 
 
@@ -38,8 +40,8 @@ public:
     void Abort();
     void Reset();
 protected:
-    boost::condition_variable cond;
-    boost::mutex mutex;
+    std::condition_variable cond;
+    std::mutex mutex;
     bool fResult;
     bool fCompleted;
     bool fAborted;
@@ -56,8 +58,8 @@ public:
     void Abort();
     void Reset();
 protected:
-    boost::condition_variable_any cond;
-    boost::mutex mutex;
+    std::condition_variable_any cond;
+    std::mutex mutex;
     int nTimeout; // microsecond
     bool fResult;
     bool fCompleted;

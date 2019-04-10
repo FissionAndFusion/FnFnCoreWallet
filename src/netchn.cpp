@@ -40,8 +40,9 @@ bool CConcurrentPeerNetData::IsForkSynchronized(const uint256& hashFork) const
 
  void CConcurrentPeerNetData::ActivePeer(uint64 nNonce, uint64 nService, const uint256& forkHash)
  {
-    WriteLocker wlockPeer(rwPeer);
-    WriteLocker wlockUnSync(rwUnsync);
+    WriteLocker wlockPeer(rwPeer, boost::defer_lock);
+    WriteLocker wlockUnSync(rwUnsync, boost::defer_lock);
+    boost::lock(wlockPeer, wlockUnSync);
 
     mapPeer[nNonce] = CNetChannelPeer(nService,forkHash);
     mapUnsync[forkHash].insert(nNonce);
@@ -49,8 +50,9 @@ bool CConcurrentPeerNetData::IsForkSynchronized(const uint256& hashFork) const
 
  void CConcurrentPeerNetData::DeactivePeer(uint64 nNonce)
  {
-    WriteLocker wlockPeer(rwPeer);
-    WriteLocker wlockUnSync(rwUnsync);
+    WriteLocker wlockPeer(rwPeer, boost::defer_lock);
+    WriteLocker wlockUnSync(rwUnsync, boost::defer_lock);
+    boost::lock(wlockPeer, wlockUnSync);
 
     map<uint64,CNetChannelPeer>::iterator it = mapPeer.find(nNonce);
     if (it != mapPeer.end())
@@ -65,8 +67,9 @@ bool CConcurrentPeerNetData::IsForkSynchronized(const uint256& hashFork) const
 
 void CConcurrentPeerNetData::SubscribeForks(uint64 nNonce, const std::vector<uint256>& hashForks)
 {
-    WriteLocker wlockPeer(rwPeer);
-    WriteLocker wlockUnSync(rwUnsync);
+    WriteLocker wlockPeer(rwPeer, boost::defer_lock);
+    WriteLocker wlockUnSync(rwUnsync, boost::defer_lock);
+    boost::lock(wlockPeer, wlockUnSync);
 
     auto iter = mapPeer.find(nNonce);
     if(iter != mapPeer.end())
@@ -81,8 +84,9 @@ void CConcurrentPeerNetData::SubscribeForks(uint64 nNonce, const std::vector<uin
 
 void CConcurrentPeerNetData::UnsubscribeForks(uint64 nNonce, const std::vector<uint256>& hashForks)
 {
-    WriteLocker wlockPeer(rwPeer);
-    WriteLocker wlockUnSync(rwUnsync);
+    WriteLocker wlockPeer(rwPeer, boost::defer_lock);
+    WriteLocker wlockUnSync(rwUnsync, boost::defer_lock);
+    boost::lock(wlockPeer, wlockUnSync);
 
     auto iter = mapPeer.find(nNonce);
     if(iter != mapPeer.end())

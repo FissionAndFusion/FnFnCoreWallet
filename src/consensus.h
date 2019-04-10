@@ -101,7 +101,7 @@ protected:
     bool LoadDelegateTx();
     bool LoadChain();
 protected:
-    boost::mutex mutex;
+    std::mutex mutex;
     ICoreProtocol* pCoreProtocol;
     IWorldLine* pWorldLine;
     ITxPool* pTxPool;

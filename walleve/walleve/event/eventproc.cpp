@@ -49,7 +49,6 @@ void CWalleveEventProc::WalleveHandleHalt()
     
     for (CWalleveThread& thrEventQue : vecThrEventQue)
     {
-        thrEventQue.Interrupt();
         WalleveThreadExit(thrEventQue);
     }
 }
