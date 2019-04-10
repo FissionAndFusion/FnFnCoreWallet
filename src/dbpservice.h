@@ -138,7 +138,7 @@ private:
         std::vector<uint8> vData(ss.GetData(), ss.GetData() + ss.GetSize());
         return vData;
     };
-    void PushMsgToChild(std::vector<uint8>& data, int& type);
+    void PushMsgToChild(std::vector<uint8>& data, int& type, uint64& nNonce);
     void SendRPCResult(CMvRPCRouteResult& result);
     void HandleRPCRoute(CMvEventDbpMethod& event);
     void PushRPC(std::vector<uint8>& data, int type);
@@ -146,7 +146,7 @@ private:
     void CreateCompletion(uint64 nNonce, std::shared_ptr<walleve::CIOCompletionUntil> sPtr);
     void CompletionByNonce(uint64& nNonce, boost::any obj);
     void DeleteCompletionByNonce(uint64 nNonce);
-    void InitRPCTopicIds();
+    void InitRPCTopicId(uint64 nNocne);
     void InitSessionCount(uint64 nNonce);
     int GetSessionCountByNonce(uint64 nNonce);
     void CountDownSessionCountByNonce(uint64 nNonce);
@@ -237,7 +237,7 @@ private:
     std::deque<std::pair<uint64, boost::any>> queCount;
     std::vector<std::pair<uint64, std::shared_ptr<walleve::CIOCompletionUntil>>> vCompletion;
     std::vector<std::pair<uint64, int>> vSessionCount;
-    std::vector<std::string> vRPCTopicIds;
+    std::vector<std::pair<uint64, std::vector<std::string>>> vRPCTopicId;
     typedef std::map<ForkNonceKeyType, uint32> MapForkCountType; 
     MapForkCountType mapChildNodeForkCount;
     MapForkCountType mapThisNodeForkCount;
