@@ -737,12 +737,7 @@ bool CDbpClient::CreateProfile(const CDbpClientConfig& confClient)
         return false;
     }
 
-    CNetHost netHost;
-    netHost.strHost = confClient.strParentHost;
-    netHost.nPort = confClient.nDbpPort;
-    netHost.data = confClient;
-    ResolveHost(netHost);
-
+    ResolveHost(CNetHost(confClient.strParentHost, 0, "", confClient));
     return true;
 }
 
