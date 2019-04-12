@@ -197,9 +197,9 @@ protected:
     SessionClientSocketBimapType bimapSessionClientSocket;      // session id <=> CDbpClientSocket
     std::map<std::string, CDbpClientSessionProfile> mapSessionProfile; // session id => session profile
 
-
 private:
     IIOModule* pDbpService;
+    CNetHost parentHost;
 };
 
 } // namespace multiverse

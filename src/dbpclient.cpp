@@ -615,6 +615,15 @@ void CDbpClient::EnterLoop()
 {
     // start resource
     WalleveLog("Dbp Client starting:\n");
+    try
+    {
+        if(!parentHost.ToEndPoint().address().to_string().empty())
+            ResolveHost(parentHost);
+    }
+    catch(const std::exception& e)
+    {
+        WalleveWarn(e.what());
+    }
 }
 
 void CDbpClient::LeaveLoop()
@@ -736,8 +745,7 @@ bool CDbpClient::CreateProfile(const CDbpClientConfig& confClient)
         WalleveError("Failed to request %s\n", confClient.strIOModule.c_str());
         return false;
     }
-
-    ResolveHost(CNetHost(confClient.strParentHost, confClient.nDbpPort, "", confClient));
+    parentHost = CNetHost(confClient.strParentHost, confClient.nDbpPort, "", confClient);
     return true;
 }
 
