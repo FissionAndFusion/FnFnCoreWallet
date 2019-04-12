@@ -475,8 +475,11 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
                 dynamic_cast<CNetChannel*>(pNetChannelBase)->EnableSuperNode(config.fEnableForkNode);
             }
             
-            dynamic_cast<CDbpClient*>(pClientBase)->AddNewClient(config);
-
+            if(config.fEnableSuperNode && config.fEnableForkNode)
+            {
+                dynamic_cast<CDbpClient*>(pClientBase)->AddNewClient(config);
+            }
+        
             CDbpService* pDbpService = new CDbpService();
             pDbpService->EnableSuperNode(config.fEnableSuperNode);
             pDbpService->EnableForkNode(config.fEnableForkNode);
