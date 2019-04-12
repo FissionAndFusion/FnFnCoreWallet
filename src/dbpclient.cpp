@@ -334,6 +334,7 @@ CDbpClient::CDbpClient()
   : walleve::CIOProc("dbpclient")
 {
     pDbpService = NULL;
+    fIsConnected = false;
 }
 
 CDbpClient::~CDbpClient() noexcept
@@ -615,15 +616,6 @@ void CDbpClient::EnterLoop()
 {
     // start resource
     WalleveLog("Dbp Client starting:\n");
-    try
-    {
-        if(!parentHost.ToEndPoint().address().to_string().empty())
-            ResolveHost(parentHost);
-    }
-    catch(const std::exception& e)
-    {
-        WalleveWarn(e.what());
-    }
 }
 
 void CDbpClient::LeaveLoop()
@@ -643,6 +635,23 @@ void CDbpClient::LeaveLoop()
     WalleveLog("Dbp Client stop\n");
 }
 
+void CDbpClient::HeartBeat()
+{
+    if(!fIsConnected)
+    {
+        try
+        {
+            if(!parentHost.ToEndPoint().address().to_string().empty())
+                ResolveHost(parentHost);
+        }
+        catch(const std::exception& e)
+        {
+            WalleveWarn("DbpClient HeartBeat Warning:\n");
+            WalleveWarn(e.what());
+        }
+    }
+}
+
 bool CDbpClient::ClientConnected(CIOClient* pClient)
 {
     auto it = mapProfile.find(pClient->GetRemote());
@@ -650,6 +659,7 @@ bool CDbpClient::ClientConnected(CIOClient* pClient)
     {
         return false;
     }
+    fIsConnected = true;
 
     WalleveLog("Connect parent node %s success,  port = %d\n",
                        (*it).first.address().to_string().c_str(),
@@ -660,6 +670,7 @@ bool CDbpClient::ClientConnected(CIOClient* pClient)
 
 void CDbpClient::ClientFailToConnect(const boost::asio::ip::tcp::endpoint& epRemote)
 {
+    fIsConnected = false;
     WalleveWarn("Connect parent node %s failed,  port = %d\n reconnectting\n",
                        epRemote.address().to_string().c_str(),
                        epRemote.port());
@@ -713,11 +724,6 @@ void CDbpClient::HostResolved(const CNetHost& host, const boost::asio::ip::tcp::
     confClient.epParentHost = ep;
 
     bool fEnableSSL = profile.optSSL.fEnable;
-
-    if (ep.address().is_loopback())
-    {
-        return;
-    }
 
     if (!StartConnection(ep, DBPCLIENT_CONNECT_TIMEOUT, fEnableSSL, profile.optSSL))
     {
