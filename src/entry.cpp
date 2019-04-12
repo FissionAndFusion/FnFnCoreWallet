@@ -451,12 +451,6 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
             }
             dynamic_cast<CDbpServer*>(pServerBase)->AddNewHost(GetDbpHostConfig());
 
-            auto pClientBase = walleveDocker.GetObject("dbpclient");
-            if(!pClientBase)
-            {
-                return false;
-            }
-
             auto pVirtualPeerNetBase = walleveDocker.GetObject("virtualpeernet");
             if(!pVirtualPeerNetBase)
             {
@@ -477,6 +471,11 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
             
             if(config.fEnableSuperNode && config.fEnableForkNode)
             {
+                auto pClientBase = walleveDocker.GetObject("dbpclient");
+                if(!pClientBase)
+                {
+                    return false;
+                }
                 dynamic_cast<CDbpClient*>(pClientBase)->AddNewClient(config);
             }
         
