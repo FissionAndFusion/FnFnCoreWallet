@@ -252,12 +252,20 @@
             "desc": "Listen for DBP connections on <port> (default: 6815)"
         },
         {
+            "name": "fDbpListen",
+            "type": "bool",
+            "opt": "dbplisten",
+            "default": false,
+            "format": "-dbplisten",
+            "desc": "Accept DBP IPv4 connections (default: false)"
+        },
+        {
             "name": "fDbpListen4",
             "type": "bool",
             "opt": "dbplisten4",
             "default": false,
             "format": "-dbplisten4",
-            "desc": "Accept DBP IPv4 connections (default: 0)"
+            "desc": "Accept DBP IPv4 connections (default: false)"
         },
         {
             "name": "fDbpListen6",
@@ -265,7 +273,7 @@
             "opt": "dbplisten6",
             "default": false,
             "format": "-dbplisten6",
-            "desc": "Accept DBP IPv6 connections (default: 0)"
+            "desc": "Accept DBP IPv6 connections (default: false)"
         },
         {
             "name": "strDbpUser",
