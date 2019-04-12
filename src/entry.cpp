@@ -429,10 +429,15 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
         }
         case EModuleType::DBPCLIENT:
         {
-            if(!AttachModule(new CDbpClient()))
+            auto config = GetDbpClientConfig();
+            if(config.fEnableSuperNode && !config.fEnableForkNode)
             {
-                return false;
+                if(!AttachModule(new CDbpClient()))
+                {
+                    return false;
+                }
             }
+            
             break;
         }
         case EModuleType::DBPSERVICE:
