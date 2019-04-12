@@ -334,7 +334,7 @@ CDbpClient::CDbpClient()
   : walleve::CIOProc("dbpclient")
 {
     pDbpService = NULL;
-    fIsConnected = false;
+    fIsResolved = false;
 }
 
 CDbpClient::~CDbpClient() noexcept
@@ -590,6 +590,12 @@ bool CDbpClient::WalleveHandleInitialize()
     // init client config
     for(const auto & confClient : vecClientConfig)
     {
+        if(confClient.fEnableSuperNode && !confClient.fEnableForkNode)
+        {
+            fIsRootNode = true;
+            continue;
+        }
+        
         if(!CreateProfile(confClient))
         {
             return false;
@@ -637,7 +643,7 @@ void CDbpClient::LeaveLoop()
 
 void CDbpClient::HeartBeat()
 {
-    if(!fIsConnected)
+    if(!fIsRootNode && !fIsResolved)
     {
         try
         {
@@ -659,7 +665,6 @@ bool CDbpClient::ClientConnected(CIOClient* pClient)
     {
         return false;
     }
-    fIsConnected = true;
 
     WalleveLog("Connect parent node %s success,  port = %d\n",
                        (*it).first.address().to_string().c_str(),
@@ -670,7 +675,6 @@ bool CDbpClient::ClientConnected(CIOClient* pClient)
 
 void CDbpClient::ClientFailToConnect(const boost::asio::ip::tcp::endpoint& epRemote)
 {
-    fIsConnected = false;
     WalleveWarn("Connect parent node %s failed,  port = %d\n reconnectting\n",
                        epRemote.address().to_string().c_str(),
                        epRemote.port());
@@ -713,6 +717,8 @@ void CDbpClient::HostResolved(const CNetHost& host, const boost::asio::ip::tcp::
         WalleveError("Failed to request %s\n", confClient.strIOModule.c_str());
         return;
     }
+
+    fIsResolved = true;
 
     if (confClient.optSSL.fEnable)
         profile.optSSL = confClient.optSSL;

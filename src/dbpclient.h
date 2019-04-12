@@ -201,7 +201,8 @@ protected:
 private:
     IIOModule* pDbpService;
     CNetHost parentHost;
-    bool fIsConnected;
+    bool fIsResolved;
+    bool fIsRootNode;
 };
 
 } // namespace multiverse
