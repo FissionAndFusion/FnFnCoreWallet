@@ -334,6 +334,7 @@ CDbpClient::CDbpClient()
   : walleve::CIOProc("dbpclient")
 {
     pDbpService = NULL;
+    fIsResolved = false;
 }
 
 CDbpClient::~CDbpClient() noexcept
@@ -589,6 +590,12 @@ bool CDbpClient::WalleveHandleInitialize()
     // init client config
     for(const auto & confClient : vecClientConfig)
     {
+        if(confClient.fEnableSuperNode && !confClient.fEnableForkNode)
+        {
+            fIsRootNode = true;
+            continue;
+        }
+        
         if(!CreateProfile(confClient))
         {
             return false;
@@ -632,6 +639,23 @@ void CDbpClient::LeaveLoop()
     }
 
     WalleveLog("Dbp Client stop\n");
+}
+
+void CDbpClient::HeartBeat()
+{
+    if(!fIsRootNode && !fIsResolved)
+    {
+        try
+        {
+            if(!parentHost.ToEndPoint().address().to_string().empty())
+                ResolveHost(parentHost);
+        }
+        catch(const std::exception& e)
+        {
+            WalleveWarn("DbpClient HeartBeat Warning:\n");
+            WalleveWarn(e.what());
+        }
+    }
 }
 
 bool CDbpClient::ClientConnected(CIOClient* pClient)
@@ -694,6 +718,8 @@ void CDbpClient::HostResolved(const CNetHost& host, const boost::asio::ip::tcp::
         return;
     }
 
+    fIsResolved = true;
+
     if (confClient.optSSL.fEnable)
         profile.optSSL = confClient.optSSL;
 
@@ -704,11 +730,6 @@ void CDbpClient::HostResolved(const CNetHost& host, const boost::asio::ip::tcp::
     confClient.epParentHost = ep;
 
     bool fEnableSSL = profile.optSSL.fEnable;
-
-    if (ep.address().is_loopback())
-    {
-        return;
-    }
 
     if (!StartConnection(ep, DBPCLIENT_CONNECT_TIMEOUT, fEnableSSL, profile.optSSL))
     {
@@ -736,8 +757,7 @@ bool CDbpClient::CreateProfile(const CDbpClientConfig& confClient)
         WalleveError("Failed to request %s\n", confClient.strIOModule.c_str());
         return false;
     }
-
-    ResolveHost(CNetHost(confClient.strParentHost, confClient.nDbpPort, "", confClient));
+    parentHost = CNetHost(confClient.strParentHost, confClient.nDbpPort, "", confClient);
     return true;
 }
 
