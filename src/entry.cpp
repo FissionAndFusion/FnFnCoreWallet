@@ -429,15 +429,10 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
         }
         case EModuleType::DBPCLIENT:
         {
-            auto config = GetDbpClientConfig();
-            if(config.fEnableSuperNode && config.fEnableForkNode)
+            if(!AttachModule(new CDbpClient()))
             {
-                if(!AttachModule(new CDbpClient()))
-                {
-                    return false;
-                }
+                return false;
             }
-            
             break;
         }
         case EModuleType::DBPSERVICE:
@@ -469,16 +464,13 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
                 dynamic_cast<CNetChannel*>(pNetChannelBase)->EnableSuperNode(config.fEnableForkNode);
             }
             
-            if(config.fEnableSuperNode && config.fEnableForkNode)
+            auto pClientBase = walleveDocker.GetObject("dbpclient");
+            if(!pClientBase)
             {
-                auto pClientBase = walleveDocker.GetObject("dbpclient");
-                if(!pClientBase)
-                {
-                    return false;
-                }
-                dynamic_cast<CDbpClient*>(pClientBase)->AddNewClient(config);
+                return false;
             }
-        
+            dynamic_cast<CDbpClient*>(pClientBase)->AddNewClient(config);
+           
             CDbpService* pDbpService = new CDbpService();
             pDbpService->EnableSuperNode(config.fEnableSuperNode);
             pDbpService->EnableForkNode(config.fEnableForkNode);
