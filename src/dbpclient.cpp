@@ -335,6 +335,7 @@ CDbpClient::CDbpClient()
 {
     pDbpService = NULL;
     fIsResolved = false;
+    fIsRootNode = false;
 }
 
 CDbpClient::~CDbpClient() noexcept
