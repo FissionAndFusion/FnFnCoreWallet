@@ -117,7 +117,7 @@ std::string CNetHost::HostFromString(const std::string& strHostIn)
         }
         else
         {
-            host = strHostIn;
+            host = strHostIn.substr(0,strHostIn.find(':'));
         }
     }
 

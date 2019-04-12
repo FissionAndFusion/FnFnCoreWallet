@@ -342,10 +342,10 @@
         {
             "name": "strParentHost",
             "type": "string",
-            "opt": "dbpparentnodeip",
+            "opt": "parentnode",
             "default": "",
-            "format": "-dbpparentnodeip=<ip>",
-            "desc": "Set dbp parent node ip to <ip> for super node(default: empty)"
+            "format": "-parentnode=<ip>:",
+            "desc": "Set parent node ip to <ip> for super node(default: empty)"
         },
         {
             "name": "fEnableForkNode",
