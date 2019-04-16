@@ -93,6 +93,7 @@ protected:
                     const CIOSSLOption& optSSL = CIOSSLOption());
     std::size_t GetOutBoundIdleCount();
     void ResolveHost(const CNetHost& host);
+    bool ResolveHostSync(const CNetHost& host, boost::asio::ip::tcp::endpoint& ep);
     virtual void EnterLoop();
     virtual void LeaveLoop();
     virtual void HeartBeat();

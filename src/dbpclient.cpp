@@ -334,7 +334,6 @@ CDbpClient::CDbpClient()
   : walleve::CIOProc("dbpclient")
 {
     pDbpService = NULL;
-    fIsResolved = false;
     fIsRootNode = false;
     fIsSuperNode = false;
 }
@@ -631,6 +630,19 @@ void CDbpClient::EnterLoop()
 {
     // start resource
     WalleveLog("Dbp Client starting:\n");
+    
+    if(fIsSuperNode && !fIsRootNode)
+    {
+        boost::asio::ip::tcp::endpoint ep;
+        if(ResolveHostSync(parentHost, ep))
+        {
+            HostResolved(parentHost, ep);
+        }
+        else
+        {
+            HostFailToResolve(parentHost);
+        }
+    }
 }
 
 void CDbpClient::LeaveLoop()
@@ -710,8 +722,6 @@ void CDbpClient::HostResolved(const CNetHost& host, const boost::asio::ip::tcp::
         return;
     }
 
-    fIsResolved = true;
-
     if (confClient.optSSL.fEnable)
         profile.optSSL = confClient.optSSL;
 
@@ -739,6 +749,7 @@ void CDbpClient::HostResolved(const CNetHost& host, const boost::asio::ip::tcp::
 
 void CDbpClient::HostFailToResolve(const CNetHost& host)
 {
+    std::cerr << "Host Resolve failed " << host.strHost << '\n';
 }
 
 bool CDbpClient::CreateProfile(const CDbpClientConfig& confClient)

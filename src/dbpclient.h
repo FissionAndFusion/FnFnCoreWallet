@@ -200,7 +200,6 @@ protected:
 private:
     IIOModule* pDbpService;
     CNetHost parentHost;
-    bool fIsResolved;
     bool fIsRootNode;
     bool fIsSuperNode;
 };
