@@ -162,7 +162,6 @@ protected:
     void WalleveHandleDeinitialize() override;
     void EnterLoop() override;
     void LeaveLoop() override;
-    void HeartBeat() override;
 
     bool ClientConnected(CIOClient* pClient) override;
     void ClientFailToConnect(const boost::asio::ip::tcp::endpoint& epRemote) override;
@@ -201,7 +200,6 @@ protected:
 private:
     IIOModule* pDbpService;
     CNetHost parentHost;
-    bool fIsResolved;
     bool fIsRootNode;
     bool fIsSuperNode;
 };
