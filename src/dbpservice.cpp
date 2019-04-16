@@ -1659,6 +1659,10 @@ void CDbpService::RPCRootHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRe
     if(ret != NULL)
     {
         CMvRPCRouteListForkRet listForkRetIn = *((CMvRPCRouteListForkRet*)ret);
+        for(auto &i : listForkRetIn.vFork)
+        {
+            std::cout << "0-.hex:" << i.strHex << std::endl;
+        }
         std::vector<CMvRPCProfile> vTempFork;
         uint64 nNonce = listForkRetIn.nNonce;
         auto compare = [nNonce](const std::pair<uint64, boost::any>& element) { return nNonce == element.first; };
@@ -1666,9 +1670,15 @@ void CDbpService::RPCRootHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRe
         if (iter != queCount.end() && (iter->second).type() == typeid(CMvRPCRouteListForkRet))
         {
             auto& vForkSelf = boost::any_cast<CMvRPCRouteListForkRet&>(iter->second).vFork;
+            std::cout << "1.vTempFork size:" << vTempFork.size() << ", vForkSelf size:" << vForkSelf.size() << std::endl;
             vForkSelf.insert(vForkSelf.end(), listForkRetIn.vFork.begin(), listForkRetIn.vFork.end());
             ListForkUnique(vForkSelf);
             vTempFork.insert(vTempFork.end(), vForkSelf.begin(), vForkSelf.end());
+            std::cout << "2.vTempFork size:" << vTempFork.size() << ", vForkSelf size:" << vForkSelf.size() << std::endl;
+            for(auto &i : vForkSelf)
+            {
+                std::cout << "2-.hex:" << i.strHex << std::endl;
+            }
         }
 
         if (GetSessionCountByNonce(data->nNonce) == 0)
@@ -1681,6 +1691,11 @@ void CDbpService::RPCRootHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRe
             retOut.vFork.insert(retOut.vFork.end(), vTempFork.begin(), vTempFork.end());
             retOut.vFork.insert(retOut.vFork.end(), vRpcFork.begin(), vRpcFork.end());
             ListForkUnique(retOut.vFork);
+            std::cout << "3.retOut.vFork size:" << retOut.vFork.size() << ", vTempFork size:" << vTempFork.size() << ", vRpcFork size:" << vRpcFork.size() << std::endl;
+            for(auto &i : retOut.vFork)
+            {
+                std::cout << "4.hex:" << i.strHex << std::endl;
+            }
             CompletionByNonce(data->nNonce, retOut);
             DeleteSessionCountByNonce(data->nNonce);
         }
@@ -2898,6 +2913,7 @@ void CDbpService::InitRPCTopicId(uint64 nNonce)
 
     std::pair<uint64, std::vector<std::string>> pair(nNonce, vTopicId);
     vRPCTopicId.push_back(pair);
+    // std::cout << "vRPCTopicId size:" << vRPCTopicId.size() << ", vTopicId size:" << vTopicId.size() << std::endl;
 }
 
 void CDbpService::InitSessionCount(uint64 nNonce)
@@ -2919,6 +2935,7 @@ void CDbpService::InitSessionCount(uint64 nNonce)
     }
     std::pair<uint64, int> pair(nNonce, setSession.size());
     vSessionCount.push_back(pair);
+    std::cout << "vSessionCount size:" << vSessionCount.size() << ", setSession size:" << setSession.size() << std::endl;
 }
 
 int CDbpService::GetSessionCountByNonce(uint64 nNonce)
