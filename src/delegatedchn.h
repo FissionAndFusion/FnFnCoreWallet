@@ -139,7 +139,7 @@ public:
     CDelegatedChannelChain() { Clear(); }
     std::list<uint256>& GetHashList() { return listBlockHash; }
     void Clear();
-    void Update(int nStartHeight,
+    void Update(const int32 nStartHeight,
                 const std::vector<std::pair<uint256,std::map<CDestination,size_t> > >& vEnrolledWeight,
                 const std::map<CDestination,std::vector<unsigned char> >& mapDistributeData,
                 const std::map<CDestination,std::vector<unsigned char> >& mapPublishData);
@@ -158,7 +158,7 @@ public:
 public:
     std::map<uint256,CDelegatedChannelChainData> mapChainData;
     std::list<uint256> listBlockHash;
-    int nLastBlockHeight;
+    int32 nLastBlockHeight;
 };
 
 class CDelegatedChannel : public network::IMvDelegatedChannel
@@ -166,7 +166,7 @@ class CDelegatedChannel : public network::IMvDelegatedChannel
 public:
     CDelegatedChannel();
     ~CDelegatedChannel();
-    void PrimaryUpdate(int nStartHeight,
+    void PrimaryUpdate(const int32 nStartHeight,
                        const std::vector<std::pair<uint256,std::map<CDestination,size_t> > >& vEnrolledWeight,
                        const std::map<CDestination,std::vector<unsigned char> >& mapDistributeData,
                        const std::map<CDestination,std::vector<unsigned char> >& mapPublishData) override;
@@ -215,7 +215,7 @@ public:
     CDummyDelegatedChannel();
     ~CDummyDelegatedChannel();
 
-    void PrimaryUpdate(int nStartHeight,
+    void PrimaryUpdate(const int32 nStartHeight,
                        const std::vector<std::pair<uint256,std::map<CDestination,size_t> > >& vEnrolledWeight,
                        const std::map<CDestination,std::vector<unsigned char> >& mapDistributeData,
                        const std::map<CDestination,std::vector<unsigned char> >& mapPublishData) override;

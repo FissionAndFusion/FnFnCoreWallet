@@ -9,7 +9,6 @@
 #include "proof.h"
 #include "transaction.h"
 #include <vector>
-#include <boost/foreach.hpp>
 #include <walleve/stream/stream.h>
 #include <walleve/stream/datastream.h>
 
@@ -132,7 +131,7 @@ public:
     int64 GetBlockMint() const
     {
         int64 nTotalTxFee = 0;
-        BOOST_FOREACH(const CTransaction& tx, vtx)
+        for(const CTransaction& tx : vtx)
         {
             nTotalTxFee += tx.nTxFee;
         }
@@ -141,7 +140,7 @@ public:
     uint256 BuildMerkleTree(std::vector<uint256>& vMerkleTree) const
     {
         vMerkleTree.clear();
-        BOOST_FOREACH(const CTransaction& tx, vtx)
+        for(const CTransaction& tx : vtx)
             vMerkleTree.push_back(tx.GetHash());
         int j = 0;
         for (int nSize = vtx.size(); nSize > 1; nSize = (nSize + 1) / 2)
@@ -222,7 +221,7 @@ public:
     uint16  nVersion;
     uint16  nType;
     uint32  nTimeStamp;
-    uint32  nHeight;
+    int32   nHeight;
     uint64  nRandBeacon;
     uint64  nChainTrust;
     int64   nMoneySupply;
@@ -285,7 +284,7 @@ public:
     {
         return *phashBlock;
     }
-    int GetBlockHeight() const
+    int32 GetBlockHeight() const
     {
         return nHeight;
     }

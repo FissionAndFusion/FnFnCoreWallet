@@ -94,9 +94,15 @@ void CPeer::HandleRead(size_t nTransferred,CompltFunc fnComplt)
     if (nTransferred != 0)
     {
         nTimeRecv = GetTime();
-        if (!fnComplt())
+        CompltRetStatus status = (CompltRetStatus)fnComplt();
+        if (status == CompltRetStatus::FAILED)
         {
             pPeerNet->HandlePeerViolate(this);
+        }
+
+        if(status == CompltRetStatus::BAN)
+        {
+            pPeerNet->HandlePeerClose(this);
         }
     }
     else 

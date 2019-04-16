@@ -156,7 +156,7 @@ MvErr CMvCoreProtocol::ValidateTransaction(const CTransaction& tx)
     }
 
     set<CTxOutPoint> setInOutPoints;
-    BOOST_FOREACH(const CTxIn& txin, tx.vInput)
+    for(const CTxIn& txin : tx.vInput)
     {
         if (txin.prevout.IsNull() || txin.prevout.n > 1)
         {
@@ -227,7 +227,7 @@ MvErr CMvCoreProtocol::ValidateBlock(const CBlock& block)
         return DEBUG(MV_ERR_BLOCK_DUPLICATED_TRANSACTION,"duplicate tx\n");
     }
 
-    BOOST_FOREACH(const CTransaction& tx,block.vtx)
+    for(const CTransaction& tx : block.vtx)
     {
         if (tx.IsMintTx() || ValidateTransaction(tx) != MV_OK)
         {
@@ -273,7 +273,7 @@ MvErr CMvCoreProtocol::VerifyBlockTx(const CTransaction& tx,const CTxContxt& txC
 {
     const CDestination& destIn = txContxt.destIn;
     int64 nValueIn = 0;
-    BOOST_FOREACH(const CTxInContxt& inctxt,txContxt.vin)
+    for(const CTxInContxt& inctxt : txContxt.vin)
     {
         if (inctxt.nTxTime > tx.nTimeStamp)
         {
@@ -315,11 +315,11 @@ MvErr CMvCoreProtocol::VerifyBlockTx(const CTransaction& tx,const CTxContxt& txC
     return MV_OK;
 }
 
-MvErr CMvCoreProtocol::VerifyTransaction(const CTransaction& tx,const vector<CTxOutput>& vPrevOutput,int nForkHeight)
+MvErr CMvCoreProtocol::VerifyTransaction(const CTransaction& tx,const vector<CTxOutput>& vPrevOutput,const int32 nForkHeight)
 {
     CDestination destIn = vPrevOutput[0].destTo;
     int64 nValueIn = 0;
-    BOOST_FOREACH(const CTxOutput& output,vPrevOutput)
+    for(const CTxOutput& output : vPrevOutput)
     {
         if (destIn != output.destTo)
         {
@@ -344,6 +344,7 @@ MvErr CMvCoreProtocol::VerifyTransaction(const CTransaction& tx,const vector<CTx
         return DEBUG(MV_ERR_TRANSACTION_INPUT_INVALID,"valuein is not enough (%ld : %ld)\n",nValueIn,tx.nAmount + tx.nTxFee);
     }
 
+    // record destIn in vchSig
     vector<uint8> vchSig;
     if (CTemplate::IsDestInRecorded(tx.sendTo))
     {
@@ -360,6 +361,21 @@ MvErr CMvCoreProtocol::VerifyTransaction(const CTransaction& tx,const vector<CTx
     if (!destIn.VerifyTxSignature(tx.GetSignatureHash(), tx.hashAnchor, tx.sendTo, vchSig))
     {
         return DEBUG(MV_ERR_TRANSACTION_SIGNATURE_INVALID,"invalid signature\n");
+    }
+
+    // locked coin template: nValueIn >= tx.nAmount + tx.nTxFee + nLockedCoin
+    if (CTemplate::IsLockedCoin(destIn))
+    {
+        CTemplatePtr ptr = CTemplate::CreateTemplatePtr(destIn.GetTemplateId(), vchSig);
+        if (!ptr)
+        {
+            return DEBUG(MV_ERR_TRANSACTION_SIGNATURE_INVALID,"invalid locked coin template destination\n");
+        }
+        int64 nLockedCoin = boost::dynamic_pointer_cast<CLockedCoinTemplate>(ptr)->LockedCoin(tx.sendTo, nForkHeight);
+        if (nValueIn < tx.nAmount + tx.nTxFee + nLockedCoin)
+        {
+            return DEBUG(MV_ERR_TRANSACTION_INPUT_INVALID,"valuein is not enough to locked coin (%ld : %ld)\n",nValueIn,tx.nAmount + tx.nTxFee + nLockedCoin);
+        }
     }
     return MV_OK;
 }

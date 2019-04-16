@@ -6,12 +6,14 @@
 #define  WALLEVE_EPMANAGER_H
 
 #include "walleve/type.h"
+#include "walleve/util.h"
 #include "walleve/peernet/nodemngr.h"
 
 #include <map>
 #include <vector>
 #include <boost/asio.hpp>
 #include <boost/any.hpp>
+#include <boost/bimap.hpp>
 
 namespace walleve
 {
@@ -54,12 +56,12 @@ protected:
 class CAddressBanned
 {
 public:
-    CAddressBanned(const boost::asio::ip::address addrBannedIn,int nScoreIn,int64 nBanTimeIn)
-    : addrBanned(addrBannedIn),nScore(nScoreIn),nBanTime(nBanTimeIn)
+    CAddressBanned(const uint256& addrBannedIn,int nScoreIn,int64 nBanTimeIn)
+    : macAddrBanned(addrBannedIn),nScore(nScoreIn),nBanTime(nBanTimeIn)
     {
     }
 public:
-    boost::asio::ip::address addrBanned;
+    uint256 macAddrBanned;
     int nScore;
     int64 nBanTime;
 };
@@ -101,8 +103,8 @@ public:
     void Clear();
     int  GetEndpointScore(const boost::asio::ip::tcp::endpoint& ep);
     void GetBanned(std::vector<CAddressBanned>& vBanned);
-    void SetBan(std::vector<boost::asio::ip::address>& vAddrToBan,int64 nBanTime);
-    void ClearBanned(std::vector<boost::asio::ip::address>& vAddrToClear);
+    void SetBan(std::vector<uint256>& vAddrToBan,int64 nBanTime);
+    void ClearBanned(std::vector<uint256>& vAddrToClear);
     void ClearAllBanned();
 
     void AddNewOutBound(const boost::asio::ip::tcp::endpoint& ep,const std::string& strName,
@@ -111,19 +113,29 @@ public:
     std::string GetOutBoundName(const boost::asio::ip::tcp::endpoint& ep);
     bool GetOutBoundData(const boost::asio::ip::tcp::endpoint& ep,boost::any& dataRet);
     bool SetOutBoundData(const boost::asio::ip::tcp::endpoint& ep,const boost::any& dataIn);
+    bool GetOutBoundNodeId(const boost::asio::ip::tcp::endpoint& ep,uint256& addr);
+    bool SetOutBoundNodeId(const boost::asio::ip::tcp::endpoint& ep,const uint256& addr);
     bool FetchOutBound(boost::asio::ip::tcp::endpoint& ep);
     bool AcceptInBound(const boost::asio::ip::tcp::endpoint& ep);
     void RewardEndpoint(const boost::asio::ip::tcp::endpoint& ep,Bonus bonus);
     void CloseEndpoint(const boost::asio::ip::tcp::endpoint& ep,CloseReason reason);
     void RetrieveGoodNode(std::vector<CNodeAvail>& vGoodNode,
                           int64 nActiveTime,std::size_t nMaxCount);
+    void AddNewGateWay(const boost::asio::ip::tcp::endpoint& epGateWay, 
+                            const boost::asio::ip::tcp::endpoint& epNode);
     int GetCandidateNodeCount(){ return mngrNode.GetCandidateNodeCount(); }
+    bool AddNewEndPointNodeId(const boost::asio::ip::tcp::endpoint& ep, const uint256& addr, bool IsInBound);
+    void RemoveEndPointNodeId(const boost::asio::ip::tcp::endpoint& ep);
 protected:
     void CleanInactiveAddress();
 protected:
     enum {MAX_ADDRESS_COUNT = 2048,MAX_INACTIVE_TIME = 864000};
     CNodeManager mngrNode;
-    std::map<boost::asio::ip::address,CAddressStatus> mapAddressStatus;
+    
+    std::map<uint256,CAddressStatus> mapAddressStatus;
+    std::map<boost::asio::ip::tcp::endpoint,uint256> mapRemoteEPNodeId;
+    std::map<boost::asio::ip::tcp::endpoint, boost::asio::ip::tcp::endpoint> mapRemoteGateWay;
+    
 };
 
 } // namespace walleve

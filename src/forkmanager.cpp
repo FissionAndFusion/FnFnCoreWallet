@@ -3,7 +3,9 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "forkmanager.h"
-#include <boost/foreach.hpp>
+#include <boost/range/adaptor/reversed.hpp>
+
+#include "template/fork.h"
 
 using namespace std;
 using namespace walleve;
@@ -54,7 +56,7 @@ bool CForkManager::WalleveHandleInvoke()
     if (!fAllowAnyFork)
     {
         setForkAllowed.insert(pCoreProtocol->GetGenesisBlockHash());
-        BOOST_FOREACH(const string& strFork,ForkConfig()->vFork)
+        for(const string& strFork : ForkConfig()->vFork)
         {
             uint256 hashFork(strFork);
             if (hashFork != 0)
@@ -62,7 +64,7 @@ bool CForkManager::WalleveHandleInvoke()
                 setForkAllowed.insert(hashFork);
             }
         }
-        BOOST_FOREACH(const string& strFork,ForkConfig()->vGroup)
+        for(const string& strFork : ForkConfig()->vGroup)
         {
             uint256 hashFork(strFork);
             if (hashFork != 0)
@@ -92,7 +94,7 @@ bool CForkManager::IsAllowed(const uint256& hashFork) const
     return (it != mapForkSched.end() && (*it).second.IsAllowed());
 }
 
-bool CForkManager::GetJoint(const uint256& hashFork,uint256& hashParent,uint256& hashJoint,int& nHeight) const
+bool CForkManager::GetJoint(const uint256& hashFork,uint256& hashParent,uint256& hashJoint,int32& nHeight) const
 {
     boost::shared_lock<boost::shared_mutex> rlock(rwAccess);
 
@@ -118,7 +120,7 @@ bool CForkManager::LoadForkContext(vector<uint256>& vActive)
         return false;
     }
 
-    BOOST_FOREACH(const CForkContext& ctxt,vForkCtxt)
+    for(const CForkContext& ctxt : vForkCtxt)
     {
         if (!AddNewForkContext(ctxt,vActive))
         {
@@ -136,7 +138,7 @@ void CForkManager::ForkUpdate(const CWorldLineUpdate& update,vector<uint256>& vA
     CForkSchedule& sched = mapForkSched[update.hashFork];
     if (!sched.IsJointEmpty())
     {
-        BOOST_REVERSE_FOREACH(const CBlockEx& block,update.vBlockAddNew)
+        for(const CBlockEx& block : boost::adaptors::reverse(update.vBlockAddNew))
         {
             if (!block.IsExtended() && !block.IsVacant())
             {
@@ -150,12 +152,14 @@ void CForkManager::ForkUpdate(const CWorldLineUpdate& update,vector<uint256>& vA
     }
     if (update.hashFork == pCoreProtocol->GetGenesisBlockHash())
     {
-        BOOST_REVERSE_FOREACH(const CBlockEx& block,update.vBlockAddNew)
+        for(const CBlockEx& block : boost::adaptors::reverse(update.vBlockAddNew))
         {
-            BOOST_FOREACH(const CTransaction& tx,block.vtx)
+            for(const CTransaction& tx : block.vtx)
             {
                 CTemplateId tid;
-                if (tx.sendTo.GetTemplateId(tid) && tid.GetType() == TEMPLATE_FORK && !tx.vchData.empty())
+                if (tx.sendTo.GetTemplateId(tid) && tid.GetType() == TEMPLATE_FORK
+                    && !tx.vchData.empty() 
+                    && tx.nAmount >= CTemplateFork::LockedCoin(update.nLastBlockHeight))
                 {
                     CForkContext ctxt;
                     if (pWorldLine->AddNewForkContext(tx,ctxt) == MV_OK)
@@ -228,7 +232,7 @@ void CForkManager::GetForkList(std::vector<uint256>& vFork) const
     }
 }
 
-bool CForkManager::GetSubline(const uint256& hashFork, vector<pair<int, uint256> >& vSubline) const
+bool CForkManager::GetSubline(const uint256& hashFork, vector<pair<int32, uint256> >& vSubline) const
 {
     boost::shared_lock<boost::shared_mutex> rlock(rwAccess);
 
@@ -240,7 +244,7 @@ bool CForkManager::GetSubline(const uint256& hashFork, vector<pair<int, uint256>
         return false;
     }
 
-    multimap<int, uint256> mapSubline;
+    multimap<int32, uint256> mapSubline;
     for (;itBegin != itEnd; ++itBegin)
     {
         mapSubline.insert(make_pair(itBegin->nJointHeight, itBegin->hashFork));

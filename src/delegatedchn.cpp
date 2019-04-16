@@ -38,7 +38,7 @@ void CDelegatedChannelChain::Clear()
     nLastBlockHeight = -1;
 }
 
-void CDelegatedChannelChain::Update(int nStartHeight,
+void CDelegatedChannelChain::Update(const int32 nStartHeight,
                                     const vector<pair<uint256,map<CDestination,size_t> > >& vEnrolledWeight,
                                     const map<CDestination,vector<unsigned char> >& mapDistributeData,
                                     const map<CDestination,vector<unsigned char> >& mapPublishData)
@@ -449,7 +449,7 @@ bool CDelegatedChannel::HandleEvent(network::CMvEventPeerPublish& eventPublish)
     return true;
 }
 
-void CDelegatedChannel::PrimaryUpdate(int nStartHeight,
+void CDelegatedChannel::PrimaryUpdate(const int32 nStartHeight,
                                       const vector<pair<uint256,map<CDestination,size_t> > >& vEnrolledWeight,
                                       const map<CDestination,vector<unsigned char> >& mapDistributeData,
                                       const map<CDestination,vector<unsigned char> >& mapPublishData)
@@ -510,7 +510,7 @@ void CDelegatedChannel::AddPeerKnownDistrubute(uint64 nNonce, const uint256& has
 {
     set<CDestination> setDestination;
     dataChain.AskForDistribute(hashAnchor, bmDistrubute, setDestination);
-    BOOST_FOREACH(const CDestination& dest,setDestination)
+    for(const CDestination& dest : setDestination)
     {
         schedPeer.AddKnownData(nNonce, CDelegatedDataIdent(hashAnchor, network::CInv::MSG_DISTRIBUTE, dest));
     }
@@ -520,7 +520,7 @@ void CDelegatedChannel::AddPeerKnownPublish(uint64 nNonce, const uint256& hashAn
 {
     set<CDestination> setDestination;
     dataChain.AskForPublish(hashAnchor, bmPublish, setDestination);
-    BOOST_FOREACH(const CDestination& dest, setDestination)
+    for(const CDestination& dest : setDestination)
     {
         schedPeer.AddKnownData(nNonce, CDelegatedDataIdent(hashAnchor, network::CInv::MSG_PUBLISH, dest));
     }
@@ -538,12 +538,13 @@ void CDelegatedChannel::DispatchMisbehaveEvent(uint64 nNonce, CEndpointManager::
 
 void CDelegatedChannel::PushBulletinTimerFunc(uint32 nTimerId)
 {
-    boost::unique_lock<boost::mutex> lock(mtxBulletin);
+    boost::unique_lock<boost::shared_mutex> wlock(rwPeer, boost::defer_lock);
+    boost::unique_lock<boost::mutex> lock(mtxBulletin, boost::defer_lock);
+    boost::lock(wlock, lock);
     if (nTimerBulletin == nTimerId)
     {
         if (fBulletin)
         {
-            boost::unique_lock<boost::shared_mutex> wlock(rwPeer);
             PushBulletin();
             fBulletin = false;
             nTimerBulletin = WalleveSetTimer(BULLETIN_TIMEOUT,boost::bind(&CDelegatedChannel::PushBulletinTimerFunc,this,_1));
@@ -578,7 +579,7 @@ void CDelegatedChannel::PushBulletin()
                 eventBulletin.data.AddBitmap(hash,bitmap);
             }
         }
-        BOOST_FOREACH(const uint64& nNonce, vPeer)
+        for(const uint64& nNonce : vPeer)
         {
             std::shared_ptr<CDelegatedChannelPeer> spPeer = GetPeer(nNonce);
             if (spPeer != NULL && spPeer->HaveUnknown(hashAnchor,eventBulletin.data))
@@ -601,7 +602,7 @@ CDummyDelegatedChannel::~CDummyDelegatedChannel()
 
 }
 
-void CDummyDelegatedChannel::PrimaryUpdate(int nStartHeight,
+void CDummyDelegatedChannel::PrimaryUpdate(const int32 nStartHeight,
                        const std::vector<std::pair<uint256,std::map<CDestination,size_t> > >& vEnrolledWeight,
                        const std::map<CDestination,std::vector<unsigned char> >& mapDistributeData,
                        const std::map<CDestination,std::vector<unsigned char> >& mapPublishData)

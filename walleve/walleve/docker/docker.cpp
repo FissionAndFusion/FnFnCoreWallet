@@ -6,7 +6,6 @@
 #include "walleve/base/base.h"
 #include "walleve/util.h"
 #include <vector>
-#include <boost/foreach.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/bind.hpp>
 
@@ -371,6 +370,7 @@ void CWalleveDocker::ThreadExit(CWalleveThread& thr)
 void CWalleveDocker::ThreadRun(CWalleveThread& thr)
 {
     Log("Thread %s started\n",thr.strThreadName.c_str());
+    thr.SetAffinity();
     try
     {
         thr.fRunning = true;
@@ -392,6 +392,7 @@ void CWalleveDocker::ThreadRun(CWalleveThread& thr)
 
 void CWalleveDocker::ThreadDelayRun(CWalleveThread& thr)
 {
+    thr.SetAffinity();
     {    
         boost::unique_lock<boost::mutex> lock(mtxDocker);
         if (!fActived)
@@ -582,7 +583,7 @@ void CWalleveDocker::TimerProc()
                 }
             }
         }
-        BOOST_FOREACH(const uint32& nTimerId,vWorkQueue)
+        for(const uint32& nTimerId : vWorkQueue)
         {
             if (fShutdown)
             {

@@ -10,6 +10,8 @@
 
 #include "walleve/walleve.h"
 
+#include <thread>
+
 namespace multiverse 
 {
 namespace network 
@@ -18,8 +20,11 @@ namespace network
 class IMvNetChannel : public walleve::IIOModule, virtual public CMvPeerEventListener
 {
 public:
-    IMvNetChannel() : IIOModule("netchannel") {}
-    virtual int GetPrimaryChainHeight() = 0;
+    IMvNetChannel(const uint nThreadIn = 1, const bool fAffinityIn = false)
+    : IIOModule("netchannel", nThreadIn, fAffinityIn)
+    {}
+
+    virtual int32 GetPrimaryChainHeight() = 0;
     virtual bool IsForkSynchronized(const uint256& hashFork) const = 0;
     virtual void BroadcastBlockInv(const uint256& hashFork,const uint256& hashBlock,const std::set<uint64>& setKnownPeer=std::set<uint64>()) = 0;
     virtual void BroadcastTxInv(const uint256& hashFork) = 0;
@@ -33,7 +38,7 @@ class IMvDelegatedChannel : public walleve::IIOModule, virtual public CMvPeerEve
 {
 public:
     IMvDelegatedChannel() : IIOModule("delegatedchannel") {}
-    virtual void PrimaryUpdate(int nStartHeight,
+    virtual void PrimaryUpdate(const int32 nStartHeight,
                                const std::vector<std::pair<uint256,std::map<CDestination,size_t> > >& vEnrolledWeight,
                                const std::map<CDestination,std::vector<unsigned char> >& mapDistributeData, 
                                const std::map<CDestination,std::vector<unsigned char> >& mapPublishData) = 0;
@@ -56,7 +61,7 @@ public:
     ~CMvPeerNet();
     virtual void BuildHello(walleve::CPeer *pPeer,walleve::CWalleveBufStream& ssPayload);
     void HandlePeerWriten(walleve::CPeer *pPeer) override;
-    virtual bool HandlePeerHandshaked(walleve::CPeer *pPeer,uint32 nTimerId);
+    virtual bool HandlePeerHandshaked(walleve::CPeer *pPeer,uint32 nTimerId,bool& fIsBanned);
     virtual bool HandlePeerRecvMessage(walleve::CPeer *pPeer,int nChannel,int nCommand,
                                walleve::CWalleveBufStream& ssPayload);
 protected:
@@ -97,12 +102,16 @@ protected:
     bool SendDelegatedMessage(uint64 nNonce,int nCommand,walleve::CWalleveBufStream& ssPayload);
     void SetInvTimer(uint64 nNonce,std::vector<CInv>& vInv);
     virtual void ProcessAskFor(walleve::CPeer* pPeer);
-    void Configure(uint32 nMagicNumIn,uint32 nVersionIn,uint64 nServiceIn,const std::string& subVersionIn,bool fEnclosedIn)
+    void Configure(uint32 nMagicNumIn,uint32 nVersionIn,uint64 nServiceIn,
+                   const std::string& subVersionIn,const std::string& rootPathIn,
+                   bool fEnclosedIn,const crypto::CCryptoKey& nodeKeyIn)
     {
         nMagicNum = nMagicNumIn; nVersion = nVersionIn; nService = nServiceIn;
-        subVersion = subVersionIn; fEnclosed = fEnclosedIn;
+        subVersion = subVersionIn; rootPath = rootPathIn; fEnclosed = fEnclosedIn;
+        nodeKey = nodeKeyIn;
     }
     virtual bool CheckPeerVersion(uint32 nVersionIn,uint64 nServiceIn,const std::string& subVersionIn) = 0;
+    CAddress ToGateWayAddress(const CNetHost& gateWayNode);
 protected:
     IMvNetChannel* pNetChannel;
     IMvDelegatedChannel* pDelegatedChannel;
@@ -110,11 +119,13 @@ protected:
     uint32 nVersion;
     uint64 nService;
     bool fEnclosed;
-    std::string subVersion;    
+    std::string subVersion;
+    std::string rootPath;    
     std::set<boost::asio::ip::tcp::endpoint> setDNSeed;
     SUPER_NODE_TYPE typeNode;
     typedef std::pair<uint256, uint64> ForkNonceKeyType;
     std::map<ForkNonceKeyType, std::set<uint256>> mapThisNodeGetData; 
+    crypto::CCryptoKey nodeKey;
 };
 
 } // namespace network

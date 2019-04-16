@@ -76,7 +76,7 @@ protected:
 class CWalleveEventProc : public IWalleveBase
 {
 public:
-    CWalleveEventProc(const std::string& walleveOwnKeyIn, const size_t nThreadIn = 1);
+    CWalleveEventProc(const std::string& walleveOwnKeyIn, const size_t nThreadIn = 1, const bool fAffinityIn = false);
     void PostEvent(CWalleveEvent * pEvent);
 protected:
     bool WalleveHandleInvoke() override;
@@ -84,6 +84,7 @@ protected:
     void EventThreadFunc();
 protected:
     size_t nThreadNum;
+    bool fAffinity;
     std::vector<CWalleveThread> vecThrEventQue;
     CWalleveEventQueue queEvent;
 };

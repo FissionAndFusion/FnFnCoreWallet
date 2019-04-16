@@ -59,7 +59,7 @@ class CRPCModWorker : public walleve::IIOModule, virtual public CMvRPCModEventLi
     typedef rpc::CRPCResultPtr (CRPCModWorker::*RPCFunc)(rpc::CRPCParamPtr param);
 
 public:
-    CRPCModWorker(uint nThreadIn = std::thread::hardware_concurrency() / 2 + 1);
+    CRPCModWorker(const uint nThreadIn = std::thread::hardware_concurrency() / 2 + 1, const bool fAffinity = false);
     ~CRPCModWorker();
     bool HandleEvent(CMvEventRPCModRequest& eventRPCModRequest) override;
 
@@ -214,7 +214,7 @@ protected:
 class CSnRPCModWorker : public CRPCModWorker, virtual public CDBPEventListener
 {
 public:
-    CSnRPCModWorker();
+    CSnRPCModWorker(const uint nThreadIn = 1, const bool fAffinity = false);
     ~CSnRPCModWorker();
     rpc::CRPCResultPtr SnRPCStop(rpc::CRPCParamPtr param) override;
     rpc::CRPCResultPtr SnRPCGetForkCount(rpc::CRPCParamPtr param) override;

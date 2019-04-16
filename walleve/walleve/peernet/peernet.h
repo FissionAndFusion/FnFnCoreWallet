@@ -67,6 +67,7 @@ protected:
     void RewardPeer(CPeer* pPeer, const CEndpointManager::Bonus& bonus);
     void RemovePeer(CPeer* pPeer, const CEndpointManager::CloseReason& reason);
     CPeer* GetPeer(uint64 nNonce);
+    CPeer* GetPeer(const boost::asio::ip::tcp::endpoint& epNode);
     void AddNewNode(const CNetHost& host);
     void AddNewNode(const boost::asio::ip::tcp::endpoint& epNode,
                     const std::string& strName = "", const boost::any& data = boost::any());
@@ -75,7 +76,10 @@ protected:
     std::string GetNodeName(const boost::asio::ip::tcp::endpoint& epNode);
     bool GetNodeData(const boost::asio::ip::tcp::endpoint& epNode, boost::any& data);
     bool SetNodeData(const boost::asio::ip::tcp::endpoint& epNode, const boost::any& data);
+    bool GetNodeRemoteId(const boost::asio::ip::tcp::endpoint& epNode, uint256& addr);
+    bool SetNodeRemoteId(const boost::asio::ip::tcp::endpoint& epNode, const uint256& addr);
     void RetrieveGoodNode(std::vector<CNodeAvail>& vGoodNode, int64 nActiveTime, std::size_t nMaxCount);
+    void AddNewGateWay(const boost::asio::ip::tcp::endpoint& epGateWay, const boost::asio::ip::tcp::endpoint& epNode);
     virtual std::string GetLocalIP();
     virtual CPeer* CreatePeer(CIOClient* pClient, uint64 nNonce, bool fInBound);
     virtual void DestroyPeer(CPeer* pPeer);
@@ -93,6 +97,7 @@ protected:
     int GetCandidateNodeCount() { return epMngr.GetCandidateNodeCount(); }
 
     void AddPeerRecord(CPeer* pPeer);
+    bool AddRemotePeerId(CPeer* pPeer, const uint256& hashId, bool fIsInbound);
 protected:
     CPeerNetConfig confNetwork;
     boost::asio::ip::address localIP;

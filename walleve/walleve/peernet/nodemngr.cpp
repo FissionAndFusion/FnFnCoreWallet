@@ -5,7 +5,6 @@
 #include "nodemngr.h"
 #include "walleve/util.h"
 #include <vector>
-#include <boost/foreach.hpp>
 
 using namespace std;
 using namespace walleve;
@@ -20,7 +19,7 @@ CNodeManager::CNodeManager()
 
 void CNodeManager::AddNew(const tcp::endpoint& ep,const string& strName,const boost::any& data)
 {
-    if (mapNode.insert(make_pair(ep,CNode(ep,strName,data))).second)
+    if (mapNode.insert(make_pair(ep,CNode(ep,uint256(),strName,data))).second)
     {
         mapIdle.insert(make_pair(GetTime(),ep)); 
         if (mapIdle.size() > MAX_IDLENODES)
@@ -86,30 +85,61 @@ bool CNodeManager::SetData(const tcp::endpoint& ep,const boost::any& dataIn)
     return false;
 }
 
+bool CNodeManager::GetNodeId(const boost::asio::ip::tcp::endpoint& ep,uint256& addr)
+{
+    map<tcp::endpoint,CNode>::iterator mi = mapNode.find(ep);
+    if (mi != mapNode.end())
+    {
+        CNode& node = (*mi).second;
+        if (node.nodeAddr.size() != 0)
+        {
+            addr = node.nodeAddr;
+            return true;
+        }
+    }
+    return false;
+}
+
+bool CNodeManager::SetNodeId(const boost::asio::ip::tcp::endpoint& ep,const uint256& addr)
+{
+    map<tcp::endpoint,CNode>::iterator mi = mapNode.find(ep);
+    if (mi != mapNode.end())
+    {
+        CNode& node = (*mi).second;
+        node.nodeAddr = addr;
+        return true;
+    }
+    return false;
+}
+
 void CNodeManager::Clear()
 {
     mapNode.clear();
     mapIdle.clear();
+    mapRemoteEPNodeId.clear();
 }
 
-void CNodeManager::Ban(const boost::asio::ip::address& address,int64 nBanTo)
+void CNodeManager::Ban(const uint256& address,int64 nBanTo)
 {
     vector<tcp::endpoint> vNode;
     multimap<int64,tcp::endpoint>::iterator it = mapIdle.begin();
     while (it != mapIdle.upper_bound(nBanTo))
     {
-        if (address == (*it).second.address())
-        {
-            vNode.push_back((*it).second);
-            mapIdle.erase(it++);
-        }
-        else
-        {
-            ++it;
-        }
+       
+       auto iter = mapRemoteEPNodeId.find(it->second);
+       if(iter != mapRemoteEPNodeId.end() && iter->second == address)
+       {
+           vNode.push_back((*it).second);
+           mapIdle.erase(it++);
+       }
+       else
+       {
+           ++it;
+       }
+       
     }
 
-    BOOST_FOREACH(const tcp::endpoint& ep,vNode)
+    for(const tcp::endpoint& ep : vNode)
     {
         mapIdle.insert(make_pair(nBanTo,ep));
     }
@@ -176,5 +206,19 @@ void CNodeManager::RemoveInactiveNodes()
         {
             break;
         }
+    }
+}
+
+void CNodeManager::AddNewEndPointNodeId(const boost::asio::ip::tcp::endpoint& ep, const uint256& addr)
+{
+    mapRemoteEPNodeId[ep] = addr;
+}
+
+void CNodeManager::RemoveEndPointNodeId(const boost::asio::ip::tcp::endpoint& ep)
+{
+    auto it =  mapRemoteEPNodeId.find(ep);
+    if(it != mapRemoteEPNodeId.end())
+    {
+        mapRemoteEPNodeId.erase(it);
     }
 }

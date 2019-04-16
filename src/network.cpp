@@ -26,10 +26,11 @@ CNetwork::~CNetwork()
 bool CNetwork::WalleveHandleInitialize()
 {
     Configure(NetworkConfig()->nMagicNum,PROTO_VERSION,network::NODE_NETWORK | network::NODE_DELEGATED,
-              FormatSubVersion(),!NetworkConfig()->vConnectTo.empty());
+              FormatSubVersion(),NetworkConfig()->pathRoot.generic_string(),
+              !NetworkConfig()->vConnectTo.empty(), NetworkConfig()->nodeKey);
 
     CPeerNetConfig config;
-    if (NetworkConfig()->fListen4)
+    if (NetworkConfig()->fListen || NetworkConfig()->fListen4)
     {
         config.vecService.push_back(CPeerService(tcp::endpoint(tcp::v4(), NetworkConfig()->nPort),
                                                  NetworkConfig()->nMaxInBounds));
@@ -41,28 +42,28 @@ bool CNetwork::WalleveHandleInitialize()
     }
     config.nMaxOutBounds = NetworkConfig()->nMaxOutBounds;
     config.nPortDefault = NetworkConfig()->nPort;
-    BOOST_FOREACH(const string& conn,NetworkConfig()->vConnectTo)
+    for(const string& conn : NetworkConfig()->vConnectTo)
     {
         config.vecNode.push_back(CNetHost(conn,config.nPortDefault,conn,
                                           boost::any(uint64(network::NODE_NETWORK))));
     }
     if (config.vecNode.empty())
     {
-        BOOST_FOREACH(const string& seed,NetworkConfig()->vDNSeed)
+        for(const string& seed : NetworkConfig()->vDNSeed)
         {
             // HACK: dnseed port is different from peer port
             //       dnseed port should be hardcode rather than in configuration
             config.vecNode.push_back(CNetHost(seed,config.nPortDefault,"dnseed",
                                               boost::any(uint64(network::NODE_NETWORK))));
         }
-        BOOST_FOREACH(const string& node,NetworkConfig()->vNode)
+        for(const string& node : NetworkConfig()->vNode)
         {
             config.vecNode.push_back(CNetHost(node,config.nPortDefault,node,
                                               boost::any(uint64(network::NODE_NETWORK))));
         }
     }
 
-    if(NetworkConfig()->fListen4 || NetworkConfig()->fListen6)
+    if(NetworkConfig()->fListen || NetworkConfig()->fListen4 || NetworkConfig()->fListen6)
     {
         config.gateWayNode = CNetHost(NetworkConfig()->strGateWay, config.nPortDefault, NetworkConfig()->strGateWay,
                                               boost::any(uint64(network::NODE_NETWORK)));

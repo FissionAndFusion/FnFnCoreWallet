@@ -96,7 +96,7 @@ uint32 CMvPeer::Responded(CInv& inv)
 
 void CMvPeer::AskFor(const uint256& hashFork, const vector<CInv>& vInv)
 {
-    BOOST_FOREACH(const CInv& inv,vInv)
+    for(const CInv& inv : vInv)
     {
         queAskFor.push(make_pair(hashFork,inv));
     }
@@ -141,37 +141,37 @@ bool CMvPeer::ParseMessageHeader()
     return false;
 }
 
-bool CMvPeer::HandshakeReadHeader()
+int CMvPeer::HandshakeReadHeader()
 {
     if (!ParseMessageHeader())
     {
-        return false;
+        return CPeer::FAILED;
     }
 
     if (hdrRecv.nPayloadSize != 0)
     {
         Read(hdrRecv.nPayloadSize,boost::bind(&CMvPeer::HandshakeReadCompleted,this));
-        return true;
+        return CPeer::SUCCESS;
     }
     return HandshakeReadCompleted();
 }
 
-bool CMvPeer::HandleReadHeader()
+int CMvPeer::HandleReadHeader()
 {
     if (!ParseMessageHeader())
     {
-        return false;
+        return CPeer::FAILED;
     }
 
     if (hdrRecv.nPayloadSize != 0)
     {
         Read(hdrRecv.nPayloadSize,boost::bind(&CMvPeer::HandleReadCompleted,this));
-        return true;
+        return CPeer::SUCCESS;
     }
     return HandleReadCompleted();
 }
 
-bool CMvPeer::HandshakeReadCompleted()
+int CMvPeer::HandshakeReadCompleted()
 {
     CWalleveBufStream& ss = ReadStream();
     uint256 hash = multiverse::crypto::CryptoHash(ss.GetData(),ss.GetSize());
@@ -185,42 +185,81 @@ bool CMvPeer::HandshakeReadCompleted()
             {
                 if (nVersion != 0)
                 {
-                    return false;
+                    return CPeer::FAILED;
                 }
                 int64 nTime;
-                ss >> nVersion >> nService >> nTime >> nNonceFrom >> strSubVer >> nStartingHeight;
+              
+                std::vector<uint8> dataSecret, vchSig;
+                uint256 pubKey;
+                ss >> nVersion >> nService >> nTime >> nNonceFrom >> strSubVer >> nStartingHeight 
+                    >> dataSecret >> vchSig >> pubKey;
+                
+                if(!dataSecret.empty() && !vchSig.empty() && pubKey.size() != 0)
+                { 
+                    if(!crypto::CryptoVerify(pubKey, dataSecret.data(), dataSecret.size(), vchSig))
+                    {
+                        return CPeer::FAILED;
+                    }
+
+                    hashRemoteId = crypto::CryptoHash(dataSecret.data(), dataSecret.size());
+                }
+                else 
+                { 
+                    throw std::runtime_error("Received dataSecret,vchSig,PubKey Invalid");
+                }
+                
                 nTimeDelta = nTime - nTimeRecv;
                 if (!fInBound)
                 {
+                    // Client
                     nTimeDelta += (nTimeRecv - nTimeHello) / 2;
                     SendHelloAck();
-                    return HandshakeCompleted();
+                    bool fIsBanned = false;
+                    bool fIsSuccess = HandshakeCompleted(fIsBanned);
+                    if(!fIsSuccess && fIsBanned)
+                    {
+                        return CPeer::BAN;
+                    }
+
+                    return fIsSuccess ? CPeer::SUCCESS : CPeer::FAILED;
+                    
                 }
-                SendHello();
-                Read(MESSAGE_HEADER_SIZE,boost::bind(&CMvPeer::HandshakeReadHeader,this));
-                return true;
+                else
+                {
+                    // Server
+                    SendHello();
+                    Read(MESSAGE_HEADER_SIZE,boost::bind(&CMvPeer::HandshakeReadHeader,this));
+                    return CPeer::SUCCESS;
+                }
             }
             else if (nCmd == MVPROTO_CMD_HELLO_ACK && fInBound)
             {
                 if (nVersion == 0)
                 {
-                    return false;
+                    return CPeer::FAILED;
                 }
                 nTimeDelta += (nTimeRecv - nTimeHello) / 2;
-                return HandshakeCompleted();
+                bool fIsBanned = false;
+                bool fIsSuccess = HandshakeCompleted(fIsBanned);
+                if(!fIsSuccess && fIsBanned)
+                {
+                    return CPeer::BAN;
+                }
+
+                return fIsSuccess ? CPeer::SUCCESS : CPeer::FAILED;
             }
         }
-        catch (exception& e)
+        catch (const std::exception& e)
         {
             StdError(__PRETTY_FUNCTION__, e.what());
         }
     }
-    return false;
+    return CPeer::FAILED;
 }
 
-bool CMvPeer::HandshakeCompleted()
+bool CMvPeer::HandshakeCompleted(bool& fIsBanned)
 {
-    if (!(static_cast<CMvPeerNet*>(pPeerNet))->HandlePeerHandshaked(this,nHsTimerId))
+    if (!(static_cast<CMvPeerNet*>(pPeerNet))->HandlePeerHandshaked(this,nHsTimerId,fIsBanned))
     {
         return false;
     }
@@ -229,7 +268,7 @@ bool CMvPeer::HandshakeCompleted()
     return true;
 }
 
-bool CMvPeer::HandleReadCompleted()
+int CMvPeer::HandleReadCompleted()
 {
     CWalleveBufStream& ss = ReadStream();
     uint256 hash = multiverse::crypto::CryptoHash(ss.GetData(),ss.GetSize());
@@ -240,7 +279,7 @@ bool CMvPeer::HandleReadCompleted()
             if ((static_cast<CMvPeerNet*>(pPeerNet))->HandlePeerRecvMessage(this,hdrRecv.GetChannel(),hdrRecv.GetCommand(),ss))
             {
                 Read(MESSAGE_HEADER_SIZE,boost::bind(&CMvPeer::HandleReadHeader,this));
-                return true;
+                return CPeer::SUCCESS;
             }
         }
         catch (exception& e)
@@ -248,6 +287,6 @@ bool CMvPeer::HandleReadCompleted()
             StdError(__PRETTY_FUNCTION__, e.what());
         }
     }
-    return false;
+    return CPeer::FAILED;
 }
 

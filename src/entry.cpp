@@ -262,7 +262,8 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
         }
         case EModuleType::NETCHANNEL:
         {
-            if (!AttachModule(new CNetChannel()))
+            const CMvNetworkConfig* networkConfig = CastConfigPtr<CMvNetworkConfig*>(mvConfig.GetConfig());
+            if (!AttachModule(new CNetChannel(networkConfig->nThreadNumber, networkConfig->fThreadAffinity)))
             {
                 return false;
             }
@@ -330,22 +331,23 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
             }
             dynamic_cast<CHttpServer*>(pBase)->AddNewHost(GetRPCHostConfig());
 
+            const CMvRPCServerConfig* rpcConfig = CastConfigPtr<CMvRPCServerConfig*>(mvConfig.GetConfig());
             auto config = GetDbpClientConfig();
-            CRPCModWorker* rpcModWorker;
 
+            CRPCModWorker* rpcModWorker;
             if (config.fEnableSuperNode && !config.fEnableForkNode) //supernode root
             {
-                rpcModWorker = new CSnRPCModWorker();
+                rpcModWorker = new CSnRPCModWorker(rpcConfig->nRPCThreadNumber, rpcConfig->fRPCThreadAffinity);
             }
 
             if (config.fEnableSuperNode && config.fEnableForkNode) // supernode fork
             {
-                rpcModWorker = new CRPCModWorker();
+                rpcModWorker = new CRPCModWorker(rpcConfig->nRPCThreadNumber, rpcConfig->fRPCThreadAffinity);
             }
 
             if (!config.fEnableSuperNode) //fnfncorewallet
             {
-                rpcModWorker = new CRPCModWorker();
+                rpcModWorker = new CRPCModWorker(rpcConfig->nRPCThreadNumber, rpcConfig->fRPCThreadAffinity);
             }
 
             if (!AttachModule(rpcModWorker))
@@ -444,12 +446,6 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
             }
             dynamic_cast<CDbpServer*>(pServerBase)->AddNewHost(GetDbpHostConfig());
 
-            auto pClientBase = walleveDocker.GetObject("dbpclient");
-            if(!pClientBase)
-            {
-                return false;
-            }
-
             auto pVirtualPeerNetBase = walleveDocker.GetObject("virtualpeernet");
             if(!pVirtualPeerNetBase)
             {
@@ -468,8 +464,13 @@ bool CMvEntry::InitializeModules(const EModeType& mode)
                 dynamic_cast<CNetChannel*>(pNetChannelBase)->EnableSuperNode(config.fEnableForkNode);
             }
             
+            auto pClientBase = walleveDocker.GetObject("dbpclient");
+            if(!pClientBase)
+            {
+                return false;
+            }
             dynamic_cast<CDbpClient*>(pClientBase)->AddNewClient(config);
-
+           
             CDbpService* pDbpService = new CDbpService();
             pDbpService->EnableSuperNode(config.fEnableSuperNode);
             pDbpService->EnableForkNode(config.fEnableForkNode);
@@ -530,7 +531,7 @@ CDbpClientConfig CMvEntry::GetDbpClientConfig()
                         config->strDbpCAFile, config->strDbpCertFile,
                         config->strDbpPKFile, config->strDbpCiphers);
     
-    return CDbpClientConfig(config->epParentHost,config->nDbpSessionTimeout,config->strPrivateKey,sslDbp,"dbpservice", 
+    return CDbpClientConfig(config->strParentHost,config->nDbpPort,config->nDbpSessionTimeout,config->strPrivateKey,sslDbp,"dbpservice", 
             config->fEnableForkNode, config->fEnableSuperNode);
 }
 

@@ -3,7 +3,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "txpool.h"
-
+#include <boost/range/adaptor/reversed.hpp>
 using namespace std;
 using namespace walleve;
 using namespace multiverse;
@@ -56,7 +56,7 @@ void CTxPoolView::InvalidateSpent(const CTxOutPoint& out,vector<uint256>& vInvol
             CPooledTx* pNextTx = NULL;
             if ((pNextTx = Get(txidNextTx)) != NULL)
             {
-                BOOST_FOREACH(const CTxIn& txin,pNextTx->vInput)
+                for(const CTxIn& txin : pNextTx->vInput)
                 {
                     SetUnspent(txin.prevout);
                 }
@@ -171,7 +171,7 @@ void CTxPoolView::ArrangeBlockTx(map<size_t,pair<uint256,CPooledTx*> >& mapArran
                 for (std::size_t i = 0;i < vTxTree.size();i++)
                 {
                     CPooledTx* pPooledTx = vTxTree[i].second;
-                    BOOST_FOREACH(const CTxIn& txin,pPooledTx->vInput)
+                    for(const CTxIn& txin : pPooledTx->vInput)
                     {
                         const uint256& txidPrev = txin.prevout.hash;
                         if (!candidate.Have(txidPrev))
@@ -320,7 +320,7 @@ MvErr CTxPool::Push(const CTransaction& tx,uint256& hashFork,CDestination& destI
         return MV_ERR_TRANSACTION_INVALID;
     }
 
-    int nHeight;
+    int32 nHeight;
     if (!pWorldLine->GetBlockLocation(tx.hashAnchor,hashFork,nHeight))
     {
         return MV_ERR_TRANSACTION_INVALID;
@@ -352,7 +352,7 @@ void CTxPool::Pop(const uint256& txid)
     }   
     CPooledTx& tx = (*it).second;
     uint256 hashFork;
-    int nHeight;
+    int32 nHeight;
     if (!pWorldLine->GetBlockLocation(tx.hashAnchor,hashFork,nHeight))
     {
         return;
@@ -362,7 +362,7 @@ void CTxPool::Pop(const uint256& txid)
     txView.Remove(txid);
     txView.InvalidateSpent(CTxOutPoint(txid,0),vInvalidTx);
     txView.InvalidateSpent(CTxOutPoint(txid,1),vInvalidTx);
-    BOOST_FOREACH(const uint256& txidInvalid,vInvalidTx)
+    for(const uint256& txidInvalid : vInvalidTx)
     {
         mapTx.erase(txidInvalid);
     }
@@ -498,8 +498,8 @@ bool CTxPool::SynchronizeWorldLine(const CWorldLineUpdate& update,CTxSetChange& 
     vector<uint256> vInvalidTx;
     CTxPoolView& txView = mapPoolView[update.hashFork];
 
-    int nHeight = update.nLastBlockHeight - update.vBlockAddNew.size() + 1;
-    BOOST_REVERSE_FOREACH(const CBlockEx& block,update.vBlockAddNew)
+    int32 nHeight = update.nLastBlockHeight - update.vBlockAddNew.size() + 1;
+    for(const CBlockEx& block : boost::adaptors::reverse(update.vBlockAddNew))
     {
         if (block.txMint.nAmount != 0)
         {
@@ -520,7 +520,7 @@ bool CTxPool::SynchronizeWorldLine(const CWorldLineUpdate& update,CTxSetChange& 
                 }
                 else
                 {
-                    BOOST_FOREACH(const CTxIn& txin,tx.vInput)
+                    for(const CTxIn& txin : tx.vInput)
                     {
                         txView.InvalidateSpent(txin.prevout,vInvalidTx);
                     }
@@ -536,7 +536,7 @@ bool CTxPool::SynchronizeWorldLine(const CWorldLineUpdate& update,CTxSetChange& 
     }
 
     vector<pair<uint256,vector<CTxIn> > > vTxRemove;
-    BOOST_FOREACH(const CBlockEx& block,update.vBlockRemove)
+    for(const CBlockEx& block : update.vBlockRemove)
     {
         for (int i = block.vtx.size() - 1; i >= 0; i--)
         {
@@ -574,7 +574,7 @@ bool CTxPool::SynchronizeWorldLine(const CWorldLineUpdate& update,CTxSetChange& 
     }
 
     change.vTxRemove.reserve(vInvalidTx.size() + vTxRemove.size());
-    BOOST_REVERSE_FOREACH(const uint256& txid,vInvalidTx)
+    for(const uint256& txid : boost::adaptors::reverse(vInvalidTx))
     {
         map<uint256,CPooledTx>::iterator it = mapTx.find(txid);
         if (it != mapTx.end())
@@ -636,7 +636,7 @@ bool CTxPool::SaveData()
     return datTxPool.Save(vTx);
 }
 
-MvErr CTxPool::AddNew(CTxPoolView& txView,const uint256& txid,const CTransaction& tx,const uint256& hashFork,int nForkHeight)
+MvErr CTxPool::AddNew(CTxPoolView& txView,const uint256& txid,const CTransaction& tx,const uint256& hashFork,const int32 nForkHeight)
 {
     vector<CTxOutput> vPrevOutput;
     vPrevOutput.resize(tx.vInput.size());

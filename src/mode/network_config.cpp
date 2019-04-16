@@ -39,7 +39,7 @@ bool CMvNetworkConfig::PostLoad()
     nMaxOutBounds = DEFAULT_MAX_OUTBOUNDS;
     if (nMaxConnection <= DEFAULT_MAX_OUTBOUNDS)
     {
-        nMaxInBounds = (fListen4 || fListen6) ? 1 : 0;
+        nMaxInBounds = (fListen || fListen4 || fListen6) ? 1 : 0;
     }
     else
     {
@@ -55,6 +55,24 @@ bool CMvNetworkConfig::PostLoad()
     {
         // vDNSeed.push_back("118.193.83.220");
     }
+
+    if (nThreadNumber <= 0)
+    {
+        nThreadNumber = 1;
+    }
+
+    vector<uint8> vecMac;
+    if (!walleve::GetAnIFMacAddress(vecMac))
+    {
+        return false;
+    }
+
+    string strPath = pathRoot.string();
+    vecMac.insert(vecMac.end(), strPath.begin(), strPath.end());
+
+    uint256 seed = crypto::CryptoHash(&vecMac[0], vecMac.size());
+    crypto::CryptoImportKey(nodeKey, seed);
+
     return true;
 }
 

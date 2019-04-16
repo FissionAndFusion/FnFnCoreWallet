@@ -28,18 +28,18 @@ class CForkStatus
 {
 public:
     CForkStatus() {}
-    CForkStatus(const uint256& hashOriginIn,const uint256& hashParentIn,int nOriginHeightIn) 
+    CForkStatus(const uint256& hashOriginIn,const uint256& hashParentIn,int32 nOriginHeightIn) 
     : hashOrigin(hashOriginIn),hashParent(hashParentIn),nOriginHeight(nOriginHeightIn) {}
 public:
     uint256 hashOrigin;
     uint256 hashParent;
-    int nOriginHeight;
+    int32 nOriginHeight;
     
     uint256 hashLastBlock;
     int64 nLastBlockTime;
-    int nLastBlockHeight;
+    int32 nLastBlockHeight;
     int64 nMoneySupply;
-    std::multimap<int,uint256> mapSubline;
+    std::multimap<int32,uint256> mapSubline;
 };
 
 class CWalletBalance
@@ -77,10 +77,10 @@ public:
 public:
     uint256 hashFork;
     uint256 hashParent;
-    int nOriginHeight;
+    int32 nOriginHeight;
     uint256 hashLastBlock;
     int64 nLastBlockTime;
-    int nLastBlockHeight;
+    int32 nLastBlockHeight;
     int64 nMoneySupply;
     std::set<uint256> setTxUpdate;
     std::vector<CBlockEx> vBlockAddNew;
@@ -91,7 +91,7 @@ class CTxSetChange
 {
 public:
     uint256 hashFork;
-    std::map<uint256,int> mapTxUpdate;
+    std::map<uint256,int32> mapTxUpdate;
     std::vector<CAssembledTx> vTxAddNew;
     std::vector<std::pair<uint256,std::vector<CTxIn> > > vTxRemove;
 };
@@ -143,7 +143,7 @@ class CBlockMakerUpdate
 public:
     uint256 hashBlock;
     int64 nBlockTime;
-    int nBlockHeight;
+    int32 nBlockHeight;
     uint256 nAgreement;
     std::size_t nWeight;
 };

@@ -27,10 +27,11 @@ class CDestInRecordedTemplate
 public:
     static void RecordDestIn(const CDestination& destIn, const std::vector<uint8>& vchPreSig, std::vector<uint8>& vchSig)
     {
-        vchSig.clear();
-        walleve::CWalleveODataStream os(vchSig, CDestination::DESTINATION_SIZE + vchPreSig.size());
+        std::vector<uint8> vchTemp;
+        walleve::CWalleveODataStream os(vchTemp, CDestination::DESTINATION_SIZE + vchPreSig.size());
         os << destIn;
-        vchSig.insert(vchSig.end(), vchPreSig.begin(), vchPreSig.end());
+        vchTemp.insert(vchTemp.end(), vchPreSig.begin(), vchPreSig.end());
+        vchSig = std::move(vchTemp);
     }
 
     static bool ParseDestIn(const std::vector<uint8>& vchSig, CDestination& destIn, std::vector<uint8>& vchSubSig)
@@ -49,6 +50,12 @@ public:
 
         return true;
     }
+};
+
+class CLockedCoinTemplate
+{
+public:
+    virtual int64 LockedCoin(const CDestination& destTo, const int32 nForkHeight) const = 0;
 };
 
 #endif // MULTIVERSE_TEMPLATE_CATAGORY_H

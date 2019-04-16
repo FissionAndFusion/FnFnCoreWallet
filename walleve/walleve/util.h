@@ -9,6 +9,17 @@
 #include <boost/date_time.hpp>
 #include <boost/asio/ip/address.hpp>
 
+#if defined __linux__
+#include <net/if.h>
+#include <ifaddrs.h>
+#include <netpacket/packet.h>
+#elif defined __APPLE__
+#include <ifaddrs.h>
+#include <net/if.h>
+#include <net/if_types.h>
+#include <net/if_dl.h>
+#endif
+
 namespace walleve
 {
 extern bool STD_DEBUG;
@@ -68,6 +79,58 @@ inline void StdWarn(const char* pszName, const char* pszErr)
 inline void StdError(const char* pszName, const char* pszErr)
 {
     std::cerr << GetLocalTime() << " [ERROR] <" << pszName << "> " << pszErr << std::endl;
+}
+
+// Get An interface's mac addr
+inline bool GetAnIFMacAddress(std::vector<uint8>& vecMac)
+{
+    bool success = false;
+#if (defined __linux__) || (defined __APPLE__)
+    struct ifaddrs *ifaddr=NULL;
+    struct ifaddrs *ifa = NULL;
+    int i = 0;
+
+    std::vector<std::vector<uint8>> vecMacList;
+    if (getifaddrs(&ifaddr) == -1)
+    {
+        return success;
+    }
+
+    for ( ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next)
+    {
+        std::vector<uint8> data;
+#if defined __linux__
+        if (ifa->ifa_addr && ifa->ifa_addr->sa_family == AF_PACKET && !(ifa->ifa_flags & IFF_LOOPBACK))
+        {
+            struct sockaddr_ll *s = (struct sockaddr_ll*)ifa->ifa_addr;
+            std::copy_n(&(s->sll_addr[0]), s->sll_halen, std::back_inserter(data));
+            vecMacList.push_back(data);
+        }
+#else
+        if (ifa->ifa_addr && ifa->ifa_addr->sa_family == AF_LINK && !(ifa->ifa_flags & IFF_LOOPBACK))
+        {
+            struct sockaddr_dl * sdl = (struct sockaddr_dl *) ifa->ifa_addr;
+            if (sdl->sdl_type == IFT_ETHER)
+            {
+                std::copy_n((uint8*)sdl->sdl_data + sdl->sdl_nlen, sdl->sdl_alen, std::back_inserter(data));
+            }
+        }
+#endif
+        if (!data.empty())
+        {
+            vecMacList.push_back(data);
+        }
+    }
+    freeifaddrs(ifaddr);
+    
+    success = vecMacList.size() > 0 ? true : false;
+    if (success) 
+    {
+        std::sort(vecMacList.begin(), vecMacList.end());
+        vecMac = std::move(vecMacList.front());
+    }
+#endif
+    return success;
 }
 
 inline bool IsRoutable(const boost::asio::ip::address& address)

@@ -5,7 +5,6 @@
 #include "epmngr.h"
 #include "walleve/util.h"
 #include <vector>
-#include <boost/foreach.hpp>
 
 using namespace std;
 using namespace walleve;
@@ -115,18 +114,19 @@ void CAddressStatus::Penalize(int nPoints,int64 ts)
 void CEndpointManager::Clear()
 {
     mapAddressStatus.clear();
-    mngrNode.Clear(); 
+    mngrNode.Clear();
+    mapRemoteEPNodeId.clear();
 }
 
 int CEndpointManager::GetEndpointScore(const tcp::endpoint& ep)
 {
-    return mapAddressStatus[ep.address()].nScore;
+    return mapAddressStatus[mapRemoteEPNodeId[ep]].nScore;
 }
 
 void CEndpointManager::GetBanned(std::vector<CAddressBanned>& vBanned)
 {
     int64 now = GetTime();
-    map<boost::asio::ip::address,CAddressStatus>::iterator it = mapAddressStatus.begin();
+    map<uint256,CAddressStatus>::iterator it = mapAddressStatus.begin();
     while (it != mapAddressStatus.end())
     {
         CAddressStatus& status = (*it).second;
@@ -138,10 +138,10 @@ void CEndpointManager::GetBanned(std::vector<CAddressBanned>& vBanned)
     }
 }
 
-void CEndpointManager::SetBan(std::vector<boost::asio::ip::address>& vAddrToBan,int64 nBanTime)
+void CEndpointManager::SetBan(std::vector<uint256>& vAddrToBan,int64 nBanTime)
 {
     int64 now = GetTime();
-    BOOST_FOREACH(const boost::asio::ip::address& addr,vAddrToBan)
+    for(const uint256& addr : vAddrToBan)
     {
         CAddressStatus& status = mapAddressStatus[addr];
         status.nBanTo = now + nBanTime;
@@ -150,12 +150,12 @@ void CEndpointManager::SetBan(std::vector<boost::asio::ip::address>& vAddrToBan,
     }
 }
 
-void CEndpointManager::ClearBanned(vector<boost::asio::ip::address>& vAddrToClear)
+void CEndpointManager::ClearBanned(vector<uint256>& vAddrToClear)
 {
     int64 now = GetTime();
-    BOOST_FOREACH(const boost::asio::ip::address& addr,vAddrToClear)
+    for(const uint256& addr : vAddrToClear)
     {
-        map<boost::asio::ip::address,CAddressStatus>::iterator it = mapAddressStatus.find(addr);
+        map<uint256,CAddressStatus>::iterator it = mapAddressStatus.find(addr);
         if (it != mapAddressStatus.end() && now < (*it).second.nBanTo)
         {
             mapAddressStatus.erase(it);
@@ -166,7 +166,7 @@ void CEndpointManager::ClearBanned(vector<boost::asio::ip::address>& vAddrToClea
 void CEndpointManager::ClearAllBanned()
 {
     int64 now = GetTime();
-    map<boost::asio::ip::address,CAddressStatus>::iterator it = mapAddressStatus.begin();
+    map<uint256,CAddressStatus>::iterator it = mapAddressStatus.begin();
     while (it != mapAddressStatus.end())
     {
         if (now < (*it).second.nBanTo)
@@ -206,16 +206,35 @@ bool CEndpointManager::SetOutBoundData(const tcp::endpoint& ep,const boost::any&
     return mngrNode.SetData(ep,dataIn);
 }
 
+bool CEndpointManager::GetOutBoundNodeId(const boost::asio::ip::tcp::endpoint& ep,uint256& addr)
+{
+    return mngrNode.GetNodeId(ep, addr);
+}
+
+bool CEndpointManager::SetOutBoundNodeId(const boost::asio::ip::tcp::endpoint& ep,const uint256& addr)
+{
+    return mngrNode.SetNodeId(ep, addr);
+}
+
 bool CEndpointManager::FetchOutBound(tcp::endpoint& ep)
 {
     while (mngrNode.Employ(ep))
     {
-        CAddressStatus& status = mapAddressStatus[ep.address()];
-        if (status.AddConnection(false))
+        auto iter = mapRemoteEPNodeId.find(ep);
+        if(iter != mapRemoteEPNodeId.end())
+        {
+            CAddressStatus& status = mapAddressStatus[mapRemoteEPNodeId[ep]];
+            if (status.AddConnection(false))
+            {
+                return true;
+            }
+            mngrNode.Dismiss(ep,false);
+        }
+        else
         {
             return true;
         }
-        mngrNode.Dismiss(ep,false);
+        
     }
     return false;
 }
@@ -223,8 +242,18 @@ bool CEndpointManager::FetchOutBound(tcp::endpoint& ep)
 bool CEndpointManager::AcceptInBound(const tcp::endpoint& ep)
 {
     int64 now = GetTime();
-    CAddressStatus& status = mapAddressStatus[ep.address()];
-    return (status.InBoundAttempt(now) && status.AddConnection(true));
+    
+    auto iter = mapRemoteEPNodeId.find(ep);
+    if(iter != mapRemoteEPNodeId.end())
+    {
+        CAddressStatus& status = mapAddressStatus[mapRemoteEPNodeId[ep]];
+        return (status.InBoundAttempt(now) && status.AddConnection(true));
+    }
+    else
+    {
+        return true;
+    }
+    
 }
 
 void CEndpointManager::RewardEndpoint(const tcp::endpoint& ep,Bonus bonus)
@@ -235,7 +264,7 @@ void CEndpointManager::RewardEndpoint(const tcp::endpoint& ep,Bonus bonus)
     {
         index = 0;
     }
-    CAddressStatus& status = mapAddressStatus[ep.address()];
+    CAddressStatus& status = mapAddressStatus[mapRemoteEPNodeId[ep]];
     status.Reward(award[index],GetTime());
 
     CleanInactiveAddress();
@@ -244,20 +273,28 @@ void CEndpointManager::RewardEndpoint(const tcp::endpoint& ep,Bonus bonus)
 void CEndpointManager::CloseEndpoint(const tcp::endpoint& ep,CloseReason reason)
 {
     int64 now = GetTime();
+    /*
+        HOST_CLOSE => 0 points,
+        CONNECT_FAILURE => 1 points,
+        NETWORK_ERROR => 2 points,
+        RESPONSE_FAILURE => 2 points,
+        PROTOCOL_INVALID => 10 points,
+        DDOS_ATTACK => 25 points
+    */
     const int lost[NUM_CLOSEREASONS] = {0,1,2,2,10,25};
     int index = (int)reason;
     if (index < 0 || index >= NUM_CLOSEREASONS)
     {
         index = 0;
     }
-    CAddressStatus& status = mapAddressStatus[ep.address()];
+    CAddressStatus& status = mapAddressStatus[mapRemoteEPNodeId[ep]];
     status.Penalize(lost[index],now);
     mngrNode.Dismiss(ep,(reason == NETWORK_ERROR)); 
     status.RemoveConnection();
 
     if (now < status.nBanTo)
     {
-        mngrNode.Ban(ep.address(),status.nBanTo);
+        mngrNode.Ban(mapRemoteEPNodeId[ep],status.nBanTo);
     }
 
     CleanInactiveAddress();
@@ -270,14 +307,24 @@ void CEndpointManager::RetrieveGoodNode(vector<CNodeAvail>& vGoodNode,
     mngrNode.Retrieve(vNode);
     int64 nActive = GetTime() - nActiveTime;
     multimap<int,CNodeAvail> mapScore;
-    BOOST_FOREACH(const CNode& node,vNode)
+    for(const CNode& node : vNode)
     {
-        const boost::asio::ip::address addr = node.ep.address();
-        map<boost::asio::ip::address,CAddressStatus>::iterator it = mapAddressStatus.find(addr);
+        const uint256& addr = node.nodeAddr;
+        map<uint256,CAddressStatus>::iterator it = mapAddressStatus.find(addr);
         if (it != mapAddressStatus.end() 
             && (*it).second.nLastSeen > nActive && (*it).second.nScore >= 0)
         {
-            mapScore.insert(make_pair(-(*it).second.nScore,CNodeAvail(node,(*it).second.nLastSeen)));
+            auto iter = mapRemoteGateWay.find(node.ep);
+            if(iter != mapRemoteGateWay.end())
+            {
+                CNode nodeGateWay(node);
+                nodeGateWay.ep = mapRemoteGateWay[node.ep];
+                mapScore.insert(make_pair(-(*it).second.nScore,CNodeAvail(nodeGateWay,(*it).second.nLastSeen)));
+            }
+            else
+            {
+                mapScore.insert(make_pair(-(*it).second.nScore,CNodeAvail(node,(*it).second.nLastSeen)));
+            }
         }
     }
 
@@ -288,6 +335,12 @@ void CEndpointManager::RetrieveGoodNode(vector<CNodeAvail>& vGoodNode,
     }
 }
 
+void CEndpointManager::AddNewGateWay(const boost::asio::ip::tcp::endpoint& epGateWay, 
+                            const boost::asio::ip::tcp::endpoint& epNode)
+{
+    mapRemoteGateWay[epNode] = epGateWay;
+}
+
 void CEndpointManager::CleanInactiveAddress()
 {
     if (mapAddressStatus.size() <= MAX_ADDRESS_COUNT)
@@ -296,14 +349,16 @@ void CEndpointManager::CleanInactiveAddress()
     }
     
     int64 inactive = GetTime() - MAX_INACTIVE_TIME; 
-    multimap<int64,boost::asio::ip::address>mapLastSeen;
-    map<boost::asio::ip::address,CAddressStatus>::iterator it = mapAddressStatus.begin();
+    //multimap<int64,uint256> mapLastSeen;
+    std::vector<std::pair<int64,uint256>> vLastSeen;
+    map<uint256,CAddressStatus>::iterator it = mapAddressStatus.begin();
     while (it != mapAddressStatus.end())
     {
         CAddressStatus& status = (*it).second;
         if (status.nLastSeen > inactive)
         {
-            mapLastSeen.insert(make_pair(status.nLastSeen,(*it).first));
+            //mapLastSeen.insert(make_pair(status.nLastSeen,(*it).first));
+            vLastSeen.push_back(make_pair(status.nLastSeen,(*it).first));
             ++it;
         }
         else
@@ -312,11 +367,44 @@ void CEndpointManager::CleanInactiveAddress()
         }
     }
 
-    multimap<int64,boost::asio::ip::address>::iterator mi = mapLastSeen.begin();
-    while (mapAddressStatus.size() > MAX_ADDRESS_COUNT && mi != mapLastSeen.end())
+    //multimap<int64,uint256>::iterator mi = mapLastSeen.begin();
+    auto mi = vLastSeen.begin();
+    while (mapAddressStatus.size() > MAX_ADDRESS_COUNT && mi != vLastSeen.end())
     {
         mapAddressStatus.erase((*mi).second);
         ++mi;
+    }
+}
+
+bool CEndpointManager::AddNewEndPointNodeId(const boost::asio::ip::tcp::endpoint& ep, const uint256& addr, bool IsInBound)
+{
+    mapRemoteEPNodeId[ep] = addr;
+    mngrNode.AddNewEndPointNodeId(ep, addr);
+    if(IsInBound)
+    {
+        int64 now = GetTime();
+        CAddressStatus& status = mapAddressStatus[mapRemoteEPNodeId[ep]];
+        return (status.InBoundAttempt(now) && status.AddConnection(true));
+    }
+    else
+    {
+        CAddressStatus& status = mapAddressStatus[mapRemoteEPNodeId[ep]];
+        if (!status.AddConnection(false))
+        {
+            mngrNode.Dismiss(ep,false);
+            return false;
+        }
+        return true;
+    }
+}
+
+void CEndpointManager::RemoveEndPointNodeId(const boost::asio::ip::tcp::endpoint& ep)
+{
+    mngrNode.RemoveEndPointNodeId(ep);
+    auto it =  mapRemoteEPNodeId.find(ep);
+    if(it != mapRemoteEPNodeId.end())
+    {
+        mapRemoteEPNodeId.erase(it);
     }
 }
 

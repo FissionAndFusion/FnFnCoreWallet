@@ -31,7 +31,7 @@ protected:
     void UpdatePrimaryBlock(const CBlock& block,const CWorldLineUpdate& updateWorldLine,const CTxSetChange& changeTxSet);
     void ActivateFork(const uint256& hashFork);
     bool ProcessForkTx(const uint256& txid,const CTransaction& tx);
-    void SyncForkHeight(int nPrimaryHeight);
+    void SyncForkHeight(const int32 nPrimaryHeight);
 
 protected:
     ICoreProtocol* pCoreProtocol;

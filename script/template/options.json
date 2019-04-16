@@ -208,60 +208,6 @@
             "desc": "Connection timeout <time> seconds (default: 120)"
         }
     ],
-
-    "CMvDbpServerConfigOption": [
-        {
-            "name": "nDbpMaxConnections",
-            "type": "unsigned int",
-            "opt": "dbpmaxconnections",
-            "default": "DEFAULT_DBP_MAX_CONNECTIONS",
-            "format": "-dbpmaxconnections=<num>",
-            "desc": "Set dbp max connections to <num> (default: 20)"
-        },
-        {
-            "name": "vDbpAllowIP",
-            "type": "vector<string>",
-            "opt": "dbpallowip",
-            "format": "-dbpallowip=<ip>",
-            "desc": "Allow DBP connections from specified <ip> address"
-        }
-    ],
-
-    "CMvDbpClientConfigOption": [
-        {
-            "name": "strParentHost",
-            "type": "string",
-            "opt": "dbpparentnodeip",
-            "default": "",
-            "format": "-dbpparentnodeip=<ip>",
-            "desc": "Set dbp parent node ip to <ip> for super node(default: empty)"
-        },
-        {
-            "name": "fEnableForkNode",
-            "type": "bool",
-            "opt": "enableforknode",
-            "default": "false",
-            "format": "-enableforknode=<true | false>",
-            "desc": "Enable fork node for super node(default: false)"
-        },
-        {
-            "name": "fEnableSuperNode",
-            "type": "bool",
-            "opt": "enablesupernode",
-            "default": "false",
-            "format": "-enablesupernode=<true | false>",
-            "desc": "Enable super node(default: false)"
-        },
-        {
-            "name": "strPrivateKey",
-            "type": "string",
-            "opt": "supernodeprikey",
-            "default": "",
-            "format": "-supernodeprikey=<privatekey>",
-            "desc": "Set Private Key to <privatekey> for ForkNode of super node(default: empty)"
-        }
-    ],
-
     "CMvRPCServerConfigOption": [
         {
             "name": "nRPCMaxConnections",
@@ -277,6 +223,22 @@
             "opt": "rpcallowip",
             "format": "-rpcallowip=<ip>",
             "desc": "Allow JSON-RPC connections from specified <ip> address"
+        },
+        {
+            "name": "nRPCThreadNumber",
+            "type": "unsigned int",
+            "opt": "rpcthreadnumber",
+            "default": "DEFAULT_RPC_THREAD_NUMBER",
+            "format": "-rpcthreadnumber=<num>",
+            "desc": "The thread number of RPC server"
+        },
+        {
+            "name": "fRPCThreadAffinity",
+            "type": "bool",
+            "opt": "rpcthreadaffinity",
+            "default": "false",
+            "format": "-rpcthreadaffinity=<num>",
+            "desc": "The threads of RPC server set affinity with CPU or not"
         }
     ],
     "CMvDbpBasicConfigOption": [
@@ -290,12 +252,20 @@
             "desc": "Listen for DBP connections on <port> (default: 6815)"
         },
         {
+            "name": "fDbpListen",
+            "type": "bool",
+            "opt": "dbplisten",
+            "default": false,
+            "format": "-dbplisten",
+            "desc": "Accept DBP IPv4 connections (default: false)"
+        },
+        {
             "name": "fDbpListen4",
             "type": "bool",
             "opt": "dbplisten4",
             "default": false,
             "format": "-dbplisten4",
-            "desc": "Accept DBP IPv4 connections (default: 0)"
+            "desc": "Accept DBP IPv4 connections (default: false)"
         },
         {
             "name": "fDbpListen6",
@@ -303,7 +273,7 @@
             "opt": "dbplisten6",
             "default": false,
             "format": "-dbplisten6",
-            "desc": "Accept DBP IPv6 connections (default: 0)"
+            "desc": "Accept DBP IPv6 connections (default: false)"
         },
         {
             "name": "strDbpUser",
@@ -376,7 +346,57 @@
             "desc": "Set max timeout to <num>  seconds (default: 60*1)"
         }
     ],
-   
+    "CMvDbpClientConfigOption": [
+        {
+            "name": "strParentHost",
+            "type": "string",
+            "opt": "parentnode",
+            "default": "",
+            "format": "-parentnode=<ip>:",
+            "desc": "Set parent node ip to <ip> for super node(default: empty)"
+        },
+        {
+            "name": "fEnableForkNode",
+            "type": "bool",
+            "opt": "enableforknode",
+            "default": "false",
+            "format": "-enableforknode=<true | false>",
+            "desc": "Enable fork node for super node(default: false)"
+        },
+        {
+            "name": "fEnableSuperNode",
+            "type": "bool",
+            "opt": "enablesupernode",
+            "default": "false",
+            "format": "-enablesupernode=<true | false>",
+            "desc": "Enable super node(default: false)"
+        },
+        {
+            "name": "strPrivateKey",
+            "type": "string",
+            "opt": "supernodeprikey",
+            "default": "",
+            "format": "-supernodeprikey=<privatekey>",
+            "desc": "Set Private Key to <privatekey> for ForkNode of super node(default: empty)"
+        }
+    ],
+    "CMvDbpServerConfigOption": [
+        {
+            "name": "nDbpMaxConnections",
+            "type": "unsigned int",
+            "opt": "dbpmaxconnections",
+            "default": "DEFAULT_DBP_MAX_CONNECTIONS",
+            "format": "-dbpmaxconnections=<num>",
+            "desc": "Set dbp max connections to <num> (default: 20)"
+        },
+        {
+            "name": "vDbpAllowIP",
+            "type": "vector<string>",
+            "opt": "dbpallowip",
+            "format": "-dbpallowip=<ip>",
+            "desc": "Allow DBP connections from specified <ip> address"
+        }
+    ],
     "CMvStorageConfigOption": [
         {
             "name": "nCheckLevel",
@@ -388,7 +408,7 @@
         },
         {
             "name": "nCheckDepth",
-            "type": "int",
+            "type": "int32",
             "opt": "chkdpth",
             "default": "1440",
             "format": "-chkdpth=<n>",
@@ -396,6 +416,16 @@
         }
     ],
     "CMvNetworkConfigOption": [
+        
+        {
+            "name": "fListen",
+            "type": "bool",
+            "opt": "listen",
+            "default": false,
+            "format": "-listen",
+            "desc": "Accept IPv4 connections from outside (default: 0)"
+        },
+        
         {
             "name": "fListen4",
             "type": "bool",
@@ -463,6 +493,22 @@
             "opt": "confidentAddress",
             "format": "-confidentAddress=<address>",
             "desc": "Trust node address"
+        },
+        {
+            "name": "nThreadNumber",
+            "type": "unsigned int",
+            "opt": "threadnumber",
+            "default": "DEFAULT_THREAD_NUMBER",
+            "format": "-threadnumber=<num>",
+            "desc": "The thread number of p2p network"
+        },
+        {
+            "name": "fThreadAffinity",
+            "type": "bool",
+            "opt": "threadaffinity",
+            "default": "false",
+            "format": "-threadaffinity=<num>",
+            "desc": "The threads of p2p network set affinity with CPU or not"
         }
     ]
 }

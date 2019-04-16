@@ -89,12 +89,12 @@ void CWorldLine::GetForkStatus(map<uint256,CForkStatus>& mapForkStatus)
 {
     mapForkStatus.clear();
 
-    multimap<int,CBlockIndex*> mapForkIndex;
+    multimap<int32,CBlockIndex*> mapForkIndex;
     cntrBlock.ListForkIndex(mapForkIndex);
-    for (multimap<int,CBlockIndex*>::iterator it = mapForkIndex.begin();it != mapForkIndex.end();++it)
+    for (multimap<int32,CBlockIndex*>::iterator it = mapForkIndex.begin();it != mapForkIndex.end();++it)
     {
         CBlockIndex* pIndex = (*it).second;
-        int nForkHeight = (*it).first;
+        int32 nForkHeight = (*it).first;
         uint256 hashFork = pIndex->GetOriginHash();
         uint256 hashParent = pIndex->GetParentHash();
 
@@ -142,7 +142,7 @@ int  CWorldLine::GetBlockCount(const uint256& hashFork)
     return nCount;
 }   
 
-bool CWorldLine::GetBlockLocation(const uint256& hashBlock,uint256& hashFork,int& nHeight)
+bool CWorldLine::GetBlockLocation(const uint256& hashBlock,uint256& hashFork,int32& nHeight)
 {
     CBlockIndex* pIndex = NULL;
     if (!cntrBlock.RetrieveIndex(hashBlock,&pIndex))
@@ -154,7 +154,7 @@ bool CWorldLine::GetBlockLocation(const uint256& hashBlock,uint256& hashFork,int
     return true;
 }
 
-bool CWorldLine::GetBlockHash(const uint256& hashFork,int nHeight,uint256& hashBlock)
+bool CWorldLine::GetBlockHash(const uint256& hashFork,const int32 nHeight,uint256& hashBlock)
 {
     CBlockIndex* pIndex = NULL;
     if (!cntrBlock.RetrieveFork(hashFork,&pIndex) || pIndex->GetBlockHeight() < nHeight)
@@ -173,7 +173,7 @@ bool CWorldLine::GetBlockHash(const uint256& hashFork,int nHeight,uint256& hashB
     return (pIndex != NULL);
 }
 
-bool CWorldLine::GetBlockHash(const uint256& hashFork,int nHeight,vector<uint256>& vBlockHash)
+bool CWorldLine::GetBlockHash(const uint256& hashFork,const int32 nHeight,vector<uint256>& vBlockHash)
 {   
     CBlockIndex* pIndex = NULL;
     if (!cntrBlock.RetrieveFork(hashFork,&pIndex) || pIndex->GetBlockHeight() < nHeight)
@@ -193,7 +193,7 @@ bool CWorldLine::GetBlockHash(const uint256& hashFork,int nHeight,vector<uint256
     return (!vBlockHash.empty());
 }
 
-bool CWorldLine::GetLastBlock(const uint256& hashFork,uint256& hashBlock,int& nHeight,int64& nTime)
+bool CWorldLine::GetLastBlock(const uint256& hashFork,uint256& hashBlock,int32& nHeight,int64& nTime)
 {
     CBlockIndex* pIndex = NULL;
     if (!cntrBlock.RetrieveFork(hashFork,&pIndex))
@@ -206,7 +206,7 @@ bool CWorldLine::GetLastBlock(const uint256& hashFork,uint256& hashBlock,int& nH
     return true;
 }
 
-bool CWorldLine::GetLastBlockTime(const uint256& hashFork,int nDepth,vector<int64>& vTime)
+bool CWorldLine::GetLastBlockTime(const uint256& hashFork,int32 nDepth,vector<int64>& vTime)
 {
     CBlockIndex* pIndex = NULL;
     if (!cntrBlock.RetrieveFork(hashFork,&pIndex))
@@ -257,7 +257,7 @@ bool CWorldLine::ExistsTx(const uint256& txid)
     return cntrBlock.ExistsTx(txid);
 }
 
-bool CWorldLine::GetTxLocation(const uint256& txid,uint256& hashFork,int& nHeight)
+bool CWorldLine::GetTxLocation(const uint256& txid,uint256& hashFork,int32& nHeight)
 {
     return cntrBlock.RetrieveTxLocation(txid,hashFork,nHeight);
 }
@@ -286,7 +286,7 @@ bool CWorldLine::FilterTx(const uint256& hashFork,CTxFilter& filter)
     return cntrBlock.FilterTx(hashFork,filter);
 }
 
-bool CWorldLine::FilterTx(const uint256& hashFork, int nDepth, CTxFilter& filter)
+bool CWorldLine::FilterTx(const uint256& hashFork, const int32 nDepth, CTxFilter& filter)
 {
     return cntrBlock.FilterTx(hashFork, nDepth, filter);
 }
@@ -397,7 +397,7 @@ MvErr CWorldLine::AddNewBlock(const CBlock& block,CWorldLineUpdate& update)
 
     vTxContxt.reserve(block.vtx.size());
 
-    BOOST_FOREACH(const CTransaction& tx,block.vtx)
+    for(const CTransaction& tx : block.vtx)
     {
         uint256 txid = tx.GetHash();
         CTxContxt txContxt;
@@ -716,7 +716,7 @@ bool CWorldLine::InsertGenesisBlock(CBlock& block)
 MvErr CWorldLine::GetTxContxt(storage::CBlockView& view,const CTransaction& tx,CTxContxt& txContxt)
 {
     txContxt.SetNull();
-    BOOST_FOREACH(const CTxIn& txin,tx.vInput)
+    for(const CTxIn& txin : tx.vInput)
     {
         CTxOutput output;
         if (!view.RetrieveUnspent(txin.prevout,output))

@@ -38,7 +38,15 @@ bool CTemplateDelegate::GetSignDestination(const CTransaction& tx, const std::ve
     }
 
     setSubDest.clear();
-    setSubDest.insert(tx.sendTo);
+    if (tx.sendTo.GetTemplateId() == nId)
+    {
+        setSubDest.insert(CDestination(keyDelegate));
+    }
+    else
+    {
+        setSubDest.insert(tx.sendTo);
+    }
+    
     return true;
 }
 
@@ -55,8 +63,12 @@ bool CTemplateDelegate::BuildVssSignature(const uint256& hash, const vector<uint
         return false;
     }
 
-    vchSig = vchData;
-    vchSig.insert(vchSig.end(), vchVssSig.begin(), vchVssSig.end());
+    std::vector<uint8> vchTemp;
+    walleve::CWalleveODataStream os(vchTemp, CDestination::DESTINATION_SIZE + vchData.size() + vchVssSig.size());
+    os << CDestination(nId);
+    vchTemp.insert(vchTemp.end(), vchData.begin(), vchData.end());
+    vchTemp.insert(vchTemp.end(), vchVssSig.begin(), vchVssSig.end());
+    vchSig = move(vchTemp);
     return true;
 }
 
@@ -124,7 +136,14 @@ void CTemplateDelegate::BuildTemplateData()
 bool CTemplateDelegate::VerifyTxSignature(const uint256& hash, const uint256& hashAnchor, const CDestination& destTo,
                                           const vector<uint8>& vchSig, bool& fCompleted) const
 {
-    return destTo.VerifyTxSignature(hash, hashAnchor, destTo, vchSig, fCompleted);
+    if (destTo.GetTemplateId() == nId)
+    {
+        return CDestination(keyDelegate).VerifyTxSignature(hash, hashAnchor, destTo, vchSig, fCompleted);
+    }
+    else
+    {
+        return destTo.VerifyTxSignature(hash, hashAnchor, destTo, vchSig, fCompleted);
+    }
 }
 
 bool CTemplateDelegate::VerifyBlockSignature(const uint256& hash, const vector<uint8>& vchSig) const

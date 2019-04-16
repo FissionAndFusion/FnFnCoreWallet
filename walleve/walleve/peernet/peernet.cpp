@@ -7,7 +7,6 @@
 #include "walleve/util.h"
 #include <string>
 #include <boost/bind.hpp>
-#include <boost/foreach.hpp>
 #include <openssl/rand.h>
 using namespace std;
 using namespace walleve;
@@ -37,6 +36,11 @@ void CPeerNet::AddPeerRecord(CPeer* pPeer)
     setIP.insert(pPeer->GetRemote().address());
 }
 
+bool CPeerNet::AddRemotePeerId(CPeer* pPeer, const uint256& hashId, bool fIsInbound)
+{
+    return epMngr.AddNewEndPointNodeId(pPeer->GetRemote(), hashId, fIsInbound);
+}
+
 void CPeerNet::HandlePeerClose(CPeer * pPeer)
 {
     RemovePeer(pPeer,CEndpointManager::HOST_CLOSE);
@@ -58,7 +62,7 @@ void CPeerNet::HandlePeerWriten(CPeer *pPeer)
 
 void CPeerNet::EnterLoop()
 {
-    BOOST_FOREACH(const CPeerService& service,confNetwork.vecService)
+    for(const CPeerService& service : confNetwork.vecService)
     {
         if (StartService(service.epListen,service.nMaxInBounds))
         {
@@ -73,7 +77,7 @@ void CPeerNet::EnterLoop()
         }
     }
 
-    BOOST_FOREACH(const CNetHost& host,confNetwork.vecNode)
+    for(const CNetHost& host : confNetwork.vecNode)
     {
         AddNewNode(host);
     }
@@ -87,12 +91,12 @@ void CPeerNet::LeaveLoop()
         vPeer.push_back((*it).second);
     }
 
-    BOOST_FOREACH(CPeer *pPeer,vPeer)
+    for(CPeer *pPeer : vPeer)
     {
         RemovePeer(pPeer,CEndpointManager::HOST_CLOSE);
     }
  
-    BOOST_FOREACH(const CPeerService& service,confNetwork.vecService)
+    for(const CPeerService& service : confNetwork.vecService)
     {
         StopService(service.epListen);
     }
@@ -166,6 +170,11 @@ void CPeerNet::HostResolved(const CNetHost& host,const tcp::endpoint& ep)
     if (host.strName == "toremove")
     {
         epMngr.RemoveOutBound(ep);
+        CPeer* pPeer = GetPeer(ep);
+        if(pPeer)
+        {
+            HandlePeerClose(pPeer);
+        }
     }
     else
     {
@@ -204,6 +213,7 @@ void CPeerNet::RemovePeer(CPeer *pPeer,const CEndpointManager::CloseReason& reas
    
     CancelClientTimers(pPeer->GetNonce()); 
     mapPeer.erase(pPeer->GetNonce());
+    epMngr.RemoveEndPointNodeId(pPeer->GetRemote());
     DestroyPeer(pPeer);
 }
 
@@ -220,6 +230,19 @@ CPeer* CPeerNet::GetPeer(uint64 nNonce)
     if (it != mapPeer.end())
     {
         return (*it).second;
+    }
+    return NULL;
+}
+
+CPeer* CPeerNet::GetPeer(const boost::asio::ip::tcp::endpoint& epNode)
+{
+    for(const auto& peer : mapPeer)
+    {
+        CPeer* pPeer = peer.second;
+        if(pPeer->GetRemote() == epNode)
+        {
+            return pPeer;
+        }
     }
     return NULL;
 }
@@ -248,6 +271,11 @@ void CPeerNet::RemoveNode(const CNetHost& host)
     if (ep != tcp::endpoint())
     {
         epMngr.RemoveOutBound(ep);
+        CPeer* pPeer = GetPeer(ep); 
+        if(pPeer)
+        {
+            HandlePeerClose(pPeer);
+        }
     }
     else 
     {
@@ -275,9 +303,24 @@ bool CPeerNet::SetNodeData(const tcp::endpoint& epNode,const boost::any& data)
     return epMngr.SetOutBoundData(epNode,data);
 }
 
+bool CPeerNet::GetNodeRemoteId(const boost::asio::ip::tcp::endpoint& epNode, uint256& addr)
+{
+    return epMngr.GetOutBoundNodeId(epNode, addr);
+}
+
+bool CPeerNet::SetNodeRemoteId(const boost::asio::ip::tcp::endpoint& epNode, const uint256& addr)
+{
+    return epMngr.SetOutBoundNodeId(epNode, addr);
+}
+
 void CPeerNet::RetrieveGoodNode(vector<CNodeAvail>& vGoodNode,int64 nActiveTime,size_t nMaxCount)
 {
     return epMngr.RetrieveGoodNode(vGoodNode,nActiveTime,nMaxCount);
+}
+
+void CPeerNet::AddNewGateWay(const boost::asio::ip::tcp::endpoint& epGateWay, const boost::asio::ip::tcp::endpoint& epNode)
+{
+    return epMngr.AddNewGateWay(epGateWay,epNode);
 }
 
 std::string CPeerNet::GetLocalIP()
@@ -371,15 +414,11 @@ bool CPeerNet::HandleEvent(CWalleveEventPeerNetGetBanned& eventGetBanned)
  
 bool CPeerNet::HandleEvent(CWalleveEventPeerNetSetBan& eventSetBan)
 {
-    vector<boost::asio::ip::address> vAddrToBan;
-    BOOST_FOREACH(const string& strAddress,eventSetBan.data.first)
+    vector<uint256> vAddrToBan;
+    for(const string& strAddress : eventSetBan.data.first)
     {
-        boost::system::error_code ec;
-        boost::asio::ip::address addr = boost::asio::ip::address::from_string(strAddress,ec);
-        if (!ec)
-        {
-            vAddrToBan.push_back(addr);
-        }
+        uint256 addr;
+        vAddrToBan.push_back(addr);
     }
     epMngr.SetBan(vAddrToBan,eventSetBan.data.second);
     eventSetBan.result = vAddrToBan.size();
@@ -388,15 +427,11 @@ bool CPeerNet::HandleEvent(CWalleveEventPeerNetSetBan& eventSetBan)
  
 bool CPeerNet::HandleEvent(CWalleveEventPeerNetClrBanned& eventClrBanned)
 {
-    vector<boost::asio::ip::address> vAddrToClear;
-    BOOST_FOREACH(const string& strAddress,eventClrBanned.data)
+    vector<uint256> vAddrToClear;
+    for(const string& strAddress : eventClrBanned.data)
     {
-        boost::system::error_code ec;
-        boost::asio::ip::address addr = boost::asio::ip::address::from_string(strAddress,ec);
-        if (!ec)
-        {
-            vAddrToClear.push_back(addr);
-        }
+        uint256 addr;
+        vAddrToClear.push_back(addr);
     }
     epMngr.ClearBanned(vAddrToClear);
     eventClrBanned.result = vAddrToClear.size();

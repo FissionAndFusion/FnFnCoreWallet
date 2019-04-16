@@ -8,7 +8,6 @@
 #include <algorithm>
 #include <chrono>
 #include <openssl/rand.h>
-#include <boost/foreach.hpp>
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/lexical_cast.hpp>
 
@@ -787,7 +786,7 @@ void CDbpServer::AddNewHost(const CDbpHostConfig& confHost)
 
 bool CDbpServer::WalleveHandleInitialize()
 {
-    BOOST_FOREACH (const CDbpHostConfig& confHost, vecHostConfig)
+    for (const CDbpHostConfig& confHost : vecHostConfig)
     {
         if (!CreateProfile(confHost))
         {
@@ -837,7 +836,7 @@ void CDbpServer::LeaveLoop()
         vClient.push_back((*it).second);
     }
 
-    BOOST_FOREACH (CDbpServerSocket *pClient, vClient)
+    for (CDbpServerSocket *pClient : vClient)
     {
         RemoveClient(pClient);
     }

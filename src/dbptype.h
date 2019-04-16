@@ -601,7 +601,7 @@ public:
     CMvDbpTransaction txMint;           // 出块奖励交易
     std::vector<CMvDbpTransaction> vtx; //区块打包的所有交易
     std::vector<uint8> vchSig;          //区块签名
-    uint32 nHeight;                     // 当前区块高度
+    int32 nHeight;                      // 当前区块高度
     std::vector<uint8> hash;            //当前区块的hash
     std::vector<uint8> fork;            // 当前区块的forkid
 };

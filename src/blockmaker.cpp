@@ -54,7 +54,7 @@ CBlockMaker::CBlockMaker()
 : thrMaker("blockmaker",boost::bind(&CBlockMaker::BlockMakerThreadFunc,this)), 
   thrExtendedMaker("extendedmaker",boost::bind(&CBlockMaker::ExtendedMakerThreadFunc,this)), 
   nMakerStatus(MAKER_HOLD),hashLastBlock(uint64(0)),nLastBlockTime(0),
-  nLastBlockHeight(uint64(0)),nLastAgreement(uint64(0)),nLastWeight(0)
+  nLastBlockHeight(0),nLastAgreement(uint64(0)),nLastWeight(0)
 {
     pCoreProtocol = NULL;
     pWorldLine = NULL;
@@ -240,7 +240,7 @@ bool CBlockMaker::Wait(long nSeconds,const uint256& hashPrimaryBlock)
     return false;
 }
 
-void CBlockMaker::PrepareBlock(CBlock& block,const uint256& hashPrev,int64 nPrevTime,int nPrevHeight,const CBlockMakerAgreement& agreement)
+void CBlockMaker::PrepareBlock(CBlock& block,const uint256& hashPrev,int64 nPrevTime,const int32 nPrevHeight,const CBlockMakerAgreement& agreement)
 {
     block.SetNull();
     block.nType = CBlock::BLOCK_PRIMARY;
@@ -337,7 +337,7 @@ bool CBlockMaker::CreateProofOfWorkBlock(CBlock& block)
     return SignBlock(block,profile);
 }
 
-void CBlockMaker::ProcessDelegatedProofOfStake(CBlock& block,const CBlockMakerAgreement& agreement,int nPrevHeight)
+void CBlockMaker::ProcessDelegatedProofOfStake(CBlock& block,const CBlockMakerAgreement& agreement,const int32 nPrevHeight)
 {
     map<CDestination,CBlockMakerProfile>::iterator it = mapDelegatedProfile.find(agreement.vBallot[0]);
     if (it != mapDelegatedProfile.end())
@@ -354,7 +354,7 @@ void CBlockMaker::ProcessDelegatedProofOfStake(CBlock& block,const CBlockMakerAg
 }
 
 void CBlockMaker::ProcessExtended(const CBlockMakerAgreement& agreement,
-                                  const uint256& hashPrimaryBlock,int64 nPrimaryBlockTime,int nPrimaryBlockHeight)
+                                  const uint256& hashPrimaryBlock,int64 nPrimaryBlockTime,const int32 nPrimaryBlockHeight)
 {
     vector<CBlockMakerProfile*> vProfile;
     set<uint256> setFork;
@@ -409,7 +409,7 @@ bool CBlockMaker::CreateDelegatedBlock(CBlock& block,const uint256& hashFork,con
 }
 
 void CBlockMaker::CreatePiggyback(const CBlockMakerProfile& profile,const CBlockMakerAgreement& agreement,
-                                  const uint256& hashRefBlock,int64 nRefBlockTime,int nPrevHeight)
+                                  const uint256& hashRefBlock,int64 nRefBlockTime,const int32 nPrevHeight)
 {
     CProofOfPiggyback proof;
     proof.nWeight = agreement.nWeight;
@@ -441,15 +441,15 @@ void CBlockMaker::CreatePiggyback(const CBlockMakerProfile& profile,const CBlock
 }
 
 void CBlockMaker::CreateExtended(const CBlockMakerProfile& profile,const CBlockMakerAgreement& agreement,
-                                 const set<uint256>& setFork,int nPrimaryBlockHeight,int64 nTime)
+                                 const set<uint256>& setFork,const int32 nPrimaryBlockHeight,int64 nTime)
 {
     CProofOfSecretShare proof;
     proof.nWeight = agreement.nWeight;
     proof.nAgreement = agreement.nAgreement;
-    BOOST_FOREACH(const uint256& hashFork,setFork)
+    for(const uint256& hashFork : setFork)
     {
         uint256 hashLastBlock;
-        int nLastBlockHeight;
+        int32 nLastBlockHeight;
         int64 nLastBlockTime;
         if (pTxPool->Count(hashFork) 
             && pWorldLine->GetLastBlock(hashFork,hashLastBlock,nLastBlockHeight,nLastBlockTime)
@@ -540,7 +540,7 @@ bool CBlockMaker::GetAvailableDelegatedProfile(const vector<CDestination>& vBall
 {
     int nAvailProfile = 0;
     vProfile.reserve(vBallot.size());
-    BOOST_FOREACH(const CDestination& dest,vBallot)
+    for(const CDestination& dest : vBallot)
     {
         map<CDestination,CBlockMakerProfile>::iterator it = mapDelegatedProfile.find(dest);
         if (it != mapDelegatedProfile.end())
@@ -599,7 +599,7 @@ void CBlockMaker::BlockMakerThreadFunc()
 
     uint256 hashPrimaryBlock = uint64(0);
     int64 nPrimaryBlockTime  = 0;
-    int nPrimaryBlockHeight  = 0;
+    int32 nPrimaryBlockHeight  = 0;
 
     {
         boost::unique_lock<boost::mutex> lock(mutex);
@@ -615,6 +615,10 @@ void CBlockMaker::BlockMakerThreadFunc()
             boost::unique_lock<boost::mutex> lock(mutex);
 
             int64 nWaitBlockTime = nPrimaryBlockTime + WAIT_NEWBLOCK_TIME - WalleveGetNetTime();
+            if (nWaitBlockTime <= 0)
+            {
+                nWaitBlockTime = 1;
+            }
             boost::system_time const toWaitBlock = boost::get_system_time() + boost::posix_time::seconds(nWaitBlockTime);
             
             while (hashPrimaryBlock == hashLastBlock && nMakerStatus == MAKER_HOLD)
@@ -636,7 +640,12 @@ void CBlockMaker::BlockMakerThreadFunc()
                 nPrimaryBlockTime    = nLastBlockTime;
                 nPrimaryBlockHeight  = nLastBlockHeight; 
                 int64 nWaitAgreement = nPrimaryBlockTime + WAIT_AGREEMENT_TIME - WalleveGetNetTime();
+                if (nWaitAgreement <= 0)
+                {
+                    nWaitAgreement = 1;
+                }
                 boost::system_time const toWaitAgree = boost::get_system_time() + boost::posix_time::seconds(nWaitAgreement);
+
                 while (hashPrimaryBlock == hashLastBlock && nMakerStatus != MAKER_EXIT)
                 {
                     if (!cond.timed_wait(lock,toWaitAgree))
@@ -704,7 +713,7 @@ void CBlockMaker::ExtendedMakerThreadFunc()
 {
     uint256 hashPrimaryBlock = uint64(0);
     int64 nPrimaryBlockTime  = 0;
-    int nPrimaryBlockHeight  = 0;
+    int32 nPrimaryBlockHeight  = 0;
 
     {
         boost::unique_lock<boost::mutex> lock(mutex);

@@ -20,7 +20,7 @@ public:
     uint32 nLockUntil;
     int64  nAmount;
     int64  nChange;
-    int    nBlockHeight;
+    int32  nBlockHeight;
 public:
     CDelegateTx() { SetNull(); }
     CDelegateTx(const CAssembledTx& tx)
@@ -47,7 +47,7 @@ public:
     {
         return (nVersion == 0);
     }
-    bool IsLocked(const uint32 n, const int nBlockHeight) const
+    bool IsLocked(const uint32 n, const int32 nBlockHeight) const
     {
         if (n == (nLockUntil >> 31))
         {
@@ -70,7 +70,7 @@ public:
     const CDestination GetDestination() const { return destDelegate; }
     void ChangeTxSet(const CTxSetChange& change);
     void AddNewTx(const CAssembledTx& tx);
-    bool BuildEnrollTx(CTransaction& tx,int nBlockHeight,int64 nTime,
+    bool BuildEnrollTx(CTransaction& tx,const int32 nBlockHeight,int64 nTime,
                        const uint256& hashAnchor,int64 nTxFee,const std::vector<unsigned char>& vchData);
 protected:
     CDestination destDelegate;
@@ -88,10 +88,10 @@ public:
     ~CConsensus();
     void PrimaryUpdate(const CWorldLineUpdate& update,const CTxSetChange& change,CDelegateRoutine& routine) override;
     void AddNewTx(const CAssembledTx& tx) override;
-    bool AddNewDistribute(int nAnchorHeight,const CDestination& destFrom,const std::vector<unsigned char>& vchDistribute) override;
-    bool AddNewPublish(int nAnchorHeight,const CDestination& destFrom,const std::vector<unsigned char>& vchPublish) override;
-    void GetAgreement(int nTargetHeight,uint256& nAgreement,std::size_t& nWeight,std::vector<CDestination>& vBallot) override;
-    void GetProof(int nTargetHeight,std::vector<unsigned char>& vchProof) override;
+    bool AddNewDistribute(const int32 nAnchorHeight,const CDestination& destFrom,const std::vector<unsigned char>& vchDistribute) override;
+    bool AddNewPublish(const int32 nAnchorHeight,const CDestination& destFrom,const std::vector<unsigned char>& vchPublish) override;
+    void GetAgreement(const int32 nTargetHeight,uint256& nAgreement,std::size_t& nWeight,std::vector<CDestination>& vBallot) override;
+    void GetProof(const int32 nTargetHeight,std::vector<unsigned char>& vchProof) override;
 protected:
     bool WalleveHandleInitialize() override;
     void WalleveHandleDeinitialize() override;
