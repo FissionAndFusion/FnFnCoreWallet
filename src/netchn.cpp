@@ -730,6 +730,11 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerBlock& eventBlock)
     CBlock& block = eventBlock.data;
     uint256 hash = block.GetHash();
 
+    std::cout << "######### NODE RECV PEER BLOCK##########\n";
+    std::cout << "Block Fork " << hashFork.ToString() << "\n";
+    std::cout << "Block hash " << hash.ToString() << "\n";
+    std::cout << "Block Type " << block.nType << '\n';
+
     try
     {
         boost::recursive_mutex::scoped_lock scoped_lock(mtxSched);
@@ -739,14 +744,19 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerBlock& eventBlock)
         
         if (!sched.ReceiveBlock(nNonce,hash,block,setSchedPeer))
         {
-            std::cerr << "Failed recved block " << hash.ToString() << " [netchannel]\n";
+            std::cout << "Failed recved block " << hash.ToString() << " [netchannel]\n";
             throw runtime_error("Failed to receive block");
         }
 
         uint256 hashForkPrev;
         int32 nHeightPrev;
+        std::cout << "GetBlockLocation block prev hash " << block.hashPrev.ToString() << '\n';
         if (pWorldLine->GetBlockLocation(block.hashPrev,hashForkPrev,nHeightPrev))
         {
+            std::cout << "GetBlockLocation return true\n";
+            std::cout << "nHeightPrev " << hashForkPrev.ToString() << '\n';
+            std::cout << "hashForkPrev " << hashForkPrev.ToString() << '\n';
+            std::cout << "hashFork " << hashFork.ToString() << '\n';
             if (hashForkPrev == hashFork)
             {
                AddNewBlock(hashFork,hash,sched,setSchedPeer,setMisbehavePeer);
@@ -758,6 +768,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerBlock& eventBlock)
         }
         else
         {
+             std::cout << "GetBlockLocation return false\n";
             sched.AddOrphanBlockPrev(hash,block.hashPrev);
         }
 
