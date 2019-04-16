@@ -650,23 +650,6 @@ void CDbpClient::LeaveLoop()
     WalleveLog("Dbp Client stop\n");
 }
 
-void CDbpClient::HeartBeat()
-{
-    if(fIsSuperNode && !fIsRootNode && !fIsResolved)
-    {
-        try
-        {
-            if(!parentHost.ToEndPoint().address().to_string().empty())
-                ResolveHost(parentHost);
-        }
-        catch(const std::exception& e)
-        {
-            WalleveWarn("DbpClient HeartBeat Warning:\n");
-            WalleveWarn(e.what());
-        }
-    }
-}
-
 bool CDbpClient::ClientConnected(CIOClient* pClient)
 {
     auto it = mapProfile.find(pClient->GetRemote());
