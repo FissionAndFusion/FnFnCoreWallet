@@ -203,6 +203,7 @@ private:
     CNetHost parentHost;
     bool fIsResolved;
     bool fIsRootNode;
+    bool fIsSuperNode;
 };
 
 } // namespace multiverse
