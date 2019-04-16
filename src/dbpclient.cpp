@@ -336,6 +336,7 @@ CDbpClient::CDbpClient()
     pDbpService = NULL;
     fIsResolved = false;
     fIsRootNode = false;
+    fIsSuperNode = false;
 }
 
 CDbpClient::~CDbpClient() noexcept
@@ -594,7 +595,14 @@ bool CDbpClient::WalleveHandleInitialize()
         if(confClient.fEnableSuperNode && !confClient.fEnableForkNode)
         {
             fIsRootNode = true;
+            fIsSuperNode = true;
             continue;
+        }
+
+        if(confClient.fEnableSuperNode && confClient.fEnableForkNode)
+        {
+            fIsRootNode = false;
+            fIsSuperNode = true;
         }
         
         if(!CreateProfile(confClient))
@@ -644,7 +652,7 @@ void CDbpClient::LeaveLoop()
 
 void CDbpClient::HeartBeat()
 {
-    if(!fIsRootNode && !fIsResolved)
+    if(fIsSuperNode && !fIsRootNode && !fIsResolved)
     {
         try
         {
