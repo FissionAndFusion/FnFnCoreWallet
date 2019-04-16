@@ -617,7 +617,6 @@ bool CWorldLine::GetBlockDelegateEnrolled(const uint256& hashBlock,map<CDestinat
         return false;
     }
 
-    std::cout << "GetEnrolled height " << pIndex->nHeight << std::endl;
     int64 nDelegateWeightRatio = (pIndex->GetMoneySupply() + DELEGATE_THRESH - 1) / DELEGATE_THRESH;
 
     if (pIndex->GetBlockHeight() < MV_CONSENSUS_ENROLL_INTERVAL)

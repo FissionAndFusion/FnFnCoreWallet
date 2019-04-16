@@ -38,18 +38,12 @@ static inline const uint256 MPEccSign(const uint256& key,const uint256& r,const 
 
 static inline bool MPEccVerify(const uint256& pubkey,const uint256& rG,const uint256& signature,const uint256& hash)
 {
-    std::cout << "pubkey " << pubkey.ToString() << std::endl;
-    std::cout << "rG " << rG.ToString() << std::endl;
-    std::cout << "signature " << signature.ToString() << std::endl;
-    std::cout << "hash " << hash.ToString() << std::endl;
     CEdwards25519 P,R,S;
     if (P.Unpack(pubkey.begin()) && R.Unpack(rG.begin()))
     {
         S.Generate(signature);
-        std::cout << "S == (P + R.ScalarMult(hash)): " << (S == (P + R.ScalarMult(hash))) << '\n';
         return (S == (P + R.ScalarMult(hash)));
     }
-    std::cout << "MPEccVerify return false \n";
     return false;
 }
 
