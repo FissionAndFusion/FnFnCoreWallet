@@ -755,7 +755,7 @@ void CDbpClient::HostResolved(const CNetHost& host, const boost::asio::ip::tcp::
 
 void CDbpClient::HostFailToResolve(const CNetHost& host)
 {
-    std::cerr << "Host Resolve failed " << host.strHost << ' Restarting resolve.\n';
+    std::cerr << "Host Resolve failed " << host.strHost << " Restarting resolve.\n";
     
     ptrResolveTimer->expires_at(ptrResolveTimer->expires_at() +
                                         boost::posix_time::seconds(5));
