@@ -164,7 +164,7 @@ bool CSchedule::ReceiveBlock(uint64 nPeerNonce,const uint256& hash,const CBlock&
                 state.objReceived = block;
                 setSchedPeer.insert(state.setKnownPeer.begin(),state.setKnownPeer.end());
 
-                std::cout << "#########completed nonce " << std::hex << nPeerNonce << " [schedule]\n";
+                std::cout << "#########completed nonce " << std::hex << nPeerNonce << " [schedule]" << std::endl;
                 mapPeer[nPeerNonce].Completed((*it).first);
                
             
@@ -179,20 +179,20 @@ bool CSchedule::ReceiveBlock(uint64 nPeerNonce,const uint256& hash,const CBlock&
                 state.objReceived = block;
                 setSchedPeer.insert(state.setKnownPeer.begin(),state.setKnownPeer.end());
                 
-                std::cout << "#########completed nAssigned " << std::hex << state.nAssigned << " [schedule]\n";
+                std::cout << "#########completed nAssigned " << std::hex << state.nAssigned << " [schedule]" << std::endl;
                 mapPeer[state.nAssigned].Completed((*it).first);
 
                 return true;
             }
             else
             {
-                std::cerr << " hash " << hash.ToString() << " hash Received in mapState [netchannel]\n";        
+                std::cerr << " hash " << hash.ToString() << " hash Received in mapState [netchannel]" << std::endl;        
             }
         }
     }
     else
     {
-        std::cerr << "Cannot Find hash " << hash.ToString() << " in mapState [netchannel]\n";
+        std::cerr << "Cannot Find hash " << hash.ToString() << " in mapState [netchannel]" << std::endl;
     }
 
     return false;
@@ -328,20 +328,20 @@ bool CSchedule::ScheduleBlockInv(uint64 nPeerNonce,vector<network::CInv>& vInv,s
     fMissingPrev = false;
     fEmpty = true;
 
-    std::cout << "entry ScheduleBlockInv [schedule]\n";
+    std::cout << "entry ScheduleBlockInv [schedule] " << std::endl;
 
-    std::cout << "nonce " << std::hex << nPeerNonce << " [schedule]\n";
+    std::cout << "nonce " << std::hex << nPeerNonce << " [schedule]" << std::endl;
 
     map<uint64,CInvPeer>::iterator it = mapPeer.find(nPeerNonce);
     if (it != mapPeer.end())
     {
-        std::cout << "mapPeer finded [schedule]\n";
+        std::cout << "mapPeer finded [schedule]" << std::endl;
         CInvPeer& peer = (*it).second;
         fEmpty = peer.Empty(network::CInv::MSG_BLOCK); 
         if (!peer.IsAssigned())
         {
             bool fReceivedAll;
-            std::cout << "is assigned false [schedule]\n";
+            std::cout << "is assigned false [schedule]" << std::endl;
         
             if (!ScheduleKnownInv(nPeerNonce,peer,network::CInv::MSG_BLOCK,vInv,nMaxCount,fReceivedAll))
             {
@@ -351,12 +351,12 @@ bool CSchedule::ScheduleBlockInv(uint64 nPeerNonce,vector<network::CInv>& vInv,s
         }
         else
         {
-             std::cout << "is assigned true [schedule]\n";
+             std::cout << "is assigned true [schedule]" << std::endl;
         }
     }
     else
     {
-         std::cout << "mapPeer not finded [schedule]\n";
+         std::cout << "mapPeer not finded [schedule]" << std::endl;
     }
     return true;
 }
@@ -398,15 +398,15 @@ bool CSchedule::ScheduleKnownInv(uint64 nPeerNonce,CInvPeer& peer,uint32 type,
 
     CUInt256List& listKnown = peer.GetKnownList(type);
 
-    std::cout << " list known list size " << listKnown.size() << " [ScheduleKnownInv]\n";
+    std::cout << " list known list size " << listKnown.size() << " [ScheduleKnownInv]" << std::endl;
     for(const uint256& hash : listKnown)
     {
         
-        std::cout << "  known hash " << hash.ToString() << " [ScheduleKnownInv]\n";
+        std::cout << "  known hash " << hash.ToString() << " [ScheduleKnownInv] " << std::endl;
         network::CInv inv(type,hash);
         CInvState& state = mapState[inv];
 
-        std::cout << " state nAssigned " << std::hex << state.nAssigned << " [ScheduleKnownInv]\n";
+        std::cout << " state nAssigned " << std::hex << state.nAssigned << " [ScheduleKnownInv]" << std::endl;
 
         if (state.nAssigned == 0)
         {

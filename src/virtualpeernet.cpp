@@ -198,7 +198,8 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerSubscribe& eventSubscribe
             }
 
             if (!vFork.empty())
-            { network::CMvEventPeerSubscribe event(eventSubscribe.nNonce, eventSubscribe.hashFork);
+            { 
+                network::CMvEventPeerSubscribe event(eventSubscribe.nNonce, eventSubscribe.hashFork);
                 event.data = vFork;
                 return CMvPeerNet::HandleEvent(eventSubscribe);
             }
