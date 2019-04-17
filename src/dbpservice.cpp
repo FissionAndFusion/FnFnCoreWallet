@@ -1201,6 +1201,7 @@ bool CDbpService::HandleEvent(CMvEventPeerSubscribe& event)
 
         FilterThisSubscribeFork(event, eventUpSub);
 
+        std::cout << "eventUpSubEmpty " << (eventUpSub.data.empty() ? "true" : "false") << '\n';
 
         if(!eventUpSub.data.empty())
         {

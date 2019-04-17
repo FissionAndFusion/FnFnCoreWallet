@@ -645,15 +645,15 @@ void CDbpClient::EnterLoop()
     
     if(fIsSuperNode && !fIsRootNode)
     {
-        boost::asio::ip::tcp::endpoint ep;
-        if(ResolveHostSync(parentHost, ep))
-        {
-            HostResolved(parentHost, ep);
-        }
-        else
-        {
-            HostFailToResolve(parentHost);
-        }
+        //boost::asio::ip::tcp::endpoint ep = boost::asio::;
+        //if(ResolveHostSync(parentHost, ep))
+        //{
+            HostResolved(parentHost, parentHost.ToEndPoint());
+        //}
+       // else
+        //{
+          //  HostFailToResolve(parentHost);
+       // }
     }
 }
 
