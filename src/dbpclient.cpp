@@ -142,7 +142,7 @@ void CDbpClientSocket::SendEvent(CMvDbpVirtualPeerNetEvent& dbpEvent)
     event.set_type(dbpEvent.type);
     event.set_data(std::string(dbpEvent.data.begin(), dbpEvent.data.end()));
 
-    std::cout << "sent event type " << dbpEvent.type << " [dbpclient]\n";
+    std::cout << "sent event type " << dbpEvent.type << " [dbpclient]" << std::endl;
 
     params->PackFrom(event);
     method.set_allocated_params(params);
@@ -486,7 +486,7 @@ void CDbpClient::HandleConnected(CDbpClientSocket* pClientSocket, google::protob
     dbp::Connected connected;
     any->UnpackTo(&connected);
 
-    std::cout << "[<] Recved Connected " << connected.session() << " [dbpclient]\n";
+    std::cout << "[<] Recved Connected " << connected.session() << " [dbpclient]" << std::endl;
 
     CreateSession(connected.session(),pClientSocket);
     
@@ -673,7 +673,7 @@ bool CDbpClient::ClientConnected(CIOClient* pClient)
     {
         return false;
     }
-    std::cout << "########### ClientConnected port " << pClient->GetRemote().port() << '\n';
+    std::cout << "########### ClientConnected port " << pClient->GetRemote().port() << std::endl;
     WalleveLog("Connect parent node %s success,  port = %d\n",
                        (*it).first.address().to_string().c_str(),
                        (*it).first.port());
@@ -755,7 +755,7 @@ void CDbpClient::HostResolved(const CNetHost& host, const boost::asio::ip::tcp::
 
 void CDbpClient::HostFailToResolve(const CNetHost& host)
 {
-    std::cerr << "Host Resolve failed " << host.strHost << " Restarting resolve.\n";
+    std::cerr << "Host Resolve failed " << host.strHost << " Restarting resolve." << std::endl;
     
     ptrResolveTimer->expires_at(ptrResolveTimer->expires_at() +
                                         boost::posix_time::seconds(5));
@@ -797,7 +797,7 @@ void CDbpClient::SendPingHandler(const boost::system::error_code& err, const CDb
 
     if(IsSessionTimeout(sessionProfile.pClientSocket))
     {
-        std::cerr << "######### dbp client session time out ############\n";
+        std::cerr << "######### dbp client session time out ############" << std::endl;
         HandleClientSocketError(sessionProfile.pClientSocket);
         return;
     }
@@ -903,7 +903,7 @@ bool CDbpClient::ActivateConnect(CIOClient* pClient, CDbpClientProfile* pProfile
     CDbpClientSocket* pDbpClientSocket = new CDbpClientSocket(pIOModule,nNonce,this,pClient, pProfile);
     if(!pDbpClientSocket)
     {
-        std::cerr << "Create Client Socket error\n";
+        std::cerr << "Create Client Socket error " << std::endl;
         return false;
     }
 
@@ -950,7 +950,7 @@ CDbpClientSocket* CDbpClient::PickOneSessionSocket() const
     }
     else
     {
-        std::cerr << "mapSessionProfile is empty\n";
+        std::cerr << "mapSessionProfile is empty " << std::endl;
     }
 
     return pClientSocket;

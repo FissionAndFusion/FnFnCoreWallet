@@ -183,7 +183,7 @@ void CDbpServerSocket::SendResponse(const std::string& client, CMvDbpAdded& body
     }
     else
     {
-        std::cerr << "Unknown added type.\n";
+        std::cerr << "Unknown added type." << std::endl;
         return;
     }
 
@@ -487,7 +487,7 @@ void CDbpServer::HandleClientConnect(CDbpServerSocket* pDbpClient, google::proto
         std::string client = connectMsg.client();
         CreateSession(session, client, forkid, pDbpClient);
 
-        std::cout << "[#] Generate Session " << session << " For Connect Msg [dbpserver]\n";
+        std::cout << "[#] Generate Session " << session << " For Connect Msg [dbpserver] " << std::endl;
         
         CMvEventDbpConnect *pEventDbpConnect = new CMvEventDbpConnect(session);
         if (!pEventDbpConnect)
@@ -625,7 +625,7 @@ void CDbpServer::HandleClientMethod(CDbpServerSocket* pDbpClient, google::protob
         ///
         if(event.type() == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_SUBSCRIBE)
         {
-            std::cout << "******RECVED Subscribe [rootnode][dbpserver]\n";
+            std::cout << "******RECVED Subscribe [rootnode][dbpserver] " << std::endl;
             CWalleveBufStream ss;
             ss.Write(event.data().data(), event.data().size());
             multiverse::network::CMvEventPeerSubscribe eventSub(0,uint256());
@@ -633,7 +633,7 @@ void CDbpServer::HandleClientMethod(CDbpServerSocket* pDbpClient, google::protob
 
             for(const auto& fork : eventSub.data)
             {
-                std::cout << "*****Fork ID " << fork.ToString() << " [dbpservice]\n";
+                std::cout << "*****Fork ID " << fork.ToString() << " [dbpservice]" << std::endl;
             }
         }
     }
@@ -869,7 +869,7 @@ bool CDbpServer::ClientAccepted(const boost::asio::ip::tcp::endpoint& epService,
 
     std::cout << "[<] #########Client Accepted Remote Address " << 
         pClient->GetRemote().address().to_string() << 
-        " port " <<  pClient->GetRemote().port() << " [dbpserver]\n";
+        " port " <<  pClient->GetRemote().port() << " [dbpserver]" << std::endl;
 
     return AddNewClient(pClient, &(*it).second) != NULL;
 }
@@ -924,7 +924,7 @@ CDbpServerSocket *CDbpServer::AddNewClient(CIOClient* pClient, CDbpProfile* pDbp
     if (pDbpClient)
     {
         mapClient.insert(std::make_pair(nNonce, pDbpClient));
-        std::cout << "[rootnode] AddNewClient Activate " << nNonce << '\n';
+        std::cout << "[rootnode] AddNewClient Activate " << nNonce << std::endl;
         pDbpClient->Activate();
     }
 
@@ -978,7 +978,7 @@ void CDbpServer::SendPingHandler(const boost::system::error_code& err, const CSe
 
     if(IsSessionTimeOut(sessionProfile.pDbpClient))
     {
-        std::cerr << "######### dbp server session time out ############\n";
+        std::cerr << "######### dbp server session time out ############" << std::endl;
         HandleClientError(sessionProfile.pDbpClient);
         return;
     }
