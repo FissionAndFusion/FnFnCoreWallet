@@ -57,6 +57,7 @@ protected:
 protected:
     walleve::IIOModule* pDbpService;
     ICoreProtocol* pCoreProtocol;
+    IForkManager* pForkManager;
 private:
     static const std::string SENDER_NETCHN;
     static const std::string SENDER_DBPSVC;
