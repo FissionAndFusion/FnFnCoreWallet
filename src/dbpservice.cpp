@@ -1592,26 +1592,12 @@ bool CDbpService::IsThisNodeData(const uint256& hashFork, uint64 nNonce, const u
 
 void CDbpService::RPCRootHandle(CMvRPCRouteStop* data, CMvRPCRouteStopRet* ret)
 {
-    if (ret == NULL)
+    if (GetSessionCountByNonce(data->nNonce) == 0)
     {
-        if (GetSessionCountByNonce(data->nNonce) == 0)
-        {
-            CMvRPCRouteStopRet stopRet;
-            CompletionByNonce(data->nNonce, stopRet);
-            DeleteSessionCountByNonce(data->nNonce);
-            pService->Shutdown();
-        }
-    }
-
-    if (ret != NULL)
-    {
-        if (GetSessionCountByNonce(data->nNonce) == 0)
-        {
-            CMvRPCRouteStopRet stopRet;
-            CompletionByNonce(data->nNonce, stopRet);
-            DeleteSessionCountByNonce(data->nNonce);
-            pService->Shutdown();
-        }
+        CMvRPCRouteStopRet stopRet;
+        CompletionByNonce(data->nNonce, stopRet);
+        DeleteSessionCountByNonce(data->nNonce);
+        pService->Shutdown();
     }
 }
 
@@ -2157,30 +2143,14 @@ void CDbpService::RPCRootHandle(CMvRPCRouteSendTransaction* data, CMvRPCRouteSen
 
 void CDbpService::RPCForkHandle(CMvRPCRouteStop* data, CMvRPCRouteStopRet* ret)
 {
-    if (ret == NULL)
+    if (GetSessionCountByNonce(data->nNonce) == 0)
     {
-        if (GetSessionCountByNonce(data->nNonce) == 0)
-        {
-            CMvRPCRouteResult result;
-            result.type = CMvRPCRoute::DBP_RPCROUTE_STOP;
-            result.vRawData = RPCRouteRetToStream(*data);
-            SendRPCResult(result);
-            DeleteSessionCountByNonce(data->nNonce);
-            pService->Shutdown();
-        }
-    }
-
-    if (ret != NULL)
-    {
-        if (GetSessionCountByNonce(data->nNonce) == 0)
-        {
-            CMvRPCRouteResult result;
-            result.type = CMvRPCRoute::DBP_RPCROUTE_STOP;
-            result.vRawData = RPCRouteRetToStream(*data);
-            SendRPCResult(result);
-            DeleteSessionCountByNonce(data->nNonce);
-            pService->Shutdown();
-        }
+        CMvRPCRouteResult result;
+        result.type = CMvRPCRoute::DBP_RPCROUTE_STOP;
+        result.vRawData = RPCRouteRetToStream(*data);
+        SendRPCResult(result);
+        DeleteSessionCountByNonce(data->nNonce);
+        pService->Shutdown();
     }
 }
 
