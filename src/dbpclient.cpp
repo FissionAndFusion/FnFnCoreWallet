@@ -673,7 +673,7 @@ bool CDbpClient::ClientConnected(CIOClient* pClient)
     {
         return false;
     }
-
+    std::cout << "########### ClientConnected port " << pClient->GetRemote().port() << '\n';
     WalleveLog("Connect parent node %s success,  port = %d\n",
                        (*it).first.address().to_string().c_str(),
                        (*it).first.port());

@@ -867,9 +867,9 @@ bool CDbpServer::ClientAccepted(const boost::asio::ip::tcp::endpoint& epService,
         return false;
     }
 
-    std::cout << "[<] Client Accepted Remote Address " << 
+    std::cout << "[<] #########Client Accepted Remote Address " << 
         pClient->GetRemote().address().to_string() << 
-        " [dbpserver]\n";
+        " port " <<  pClient->GetRemote().port() << " [dbpserver]\n";
 
     return AddNewClient(pClient, &(*it).second) != NULL;
 }
@@ -924,6 +924,7 @@ CDbpServerSocket *CDbpServer::AddNewClient(CIOClient* pClient, CDbpProfile* pDbp
     if (pDbpClient)
     {
         mapClient.insert(std::make_pair(nNonce, pDbpClient));
+        std::cout << "[rootnode] AddNewClient Activate " << nNonce << '\n';
         pDbpClient->Activate();
     }
 
