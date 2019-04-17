@@ -175,6 +175,9 @@ protected:
    
     void StartPingTimer(const std::string& session);
     void SendPingHandler(const boost::system::error_code& err, const CDbpClientSessionProfile& sessionProfile);
+    void StartResolveTimer();
+    void ResolveHandler(const boost::system::error_code& err);
+    
     void SubscribeDefaultTopics(CDbpClientSocket* pClientSocket);
     void CreateSession(const std::string& session, CDbpClientSocket* pClientSocket);
     bool HaveAssociatedSessionOf(CDbpClientSocket* pClientSocket);
@@ -202,6 +205,8 @@ private:
     CNetHost parentHost;
     bool fIsRootNode;
     bool fIsSuperNode;
+
+    std::shared_ptr<boost::asio::deadline_timer> ptrResolveTimer;
 };
 
 } // namespace multiverse

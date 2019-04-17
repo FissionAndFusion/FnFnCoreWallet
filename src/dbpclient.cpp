@@ -633,15 +633,7 @@ void CDbpClient::EnterLoop()
     
     if(fIsSuperNode && !fIsRootNode)
     {
-        boost::asio::ip::tcp::endpoint ep;
-        if(ResolveHostSync(parentHost, ep))
-        {
-            HostResolved(parentHost, ep);
-        }
-        else
-        {
-            HostFailToResolve(parentHost);
-        }
+        StartResolveTimer();
     }
 }
 
@@ -722,6 +714,8 @@ void CDbpClient::HostResolved(const CNetHost& host, const boost::asio::ip::tcp::
         return;
     }
 
+    ptrResolveTimer->cancel();
+
     if (confClient.optSSL.fEnable)
         profile.optSSL = confClient.optSSL;
 
@@ -749,7 +743,12 @@ void CDbpClient::HostResolved(const CNetHost& host, const boost::asio::ip::tcp::
 
 void CDbpClient::HostFailToResolve(const CNetHost& host)
 {
-    std::cerr << "Host Resolve failed " << host.strHost << '\n';
+    std::cerr << "Host Resolve failed " << host.strHost << ' Restarting resolve.\n';
+    
+    ptrResolveTimer->expires_at(ptrResolveTimer->expires_at() +
+                                        boost::posix_time::seconds(5));
+    ptrResolveTimer->async_wait(boost::bind(&CDbpClient::ResolveHandler,
+                                                    this, boost::asio::placeholders::error));
 }
 
 bool CDbpClient::CreateProfile(const CDbpClientConfig& confClient)
@@ -812,6 +811,27 @@ void CDbpClient::StartPingTimer(const std::string& session)
     profile.ptrPingTimer->async_wait(boost::bind(&CDbpClient::SendPingHandler,
                                                     this, boost::asio::placeholders::error,
                                                     boost::ref(profile)));
+}
+
+void CDbpClient::StartResolveTimer()
+{
+    ptrResolveTimer = 
+        std::make_shared<boost::asio::deadline_timer>(this->GetIoService(),
+                                                      boost::posix_time::seconds(5));
+    ptrResolveTimer->expires_at(ptrResolveTimer->expires_at() +
+                                        boost::posix_time::seconds(5));
+    ptrResolveTimer->async_wait(boost::bind(&CDbpClient::ResolveHandler,
+                                                    this, boost::asio::placeholders::error));
+}
+
+void CDbpClient::ResolveHandler(const boost::system::error_code& err)
+{
+    if (err != boost::system::errc::success)
+    {
+        return;
+    }
+    
+    ResolveHost(parentHost);
 }
 
 void CDbpClient::SubscribeDefaultTopics(CDbpClientSocket* pClientSocket)
