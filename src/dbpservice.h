@@ -152,6 +152,7 @@ private:
     void CountDownSessionCountByNonce(uint64 nNonce);
     void DeleteSessionCountByNonce(uint64 nNonce);
     void InsertQueCount(uint64 nNonce, boost::any obj);
+    void DeleteQueCount(uint64 nNonce);
     void TransformForks(std::vector<std::pair<uint256,CProfile>>& vFork, std::vector<CMvRPCProfile>& vRpcFork);
     void ListForkUnique(std::vector<CMvRPCProfile>& vFork);
     bool GetForkHashOfDef(const rpc::CRPCString& hex, uint256& hashFork);

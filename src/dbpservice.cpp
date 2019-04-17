@@ -1638,6 +1638,7 @@ void CDbpService::RPCRootHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRe
             ret.vFork.insert(ret.vFork.end(), vRpcFork.begin(), vRpcFork.end());
             CompletionByNonce(data->nNonce, ret);
             DeleteSessionCountByNonce(data->nNonce);
+            DeleteQueCount(data->nNonce);
         }
         return;
     }
@@ -1684,6 +1685,7 @@ void CDbpService::RPCRootHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRe
             }
             CompletionByNonce(data->nNonce, retOut);
             DeleteSessionCountByNonce(data->nNonce);
+            DeleteQueCount(data->nNonce);
         }
         return;
     }
@@ -2177,6 +2179,7 @@ void CDbpService::RPCForkHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRe
             result.vData = RPCRouteRetToStream(retOut);
             SendRPCResult(result);
             DeleteSessionCountByNonce(data->nNonce);
+            DeleteQueCount(data->nNonce);
         }
         return;
     }
@@ -2217,6 +2220,7 @@ void CDbpService::RPCForkHandle(CMvRPCRouteListFork* data, CMvRPCRouteListForkRe
             result.vData = RPCRouteRetToStream(listForkRetOut);
             SendRPCResult(result);
             DeleteSessionCountByNonce(data->nNonce);
+            DeleteQueCount(data->nNonce);
         }
         return;
     }
@@ -2766,6 +2770,16 @@ void CDbpService::InsertQueCount(uint64 nNonce, boost::any obj)
     queCount.push_front(pair);
 }
 
+void CDbpService::DeleteQueCount(uint64 nNonce)
+{
+    auto compare = [nNonce](const std::pair<uint64, boost::any>& element) { return nNonce == element.first; };
+    auto iter = std::find_if(queCount.begin(), queCount.end(), compare);
+    if (iter != queCount.end())
+    {
+        queCount.erase(iter);
+    }
+}
+
 void CDbpService::PushMsgToChild(std::vector<uint8>& data, int& type, uint64& nNonce)
 {
     auto compare = [nNonce](const std::pair<uint64, std::vector<std::string>>& element) {
@@ -2954,7 +2968,6 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteStop& event)
     event.data.type = CMvRPCRoute::DBP_RPCROUTE_STOP;
     CreateCompletion(event.data.nNonce, event.data.spIoCompltUntil);
     CMvRPCRouteStopRet stopRet;
-    InsertQueCount(event.data.nNonce, stopRet);
 
     InitSessionCount(event.data.nNonce);
     if(GetSessionCountByNonce(event.data.nNonce) > 0)
@@ -3009,7 +3022,6 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetBlockLocation& event)
 
     InitRPCTopicId(event.data.nNonce);
     InitSessionCount(event.data.nNonce);
-    InsertQueCount(event.data.nNonce, getBlockLocationRet);
     RPCRootHandle(&event.data, NULL);
     return true;
 }
@@ -3057,7 +3069,6 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetBlockCount& event)
 
     InitRPCTopicId(event.data.nNonce);
     InitSessionCount(event.data.nNonce);
-    InsertQueCount(event.data.nNonce, getBlockCountRet);
     RPCRootHandle(&event.data, NULL);
     return true;
 }
@@ -3100,7 +3111,6 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetBlockHash& event)
 
     InitRPCTopicId(event.data.nNonce);
     InitSessionCount(event.data.nNonce);
-    InsertQueCount(event.data.nNonce, getBlockHashRet);
     RPCRootHandle(&event.data, NULL);
     return true;
 }
@@ -3131,7 +3141,6 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetBlock& event)
 
     InitRPCTopicId(event.data.nNonce);
     InitSessionCount(event.data.nNonce);
-    InsertQueCount(event.data.nNonce, getBlockRet);
     RPCRootHandle(&event.data, NULL);
     return true;
 }
@@ -3168,7 +3177,6 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetTxPool& event)
 
     InitRPCTopicId(event.data.nNonce);
     InitSessionCount(event.data.nNonce);
-    InsertQueCount(event.data.nNonce, getTxPoolRet);
     RPCRootHandle(&event.data, NULL);
     return true;
 }
@@ -3200,7 +3208,6 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetTransaction& event)
 
     InitRPCTopicId(event.data.nNonce);
     InitSessionCount(event.data.nNonce);
-    InsertQueCount(event.data.nNonce, getTransactionRet);
     RPCRootHandle(&event.data, NULL);
     return true;
 }
@@ -3231,7 +3238,6 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteGetForkHeight& event)
 
     InitRPCTopicId(event.data.nNonce);
     InitSessionCount(event.data.nNonce);
-    InsertQueCount(event.data.nNonce, getForkHeightRet);
     RPCRootHandle(&event.data, NULL);
     return true;
 }
@@ -3254,7 +3260,6 @@ bool CDbpService::HandleEvent(CMvEventRPCRouteSendTransaction& event)
 
     InitRPCTopicId(event.data.nNonce);
     InitSessionCount(event.data.nNonce);
-    InsertQueCount(event.data.nNonce, sendTransactionRet);
     RPCRootHandle(&event.data, NULL);
     return true;
 }
@@ -3265,7 +3270,6 @@ bool CDbpService::HandleAddedEventStop(CMvEventRPCRouteAdded& event, walleve::CW
     ss >> stop;
     CMvRPCRouteStopRet stopRet;
     InitSessionCount(stop.nNonce);
-    InsertQueCount(stop.nNonce, stopRet);
     if (GetSessionCountByNonce(stop.nNonce) > 0)
     {
         PushRPC(event.data.vData, event.data.type);
@@ -3300,7 +3304,6 @@ bool CDbpService::HandleAddedEventGetBlockLocation(CMvEventRPCRouteAdded& event,
 
     InitSessionCount(getBlockLocation.nNonce);
     InitRPCTopicId(getBlockLocation.nNonce);
-    InsertQueCount(getBlockLocation.nNonce, getBlockLocationRet);
 
     uint256 hashBlock;
     hashBlock.SetHex(getBlockLocation.strBlock);
@@ -3330,7 +3333,6 @@ bool CDbpService::HandleAddedEventGetBlockCount(CMvEventRPCRouteAdded& event, wa
 
     InitSessionCount(getBlockCount.nNonce);
     InitRPCTopicId(getBlockCount.nNonce);
-    InsertQueCount(getBlockCount.nNonce, getBlockCountRet);
 
     uint256 hashFork;
     if (!GetForkHashOfDef(getBlockCount.strFork, hashFork))
@@ -3375,7 +3377,6 @@ bool CDbpService::HandleAddedEventGetBlockHash(CMvEventRPCRouteAdded& event, wal
 
     InitSessionCount(getBlockHash.nNonce);
     InitRPCTopicId(getBlockHash.nNonce);
-    InsertQueCount(getBlockHash.nNonce, getBlockHashRet);
 
     uint256 hashFork;
     if (!GetForkHashOfDef(getBlockHash.strFork, hashFork))
@@ -3424,7 +3425,6 @@ bool CDbpService::HandleAddedEventGetBlock(CMvEventRPCRouteAdded& event, walleve
 
     InitSessionCount(getBlock.nNonce);
     InitRPCTopicId(getBlock.nNonce);
-    InsertQueCount(getBlock.nNonce, getBlockRet);
 
     uint256 hashBlock, fork;
     hashBlock.SetHex(getBlock.hash);
@@ -3457,7 +3457,6 @@ bool CDbpService::HandleAddedEventGetTxPool(CMvEventRPCRouteAdded& event, wallev
 
     InitSessionCount(getTxPool.nNonce);
     InitRPCTopicId(getTxPool.nNonce);
-    InsertQueCount(getTxPool.nNonce, getTxPoolRet);
 
     uint256 hashFork;
     hashFork.SetHex(getTxPool.strFork);
@@ -3494,7 +3493,6 @@ bool CDbpService::HandleAddedEventGetTransaction(CMvEventRPCRouteAdded& event, w
 
     InitSessionCount(getTransaction.nNonce);
     InitRPCTopicId(getTransaction.nNonce);
-    InsertQueCount(getTransaction.nNonce, getTransactionRet);
 
     uint256 txid, hashFork;
     txid.SetHex(getTransaction.strTxid);
@@ -3528,7 +3526,6 @@ bool CDbpService::HandleAddedEventGetForkHeight(CMvEventRPCRouteAdded& event, wa
 
     InitSessionCount(getForkHeight.nNonce);
     InitRPCTopicId(getForkHeight.nNonce);
-    InsertQueCount(getForkHeight.nNonce, getForkHeightRet);
 
     uint256 hashFork;
     hashFork.SetHex(getForkHeight.strFork);
@@ -3558,7 +3555,6 @@ bool CDbpService::HandleAddedEventSendTransaction(CMvEventRPCRouteAdded& event, 
 
     InitSessionCount(sendTransaction.nNonce);
     InitRPCTopicId(sendTransaction.nNonce);
-    InsertQueCount(sendTransaction.nNonce, sendTransactionRet);
 
     MvErr err = pService->SendTransaction(sendTransaction.rawTx);
     if (err == MV_OK)
