@@ -195,8 +195,19 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerSubscribe& eventSubscribe
             }
 
             if (!vFork.empty())
-            { network::CMvEventPeerSubscribe event(eventSubscribe.nNonce, eventSubscribe.hashFork);
+            { 
+                network::CMvEventPeerSubscribe event(eventSubscribe.nNonce, eventSubscribe.hashFork);
                 event.data = vFork;
+
+                network::CMvEventPeerSubscribe* pEvent = new network::CMvEventPeerSubscribe(eventSubscribe.nNonce, eventSubscribe.hashFork);
+                if (!pEvent)
+                {
+                    return false;
+                }
+
+                pEvent->data = vFork;
+                pNetChannel->PostEvent(pEvent);
+
                 return CMvPeerNet::HandleEvent(eventSubscribe);
             }
 
@@ -242,6 +253,13 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerUnsubscribe& eventUnsubsc
 
         if (SENDER_DBPSVC == eventUnsubscribe.sender)
         {
+            network::CMvEventPeerUnsubscribe* pEvent = new network::CMvEventPeerUnsubscribe(eventUnsubscribe.nNonce, eventUnsubscribe.hashFork);
+            if (!pEvent)
+            {
+                return false;
+            }
+            pEvent->data = eventUnsubscribe.data;
+            pNetChannel->PostEvent(pEvent);
             return CMvPeerNet::HandleEvent(eventUnsubscribe);
         }
     }
