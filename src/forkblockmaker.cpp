@@ -153,10 +153,8 @@ bool CForkBlockMaker::WalleveHandleInitialize()
     }
     else
     {
-        WalleveError("ForkNodeMintConfig is invalid.\n");
-        return false;
+        WalleveWarn("ForkNodeMintConfig is null. Disabled Fork Block Maker.\n");
     }
-    
 
     return true;
 }
