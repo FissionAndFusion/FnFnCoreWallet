@@ -620,22 +620,6 @@ void CDbpServer::HandleClientMethod(CDbpServerSocket* pDbpClient, google::protob
         methodBody.method = CMvDbpMethod::SnMethod::SEND_EVENT;
         methodBody.params.insert(std::make_pair("type", event.type()));
         methodBody.params.insert(std::make_pair("data", event.data()));
-
-
-        ///
-        if(event.type() == CMvDbpVirtualPeerNetEvent::EventType::DBP_EVENT_PEER_SUBSCRIBE)
-        {
-            std::cout << "******RECVED Subscribe [rootnode][dbpserver] " << std::endl;
-            CWalleveBufStream ss;
-            ss.Write(event.data().data(), event.data().size());
-            multiverse::network::CMvEventPeerSubscribe eventSub(0,uint256());
-            ss >> eventSub;
-
-            for(const auto& fork : eventSub.data)
-            {
-                std::cout << "*****Fork ID " << fork.ToString() << " [dbpservice]" << std::endl;
-            }
-        }
     }
     else if (methodMsg.method() == "rpcroute" &&
              methodMsg.params().Is<sn::RPCRouteArgs>())
