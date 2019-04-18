@@ -252,12 +252,20 @@
             "desc": "Listen for DBP connections on <port> (default: 6815)"
         },
         {
+            "name": "fDbpListen",
+            "type": "bool",
+            "opt": "dbplisten",
+            "default": false,
+            "format": "-dbplisten",
+            "desc": "Accept DBP IPv4 connections (default: false)"
+        },
+        {
             "name": "fDbpListen4",
             "type": "bool",
             "opt": "dbplisten4",
             "default": false,
             "format": "-dbplisten4",
-            "desc": "Accept DBP IPv4 connections (default: 0)"
+            "desc": "Accept DBP IPv4 connections (default: false)"
         },
         {
             "name": "fDbpListen6",
@@ -265,7 +273,7 @@
             "opt": "dbplisten6",
             "default": false,
             "format": "-dbplisten6",
-            "desc": "Accept DBP IPv6 connections (default: 0)"
+            "desc": "Accept DBP IPv6 connections (default: false)"
         },
         {
             "name": "strDbpUser",
@@ -342,10 +350,10 @@
         {
             "name": "strParentHost",
             "type": "string",
-            "opt": "dbpparentnodeip",
+            "opt": "parentnode",
             "default": "",
-            "format": "-dbpparentnodeip=<ip>",
-            "desc": "Set dbp parent node ip to <ip> for super node(default: empty)"
+            "format": "-parentnode=<ip>:",
+            "desc": "Set parent node ip to <ip> for super node(default: empty)"
         },
         {
             "name": "fEnableForkNode",

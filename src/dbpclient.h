@@ -162,6 +162,7 @@ protected:
     void WalleveHandleDeinitialize() override;
     void EnterLoop() override;
     void LeaveLoop() override;
+    void HeartBeat() override;
 
     bool ClientConnected(CIOClient* pClient) override;
     void ClientFailToConnect(const boost::asio::ip::tcp::endpoint& epRemote) override;
@@ -197,9 +198,12 @@ protected:
     SessionClientSocketBimapType bimapSessionClientSocket;      // session id <=> CDbpClientSocket
     std::map<std::string, CDbpClientSessionProfile> mapSessionProfile; // session id => session profile
 
-
 private:
     IIOModule* pDbpService;
+    CNetHost parentHost;
+    bool fIsResolved;
+    bool fIsRootNode;
+    bool fIsSuperNode;
 };
 
 } // namespace multiverse

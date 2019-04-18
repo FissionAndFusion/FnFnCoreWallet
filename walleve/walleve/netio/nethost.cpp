@@ -70,10 +70,20 @@ unsigned short CNetHost::PortFromString(const string& strHostIn,unsigned short n
     }
     else
     {
+        // IPv6 
         size_t s = strHostIn.find("]:");
         if (s != string::npos)
         {
             port = atoi(strHostIn.substr(s + 2).c_str());
+        }
+        else
+        {
+            // domain name : port
+            size_t ss = strHostIn.find(':');
+            if (ss != string::npos)
+            {
+                port = atoi(strHostIn.substr(ss + 1).c_str());
+            }
         }
     }
     
@@ -107,7 +117,7 @@ std::string CNetHost::HostFromString(const std::string& strHostIn)
         }
         else
         {
-            host = strHostIn;
+            host = strHostIn.substr(0,strHostIn.find(':'));
         }
     }
 
