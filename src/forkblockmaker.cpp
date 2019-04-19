@@ -465,6 +465,34 @@ bool CForkBlockMaker::GetAvailableExtendedFork(std::set<uint256>& setFork)
     return (!setFork.empty());
 }
 
+static std::string ToStatusStr(int n)
+{
+    if(n == 0)
+    {
+        return std::string("MAKER_RUN");
+    }
+    else if(n == 1)
+    {
+        return std::string("MAKER_RESET");
+    }
+    else if(n == 2)
+    {
+        return std::string("MAKER_EXIT");
+    }
+    else if(n == 3)
+    {
+        return std::string("MAKER_HOLD");
+    }
+    else if(n == 4)
+    {
+        return std::string("MAKER_SKIP");
+    }
+    else
+    {
+        return std::string("unknown status");
+    }
+}
+
 void CForkBlockMaker::BlockMakerThreadFunc()
 {
     const char* ConsensusMethodName[CM_MAX] = {"mpvss","blake512"};
@@ -500,7 +528,8 @@ void CForkBlockMaker::BlockMakerThreadFunc()
         {
             boost::unique_lock<boost::mutex> lock(mutex);
 
-            std::cout << "[non-extend] current ForkMakerSatutus is " << (int)nMakerStatus << std::endl;
+            std::cout << "[non-extend] current ForkMakerSatutus is " 
+                << ToStatusStr((int)nMakerStatus) << std::endl;
             while((nMakerStatus == ForkMakerStatus::MAKER_HOLD || nMakerStatus == ForkMakerStatus::MAKER_SKIP)
                 && nMakerStatus != ForkMakerStatus::MAKER_EXIT)
             {
@@ -598,7 +627,7 @@ void CForkBlockMaker::ExtendedMakerThreadFunc()
         {
             boost::unique_lock<boost::mutex> lock(mutex);
             
-            std::cout << "[extend] current ForkMakerSatutus is " << (int)nMakerStatus << std::endl;
+            std::cout << "[extend] current ForkMakerSatutus is " << ToStatusStr((int)nMakerStatus) << std::endl;
             while((nMakerStatus == ForkMakerStatus::MAKER_HOLD || nMakerStatus == ForkMakerStatus::MAKER_SKIP) 
                 && nMakerStatus != ForkMakerStatus::MAKER_EXIT)
             {
