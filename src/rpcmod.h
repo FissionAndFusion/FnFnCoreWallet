@@ -8,7 +8,6 @@
 #include "json/json_spirit.h"
 #include <boost/function.hpp>
 #include <thread>
-#include <mutex>
 
 #include "walleve/walleve.h"
 
@@ -78,19 +77,19 @@ protected:
     struct CDestMutex
     {
         size_t nRef = 0;
-        mutable std::mutex mtx;
+        mutable boost::mutex mtx;
     };
     typedef std::shared_ptr<CDestMutex> CDestMutexPtr;
 
     class CDestForkLock
     {
     public:
-        CDestForkLock(const CDestFork& destForkIn, std::mutex& destForkMutexIn,
+        CDestForkLock(const CDestFork& destForkIn, boost::mutex& destForkMutexIn,
                       std::map<CDestFork, CDestMutexPtr>& mapDestMutexIn)
         : destFork(destForkIn), destForkMutex(destForkMutexIn), mapDestMutex(mapDestMutexIn)
         {
             {
-                std::unique_lock<std::mutex> lock(destForkMutex);
+                boost::unique_lock<boost::mutex> lock(destForkMutex);
                 auto it = mapDestMutex.find(destFork);
                 if (it == mapDestMutex.end())
                 {
@@ -105,7 +104,7 @@ protected:
         {
             spDestMutex->mtx.unlock();
             {
-                std::unique_lock<std::mutex> lock(destForkMutex);
+                boost::unique_lock<boost::mutex> lock(destForkMutex);
                 if (--spDestMutex->nRef == 0)
                 {
                     mapDestMutex.erase(destFork);
@@ -115,7 +114,7 @@ protected:
     protected:
         const CDestFork& destFork;
         std::map<CDestFork, CDestMutexPtr>& mapDestMutex;
-        std::mutex& destForkMutex;
+        boost::mutex& destForkMutex;
         CDestMutexPtr spDestMutex;
     };
 
@@ -207,7 +206,7 @@ protected:
     IService* pService;
     walleve::IIOModule* pRPCMod;
 
-    mutable std::mutex destForkMutex;
+    mutable boost::mutex destForkMutex;
     std::map<CDestFork, CDestMutexPtr> mapDestMutex;
     std::map<std::string, RPCFunc> mapRPCFunc;
 };

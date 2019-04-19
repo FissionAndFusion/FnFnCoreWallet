@@ -25,15 +25,15 @@ CWalleveMultiEventQueue::~CWalleveMultiEventQueue()
 
 void CWalleveMultiEventQueue::AddNew(CWalleveEvent* pEvent)
 {
-    shared_ptr<CEventNode> spNode = make_shared<CEventNode>(pEvent);
+    boost::shared_ptr<CEventNode> spNode(new CEventNode(pEvent));
     if (!spNode)
     {
         return;
     }
 
-    shared_ptr<CEventNode> spPrevNode;
+    boost::shared_ptr<CEventNode> spPrevNode;
     {
-        unique_lock<mutex> lock(mtxWrite);
+        boost::unique_lock<boost::mutex> lock(mtxWrite);
         if (fAbort)
         {
             return;
@@ -60,7 +60,7 @@ void CWalleveMultiEventQueue::AddNew(CWalleveEvent* pEvent)
         }
         else
         {
-            atomic_store_explicit(&spPrevNode->spNext, spNode, memory_order_release);
+            boost::atomic_store_explicit(&spPrevNode->spNext, spNode, memory_order_release);
         }
     }
         
@@ -70,7 +70,7 @@ void CWalleveMultiEventQueue::AddNew(CWalleveEvent* pEvent)
     }
 }
 
-shared_ptr<CWalleveMultiEventQueue::CEventNode> CWalleveMultiEventQueue::Fetch(shared_ptr<CEventNode> spPrevNode)
+boost::shared_ptr<CWalleveMultiEventQueue::CEventNode> CWalleveMultiEventQueue::Fetch(boost::shared_ptr<CEventNode> spPrevNode)
 {
     if (spPrevNode)
     {
@@ -78,7 +78,7 @@ shared_ptr<CWalleveMultiEventQueue::CEventNode> CWalleveMultiEventQueue::Fetch(s
         if (nOldFlag == CEventNode::LAST)
         {
             // if event queue is empty, remove this nonce from mapWrite
-            unique_lock<mutex> lock(mtxWrite);
+            boost::unique_lock<boost::mutex> lock(mtxWrite);
             auto it = mapWrite.find(spPrevNode->spEvent->nNonce);
             if (it != mapWrite.end() && (it->second == spPrevNode))
             {
@@ -88,8 +88,8 @@ shared_ptr<CWalleveMultiEventQueue::CEventNode> CWalleveMultiEventQueue::Fetch(s
         else if (nOldFlag == CEventNode::MIDDLE)
         {
             // wait for writing thread
-            shared_ptr<CEventNode> spNode;
-            while((spNode = atomic_load_explicit(&spPrevNode->spNext, memory_order_relaxed)) == NULL)
+            boost::shared_ptr<CEventNode> spNode;
+            while((spNode = boost::atomic_load_explicit(&spPrevNode->spNext, memory_order_relaxed)) == NULL)
                 ;
 
             // continue to execute next event or not
@@ -110,7 +110,7 @@ shared_ptr<CWalleveMultiEventQueue::CEventNode> CWalleveMultiEventQueue::Fetch(s
     }
 
     // wait for new event
-    unique_lock<mutex> lock(mtxRead);
+    boost::unique_lock<boost::mutex> lock(mtxRead);
     while (!fAbort && mapRead.empty())
     {
         condRead.wait(lock);
@@ -120,7 +120,7 @@ shared_ptr<CWalleveMultiEventQueue::CEventNode> CWalleveMultiEventQueue::Fetch(s
         --nReadSize;
 
         auto it = mapRead.begin();
-        shared_ptr<CEventNode> spNode = it->second;
+        boost::shared_ptr<CEventNode> spNode = it->second;
         nTime.store(spNode->nTime);
         mapRead.erase(it);
 
@@ -134,11 +134,11 @@ void CWalleveMultiEventQueue::Reset()
 {
     fAbort = false;
     {
-        unique_lock<mutex> lock(mtxWrite);
+        boost::unique_lock<boost::mutex> lock(mtxWrite);
         mapWrite.clear();
     }
     {
-        unique_lock<mutex> lock(mtxRead);
+        boost::unique_lock<boost::mutex> lock(mtxRead);
         mapRead.clear();
     }
 }
@@ -147,20 +147,20 @@ void CWalleveMultiEventQueue::Interrupt()
 {
     fAbort = true;
     {
-        unique_lock<mutex> lock(mtxWrite);
+        boost::unique_lock<boost::mutex> lock(mtxWrite);
         mapWrite.clear();
     }
     {
-        unique_lock<mutex> lock(mtxRead);
+        boost::unique_lock<boost::mutex> lock(mtxRead);
         mapRead.clear();
     }
     condRead.notify_all();
 }
 
-void CWalleveMultiEventQueue::NotifyRead(shared_ptr<CEventNode> spNode)
+void CWalleveMultiEventQueue::NotifyRead(boost::shared_ptr<CEventNode> spNode)
 {
     {
-        unique_lock<mutex> lock(mtxRead);
+        boost::unique_lock<boost::mutex> lock(mtxRead);
         if (fAbort)
         {
             return;
@@ -172,7 +172,7 @@ void CWalleveMultiEventQueue::NotifyRead(shared_ptr<CEventNode> spNode)
     condRead.notify_one();
 }
 
-bool CWalleveMultiEventQueue::ContinueExecute(shared_ptr<CEventNode> spNode)
+bool CWalleveMultiEventQueue::ContinueExecute(boost::shared_ptr<CEventNode> spNode)
 {
     return spNode && (spNode->nTime <= nTime || nReadSize == 0);
 }
@@ -232,8 +232,8 @@ void CWalleveMultiEventProc::PostEvent(CWalleveEvent *pEvent)
 
 void CWalleveMultiEventProc::EventThreadFunc()
 {
-    shared_ptr<CWalleveMultiEventQueue::CEventNode> spPreNode;
-    shared_ptr<CWalleveMultiEventQueue::CEventNode> spNode;
+    boost::shared_ptr<CWalleveMultiEventQueue::CEventNode> spPreNode;
+    boost::shared_ptr<CWalleveMultiEventQueue::CEventNode> spNode;
     while ((spNode = queEvent.Fetch(spPreNode)) != NULL)
     {
         if (!spNode->spEvent->Handle(*this))

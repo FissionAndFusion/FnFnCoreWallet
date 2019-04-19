@@ -7,10 +7,10 @@
 
 #include <atomic>
 #include <chrono>
-#include <condition_variable>
 #include <map>
-#include <mutex>
 #include <vector>
+#include <boost/thread/thread.hpp>
+#include <boost/shared_ptr.hpp>
 
 #include "walleve/base/base.h"
 #include "walleve/event/event.h"
@@ -27,8 +27,8 @@ public:
     {
         uint64 nTime;
         std::atomic<int> nFlag;
-        std::shared_ptr<CWalleveEvent> spEvent;
-        std::shared_ptr<CEventNode> spNext;
+        boost::shared_ptr<CWalleveEvent> spEvent;
+        boost::shared_ptr<CEventNode> spNext;
 
         enum FlagType
         {
@@ -47,25 +47,25 @@ public:
     CWalleveMultiEventQueue();
     ~CWalleveMultiEventQueue();
     void AddNew(CWalleveEvent* pEvent);
-    std::shared_ptr<CEventNode> Fetch(std::shared_ptr<CEventNode> spPrevNode);
+    boost::shared_ptr<CEventNode> Fetch(boost::shared_ptr<CEventNode> spPrevNode);
     void Reset();
     void Interrupt();
 
 protected:
-    void NotifyRead(std::shared_ptr<CEventNode> spNode);
-    bool ContinueExecute(std::shared_ptr<CEventNode> spNode);
+    void NotifyRead(boost::shared_ptr<CEventNode> spNode);
+    bool ContinueExecute(boost::shared_ptr<CEventNode> spNode);
 
 protected:
     std::atomic<uint64> nTime;
     std::atomic<bool> fAbort;
 
-    std::mutex mtxRead;
-    std::condition_variable condRead;
-    std::multimap<uint64, std::shared_ptr<CEventNode> > mapRead;
+    boost::mutex mtxRead;
+    boost::condition_variable condRead;
+    std::multimap<uint64, boost::shared_ptr<CEventNode> > mapRead;
     std::atomic<size_t> nReadSize;
 
-    std::mutex mtxWrite;
-    std::map<uint64, std::shared_ptr<CEventNode> > mapWrite;
+    boost::mutex mtxWrite;
+    std::map<uint64, boost::shared_ptr<CEventNode> > mapWrite;
 };
 
 class CWalleveMultiEventProc : public IWalleveBase

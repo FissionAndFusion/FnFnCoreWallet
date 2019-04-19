@@ -47,7 +47,7 @@ private:
     void ConsoleHandleOutput(const std::string& strOutput);
 public:
     static CConsole* pCurrentConsole;
-    static std::mutex mutexConsole;
+    static boost::mutex mutexConsole;
 private:
     CWalleveThread thrConsole;
     std::string strPrompt;

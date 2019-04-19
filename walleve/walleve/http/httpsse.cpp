@@ -39,7 +39,7 @@ const string& CHttpEventStream::GetEntry()
 
 void CHttpEventStream::RegisterEvent(const string& strEventName,CHttpSSEGenerator *pGenerator)
 {
-    std::unique_lock<std::mutex> lock(mtxEvent);
+    boost::unique_lock<boost::mutex> lock(mtxEvent);
     auto it = mapGenerator.find(strEventName);
     if (it != mapGenerator.end())
     {
@@ -53,13 +53,13 @@ void CHttpEventStream::RegisterEvent(const string& strEventName,CHttpSSEGenerato
 
 void CHttpEventStream::UnregisterEvent(const string& strEventName)
 {
-    std::unique_lock<std::mutex> lock(mtxEvent);
+    boost::unique_lock<boost::mutex> lock(mtxEvent);
     mapGenerator.erase(strEventName);
 }
 
 void CHttpEventStream::ResetData(const std::string& strEventName)
 {
-    std::unique_lock<std::mutex> lock(mtxEvent);
+    boost::unique_lock<boost::mutex> lock(mtxEvent);
     auto it = mapGenerator.find(strEventName);
     if (it != mapGenerator.end())
     {
@@ -69,7 +69,7 @@ void CHttpEventStream::ResetData(const std::string& strEventName)
 
 bool CHttpEventStream::UpdateEventData(const string& strEventName,CHttpSSEData& data)
 {
-    std::unique_lock<std::mutex> lock(mtxEvent);
+    boost::unique_lock<boost::mutex> lock(mtxEvent);
     auto it = mapGenerator.find(strEventName);
     if (it != mapGenerator.end())
     {
@@ -84,7 +84,7 @@ bool CHttpEventStream::UpdateEventData(const string& strEventName,CHttpSSEData& 
 
 bool CHttpEventStream::ConstructResponse(uint64 nLastEventId,CWalleveHttpRsp& rsp)
 {
-    std::unique_lock<std::mutex> lock(mtxEvent);
+    boost::unique_lock<boost::mutex> lock(mtxEvent);
 
     if (nLastEventId >= nEventId)
     {

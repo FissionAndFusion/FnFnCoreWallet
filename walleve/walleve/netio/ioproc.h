@@ -12,11 +12,9 @@
 #include "walleve/netio/iocontainer.h"
 #include <string>
 #include <map>
-#include <memory>
-#include <mutex>
-#include <condition_variable>
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp> 
+#include <boost/shared_ptr.hpp>
 
 namespace walleve
 {
@@ -40,8 +38,8 @@ public:
     void Abort();
     void Reset();
 protected:
-    std::condition_variable cond;
-    std::mutex mutex;
+    boost::condition_variable cond;
+    boost::mutex mutex;
     bool fResult;
     bool fCompleted;
     bool fAborted;
@@ -58,8 +56,8 @@ public:
     void Abort();
     void Reset();
 protected:
-    std::condition_variable_any cond;
-    std::mutex mutex;
+    boost::condition_variable_any cond;
+    boost::mutex mutex;
     int nTimeout; // microsecond
     bool fResult;
     bool fCompleted;
@@ -109,7 +107,7 @@ private:
     void IOThreadFunc();
     void IOProcHeartBeat(const boost::system::error_code& err);
     void IOProcPollTimer();
-    void IOProcHandleEvent(CWalleveEvent * pEvent,std::shared_ptr<CIOCompletion> spComplt);
+    void IOProcHandleEvent(CWalleveEvent * pEvent,boost::shared_ptr<CIOCompletion> spComplt);
     void IOProcHandleResolved(const CNetHost& host,const boost::system::error_code& err,
                               boost::asio::ip::tcp::resolver::iterator endpoint_iterator);
 private:
