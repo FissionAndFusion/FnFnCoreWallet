@@ -598,6 +598,12 @@ bool CDbpClient::WalleveHandleInitialize()
             fIsSuperNode = true;
             continue;
         }
+
+        if(confClient.fEnableSuperNode && confClient.fEnableForkNode)
+        {
+            fIsRootNode = false;
+            fIsSuperNode = true;
+        }
         
         if(!CreateProfile(confClient))
         {

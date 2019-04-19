@@ -135,7 +135,19 @@ bool CForkBlockMaker::WalleveHandleInitialize()
         {
             mapDelegatedProfile.insert(make_pair(profile.GetDestination(),profile));
         }
+        else
+        {
+            WalleveError("CForkBlockMakerProfile is invalid.\n");
+            return false;
+        }
+        
     }
+    else
+    {
+        WalleveError("ForkNodeMintConfig is invalid.\n");
+        return false;
+    }
+    
 
     return true;
 }
