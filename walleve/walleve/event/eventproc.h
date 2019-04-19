@@ -9,6 +9,7 @@
 #include "walleve/event/event.h"
 
 #include <queue>
+#include <boost/thread/thread.hpp>
 
 namespace walleve
 {

@@ -141,7 +141,6 @@ protected:
     const std::string strEntry;
     uint64 nEventId;
     std::map<std::string, std::unique_ptr<CHttpSSEGenerator>> mapGenerator;
-
 }; 
 
 } // namespace walleve

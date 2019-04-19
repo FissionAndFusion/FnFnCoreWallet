@@ -11,6 +11,7 @@
 #include <vector>
 #include <algorithm>
 #include <boost/asio/ip/address.hpp>
+#include <boost/thread/thread.hpp>
 
 namespace walleve
 {

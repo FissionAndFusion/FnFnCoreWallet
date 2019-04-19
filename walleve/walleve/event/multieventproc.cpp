@@ -14,7 +14,7 @@ using namespace walleve;
 // CWalleveMultiEventQueue
 
 CWalleveMultiEventQueue::CWalleveMultiEventQueue()
-    : fAbort(false), nTime(chrono::steady_clock::now().time_since_epoch().count())
+  : fAbort(false), nTime(chrono::steady_clock::now().time_since_epoch().count())
 {
 }
 

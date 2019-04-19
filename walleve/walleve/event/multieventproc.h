@@ -2,15 +2,15 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef WALLEVE_NAMED_EVENT_PROC_H
-#define WALLEVE_NAMED_EVENT_PROC_H
+#ifndef WALLEVE_MULTI_EVENT_PROC_H
+#define WALLEVE_MULTI_EVENT_PROC_H
 
 #include <atomic>
+#include <boost/shared_ptr.hpp>
+#include <boost/thread/thread.hpp>
 #include <chrono>
 #include <map>
 #include <vector>
-#include <boost/thread/thread.hpp>
-#include <boost/shared_ptr.hpp>
 
 #include "walleve/base/base.h"
 #include "walleve/event/event.h"
@@ -38,9 +38,10 @@ public:
         };
 
         CEventNode(CWalleveEvent* pEventIn = NULL)
-        : spEvent(pEventIn), spNext(NULL), nFlag(LAST),
+          : spEvent(pEventIn), spNext(NULL), nFlag(LAST),
             nTime(std::chrono::steady_clock::now().time_since_epoch().count())
-        {}
+        {
+        }
     };
 
 public:
@@ -61,11 +62,11 @@ protected:
 
     boost::mutex mtxRead;
     boost::condition_variable condRead;
-    std::multimap<uint64, boost::shared_ptr<CEventNode> > mapRead;
+    std::multimap<uint64, boost::shared_ptr<CEventNode>> mapRead;
     std::atomic<size_t> nReadSize;
 
     boost::mutex mtxWrite;
-    std::map<uint64, boost::shared_ptr<CEventNode> > mapWrite;
+    std::map<uint64, boost::shared_ptr<CEventNode>> mapWrite;
 };
 
 class CWalleveMultiEventProc : public IWalleveBase
@@ -88,4 +89,4 @@ protected:
 
 } // namespace walleve
 
-#endif //WALLEVE_NAMED_EVENT_PROC_H
+#endif //WALLEVE_MULTI_EVENT_PROC_H

@@ -5,6 +5,7 @@
 #ifndef  MULTIVERSE_TIMESERIES_H
 #define  MULTIVERSE_TIMESERIES_H
 
+#include <boost/thread/thread.hpp>
 #include <boost/filesystem.hpp>
 #include <walleve/walleve.h>
 #include "uint256.h"
