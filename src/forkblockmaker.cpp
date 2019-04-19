@@ -500,9 +500,11 @@ void CForkBlockMaker::BlockMakerThreadFunc()
         {
             boost::unique_lock<boost::mutex> lock(mutex);
 
+            std::cout << "[non-extend] current ForkMakerSatutus is " << (int)nMakerStatus << std::endl;
             while((nMakerStatus == ForkMakerStatus::MAKER_HOLD || nMakerStatus == ForkMakerStatus::MAKER_SKIP)
                 && nMakerStatus != ForkMakerStatus::MAKER_EXIT)
             {
+                std::cout << "Non-Extend block state machine waitting" << std::endl;
                 cond.wait(lock);
             }
 
@@ -523,6 +525,7 @@ void CForkBlockMaker::BlockMakerThreadFunc()
 
             if(agree.vBallot.empty())
             {
+                std::cout << "agree.vBallot is empty. continue" << std::endl;
                 nMakerStatus = ForkMakerStatus::MAKER_SKIP;
                 continue;
             }
@@ -549,8 +552,12 @@ void CForkBlockMaker::BlockMakerThreadFunc()
             
             if (!agree.IsProofOfWork())
             {
-                std::cout << "start Process DPoS " << std::endl;
+                std::cout << "agree is DPoS and start Process DPoS " << std::endl;
                 ProcessDelegatedProofOfStake(block,agree,nLastBlockHeight - 1); 
+            }
+            else
+            {
+                std::cout << "agree is PoW." << std::endl;
             }
             
             {
@@ -591,9 +598,11 @@ void CForkBlockMaker::ExtendedMakerThreadFunc()
         {
             boost::unique_lock<boost::mutex> lock(mutex);
             
+            std::cout << "[extend] current ForkMakerSatutus is " << (int)nMakerStatus << std::endl;
             while((nMakerStatus == ForkMakerStatus::MAKER_HOLD || nMakerStatus == ForkMakerStatus::MAKER_SKIP) 
                 && nMakerStatus != ForkMakerStatus::MAKER_EXIT)
             {
+                std::cout << "Extend block state machine is waitting." << std::endl;
                 cond.wait(lock);
             }
 
@@ -608,6 +617,7 @@ void CForkBlockMaker::ExtendedMakerThreadFunc()
             {
                 hashPrimaryBlock = hashLastBlock;
                 nMakerStatus = ForkMakerStatus::MAKER_SKIP;
+                std::cout << "[extend]currentAgree is Pow . continue" << std::endl;
                 continue;
             }
 
