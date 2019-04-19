@@ -340,9 +340,12 @@ bool CNetChannel::IsForkSynchronized(const uint256& hashFork) const
 
 void CNetChannel::BroadcastBlockInv(const uint256& hashFork,const uint256& hashBlock)
 {
-    CSchedule& sched = GetSchedule(hashFork);
     set<uint64> setKnownPeer;
-    sched.GetKnownPeer(network::CInv(network::CInv::MSG_BLOCK,hashBlock), setKnownPeer);
+    {
+        boost::recursive_mutex::scoped_lock scoped_lock(mtxSched);
+        CSchedule& sched = GetSchedule(hashFork);
+        sched.GetKnownPeer(network::CInv(network::CInv::MSG_BLOCK,hashBlock), setKnownPeer);
+    }
 
     network::CMvEventPeerInv eventInv(0,hashFork);
     eventInv.sender = "netchannel";
