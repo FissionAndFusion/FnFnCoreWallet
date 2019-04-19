@@ -17,11 +17,11 @@ namespace multiverse
 namespace network 
 {
 
-class IMvNetChannel : public walleve::IIOModule, virtual public CMvPeerEventListener
+class IMvNetChannel : public walleve::IIOMultiModule, virtual public CMvPeerEventListener
 {
 public:
     IMvNetChannel(const uint nThreadIn = 1, const bool fAffinityIn = false)
-    : IIOModule("netchannel", nThreadIn, fAffinityIn)
+    : IIOMultiModule("netchannel", nThreadIn, fAffinityIn)
     {}
 
     virtual int32 GetPrimaryChainHeight() = 0;
