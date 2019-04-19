@@ -294,14 +294,14 @@ void CDispatcher::UpdatePrimaryBlock(const CBlock& block,const CWorldLineUpdate&
         pBlockMakerUpdate->data.nAgreement = proof.nAgreement;
         pBlockMakerUpdate->data.nWeight = proof.nWeight;
         
-        std::cout << "###########################\n";
+        std::cout << "###########################" << std::endl;
         std::cout << std::dec;
-        std::cout << "new block hash " << block.GetHash().ToString() << '\n';
-        std::cout << "new block time " << block.nTimeStamp << '\n';
+        std::cout << "new block hash " << block.GetHash().ToString() << std::endl;
+        std::cout << "new block time " << block.nTimeStamp << std::endl;
         int nHeight = 0;
         uint256 hashFork;
         pWorldLine->GetBlockLocation(block.GetHash(),hashFork, nHeight);
-        std::cout << "new block height " << nHeight << '\n';
+        std::cout << "new block height " << nHeight << std::endl;
 
         pBlockMaker->PostEvent(pBlockMakerUpdate);
     }

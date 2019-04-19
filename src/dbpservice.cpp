@@ -771,10 +771,10 @@ void CDbpService::HandleSendEvent(CMvEventDbpMethod& event)
 
             if(IsRootNodeOfSuperNode())
             {
-                std::cout << "#############[rootnode] "  << "Subscribe Fork: [dbpservice]" << std::endl;
+                //std::cout << "#############[rootnode] "  << "Subscribe Fork: [dbpservice]" << std::endl;
                 for(const auto& fork : eventUpSub.data)
                 {
-                    std::cout << "Fork ID " << fork.ToString() << " [dbpservice]" << std::endl;
+                    //std::cout << "Fork ID " << fork.ToString() << " [dbpservice]" << std::endl;
                 }
                 eventUpSub.flow = "up";
                 eventUpSub.sender = "dbpservice";
@@ -854,13 +854,13 @@ void CDbpService::HandleSendEvent(CMvEventDbpMethod& event)
 
         if(IsRootNodeOfSuperNode())
         {
-            std::cout << "#############[rootnode] "  << "GetData Begin [dbpservice]" << std::endl;
-            std::cout << "[rootnode] Get Data fork "  << eventGetData.hashFork.ToString() << std::endl;
+            //std::cout << "#############[rootnode] "  << "GetData Begin [dbpservice]" << std::endl;
+            //std::cout << "[rootnode] Get Data fork "  << eventGetData.hashFork.ToString() << std::endl;
             for(const auto& inv : eventGetData.data)
             {
-                std::cout << "Get Data Inv Hash " << inv.nHash.ToString() << std::endl;
+              //std::cout << "Get Data Inv Hash " << inv.nHash.ToString() << std::endl;
             }
-            std::cout << "#############[rootnode] "  << "GetData End [dbpservice]" << std::endl;
+            //std::cout << "#############[rootnode] "  << "GetData End [dbpservice]" << std::endl;
                
             eventGetData.flow = "up";
             eventGetData.sender = "dbpservice";
@@ -895,7 +895,7 @@ void CDbpService::HandleSendEvent(CMvEventDbpMethod& event)
             ss >> eventInv;
             eventInv.sender = "dbpservice";
             eventInv.flow = "up";
-            std::cout << "from down to up Peer Inv " <<  eventInv.hashFork.ToString() << " [rootnode dbpservice]" << std::endl;
+            //std::cout << "from down to up Peer Inv " <<  eventInv.hashFork.ToString() << " [rootnode dbpservice]" << std::endl;
             pVirtualPeerNet->DispatchEvent(&eventInv);
         }
         
@@ -1647,11 +1647,11 @@ void CDbpService::UpdateGetDataEventRecord(const CMvEventPeerGetData& event)
     std::set<uint256> setInvHash;
     std::for_each(event.data.begin(), event.data.end(), [&](const CInv& inv) {
         setInvHash.insert(inv.nHash);
-        std::cout << "Get Data Inv Hash " << inv.nHash.ToString() << " [dbpservice]" << std::endl;
+        //std::cout << "Get Data Inv Hash " << inv.nHash.ToString() << " [dbpservice]" << std::endl;
     });
 
-    std::cout << "Get Data nonce " << nNonce << " [dbpservice]" << std::endl;
-    std::cout << "Get Data hashFork " << hashFork.ToString() << " [dbpservice]" << std::endl;
+    //std::cout << "Get Data nonce " << nNonce << " [dbpservice]" << std::endl;
+    //std::cout << "Get Data hashFork " << hashFork.ToString() << " [dbpservice]" << std::endl;
 
     mapThisNodeGetData[std::make_pair(hashFork, nNonce)] = setInvHash;
 }

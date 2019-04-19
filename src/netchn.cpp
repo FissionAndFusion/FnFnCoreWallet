@@ -545,12 +545,12 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerInv& eventInv)
     uint256& hashFork = eventInv.hashFork;
     
 
-    std::cout << " PeerInv nonce " << nNonce << " [netchannel]" << std::endl;
-    std::cout << " PeerInv hash fork " << hashFork.ToString() << " [netchannel]" << std::endl;
+    //std::cout << " PeerInv nonce " << nNonce << " [netchannel]" << std::endl;
+    //std::cout << " PeerInv hash fork " << hashFork.ToString() << " [netchannel]" << std::endl;
 
     for(const auto& inv : eventInv.data)
     {
-        std::cout << "Inv Hash " << inv.nHash.ToString() << " [netchannel]" << std::endl;
+        //std::cout << "Inv Hash " << inv.nHash.ToString() << " [netchannel]" << std::endl;
     }
     
     try 
@@ -732,10 +732,10 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerBlock& eventBlock)
     CBlock& block = eventBlock.data;
     uint256 hash = block.GetHash();
 
-    std::cout << "######### NODE RECV PEER BLOCK##########" << std::endl;
-    std::cout << "Block Fork " << hashFork.ToString() << std::endl;
-    std::cout << "Block hash " << hash.ToString() << std::endl;
-    std::cout << "Block Type " << block.nType << std::endl;
+    //std::cout << "######### NODE RECV PEER BLOCK##########" << std::endl;
+    //std::cout << "Block Fork " << hashFork.ToString() << std::endl;
+    //std::cout << "Block hash " << hash.ToString() << std::endl;
+    //std::cout << "Block Type " << block.nType << std::endl;
 
     try
     {
@@ -746,19 +746,19 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerBlock& eventBlock)
         
         if (!sched.ReceiveBlock(nNonce,hash,block,setSchedPeer))
         {
-            std::cout << "Failed recved block " << hash.ToString() << " [netchannel]" << std::endl;
+            //std::cout << "Failed recved block " << hash.ToString() << " [netchannel]" << std::endl;
             throw runtime_error("Failed to receive block");
         }
 
         uint256 hashForkPrev;
         int32 nHeightPrev;
-        std::cout << "GetBlockLocation block prev hash " << block.hashPrev.ToString() << std::endl;
+        //std::cout << "GetBlockLocation block prev hash " << block.hashPrev.ToString() << std::endl;
         if (pWorldLine->GetBlockLocation(block.hashPrev,hashForkPrev,nHeightPrev))
         {
-            std::cout << "GetBlockLocation return true" << std::endl;
-            std::cout << "nHeightPrev " << hashForkPrev.ToString() << std::endl;
-            std::cout << "hashForkPrev " << hashForkPrev.ToString() << std::endl;
-            std::cout << "hashFork " << hashFork.ToString() << std::endl;
+            //std::cout << "GetBlockLocation return true" << std::endl;
+            //std::cout << "nHeightPrev " << hashForkPrev.ToString() << std::endl;
+            //std::cout << "hashForkPrev " << hashForkPrev.ToString() << std::endl;
+            //std::cout << "hashFork " << hashFork.ToString() << std::endl;
             if (hashForkPrev == hashFork)
             {
                AddNewBlock(hashFork,hash,sched,setSchedPeer,setMisbehavePeer);
@@ -770,7 +770,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerBlock& eventBlock)
         }
         else
         {
-            std::cout << "GetBlockLocation return false" << std::endl;
+            //std::cout << "GetBlockLocation return false" << std::endl;
             sched.AddOrphanBlockPrev(hash,block.hashPrev);
         }
 
@@ -842,7 +842,7 @@ void CNetChannel::SchedulePeerInv(uint64 nNonce,const uint256& hashFork,CSchedul
         if (fMissingPrev)
         {
             DispatchGetBlocksEvent(nNonce,hashFork);
-            std::cout << "called Dispatch GetBlocks [netchannel SchedulePeerInv]" << std::endl;
+            //std::cout << "called Dispatch GetBlocks [netchannel SchedulePeerInv]" << std::endl;
         }
         else if (eventGetData.data.empty())
         {
@@ -857,22 +857,22 @@ void CNetChannel::SchedulePeerInv(uint64 nNonce,const uint256& hashFork,CSchedul
             }
         }
 
-        std::cout << "fEMpty " << fEmpty << " [netchannel SchedulePeerInv]" << std::endl;
+        //std::cout << "fEMpty " << fEmpty << " [netchannel SchedulePeerInv]" << std::endl;
         SetPeerSyncStatus(nNonce,hashFork,fEmpty);
     }
     else
     {
-        std::cout << "ScheduleBlockInv return false [netchannel SchedulePeerInv]" << std::endl;
+        //std::cout << "ScheduleBlockInv return false [netchannel SchedulePeerInv]" << std::endl;
         if(nNonce != std::numeric_limits<uint64>::max())
         {
-            std::cout << "Dispatch Event DDOS (ScheduleBlockInv return false) [netchannel]" << std::endl;
+            //std::cout << "Dispatch Event DDOS (ScheduleBlockInv return false) [netchannel]" << std::endl;
             DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK,"SchedulePeerInv2");
         }
     }
     if (!eventGetData.data.empty())
     {
         pPeerNet->DispatchEvent(&eventGetData);
-        std::cout << "called Dispatch GetData [netchannel SchedulePeerInv]" << std::endl;
+        //std::cout << "called Dispatch GetData [netchannel SchedulePeerInv]" << std::endl;
     }
 }
 
