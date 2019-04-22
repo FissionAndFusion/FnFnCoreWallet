@@ -650,7 +650,7 @@ void CForkBlockMaker::ExtendedMakerThreadFunc()
                 || currentAgreement.nWeight != nLastWeight) 
             {
                 hashPrimaryBlock = hashLastBlock;
-                nMakerStatus = ForkMakerStatus::MAKER_SKIP;
+                //nMakerStatus = ForkMakerStatus::MAKER_SKIP;
                 std::cout << "[extend]currentAgree is Pow . continue" << std::endl;
                 continue;
             }
