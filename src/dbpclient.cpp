@@ -819,16 +819,6 @@ void CDbpClient::StartPingTimer(const std::string& session)
                                                     boost::ref(profile)));
 }
 
-void CDbpClient::ResolveHandler(const boost::system::error_code& err)
-{
-    if (err != boost::system::errc::success)
-    {
-        return;
-    }
-    
-    ResolveHost(parentHost);
-}
-
 void CDbpClient::SubscribeDefaultTopics(CDbpClientSocket* pClientSocket)
 {
     std::vector<std::string> vTopics{ RPC_CMD_TOPIC };
