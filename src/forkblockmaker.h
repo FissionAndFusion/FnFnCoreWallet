@@ -77,7 +77,7 @@ protected:
     bool GetAvailableDelegatedProfile(const std::vector<CDestination>& vBallot,std::vector<CForkBlockMakerProfile*>& vProfile);
     bool GetAvailableExtendedFork(std::set<uint256>& setFork);
 private:
-    enum class ForkMakerStatus : int {MAKER_RUN=0,MAKER_RESET=1,MAKER_EXIT=2,MAKER_HOLD=3,MAKER_SKIP=4};
+    enum class ForkMakerStatus : int {MAKER_RUN=0,MAKER_RESET=1,MAKER_EXIT=2,MAKER_HOLD=3,MAKER_SKIP=4,MAKER_EXTEND_SKIP=5};
     void BlockMakerThreadFunc();
     void ExtendedMakerThreadFunc();
 

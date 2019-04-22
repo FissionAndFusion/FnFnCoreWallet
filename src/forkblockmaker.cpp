@@ -550,7 +550,9 @@ void CForkBlockMaker::ExtendedMakerThreadFunc()
         {
             boost::unique_lock<boost::mutex> lock(mutex);
             
-            while((nMakerStatus == ForkMakerStatus::MAKER_HOLD || nMakerStatus == ForkMakerStatus::MAKER_SKIP) 
+            while((nMakerStatus == ForkMakerStatus::MAKER_HOLD 
+                || nMakerStatus == ForkMakerStatus::MAKER_SKIP
+                || nMakerStatus == ForkMakerStatus::MAKER_EXTEND_SKIP) 
                 && nMakerStatus != ForkMakerStatus::MAKER_EXIT)
             {
                 cond.wait(lock);
@@ -566,6 +568,7 @@ void CForkBlockMaker::ExtendedMakerThreadFunc()
                 || currentAgreement.nWeight != nLastWeight) 
             {
                 hashPrimaryBlock = hashLastBlock;
+                nMakerStatus = ForkMakerStatus::MAKER_EXTEND_SKIP;
                 continue;
             }
 
