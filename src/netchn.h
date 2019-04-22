@@ -72,7 +72,7 @@ public:
     void SubscribeForks(uint64 nNonce, const std::vector<uint256>& hashForks);
     void UnsubscribeForks(uint64 nNonce, const std::vector<uint256>& hashForks);
     void AddKnownTx(uint64 nNonce, const uint256& hashFork, const std::vector<uint256>& vTxHash);
-    bool SetPeerSyncStatus(uint64 nNonce, const uint256& hashFork, bool fSync, bool fInverted);
+    bool SetPeerSyncStatus(uint64 nNonce, const uint256& hashFork, bool fSync, bool& fInverted);
     void DeletePeerUnSyncByFork(uint64 nNonce, const uint256& hashFork);
     void InsertPeerUnSyncByFork(uint64 nNonce, const uint256& hashFork);
     bool IsPeerEmpty();
