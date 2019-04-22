@@ -105,7 +105,7 @@ void CConcurrentPeerNetData::AddKnownTx(uint64 nNonce, const uint256& hashFork, 
     mapPeer[nNonce].AddKnownTx(hashFork,vTxHash);
 }
 
-bool CConcurrentPeerNetData::SetPeerSyncStatus(uint64 nNonce, const uint256& hashFork, bool fSync, bool fInverted)
+bool CConcurrentPeerNetData::SetPeerSyncStatus(uint64 nNonce, const uint256& hashFork, bool fSync, bool& fInverted)
 {
     WriteLocker wlockPeer(rwPeer);
     CNetChannelPeer& peer = mapPeer[nNonce];
