@@ -75,6 +75,34 @@ CForkBlockMaker::~CForkBlockMaker()
     }
     mapHashAlgo.clear();
 }
+
+static std::string ToStatusStr(int n)
+{
+    if(n == 0)
+    {
+        return std::string("MAKER_RUN");
+    }
+    else if(n == 1)
+    {
+        return std::string("MAKER_RESET");
+    }
+    else if(n == 2)
+    {
+        return std::string("MAKER_EXIT");
+    }
+    else if(n == 3)
+    {
+        return std::string("MAKER_HOLD");
+    }
+    else if(n == 4)
+    {
+        return std::string("MAKER_SKIP");
+    }
+    else
+    {
+        return std::string("unknown status");
+    }
+}
     
 bool CForkBlockMaker::HandleEvent(CMvEventBlockMakerUpdate& eventUpdate)
 {
@@ -86,15 +114,17 @@ bool CForkBlockMaker::HandleEvent(CMvEventBlockMakerUpdate& eventUpdate)
         nLastBlockHeight = eventUpdate.data.nBlockHeight;
         nLastAgreement = eventUpdate.data.nAgreement;
         nLastWeight = eventUpdate.data.nWeight;
-    }
-    cond.notify_all();
 
-    std::cout << "Handle Event ForkBlockMaker " << std::endl;
-    std::cout << "UpdateEvent Block hash " << hashLastBlock.ToString() << std::endl;
-    std::cout << "UpdateEvent Block Time " << nLastBlockTime << std::endl;
-    std::cout << "UpdateEvent Block Height " << nLastBlockHeight << std::endl;
-    std::cout << "UpdateEvent Block agreement " << nLastAgreement.ToString() << std::endl;
-    std::cout << "UpdateEvent Block weight " << nLastWeight << std::endl;
+        std::cout << "Handle Event ForkBlockMaker " << std::endl;
+        std::cout << "UpdateEvent Block hash " << hashLastBlock.ToString() << std::endl;
+        std::cout << "UpdateEvent Block Time " << nLastBlockTime << std::endl;
+        std::cout << "UpdateEvent Block Height " << nLastBlockHeight << std::endl;
+        std::cout << "UpdateEvent Block agreement " << nLastAgreement.ToString() << std::endl;
+        std::cout << "UpdateEvent Block weight " << nLastWeight << std::endl;
+        std::cout << "UpdateEvent ForkMaker Current status " << ToStatusStr((int)nMakerStatus) << std::endl; 
+    }
+
+    cond.notify_all();
     
     return true;
 }
@@ -465,34 +495,6 @@ bool CForkBlockMaker::GetAvailableExtendedFork(std::set<uint256>& setFork)
     return (!setFork.empty());
 }
 
-static std::string ToStatusStr(int n)
-{
-    if(n == 0)
-    {
-        return std::string("MAKER_RUN");
-    }
-    else if(n == 1)
-    {
-        return std::string("MAKER_RESET");
-    }
-    else if(n == 2)
-    {
-        return std::string("MAKER_EXIT");
-    }
-    else if(n == 3)
-    {
-        return std::string("MAKER_HOLD");
-    }
-    else if(n == 4)
-    {
-        return std::string("MAKER_SKIP");
-    }
-    else
-    {
-        return std::string("unknown status");
-    }
-}
-
 void CForkBlockMaker::BlockMakerThreadFunc()
 {
     const char* ConsensusMethodName[CM_MAX] = {"mpvss","blake512"};
@@ -533,6 +535,8 @@ void CForkBlockMaker::BlockMakerThreadFunc()
             while((nMakerStatus == ForkMakerStatus::MAKER_HOLD || nMakerStatus == ForkMakerStatus::MAKER_SKIP)
                 && nMakerStatus != ForkMakerStatus::MAKER_EXIT)
             {
+                std::cout << "[non-extend] current ForkMakerSatutus is " 
+                    << ToStatusStr((int)nMakerStatus) << std::endl;
                 std::cout << "Non-Extend block state machine waitting" << std::endl;
                 cond.wait(lock);
             }
@@ -631,6 +635,7 @@ void CForkBlockMaker::ExtendedMakerThreadFunc()
             while((nMakerStatus == ForkMakerStatus::MAKER_HOLD || nMakerStatus == ForkMakerStatus::MAKER_SKIP) 
                 && nMakerStatus != ForkMakerStatus::MAKER_EXIT)
             {
+                std::cout << "[extend] current ForkMakerSatutus is " << ToStatusStr((int)nMakerStatus) << std::endl;
                 std::cout << "Extend block state machine is waitting." << std::endl;
                 cond.wait(lock);
             }
