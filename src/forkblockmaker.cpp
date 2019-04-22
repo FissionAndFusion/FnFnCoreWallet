@@ -650,7 +650,6 @@ void CForkBlockMaker::ExtendedMakerThreadFunc()
                 || currentAgreement.nWeight != nLastWeight) 
             {
                 hashPrimaryBlock = hashLastBlock;
-                //nMakerStatus = ForkMakerStatus::MAKER_SKIP;
                 std::cout << "[extend]currentAgree is Pow . continue" << std::endl;
                 continue;
             }
@@ -663,7 +662,6 @@ void CForkBlockMaker::ExtendedMakerThreadFunc()
 
         try
         {
-            std::cout << "start Process Extended Block" << std::endl;
             ProcessExtended(agree,hashPrimaryBlock,nPrimaryBlockTime,nPrimaryBlockHeight);
         }
         catch (const std::exception& e)
