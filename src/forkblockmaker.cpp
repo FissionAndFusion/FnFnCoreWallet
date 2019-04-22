@@ -566,7 +566,6 @@ void CForkBlockMaker::ExtendedMakerThreadFunc()
                 || currentAgreement.nWeight != nLastWeight) 
             {
                 hashPrimaryBlock = hashLastBlock;
-                nMakerStatus = ForkMakerStatus::MAKER_SKIP;
                 continue;
             }
 
