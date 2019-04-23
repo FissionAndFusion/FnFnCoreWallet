@@ -102,6 +102,11 @@ static std::string ToStatusStr(int n)
     {
         return std::string("MAKER_EXTEND_RUN");
     }
+    else
+    {
+        return std::string("UNKNOWN STATUS");
+    }
+    
 }
     
 bool CForkBlockMaker::HandleEvent(CMvEventBlockMakerUpdate& eventUpdate)
