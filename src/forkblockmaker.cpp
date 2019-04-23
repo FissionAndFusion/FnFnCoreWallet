@@ -98,9 +98,9 @@ static std::string ToStatusStr(int n)
     {
         return std::string("MAKER_SKIP");
     }
-    else
+    else if(n == 5)
     {
-        return std::string("unknown status");
+        return std::string("MAKER_EXTEND_RUN");
     }
 }
     
@@ -235,8 +235,10 @@ void CForkBlockMaker::WalleveHandleHalt()
     {
         boost::unique_lock<boost::mutex> lock(mutex);
         nMakerStatus = ForkMakerStatus::MAKER_EXIT;
+        nExtendMakerStatus = ForkExtendMakerStatus::MAKER_EXIT;
     }
     cond.notify_all();
+    condExtend.notify_all();
 
     thrMaker.Interrupt();
     WalleveThreadExit(thrMaker);
@@ -576,7 +578,10 @@ void CForkBlockMaker::BlockMakerThreadFunc()
             }
 
             nMakerStatus = ForkMakerStatus::MAKER_RUN;
+            nExtendMakerStatus = ForkExtendMakerStatus::MAKER_RUN;
         }
+        
+        condExtend.notify_all();
 
         CBlock block;
         try
@@ -586,7 +591,7 @@ void CForkBlockMaker::BlockMakerThreadFunc()
             if (!agree.IsProofOfWork())
             {
                 std::cout << "agree is DPoS and start Process DPoS " << std::endl;
-                ProcessDelegatedProofOfStake(block,agree,nLastBlockHeight - 1); 
+                ProcessDelegatedProofOfStake(block,agree,nLastBlockHeight - 1);
             }
             else
             {
@@ -631,8 +636,8 @@ void CForkBlockMaker::ExtendedMakerThreadFunc()
         {
             boost::unique_lock<boost::mutex> lock(mutex);
             
-            std::cout << "[extend] current ForkMakerSatutus is " << ToStatusStr((int)nMakerStatus) << std::endl;
-            while((nMakerStatus == ForkMakerStatus::MAKER_HOLD 
+            std::cout << "[extend] current ForkMakerSatutus is " << ToStatusStr((int)nExtendMakerStatus) << std::endl;
+           /* while((nMakerStatus == ForkMakerStatus::MAKER_HOLD 
                 || nMakerStatus == ForkMakerStatus::MAKER_SKIP
                 || nMakerStatus == ForkMakerStatus::MAKER_EXTEND_SKIP) 
                 && nMakerStatus != ForkMakerStatus::MAKER_EXIT)
@@ -640,6 +645,15 @@ void CForkBlockMaker::ExtendedMakerThreadFunc()
                 std::cout << "[extend] current ForkMakerSatutus is " << ToStatusStr((int)nMakerStatus) << std::endl;
                 std::cout << "Extend block state machine is waitting." << std::endl;
                 cond.wait(lock);
+            }*/
+
+            while((nExtendMakerStatus == ForkExtendMakerStatus::MAKER_HOLD 
+                || nExtendMakerStatus == ForkExtendMakerStatus::MAKER_SKIP) 
+                && nExtendMakerStatus != ForkExtendMakerStatus::MAKER_EXIT)
+            {
+                std::cout << "[extend] current ForkMakerSatutus is " << ToStatusStr((int)nExtendMakerStatus) << std::endl;
+                std::cout << "Extend block state machine is waitting." << std::endl;
+                condExtend.wait(lock);
             }
 
             if (nMakerStatus == ForkMakerStatus::MAKER_EXIT)
@@ -653,7 +667,7 @@ void CForkBlockMaker::ExtendedMakerThreadFunc()
             {
                 hashPrimaryBlock = hashLastBlock;
                 std::cout << "[extend]currentAgree is Pow . continue" << std::endl;
-                nMakerStatus = ForkMakerStatus::MAKER_EXTEND_SKIP;
+                nExtendMakerStatus = ForkExtendMakerStatus::MAKER_SKIP;
                 continue;
             }
 
@@ -666,6 +680,10 @@ void CForkBlockMaker::ExtendedMakerThreadFunc()
         try
         {
             ProcessExtended(agree,hashPrimaryBlock,nPrimaryBlockTime,nPrimaryBlockHeight);
+            {
+                boost::unique_lock<boost::mutex> lock(mutex);
+                nExtendMakerStatus = ForkExtendMakerStatus::MAKER_HOLD;
+            }
         }
         catch (const std::exception& e)
         {
