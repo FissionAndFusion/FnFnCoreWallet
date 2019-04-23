@@ -18,6 +18,7 @@ CVirtualPeerNet::CVirtualPeerNet()
 {
     pDbpService = NULL;
     pCoreProtocol = NULL;
+    pForkManager = NULL;
     typeNode = SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN;
 }
 
@@ -88,6 +89,7 @@ void CVirtualPeerNet::WalleveHandleDeinitialize()
 
     pDbpService = NULL;
     pCoreProtocol = NULL;
+    pForkManager = NULL;
 }
 
 //must be invoked by dbpservice only to notify netchannel
