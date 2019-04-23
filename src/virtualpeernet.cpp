@@ -746,3 +746,8 @@ bool CVirtualPeerNet::IsMainFork(const uint256& hashFork)
 {
     return hashFork == pCoreProtocol->GetGenesisBlockHash();
 }
+
+bool CVirtualPeerNet::IsMyFork(const uint256& hashFork)
+{
+    return pForkManager->IsAllowed(hashFork);
+}
