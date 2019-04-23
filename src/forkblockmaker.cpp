@@ -632,7 +632,9 @@ void CForkBlockMaker::ExtendedMakerThreadFunc()
             boost::unique_lock<boost::mutex> lock(mutex);
             
             std::cout << "[extend] current ForkMakerSatutus is " << ToStatusStr((int)nMakerStatus) << std::endl;
-            while((nMakerStatus == ForkMakerStatus::MAKER_HOLD || nMakerStatus == ForkMakerStatus::MAKER_SKIP) 
+            while((nMakerStatus == ForkMakerStatus::MAKER_HOLD 
+                || nMakerStatus == ForkMakerStatus::MAKER_SKIP
+                || nMakerStatus == ForkMakerStatus::MAKER_EXTEND_SKIP) 
                 && nMakerStatus != ForkMakerStatus::MAKER_EXIT)
             {
                 std::cout << "[extend] current ForkMakerSatutus is " << ToStatusStr((int)nMakerStatus) << std::endl;
@@ -651,6 +653,7 @@ void CForkBlockMaker::ExtendedMakerThreadFunc()
             {
                 hashPrimaryBlock = hashLastBlock;
                 std::cout << "[extend]currentAgree is Pow . continue" << std::endl;
+                nMakerStatus = ForkMakerStatus::MAKER_EXTEND_SKIP;
                 continue;
             }
 
