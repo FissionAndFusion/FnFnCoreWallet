@@ -53,8 +53,8 @@ bool CForkBlockMakerProfile::BuildTemplate()
 CForkBlockMaker::CForkBlockMaker()
 : thrMaker("blockmaker",boost::bind(&CForkBlockMaker::BlockMakerThreadFunc,this)), 
   thrExtendedMaker("extendedmaker",boost::bind(&CForkBlockMaker::ExtendedMakerThreadFunc,this)), 
-  nMakerStatus(ForkMakerStatus::MAKER_HOLD),hashLastBlock(uint64(0)),nLastBlockTime(0),
-  nLastBlockHeight(0),nLastAgreement(uint64(0)),nLastWeight(0)
+  nMakerStatus(ForkMakerStatus::MAKER_HOLD),nExtendMakerStatus(ForkExtendMakerStatus::MAKER_HOLD),
+  hashLastBlock(uint64(0)),nLastBlockTime(0),nLastBlockHeight(0),nLastAgreement(uint64(0)),nLastWeight(0)
 {
     pCoreProtocol = NULL;
     pWorldLine = NULL;
@@ -642,16 +642,7 @@ void CForkBlockMaker::ExtendedMakerThreadFunc()
             boost::unique_lock<boost::mutex> lock(mutex);
             
             std::cout << "[extend] current ForkMakerSatutus is " << ToStatusStr((int)nExtendMakerStatus) << std::endl;
-           /* while((nMakerStatus == ForkMakerStatus::MAKER_HOLD 
-                || nMakerStatus == ForkMakerStatus::MAKER_SKIP
-                || nMakerStatus == ForkMakerStatus::MAKER_EXTEND_SKIP) 
-                && nMakerStatus != ForkMakerStatus::MAKER_EXIT)
-            {
-                std::cout << "[extend] current ForkMakerSatutus is " << ToStatusStr((int)nMakerStatus) << std::endl;
-                std::cout << "Extend block state machine is waitting." << std::endl;
-                cond.wait(lock);
-            }*/
-
+         
             while((nExtendMakerStatus == ForkExtendMakerStatus::MAKER_HOLD 
                 || nExtendMakerStatus == ForkExtendMakerStatus::MAKER_SKIP) 
                 && nExtendMakerStatus != ForkExtendMakerStatus::MAKER_EXIT)
@@ -661,7 +652,7 @@ void CForkBlockMaker::ExtendedMakerThreadFunc()
                 condExtend.wait(lock);
             }
 
-            if (nMakerStatus == ForkMakerStatus::MAKER_EXIT)
+            if (nExtendMakerStatus == ForkExtendMakerStatus::MAKER_EXIT)
             {
                 break;
             }
