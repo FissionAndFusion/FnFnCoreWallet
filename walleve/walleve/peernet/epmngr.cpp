@@ -13,6 +13,8 @@ using boost::asio::ip::tcp;
 ///////////////////////////////
 // CConnAttempt
 
+static bool gIsInBound = false;
+
 CConnAttempt::CConnAttempt()
 : nAttempts(0),nStartIndex(0),nStartTime(0) 
 {
@@ -58,12 +60,14 @@ CAddressStatus::CAddressStatus()
 
 bool CAddressStatus::InBoundAttempt(int64 ts)
 {
+    std::cout << "InBoundAttempt entry" << std::endl;
     nLastSeen = ts;
     if (connAttempt.Attempt(ts))
     {
+        std::cout << "ts " << ts << " BanTo " << nBanTo << std::endl;
         return (ts > nBanTo);
     }
-    
+    std::cout << "InBoundAttempt return false" << std::endl;
     Penalize(ATTEMPT_PENALTY,ts); 
     return false;
 }
@@ -72,6 +76,7 @@ bool CAddressStatus::AddConnection(bool fInBound)
 {
     if (nConnections >= (fInBound ? CONNECTION_LIMIT : 1))
     {
+        std::cout << "Add Connection return false" << std::endl;
         return false;
     }
     nConnections++;
@@ -224,10 +229,17 @@ bool CEndpointManager::FetchOutBound(tcp::endpoint& ep)
         if(iter != mapRemoteEPNodeId.end())
         {
             CAddressStatus& status = mapAddressStatus[mapRemoteEPNodeId[ep]];
+            std::cout << "[FetchOutBound][Before AddConnection] " <<
+                " BanTo " << status.nBanTo << " Socre " << status.nScore << " LastSeen "
+                << status.nLastSeen << std::endl;  
             if (status.AddConnection(false))
             {
+                std::cout << "[FetchOutBound][After AddConnection] " <<
+                " BanTo " << status.nBanTo << " Socre " << status.nScore << " LastSeen "
+                << status.nLastSeen << std::endl;  
                 return true;
             }
+            std::cout << "[FetchOutBound] Dimiss" << std::endl;
             mngrNode.Dismiss(ep,false);
         }
         else
@@ -241,6 +253,7 @@ bool CEndpointManager::FetchOutBound(tcp::endpoint& ep)
 
 bool CEndpointManager::AcceptInBound(const tcp::endpoint& ep)
 {
+    std::cout << "AcceptInBound Entry" << std::endl;
     int64 now = GetTime();
     
     auto iter = mapRemoteEPNodeId.find(ep);
@@ -272,6 +285,8 @@ void CEndpointManager::RewardEndpoint(const tcp::endpoint& ep,Bonus bonus)
 
 void CEndpointManager::CloseEndpoint(const tcp::endpoint& ep,CloseReason reason)
 {
+    std::cout << "Close EndPoint " << ep.address().to_string() << ":" << ep.port() << std::endl;
+    std::cout << "Close Reason " << (int)reason << std::endl;
     int64 now = GetTime();
     /*
         HOST_CLOSE => 0 points,
@@ -378,17 +393,26 @@ void CEndpointManager::CleanInactiveAddress()
 
 bool CEndpointManager::AddNewEndPointNodeId(const boost::asio::ip::tcp::endpoint& ep, const uint256& addr, bool IsInBound)
 {
+    std::cout << "AddNewEndPointNodeId Entry" << std::endl;
     mapRemoteEPNodeId[ep] = addr;
     mngrNode.AddNewEndPointNodeId(ep, addr);
     if(IsInBound)
     {
+        std::cout << "<<<<<<<<<<<<<<<<<<<<<" << std::endl;
         int64 now = GetTime();
         CAddressStatus& status = mapAddressStatus[mapRemoteEPNodeId[ep]];
+         std::cout << "[AddNewEndPointNodeId] " <<
+                " BanTo " << status.nBanTo << " Socre " << status.nScore << " LastSeen "
+                << status.nLastSeen << std::endl;  
         return (status.InBoundAttempt(now) && status.AddConnection(true));
     }
     else
     {
+        std::cout << ">>>>>>>>>>>>>>>>>>>>>" << std::endl;
         CAddressStatus& status = mapAddressStatus[mapRemoteEPNodeId[ep]];
+        std::cout << "[AddNewEndPointNodeId] " <<
+                " BanTo " << status.nBanTo << " Socre " << status.nScore << " LastSeen "
+                << status.nLastSeen << std::endl;  
         if (!status.AddConnection(false))
         {
             mngrNode.Dismiss(ep,false);
