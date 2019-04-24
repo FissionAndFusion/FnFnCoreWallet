@@ -187,7 +187,7 @@ BOOST_AUTO_TEST_CASE( interpolation )
 BOOST_AUTO_TEST_CASE( mpvss )
 {
     srand(time(0));
-    for (size_t count = 1; count <= 2; count++)
+    for (size_t count = 50; count <= 50; count++)
     {
         uint256 nInitValue;
         std::vector<uint256> vID;
@@ -238,7 +238,7 @@ BOOST_AUTO_TEST_CASE( mpvss )
             {
                 if (i != j)
                 {
-                    mapSS[vID[j]].Accept(vID[i],mapShare[vID[j]]);
+                    BOOST_CHECK( mapSS[vID[j]].Accept(vID[i],mapShare[vID[j]]) );
                 }
             }
         }
@@ -246,27 +246,46 @@ BOOST_AUTO_TEST_CASE( mpvss )
 
         // Publish
         t0 = boost::posix_time::microsec_clock::universal_time();
-        bool fCompleted;
+        std::vector< std::map<uint256,std::vector<uint256> > > vecMapShare;
+        vecMapShare.resize(count);
         for (int i = 0;i < count;i++)
         {
-            std::map<uint256,std::vector<uint256> > mapShare;
-            mapSS[vID[i]].Publish(mapShare);
+            mapSS[vID[i]].Publish(vecMapShare[i]);
+        }
+
+        for (int i = 0;i < count;i++)
+        {
+            bool fCompleted = false;
             for (int j = 0;j < count;j++)
             {
-                fCompleted = false;
-                mapSS[vID[j]].Collect(vID[i],mapShare,fCompleted);
+                int indexFrom = (i + j) % count;
+                BOOST_CHECK( mapSS[vID[i]].Collect(vID[indexFrom], vecMapShare[indexFrom], fCompleted) );
             }
-            fCompleted = false;
-            ssWitness.Collect(vID[i],mapShare,fCompleted);
+            BOOST_CHECK( fCompleted );
         }
+
+        bool fCompleted = false;
+        for (int i = 0; i < count; i++)
+        {
+            BOOST_CHECK( ssWitness.Collect(vID[i],vecMapShare[i],fCompleted) );
+        }
+        BOOST_CHECK( fCompleted );
+
         std::cout << "\tPublish : " << ((boost::posix_time::microsec_clock::universal_time() - t0).ticks() / count) <<"\n";
 
         // Reconstruct 
         t0 = boost::posix_time::microsec_clock::universal_time();
         for (int i = 0;i < count;i++)
         {
+            uint256 nRecValue;
             std::map<uint256,std::pair<uint256,std::size_t> > mapSecret;
             mapSS[vID[i]].Reconstruct(mapSecret);
+            for (std::map<uint256,std::pair<uint256,std::size_t> >::iterator it = mapSecret.begin();it != mapSecret.end();++it)
+            {
+                nRecValue = nRecValue ^ (*it).second.first;
+            }
+            std::cout << "\tReconstruct candidate " << i << " : " << nRecValue.GetHex() << "\n";
+            BOOST_CHECK( nRecValue == nInitValue );
         }
         std::cout << "\tReconstruct : " << ((boost::posix_time::microsec_clock::universal_time() - t0).ticks() / count) <<"\n";;
 
@@ -277,11 +296,41 @@ BOOST_AUTO_TEST_CASE( mpvss )
         {
             nRecValue = nRecValue ^ (*it).second.first;
         }
-        std::cout << "\tReconstruct value = " << nRecValue.GetHex() << "\n";
+        std::cout << "\tReconstruct witness : " << nRecValue.GetHex() << "\n";
         std::cout << "}\n";
 
         BOOST_CHECK( nRecValue == nInitValue );
     }
+}
+
+BOOST_AUTO_TEST_CASE( generate_pow_code )
+{
+    std::cout << "{" << std::endl;
+    for (int i = 1; i <= 51; i++)
+    {
+        std::cout << "    // " << i << "^1 ... " << i << "^26" << std::endl;
+        std::cout << "    {" << std::endl;
+        CSC25519 base(1);
+        uint256 ret;
+        for (int j = 1; j <= 26; j++)
+        {
+            base *= i;
+            base.Pack(ret.begin());
+            const uint64* p = (const uint64*)ret.begin();
+            std::cout << "        CSC25519({";
+            for (int k = 0; k < 4; k++)
+            {
+                std::cout << "0x" << std::hex << *p++ << std::resetiosflags(std::ios_base::basefield);
+                if (k < 3)
+                {
+                    std::cout << ",";
+                }
+            }
+            std::cout << "})," << std::endl;
+        }
+        std::cout << "    }," << std::endl;
+    }
+    std::cout << "};" << std::endl;
 }
 
 BOOST_AUTO_TEST_SUITE_END()
