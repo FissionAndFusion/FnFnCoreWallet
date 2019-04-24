@@ -934,6 +934,10 @@ void CDbpService::HandleSendEvent(CMvEventDbpMethod& event)
         {
             CMvEventPeerBlock eventBlock(0,uint256());
             ss >> eventBlock;
+
+            std::cout << "#######from down to up Block: nonce " << std::hex << 
+                eventBlock.nNonce << std::endl;
+
             eventBlock.sender = "dbpservice";
             eventBlock.flow = "up";
             pVirtualPeerNet->DispatchEvent(&eventBlock);
@@ -1499,6 +1503,11 @@ bool CDbpService::HandleEvent(CMvEventDbpVirtualPeerNet& event)
         CMvEventPeerSubscribe eventSub(0, uint256());
         ss >> eventSub;
 
+        std::cout << "####### from up to down SUBSCRIBE :" << std::endl;
+        for(const auto& fork : eventSub.data)
+        {
+            std::cout << "Subscribed fork " << fork.ToString() << std::endl;
+        }
         if(IsMyFork(eventSub.hashFork))
         {
             eventSub.sender = "dbpservice";
@@ -1533,6 +1542,8 @@ bool CDbpService::HandleEvent(CMvEventDbpVirtualPeerNet& event)
         CMvEventPeerGetBlocks eventGetBlocks(0, uint256());
         ss >> eventGetBlocks;
 
+        std::cout << "####### from up to down GETBLOCKS " << 
+            eventGetBlocks.hashFork.ToString() << std::endl;
         if(IsMyFork(eventGetBlocks.hashFork))
         {
             eventGetBlocks.sender = "dbpservice";
@@ -1550,6 +1561,8 @@ bool CDbpService::HandleEvent(CMvEventDbpVirtualPeerNet& event)
         CMvEventPeerGetData eventGetData(0, uint256());
         ss >> eventGetData; 
 
+        std::cout << "####### from up to down GETDATA " << 
+            eventGetData.hashFork.ToString() << std::endl;
         if(IsMyFork(eventGetData.hashFork))
         {
             eventGetData.sender = "dbpservice";
@@ -1569,12 +1582,12 @@ bool CDbpService::HandleEvent(CMvEventDbpVirtualPeerNet& event)
 
         if(IsMyFork(eventInv.hashFork))
         {
-            std::cout << "[forknode] [<] Peer Inv Fork " << eventInv.hashFork.ToString() << " [dbpservice]" << std::endl; 
-            std::cout << "[forknode] [<] Peer Inv Nonce " << eventInv.nNonce << " [dbpservice]" << std::endl;
+            //std::cout << "[forknode] [<] Peer Inv Fork " << eventInv.hashFork.ToString() << " [dbpservice]" << std::endl; 
+            //std::cout << "[forknode] [<] Peer Inv Nonce " << eventInv.nNonce << " [dbpservice]" << std::endl;
             
             for(const auto& inv : eventInv.data)
             {
-                std::cout << "[forknode] [<] inv hash " << inv.nHash.ToString() << std::endl;
+               //std::cout << "[forknode] [<] inv hash " << inv.nHash.ToString() << std::endl;
             }
             eventInv.sender = "dbpservice";
             eventInv.flow = "down";
@@ -1589,14 +1602,14 @@ bool CDbpService::HandleEvent(CMvEventDbpVirtualPeerNet& event)
         CMvEventPeerTx eventTx(0, uint256());
         ss >> eventTx;
 
-        std::cout << "[forknode] From up to down:  Peer Tx Hash " << eventTx.data.GetHash().ToString() << " [dbpservice]" << std::endl; 
+        //std::cout << "[forknode] From up to down:  Peer Tx Hash " << eventTx.data.GetHash().ToString() << " [dbpservice]" << std::endl; 
         
         if(IsMyFork(eventTx.hashFork) && 
             IsThisNodeData(eventTx.hashFork, eventTx.nNonce, eventTx.data.GetHash()))
         {
-            std::cout << "[forknode] [<] Peer Tx Fork " << eventTx.hashFork.ToString() << " [dbpservice]" << std::endl; 
-            std::cout << "[forknode] [<] Peer Tx Nonce " << eventTx.nNonce << " [dbpservice]" << std::endl;
-            std::cout << "[forknode] [<] Peer Tx Hash " << eventTx.data.GetHash().ToString() << " [dbpservice]" << std::endl; 
+            //std::cout << "[forknode] [<] Peer Tx Fork " << eventTx.hashFork.ToString() << " [dbpservice]" << std::endl; 
+            //std::cout << "[forknode] [<] Peer Tx Nonce " << eventTx.nNonce << " [dbpservice]" << std::endl;
+            //std::cout << "[forknode] [<] Peer Tx Hash " << eventTx.data.GetHash().ToString() << " [dbpservice]" << std::endl; 
             
             eventTx.sender = "dbpservice";
             eventTx.flow = "down";
@@ -1611,14 +1624,14 @@ bool CDbpService::HandleEvent(CMvEventDbpVirtualPeerNet& event)
         CMvEventPeerBlock eventBlock(0, uint256());
         ss >> eventBlock;
 
-        std::cout << "[forknode] From up to down:  Peer Block Hash " << eventBlock.data.GetHash().ToString() << " [dbpservice]" << std::endl; 
+        //std::cout << "[forknode] From up to down:  Peer Block Hash " << eventBlock.data.GetHash().ToString() << " [dbpservice]" << std::endl; 
         
         if(IsMyFork(eventBlock.hashFork) && 
             IsThisNodeData(eventBlock.hashFork, eventBlock.nNonce, eventBlock.data.GetHash()))
         {
-            std::cout << "[forknode] [<] Peer Block Fork " << eventBlock.hashFork.ToString() << " [dbpservice]" << std::endl; 
-            std::cout << "[forknode] [<] Peer Block Nonce " << eventBlock.nNonce << " [dbpservice]" << std::endl;
-            std::cout << "[forknode] [<] Peer Block Hask " << eventBlock.data.GetHash().ToString() << " [dbpservice]" << std::endl; 
+            //std::cout << "[forknode] [<] Peer Block Fork " << eventBlock.hashFork.ToString() << " [dbpservice]" << std::endl; 
+            //std::cout << "[forknode] [<] Peer Block Nonce " << eventBlock.nNonce << " [dbpservice]" << std::endl;
+            //std::cout << "[forknode] [<] Peer Block Hask " << eventBlock.data.GetHash().ToString() << " [dbpservice]" << std::endl; 
             
             eventBlock.sender = "dbpservice";
             eventBlock.flow = "down";

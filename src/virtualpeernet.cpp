@@ -513,7 +513,10 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerTx& eventTx)
 
         if(SENDER_DBPSVC == eventTx.sender)
         {
-            return true; // TODO: send logic
+            if(std::numeric_limits<uint64>::max() != eventTx.nNonce)
+            {
+                return CMvPeerNet::HandleEvent(eventTx);
+            }
         }
     }
 
@@ -568,7 +571,10 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerBlock& eventBlock)
 
         if(SENDER_DBPSVC == eventBlock.sender)
         {
-            return true; // TODO: send logic
+            if(std::numeric_limits<uint64>::max() != eventBlock.nNonce)
+            {
+                return CMvPeerNet::HandleEvent(eventBlock);
+            }
         }
     }
 
