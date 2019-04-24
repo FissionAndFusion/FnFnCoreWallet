@@ -213,7 +213,6 @@ void CPeerNet::RemovePeer(CPeer *pPeer,const CEndpointManager::CloseReason& reas
    
     CancelClientTimers(pPeer->GetNonce()); 
     mapPeer.erase(pPeer->GetNonce());
-    epMngr.RemoveEndPointNodeId(pPeer->GetRemote());
     DestroyPeer(pPeer);
 }
 
