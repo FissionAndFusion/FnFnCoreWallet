@@ -470,6 +470,12 @@ bool CMvPeerNet::IsMainFork(const uint256& hashFork)
     return false;
 }
 
+bool CMvPeerNet::IsMyFork(const uint256& hashFork)
+{
+    (void)hashFork;
+    return false;
+}
+
 bool CMvPeerNet::IsThisNodeData(const uint256& hashFork, uint64 nNonce, const uint256& dataHash)
 {
     auto pairKey = std::make_pair(hashFork, nNonce);
@@ -646,7 +652,7 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                     CBlockLocator payload;
                     ssPayload >> payload;
 
-                    if(IsMainFork(hashFork))
+                    if(IsMainFork(hashFork) || IsMyFork(hashFork))
                     {
                         CMvEventPeerGetBlocks* pEvent = new CMvEventPeerGetBlocks(pMvPeer->GetNonce(), hashFork);
                         if (pEvent != NULL)
@@ -678,7 +684,7 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                     vector<CInv> payload;
                     ssPayload >> payload;
 
-                    if(IsMainFork(hashFork))
+                    if(IsMainFork(hashFork) || IsMyFork(hashFork))
                     {
                         vector<CInv> vInv;
                         vInv = payload;
@@ -719,7 +725,7 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                     vector<CInv> payload;
                     ssPayload >> payload;
 
-                    if(IsMainFork(hashFork))
+                    if(IsMainFork(hashFork) || IsMyFork(hashFork))
                     {
                         CMvEventPeerInv* pEvent = new CMvEventPeerInv(pMvPeer->GetNonce(), hashFork);
                         if (pEvent != NULL)
@@ -768,7 +774,8 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                     CTransaction payload;
                     ssPayload >> payload;
 
-                    if(IsMainFork(hashFork) && IsThisNodeData(hashFork, pMvPeer->GetNonce(), payload.GetHash()))
+                    if((IsMainFork(hashFork) || IsMyFork(hashFork)) 
+                        && IsThisNodeData(hashFork, pMvPeer->GetNonce(), payload.GetHash()))
                     {
                         CMvEventPeerTx* pEvent = new CMvEventPeerTx(pMvPeer->GetNonce(), hashFork);
                         if (pEvent != NULL)
@@ -804,7 +811,8 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                     CBlock payload;
                     ssPayload >> payload;
 
-                    if(IsMainFork(hashFork) && IsThisNodeData(hashFork, pMvPeer->GetNonce(), payload.GetHash()))
+                    if((IsMainFork(hashFork) || IsMyFork(hashFork)) 
+                        && IsThisNodeData(hashFork, pMvPeer->GetNonce(), payload.GetHash()))
                     {
                         CMvEventPeerBlock* pEvent = new CMvEventPeerBlock(pMvPeer->GetNonce(), hashFork);
                         if (pEvent != NULL)

@@ -589,6 +589,11 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerGetData& eventGetData)
                 eventTx.sender = "netchannel";
             }
 
+            if("down" == flow)
+            {
+                eventTx.sender = "netchannel";
+            }
+
             if (pTxPool->Get(inv.nHash,eventTx.data))
             {
                 pPeerNet->DispatchEvent(&eventTx);
@@ -601,6 +606,11 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerGetData& eventGetData)
             if("up" == flow)
             {
                 eventBlock.nNonce = std::numeric_limits<uint64>::max();
+                eventBlock.sender = "netchannel";
+            }
+
+            if("down" == flow)
+            {
                 eventBlock.sender = "netchannel";
             }
 
@@ -633,6 +643,11 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerGetBlocks& eventGetBlocks)
     if("up" == flow)
     {
         eventInv.nNonce = std::numeric_limits<uint64>::max();
+        eventInv.sender = "netchannel";
+    }
+
+    if("down" == flow)
+    {
         eventInv.sender = "netchannel";
     }
 

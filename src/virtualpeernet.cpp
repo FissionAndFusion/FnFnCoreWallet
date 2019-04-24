@@ -16,6 +16,7 @@ CVirtualPeerNet::CVirtualPeerNet()
 {
     pDbpService = NULL;
     pCoreProtocol = NULL;
+    pForkManager = NULL;
     typeNode = SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN;
 }
 
@@ -86,6 +87,7 @@ void CVirtualPeerNet::WalleveHandleDeinitialize()
 
     pDbpService = NULL;
     pCoreProtocol = NULL;
+    pForkManager = NULL;
 }
 
 //must be invoked by dbpservice only to notify netchannel
@@ -178,7 +180,7 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerSubscribe& eventSubscribe
             vector<uint256> vMyFork;
             for (auto subHash = vHashFork.cbegin(); subHash != vHashFork.cend(); ++subHash)
             {
-                if(IsMainFork(*subHash) || pForkManager->IsAllowed(*subHash))
+                if(IsMainFork(*subHash) || IsMyFork(*subHash))
                 {
                     vMyFork.push_back(*subHash);
                 }
@@ -254,7 +256,7 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerUnsubscribe& eventUnsubsc
             vector<uint256> vMyFork;
             for (auto subHash = vHashFork.cbegin(); subHash != vHashFork.cend(); ++subHash)
             {
-                if (IsMainFork(*subHash) || pForkManager->IsAllowed(*subHash))
+                if (IsMainFork(*subHash) || IsMyFork(*subHash))
                 {
                     vMyFork.push_back(*subHash);
                 }
@@ -341,7 +343,7 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerInv& eventInv)
 
         if (SENDER_DBPSVC == eventInv.sender)
         {
-            if (IsMainFork(eventInv.hashFork) || pForkManager->IsAllowed(eventInv.hashFork))
+            if (IsMainFork(eventInv.hashFork) || IsMyFork(eventInv.hashFork))
             {
                 network::CMvEventPeerInv* pEvent = new network::CMvEventPeerInv(eventInv);
                 if (!pEvent)
@@ -460,7 +462,7 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerGetBlocks& eventGetBlocks
 
         if(SENDER_DBPSVC == eventGetBlocks.sender)
         {
-            if (IsMainFork(eventGetBlocks.hashFork) || pForkManager->IsAllowed(eventGetBlocks.hashFork))
+            if (IsMainFork(eventGetBlocks.hashFork) || IsMyFork(eventGetBlocks.hashFork))
             {
                 network::CMvEventPeerGetBlocks* pEvent = new network::CMvEventPeerGetBlocks(eventGetBlocks);
                 pEvent->sender = "virtualpeernet";
@@ -740,4 +742,9 @@ bool CVirtualPeerNet::HandleRootPeerTx(const uint64& nNonce, const uint256& hash
 bool CVirtualPeerNet::IsMainFork(const uint256& hashFork)
 {
     return hashFork == pCoreProtocol->GetGenesisBlockHash();
+}
+
+bool CVirtualPeerNet::IsMyFork(const uint256& hashFork)
+{
+    return pForkManager->IsAllowed(hashFork);
 }
