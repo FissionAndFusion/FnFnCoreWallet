@@ -629,6 +629,14 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerGetData& eventGetData)
             {
                 pPeerNet->DispatchEvent(&eventTx);
             }
+            else if (pWorldLine->GetTransaction(inv.nHash, eventTx.data))
+            {
+                pPeerNet->DispatchEvent(&eventTx);
+            }
+            else
+            {
+                // TODO: Penalize
+            }
         }
         else if (inv.nType == network::CInv::MSG_BLOCK)
         {
@@ -648,6 +656,10 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerGetData& eventGetData)
             if (pWorldLine->GetBlock(inv.nHash,eventBlock.data))
             {
                 pPeerNet->DispatchEvent(&eventBlock);
+            }
+            else
+            {
+                // TODO: Penalize
             }
         }
     }
