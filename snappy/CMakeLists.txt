@@ -7,6 +7,8 @@ option(BUILD_SHARED_LIBS "Build shared libraries(DLLs)." OFF)
 
 option(SNAPPY_BUILD_TESTS "Build Snappy's own tests." OFF)
 
+option(SNAPPY_INSTALL "Install Snappy's header and library" OFF)
+
 include(TestBigEndian)
 test_big_endian(SNAPPY_IS_BIG_ENDIAN)
 
@@ -140,35 +142,37 @@ if(SNAPPY_BUILD_TESTS)
     COMMAND "${PROJECT_BINARY_DIR}/snappy_unittest")
 endif(SNAPPY_BUILD_TESTS)
 
-include(GNUInstallDirs)
-install(TARGETS snappy
-  EXPORT SnappyTargets
-  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-)
-install(
-  FILES
-    "${PROJECT_SOURCE_DIR}/snappy-c.h"
-    "${PROJECT_SOURCE_DIR}/snappy-sinksource.h"
-    "${PROJECT_SOURCE_DIR}/snappy.h"
-    "${PROJECT_BINARY_DIR}/snappy-stubs-public.h"
-  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-)
+if(SNAPPY_INSTALL)
+  include(GNUInstallDirs)
+  install(TARGETS snappy
+    EXPORT SnappyTargets
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  )
+  install(
+    FILES
+      "${PROJECT_SOURCE_DIR}/snappy-c.h"
+      "${PROJECT_SOURCE_DIR}/snappy-sinksource.h"
+      "${PROJECT_SOURCE_DIR}/snappy.h"
+      "${PROJECT_BINARY_DIR}/snappy-stubs-public.h"
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  )
 
-include(CMakePackageConfigHelpers)
-write_basic_package_version_file(
-    "${PROJECT_BINARY_DIR}/SnappyConfigVersion.cmake"
-    COMPATIBILITY SameMajorVersion
-)
-install(
-  EXPORT SnappyTargets
-  NAMESPACE Snappy::
-  DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/Snappy"
-)
-install(
-  FILES
-    "${PROJECT_SOURCE_DIR}/cmake/SnappyConfig.cmake"
-    "${PROJECT_BINARY_DIR}/SnappyConfigVersion.cmake"
-  DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/Snappy"
-)
+  include(CMakePackageConfigHelpers)
+  write_basic_package_version_file(
+      "${PROJECT_BINARY_DIR}/SnappyConfigVersion.cmake"
+      COMPATIBILITY SameMajorVersion
+  )
+  install(
+    EXPORT SnappyTargets
+    NAMESPACE Snappy::
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/Snappy"
+  )
+  install(
+    FILES
+      "${PROJECT_SOURCE_DIR}/cmake/SnappyConfig.cmake"
+      "${PROJECT_BINARY_DIR}/SnappyConfigVersion.cmake"
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/Snappy"
+  )
+endif(SNAPPY_INSTALL)
