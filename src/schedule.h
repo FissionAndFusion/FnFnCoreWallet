@@ -75,7 +75,7 @@ public:
         
         for(const auto& s :  GetAssigned(inv.nType))
         {
-            std::cout << "Assigned Inv Hash " << s.ToString() << " completed [schedule]\n"; 
+            std::cout << "Assigned Inv Hash " << s.ToString() << " completed [schedule]" << std::endl; 
         }
         
         
@@ -85,21 +85,21 @@ public:
     {
         if(!invKnown[0].setAssigned.empty())
         {
-            std::cout << "assigned[0] is not empty [schedule]\n";
+            std::cout << "assigned[0] is not empty [schedule]" << std::endl;
 
             for(const auto& assigned : invKnown[0].setAssigned)
             {
-                std::cout << "assigned hash " << assigned.ToString() << " [schedule]\n";
+                std::cout << "assigned hash " << assigned.ToString() << " [schedule]" << std::endl;
             }
         }
 
         if(!invKnown[1].setAssigned.empty())
         {
-            std::cout << "assigned[1] is not empty [schedule]\n";
+            std::cout << "assigned[1] is not empty [schedule]" << std::endl;
 
             for(const auto& assigned : invKnown[1].setAssigned)
             {
-                std::cout << "assigned hash " << assigned.ToString() << " [schedule]\n";
+                std::cout << "assigned hash " << assigned.ToString() << " [schedule]" << std::endl;
             }
         }
         
