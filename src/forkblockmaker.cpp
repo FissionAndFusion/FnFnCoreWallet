@@ -53,8 +53,8 @@ bool CForkBlockMakerProfile::BuildTemplate()
 CForkBlockMaker::CForkBlockMaker()
 : thrMaker("blockmaker",boost::bind(&CForkBlockMaker::BlockMakerThreadFunc,this)), 
   thrExtendedMaker("extendedmaker",boost::bind(&CForkBlockMaker::ExtendedMakerThreadFunc,this)), 
-  nMakerStatus(ForkMakerStatus::MAKER_HOLD),hashLastBlock(uint64(0)),nLastBlockTime(0),
-  nLastBlockHeight(0),nLastAgreement(uint64(0)),nLastWeight(0)
+  nMakerStatus(ForkMakerStatus::MAKER_HOLD),nExtendMakerStatus(ForkExtendMakerStatus::MAKER_HOLD),
+  hashLastBlock(uint64(0)),nLastBlockTime(0),nLastBlockHeight(0),nLastAgreement(uint64(0)),nLastWeight(0)
 {
     pCoreProtocol = NULL;
     pWorldLine = NULL;
@@ -144,10 +144,8 @@ bool CForkBlockMaker::WalleveHandleInitialize()
     }
     else
     {
-        WalleveError("ForkNodeMintConfig is invalid.\n");
-        return false;
+        WalleveWarn("ForkNodeMintConfig is null. Disabled Fork Block Maker.\n");
     }
-    
 
     return true;
 }
@@ -198,8 +196,10 @@ void CForkBlockMaker::WalleveHandleHalt()
     {
         boost::unique_lock<boost::mutex> lock(mutex);
         nMakerStatus = ForkMakerStatus::MAKER_EXIT;
+        nExtendMakerStatus = ForkExtendMakerStatus::MAKER_EXIT;
     }
     cond.notify_all();
+    condExtend.notify_all();
 
     thrMaker.Interrupt();
     WalleveThreadExit(thrMaker);
@@ -503,7 +503,10 @@ void CForkBlockMaker::BlockMakerThreadFunc()
             currentAgreement = agree;
             
             nMakerStatus = ForkMakerStatus::MAKER_RUN;
+            nExtendMakerStatus = ForkExtendMakerStatus::MAKER_RUN;
         }
+
+        condExtend.notify_all();
 
         CBlock block;
         try
@@ -552,13 +555,14 @@ void CForkBlockMaker::ExtendedMakerThreadFunc()
         {
             boost::unique_lock<boost::mutex> lock(mutex);
             
-            while((nMakerStatus == ForkMakerStatus::MAKER_HOLD || nMakerStatus == ForkMakerStatus::MAKER_SKIP) 
-                && nMakerStatus != ForkMakerStatus::MAKER_EXIT)
+            while((nExtendMakerStatus == ForkExtendMakerStatus::MAKER_HOLD 
+                || nExtendMakerStatus == ForkExtendMakerStatus::MAKER_SKIP) 
+                && nExtendMakerStatus != ForkExtendMakerStatus::MAKER_EXIT)
             {
-                cond.wait(lock);
+                condExtend.wait(lock);
             }
 
-            if (nMakerStatus == ForkMakerStatus::MAKER_EXIT)
+            if (nExtendMakerStatus == ForkExtendMakerStatus::MAKER_EXIT)
             {
                 break;
             }
@@ -568,7 +572,7 @@ void CForkBlockMaker::ExtendedMakerThreadFunc()
                 || currentAgreement.nWeight != nLastWeight) 
             {
                 hashPrimaryBlock = hashLastBlock;
-                nMakerStatus = ForkMakerStatus::MAKER_SKIP;
+                nExtendMakerStatus = ForkExtendMakerStatus::MAKER_SKIP;
                 continue;
             }
 
@@ -581,6 +585,10 @@ void CForkBlockMaker::ExtendedMakerThreadFunc()
         try
         {
             ProcessExtended(agree,hashPrimaryBlock,nPrimaryBlockTime,nPrimaryBlockHeight);
+            {
+                boost::unique_lock<boost::mutex> lock(mutex);
+                nExtendMakerStatus = ForkExtendMakerStatus::MAKER_HOLD;
+            }
         }
         catch (const std::exception& e)
         {

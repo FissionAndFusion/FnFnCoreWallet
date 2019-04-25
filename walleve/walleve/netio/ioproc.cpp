@@ -305,6 +305,24 @@ void CIOProc::ResolveHost(const CNetHost& host)
                                            boost::asio::placeholders::iterator));
 }
 
+bool CIOProc::ResolveHostSync(const CNetHost& host, boost::asio::ip::tcp::endpoint& ep)
+{
+    std::stringstream ss;
+    ss << host.nPort;
+    tcp::resolver::query query(host.strHost,ss.str());
+    boost::system::error_code err;
+    auto iter = resolverHost.resolve(query,err);
+    if(!err)
+    {
+        ep = *iter;
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
 void CIOProc::EnterLoop() 
 {
 }

@@ -54,9 +54,11 @@ protected:
     bool HandleRootPeerTx(const uint64& nNonce, const uint256& hashFork, CTransaction& data) override;
 
     bool IsMainFork(const uint256& hashFork) override;
+    bool IsMyFork(const uint256& hashFork) override;
 protected:
     walleve::IIOModule* pDbpService;
     ICoreProtocol* pCoreProtocol;
+    IForkManager* pForkManager;
 private:
     static const std::string SENDER_NETCHN;
     static const std::string SENDER_DBPSVC;

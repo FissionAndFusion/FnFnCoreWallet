@@ -162,7 +162,6 @@ protected:
     void WalleveHandleDeinitialize() override;
     void EnterLoop() override;
     void LeaveLoop() override;
-    void HeartBeat() override;
 
     bool ClientConnected(CIOClient* pClient) override;
     void ClientFailToConnect(const boost::asio::ip::tcp::endpoint& epRemote) override;
@@ -176,6 +175,7 @@ protected:
    
     void StartPingTimer(const std::string& session);
     void SendPingHandler(const boost::system::error_code& err, const CDbpClientSessionProfile& sessionProfile);
+    
     void SubscribeDefaultTopics(CDbpClientSocket* pClientSocket);
     void CreateSession(const std::string& session, CDbpClientSocket* pClientSocket);
     bool HaveAssociatedSessionOf(CDbpClientSocket* pClientSocket);
@@ -201,7 +201,6 @@ protected:
 private:
     IIOModule* pDbpService;
     CNetHost parentHost;
-    bool fIsResolved;
     bool fIsRootNode;
     bool fIsSuperNode;
 };

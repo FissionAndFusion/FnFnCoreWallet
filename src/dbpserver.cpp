@@ -183,7 +183,7 @@ void CDbpServerSocket::SendResponse(const std::string& client, CMvDbpAdded& body
     }
     else
     {
-        std::cerr << "Unknown added type.\n";
+        std::cerr << "Unknown added type." << std::endl;
         return;
     }
 
@@ -954,7 +954,7 @@ void CDbpServer::SendPingHandler(const boost::system::error_code& err, const CSe
 
     if(IsSessionTimeOut(sessionProfile.pDbpClient))
     {
-        std::cerr << "######### dbp server session time out ############\n";
+        std::cerr << "######### dbp server session time out ############" << std::endl;
         HandleClientError(sessionProfile.pDbpClient);
         return;
     }

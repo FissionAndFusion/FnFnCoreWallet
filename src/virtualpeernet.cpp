@@ -16,6 +16,7 @@ CVirtualPeerNet::CVirtualPeerNet()
 {
     pDbpService = NULL;
     pCoreProtocol = NULL;
+    pForkManager = NULL;
     typeNode = SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN;
 }
 
@@ -71,6 +72,12 @@ bool CVirtualPeerNet::WalleveHandleInitialize()
         return false;
     }
 
+    if(!WalleveGetObject("forkmanager", pForkManager))
+    {
+        WalleveLog("Failed to request forkmanager\n");
+        return false;
+    }
+
     return true;
 }
 
@@ -80,6 +87,7 @@ void CVirtualPeerNet::WalleveHandleDeinitialize()
 
     pDbpService = NULL;
     pCoreProtocol = NULL;
+    pForkManager = NULL;
 }
 
 //must be invoked by dbpservice only to notify netchannel
@@ -168,13 +176,13 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerSubscribe& eventSubscribe
         if(SENDER_DBPSVC == eventSubscribe.sender)
         {
             vector<uint256> vHashFork = eventSubscribe.data;
-            vector<uint256> vMain;
             vector<uint256> vFork;
+            vector<uint256> vMyFork;
             for (auto subHash = vHashFork.cbegin(); subHash != vHashFork.cend(); ++subHash)
             {
-                if (IsMainFork(*subHash))
+                if(IsMainFork(*subHash) || IsMyFork(*subHash))
                 {
-                    vMain.push_back(*subHash);
+                    vMyFork.push_back(*subHash);
                 }
                 else
                 {
@@ -182,7 +190,7 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerSubscribe& eventSubscribe
                 }
             }
 
-            if (!vMain.empty())
+            if (!vMyFork.empty())
             {
                 network::CMvEventPeerSubscribe* pEvent = new network::CMvEventPeerSubscribe(eventSubscribe.nNonce, eventSubscribe.hashFork);
                 if (!pEvent)
@@ -190,14 +198,15 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerSubscribe& eventSubscribe
                     return false;
                 }
 
-                pEvent->data = vMain;
+                pEvent->data = vMyFork;
                 pNetChannel->PostEvent(pEvent);
             }
 
             if (!vFork.empty())
-            { network::CMvEventPeerSubscribe event(eventSubscribe.nNonce, eventSubscribe.hashFork);
+            { 
+                network::CMvEventPeerSubscribe event(eventSubscribe.nNonce, eventSubscribe.hashFork);
                 event.data = vFork;
-                return CMvPeerNet::HandleEvent(eventSubscribe);
+                return CMvPeerNet::HandleEvent(event);
             }
 
             return true;
@@ -242,7 +251,40 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerUnsubscribe& eventUnsubsc
 
         if (SENDER_DBPSVC == eventUnsubscribe.sender)
         {
-            return CMvPeerNet::HandleEvent(eventUnsubscribe);
+            vector<uint256> vHashFork = eventUnsubscribe.data;
+            vector<uint256> vFork;
+            vector<uint256> vMyFork;
+            for (auto subHash = vHashFork.cbegin(); subHash != vHashFork.cend(); ++subHash)
+            {
+                if (IsMainFork(*subHash) || IsMyFork(*subHash))
+                {
+                    vMyFork.push_back(*subHash);
+                }
+                else
+                {
+                    vFork.push_back(*subHash);
+                }
+            }
+            
+            if(!vMyFork.empty())
+            {
+                network::CMvEventPeerUnsubscribe* pEvent = new network::CMvEventPeerUnsubscribe(eventUnsubscribe.nNonce, eventUnsubscribe.hashFork);
+                if (!pEvent)
+                {
+                    return false;
+                }
+
+                pEvent->data = vMyFork;
+                pNetChannel->PostEvent(pEvent);
+            }
+            
+            if(!vFork.empty())
+            {
+                network::CMvEventPeerUnsubscribe event(eventUnsubscribe.nNonce, eventUnsubscribe.hashFork);
+                event.data = vFork;
+                return CMvPeerNet::HandleEvent(event);
+            }
+            return true;
         }
     }
 
@@ -301,7 +343,7 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerInv& eventInv)
 
         if (SENDER_DBPSVC == eventInv.sender)
         {
-            if (IsMainFork(eventInv.hashFork))
+            if (IsMainFork(eventInv.hashFork) || IsMyFork(eventInv.hashFork))
             {
                 network::CMvEventPeerInv* pEvent = new network::CMvEventPeerInv(eventInv);
                 if (!pEvent)
@@ -420,7 +462,7 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerGetBlocks& eventGetBlocks
 
         if(SENDER_DBPSVC == eventGetBlocks.sender)
         {
-            if (IsMainFork(eventGetBlocks.hashFork))
+            if (IsMainFork(eventGetBlocks.hashFork) || IsMyFork(eventGetBlocks.hashFork))
             {
                 network::CMvEventPeerGetBlocks* pEvent = new network::CMvEventPeerGetBlocks(eventGetBlocks);
                 pEvent->sender = "virtualpeernet";
@@ -468,7 +510,10 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerTx& eventTx)
 
         if(SENDER_DBPSVC == eventTx.sender)
         {
-            return true; // TODO: send logic
+            if(std::numeric_limits<uint64>::max() != eventTx.nNonce)
+            {
+                return CMvPeerNet::HandleEvent(eventTx);
+            }
         }
     }
 
@@ -523,7 +568,10 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerBlock& eventBlock)
 
         if(SENDER_DBPSVC == eventBlock.sender)
         {
-            return true; // TODO: send logic
+            if(std::numeric_limits<uint64>::max() != eventBlock.nNonce)
+            {
+                return CMvPeerNet::HandleEvent(eventBlock);
+            }
         }
     }
 
@@ -700,4 +748,9 @@ bool CVirtualPeerNet::HandleRootPeerTx(const uint64& nNonce, const uint256& hash
 bool CVirtualPeerNet::IsMainFork(const uint256& hashFork)
 {
     return hashFork == pCoreProtocol->GetGenesisBlockHash();
+}
+
+bool CVirtualPeerNet::IsMyFork(const uint256& hashFork)
+{
+    return pForkManager->IsAllowed(hashFork);
 }

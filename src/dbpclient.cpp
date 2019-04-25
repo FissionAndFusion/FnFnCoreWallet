@@ -334,7 +334,6 @@ CDbpClient::CDbpClient()
   : walleve::CIOProc("dbpclient")
 {
     pDbpService = NULL;
-    fIsResolved = false;
     fIsRootNode = false;
     fIsSuperNode = false;
 }
@@ -631,6 +630,11 @@ void CDbpClient::EnterLoop()
 {
     // start resource
     WalleveLog("Dbp Client starting:\n");
+    
+    if(fIsSuperNode && !fIsRootNode)
+    {
+        ResolveHost(parentHost);
+    }
 }
 
 void CDbpClient::LeaveLoop()
@@ -648,23 +652,6 @@ void CDbpClient::LeaveLoop()
     }
 
     WalleveLog("Dbp Client stop\n");
-}
-
-void CDbpClient::HeartBeat()
-{
-    if(fIsSuperNode && !fIsRootNode && !fIsResolved)
-    {
-        try
-        {
-            if(!parentHost.ToEndPoint().address().to_string().empty())
-                ResolveHost(parentHost);
-        }
-        catch(const std::exception& e)
-        {
-            WalleveWarn("DbpClient HeartBeat Warning:\n");
-            WalleveWarn(e.what());
-        }
-    }
 }
 
 bool CDbpClient::ClientConnected(CIOClient* pClient)
@@ -727,8 +714,6 @@ void CDbpClient::HostResolved(const CNetHost& host, const boost::asio::ip::tcp::
         return;
     }
 
-    fIsResolved = true;
-
     if (confClient.optSSL.fEnable)
         profile.optSSL = confClient.optSSL;
 
@@ -756,6 +741,8 @@ void CDbpClient::HostResolved(const CNetHost& host, const boost::asio::ip::tcp::
 
 void CDbpClient::HostFailToResolve(const CNetHost& host)
 {
+    std::cerr << "Host Resolve failed " << host.strHost << " Restarting resolve." << std::endl;
+    ResolveHost(host);
 }
 
 bool CDbpClient::CreateProfile(const CDbpClientConfig& confClient)
@@ -792,7 +779,7 @@ void CDbpClient::SendPingHandler(const boost::system::error_code& err, const CDb
 
     if(IsSessionTimeout(sessionProfile.pClientSocket))
     {
-        std::cerr << "######### dbp client session time out ############\n";
+        std::cerr << "######### dbp client session time out ############" << std::endl;
         HandleClientSocketError(sessionProfile.pClientSocket);
         return;
     }
@@ -877,7 +864,7 @@ bool CDbpClient::ActivateConnect(CIOClient* pClient, CDbpClientProfile* pProfile
     CDbpClientSocket* pDbpClientSocket = new CDbpClientSocket(pIOModule,nNonce,this,pClient, pProfile);
     if(!pDbpClientSocket)
     {
-        std::cerr << "Create Client Socket error\n";
+        std::cerr << "Create Client Socket error" << std::endl;
         return false;
     }
 
@@ -924,7 +911,7 @@ CDbpClientSocket* CDbpClient::PickOneSessionSocket() const
     }
     else
     {
-        std::cerr << "mapSessionProfile is empty\n";
+        std::cerr << "mapSessionProfile is empty" << std::endl;
     }
 
     return pClientSocket;

@@ -78,6 +78,7 @@ protected:
     virtual bool HandleRootPeerBlock(const uint64& nNonce, const uint256& hashFork, CBlock& data);
     virtual bool HandleRootPeerTx(const uint64& nNonce, const uint256& hashFork, CTransaction& data);
     virtual bool IsMainFork(const uint256& hashFork);
+    virtual bool IsMyFork(const uint256& hashFork);
     bool IsThisNodeData(const uint256& hashFork, uint64 nNonce, const uint256& dataHash);
 protected:
     bool WalleveHandleInitialize() override;
