@@ -11,7 +11,6 @@
 #include <vector>
 #include <queue>
 #include <map>
-#include <boost/ptr_container/ptr_map.hpp>
 #include <boost/thread/thread.hpp>
 
 #include "walleve/util.h"
@@ -141,9 +140,7 @@ protected:
     boost::mutex mtxEvent;
     const std::string strEntry;
     uint64 nEventId;
-    //boost::ptr_map<std::string,CHttpSSEGenerator> mapGenerator;
     std::map<std::string, std::unique_ptr<CHttpSSEGenerator>> mapGenerator;
-
 }; 
 
 } // namespace walleve

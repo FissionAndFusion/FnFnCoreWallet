@@ -3,7 +3,9 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "ioproc.h"
+
 #include <boost/bind.hpp>
+
 using namespace std;
 using namespace walleve;
 using boost::asio::ip::tcp;
@@ -136,11 +138,11 @@ boost::asio::io_service::strand& CIOProc::GetIoStrand()
 bool CIOProc::DispatchEvent(CWalleveEvent * pEvent)
 {
     bool fResult = false;
-    CIOCompletion complt;
+    boost::shared_ptr<CIOCompletion> spComplt(new CIOCompletion);
     try
     {
-        ioStrand.dispatch(boost::bind(&CIOProc::IOProcHandleEvent,this,pEvent,boost::ref(complt)));
-        complt.WaitForComplete(fResult);
+        ioStrand.dispatch(boost::bind(&CIOProc::IOProcHandleEvent,this,pEvent,spComplt));
+        spComplt->WaitForComplete(fResult);
     }
     catch (exception& e)
     {
@@ -414,9 +416,9 @@ void CIOProc::IOProcPollTimer()
     }
 }
 
-void CIOProc::IOProcHandleEvent(CWalleveEvent * pEvent,CIOCompletion& compltHandle)
+void CIOProc::IOProcHandleEvent(CWalleveEvent * pEvent,boost::shared_ptr<CIOCompletion> spComplt)
 {
-    compltHandle.Completed(pEvent->Handle(*this));
+    spComplt->Completed(pEvent->Handle(*this));
 }
 
 void CIOProc::IOProcHandleResolved(const CNetHost& host,const boost::system::error_code& err,

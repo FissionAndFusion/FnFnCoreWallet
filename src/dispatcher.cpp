@@ -175,7 +175,7 @@ MvErr CDispatcher::AddNewBlock(const CBlock& block,uint64 nNonce)
 
     pService->NotifyWorldLineUpdate(updateWorldLine);
 
-    if (!nNonce && !block.IsOrigin() && !block.IsVacant())
+    if (nNonce != std::numeric_limits<uint64>::max() && !block.IsOrigin() && !block.IsVacant())
     {
         pNetChannel->BroadcastBlockInv(updateWorldLine.hashFork,block.GetHash());
     }
