@@ -99,7 +99,7 @@ public:
     ~CNetChannel();
     int32 GetPrimaryChainHeight() override;
     bool IsForkSynchronized(const uint256& hashFork) const override;
-    void BroadcastBlockInv(const uint256& hashFork,const uint256& hashBlock,const std::set<uint64>& setKnownPeer=std::set<uint64>()) override;
+    void BroadcastBlockInv(const uint256& hashFork,const uint256& hashBlock) override;
     void BroadcastTxInv(const uint256& hashFork) override;
     void SubscribeFork(const uint256& hashFork) override;
     void UnsubscribeFork(const uint256& hashFork) override;

@@ -17,16 +17,16 @@ namespace multiverse
 namespace network 
 {
 
-class IMvNetChannel : public walleve::IIOModule, virtual public CMvPeerEventListener
+class IMvNetChannel : public walleve::IIOMultiModule, virtual public CMvPeerEventListener
 {
 public:
     IMvNetChannel(const uint nThreadIn = 1, const bool fAffinityIn = false)
-    : IIOModule("netchannel", nThreadIn, fAffinityIn)
+    : IIOMultiModule("netchannel", nThreadIn, fAffinityIn)
     {}
 
     virtual int32 GetPrimaryChainHeight() = 0;
     virtual bool IsForkSynchronized(const uint256& hashFork) const = 0;
-    virtual void BroadcastBlockInv(const uint256& hashFork,const uint256& hashBlock,const std::set<uint64>& setKnownPeer=std::set<uint64>()) = 0;
+    virtual void BroadcastBlockInv(const uint256& hashFork,const uint256& hashBlock) = 0;
     virtual void BroadcastTxInv(const uint256& hashFork) = 0;
     virtual void SubscribeFork(const uint256& hashFork) = 0;
     virtual void UnsubscribeFork(const uint256& hashFork) = 0;

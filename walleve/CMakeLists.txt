@@ -16,6 +16,7 @@ set(sources
 	walleve/entry/entry.cpp		walleve/entry/entry.h
 	walleve/event/event.cpp		walleve/event/event.h
 	walleve/event/eventproc.cpp	walleve/event/eventproc.h
+	walleve/event/multieventproc.cpp	walleve/event/multieventproc.h
 	walleve/stream/circular.cpp	walleve/stream/circular.h
 	walleve/stream/stream.cpp	walleve/stream/stream.h
 	walleve/base/base.cpp		walleve/base/base.h
