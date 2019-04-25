@@ -577,7 +577,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerInv& eventInv)
                     || (inv.nType == network::CInv::MSG_BLOCK && !pWorldLine->Exists(inv.nHash)))
                 {
                     sched.AddNewInv(inv,nNonce);
-                    std::cout << "Add new Inv nonce " << nNonce << " hash " << inv.nHash.ToString() 
+                    std::cout << "Add new Inv nonce " << std::hex << nNonce << " hash " << inv.nHash.ToString() 
                 << " [netchannel]" << std::endl;
                     if (inv.nType == network::CInv::MSG_TX)
                     {
@@ -591,7 +591,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerInv& eventInv)
             }
            
             SchedulePeerInv(nNonce,hashFork,sched);
-            std::cout << "called SchedulePeerInv nonce " << nNonce << " hashfork " << hashFork.ToString() 
+            std::cout << "called SchedulePeerInv nonce " << std::hex << nNonce << " hashfork " << hashFork.ToString() 
                 << " [netchannel]" << std::endl;
         }
     }
@@ -674,7 +674,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerGetBlocks& eventGetBlocks)
     std::string flow = eventGetBlocks.flow;
     if (!pWorldLine->GetBlockInv(hashFork,eventGetBlocks.data,vBlockHash,MAX_GETBLOCKS_COUNT))
     {
-        std::cout << "DDOS in PeerGetBlocks [netchannel]" << std::endl;
+        std::cout << "DDOS in PeerGetBlocks [netchannel] " << std::hex << nNonce << std::endl;
         DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK,"eventGetBlocks");
         return true;
     }

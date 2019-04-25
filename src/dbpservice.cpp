@@ -1199,7 +1199,7 @@ bool CDbpService::HandleEvent(CMvEventPeerSubscribe& event)
         CMvEventPeerSubscribe eventUpSub(event.nNonce, event.hashFork);
 
 
-        std::cout << "nonce " << event.nNonce << " [dbpservice] " << std::endl;
+        std::cout << "nonce " << std::hex <<  event.nNonce << " [dbpservice] " << std::endl;
         std::cout << "hashfork " << event.hashFork.ToString() << " [dbpservice]" << std::endl;
 
         FilterThisSubscribeFork(event, eventUpSub);
