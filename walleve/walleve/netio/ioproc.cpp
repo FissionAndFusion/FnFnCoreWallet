@@ -403,7 +403,6 @@ void CIOProc::IOProcPollTimer()
         {
             uint64 nNonce = (*it).second.nNonce;
             mapTimerById.erase(it);
-            cout << "Timeout: " << nTimerId;
             if (nNonce == 0)
             {
                 ioOutBound.Timeout(nTimerId);
