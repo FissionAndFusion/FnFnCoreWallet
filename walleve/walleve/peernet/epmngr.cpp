@@ -416,7 +416,7 @@ bool CEndpointManager::AddNewEndPointNodeId(const boost::asio::ip::tcp::endpoint
         if (!status.AddConnection(false))
         {
             mngrNode.Dismiss(ep,false);
-            return false;
+            return true;
         }
         return true;
     }
