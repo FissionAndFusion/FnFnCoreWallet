@@ -14,7 +14,7 @@
 #include <map>
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp> 
-
+#include <boost/shared_ptr.hpp>
 
 namespace walleve
 {
@@ -107,7 +107,7 @@ private:
     void IOThreadFunc();
     void IOProcHeartBeat(const boost::system::error_code& err);
     void IOProcPollTimer();
-    void IOProcHandleEvent(CWalleveEvent * pEvent,CIOCompletion& compltHandle);
+    void IOProcHandleEvent(CWalleveEvent * pEvent,boost::shared_ptr<CIOCompletion> spComplt);
     void IOProcHandleResolved(const CNetHost& host,const boost::system::error_code& err,
                               boost::asio::ip::tcp::resolver::iterator endpoint_iterator);
 private:
