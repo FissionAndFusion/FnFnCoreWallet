@@ -323,6 +323,10 @@ void CIOOutBound::HandleConnect(CIOClient *pClient, const tcp::endpoint epRemote
             mapPending.erase(nTimerId);
             pClient->Close();
         }
+        else
+        {
+            pClient->Release();
+        }
         pIOProc->ClientFailToConnect(epRemote);
     }
 }
