@@ -306,27 +306,28 @@ void CDbpClientSocket::HandleReadCompleted(uint32_t len)
         break;
     case dbp::PONG:
         pDbpClient->HandleClientSocketRecv(this,anyObj);
-        pDbpClient->HandleClientSocketSent(this);
         break;
     case dbp::RESULT:
         pDbpClient->HandleClientSocketRecv(this,anyObj);
-        pDbpClient->HandleClientSocketSent(this);
         break;
     case dbp::NOSUB:
         pDbpClient->HandleClientSocketRecv(this,anyObj);
         break;
     case dbp::READY:
         pDbpClient->HandleClientSocketRecv(this,anyObj);
-        pDbpClient->HandleClientSocketSent(this);
         break;
     case dbp::ADDED:
         pDbpClient->HandleClientSocketRecv(this,anyObj);
-        pDbpClient->HandleClientSocketSent(this);
         break;
     default:
         std::cerr << "is not Message Base Type is unknown. [dbpclient]" << std::endl;
         pDbpClient->HandleClientSocketError(this);
         break;
+    }
+
+    if(!IsReading)
+    {
+        ReadMessage();
     }
 }
 
