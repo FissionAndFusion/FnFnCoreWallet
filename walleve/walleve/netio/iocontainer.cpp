@@ -282,6 +282,7 @@ bool CIOOutBound::ConnectTo(const tcp::endpoint& epRemote,int64 nTimeout)
     CIOClient *pClient = ClientAlloc();
     if (pClient == NULL)
     {
+        std::cout << "Alloc return false" << std::endl;
         return false;
     }
 
@@ -313,7 +314,7 @@ void CIOOutBound::HandleConnect(CIOClient *pClient, const tcp::endpoint epRemote
         if (!pIOProc->ClientConnected(pClient))
         {
             pClient->Close();
-        }    
+        }
     }
     else
     {
@@ -323,6 +324,11 @@ void CIOOutBound::HandleConnect(CIOClient *pClient, const tcp::endpoint epRemote
             mapPending.erase(nTimerId);
             pClient->Close();
         }
+        else
+        {
+            pClient->Release();
+        }
+            
         pIOProc->ClientFailToConnect(epRemote);
     }
 }
