@@ -118,7 +118,7 @@ bool CMvPeerNet::HandleEventForkNode(CMvEventPeerGetData& eventGetData)
         return false;
     }
 
-    //SetInvTimer(eventGetData.nNonce,eventGetData.data);
+    SetInvTimer(eventGetData.nNonce,eventGetData.data);
     return true;
 }
 
