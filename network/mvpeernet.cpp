@@ -347,6 +347,11 @@ bool CMvPeerNet::HandlePeerHandshaked(CPeer *pPeer,uint32 nTimerId,bool& fIsBann
 
     }
 
+    if(pMvPeer->IsInBound())
+    {
+        return false;
+    }
+
     if(!AddRemotePeerId(pPeer, pMvPeer->hashRemoteId, pMvPeer->IsInBound()))
     {
         if(pMvPeer->IsInBound()) fIsBanned = true;

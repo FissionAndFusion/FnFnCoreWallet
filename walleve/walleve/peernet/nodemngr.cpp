@@ -190,6 +190,7 @@ bool CNodeManager::Employ(tcp::endpoint& ep)
         mapIdle.erase(it);
         //std::cout << "Employed  true " << ep.address().to_string() << ":" << ep.port() 
             //<< std::endl;
+        std::cout << "erased size " << mapIdle.size() << std::endl;
         return true;
     }
 
