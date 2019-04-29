@@ -582,7 +582,7 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                 gateWayAddress.ssEndpoint.GetEndpoint(epGateWay);
                 if(epGateWay.address().to_string() == NODE_DEFAULT_GATEWAY)
                 {
-                    RemoveNode(pMvPeer->GetRemote());
+                    AddNewBlackEndPoint(pMvPeer->GetRemote());
                 }
                 else
                 {
