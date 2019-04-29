@@ -636,6 +636,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerGetData& eventGetData)
             else
             {
                 // TODO: Penalize
+                std::cout << "SunHanTao Penalize" << std::endl;
             }
         }
         else if (inv.nType == network::CInv::MSG_BLOCK)
@@ -660,6 +661,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerGetData& eventGetData)
             else
             {
                 // TODO: Penalize
+                std::cout << "SunHanTao Penalize" << std::endl;
             }
         }
     }

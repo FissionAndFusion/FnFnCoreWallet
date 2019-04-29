@@ -347,11 +347,6 @@ bool CMvPeerNet::HandlePeerHandshaked(CPeer *pPeer,uint32 nTimerId,bool& fIsBann
 
     }
 
-    if(pMvPeer->IsInBound())
-    {
-        return false;
-    }
-
     if(!AddRemotePeerId(pPeer, pMvPeer->hashRemoteId, pMvPeer->IsInBound()))
     {
         if(pMvPeer->IsInBound()) fIsBanned = true;
@@ -600,7 +595,7 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                 gateWayAddress.ssEndpoint.GetEndpoint(epGateWay);
                 if(epGateWay.address().to_string() == NODE_DEFAULT_GATEWAY)
                 {
-                    RemoveNode(pMvPeer->GetRemote());
+                    //RemoveNode(pMvPeer->GetRemote());
                 }
                 else
                 {
