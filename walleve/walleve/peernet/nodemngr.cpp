@@ -173,16 +173,16 @@ void CNodeManager::Ban(const uint256& address,int64 nBanTo)
 
 bool CNodeManager::Employ(tcp::endpoint& ep)
 {
-    std::cout << "Employ ep" << std::endl;
-    std::cout << "mapIdle size " << mapIdle.size() << std::endl;
+    //std::cout << "Employ ep" << std::endl;
+    //std::cout << "mapIdle size " << mapIdle.size() << std::endl;
     for(const auto& idle : mapIdle)
     {
-        std::cout << "idle time " << idle.first << " ep " << 
-            idle.second.address().to_string() << ":" << idle.second.port()
-            << std::endl;
+        //std::cout << "idle time " << idle.first << " ep " << 
+          //  idle.second.address().to_string() << ":" << idle.second.port()
+            //<< std::endl;
     }
     int64 time64 = GetTime();
-    std::cout << "CurrentTime " << time64 << std::endl;
+    //std::cout << "CurrentTime " << time64 << std::endl;
     multimap<int64,tcp::endpoint>::iterator it = mapIdle.begin();
     if (it != mapIdle.upper_bound(time64))
     {

@@ -100,6 +100,16 @@ bool CMvPeerNet::HandleEvent(CMvEventPeerGetData& eventGetData)
 {
     CWalleveBufStream ssPayload;
     ssPayload << eventGetData;
+    
+    
+    std::cout << "GetData:" << std::endl;
+
+    for(const auto& inv : eventGetData.data)
+    {
+        std::cout << "########## Send GetData Inv type " << inv.nType << "inv hash " 
+            << inv.nHash.ToString() << std::endl; 
+    }
+    
     if (!SendDataMessage(eventGetData.nNonce,MVPROTO_CMD_GETDATA,ssPayload))
     {
         return false;
@@ -273,6 +283,10 @@ void CMvPeerNet::SetInvTimer(uint64 nNonce,vector<CInv>& vInv)
             {
                 nElapse += nTimeout[inv.nType];
                 uint32 nTimerId = SetTimer(nNonce,nElapse);
+              
+                std::cout << "########## SetInvTimer Inv type " << inv.nType << "inv hash " 
+                    << inv.nHash.ToString() << std::endl; 
+                
                 CancelTimer(pMvPeer->Request(inv,nTimerId));
             }
         }
@@ -286,6 +300,8 @@ void CMvPeerNet::ProcessAskFor(CPeer* pPeer)
     CMvPeer *pMvPeer = static_cast<CMvPeer *>(pPeer);
     if (pMvPeer->FetchAskFor(hashFork,inv))
     {
+        std::cout << "############# inv type " << inv.nType << inv.nHash.ToString()
+            << std::endl;
         CMvEventPeerGetData* pEventGetData = new CMvEventPeerGetData(pMvPeer->GetNonce(),hashFork);
         if (pEventGetData != NULL)
         {

@@ -121,6 +121,7 @@ void CPeerNet::HeartBeat()
 
 void CPeerNet::Timeout(uint64 nNonce,uint32 nTimerId)
 {
+    std::cout << "TimeOut timer id " << nTimerId << std::endl;
     CPeer *pPeer = GetPeer(nNonce);
     if (pPeer != NULL)
     {

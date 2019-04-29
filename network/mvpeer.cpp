@@ -111,6 +111,12 @@ bool CMvPeer::FetchAskFor(uint256& hashFork,CInv& inv)
         queAskFor.pop();
         return true;
     }
+    else if(!IsWriteable() && !queAskFor.empty())
+    {
+        std::cout << "#############[FetchAskFor] inv type " << inv.nType << inv.nHash.ToString()
+            << std::endl;
+    }
+    
     return false;
 }
 
