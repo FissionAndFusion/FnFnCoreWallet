@@ -322,6 +322,11 @@ void CPeerNet::AddNewGateWay(const boost::asio::ip::tcp::endpoint& epGateWay, co
     return epMngr.AddNewGateWay(epGateWay,epNode);
 }
 
+void CPeerNet::AddNewBlackEndPoint(const boost::asio::ip::tcp::endpoint& epNode)
+{
+    return epMngr.AddNewBlackEndPoint(epNode);
+}
+
 std::string CPeerNet::GetLocalIP()
 {
     if (IsRoutable(localIP))
