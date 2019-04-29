@@ -16,6 +16,11 @@ using namespace walleve;
 CWalleveEventProc::CWalleveEventProc(const string& walleveOwnKeyIn, const size_t nThreadNumIn, const bool fAffinityIn)
  : IWalleveBase(walleveOwnKeyIn), nThreadNum(nThreadNumIn), fAffinity(fAffinityIn)
 {
+    if (nThreadNum == 0)
+    {
+        nThreadNum = 1;
+    }
+
     vecThrEventQue.reserve(nThreadNum);
     auto nextCPU = fAffinity
         ? [](int& x) -> int { return x++ % thread::hardware_concurrency(); }

@@ -338,8 +338,15 @@ bool CNetChannel::IsForkSynchronized(const uint256& hashFork) const
     return conPeerNetData.IsForkSynchronized(hashFork);
 }
 
-void CNetChannel::BroadcastBlockInv(const uint256& hashFork,const uint256& hashBlock,const set<uint64>& setKnownPeer)
+void CNetChannel::BroadcastBlockInv(const uint256& hashFork,const uint256& hashBlock)
 {
+    set<uint64> setKnownPeer;
+    {
+        boost::recursive_mutex::scoped_lock scoped_lock(mtxSched);
+        CSchedule& sched = GetSchedule(hashFork);
+        sched.GetKnownPeer(network::CInv(network::CInv::MSG_BLOCK,hashBlock), setKnownPeer);
+    }
+
     network::CMvEventPeerInv eventInv(0,hashFork);
     eventInv.sender = "netchannel";
     eventInv.data.push_back(network::CInv(network::CInv::MSG_BLOCK,hashBlock));
@@ -593,6 +600,14 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerGetData& eventGetData)
             {
                 pPeerNet->DispatchEvent(&eventTx);
             }
+            else if (pWorldLine->GetTransaction(inv.nHash, eventTx.data))
+            {
+                pPeerNet->DispatchEvent(&eventTx);
+            }
+            else
+            {
+                // TODO: Penalize
+            }
         }
         else if (inv.nType == network::CInv::MSG_BLOCK)
         {
@@ -607,6 +622,10 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerGetData& eventGetData)
             if (pWorldLine->GetBlock(inv.nHash,eventBlock.data))
             {
                 pPeerNet->DispatchEvent(&eventBlock);
+            }
+            else
+            {
+                // TODO: Penalize
             }
         }
     }
@@ -874,7 +893,6 @@ void CNetChannel::AddNewBlock(const uint256& hashFork,const uint256& hash,CSched
                 if(nNonceSender != std::numeric_limits<uint64>::max())
                 {
                     DispatchAwardEvent(nNonceSender,CEndpointManager::VITAL_DATA);
-                    BroadcastBlockInv(hashFork,hashBlock,setKnownPeer);
                 }
                 
                 setSchedPeer.insert(setKnownPeer.begin(),setKnownPeer.end());

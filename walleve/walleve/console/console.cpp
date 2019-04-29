@@ -20,7 +20,7 @@ using namespace walleve;
 // CConsole
 
 CConsole* CConsole::pCurrentConsole = NULL;
-std::mutex CConsole::mutexConsole;
+boost::mutex CConsole::mutexConsole;
 
 CConsole::CConsole(const string& walleveOwnKeyIn,const string& strPromptIn)
 : IWalleveBase(walleveOwnKeyIn),
@@ -99,7 +99,7 @@ void CConsole::WalleveHandleHalt()
 
 bool CConsole::InstallReadline(const string& strPrompt)
 {
-    std::unique_lock<std::mutex> lock(CConsole::mutexConsole);
+    boost::unique_lock<boost::mutex> lock(CConsole::mutexConsole);
     if (pCurrentConsole != NULL && pCurrentConsole != this)
     {
         return false;
@@ -112,7 +112,7 @@ bool CConsole::InstallReadline(const string& strPrompt)
 
 void CConsole::UninstallReadline()
 {
-    std::unique_lock<std::mutex> lock(CConsole::mutexConsole);
+    boost::unique_lock<boost::mutex> lock(CConsole::mutexConsole);
     if (pCurrentConsole == this)
     {
         pCurrentConsole = NULL;
@@ -136,7 +136,7 @@ bool CConsole::HandleLine(const string& strLine)
 
 void CConsole::ReadlineCallback(char *line)
 {
-    std::unique_lock<std::mutex> lock(CConsole::mutexConsole);
+    boost::unique_lock<boost::mutex> lock(CConsole::mutexConsole);
     if (pCurrentConsole != NULL)
     {
         pCurrentConsole->DispatchLine(line); 
@@ -197,7 +197,7 @@ void CConsole::ConsoleHandleLine(const string& strLine)
 
 void CConsole::ConsoleHandleOutput(const string& strOutput)
 {
-    std::unique_lock<std::mutex> lock(CConsole::mutexConsole);
+    boost::unique_lock<boost::mutex> lock(CConsole::mutexConsole);
     if (pCurrentConsole == this)
     {
         std::cout << '\n' << strOutput << std::flush << std::endl;

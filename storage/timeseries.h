@@ -5,7 +5,7 @@
 #ifndef  MULTIVERSE_TIMESERIES_H
 #define  MULTIVERSE_TIMESERIES_H
 
-#include <mutex>
+#include <boost/thread/thread.hpp>
 #include <boost/filesystem.hpp>
 #include <walleve/walleve.h>
 #include "uint256.h"
@@ -73,7 +73,7 @@ public:
     template <typename T>
     bool Write(const T& t,uint32& nFile,uint32& nOffset,bool fWriteCache = true)
     {
-        std::unique_lock<std::mutex> lock(mtxCache);
+        boost::unique_lock<boost::mutex> lock(mtxCache);
 
         std::string pathFile;
         if (!GetLastFilePath(nFile,pathFile))
@@ -106,7 +106,7 @@ public:
     template <typename T>
     bool Write(const T& t,CDiskPos& pos,bool fWriteCache = true)
     {
-        std::unique_lock<std::mutex> lock(mtxCache);
+        boost::unique_lock<boost::mutex> lock(mtxCache);
 
         std::string pathFile;
         if (!GetLastFilePath(pos.nFile,pathFile))
@@ -139,7 +139,7 @@ public:
     template <typename T>
     bool Read(T& t,uint32 nFile,uint32 nOffset,bool fWriteCache = true)
     {
-        std::unique_lock<std::mutex> lock(mtxCache);
+        boost::unique_lock<boost::mutex> lock(mtxCache);
 
         if (ReadFromCache(t,CDiskPos(nFile,nOffset)))
         {
@@ -176,7 +176,7 @@ public:
     template <typename T>
     bool Read(T& t,const CDiskPos& pos,bool fWriteCache = true)
     {
-        std::unique_lock<std::mutex> lock(mtxCache);
+        boost::unique_lock<boost::mutex> lock(mtxCache);
 
         if (ReadFromCache(t,pos))
         {
@@ -328,7 +328,7 @@ protected:
     }
 protected:
     enum {FILE_CACHE_SIZE = 0x2000000};
-    std::mutex mtxCache;
+    boost::mutex mtxCache;
     walleve::CWalleveCircularStream cacheStream;
     std::map<CDiskPos,std::size_t> mapCachePos;
     static const uint32 nMagicNum;
@@ -342,7 +342,7 @@ public:
     template <typename T>
     bool Write(const T& t,CDiskPos& pos)
     {
-        std::unique_lock<std::mutex> lock(mtxWriter);
+        boost::unique_lock<boost::mutex> lock(mtxWriter);
 
         std::string pathFile;
         if (!GetLastFilePath(pos.nFile,pathFile))
@@ -368,7 +368,7 @@ public:
     template <typename T>
     bool WriteBatch(const typename std::vector<T>& vBatch,std::vector<CDiskPos>& vPos)
     {
-        std::unique_lock<std::mutex> lock(mtxWriter);
+        boost::unique_lock<boost::mutex> lock(mtxWriter);
 
         size_t n = 0;
 
@@ -426,7 +426,7 @@ public:
         return true;
     }
 protected:
-    std::mutex mtxWriter;
+    boost::mutex mtxWriter;
     static const uint32 nMagicNum;
 };
 

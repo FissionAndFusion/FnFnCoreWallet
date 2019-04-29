@@ -116,7 +116,7 @@ bool CTimeSeriesCached::Initialize(const path& pathLocationIn,const string& strP
     }
 
     {
-        std::unique_lock<std::mutex> lock(mtxCache);
+        boost::unique_lock<boost::mutex> lock(mtxCache);
 
         ResetCache();
     }
@@ -125,7 +125,7 @@ bool CTimeSeriesCached::Initialize(const path& pathLocationIn,const string& strP
 
 void CTimeSeriesCached::Deinitialize()
 {
-    std::unique_lock<std::mutex> lock(mtxCache);
+    boost::unique_lock<boost::mutex> lock(mtxCache);
 
     ResetCache();
 }

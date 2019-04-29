@@ -10,8 +10,8 @@
 #include <map>
 #include <vector>
 #include <algorithm>
-#include <mutex>
 #include <boost/asio/ip/address.hpp>
+#include <boost/thread/thread.hpp>
 
 namespace walleve
 {
@@ -36,7 +36,7 @@ public:
     }
     int64 GetTimeOffset()
     {
-        std::unique_lock<std::mutex> lock(mtxNetTime);
+        boost::unique_lock<boost::mutex> lock(mtxNetTime);
         return nTimeOffset;
     }
     void Clear()
@@ -47,7 +47,7 @@ public:
     }
     bool AddNew(const boost::asio::ip::address& address,int64 nTimeDelta)
     {
-        std::unique_lock<std::mutex> lock(mtxNetTime);
+        boost::unique_lock<boost::mutex> lock(mtxNetTime);
 
         CDelta& node = mapNode[address];
         if (node.nTimeUpdate != 0)
@@ -116,7 +116,7 @@ protected:
                                       : ((vecDelta[nMedian] + vecDelta[nMedian - 1]) >> 1));
     }
 protected:
-    std::mutex mtxNetTime;
+    boost::mutex mtxNetTime;
     std::map<boost::asio::ip::address,CDelta> mapNode;
     std::vector<int64> vecDelta;
     const std::size_t nMaxCount;

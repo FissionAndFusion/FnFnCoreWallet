@@ -3,7 +3,9 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "ioproc.h"
+
 #include <boost/bind.hpp>
+
 using namespace std;
 using namespace walleve;
 using boost::asio::ip::tcp;
@@ -28,7 +30,7 @@ CIOCompletion::CIOCompletion()
 
 bool CIOCompletion::WaitForComplete(bool& fResultRet)
 {
-    std::unique_lock<std::mutex> lock(mutex);
+    boost::unique_lock<boost::mutex> lock(mutex);
     while (!fCompleted && !fAborted)
     {
         cond.wait(lock);
@@ -40,7 +42,7 @@ bool CIOCompletion::WaitForComplete(bool& fResultRet)
 void CIOCompletion::Completed(bool fResultIn)
 {
     {
-        std::lock_guard<std::mutex> lock(mutex);
+        boost::lock_guard<boost::mutex> lock(mutex);
         fResult = fResultIn;
         fCompleted = true;
     }
@@ -50,7 +52,7 @@ void CIOCompletion::Completed(bool fResultIn)
 void CIOCompletion::Abort()
 {
     {
-        std::lock_guard<std::mutex> lock(mutex);
+        boost::lock_guard<boost::mutex> lock(mutex);
         fAborted = true;
     }
     cond.notify_all();
@@ -58,7 +60,7 @@ void CIOCompletion::Abort()
 
 void CIOCompletion::Reset()
 {
-    std::lock_guard<std::mutex> lock(mutex);
+    boost::lock_guard<boost::mutex> lock(mutex);
     fResult = false;
     fCompleted = false;
     fAborted = false;
@@ -73,9 +75,9 @@ CIOCompletionUntil::CIOCompletionUntil(int nTimeout)
 
 bool CIOCompletionUntil::WaitForComplete(bool& fResultRet)
 {
-    std::unique_lock<std::mutex> lock(mutex);
-    std::chrono::microseconds period(nTimeout);
-    std::chrono::system_clock::time_point wakeUpTime = std::chrono::system_clock::now() + period;
+    boost::unique_lock<boost::mutex> lock(mutex);
+    boost::chrono::microseconds period(nTimeout);
+    boost::chrono::system_clock::time_point wakeUpTime = boost::chrono::system_clock::now() + period;
     cond.wait_until(lock, wakeUpTime, [this] { return fCompleted || fAborted; });
     fResultRet = fResult;
     return fCompleted;
@@ -84,7 +86,7 @@ bool CIOCompletionUntil::WaitForComplete(bool& fResultRet)
 void CIOCompletionUntil::Completed(bool fResultIn)
 {
     {
-        std::lock_guard<std::mutex> lock(mutex);
+        boost::lock_guard<boost::mutex> lock(mutex);
         fResult = fResultIn;
         fCompleted = true;
     }
@@ -94,7 +96,7 @@ void CIOCompletionUntil::Completed(bool fResultIn)
 void CIOCompletionUntil::Abort()
 {
     {
-        std::lock_guard<std::mutex> lock(mutex);
+        boost::lock_guard<boost::mutex> lock(mutex);
         fAborted = true;
     }
     cond.notify_all();
@@ -102,7 +104,7 @@ void CIOCompletionUntil::Abort()
 
 void CIOCompletionUntil::Reset()
 {
-    std::lock_guard<std::mutex> lock(mutex);
+    boost::lock_guard<boost::mutex> lock(mutex);
     fResult = false;
     fCompleted = false;
     fAborted = false;
@@ -136,11 +138,11 @@ boost::asio::io_service::strand& CIOProc::GetIoStrand()
 bool CIOProc::DispatchEvent(CWalleveEvent * pEvent)
 {
     bool fResult = false;
-    CIOCompletion complt;
+    boost::shared_ptr<CIOCompletion> spComplt(new CIOCompletion);
     try
     {
-        ioStrand.dispatch(boost::bind(&CIOProc::IOProcHandleEvent,this,pEvent,boost::ref(complt)));
-        complt.WaitForComplete(fResult);
+        ioStrand.dispatch(boost::bind(&CIOProc::IOProcHandleEvent,this,pEvent,spComplt));
+        spComplt->WaitForComplete(fResult);
     }
     catch (exception& e)
     {
@@ -414,9 +416,9 @@ void CIOProc::IOProcPollTimer()
     }
 }
 
-void CIOProc::IOProcHandleEvent(CWalleveEvent * pEvent,CIOCompletion& compltHandle)
+void CIOProc::IOProcHandleEvent(CWalleveEvent * pEvent,boost::shared_ptr<CIOCompletion> spComplt)
 {
-    compltHandle.Completed(pEvent->Handle(*this));
+    spComplt->Completed(pEvent->Handle(*this));
 }
 
 void CIOProc::IOProcHandleResolved(const CNetHost& host,const boost::system::error_code& err,
