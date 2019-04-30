@@ -942,6 +942,11 @@ void CNetChannel::AddNewTx(const uint256& hashFork,const uint256& txid,CSchedule
         CTransaction *pTx = sched.GetTransaction(hashTx,nNonceSender);
         if (pTx != NULL)
         {
+            if (pWorldLine->ExistsTx(txid))
+            {
+                return;
+            }
+
             MvErr err = pDispatcher->AddNewTx(*pTx,nNonceSender);
             if (err == MV_OK)
             {

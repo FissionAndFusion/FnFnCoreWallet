@@ -1067,12 +1067,15 @@ bool CBlockBase::GetForkBlockInv(const uint256& hashFork,const CBlockLocator& lo
     {
         return false;
     }
-    
+
+    CWalleveReadLock rForkLock(spFork->GetRWAccess());
+
+    CBlockIndex* pIndexLast = spFork->GetLast();
     CBlockIndex* pIndex = NULL;
     for(const uint256& hash : locator.vBlockHash)
     {
         pIndex = GetIndex(hash);
-        if (pIndex != NULL)
+        if (pIndex != NULL && (pIndex == pIndexLast || pIndex->pNext != NULL))
         {
             if (pIndex->GetOriginHash() != hashFork)
             {
@@ -1082,21 +1085,17 @@ bool CBlockBase::GetForkBlockInv(const uint256& hashFork,const CBlockLocator& lo
         }
     }
 
+    pIndex = (pIndex != NULL ? pIndex->pNext : spFork->GetOrigin()->pNext);
+    while(pIndex != NULL && vBlockHash.size() < nMaxCount - 1)
     {
-        CWalleveReadLock rForkLock(spFork->GetRWAccess());
-
-        pIndex = (pIndex != NULL ? pIndex->pNext : spFork->GetOrigin()->pNext);
-        while(pIndex != NULL && vBlockHash.size() < nMaxCount - 1)
-        {
-            vBlockHash.push_back(pIndex->GetBlockHash());
-            pIndex = pIndex->pNext;
-        }
-        CBlockIndex* pIndexLast = spFork->GetLast();
-        if (pIndex != NULL && pIndex != pIndexLast)
-        {
-            vBlockHash.push_back(pIndexLast->GetBlockHash());
-        }
+        vBlockHash.push_back(pIndex->GetBlockHash());
+        pIndex = pIndex->pNext;
     }
+    if (pIndex != NULL && pIndex != pIndexLast)
+    {
+        vBlockHash.push_back(pIndexLast->GetBlockHash());
+    }
+
     return true;
 }
 
