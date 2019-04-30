@@ -284,16 +284,15 @@ void CConsensus::PrimaryUpdate(const CWorldLineUpdate& update,const CTxSetChange
     {
         uint256 hash = update.vBlockAddNew[i].GetHash();
 
-        map<CDestination,size_t> mapWeight;
-        map<CDestination,vector<unsigned char> > mapEnrollData;
+        CDelegateEnrolled enrolled;
 
-        if (pWorldLine->GetBlockDelegateEnrolled(hash,mapWeight,mapEnrollData))
+        if (pWorldLine->GetBlockDelegateEnrolled(hash,enrolled))
         {
             delegate::CMvDelegateEvolveResult result;
-            mvDelegate.Evolve(nBlockHeight,mapWeight,mapEnrollData,result); 
+            mvDelegate.Evolve(nBlockHeight,enrolled.mapWeight,enrolled.mapEnrollData,result); 
         }
 
-        routine.vEnrolledWeight.push_back(make_pair(hash,mapWeight));
+        routine.vEnrolledWeight.push_back(make_pair(hash,enrolled.mapWeight));
 
         nBlockHeight++;
     }
@@ -302,13 +301,12 @@ void CConsensus::PrimaryUpdate(const CWorldLineUpdate& update,const CTxSetChange
     {
         uint256 hash = update.vBlockAddNew[0].GetHash();
 
-        map<CDestination,size_t> mapWeight;
-        map<CDestination,vector<unsigned char> > mapEnrollData;
+        CDelegateEnrolled enrolled;
 
-        if (pWorldLine->GetBlockDelegateEnrolled(hash,mapWeight,mapEnrollData))
+        if (pWorldLine->GetBlockDelegateEnrolled(hash,enrolled))
         {
             delegate::CMvDelegateEvolveResult result;
-            mvDelegate.Evolve(nBlockHeight,mapWeight,mapEnrollData,result); 
+            mvDelegate.Evolve(nBlockHeight,enrolled.mapWeight,enrolled.mapEnrollData,result); 
             
             int32 nDistributeTargetHeight = nBlockHeight + MV_CONSENSUS_DISTRIBUTE_INTERVAL + 1;
             int32 nPublishTargetHeight = nBlockHeight + 1;
@@ -342,7 +340,7 @@ void CConsensus::PrimaryUpdate(const CWorldLineUpdate& update,const CTxSetChange
             }
             routine.mapPublishData = result.mapPublishData;
         }
-        routine.vEnrolledWeight.push_back(make_pair(hash,mapWeight));
+        routine.vEnrolledWeight.push_back(make_pair(hash,enrolled.mapWeight));
     }
 }
 
@@ -413,13 +411,13 @@ bool CConsensus::LoadChain()
         {
             return false;
         }
-        map<CDestination,size_t> mapWeight;
-        map<CDestination,vector<unsigned char> > mapEnrollData;
 
-        if (pWorldLine->GetBlockDelegateEnrolled(hashBlock,mapWeight,mapEnrollData))
+        CDelegateEnrolled enrolled;
+
+        if (pWorldLine->GetBlockDelegateEnrolled(hashBlock,enrolled))
         {
             delegate::CMvDelegateEvolveResult result;
-            mvDelegate.Evolve(i,mapWeight,mapEnrollData,result);
+            mvDelegate.Evolve(i,enrolled.mapWeight,enrolled.mapEnrollData,result);
         }
     }
     return true;

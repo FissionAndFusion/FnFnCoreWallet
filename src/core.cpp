@@ -262,10 +262,100 @@ MvErr CMvCoreProtocol::ValidateOrigin(const CBlock& block,const CProfile& parent
     return MV_OK;
 }
 
-MvErr CMvCoreProtocol::VerifyBlock(const CBlock& block,CBlockIndex* pIndexPrev)
+MvErr CMvCoreProtocol::VerifyProofOfWork(const CBlock& block, const CBlockIndex* pIndexPrev, int64& nReward)
 {
-    (void)block;
-    (void)pIndexPrev;
+    if (block.vchProof.size() < CProofOfHashWorkCompact::PROOFHASHWORK_SIZE)
+    {
+        return MV_ERR_BLOCK_PROOF_OF_WORK_INVALID;
+    }
+
+    if (block.GetBlockTime() < pIndexPrev->GetBlockTime())
+    {
+        return MV_ERR_BLOCK_TIMESTAMP_OUT_OF_RANGE;
+    }
+
+    CProofOfHashWorkCompact proof;
+    proof.Load(block.vchProof);
+
+    int nBits;
+
+    if (!GetProofOfWorkTarget(pIndexPrev,proof.nAlgo,nBits,nReward))
+    {
+        return MV_ERR_BLOCK_PROOF_OF_WORK_INVALID;
+    }
+
+    if (nBits != proof.nBits || proof.nAlgo != CM_BLAKE512)
+    {
+        return MV_ERR_BLOCK_PROOF_OF_WORK_INVALID;
+    }
+
+    uint256 hashTarget = (~uint256(uint64(0)) >> GetProofOfWorkRunTimeBits(nBits,block.GetBlockTime(),pIndexPrev->GetBlockTime()));
+
+    vector<unsigned char> vchProofOfWork;
+    block.GetSerializedProofOfWorkData(vchProofOfWork);
+    uint256 hash = crypto::CryptoHash(&vchProofOfWork[0],vchProofOfWork.size());
+
+    if (hash > hashTarget)
+    {
+        return MV_ERR_BLOCK_PROOF_OF_WORK_INVALID;
+    }
+
+    return MV_OK;
+}
+
+MvErr CMvCoreProtocol::VerifyDelegatedProofOfStake(const CBlock& block, const CBlockIndex* pIndexPrev,
+                                                   const CDelegateAgreement& agreement,int64& nReward)
+{
+    if (block.GetBlockTime() < pIndexPrev->GetBlockTime() + BLOCK_TARGET_SPACING
+        || block.GetBlockTime() >= pIndexPrev->GetBlockTime() + BLOCK_TARGET_SPACING * 3 / 2)
+    {
+        return MV_ERR_BLOCK_TIMESTAMP_OUT_OF_RANGE;
+    }
+
+    if (block.txMint.sendTo != agreement.vBallot[0])
+    {
+        return MV_ERR_BLOCK_PROOF_OF_STAKE_INVALID;
+    }
+
+    nReward = GetDelegatedProofOfStakeReward(pIndexPrev,agreement.nWeight);
+
+    return MV_OK;
+}
+
+MvErr CMvCoreProtocol::VerifySubsidiary(const CBlock& block,const CBlockIndex* pIndexPrev,const CBlockIndex* pIndexRef,
+                                                            const CDelegateAgreement& agreement, int64& nReward)
+{
+    if (block.GetBlockTime() < pIndexPrev->GetBlockTime())
+    {
+        return MV_ERR_BLOCK_TIMESTAMP_OUT_OF_RANGE;
+    }
+
+    if (!block.IsExtended())
+    {
+        if (block.GetBlockTime() != pIndexRef->GetBlockTime())
+        {
+            return MV_ERR_BLOCK_TIMESTAMP_OUT_OF_RANGE;
+        }
+
+        nReward = GetDelegatedProofOfStakeReward(pIndexPrev,agreement.nWeight);
+    }
+    else
+    {
+        if (block.GetBlockTime() <= pIndexRef->GetBlockTime() 
+            || block.GetBlockTime() >= pIndexRef->GetBlockTime() + BLOCK_TARGET_SPACING)
+        {
+            return MV_ERR_BLOCK_TIMESTAMP_OUT_OF_RANGE;
+        }
+
+        nReward = 0;
+    }
+
+    int nIndex = (block.GetBlockTime() - pIndexRef->GetBlockTime()) / EXTENDED_BLOCK_SPACING;
+    if (block.txMint.sendTo != agreement.GetBallot(nIndex))
+    {
+        return MV_ERR_BLOCK_PROOF_OF_STAKE_INVALID;
+    }
+
     return MV_OK;
 }
 
@@ -380,7 +470,7 @@ MvErr CMvCoreProtocol::VerifyTransaction(const CTransaction& tx,const vector<CTx
     return MV_OK;
 }
 
-bool CMvCoreProtocol::GetProofOfWorkTarget(CBlockIndex* pIndexPrev,int nAlgo,int& nBits,int64& nReward)
+bool CMvCoreProtocol::GetProofOfWorkTarget(const CBlockIndex* pIndexPrev,int nAlgo,int& nBits,int64& nReward)
 {
     if (nAlgo <= 0 || nAlgo >= CM_MAX || !pIndexPrev->IsPrimary())
     {
@@ -388,7 +478,7 @@ bool CMvCoreProtocol::GetProofOfWorkTarget(CBlockIndex* pIndexPrev,int nAlgo,int
     }
     nReward = GetProofOfWorkReward(pIndexPrev);
 
-    CBlockIndex* pIndex = pIndexPrev;
+    const CBlockIndex* pIndex = pIndexPrev;
     while ((!pIndex->IsProofOfWork() || pIndex->nProofAlgo != nAlgo) && pIndex->pPrev != NULL)
     {
         pIndex = pIndex->pPrev;
@@ -446,7 +536,7 @@ int CMvCoreProtocol::GetProofOfWorkRunTimeBits(int nBits,int64 nTime,int64 nPrev
     return nBits;
 }
 
-int64 CMvCoreProtocol::GetDelegatedProofOfStakeReward(CBlockIndex* pIndexPrev,size_t nWeight)
+int64 CMvCoreProtocol::GetDelegatedProofOfStakeReward(const CBlockIndex* pIndexPrev,size_t nWeight)
 {
     return (15 * COIN);    
 }
@@ -483,7 +573,7 @@ void CMvCoreProtocol::GetDelegatedBallot(const uint256& nAgreement,size_t nWeigh
     }
 }
 
-int64 CMvCoreProtocol::GetProofOfWorkReward(CBlockIndex* pIndexPrev)
+int64 CMvCoreProtocol::GetProofOfWorkReward(const CBlockIndex* pIndexPrev)
 {
     (void)pIndexPrev;
     return (15 * COIN);    

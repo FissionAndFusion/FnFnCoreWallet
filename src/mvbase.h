@@ -36,12 +36,16 @@ public:
     virtual MvErr ValidateTransaction(const CTransaction& tx) = 0;
     virtual MvErr ValidateBlock(const CBlock& block) = 0;
     virtual MvErr ValidateOrigin(const CBlock& block, const CProfile& parentProfile, CProfile& forkProfile) = 0;
-    virtual MvErr VerifyBlock(const CBlock& block, CBlockIndex* pIndexPrev) = 0;
+    virtual MvErr VerifyProofOfWork(const CBlock& block, const CBlockIndex* pIndexPrev,int64& nReward) = 0;
+    virtual MvErr VerifyDelegatedProofOfStake(const CBlock& block, const CBlockIndex* pIndexPrev,
+                                              const CDelegateAgreement& agreement, int64& nReward) = 0;
+    virtual MvErr VerifySubsidiary(const CBlock& block,const CBlockIndex* pIndexPrev,const CBlockIndex* pIndexRef,
+                                                       const CDelegateAgreement& agreement, int64& nReward) = 0;
     virtual MvErr VerifyBlockTx(const CTransaction& tx, const CTxContxt& txContxt, CBlockIndex* pIndexPrev) = 0;
     virtual MvErr VerifyTransaction(const CTransaction& tx, const std::vector<CTxOutput>& vPrevOutput, int32 nForkHeight) = 0;
-    virtual bool GetProofOfWorkTarget(CBlockIndex* pIndexPrev, int nAlgo, int& nBits, int64& nReward) = 0;
+    virtual bool GetProofOfWorkTarget(const CBlockIndex* pIndexPrev, int nAlgo, int& nBits, int64& nReward) = 0;
     virtual int GetProofOfWorkRunTimeBits(int nBits, int64 nTime, int64 nPrevTime) = 0;
-    virtual int64 GetDelegatedProofOfStakeReward(CBlockIndex* pIndexPrev, std::size_t nWeight) = 0;
+    virtual int64 GetDelegatedProofOfStakeReward(const CBlockIndex* pIndexPrev, std::size_t nWeight) = 0;
     virtual void GetDelegatedBallot(const uint256& nAgreement, std::size_t nWeight,
                                     const std::map<CDestination, size_t>& mapBallot, std::vector<CDestination>& vBallot) = 0;
 };
@@ -79,9 +83,8 @@ public:
     virtual bool GetDelegatedProofOfStakeReward(const uint256& hashPrev,std::size_t nWeight,int64& nReward) = 0;
     virtual bool GetBlockLocator(const uint256& hashFork,CBlockLocator& locator) = 0;
     virtual bool GetBlockInv(const uint256& hashFork,const CBlockLocator& locator,std::vector<uint256>& vBlockHash,std::size_t nMaxCount) = 0;
-    virtual bool GetBlockDelegateEnrolled(const uint256& hashBlock,std::map<CDestination,std::size_t>& mapWeight,
-                                                                   std::map<CDestination,std::vector<unsigned char> >& mapEnrollData) = 0;
-    virtual bool GetBlockDelegateAgreement(const uint256& hashBlock,uint256& nAgreement,size_t& nWeight,std::vector<CDestination>& vBallot) = 0;
+    virtual bool GetBlockDelegateEnrolled(const uint256& hashBlock,CDelegateEnrolled& enrolled) = 0;
+    virtual bool GetBlockDelegateAgreement(const uint256& hashBlock,CDelegateAgreement& agreement) = 0;
     const CMvBasicConfig* WalleveConfig()
     {
         return dynamic_cast<const CMvBasicConfig*>(walleve::IWalleveBase::WalleveConfig());

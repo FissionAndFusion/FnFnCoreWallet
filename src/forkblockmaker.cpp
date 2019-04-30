@@ -275,7 +275,7 @@ bool CForkBlockMaker::DispatchBlock(const CBlock& block)
     return true;
 }
     
-void CForkBlockMaker::ProcessDelegatedProofOfStake(CBlock& block,const CBlockMakerAgreement& agreement,const int32 nPrevHeight)
+void CForkBlockMaker::ProcessDelegatedProofOfStake(CBlock& block,const CDelegateAgreement& agreement,const int32 nPrevHeight)
 {
     map<CDestination,CForkBlockMakerProfile>::iterator it = mapDelegatedProfile.find(agreement.vBallot[0]);
     if (it != mapDelegatedProfile.end())
@@ -285,7 +285,7 @@ void CForkBlockMaker::ProcessDelegatedProofOfStake(CBlock& block,const CBlockMak
     }
 }
     
-void CForkBlockMaker::ProcessExtended(const CBlockMakerAgreement& agreement,const uint256& hashPrimaryBlock,
+void CForkBlockMaker::ProcessExtended(const CDelegateAgreement& agreement,const uint256& hashPrimaryBlock,
                                                                int64 nPrimaryBlockTime,const int32 nPrimaryBlockHeight)
 {
     vector<CForkBlockMakerProfile*> vProfile;
@@ -339,7 +339,7 @@ bool CForkBlockMaker::CreateDelegatedBlock(CBlock& block,const uint256& hashFork
     return SignBlock(block,profile);
 }
     
-void CForkBlockMaker::CreatePiggyback(const CForkBlockMakerProfile& profile,const CBlockMakerAgreement& agreement,const CBlock& refblock,const int32 nPrevHeight)
+void CForkBlockMaker::CreatePiggyback(const CForkBlockMakerProfile& profile,const CDelegateAgreement& agreement,const CBlock& refblock,const int32 nPrevHeight)
 {
     CProofOfPiggyback proof;
     proof.nWeight = agreement.nWeight;
@@ -370,7 +370,7 @@ void CForkBlockMaker::CreatePiggyback(const CForkBlockMakerProfile& profile,cons
     }
 }
     
-void CForkBlockMaker::CreateExtended(const CForkBlockMakerProfile& profile,const CBlockMakerAgreement& agreement,const std::set<uint256>& setFork,const int32 nPrimaryBlockHeight,int64 nTime)
+void CForkBlockMaker::CreateExtended(const CForkBlockMakerProfile& profile,const CDelegateAgreement& agreement,const std::set<uint256>& setFork,const int32 nPrimaryBlockHeight,int64 nTime)
 {
     CProofOfSecretShare proof;
     proof.nWeight = agreement.nWeight;
@@ -472,7 +472,7 @@ void CForkBlockMaker::BlockMakerThreadFunc()
     // run state machine
     for (;;)
     {   
-        CBlockMakerAgreement agree;
+        CDelegateAgreement agree;
         {
             boost::unique_lock<boost::mutex> lock(mutex);
 
@@ -487,8 +487,7 @@ void CForkBlockMaker::BlockMakerThreadFunc()
                 break;
             }
         
-            if(!pWorldLine->GetBlockDelegateAgreement(hashLastBlock, agree.nAgreement, 
-                agree.nWeight, agree.vBallot))
+            if(!pWorldLine->GetBlockDelegateAgreement(hashLastBlock, agree))
             {
                 nMakerStatus = ForkMakerStatus::MAKER_SKIP;
                 continue;
@@ -551,7 +550,7 @@ void CForkBlockMaker::ExtendedMakerThreadFunc()
 
     for (;;)
     {
-        CBlockMakerAgreement agree; 
+        CDelegateAgreement agree; 
         {
             boost::unique_lock<boost::mutex> lock(mutex);
             

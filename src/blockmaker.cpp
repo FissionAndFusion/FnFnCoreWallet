@@ -238,7 +238,7 @@ bool CBlockMaker::Wait(long nSeconds,const uint256& hashPrimaryBlock)
     return false;
 }
 
-void CBlockMaker::PrepareBlock(CBlock& block,const uint256& hashPrev,int64 nPrevTime,const int32 nPrevHeight,const CBlockMakerAgreement& agreement)
+void CBlockMaker::PrepareBlock(CBlock& block,const uint256& hashPrev,int64 nPrevTime,const int32 nPrevHeight,const CDelegateAgreement& agreement)
 {
     block.SetNull();
     block.nType = CBlock::BLOCK_PRIMARY;
@@ -335,7 +335,7 @@ bool CBlockMaker::CreateProofOfWorkBlock(CBlock& block)
     return SignBlock(block,profile);
 }
 
-void CBlockMaker::ProcessDelegatedProofOfStake(CBlock& block,const CBlockMakerAgreement& agreement,const int32 nPrevHeight)
+void CBlockMaker::ProcessDelegatedProofOfStake(CBlock& block,const CDelegateAgreement& agreement,const int32 nPrevHeight)
 {
     map<CDestination,CBlockMakerProfile>::iterator it = mapDelegatedProfile.find(agreement.vBallot[0]);
     if (it != mapDelegatedProfile.end())
@@ -351,7 +351,7 @@ void CBlockMaker::ProcessDelegatedProofOfStake(CBlock& block,const CBlockMakerAg
     }
 }
 
-void CBlockMaker::ProcessExtended(const CBlockMakerAgreement& agreement,
+void CBlockMaker::ProcessExtended(const CDelegateAgreement& agreement,
                                   const uint256& hashPrimaryBlock,int64 nPrimaryBlockTime,const int32 nPrimaryBlockHeight)
 {
     vector<CBlockMakerProfile*> vProfile;
@@ -406,7 +406,7 @@ bool CBlockMaker::CreateDelegatedBlock(CBlock& block,const uint256& hashFork,con
     return SignBlock(block,profile);
 }
 
-void CBlockMaker::CreatePiggyback(const CBlockMakerProfile& profile,const CBlockMakerAgreement& agreement,
+void CBlockMaker::CreatePiggyback(const CBlockMakerProfile& profile,const CDelegateAgreement& agreement,
                                   const uint256& hashRefBlock,int64 nRefBlockTime,const int32 nPrevHeight)
 {
     CProofOfPiggyback proof;
@@ -438,7 +438,7 @@ void CBlockMaker::CreatePiggyback(const CBlockMakerProfile& profile,const CBlock
     } 
 }
 
-void CBlockMaker::CreateExtended(const CBlockMakerProfile& profile,const CBlockMakerAgreement& agreement,
+void CBlockMaker::CreateExtended(const CBlockMakerProfile& profile,const CDelegateAgreement& agreement,
                                  const set<uint256>& setFork,const int32 nPrimaryBlockHeight,int64 nTime)
 {
     CProofOfSecretShare proof;
@@ -608,7 +608,7 @@ void CBlockMaker::BlockMakerThreadFunc()
 
     for (;;)
     {
-        CBlockMakerAgreement agree;
+        CDelegateAgreement agree;
         {
             boost::unique_lock<boost::mutex> lock(mutex);
 
@@ -722,11 +722,11 @@ void CBlockMaker::ExtendedMakerThreadFunc()
 
     for (;;)
     {
-        CBlockMakerAgreement agree; 
+        CDelegateAgreement agree; 
         {
             boost::unique_lock<boost::mutex> lock(mutex);
             
-            while (hashPrimaryBlock == hashLastBlock && nMakerStatus !=  MAKER_EXIT)
+            while (hashPrimaryBlock == hashLastBlock && nMakerStatus != MAKER_EXIT)
             {
                 cond.wait(lock);
             }

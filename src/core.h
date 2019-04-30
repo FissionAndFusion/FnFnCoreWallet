@@ -20,12 +20,16 @@ public:
     virtual MvErr ValidateTransaction(const CTransaction& tx) override;
     virtual MvErr ValidateBlock(const CBlock& block) override;
     virtual MvErr ValidateOrigin(const CBlock& block, const CProfile& parentProfile, CProfile& forkProfile) override;
-    virtual MvErr VerifyBlock(const CBlock& block, CBlockIndex* pIndexPrev) override;
+    virtual MvErr VerifyProofOfWork(const CBlock& block, const CBlockIndex* pIndexPrev, int64& nReward) override;
+    virtual MvErr VerifyDelegatedProofOfStake(const CBlock& block, const CBlockIndex* pIndexPrev,
+                                              const CDelegateAgreement& agreement, int64& nReward) override;
+    virtual MvErr VerifySubsidiary(const CBlock& block,const CBlockIndex* pIndexPrev,const CBlockIndex* pIndexRef,
+                                                       const CDelegateAgreement& agreement, int64& nReward) override;
     virtual MvErr VerifyBlockTx(const CTransaction& tx, const CTxContxt& txContxt, CBlockIndex *pIndexPrev) override;
     virtual MvErr VerifyTransaction(const CTransaction& tx, const std::vector<CTxOutput>& vPrevOutput, int32 nForkHeight) override;
-    virtual bool GetProofOfWorkTarget(CBlockIndex* pIndexPrev, int nAlgo, int& nBits, int64& nReward) override;
+    virtual bool GetProofOfWorkTarget(const CBlockIndex* pIndexPrev, int nAlgo, int& nBits, int64& nReward) override;
     virtual int GetProofOfWorkRunTimeBits(int nBits, int64 nTime, int64 nPrevTime) override;
-    virtual int64 GetDelegatedProofOfStakeReward(CBlockIndex* pIndexPrev, std::size_t nWeight) override;
+    virtual int64 GetDelegatedProofOfStakeReward(const CBlockIndex* pIndexPrev, std::size_t nWeight) override;
     virtual void GetDelegatedBallot(const uint256& nAgreement, std::size_t nWeight,
                                     const std::map<CDestination, size_t>& mapBallot, std::vector<CDestination>& vBallot) override;
 
@@ -33,7 +37,7 @@ protected:
     bool WalleveHandleInitialize() override;
     const MvErr Debug(const MvErr& err, const char* pszFunc, const char* pszFormat, ...);
     bool CheckBlockSignature(const CBlock& block);
-    int64 GetProofOfWorkReward(CBlockIndex* pIndexPrev);
+    int64 GetProofOfWorkReward(const CBlockIndex* pIndexPrev);
     MvErr ValidateVacantBlock(const CBlock& block);
 
 protected:

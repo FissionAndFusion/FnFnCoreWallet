@@ -10,10 +10,14 @@ using namespace std;
 using namespace walleve;
 using namespace multiverse;
 
+#define ENROLLED_CACHE_COUNT		(120)
+#define AGREEMENT_CACHE_COUNT		(16)
+
 //////////////////////////////
 // CWorldLine 
 
 CWorldLine::CWorldLine()
+: cacheEnrolled(ENROLLED_CACHE_COUNT), cacheAgreement(AGREEMENT_CACHE_COUNT)
 {
     pCoreProtocol = NULL;
     pTxPool = NULL;
@@ -83,6 +87,8 @@ bool CWorldLine::WalleveHandleInvoke()
 void CWorldLine::WalleveHandleHalt()
 {
     cntrBlock.Deinitialize();
+    cacheEnrolled.Clear();
+    cacheAgreement.Clear();
 }
 
 void CWorldLine::GetForkStatus(map<uint256,CForkStatus>& mapForkStatus)
@@ -373,6 +379,15 @@ MvErr CWorldLine::AddNewBlock(const CBlock& block,CWorldLineUpdate& update)
         return MV_ERR_SYS_STORAGE_ERROR;
     }
 
+    int64 nReward;
+
+    err = VerifyBlock(hash,block,pIndexPrev,nReward);
+    if (err != MV_OK)
+    {
+        WalleveLog("AddNewBlock Verify Block Error(%s) : %s \n",MvErrString(err),hash.ToString().c_str());
+        return err;
+    } 
+
     storage::CBlockView view;
     if (!cntrBlock.GetBlockView(block.hashPrev,view,!block.IsOrigin()))
     {
@@ -380,13 +395,6 @@ MvErr CWorldLine::AddNewBlock(const CBlock& block,CWorldLineUpdate& update)
         return MV_ERR_SYS_STORAGE_ERROR;
     }
     
-    err = pCoreProtocol->VerifyBlock(block,pIndexPrev);
-    if (err != MV_OK)
-    {
-        WalleveLog("AddNewBlock Verify Block Error(%s) : %s \n",MvErrString(err),hash.ToString().c_str());
-        return err;
-    } 
-
     if (!block.IsVacant())
     {
         view.AddTx(block.txMint.GetHash(),block.txMint);
@@ -394,6 +402,8 @@ MvErr CWorldLine::AddNewBlock(const CBlock& block,CWorldLineUpdate& update)
 
     CBlockEx blockex(block);
     vector<CTxContxt>& vTxContxt = blockex.vTxContxt;
+
+    int64 nTotalFee = 0;
 
     vTxContxt.reserve(block.vtx.size());
 
@@ -418,6 +428,14 @@ MvErr CWorldLine::AddNewBlock(const CBlock& block,CWorldLineUpdate& update)
         }
         vTxContxt.push_back(txContxt);
         view.AddTx(txid,tx,txContxt.destIn,txContxt.GetValueIn());
+
+        nTotalFee += tx.nTxFee;
+    }
+
+    if (block.txMint.nAmount > nTotalFee + nReward)
+    {
+        WalleveLog("AddNewBlock Mint tx amount invalid : (%ld > %ld + %ld \n",block.txMint.nAmount,nTotalFee,nReward);
+        return MV_ERR_BLOCK_TRANSACTIONS_INVALID;
     }
 
     CBlockIndex* pIndexNew;
@@ -604,11 +622,14 @@ bool CWorldLine::GetBlockInv(const uint256& hashFork,const CBlockLocator& locato
     return cntrBlock.GetForkBlockInv(hashFork,locator,vBlockHash,nMaxCount);
 }
 
-bool CWorldLine::GetBlockDelegateEnrolled(const uint256& hashBlock,map<CDestination,size_t>& mapWeight,
-                                                                   map<CDestination,vector<unsigned char> >& mapEnrollData)
+bool CWorldLine::GetBlockDelegateEnrolled(const uint256& hashBlock,CDelegateEnrolled& enrolled)
 {
-    mapWeight.clear();
-    mapEnrollData.clear();
+    enrolled.Clear();
+
+    if (cacheEnrolled.Retrieve(hashBlock,enrolled))
+    {
+        return true;
+    }
 
     CBlockIndex* pIndex;
     if (!cntrBlock.RetrieveIndex(hashBlock,&pIndex))
@@ -616,6 +637,7 @@ bool CWorldLine::GetBlockDelegateEnrolled(const uint256& hashBlock,map<CDestinat
         WalleveLog("GetBlockDelegateEnrolled : Retrieve block Index Error: %s \n",hashBlock.ToString().c_str());
         return false;
     }
+
     int64 nDelegateWeightRatio = (pIndex->GetMoneySupply() + DELEGATE_THRESH - 1) / DELEGATE_THRESH;
 
     if (pIndex->GetBlockHeight() < MV_CONSENSUS_ENROLL_INTERVAL)
@@ -630,18 +652,27 @@ bool CWorldLine::GetBlockDelegateEnrolled(const uint256& hashBlock,map<CDestinat
     }
 
     if (!cntrBlock.RetrieveAvailDelegate(hashBlock,pIndex->GetBlockHash(),vBlockRange,nDelegateWeightRatio,
-                                                   mapWeight,mapEnrollData))
+                                                   enrolled.mapWeight,enrolled.mapEnrollData))
     {
         WalleveLog("GetBlockDelegateEnrolled : Retrieve Avail Delegate Error: %s \n",hashBlock.ToString().c_str());
         return false;
     }
 
+    cacheEnrolled.AddNew(hashBlock,enrolled);
+
     return true;
 }
 
-bool CWorldLine::GetBlockDelegateAgreement(const uint256& hashBlock,uint256& nAgreement,size_t& nWeight,vector<CDestination>& vBallot)
+bool CWorldLine::GetBlockDelegateAgreement(const uint256& hashBlock,CDelegateAgreement& agreement)
 {
-    CBlockIndex* pIndex = NULL;
+    agreement.Clear();
+
+    if (cacheAgreement.Retrieve(hashBlock,agreement))
+    {
+        return true;
+    }
+
+    CBlockIndex* pIndex;
     if (!cntrBlock.RetrieveIndex(hashBlock,&pIndex))
     {
         WalleveLog("GetBlockDelegateAgreement : Retrieve block Index Error: %s \n",hashBlock.ToString().c_str());
@@ -659,28 +690,30 @@ bool CWorldLine::GetBlockDelegateAgreement(const uint256& hashBlock,uint256& nAg
         WalleveLog("GetBlockDelegateAgreement : Retrieve block Error: %s \n",hashBlock.ToString().c_str());
         return false;
     }
-    
+
     for (int i = 0;i < MV_CONSENSUS_DISTRIBUTE_INTERVAL + 1;i++)
     {
         pIndex = pIndex->pPrev;
     }
 
-    map<CDestination,size_t> mapWeight;
-    map<CDestination,vector<unsigned char> > mapEnrollData;
-    if (!GetBlockDelegateEnrolled(pIndex->GetBlockHash(),mapWeight,mapEnrollData))
+    CDelegateEnrolled enrolled;
+
+    if (!GetBlockDelegateEnrolled(pIndex->GetBlockHash(),enrolled))
     {
         return false;
     }
 
-    delegate::CMvDelegateVerify verifier(mapWeight,mapEnrollData);
+    delegate::CMvDelegateVerify verifier(enrolled.mapWeight,enrolled.mapEnrollData);
     map<CDestination,size_t> mapBallot;
-    if (!verifier.VerifyProof(block.vchProof,nAgreement,nWeight,mapBallot))
+    if (!verifier.VerifyProof(block.vchProof,agreement.nAgreement,agreement.nWeight,mapBallot))
     {
         WalleveLog("GetBlockDelegateAgreement : Invalid block proof : %s \n",hashBlock.ToString().c_str());
         return false;
     }
     
-    pCoreProtocol->GetDelegatedBallot(nAgreement,nWeight,mapBallot,vBallot); 
+    pCoreProtocol->GetDelegatedBallot(agreement.nAgreement,agreement.nWeight,mapBallot,agreement.vBallot); 
+
+    cacheAgreement.AddNew(hashBlock,agreement);
 
     return true;
 }
@@ -759,5 +792,124 @@ bool CWorldLine::GetBlockChanges(const CBlockIndex* pIndexNew,const CBlockIndex*
         }
     }
     return true;
+}
+
+bool CWorldLine::GetBlockDelegateAgreement(const uint256& hashBlock,const CBlock& block,const CBlockIndex* pIndexPrev,
+                                                                    CDelegateAgreement& agreement)
+{
+    agreement.Clear();
+
+    if (pIndexPrev->GetBlockHeight() < MV_CONSENSUS_INTERVAL - 1)
+    {
+        return true;
+    }
+
+    const CBlockIndex* pIndex = pIndexPrev;
+
+    for (int i = 0;i < MV_CONSENSUS_DISTRIBUTE_INTERVAL;i++)
+    {
+        pIndex = pIndex->pPrev;
+    }
+
+    CDelegateEnrolled enrolled;
+
+    if (!GetBlockDelegateEnrolled(pIndex->GetBlockHash(),enrolled))
+    {
+        return false;
+    }
+
+    delegate::CMvDelegateVerify verifier(enrolled.mapWeight,enrolled.mapEnrollData);
+    map<CDestination,size_t> mapBallot;
+    if (!verifier.VerifyProof(block.vchProof,agreement.nAgreement,agreement.nWeight,mapBallot))
+    {
+        WalleveLog("GetBlockDelegateAgreement : Invalid block proof : %s \n",hashBlock.ToString().c_str());
+        return false;
+    }
+    
+    pCoreProtocol->GetDelegatedBallot(agreement.nAgreement,agreement.nWeight,mapBallot,agreement.vBallot); 
+
+    cacheAgreement.AddNew(hashBlock,agreement);
+
+    return true;
+}
+
+MvErr CWorldLine::VerifyBlock(const uint256& hashBlock,const CBlock& block,CBlockIndex* pIndexPrev,int64& nReward)
+{
+    nReward = 0;
+    if (block.IsOrigin())
+    {
+        return MV_ERR_BLOCK_INVALID_FORK;
+    }
+
+    if (block.IsPrimary())
+    {
+        if (!pIndexPrev->IsPrimary())
+        {
+            return MV_ERR_BLOCK_INVALID_FORK;
+        }
+
+        CDelegateAgreement agreement;
+        if (!GetBlockDelegateAgreement(hashBlock,block,pIndexPrev,agreement))
+        {
+            return MV_ERR_BLOCK_PROOF_OF_STAKE_INVALID;
+        }
+
+        if (agreement.IsProofOfWork())
+        {
+            return pCoreProtocol->VerifyProofOfWork(block,pIndexPrev,nReward);
+        }
+        else
+        {
+            return pCoreProtocol->VerifyDelegatedProofOfStake(block,pIndexPrev,agreement,nReward);
+        }
+    }
+    else if (!block.IsVacant())
+    {
+        if (pIndexPrev->IsPrimary())
+        {
+            return MV_ERR_BLOCK_INVALID_FORK;
+        }
+
+        CProofOfPiggyback proof;
+        proof.Load(block.vchProof);
+        
+        CDelegateAgreement agreement;
+        if (!GetBlockDelegateAgreement(proof.hashRefBlock,agreement))
+        {
+            return MV_ERR_BLOCK_PROOF_OF_STAKE_INVALID;
+        }
+
+        if (agreement.nAgreement != proof.nAgreement || agreement.nWeight != proof.nWeight
+            || agreement.IsProofOfWork())
+        {
+            return MV_ERR_BLOCK_PROOF_OF_STAKE_INVALID;
+        }
+
+        CBlockIndex* pIndexRef = NULL;
+        if (!cntrBlock.RetrieveIndex(proof.hashRefBlock,&pIndexRef))
+        {
+            return MV_ERR_BLOCK_PROOF_OF_STAKE_INVALID;
+        }
+
+        if (block.IsExtended())
+        {
+            CBlock blockPrev;
+            if (!cntrBlock.Retrieve(pIndexPrev,blockPrev) || blockPrev.IsVacant())
+            {
+                return MV_ERR_MISSING_PREV;
+            }
+
+            CProofOfPiggyback proofPrev;
+            proofPrev.Load(blockPrev.vchProof);
+            if (proof.nAgreement != proofPrev.nAgreement || proof.nWeight != proofPrev.nWeight)
+            {
+                return MV_ERR_BLOCK_PROOF_OF_STAKE_INVALID;
+            }
+        }
+
+        return pCoreProtocol->VerifySubsidiary(block,pIndexPrev,pIndexRef,agreement,nReward);
+    }
+   
+    return MV_OK;
 }
 
