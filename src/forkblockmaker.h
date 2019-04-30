@@ -78,6 +78,7 @@ protected:
     bool GetAvailableExtendedFork(std::set<uint256>& setFork);
 private:
     enum class ForkMakerStatus : int {MAKER_RUN=0,MAKER_RESET=1,MAKER_EXIT=2,MAKER_HOLD=3,MAKER_SKIP=4};
+    enum class ForkExtendMakerStatus : int {MAKER_RUN=0,MAKER_RESET=1,MAKER_EXIT=2,MAKER_HOLD=3,MAKER_SKIP=4};
     void BlockMakerThreadFunc();
     void ExtendedMakerThreadFunc();
 
@@ -87,7 +88,9 @@ protected:
     walleve::CWalleveThread thrExtendedMaker;
     boost::mutex mutex;
     boost::condition_variable cond;
+    boost::condition_variable condExtend;
     ForkMakerStatus nMakerStatus;
+    ForkExtendMakerStatus nExtendMakerStatus;
     uint256 hashLastBlock;
     int64 nLastBlockTime;
     int32 nLastBlockHeight;

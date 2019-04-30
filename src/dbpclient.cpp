@@ -306,27 +306,28 @@ void CDbpClientSocket::HandleReadCompleted(uint32_t len)
         break;
     case dbp::PONG:
         pDbpClient->HandleClientSocketRecv(this,anyObj);
-        pDbpClient->HandleClientSocketSent(this);
         break;
     case dbp::RESULT:
         pDbpClient->HandleClientSocketRecv(this,anyObj);
-        pDbpClient->HandleClientSocketSent(this);
         break;
     case dbp::NOSUB:
         pDbpClient->HandleClientSocketRecv(this,anyObj);
         break;
     case dbp::READY:
         pDbpClient->HandleClientSocketRecv(this,anyObj);
-        pDbpClient->HandleClientSocketSent(this);
         break;
     case dbp::ADDED:
         pDbpClient->HandleClientSocketRecv(this,anyObj);
-        pDbpClient->HandleClientSocketSent(this);
         break;
     default:
         std::cerr << "is not Message Base Type is unknown. [dbpclient]" << std::endl;
         pDbpClient->HandleClientSocketError(this);
         break;
+    }
+
+    if(!IsReading)
+    {
+        ReadMessage();
     }
 }
 
@@ -334,7 +335,6 @@ CDbpClient::CDbpClient()
   : walleve::CIOProc("dbpclient")
 {
     pDbpService = NULL;
-    fIsResolved = false;
     fIsRootNode = false;
     fIsSuperNode = false;
 }
@@ -631,6 +631,11 @@ void CDbpClient::EnterLoop()
 {
     // start resource
     WalleveLog("Dbp Client starting:\n");
+    
+    if(fIsSuperNode && !fIsRootNode)
+    {
+        ResolveHost(parentHost);
+    }
 }
 
 void CDbpClient::LeaveLoop()
@@ -648,23 +653,6 @@ void CDbpClient::LeaveLoop()
     }
 
     WalleveLog("Dbp Client stop\n");
-}
-
-void CDbpClient::HeartBeat()
-{
-    if(fIsSuperNode && !fIsRootNode && !fIsResolved)
-    {
-        try
-        {
-            if(!parentHost.ToEndPoint().address().to_string().empty())
-                ResolveHost(parentHost);
-        }
-        catch(const std::exception& e)
-        {
-            WalleveWarn("DbpClient HeartBeat Warning:\n");
-            WalleveWarn(e.what());
-        }
-    }
 }
 
 bool CDbpClient::ClientConnected(CIOClient* pClient)
@@ -687,10 +675,6 @@ void CDbpClient::ClientFailToConnect(const boost::asio::ip::tcp::endpoint& epRem
     WalleveWarn("Connect parent node %s failed,  port = %d\n reconnectting\n",
                        epRemote.address().to_string().c_str(),
                        epRemote.port());
-
-    std::cerr << "Connect parent node " << 
-        epRemote.address().to_string() << " failed, " 
-        << "port " << epRemote.port() << " and reconnectting." << std::endl;
     
     std::this_thread::sleep_for(std::chrono::seconds(5));
     
@@ -727,8 +711,6 @@ void CDbpClient::HostResolved(const CNetHost& host, const boost::asio::ip::tcp::
         return;
     }
 
-    fIsResolved = true;
-
     if (confClient.optSSL.fEnable)
         profile.optSSL = confClient.optSSL;
 
@@ -756,6 +738,8 @@ void CDbpClient::HostResolved(const CNetHost& host, const boost::asio::ip::tcp::
 
 void CDbpClient::HostFailToResolve(const CNetHost& host)
 {
+    std::cerr << "Host Resolve failed " << host.strHost << " Restarting resolve." << std::endl;
+    ResolveHost(host);
 }
 
 bool CDbpClient::CreateProfile(const CDbpClientConfig& confClient)
@@ -792,7 +776,7 @@ void CDbpClient::SendPingHandler(const boost::system::error_code& err, const CDb
 
     if(IsSessionTimeout(sessionProfile.pClientSocket))
     {
-        std::cerr << "######### dbp client session time out ############\n";
+        std::cerr << "######### dbp client session time out ############" << std::endl;
         HandleClientSocketError(sessionProfile.pClientSocket);
         return;
     }
@@ -877,7 +861,7 @@ bool CDbpClient::ActivateConnect(CIOClient* pClient, CDbpClientProfile* pProfile
     CDbpClientSocket* pDbpClientSocket = new CDbpClientSocket(pIOModule,nNonce,this,pClient, pProfile);
     if(!pDbpClientSocket)
     {
-        std::cerr << "Create Client Socket error\n";
+        std::cerr << "Create Client Socket error" << std::endl;
         return false;
     }
 
@@ -924,7 +908,7 @@ CDbpClientSocket* CDbpClient::PickOneSessionSocket() const
     }
     else
     {
-        std::cerr << "mapSessionProfile is empty\n";
+        std::cerr << "mapSessionProfile is empty" << std::endl;
     }
 
     return pClientSocket;

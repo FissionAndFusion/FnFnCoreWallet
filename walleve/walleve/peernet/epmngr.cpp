@@ -323,7 +323,10 @@ void CEndpointManager::RetrieveGoodNode(vector<CNodeAvail>& vGoodNode,
             }
             else
             {
-                mapScore.insert(make_pair(-(*it).second.nScore,CNodeAvail(node,(*it).second.nLastSeen)));
+                if(setRemoteBlackEp.find(node.ep) == setRemoteBlackEp.end())
+                {
+                    mapScore.insert(make_pair(-(*it).second.nScore,CNodeAvail(node,(*it).second.nLastSeen)));
+                }
             }
         }
     }
@@ -339,6 +342,12 @@ void CEndpointManager::AddNewGateWay(const boost::asio::ip::tcp::endpoint& epGat
                             const boost::asio::ip::tcp::endpoint& epNode)
 {
     mapRemoteGateWay[epNode] = epGateWay;
+    setRemoteBlackEp.erase(epNode);
+}
+
+void CEndpointManager::AddNewBlackEndPoint(const boost::asio::ip::tcp::endpoint& epNode)
+{
+    setRemoteBlackEp.insert(epNode);
 }
 
 void CEndpointManager::CleanInactiveAddress()
@@ -392,7 +401,6 @@ bool CEndpointManager::AddNewEndPointNodeId(const boost::asio::ip::tcp::endpoint
         if (!status.AddConnection(false))
         {
             mngrNode.Dismiss(ep,false);
-            return false;
         }
         return true;
     }

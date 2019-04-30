@@ -183,7 +183,7 @@ void CDbpServerSocket::SendResponse(const std::string& client, CMvDbpAdded& body
     }
     else
     {
-        std::cerr << "Unknown added type.\n";
+        std::cerr << "Unknown added type." << std::endl;
         return;
     }
 
@@ -404,7 +404,6 @@ void CDbpServerSocket::HandleReadCompleted(uint32_t len)
         break;
     case dbp::PONG:
         pServer->HandleClientRecv(this, anyObj);
-        pServer->HandleClientSent(this);
         break;
     case dbp::PING:
         pServer->HandleClientRecv(this, anyObj);
@@ -414,6 +413,11 @@ void CDbpServerSocket::HandleReadCompleted(uint32_t len)
         pServer->RespondError(this, "003", "is not Message Base Type is unknown.");
         pServer->HandleClientError(this);
         break;
+    }
+
+    if(!IsReading)
+    {
+        Activate();
     }
 }
 
@@ -954,7 +958,7 @@ void CDbpServer::SendPingHandler(const boost::system::error_code& err, const CSe
 
     if(IsSessionTimeOut(sessionProfile.pDbpClient))
     {
-        std::cerr << "######### dbp server session time out ############\n";
+        std::cerr << "######### dbp server session time out ############" << std::endl;
         HandleClientError(sessionProfile.pDbpClient);
         return;
     }

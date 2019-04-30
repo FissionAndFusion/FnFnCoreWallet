@@ -515,7 +515,7 @@ bool CDbpService::GetLwsBlocks(const uint256& forkHash, const uint256& startHash
 
     if(!IsForkHash(connectForkHash))
     {
-        std::cerr << "connect fork hash is not a fork hash.\n";
+        std::cerr << "connect fork hash is not a fork hash." << std::endl;
         return false;
     }
 
@@ -528,13 +528,13 @@ bool CDbpService::GetLwsBlocks(const uint256& forkHash, const uint256& startHash
     uint256 tempForkHash;
     if (!pService->GetBlockLocation(blockHash, tempForkHash, blockHeight))
     {
-        std::cerr << "GetBlockLocation failed\n";
+        std::cerr << "GetBlockLocation failed" << std::endl;
         return false;
     }
 
     if(!CalcForkPoints(connectForkHash))
     {
-        std::cerr << "CalcForkPoint failed.\n";
+        std::cerr << "CalcForkPoint failed." << std::endl;
         return false;
     }
 
