@@ -10,7 +10,7 @@ using namespace std;
 namespace walleve
 {
 bool STD_DEBUG = false;
-uint64 SUPERNODE_INNER_NONCE = std::numeric_limits<uint64>::max();
+const uint64 SUPERNODE_INNER_NONCE = std::numeric_limits<uint64>::max();
 } // namespace walleve
 
 

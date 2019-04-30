@@ -25,7 +25,7 @@ namespace walleve
 
 
 extern bool STD_DEBUG;
-extern uint64 SUPERNODE_INNER_NONCE;
+extern const uint64 SUPERNODE_INNER_NONCE;
 
 inline int64 GetTime()
 {
