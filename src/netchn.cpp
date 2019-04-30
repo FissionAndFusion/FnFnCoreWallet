@@ -363,7 +363,7 @@ void CNetChannel::BroadcastBlockInv(const uint256& hashFork,const uint256& hashB
         }
     }
     
-    network::CMvEventPeerInv eventDownInv(std::numeric_limits<uint64>::max(), hashFork);
+    network::CMvEventPeerInv eventDownInv(SUPERNODE_INNER_NONCE, hashFork);
     eventDownInv.sender = "netchannel";
     eventDownInv.data.push_back(network::CInv(network::CInv::MSG_BLOCK,hashBlock));
     pPeerNet->DispatchEvent(&eventDownInv);
@@ -616,7 +616,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerGetData& eventGetData)
 
             if("up" == flow)
             {
-                eventTx.nNonce = std::numeric_limits<uint64>::max();
+                eventTx.nNonce = SUPERNODE_INNER_NONCE;
                 eventTx.sender = "netchannel";
             }
 
@@ -645,7 +645,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerGetData& eventGetData)
 
             if("up" == flow)
             {
-                eventBlock.nNonce = std::numeric_limits<uint64>::max();
+                eventBlock.nNonce = SUPERNODE_INNER_NONCE;
                 eventBlock.sender = "netchannel";
             }
 
@@ -688,7 +688,7 @@ bool CNetChannel::HandleEvent(network::CMvEventPeerGetBlocks& eventGetBlocks)
 
     if("up" == flow)
     {
-        eventInv.nNonce = std::numeric_limits<uint64>::max();
+        eventInv.nNonce = SUPERNODE_INNER_NONCE;
         eventInv.sender = "netchannel";
     }
 
@@ -885,7 +885,7 @@ void CNetChannel::SchedulePeerInv(uint64 nNonce,const uint256& hashFork,CSchedul
            // std::cout << "eventGetData data is empty [netchannel SchedulePeerInv]\n";
             if (!sched.ScheduleTxInv(nNonce,eventGetData.data,MAX_PEER_SCHED_COUNT))
             {
-                if(nNonce != std::numeric_limits<uint64>::max())
+                if(!IsSuperNodeInnerNonce(nNonce))
                 {
                     std::cout << "Dispatch Event DDOS (ScheduleTxInv return false) [netchannel]" << std::endl;
                     DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK,"SchedulePeerInv1");
@@ -898,8 +898,7 @@ void CNetChannel::SchedulePeerInv(uint64 nNonce,const uint256& hashFork,CSchedul
     }
     else
     {
-        //std::cout << "ScheduleBlockInv return false [netchannel SchedulePeerInv]" << std::endl;
-        if(nNonce != std::numeric_limits<uint64>::max())
+        if(!IsSuperNodeInnerNonce(nNonce))
         {
             //std::cout << "Dispatch Event DDOS (ScheduleBlockInv return false) [netchannel]" << std::endl;
             DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK,"SchedulePeerInv2");
@@ -954,7 +953,7 @@ void CNetChannel::AddNewBlock(const uint256& hashFork,const uint256& hash,CSched
                 sched.GetNextBlock(hashBlock,vBlockHash);
                 sched.RemoveInv(network::CInv(network::CInv::MSG_BLOCK,hashBlock),setKnownPeer);
                 
-                if(nNonceSender != std::numeric_limits<uint64>::max())
+                if(!IsSuperNodeInnerNonce(nNonceSender))
                 {
                     DispatchAwardEvent(nNonceSender,CEndpointManager::VITAL_DATA);
                 }
@@ -997,7 +996,7 @@ void CNetChannel::AddNewTx(const uint256& hashFork,const uint256& txid,CSchedule
                 sched.GetNextTx(hashTx,vtx,setTx);
                 sched.RemoveInv(network::CInv(network::CInv::MSG_TX,hashTx),setSchedPeer);
                 
-                if(nNonceSender != std::numeric_limits<uint64>::max())
+                if(!IsSuperNodeInnerNonce(nNonceSender))
                 {
                     DispatchAwardEvent(nNonceSender,CEndpointManager::MAJOR_DATA);
                 }
@@ -1029,7 +1028,7 @@ void CNetChannel::PostAddNew(const uint256& hashFork,CSchedule& sched,
 
     for(const uint64 nNonceMisbehave : setMisbehavePeer)
     {
-        if(nNonceMisbehave != std::numeric_limits<uint64>::max())
+        if(!IsSuperNodeInnerNonce(nNonceMisbehave))
         {
             std::cout << "DDOS in PostAddNew [netchannel]" << std::endl;
             DispatchMisbehaveEvent(nNonceMisbehave,CEndpointManager::DDOS_ATTACK,"PostAddNew");

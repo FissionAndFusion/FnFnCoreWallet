@@ -4,6 +4,7 @@
 
 #include "dispatcher.h"
 #include "event.h"
+#include "walleve/util.h"
 
 using namespace std;
 using namespace walleve;
@@ -175,7 +176,7 @@ MvErr CDispatcher::AddNewBlock(const CBlock& block,uint64 nNonce)
 
     pService->NotifyWorldLineUpdate(updateWorldLine);
 
-    if (nNonce != std::numeric_limits<uint64>::max() && !block.IsOrigin() && !block.IsVacant())
+    if (!IsSuperNodeInnerNonce(nNonce) && !block.IsOrigin() && !block.IsVacant())
     {
         pNetChannel->BroadcastBlockInv(updateWorldLine.hashFork,block.GetHash());
     }

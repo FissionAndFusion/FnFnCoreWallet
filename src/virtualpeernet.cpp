@@ -179,7 +179,7 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerSubscribe& eventSubscribe
         if(SENDER_DBPSVC == eventSubscribe.sender)
         {
            
-            if(eventSubscribe.nNonce == std::numeric_limits<uint64>::max())
+            if(IsSuperNodeInnerNonce(eventSubscribe.nNonce))
             {   
                 network::CMvEventPeerSubscribe* pEvent = new network::CMvEventPeerSubscribe(eventSubscribe.nNonce, eventSubscribe.hashFork);
                 if (!pEvent)
@@ -240,7 +240,7 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerUnsubscribe& eventUnsubsc
         if (SENDER_DBPSVC == eventUnsubscribe.sender)
         {
             
-            if(eventUnsubscribe.nNonce == std::numeric_limits<uint64>::max())
+            if(IsSuperNodeInnerNonce(eventUnsubscribe.nNonce))
             {
                 network::CMvEventPeerUnsubscribe* pEvent = new network::CMvEventPeerUnsubscribe(eventUnsubscribe.nNonce, eventUnsubscribe.hashFork);
                 if (!pEvent)
@@ -287,7 +287,7 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerInv& eventInv)
 {
     if(typeNode == SUPER_NODE_TYPE::SUPER_NODE_TYPE_FNFN)
     {
-        if(eventInv.nNonce != std::numeric_limits<uint64>::max())
+        if(!IsSuperNodeInnerNonce(eventInv.nNonce))
         {
             return CMvPeerNet::HandleEvent(eventInv);
         }
@@ -297,7 +297,7 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerInv& eventInv)
     {
         if(SENDER_NETCHN == eventInv.sender)
         {
-            if(std::numeric_limits<uint64>::max() != eventInv.nNonce)
+            if(!IsSuperNodeInnerNonce(eventInv.nNonce))
             {
                 return CMvPeerNet::HandleEvent(eventInv);
             }
@@ -378,7 +378,7 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerGetData& eventGetData)
 
         if(SENDER_DBPSVC == eventGetData.sender)
         {
-            if(std::numeric_limits<uint64>::max() != eventGetData.nNonce)
+            if(!IsSuperNodeInnerNonce(eventGetData.nNonce))
             {
                 return CMvPeerNet::HandleEventForkNode(eventGetData);
             }
@@ -432,7 +432,7 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerGetBlocks& eventGetBlocks
 
         if(SENDER_DBPSVC == eventGetBlocks.sender)
         {
-            if(eventGetBlocks.nNonce == std::numeric_limits<uint64>::max())
+            if(IsSuperNodeInnerNonce(eventGetBlocks.nNonce))
             {
                 network::CMvEventPeerGetBlocks* pEvent = new network::CMvEventPeerGetBlocks(eventGetBlocks);
                 pEvent->sender = "virtualpeernet";
@@ -482,7 +482,7 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerTx& eventTx)
 
         if(SENDER_DBPSVC == eventTx.sender)
         {
-            if(std::numeric_limits<uint64>::max() != eventTx.nNonce)
+            if(!IsSuperNodeInnerNonce(eventTx.nNonce))
             {
                 return CMvPeerNet::HandleEvent(eventTx);
             }
@@ -520,12 +520,7 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerBlock& eventBlock)
     {
         if(SENDER_NETCHN == eventBlock.sender)
         {
-            if(std::numeric_limits<uint64>::max() != eventBlock.nNonce)
-            {
-                return CMvPeerNet::HandleEvent(eventBlock);
-            }
-
-            if(std::numeric_limits<uint64>::max() == eventBlock.nNonce)
+            if(IsSuperNodeInnerNonce(eventBlock.nNonce))
             {
                 network::CMvEventPeerBlock *pEvent = new network::CMvEventPeerBlock(eventBlock);
                 if(!pEvent)
@@ -536,11 +531,15 @@ bool CVirtualPeerNet::HandleEvent(network::CMvEventPeerBlock& eventBlock)
                 pDbpService->PostEvent(pEvent);
                 return true;
             }
+            else
+            {
+                return CMvPeerNet::HandleEvent(eventBlock);
+            }
         }
 
         if(SENDER_DBPSVC == eventBlock.sender)
         {
-            if(std::numeric_limits<uint64>::max() != eventBlock.nNonce)
+            if(!IsSuperNodeInnerNonce(eventBlock.nNonce))
             {
                 return CMvPeerNet::HandleEvent(eventBlock);
             }

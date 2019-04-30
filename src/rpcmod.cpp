@@ -2229,7 +2229,7 @@ uint64 CSnRPCModWorker::GenNonce()
 {
     uint64 nNonce;
     RAND_bytes((unsigned char*)&nNonce, sizeof(nNonce));
-    while(nNonce <= 0xFF || nNonce == std::numeric_limits<uint64>::max())
+    while(nNonce <= 0xFF || IsSuperNodeInnerNonce(nNonce))
     {
         RAND_bytes((unsigned char*)&nNonce, sizeof(nNonce));
     }

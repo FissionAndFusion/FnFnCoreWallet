@@ -355,10 +355,8 @@ bool CDelegatedChannel::HandleEvent(network::CMvEventPeerGetDelegated& eventGetD
 
         network::CMvEventPeerDistribute eventDistribute(nNonce,hashAnchor);
         eventDistribute.data.destDelegate = dest;
-        if (dataChain.GetDistributeData(hashAnchor,dest,eventDistribute.data.vchData))
-        {
-            pPeerNet->DispatchEvent(&eventDistribute);
-        } 
+        dataChain.GetDistributeData(hashAnchor,dest,eventDistribute.data.vchData);
+        pPeerNet->DispatchEvent(&eventDistribute);
     } 
     else if (eventGetDelegated.data.nInvType == network::CInv::MSG_PUBLISH)
     {
@@ -366,10 +364,8 @@ bool CDelegatedChannel::HandleEvent(network::CMvEventPeerGetDelegated& eventGetD
 
         network::CMvEventPeerPublish eventPublish(nNonce,hashAnchor);
         eventPublish.data.destDelegate = dest;
-        if (dataChain.GetPublishData(hashAnchor,dest,eventPublish.data.vchData))
-        {
-            pPeerNet->DispatchEvent(&eventPublish);
-        } 
+        dataChain.GetPublishData(hashAnchor,dest,eventPublish.data.vchData);
+        pPeerNet->DispatchEvent(&eventPublish);
     }
  
     return true;
@@ -393,6 +389,10 @@ bool CDelegatedChannel::HandleEvent(network::CMvEventPeerDistribute& eventDistri
             if (dataChain.IsOutOfDistributeRange(hashAnchor))
             {
                 DispatchGetDelegated();
+                return true;
+            }
+            else if (vchData.empty())
+            {
                 return true;
             }
             else if (pDispatcher->AddNewDistribute(hashAnchor,dest,vchData))
@@ -430,6 +430,10 @@ bool CDelegatedChannel::HandleEvent(network::CMvEventPeerPublish& eventPublish)
             if (dataChain.IsOutOfPublishRange(hashAnchor))
             {
                 DispatchGetDelegated();
+                return true;
+            }
+            else if (vchData.empty())
+            {
                 return true;
             }
             else if (pDispatcher->AddNewPublish(hashAnchor,dest,vchData))

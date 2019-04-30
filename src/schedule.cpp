@@ -3,7 +3,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
     
 #include "schedule.h"
-    
+#include "walleve/util.h"    
 using namespace std;
 using namespace multiverse;
 
@@ -157,7 +157,7 @@ bool CSchedule::ReceiveBlock(uint64 nPeerNonce,const uint256& hash,const CBlock&
     {
         CInvState& state = (*it).second;
 
-        if(nPeerNonce != std::numeric_limits<uint64>::max())
+        if(!walleve::IsSuperNodeInnerNonce(nPeerNonce))
         {
             if (state.nAssigned == nPeerNonce && !state.IsReceived())
             {
@@ -205,7 +205,7 @@ bool CSchedule::ReceiveTx(uint64 nPeerNonce,const uint256& txid,const CTransacti
     {
         CInvState& state = (*it).second;
         
-        if(nPeerNonce != std::numeric_limits<uint64>::max())
+        if(!walleve::IsSuperNodeInnerNonce(nPeerNonce))
         {
             if (state.nAssigned == nPeerNonce && !state.IsReceived())
             {
