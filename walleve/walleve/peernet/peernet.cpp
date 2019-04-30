@@ -186,7 +186,7 @@ CPeer* CPeerNet::AddNewPeer(CIOClient *pClient,bool fInBound)
 {
     uint64 nNonce;
     RAND_bytes((unsigned char*)&nNonce, sizeof(nNonce));
-    while(mapPeer.count(nNonce) || nNonce <= 0xFF || nNonce == std::numeric_limits<uint64>::max())
+    while(mapPeer.count(nNonce) || nNonce <= 0xFF || IsSuperNodeInnerNonce(nNonce))
     {
         RAND_bytes((unsigned char*)&nNonce, sizeof(nNonce));
     }
