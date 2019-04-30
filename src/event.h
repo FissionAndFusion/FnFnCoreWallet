@@ -76,7 +76,7 @@ class CMvBlockMakerEventListener;
     walleve::CWalleveEventCategory<type, CMvBlockMakerEventListener, body, CNil>
 
 typedef TYPE_BLOCKMAKEREVENT(MV_EVENT_BLOCKMAKER_UPDATE, CBlockMakerUpdate) CMvEventBlockMakerUpdate;
-typedef TYPE_BLOCKMAKEREVENT(MV_EVENT_BLOCKMAKER_AGREE, CBlockMakerAgreement) CMvEventBlockMakerAgree;
+typedef TYPE_BLOCKMAKEREVENT(MV_EVENT_BLOCKMAKER_AGREE, CDelegateAgreement) CMvEventBlockMakerAgree;
 
 class CMvBlockMakerEventListener : virtual public walleve::CWalleveEventListener
 {

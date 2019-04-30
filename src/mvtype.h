@@ -129,6 +129,56 @@ public:
     CDelegateRoutine() : fPublishCompleted(false) {}
 };
 
+class CDelegateEnrolled
+{
+public:
+    CDelegateEnrolled() {}
+    void Clear()
+    {
+        mapWeight.clear();
+        mapEnrollData.clear();
+    } 
+public:
+    std::map<CDestination,std::size_t> mapWeight;
+    std::map<CDestination,std::vector<unsigned char> > mapEnrollData;
+};
+
+class CDelegateAgreement
+{
+public:
+    CDelegateAgreement() 
+    {
+        nAgreement = 0;
+        nWeight = 0;
+    }
+    bool IsProofOfWork() const 
+    { 
+        return (vBallot.empty()); 
+    } 
+    const CDestination GetBallot(int nIndex) const
+    {
+        if (vBallot.empty())
+        {
+            return CDestination();
+        }
+        return vBallot[nIndex % vBallot.size()];
+    }
+    bool operator==(const CDelegateAgreement& other)
+    {
+        return (nAgreement == other.nAgreement && nWeight == other.nWeight);
+    }
+    void Clear()
+    {
+        nAgreement = 0;
+        nWeight = 0;
+        vBallot.clear();
+    }
+public:
+    uint256 nAgreement;
+    std::size_t nWeight;
+    std::vector<CDestination> vBallot;
+};
+
 /* Protocol & Event */
 class CNil
 {
@@ -146,21 +196,6 @@ public:
     int32 nBlockHeight;
     uint256 nAgreement;
     std::size_t nWeight;
-};
-
-class CBlockMakerAgreement
-{
-public:
-    CBlockMakerAgreement() : nAgreement(uint64(0)),nWeight(0) {}
-    bool IsProofOfWork() const { return (vBallot.empty()); } 
-    bool operator==(const CBlockMakerAgreement& other)
-    {
-        return (nAgreement == other.nAgreement && nWeight == other.nWeight);
-    }
-public:
-    uint256 nAgreement;
-    std::size_t nWeight;
-    std::vector<CDestination> vBallot;
 };
 
 class CRPCModRequest

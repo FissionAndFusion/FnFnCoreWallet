@@ -46,9 +46,8 @@ public:
     bool GetDelegatedProofOfStakeReward(const uint256& hashPrev,std::size_t nWeight,int64& nReward) override;
     bool GetBlockLocator(const uint256& hashFork,CBlockLocator& locator) override;
     bool GetBlockInv(const uint256& hashFork,const CBlockLocator& locator,std::vector<uint256>& vBlockHash,std::size_t nMaxCount) override;
-    bool GetBlockDelegateEnrolled(const uint256& hashBlock,std::map<CDestination,std::size_t>& mapWeight,
-                                                           std::map<CDestination,std::vector<unsigned char> >& mapEnrollData) override;
-    bool GetBlockDelegateAgreement(const uint256& hashBlock,uint256& nAgreement,size_t& nWeight,std::vector<CDestination>& vBallot) override;
+    bool GetBlockDelegateEnrolled(const uint256& hashBlock,CDelegateEnrolled& enrolled) override;
+    bool GetBlockDelegateAgreement(const uint256& hashBlock,CDelegateAgreement& agreement) override;
 protected:
     bool WalleveHandleInitialize() override;
     void WalleveHandleDeinitialize() override;
@@ -60,11 +59,16 @@ protected:
     MvErr GetTxContxt(storage::CBlockView& view,const CTransaction& tx,CTxContxt& txContxt);
     bool GetBlockChanges(const CBlockIndex* pIndexNew,const CBlockIndex* pIndexFork,
                          std::vector<CBlockEx>& vBlockAddNew,std::vector<CBlockEx>& vBlockRemove);
+    bool GetBlockDelegateAgreement(const uint256& hashBlock,const CBlock& block,const CBlockIndex* pIndexPrev,
+                                                            CDelegateAgreement& agreement);
+    MvErr VerifyBlock(const uint256& hashBlock,const CBlock& block,CBlockIndex* pIndexPrev,int64& nReward);
 protected:
     boost::shared_mutex rwAccess;
     ICoreProtocol* pCoreProtocol;
     ITxPool* pTxPool;
     storage::CBlockBase cntrBlock;
+    walleve::CWalleveCache<uint256,CDelegateEnrolled> cacheEnrolled;
+    walleve::CWalleveCache<uint256,CDelegateAgreement> cacheAgreement;;
 };
 
 } // namespace multiverse
