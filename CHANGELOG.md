@@ -14,3 +14,14 @@
 ### Features
 
 * change database backbone
+
+<a name="Version 0.2.0"></a>
+# Version 0.2.0 (2019-4-30)
+
+### Features
+
+* improve the robustness of peer-peer network.
+* implement rpc/blockmaker for supernode.
+* reconstruct template system
+* remove dependency on MYSQL
+* IPv6 support

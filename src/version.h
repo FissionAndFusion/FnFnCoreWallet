@@ -14,8 +14,8 @@
 #define MV_VERSION_NAME        "Multiverse"
 
 #define MV_VERSION_MAJOR       0
-#define MV_VERSION_MINOR       1
-#define MV_VERSION_REVISION    2
+#define MV_VERSION_MINOR       2
+#define MV_VERSION_REVISION    0
 
 std::string FormatVersion(uint32 nVersion);
 
