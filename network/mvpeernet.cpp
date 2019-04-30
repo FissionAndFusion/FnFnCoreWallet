@@ -772,6 +772,9 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                     CTransaction payload;
                     ssPayload >> payload;
 
+                    CInv inv(CInv::MSG_TX, payload.GetHash());
+                    CancelTimer(pMvPeer->Responded(inv));
+
                     if((IsMainFork(hashFork) || IsMyFork(hashFork)) 
                         && IsThisNodeData(hashFork, pMvPeer->GetNonce(), payload.GetHash()))
                     {
@@ -779,8 +782,6 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                         if (pEvent != NULL)
                         {
                             pEvent->data = payload;
-                            CInv inv(CInv::MSG_TX, pEvent->data.GetHash());
-                            CancelTimer(pMvPeer->Responded(inv));
                             pNetChannel->PostEvent(pEvent);
                         }
                         return true;
@@ -809,6 +810,9 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                     CBlock payload;
                     ssPayload >> payload;
 
+                    CInv inv(CInv::MSG_BLOCK, payload.GetHash());
+                    CancelTimer(pMvPeer->Responded(inv));
+
                     if((IsMainFork(hashFork) || IsMyFork(hashFork)) 
                         && IsThisNodeData(hashFork, pMvPeer->GetNonce(), payload.GetHash()))
                     {
@@ -816,8 +820,6 @@ bool CMvPeerNet::HandlePeerRecvMessage(CPeer *pPeer,int nChannel,int nCommand,CW
                         if (pEvent != NULL)
                         {
                             pEvent->data = payload;
-                            CInv inv(CInv::MSG_BLOCK, pEvent->data.GetHash());
-                            CancelTimer(pMvPeer->Responded(inv));
                             pNetChannel->PostEvent(pEvent);
                         }
                     }
