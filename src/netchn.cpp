@@ -841,7 +841,7 @@ void CNetChannel::SchedulePeerInv(uint64 nNonce,const uint256& hashFork,CSchedul
         {
             if (!sched.ScheduleTxInv(nNonce,eventGetData.data,MAX_PEER_SCHED_COUNT))
             {
-                if(!IsInnerSuperode(nNonce))
+                if(!IsSuperNodeInnerNonce(nNonce))
                 {
                     DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK,"SchedulePeerInv1");
                 }     
@@ -851,7 +851,7 @@ void CNetChannel::SchedulePeerInv(uint64 nNonce,const uint256& hashFork,CSchedul
     }
     else
     {
-        if(!IsInnerSuperode(nNonce))
+        if(!IsSuperNodeInnerNonce(nNonce))
         {
             DispatchMisbehaveEvent(nNonce,CEndpointManager::DDOS_ATTACK,"SchedulePeerInv2");
         }
@@ -905,7 +905,7 @@ void CNetChannel::AddNewBlock(const uint256& hashFork,const uint256& hash,CSched
                 sched.GetNextBlock(hashBlock,vBlockHash);
                 sched.RemoveInv(network::CInv(network::CInv::MSG_BLOCK,hashBlock),setKnownPeer);
                 
-                if(!IsInnerSuperode(nNonceSender))
+                if(!IsSuperNodeInnerNonce(nNonceSender))
                 {
                     DispatchAwardEvent(nNonceSender,CEndpointManager::VITAL_DATA);
                 }
@@ -948,7 +948,7 @@ void CNetChannel::AddNewTx(const uint256& hashFork,const uint256& txid,CSchedule
                 sched.GetNextTx(hashTx,vtx,setTx);
                 sched.RemoveInv(network::CInv(network::CInv::MSG_TX,hashTx),setSchedPeer);
                 
-                if(!IsInnerSuperode(nNonceSender))
+                if(!IsSuperNodeInnerNonce(nNonceSender))
                 {
                     DispatchAwardEvent(nNonceSender,CEndpointManager::MAJOR_DATA);
                 }
@@ -980,7 +980,7 @@ void CNetChannel::PostAddNew(const uint256& hashFork,CSchedule& sched,
 
     for(const uint64 nNonceMisbehave : setMisbehavePeer)
     {
-        if(!IsInnerSuperode(nNonceMisbehave))
+        if(!IsSuperNodeInnerNonce(nNonceMisbehave))
         {
             DispatchMisbehaveEvent(nNonceMisbehave,CEndpointManager::DDOS_ATTACK,"PostAddNew");
         }

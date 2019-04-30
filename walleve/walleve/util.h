@@ -284,7 +284,7 @@ inline std::size_t ParseHexString(const std::string& str,unsigned char* p,std::s
 }
 
 
-inline bool IsInnerSuperode(uint64 nNonce)
+inline bool IsSuperNodeInnerNonce(uint64 nNonce)
 {
     return nNonce == SUPERNODE_INNER_NONCE;
 }

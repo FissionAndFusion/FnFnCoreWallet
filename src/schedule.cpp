@@ -157,7 +157,7 @@ bool CSchedule::ReceiveBlock(uint64 nPeerNonce,const uint256& hash,const CBlock&
     {
         CInvState& state = (*it).second;
 
-        if(!walleve::IsInnerSuperode(nPeerNonce))
+        if(!walleve::IsSuperNodeInnerNonce(nPeerNonce))
         {
             if (state.nAssigned == nPeerNonce && !state.IsReceived())
             {
@@ -188,7 +188,7 @@ bool CSchedule::ReceiveTx(uint64 nPeerNonce,const uint256& txid,const CTransacti
     {
         CInvState& state = (*it).second;
         
-        if(!walleve::IsInnerSuperode(nPeerNonce))
+        if(!walleve::IsSuperNodeInnerNonce(nPeerNonce))
         {
             if (state.nAssigned == nPeerNonce && !state.IsReceived())
             {

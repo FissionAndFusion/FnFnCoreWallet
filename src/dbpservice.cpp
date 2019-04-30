@@ -820,7 +820,7 @@ void CDbpService::HandleSendEvent(CMvEventDbpMethod& event)
         if(IsForkNodeOfSuperNode())
         {
             if(IsMyFork(eventGetBlocks.hashFork)
-                && IsInnerSuperode(eventGetBlocks.nNonce))
+                && IsSuperNodeInnerNonce(eventGetBlocks.nNonce))
             {
                 eventGetBlocks.flow = "up";
                 eventGetBlocks.sender = "dbpservice";
@@ -851,7 +851,7 @@ void CDbpService::HandleSendEvent(CMvEventDbpMethod& event)
         if(IsForkNodeOfSuperNode())
         {
             if(IsMyFork(eventGetData.hashFork)
-                && IsInnerSuperode(eventGetData.nNonce))
+                && IsSuperNodeInnerNonce(eventGetData.nNonce))
             {
                 eventGetData.flow = "up";
                 eventGetData.sender = "dbpservice";
@@ -1236,7 +1236,7 @@ bool CDbpService::HandleEvent(CMvEventPeerInv& event)
 
     if(IsForkNodeOfSuperNode())
     {
-        if(IsInnerSuperode(event.nNonce))
+        if(IsSuperNodeInnerNonce(event.nNonce))
         {
             PushEvent(eventVPeer);
         }
@@ -1266,7 +1266,7 @@ bool CDbpService::HandleEvent(CMvEventPeerBlock& event)
 
     if(IsForkNodeOfSuperNode())
     {
-        if(IsInnerSuperode(event.nNonce))
+        if(IsSuperNodeInnerNonce(event.nNonce))
         {
             PushEvent(eventVPeer);
         }
@@ -1297,7 +1297,7 @@ bool CDbpService::HandleEvent(CMvEventPeerTx& event)
 
     if(IsForkNodeOfSuperNode())
     {
-        if(IsInnerSuperode(event.nNonce))
+        if(IsSuperNodeInnerNonce(event.nNonce))
         {
             PushEvent(eventVPeer);
         }
