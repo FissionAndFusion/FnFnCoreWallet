@@ -104,7 +104,7 @@ void CMvPeer::AskFor(const uint256& hashFork, const vector<CInv>& vInv)
     
 bool CMvPeer::FetchAskFor(uint256& hashFork,CInv& inv)
 {
-    if (IsWriteable() && !queAskFor.empty())
+    if (!queAskFor.empty())
     {
         hashFork = queAskFor.front().first;
         inv = queAskFor.front().second;
