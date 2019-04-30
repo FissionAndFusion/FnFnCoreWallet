@@ -2268,7 +2268,7 @@ CRPCResultPtr CSnRPCModWorker::SnRPCStop(CRPCParamPtr param)
     DelCompltUntilByNonce(nNonce);
     if(!fResult)
     {
-        throw CRPCException(RPC_INVALID_PARAMETER, "Timeout");
+        throw CRPCException(RPC_REQUEST_TIMEOUT, "Timeout");
     }
 
     std::string reason = "[supernode]multiverse server stopping";
@@ -2297,7 +2297,7 @@ CRPCResultPtr CSnRPCModWorker::SnRPCGetForkCount(CRPCParamPtr param)
     DelCompltUntilByNonce(nNonce);
     if(!fResult)
     {
-        throw CRPCException(RPC_INVALID_PARAMETER, "Timeout");
+        throw CRPCException(RPC_REQUEST_TIMEOUT, "Timeout");
     }
 
     CMvRPCRouteListForkRet ret =
@@ -2328,7 +2328,7 @@ CRPCResultPtr CSnRPCModWorker::SnRPCListFork(CRPCParamPtr param)
     DelCompltUntilByNonce(nNonce);
     if(!fResult)
     {
-        throw CRPCException(RPC_INVALID_PARAMETER, "Timeout");
+        throw CRPCException(RPC_REQUEST_TIMEOUT, "Timeout");
     }
 
     CMvRPCRouteListForkRet ret =
@@ -2369,7 +2369,7 @@ CRPCResultPtr CSnRPCModWorker::SnRPCGetBlockLocation(CRPCParamPtr param)
     DelCompltUntilByNonce(nNonce);
     if(!fResult)
     {
-        throw CRPCException(RPC_INVALID_PARAMETER, "Timeout");
+        throw CRPCException(RPC_REQUEST_TIMEOUT, "Timeout");
     }
 
     CMvRPCRouteGetBlockLocationRet ret =
@@ -2408,7 +2408,7 @@ CRPCResultPtr CSnRPCModWorker::SnRPCGetBlockCount(CRPCParamPtr param)
     DelCompltUntilByNonce(nNonce);
     if (!fResult)
     {
-        throw CRPCException(RPC_INVALID_PARAMETER, "Timeout");
+        throw CRPCException(RPC_REQUEST_TIMEOUT, "Timeout");
     }
 
     auto ret =
@@ -2455,7 +2455,7 @@ CRPCResultPtr CSnRPCModWorker::SnRPCGetBlockHash(CRPCParamPtr param)
     DelCompltUntilByNonce(nNonce);
     if(!fResult)
     {
-        throw CRPCException(RPC_INVALID_PARAMETER, "Timeout");
+        throw CRPCException(RPC_REQUEST_TIMEOUT, "Timeout");
     }
 
     auto ret = boost::any_cast<CMvRPCRouteGetBlockHashRet>(ptrCompltUntil->obj);
@@ -2507,7 +2507,7 @@ CRPCResultPtr CSnRPCModWorker::SnRPCGetBlock(CRPCParamPtr param)
     DelCompltUntilByNonce(nNonce);
     if(!fResult)
     {
-        throw CRPCException(RPC_INVALID_PARAMETER, "Timeout");
+        throw CRPCException(RPC_REQUEST_TIMEOUT, "Timeout");
     }
 
     auto ret = boost::any_cast<CMvRPCRouteGetBlockRet>(ptrCompltUntil->obj);
@@ -2546,7 +2546,7 @@ CRPCResultPtr CSnRPCModWorker::SnRPCGetTxPool(CRPCParamPtr param)
     DelCompltUntilByNonce(nNonce);
     if(!fResult)
     {
-        throw CRPCException(RPC_INVALID_PARAMETER, "Timeout");
+        throw CRPCException(RPC_REQUEST_TIMEOUT, "Timeout");
     }
 
     auto spResult = MakeCGetTxPoolResultPtr();
@@ -2606,7 +2606,7 @@ CRPCResultPtr CSnRPCModWorker::SnRPCGetTransaction(CRPCParamPtr param)
     DelCompltUntilByNonce(nNonce);
     if(!fResult)
     {
-        throw CRPCException(RPC_INVALID_PARAMETER, "Timeout");
+        throw CRPCException(RPC_REQUEST_TIMEOUT, "Timeout");
     }
 
     auto spResult = MakeCGetTransactionResultPtr();
@@ -2657,7 +2657,7 @@ CRPCResultPtr CSnRPCModWorker::SnRPCGetForkHeight(CRPCParamPtr param)
     DelCompltUntilByNonce(nNonce);
     if(!fResult)
     {
-        throw CRPCException(RPC_INVALID_PARAMETER, "Timeout");
+        throw CRPCException(RPC_REQUEST_TIMEOUT, "Timeout");
     }
 
     auto ret =
@@ -2712,7 +2712,7 @@ CRPCResultPtr CSnRPCModWorker::SnRPCSendTransaction(CRPCParamPtr param)
     DelCompltUntilByNonce(nNonce);
     if(!fResult)
     {
-        throw CRPCException(RPC_INVALID_PARAMETER, "Timeout");
+        throw CRPCException(RPC_REQUEST_TIMEOUT, "Timeout");
     }
 
     auto ret =
