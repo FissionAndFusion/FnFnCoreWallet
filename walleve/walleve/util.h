@@ -22,7 +22,10 @@
 
 namespace walleve
 {
+
+
 extern bool STD_DEBUG;
+extern uint64 SUPERNODE_INNER_NONCE;
 
 inline int64 GetTime()
 {
@@ -278,6 +281,12 @@ inline std::vector<unsigned char> ParseHexString(const std::string& str)
 inline std::size_t ParseHexString(const std::string& str,unsigned char* p,std::size_t n)
 {
     return ParseHexString(str.c_str(),p,n);
+}
+
+
+inline bool IsInnerSuperode(uint64 nNonce)
+{
+    return nNonce == SUPERNODE_INNER_NONCE;
 }
 
 #ifdef __GNUG__

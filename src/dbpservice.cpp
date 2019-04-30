@@ -253,7 +253,7 @@ bool CDbpService::HandleEvent(CMvEventDbpConnect& event)
             if(mapPeerEventActive.size() == 0)
             {
                 CWalleveBufStream ss;
-                CMvEventPeerActive eventAct(std::numeric_limits<uint64>::max());
+                CMvEventPeerActive eventAct(SUPERNODE_INNER_NONCE);
                 eventAct.data.nService = network::NODE_NETWORK;
                 ss << eventAct;
                 std::string data(ss.GetData(), ss.GetSize());
@@ -821,7 +821,7 @@ void CDbpService::HandleSendEvent(CMvEventDbpMethod& event)
         if(IsForkNodeOfSuperNode())
         {
             if(IsMyFork(eventGetBlocks.hashFork)
-                && eventGetBlocks.nNonce == std::numeric_limits<uint64>::max())
+                && IsInnerSuperode(eventGetBlocks.nNonce))
             {
                 eventGetBlocks.flow = "up";
                 eventGetBlocks.sender = "dbpservice";
@@ -852,7 +852,7 @@ void CDbpService::HandleSendEvent(CMvEventDbpMethod& event)
         if(IsForkNodeOfSuperNode())
         {
             if(IsMyFork(eventGetData.hashFork)
-                && eventGetData.nNonce == std::numeric_limits<uint64>::max())
+                && IsInnerSuperode(eventGetData.nNonce))
             {
                 eventGetData.flow = "up";
                 eventGetData.sender = "dbpservice";
@@ -1237,7 +1237,7 @@ bool CDbpService::HandleEvent(CMvEventPeerInv& event)
 
     if(IsForkNodeOfSuperNode())
     {
-        if(event.nNonce == std::numeric_limits<uint64>::max())
+        if(IsInnerSuperode(event.nNonce))
         {
             PushEvent(eventVPeer);
         }
@@ -1267,7 +1267,7 @@ bool CDbpService::HandleEvent(CMvEventPeerBlock& event)
 
     if(IsForkNodeOfSuperNode())
     {
-        if(event.nNonce == std::numeric_limits<uint64>::max())
+        if(IsInnerSuperode(event.nNonce))
         {
             PushEvent(eventVPeer);
         }
@@ -1298,7 +1298,7 @@ bool CDbpService::HandleEvent(CMvEventPeerTx& event)
 
     if(IsForkNodeOfSuperNode())
     {
-        if(event.nNonce == std::numeric_limits<uint64>::max())
+        if(IsInnerSuperode(event.nNonce))
         {
             PushEvent(eventVPeer);
         }
