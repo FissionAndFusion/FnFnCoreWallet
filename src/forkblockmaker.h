@@ -73,7 +73,8 @@ protected:
                                                                int64 nPrimaryBlockTime,const int32 nPrimaryBlockHeight);
     bool CreateDelegatedBlock(CBlock& block,const uint256& hashFork,const CForkBlockMakerProfile& profile,std::size_t nWeight);
     void CreatePiggyback(const CForkBlockMakerProfile& profile,const CDelegateAgreement& agreement,const CBlock& refblock,const int32 nPrevHeight); 
-    void CreateExtended(const CForkBlockMakerProfile& profile,const CDelegateAgreement& agreement,const std::set<uint256>& setFork,const int32 nPrimaryBlockHeight,int64 nTime); 
+    void CreateExtended(const CForkBlockMakerProfile& profile,const CDelegateAgreement& agreement,
+                        const uint256& hashRefBlock,const std::set<uint256>& setFork,const int32 nPrimaryBlockHeight,int64 nTime); 
     bool GetAvailableDelegatedProfile(const std::vector<CDestination>& vBallot,std::vector<CForkBlockMakerProfile*>& vProfile);
     bool GetAvailableExtendedFork(std::set<uint256>& setFork);
 private:

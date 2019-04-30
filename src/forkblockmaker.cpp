@@ -286,7 +286,7 @@ void CForkBlockMaker::ProcessDelegatedProofOfStake(CBlock& block,const CDelegate
 }
     
 void CForkBlockMaker::ProcessExtended(const CDelegateAgreement& agreement,const uint256& hashPrimaryBlock,
-                                                               int64 nPrimaryBlockTime,const int32 nPrimaryBlockHeight)
+                                      int64 nPrimaryBlockTime,const int32 nPrimaryBlockHeight)
 {
     vector<CForkBlockMakerProfile*> vProfile;
     set<uint256> setFork;
@@ -312,7 +312,7 @@ void CForkBlockMaker::ProcessExtended(const CDelegateAgreement& agreement,const 
             {
                 return;
             }
-            CreateExtended(*pProfile,agreement,setFork,nPrimaryBlockHeight,nTime);
+            CreateExtended(*pProfile,agreement,hashPrimaryBlock,setFork,nPrimaryBlockHeight,nTime);
         }
         nTime += EXTENDED_BLOCK_SPACING;
     }
@@ -370,11 +370,13 @@ void CForkBlockMaker::CreatePiggyback(const CForkBlockMakerProfile& profile,cons
     }
 }
     
-void CForkBlockMaker::CreateExtended(const CForkBlockMakerProfile& profile,const CDelegateAgreement& agreement,const std::set<uint256>& setFork,const int32 nPrimaryBlockHeight,int64 nTime)
+void CForkBlockMaker::CreateExtended(const CForkBlockMakerProfile& profile,const CDelegateAgreement& agreement,
+                                     const uint256& hashRefBlock,const std::set<uint256>& setFork,const int32 nPrimaryBlockHeight,int64 nTime)
 {
-    CProofOfSecretShare proof;
+    CProofOfPiggyback proof;
     proof.nWeight = agreement.nWeight;
     proof.nAgreement = agreement.nAgreement;
+    proof.hashRefBlock = hashRefBlock;
     for(const uint256& hashFork : setFork)
     {
         uint256 hashLastBlock;

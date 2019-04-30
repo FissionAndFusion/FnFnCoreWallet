@@ -378,7 +378,7 @@ void CBlockMaker::ProcessExtended(const CDelegateAgreement& agreement,
             {
                 return;
             }
-            CreateExtended(*pProfile,agreement,setFork,nPrimaryBlockHeight,nTime);
+            CreateExtended(*pProfile,agreement,hashPrimaryBlock,setFork,nPrimaryBlockHeight,nTime);
         }
         nTime += EXTENDED_BLOCK_SPACING;
     }
@@ -439,11 +439,12 @@ void CBlockMaker::CreatePiggyback(const CBlockMakerProfile& profile,const CDeleg
 }
 
 void CBlockMaker::CreateExtended(const CBlockMakerProfile& profile,const CDelegateAgreement& agreement,
-                                 const set<uint256>& setFork,const int32 nPrimaryBlockHeight,int64 nTime)
+                                 const uint256& hashRefBlock,const set<uint256>& setFork,const int32 nPrimaryBlockHeight,int64 nTime)
 {
-    CProofOfSecretShare proof;
+    CProofOfPiggyback proof;
     proof.nWeight = agreement.nWeight;
     proof.nAgreement = agreement.nAgreement;
+    proof.hashRefBlock = hashRefBlock;
     for(const uint256& hashFork : setFork)
     {
         uint256 hashLastBlock;

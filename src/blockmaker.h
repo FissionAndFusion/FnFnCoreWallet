@@ -75,7 +75,8 @@ protected:
     bool CreateProofOfWork(CBlock& block,CBlockMakerHashAlgo* pHashAlgo);
     void CreatePiggyback(const CBlockMakerProfile& profile,const CDelegateAgreement& agreement,
                          const uint256& hashRefBlock,int64 nRefBlockTime,const int32 nPrevHeight); 
-    void CreateExtended(const CBlockMakerProfile& profile,const CDelegateAgreement& agreement,const std::set<uint256>& setFork,int nPrimaryBlockHeight,int64 nTime); 
+    void CreateExtended(const CBlockMakerProfile& profile,const CDelegateAgreement& agreement,
+                        const uint256& hashRefBlock,const std::set<uint256>& setFork,int nPrimaryBlockHeight,int64 nTime); 
     bool GetAvailableDelegatedProfile(const std::vector<CDestination>& vBallot,std::vector<CBlockMakerProfile*>& vProfile);
     bool GetAvailableExtendedFork(std::set<uint256>& setFork);
 private:
