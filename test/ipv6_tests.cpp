@@ -130,6 +130,10 @@ BOOST_AUTO_TEST_CASE( resolve_multi_ip )
     // address=/multi-ip-multiverse.com/127.0.0.1
     CNetHost multiHost("www.multi-ip-multiverse.com",55);
     BOOST_CHECK(ResolveHost(multiHost) == "127.0.0.3");
+
+    // address=/multi-addr-multiverse.com/multi-addr0-multiverse.com/multi-addr1-multiverse.com/127.0.0.5
+    CNetHost multiAddrHost("www.multi-addr-multiverse.com",55);
+    BOOST_CHECK(ResolveHost(multiAddrHost) == "127.0.0.5");
 }
 
 BOOST_AUTO_TEST_SUITE_END()
