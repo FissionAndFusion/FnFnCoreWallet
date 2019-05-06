@@ -110,6 +110,7 @@ BOOST_AUTO_TEST_CASE ( dns_query )
 
     // configure dnsmasq: /etc/dnsmasq.conf (see conf path of file: --conf-dir --conf-file) 
     // OPTION address=/domain.com/[ipv4 | ipv6]
+    // sudo service network-manager restart
     // refers to http://www.thekelleys.org.uk/dnsmasq/docs/dnsmasq-man.html
 
     // address=/ipv4-multiverse.com/127.0.0.1
@@ -119,6 +120,26 @@ BOOST_AUTO_TEST_CASE ( dns_query )
     // address=/ipv6-multiverse.com/2001:db8:0:23:8:800:200c:417a
     CNetHost v6Host("www.ipv6-multiverse.com",55);
     BOOST_CHECK(ResolveHost(v6Host) == "2001:db8:0:23:8:800:200c:417a");
+}
+
+BOOST_AUTO_TEST_CASE( resolve_multi_ip )
+{
+    // config options by order as follows:
+    // address=/multi-ip-multiverse.com/127.0.0.3
+    // address=/multi-ip-multiverse.com/127.0.0.2
+    // address=/multi-ip-multiverse.com/127.0.0.1
+    CNetHost multiHost("www.multi-ip-multiverse.com",55);
+    BOOST_CHECK(ResolveHost(multiHost) == "127.0.0.3");
+
+    // address=/multi-addr-multiverse.com/multi-addr0-multiverse.com/multi-addr1-multiverse.com/127.0.0.5
+    CNetHost multiAddrHost0("www.multi-addr-multiverse.com",55);
+    BOOST_CHECK(ResolveHost(multiAddrHost0) == "127.0.0.5");
+
+    CNetHost multiAddrHost1("www.multi-addr0-multiverse.com",55);
+    BOOST_CHECK(ResolveHost(multiAddrHost1) == "127.0.0.5");
+
+    CNetHost multiAddrHost2("www.multi-addr1-multiverse.com",55);
+    BOOST_CHECK(ResolveHost(multiAddrHost2) == "127.0.0.5");
 }
 
 BOOST_AUTO_TEST_SUITE_END()
