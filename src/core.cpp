@@ -118,7 +118,7 @@ MvErr CMvCoreProtocol::ValidateTransaction(const CTransaction& tx)
             {
                 return DEBUG(MV_ERR_TRANSACTION_INVALID, "tx vchData is overflow.\n");
             }
-            std::string strDescEncodedBase64(tx.vchData.begin() + nPos, tx.vchData.begin() + nPos + szDesc);
+            std::string strDescEncodedBase64(tx.vchData.begin() + nPos + 1, tx.vchData.begin() + nPos + 1 + szDesc);
             walleve::CHttpUtil util;
             std::string strDescDecodedBase64;
             if(!util.Base64Decode(strDescEncodedBase64, strDescDecodedBase64))
