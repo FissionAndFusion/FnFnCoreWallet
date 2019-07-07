@@ -318,6 +318,14 @@ void CConsensus::PrimaryUpdate(const CWorldLineUpdate& update,const CTxSetChange
                 if (mi != mapContext.end())
                 { 
                     CTransaction tx;
+                    
+                    int32 nHeight;
+                    int64 nTime;
+                    CBlock lastBlock;
+                    pWorldLine->GetLastBlock(pCoreProtocol->GetGenesisBlockHash(), hash, nHeight,nTime);
+                    pWorldLine->GetBlock(hash, lastBlock);
+                    hash = lastBlock.hashPrev;
+                    
                     if ((*mi).second.BuildEnrollTx(tx,nBlockHeight,WalleveGetNetTime(),hash,0,(*it).second))
                     {
                         routine.vEnrollTx.push_back(tx);
